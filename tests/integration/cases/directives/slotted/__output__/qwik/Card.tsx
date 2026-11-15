@@ -2,6 +2,7 @@ import Disclosure from "./Disclosure";
 import {
   type CSSProperties,
   type ClassList,
+  type Signal,
   component$,
   useSignal,
   useVisibleTask$,
@@ -22,30 +23,32 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
   ({ class: className, style, ...attributes }) => {
     const note = useSignal<{ name: string } | null>({ name: "note" });
 
-    const traceElement = useSignal<DirectiveElement<typeof vTrace>>();
+    const traceElements = useSignal<DirectiveElement<typeof vTrace>[]>([]);
 
     useVisibleTask$(
       ({ track, cleanup }) => {
-        const element = track(traceElement);
-        if (element) cleanup(runDirective(vTrace, element, "body"));
+        const value = "body";
+        for (const element of track(traceElements)) {
+          cleanup(runDirective(vTrace, element, value));
+        }
       },
       { strategy: "document-ready" },
     );
 
-    const traceElement_1 = useSignal<DirectiveElement<typeof vTrace>>();
+    const traceElements_1 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
 
     useVisibleTask$(
       ({ track, cleanup }) => {
-        const element = track(traceElement_1);
-        if (element?.isConnected)
-          cleanup(
-            runDirective(
-              vTrace,
-              element,
-              track(() => note.value!.name),
-            ),
-          );
-        else if (element) cleanup(waitForDocument(element, () => traceElement_1.trigger()));
+        if (track(traceElements_1).some((element) => element.isConnected)) {
+          const value = track(() => note.value!.name);
+          for (const element of track(traceElements_1)) {
+            cleanup(runDirective(vTrace, element, value));
+          }
+        } else {
+          for (const element of traceElements_1.value) {
+            cleanup(waitForDocument(element, () => traceElements_1.trigger()));
+          }
+        }
       },
       { strategy: "document-ready" },
     );
@@ -58,11 +61,11 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         style={style}
       >
         <Disclosure>
-          <p data-name="body" ref={traceElement}>
+          <p data-name="body" ref={(element) => collectElement(traceElements, element)}>
             Body
           </p>
           {note.value ? (
-            <p data-name="note" ref={traceElement_1}>
+            <p data-name="note" ref={(element) => collectElement(traceElements_1, element)}>
               Note
             </p>
           ) : null}
@@ -147,9 +150,9 @@ function runDirective<E extends Element, T>(
     current.mounted = element.isConnected;
     if (current.mounted) {
       const mounted = current.value as T;
-      queueHook(element, () => directive.mounted?.(element, mounted));
+      queueHook(element, () => directive.mounted?.(element, mounted), "mounted");
     } else {
-      queueHook(element, () => directive.unmounted?.(element), true);
+      queueHook(element, () => directive.unmounted?.(element), "unmounted");
     }
   };
   let state = elements.get(element);
@@ -158,7 +161,9 @@ function runDirective<E extends Element, T>(
     if (!Object.is(value, state.value)) {
       const previous = state.value as T;
       state.value = value;
-      if (state.mounted) queueHook(element, () => directive.updated?.(element, value, previous));
+      if (state.mounted) {
+        queueHook(element, () => directive.updated?.(element, value, previous), "updated");
+      }
     }
   } else {
     state = { value, mounted: false, runs: 0, unwatch: watchDocument(sync) };
@@ -172,7 +177,7 @@ function runDirective<E extends Element, T>(
       if (elements.get(element) !== taken || taken.runs !== runs) return;
       taken.unwatch();
       elements.delete(element);
-      if (taken.mounted) queueHook(element, () => directive.unmounted?.(element), true);
+      if (taken.mounted) queueHook(element, () => directive.unmounted?.(element), "unmounted");
     });
   };
 }
@@ -187,6 +192,15 @@ function waitForDocument(element: Element, ready: () => void): () => void {
   return unwatch;
 }
 
+/**
+ * Adds an element a directive's `ref` receives to the directive's elements, once: on the server
+ * a reference the client resumes as the element, so every element one use renders is followed.
+ */
+function collectElement<E extends Element>(elements: Signal<E[]>, element: E): void {
+  if (elements.untrackedValue.includes(element)) return;
+  elements.value = [...elements.untrackedValue, element];
+}
+
 /** The element a directive's hooks take. */
 type DirectiveElement<D> = D extends DirectiveHooks<infer E extends Element, never> ? E : never;
 
@@ -195,27 +209,36 @@ type DirectiveElement<D> = D extends DirectiveHooks<infer E extends Element, nev
  * a descendant's before its ancestor's and siblings' in document order, one element's in the
  * order they came, with the hooks every other output queued.
  */
-function queueHook(element: Element, run: () => void, leaving = false): void {
-  const key: unique symbol = Symbol.for("unframework.directive-hooks@1");
+function queueHook(
+  element: Element,
+  run: () => void,
+  hook: "mounted" | "updated" | "unmounted",
+): void {
+  const key: unique symbol = Symbol.for("unframework.directive-hooks@2");
   const scope = globalThis as typeof globalThis & {
-    [key]?: { element: Element; run: () => void; leaving: boolean }[];
+    [key]?: { element: Element; run: () => void; hook: "mounted" | "updated" | "unmounted" }[];
   };
   const queued = scope[key];
   if (queued) {
-    queued.push({ element, run, leaving });
+    queued.push({ element, run, hook });
     return;
   }
-  scope[key] = [{ element, run, leaving }];
+  scope[key] = [{ element, run, hook }];
   queueMicrotask(() => {
     const hooks = scope[key] ?? [];
     scope[key] = undefined;
     // Every `unmounted` runs first, but one after its own element's `mounted` this turn, as
-    // StrictMode's, which keeps its place among the rest.
-    const first = new Set<{ element: Element; run: () => void; leaving: boolean }>();
+    // StrictMode's, which keeps its place among the rest. A leaving one moves up together
+    // with the element's hooks before it, which keep their order.
+    const first = new Set<(typeof hooks)[number]>();
     const entered = new Set<Element>();
-    for (const hook of hooks) {
-      if (!hook.leaving) entered.add(hook.element);
-      else if (!entered.has(hook.element)) first.add(hook);
+    for (const each of hooks) {
+      if (each.hook === "mounted") entered.add(each.element);
+      if (each.hook !== "unmounted" || entered.has(each.element)) continue;
+      for (const earlier of hooks) {
+        if (earlier.element === each.element) first.add(earlier);
+        if (earlier === each) break;
+      }
     }
     hooks.sort((a, b) => {
       if (first.has(a) !== first.has(b)) return first.has(a) ? -1 : 1;
@@ -226,9 +249,9 @@ function queueHook(element: Element, run: () => void, leaving = false): void {
         ? -1
         : 1;
     });
-    for (const hook of hooks) {
+    for (const each of hooks) {
       try {
-        hook.run();
+        each.run();
       } catch (error) {
         reportError(error);
       }

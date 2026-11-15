@@ -1,0 +1,44 @@
+---
+import Choice from "./Choice.astro";
+import List from "./List.astro";
+import Wrapper from "./Wrapper.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const noted = "" as string;
+---
+
+<section
+  class:list={["page", className]}
+  aria-label="Page"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <Wrapper>
+    <Fragment slot="row">
+      <span data-name="row">Row</span>
+    </Fragment>
+  </Wrapper>
+  <Choice>
+    <Fragment slot="body">
+      <em data-name="body">Body</em>
+    </Fragment>
+  </Choice>
+  <List items={["a", "b"]} item={({ item }) => <strong data-name="item">{item}</strong>} />
+  <p data-name="note">Note</p>
+  <output>{noted}</output>
+  <button type="button">Check</button>
+  <button type="button">Rename</button>
+</section>

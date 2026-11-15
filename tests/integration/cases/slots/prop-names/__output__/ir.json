@@ -312,8 +312,7 @@
               {
                 "name": "row",
                 "optional": true,
-                "props": "{ name: string; \"data-id\": string; index: number }",
-                "repeated": true
+                "props": "{ name: string; \"data-id\": string; index: number }"
               }
             ],
             "exposes": [],

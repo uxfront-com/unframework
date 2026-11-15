@@ -1,0 +1,18 @@
+- region "Page":
+  - region "Rows":
+    - list:
+      - listitem: Row
+      - listitem: Row
+    - button "Add row"
+    - button "Remove row"
+  - emphasis: Body
+  - button "Switch"
+  - list:
+    - listitem:
+      - strong: a
+    - listitem:
+      - strong: b
+  - paragraph: Note
+  - status: note
+  - button "Check"
+  - button "Rename"

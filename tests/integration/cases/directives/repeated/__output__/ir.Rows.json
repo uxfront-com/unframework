@@ -1,0 +1,374 @@
+{
+  "irVersion": 1,
+  "file": "directives/repeated/Rows.uf.tsx",
+  "components": [
+    {
+      "name": "Rows",
+      "span": {
+        "start": 210,
+        "end": 772
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@251",
+        "type": {
+          "code": "{ row?(): Element }",
+          "span": {
+            "start": 271,
+            "end": 290
+          }
+        },
+        "slots": [
+          {
+            "name": "row",
+            "optional": true,
+            "span": {
+              "start": 273,
+              "end": 288
+            }
+          }
+        ],
+        "span": {
+          "start": 245,
+          "end": 294
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@251",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 251,
+            "end": 256
+          }
+        },
+        {
+          "id": "items@303",
+          "name": "items",
+          "kind": "state",
+          "span": {
+            "start": 303,
+            "end": 308
+          }
+        },
+        {
+          "id": "item@396",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 396,
+            "end": 400
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "items@303",
+          "initial": {
+            "code": "[1, 2]",
+            "span": {
+              "start": 315,
+              "end": 321
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 297,
+            "end": 323
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "rows",
+            "span": {
+              "start": 345,
+              "end": 357
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "items.value",
+                  "span": {
+                    "start": 379,
+                    "end": 390
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "items@303",
+                      "span": {
+                        "start": 379,
+                        "end": 390
+                      }
+                    }
+                  ]
+                },
+                "item": "item@396",
+                "key": {
+                  "code": "item",
+                  "span": {
+                    "start": 426,
+                    "end": 430
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "item@396",
+                      "span": {
+                        "start": 426,
+                        "end": 430
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "SlotOutlet",
+                      "slot": "row",
+                      "fallback": [],
+                      "span": {
+                        "start": 432,
+                        "end": 447
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 417,
+                    "end": 452
+                  }
+                },
+                "span": {
+                  "start": 379,
+                  "end": 463
+                }
+              }
+            ],
+            "span": {
+              "start": 365,
+              "end": 476
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 499,
+                  "end": 512
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(items.value = [...items.value, items.value.length + 1])",
+                      "span": {
+                        "start": 536,
+                        "end": 592
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "items@303",
+                          "operator": "=",
+                          "span": {
+                            "start": 536,
+                            "end": 592
+                          },
+                          "target": {
+                            "start": 537,
+                            "end": 548
+                          },
+                          "value": {
+                            "start": 551,
+                            "end": 591
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "items@303",
+                          "span": {
+                            "start": 555,
+                            "end": 566
+                          }
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "items@303",
+                          "span": {
+                            "start": 568,
+                            "end": 579
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 530,
+                      "end": 592
+                    }
+                  },
+                  "span": {
+                    "start": 530,
+                    "end": 592
+                  }
+                },
+                "span": {
+                  "start": 521,
+                  "end": 593
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add row",
+                "span": {
+                  "start": 601,
+                  "end": 624
+                }
+              }
+            ],
+            "span": {
+              "start": 483,
+              "end": 633
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 648,
+                  "end": 661
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(items.value = items.value.slice(0, -1))",
+                      "span": {
+                        "start": 677,
+                        "end": 717
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "items@303",
+                          "operator": "=",
+                          "span": {
+                            "start": 677,
+                            "end": 717
+                          },
+                          "target": {
+                            "start": 678,
+                            "end": 689
+                          },
+                          "value": {
+                            "start": 692,
+                            "end": 716
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "items@303",
+                          "span": {
+                            "start": 692,
+                            "end": 703
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 671,
+                      "end": 717
+                    }
+                  },
+                  "span": {
+                    "start": 671,
+                    "end": 717
+                  }
+                },
+                "span": {
+                  "start": 662,
+                  "end": 718
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Remove row",
+                "span": {
+                  "start": 719,
+                  "end": 745
+                }
+              }
+            ],
+            "span": {
+              "start": 640,
+              "end": 754
+            }
+          }
+        ],
+        "span": {
+          "start": 340,
+          "end": 765
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Rows",
+      "span": {
+        "start": 210,
+        "end": 772
+      }
+    }
+  ],
+  "types": []
+}
