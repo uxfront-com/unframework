@@ -28,12 +28,13 @@ export default component$<ProfileMenuEvents & { class?: ClassList; style?: CSSPr
     useVisibleTask$(
       ({ track, cleanup }) => {
         const element = track(clickOutsideElement);
-        if (element?.isConnected)
-          runDirective(
-            vClickOutside,
-            element,
-            track(() => close),
-            cleanup,
+        if (element)
+          cleanup(
+            runDirective(
+              vClickOutside,
+              element,
+              track(() => close),
+            ),
           );
       },
       { strategy: "document-ready" },
@@ -87,54 +88,70 @@ interface DirectiveHooks<E extends Element, T> {
   unmounted?(el: E): unknown;
 }
 
-/** The value each directive's element last received, and the watch on its removal. */
+/**
+ * Each directive's elements: the value each last received, whether `mounted` ran, how many runs
+ * took it up, and the watch on its place in the document.
+ */
 const directiveStates = new WeakMap<
   object,
-  WeakMap<Element, { value: unknown; observer: MutationObserver }>
+  WeakMap<
+    Element,
+    { value: unknown; mounted: boolean; runs: number; observer: MutationObserver; sync: () => void }
+  >
 >();
 
 /**
- * Runs a directive's hooks on its element, from the task that tracks the element and the value:
- * `mounted` for a new element, `updated` for a value that changed, and `unmounted` once the
- * element leaves the document, or the component unmounts.
+ * Runs a directive's hooks on its element: `mounted` once the element is in the document,
+ * `updated` for a value that changed while it is, and `unmounted` once it leaves, which
+ * projected content may do and come back. The stop it returns, called when the element's owner
+ * goes, unmounts the element a microtask later, unless a later run took it up.
  */
 function runDirective<E extends Element, T>(
   directive: DirectiveHooks<E, T>,
   element: E,
   value: T,
-  cleanup: (callback: () => void) => void,
-): void {
-  let states = directiveStates.get(directive);
-  if (!states) {
-    states = new WeakMap();
-    directiveStates.set(directive, states);
+): () => void {
+  let own = directiveStates.get(directive);
+  if (!own) {
+    own = new WeakMap();
+    directiveStates.set(directive, own);
   }
-  const own = states;
-  const unmount = () => {
-    const state = own.get(element);
-    if (!state) return;
-    state.observer.disconnect();
-    own.delete(element);
-    queueHook(element, () => directive.unmounted?.(element));
-  };
-  const state = own.get(element);
-  if (!state) {
-    const observer = new MutationObserver(() => {
-      if (!element.isConnected) unmount();
-    });
-    observer.observe(document, { childList: true, subtree: true });
-    own.set(element, { value, observer });
-    queueHook(element, () => directive.mounted?.(element, value));
-  } else if (!Object.is(value, state.value)) {
-    const previous = state.value as T;
-    state.value = value;
-    queueHook(element, () => directive.updated?.(element, value, previous));
+  const elements = own;
+  let state = elements.get(element);
+  if (state) {
+    state.runs += 1;
+    if (!Object.is(value, state.value)) {
+      const previous = state.value as T;
+      state.value = value;
+      if (state.mounted) queueHook(element, () => directive.updated?.(element, value, previous));
+    }
+  } else {
+    const sync = () => {
+      const current = elements.get(element);
+      if (!current || current.mounted === element.isConnected) return;
+      current.mounted = element.isConnected;
+      if (current.mounted) {
+        const mounted = current.value as T;
+        queueHook(element, () => directive.mounted?.(element, mounted));
+      } else {
+        queueHook(element, () => directive.unmounted?.(element));
+      }
+    };
+    state = { value, mounted: false, runs: 0, observer: new MutationObserver(sync), sync };
+    state.observer.observe(document, { childList: true, subtree: true });
+    elements.set(element, state);
   }
-  cleanup(() => {
+  state.sync();
+  const taken = state;
+  const runs = taken.runs;
+  return () => {
     queueMicrotask(() => {
-      if (!element.isConnected) unmount();
+      if (elements.get(element) !== taken || taken.runs !== runs) return;
+      taken.observer.disconnect();
+      elements.delete(element);
+      if (taken.mounted) queueHook(element, () => directive.unmounted?.(element));
     });
-  });
+  };
 }
 
 /** The element a directive's hooks take. */

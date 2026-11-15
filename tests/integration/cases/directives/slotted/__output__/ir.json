@@ -1,0 +1,259 @@
+{
+  "irVersion": 1,
+  "file": "directives/slotted/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 576,
+        "end": 797
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 633,
+              "end": 645
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Card",
+            "span": {
+              "start": 646,
+              "end": 663
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Disclosure",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "data-name",
+                        "value": "body",
+                        "span": {
+                          "start": 695,
+                          "end": 711
+                        }
+                      },
+                      {
+                        "kind": "Directive",
+                        "name": "vTrace",
+                        "value": {
+                          "code": "\"body\"",
+                          "span": {
+                            "start": 720,
+                            "end": 726
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 712,
+                          "end": 726
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Body",
+                        "span": {
+                          "start": 727,
+                          "end": 751
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 692,
+                      "end": 755
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 692,
+                  "end": 755
+                }
+              }
+            ],
+            "span": {
+              "start": 671,
+              "end": 775
+            }
+          }
+        ],
+        "span": {
+          "start": 624,
+          "end": 790
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 576,
+        "end": 797
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Disclosure.uf.tsx",
+      "file": "Disclosure.uf.tsx",
+      "api": {
+        "file": "Disclosure.uf.tsx",
+        "components": [
+          {
+            "name": "Disclosure",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Disclosure",
+          "span": {
+            "start": 64,
+            "end": 74
+          }
+        }
+      ],
+      "span": {
+        "start": 57,
+        "end": 102
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vTrace",
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 231,
+          "end": 237
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    const call = `mounted ${value}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 262,
+              "end": 394
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 305,
+                  "end": 313
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 332,
+                  "end": 343
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 243,
+            "end": 394
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const call = `unmounted ${el.getAttribute(\"data-name\")}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 412,
+              "end": 569
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 480,
+                  "end": 488
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 507,
+                  "end": 518
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 398,
+            "end": 569
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 200,
+        "end": 574
+      }
+    }
+  ]
+}

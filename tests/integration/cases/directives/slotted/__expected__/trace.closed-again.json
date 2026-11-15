@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Details' })",
+      "dom": [
+        "<section aria-label=\"Card\" class=\"card\">",
+        "  <div class=\"disclosure\">",
+        "    <button aria-expanded=\"false\" type=\"button\" uf:focused=\"\">",
+        "      \"Details\"",
+        "    </button>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Card\":",
+        "  - button \"Details\""
+      ],
+      "events": {}
+    }
+  ]
+}

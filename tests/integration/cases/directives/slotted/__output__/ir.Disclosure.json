@@ -1,0 +1,286 @@
+{
+  "irVersion": 1,
+  "file": "directives/slotted/Disclosure.uf.tsx",
+  "components": [
+    {
+      "name": "Disclosure",
+      "span": {
+        "start": 244,
+        "end": 627
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@291",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 311,
+            "end": 334
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 313,
+              "end": 332
+            }
+          }
+        ],
+        "span": {
+          "start": 285,
+          "end": 338
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@291",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 291,
+            "end": 296
+          }
+        },
+        {
+          "id": "open@347",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 347,
+            "end": 351
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@347",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 358,
+              "end": 363
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 341,
+            "end": 365
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "disclosure",
+            "span": {
+              "start": 387,
+              "end": 405
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 421,
+                  "end": 434
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 450,
+                    "end": 460
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@347",
+                      "span": {
+                        "start": 450,
+                        "end": 460
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 435,
+                  "end": 461
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = !open.value)",
+                      "span": {
+                        "start": 477,
+                        "end": 503
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@347",
+                          "operator": "=",
+                          "span": {
+                            "start": 477,
+                            "end": 503
+                          },
+                          "target": {
+                            "start": 478,
+                            "end": 488
+                          },
+                          "value": {
+                            "start": 491,
+                            "end": 502
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "open@347",
+                          "span": {
+                            "start": 492,
+                            "end": 502
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 471,
+                      "end": 503
+                    }
+                  },
+                  "span": {
+                    "start": 471,
+                    "end": 503
+                  }
+                },
+                "span": {
+                  "start": 462,
+                  "end": 504
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Details",
+                "span": {
+                  "start": 505,
+                  "end": 528
+                }
+              }
+            ],
+            "span": {
+              "start": 413,
+              "end": 537
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 545,
+                    "end": 555
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@347",
+                      "span": {
+                        "start": 545,
+                        "end": 555
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "body",
+                        "span": {
+                          "start": 563,
+                          "end": 575
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "default",
+                        "fallback": [],
+                        "span": {
+                          "start": 576,
+                          "end": 595
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 558,
+                      "end": 601
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 545,
+                  "end": 601
+                }
+              }
+            ],
+            "span": {
+              "start": 545,
+              "end": 608
+            }
+          }
+        ],
+        "span": {
+          "start": 382,
+          "end": 620
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Disclosure",
+      "span": {
+        "start": 244,
+        "end": 627
+      }
+    }
+  ],
+  "types": []
+}
