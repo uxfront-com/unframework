@@ -21,39 +21,39 @@
       "value": {
         "code": "\"button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex='-1'])\"",
         "span": {
-          "start": 440,
-          "end": 528
+          "start": 442,
+          "end": 530
         },
         "refs": []
       },
       "span": {
         "start": 422,
-        "end": 529
+        "end": 531
       }
     },
     {
       "name": "traps",
-      "binding": "traps@536",
+      "binding": "traps@538",
       "value": {
         "code": "new WeakMap<HTMLElement, Trap>()",
         "span": {
-          "start": 544,
-          "end": 576
+          "start": 546,
+          "end": 578
         },
         "refs": [
           {
             "kind": "Global",
             "name": "WeakMap",
             "span": {
-              "start": 548,
-              "end": 555
+              "start": 550,
+              "end": 557
             }
           }
         ]
       },
       "span": {
-        "start": 530,
-        "end": 577
+        "start": 532,
+        "end": 579
       }
     }
   ],
@@ -64,8 +64,8 @@
       "value": {
         "code": "boolean",
         "span": {
-          "start": 621,
-          "end": 628
+          "start": 623,
+          "end": 630
         }
       },
       "hooks": [
@@ -78,79 +78,79 @@
           "body": {
             "code": "{\n    const onKeydown = (event: KeyboardEvent) => {\n      if (event.key !== \"Tab\") return;\n      const controls = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)];\n      const first = controls[0];\n      const last = controls.at(-1);\n      if (!first || !last) return;\n      if (event.shiftKey && document.activeElement === first) {\n        event.preventDefault();\n        last.focus();\n      } else if (!event.shiftKey && document.activeElement === last) {\n        event.preventDefault();\n        first.focus();\n      }\n    };\n    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;\n    traps.set(el, { previous, onKeydown });\n    el.addEventListener(\"keydown\", onKeydown);\n    if (active) el.querySelector<HTMLElement>(FOCUSABLE)?.focus();\n  }",
             "span": {
-              "start": 654,
-              "end": 1442
+              "start": 656,
+              "end": 1444
             },
             "refs": [
               {
                 "kind": "Binding",
                 "binding": "FOCUSABLE@428",
                 "span": {
-                  "start": 805,
-                  "end": 814
+                  "start": 807,
+                  "end": 816
                 }
               },
               {
                 "kind": "Global",
                 "name": "document",
                 "span": {
-                  "start": 950,
-                  "end": 958
+                  "start": 952,
+                  "end": 960
                 }
               },
               {
                 "kind": "Global",
                 "name": "document",
                 "span": {
-                  "start": 1076,
-                  "end": 1084
+                  "start": 1078,
+                  "end": 1086
                 }
               },
               {
                 "kind": "Global",
                 "name": "document",
                 "span": {
-                  "start": 1202,
-                  "end": 1210
+                  "start": 1204,
+                  "end": 1212
                 }
               },
               {
                 "kind": "Global",
                 "name": "HTMLElement",
                 "span": {
-                  "start": 1236,
-                  "end": 1247
+                  "start": 1238,
+                  "end": 1249
                 }
               },
               {
                 "kind": "Global",
                 "name": "document",
                 "span": {
-                  "start": 1250,
-                  "end": 1258
+                  "start": 1252,
+                  "end": 1260
                 }
               },
               {
                 "kind": "Binding",
-                "binding": "traps@536",
+                "binding": "traps@538",
                 "span": {
-                  "start": 1285,
-                  "end": 1290
+                  "start": 1287,
+                  "end": 1292
                 }
               },
               {
                 "kind": "Binding",
                 "binding": "FOCUSABLE@428",
                 "span": {
-                  "start": 1418,
-                  "end": 1427
+                  "start": 1420,
+                  "end": 1429
                 }
               }
             ]
           },
           "span": {
-            "start": 634,
-            "end": 1442
+            "start": 636,
+            "end": 1444
           }
         },
         {
@@ -161,31 +161,31 @@
           "body": {
             "code": "{\n    const trap = traps.get(el);\n    if (!trap) return;\n    el.removeEventListener(\"keydown\", trap.onKeydown);\n    traps.delete(el);\n    trap.previous?.focus();\n  }",
             "span": {
-              "start": 1460,
-              "end": 1625
+              "start": 1462,
+              "end": 1627
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "traps@536",
+                "binding": "traps@538",
                 "span": {
-                  "start": 1479,
-                  "end": 1484
+                  "start": 1481,
+                  "end": 1486
                 }
               },
               {
                 "kind": "Binding",
-                "binding": "traps@536",
+                "binding": "traps@538",
                 "span": {
-                  "start": 1576,
-                  "end": 1581
+                  "start": 1578,
+                  "end": 1583
                 }
               }
             ]
           },
           "span": {
-            "start": 1446,
-            "end": 1625
+            "start": 1448,
+            "end": 1627
           }
         }
       ],
@@ -200,19 +200,19 @@
           }
         },
         {
-          "id": "traps@536",
+          "id": "traps@538",
           "name": "traps",
           "kind": "moduleConst",
           "span": {
-            "start": 536,
-            "end": 541
+            "start": 538,
+            "end": 543
           }
         }
       ],
       "types": [],
       "span": {
-        "start": 579,
-        "end": 1630
+        "start": 581,
+        "end": 1632
       }
     }
   ]

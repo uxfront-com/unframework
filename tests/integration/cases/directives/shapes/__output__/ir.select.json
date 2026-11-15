@@ -1,0 +1,75 @@
+{
+  "irVersion": 1,
+  "file": "directives/shapes/select.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [
+    {
+      "name": "Field",
+      "exported": false,
+      "code": "type Field = HTMLInputElement | HTMLTextAreaElement;",
+      "span": {
+        "start": 225,
+        "end": 277
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vSelectable",
+      "exported": true,
+      "value": {
+        "code": "boolean",
+        "span": {
+          "start": 322,
+          "end": 329
+        }
+      },
+      "element": {
+        "code": "Field",
+        "span": {
+          "start": 331,
+          "end": 336
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    el.setAttribute(\"data-selectable\", String(value));\n  }",
+            "span": {
+              "start": 361,
+              "end": 421
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "String",
+                "span": {
+                  "start": 402,
+                  "end": 408
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 342,
+            "end": 421
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [
+        "Field"
+      ],
+      "span": {
+        "start": 279,
+        "end": 426
+      }
+    }
+  ]
+}

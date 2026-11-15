@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Note from "./Note.vue";
 import { type ObjectDirective, ref } from "vue";
 
 const TRACE = "directive-trace";
@@ -19,6 +20,7 @@ const shown = ref(true);
 <template>
   <section v-trace="'outer'" class="tree" aria-label="Tree" data-name="outer">
     <p v-trace="'first'" data-name="first">First</p>
+    <Note />
     <div v-if="shown" v-trace="'branch'" class="branch" data-name="branch">
       <span v-trace="'leaf'" data-name="leaf">Leaf</span>
     </div>

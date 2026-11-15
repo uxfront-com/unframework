@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Toggle' })",
+      "dom": [
+        "<section aria-label=\"Profile\" class=\"profile\">",
+        "  <p data-element=\"mounted\" data-hooks=\"Grace\">",
+        "    \"Grace\"",
+        "  </p>",
+        "  <textarea aria-label=\"Note\" data-element=\"mounted\" data-hooks=\"updated Hi\" data-selectable=\"true\" uf:value=\"Hi\"></textarea>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Profile\":",
+        "  - paragraph: Grace",
+        "  - textbox \"Note\": Hi",
+        "  - button \"Toggle\""
+      ],
+      "events": {}
+    }
+  ]
+}

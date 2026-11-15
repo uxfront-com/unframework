@@ -1,0 +1,35 @@
+---
+interface User {
+  name: string;
+}
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const user = { name: "Ada" } as User | null;
+const note = "Hello" as string;
+---
+
+<section
+  class:list={["profile", className]}
+  aria-label="Profile"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  {user ? (
+    <p>{user.name}</p>
+  ) : null}
+  <textarea aria-label="Note">{note}</textarea>
+  <button type="button">Toggle</button>
+</section>

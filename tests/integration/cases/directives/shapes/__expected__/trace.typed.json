@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Note' }) \"Hi\"",
+      "dom": [
+        "<section aria-label=\"Profile\" class=\"profile\">",
+        "  <p data-element=\"mounted\" data-hooks=\"Ada\">",
+        "    \"Ada\"",
+        "  </p>",
+        "  <textarea aria-label=\"Note\" data-element=\"mounted\" data-hooks=\"updated Hi\" data-selectable=\"true\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
+        "  <button type=\"button\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Profile\":",
+        "  - paragraph: Ada",
+        "  - textbox \"Note\": Hi",
+        "  - button \"Toggle\""
+      ],
+      "events": {}
+    }
+  ]
+}

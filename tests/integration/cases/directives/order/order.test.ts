@@ -1,7 +1,9 @@
 // directives/order: the order a directive's hooks run in on nested and sibling elements
 // (ADR-0099). Within one render, `mounted` runs on an element after its descendants and after
 // its earlier siblings, as Vue's own order is (a post-order of the DOM). `unmounted` runs on an
-// element after its descendants, whether a condition removes them or the component unmounts.
+// element after its descendants, whether a condition removes them or the component unmounts. A
+// child component's root, which applies a `.uf.ts` module's directive, sorts among its parent's
+// elements in document order.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import type { View } from "@unframework.dev/testing";
 import { expect } from "vitest";
@@ -43,6 +45,7 @@ function record(): { calls: (view: View) => string[]; reset: () => void; stop: (
 describeTargets("directives/order", () => {
   it("renders the tree", async () => {
     const view = await mountScenario(Tree, "initial");
+    await view.expectParity("initial");
     await expect.element(view.getByText("Leaf")).toBeVisible();
   });
 
@@ -53,9 +56,10 @@ describeTargets("directives/order", () => {
       const trace = record();
       try {
         const view = await mountScenario(Tree, "initial");
-        await view.expectParity("initial");
+        await view.expectParity("traced");
         expect(trace.calls(view)).toEqual([
           "mounted first",
+          "mounted note",
           "mounted leaf",
           "mounted branch",
           "mounted last",
@@ -75,7 +79,7 @@ describeTargets("directives/order", () => {
       try {
         const view = await mountScenario(Tree, "initial");
         await view.expectParity("mounted");
-        expect(trace.calls(view)).toHaveLength(5);
+        expect(trace.calls(view)).toHaveLength(6);
         trace.reset();
         await view.user.click(view.getByRole("button", { name: "Toggle" }));
         await view.expectParity("collapsed");
@@ -92,6 +96,7 @@ describeTargets("directives/order", () => {
           "unmounted first",
           "unmounted last",
           "unmounted leaf",
+          "unmounted note",
           "unmounted outer",
         ]);
         expect(removal.indexOf("unmounted leaf")).toBeLessThan(removal.indexOf("unmounted branch"));

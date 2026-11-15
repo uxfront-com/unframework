@@ -1,4 +1,6 @@
 ---
+import Note from "./Note.astro";
+
 interface Props {
   class?: string;
   style?: Record<string, string | number | undefined>;
@@ -24,6 +26,7 @@ const shown = true as boolean;
   {...scopeAttributes(Astro.props)}
 >
   <p data-name="first">First</p>
+  <Note />
   {shown ? (
     <div class="branch" data-name="branch">
       <span data-name="leaf">Leaf</span>

@@ -20,12 +20,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       if (event.key === "Escape") await close();
     });
 
-    const focusTrapElement = useSignal<HTMLElement>();
+    const focusTrapElement = useSignal<DirectiveElement<typeof vFocusTrap>>();
 
     useVisibleTask$(
       ({ track, cleanup }) => {
         const element = track(focusTrapElement);
-        if (element)
+        if (element?.isConnected)
           runDirective(
             vFocusTrap,
             element,
@@ -78,9 +78,9 @@ function scopeAttributes(props: object): Record<string, ""> {
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {
-  mounted?(el: E, value: T): void;
-  updated?(el: E, value: T, oldValue: T): void;
-  unmounted?(el: E): void;
+  mounted?(el: E, value: T): unknown;
+  updated?(el: E, value: T, oldValue: T): unknown;
+  unmounted?(el: E): unknown;
 }
 
 /** The value each directive's element last received, and the watch on its removal. */
@@ -133,25 +133,41 @@ function runDirective<E extends Element, T>(
   });
 }
 
-const queuedHooks: { element: Element; run: () => void }[] = [];
+/** The element a directive's hooks take. */
+type DirectiveElement<D> = D extends DirectiveHooks<infer E extends Element, never> ? E : never;
 
 /**
  * Runs a directive's hook once the turn ends, a descendant's before its ancestor's and
- * siblings' in document order, as Vue runs them.
+ * siblings' in document order, as Vue runs them, with the hooks every other output queued.
  */
 function queueHook(element: Element, run: () => void): void {
-  if (!queuedHooks.length) {
-    queueMicrotask(() => {
-      const hooks = queuedHooks.splice(0).sort((a, b) => {
-        if (a.element === b.element) return 0;
-        if (a.element.contains(b.element)) return 1;
-        if (b.element.contains(a.element)) return -1;
-        return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
-          ? -1
-          : 1;
-      });
-      for (const hook of hooks) hook.run();
-    });
+  const key: unique symbol = Symbol.for("unframework.directive-hooks");
+  const scope = globalThis as typeof globalThis & {
+    [key]?: { element: Element; run: () => void }[];
+  };
+  const queued = scope[key];
+  if (queued) {
+    queued.push({ element, run });
+    return;
   }
-  queuedHooks.push({ element, run });
+  scope[key] = [{ element, run }];
+  queueMicrotask(() => {
+    const hooks = scope[key] ?? [];
+    scope[key] = undefined;
+    hooks.sort((a, b) => {
+      if (a.element === b.element) return 0;
+      if (a.element.contains(b.element)) return 1;
+      if (b.element.contains(a.element)) return -1;
+      return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1;
+    });
+    for (const hook of hooks) {
+      try {
+        hook.run();
+      } catch (error) {
+        reportError(error);
+      }
+    }
+  });
 }

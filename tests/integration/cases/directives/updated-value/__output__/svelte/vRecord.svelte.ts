@@ -3,11 +3,11 @@ import type { Attachment } from "svelte/attachments";
 
 export function vRecord(getValue: () => number): Attachment<HTMLElement> {
   const hooks = {
-    mounted(el: HTMLElement, value: number): void {
+    mounted(el: HTMLElement, value: number) {
       el.setAttribute("data-value", String(value));
       el.setAttribute("data-updates", "0");
     },
-    updated(el: HTMLElement, value: number, oldValue: number): void {
+    updated(el: HTMLElement, value: number, oldValue: number) {
       el.setAttribute("data-value", String(value));
       el.setAttribute("data-old-value", String(oldValue));
       el.setAttribute("data-updates", String(Number(el.getAttribute("data-updates")) + 1));

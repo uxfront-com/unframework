@@ -8,6 +8,9 @@
         "  <p data-name=\"first\">",
         "    \"First\"",
         "  </p>",
+        "  <em data-name=\"note\">",
+        "    \"Note\"",
+        "  </em>",
         "  <p data-name=\"last\">",
         "    \"Last\"",
         "  </p>",
@@ -19,6 +22,7 @@
       "aria": [
         "- region \"Tree\":",
         "  - paragraph: First",
+        "  - emphasis: Note",
         "  - paragraph: Last",
         "  - button \"Toggle\""
       ],

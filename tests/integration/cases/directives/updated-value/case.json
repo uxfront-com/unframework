@@ -1,6 +1,7 @@
 {
   "description": "A directive whose value is a state: `updated` runs once after a render that changes the value, with the previous one, and not after a render that changes another state.",
   "main": "Meter.uf.tsx",
+  "requires": "Every render of the case holds what the directive's `mounted` writes, which a static target never runs: the server render checks the static targets, without it.",
   "ssr": {
     "initial": {}
   }

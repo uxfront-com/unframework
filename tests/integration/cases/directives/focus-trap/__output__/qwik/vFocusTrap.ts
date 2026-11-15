@@ -8,7 +8,7 @@ const FOCUSABLE =
 const traps = new WeakMap<HTMLElement, Trap>();
 
 export const vFocusTrap = {
-  mounted(el: HTMLElement, active: boolean): void {
+  mounted(el: HTMLElement, active: boolean) {
     const onKeydown = (event: KeyboardEvent) => {
       if (event.key !== "Tab") return;
       const controls = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)];
@@ -28,7 +28,7 @@ export const vFocusTrap = {
     el.addEventListener("keydown", onKeydown);
     if (active) el.querySelector<HTMLElement>(FOCUSABLE)?.focus();
   },
-  unmounted(el: HTMLElement): void {
+  unmounted(el: HTMLElement) {
     const trap = traps.get(el);
     if (!trap) return;
     el.removeEventListener("keydown", trap.onKeydown);

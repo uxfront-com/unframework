@@ -93,50 +93,92 @@ function scopeAttributes(props: object): Record<string, ""> {
 
 /** The hooks of a directive, which `useDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {
-  mounted?(el: E, value: T): void;
-  updated?(el: E, value: T, oldValue: T): void;
-  unmounted?(el: E): void;
+  mounted?(el: E, value: T): unknown;
+  updated?(el: E, value: T, oldValue: T): unknown;
+  unmounted?(el: E): unknown;
 }
 
 /**
  * Runs a directive's hooks on the element its ref callback receives: `mounted` once it is
- * rendered, `updated` after a render that changes the value, and `unmounted` once it is gone.
+ * rendered, `updated` after a render that changes the value, and `unmounted` once it is gone,
+ * whichever component renders or removes it. The callback only records the element, so one
+ * written in place, attached again at each render, keeps the directive.
  */
 function useDirective<E extends Element, T>(directive: DirectiveHooks<E, T>, getValue: () => T) {
-  const state = useRef<{ element: E | null; mounted: E | null; value?: T }>({
+  const state = useRef<{ element: E | null; getValue: () => T; mounted: E | null; value?: T }>({
     element: null,
+    getValue,
     mounted: null,
   });
-  const [ref] = useState(() => (element: E | null) => {
-    state.current.element = element;
-  });
-  useLayoutEffect(() => {
+  const [sync] = useState(() => () => {
     const current = state.current;
     const { element, mounted } = current;
     if (mounted && mounted !== element) {
       current.mounted = null;
-      directive.unmounted?.(mounted);
+      queueHook(mounted, () => directive.unmounted?.(mounted));
     }
     if (!element) return;
-    const value = getValue();
+    const value = current.getValue();
     if (current.mounted !== element) {
       current.mounted = element;
       current.value = value;
-      directive.mounted?.(element, value);
+      queueHook(element, () => directive.mounted?.(element, value));
     } else if (!Object.is(value, current.value)) {
       const previous = current.value as T;
       current.value = value;
-      directive.updated?.(element, value, previous);
+      queueHook(element, () => directive.updated?.(element, value, previous));
     }
+  });
+  const [ref] = useState(() => (element: E | null) => {
+    state.current.element = element;
+    queueMicrotask(sync);
+  });
+  useLayoutEffect(() => {
+    state.current.getValue = getValue;
+    sync();
   });
   useLayoutEffect(
     () => () => {
-      const { mounted } = state.current;
-      if (!mounted) return;
-      state.current.mounted = null;
-      directive.unmounted?.(mounted);
+      state.current.element = null;
+      sync();
     },
-    [directive],
+    [sync],
   );
   return ref;
+}
+
+/**
+ * Runs a directive's hook once the turn ends, a descendant's before its ancestor's and
+ * siblings' in document order, as Vue runs them, with the hooks every other output queued.
+ */
+function queueHook(element: Element, run: () => void): void {
+  const key: unique symbol = Symbol.for("unframework.directive-hooks");
+  const scope = globalThis as typeof globalThis & {
+    [key]?: { element: Element; run: () => void }[];
+  };
+  const queued = scope[key];
+  if (queued) {
+    queued.push({ element, run });
+    return;
+  }
+  scope[key] = [{ element, run }];
+  queueMicrotask(() => {
+    const hooks = scope[key] ?? [];
+    scope[key] = undefined;
+    hooks.sort((a, b) => {
+      if (a.element === b.element) return 0;
+      if (a.element.contains(b.element)) return 1;
+      if (b.element.contains(a.element)) return -1;
+      return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1;
+    });
+    for (const hook of hooks) {
+      try {
+        hook.run();
+      } catch (error) {
+        reportError(error);
+      }
+    }
+  });
 }

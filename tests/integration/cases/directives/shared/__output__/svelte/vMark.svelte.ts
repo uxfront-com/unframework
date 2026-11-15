@@ -3,7 +3,7 @@ import type { Attachment } from "svelte/attachments";
 
 export function vMark(getValue: () => string): Attachment<HTMLElement> {
   const hooks = {
-    mounted(el: HTMLElement, value: string): void {
+    mounted(el: HTMLElement, value: string) {
       el.setAttribute("data-directive-mounted", value);
     },
   };

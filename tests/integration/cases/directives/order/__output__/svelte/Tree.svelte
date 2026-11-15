@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import Note from "./Note.svelte";
   import { untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
   import type { ClassValue } from "svelte/elements";
@@ -22,12 +23,12 @@
 
   function vTrace(getValue: () => string): Attachment<HTMLElement> {
     const hooks = {
-      mounted(el: HTMLElement, value: string): void {
+      mounted(el: HTMLElement, value: string) {
         document.dispatchEvent(
           new CustomEvent(TRACE, { detail: { call: `mounted ${value}`, el } }),
         );
       },
-      unmounted(el: HTMLElement): void {
+      unmounted(el: HTMLElement) {
         const call = `unmounted ${el.getAttribute("data-name")}`;
         document.dispatchEvent(new CustomEvent(TRACE, { detail: { call, el } }));
       },
@@ -48,7 +49,8 @@
   {...scopeAttributes(attributes)}
 >
   <p data-name="first" {@attach vTrace(() => "first")}>First</p
-  >{#if shown}
+  ><Note
+  />{#if shown}
     <div class="branch" data-name="branch" {@attach vTrace(() => "branch")}>
       <span data-name="leaf" {@attach vTrace(() => "leaf")}>Leaf</span>
     </div>

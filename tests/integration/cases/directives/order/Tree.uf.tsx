@@ -1,5 +1,7 @@
 import { defineDirective, ref } from "@uxfront/unframework";
 
+import Note from "./Note.uf.tsx";
+
 // The event each hook reports its call with, to whoever listens on the document.
 const TRACE = "directive-trace";
 
@@ -22,6 +24,7 @@ export default function Tree() {
       <p data-name="first" v-trace="first">
         First
       </p>
+      <Note />
       {shown.value ? (
         <div class="branch" data-name="branch" v-trace="branch">
           <span data-name="leaf" v-trace="leaf">

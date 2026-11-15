@@ -1,0 +1,99 @@
+{
+  "irVersion": 1,
+  "file": "directives/order/trace.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "directives": [
+    {
+      "name": "vNote",
+      "exported": true,
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 281,
+          "end": 287
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    const call = `mounted ${value}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 312,
+              "end": 444
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 355,
+                  "end": 363
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 382,
+                  "end": 393
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 293,
+            "end": 444
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const call = `unmounted ${el.getAttribute(\"data-name\")}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 462,
+              "end": 619
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 530,
+                  "end": 538
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 557,
+                  "end": 568
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 448,
+            "end": 619
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 244,
+        "end": 624
+      }
+    }
+  ]
+}

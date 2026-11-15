@@ -7,11 +7,6 @@ import { expect } from "vitest";
 import Meter from "./Meter.uf.tsx";
 
 describeTargets("directives/updated-value", () => {
-  it("renders the first level", async () => {
-    const view = await mountScenario(Meter, "initial");
-    await expect.element(view.getByText("Level 1")).toBeVisible();
-  });
-
   it("writes the first value once mounted", { requires: ["directive"] }, async () => {
     const view = await mountScenario(Meter, "initial");
     await view.expectParity("mounted");

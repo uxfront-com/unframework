@@ -1,3 +1,4 @@
+import Note from "./Note";
 import {
   type CSSProperties,
   type ClassList,
@@ -9,10 +10,10 @@ import {
 const TRACE = "directive-trace";
 
 const vTrace = {
-  mounted(el: HTMLElement, value: string): void {
+  mounted(el: HTMLElement, value: string) {
     document.dispatchEvent(new CustomEvent(TRACE, { detail: { call: `mounted ${value}`, el } }));
   },
-  unmounted(el: HTMLElement): void {
+  unmounted(el: HTMLElement) {
     const call = `unmounted ${el.getAttribute("data-name")}`;
     document.dispatchEvent(new CustomEvent(TRACE, { detail: { call, el } }));
   },
@@ -22,52 +23,52 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
   ({ class: className, style, ...attributes }) => {
     const shown = useSignal(true);
 
-    const traceElement = useSignal<HTMLElement>();
+    const traceElement = useSignal<DirectiveElement<typeof vTrace>>();
 
     useVisibleTask$(
       ({ track, cleanup }) => {
         const element = track(traceElement);
-        if (element) runDirective(vTrace, element, "outer", cleanup);
+        if (element?.isConnected) runDirective(vTrace, element, "outer", cleanup);
       },
       { strategy: "document-ready" },
     );
 
-    const traceElement_1 = useSignal<HTMLElement>();
+    const traceElement_1 = useSignal<DirectiveElement<typeof vTrace>>();
 
     useVisibleTask$(
       ({ track, cleanup }) => {
         const element = track(traceElement_1);
-        if (element) runDirective(vTrace, element, "first", cleanup);
+        if (element?.isConnected) runDirective(vTrace, element, "first", cleanup);
       },
       { strategy: "document-ready" },
     );
 
-    const traceElement_2 = useSignal<HTMLElement>();
+    const traceElement_2 = useSignal<DirectiveElement<typeof vTrace>>();
 
     useVisibleTask$(
       ({ track, cleanup }) => {
         const element = track(traceElement_2);
-        if (element) runDirective(vTrace, element, "branch", cleanup);
+        if (element?.isConnected) runDirective(vTrace, element, "branch", cleanup);
       },
       { strategy: "document-ready" },
     );
 
-    const traceElement_3 = useSignal<HTMLElement>();
+    const traceElement_3 = useSignal<DirectiveElement<typeof vTrace>>();
 
     useVisibleTask$(
       ({ track, cleanup }) => {
         const element = track(traceElement_3);
-        if (element) runDirective(vTrace, element, "leaf", cleanup);
+        if (element?.isConnected) runDirective(vTrace, element, "leaf", cleanup);
       },
       { strategy: "document-ready" },
     );
 
-    const traceElement_4 = useSignal<HTMLElement>();
+    const traceElement_4 = useSignal<DirectiveElement<typeof vTrace>>();
 
     useVisibleTask$(
       ({ track, cleanup }) => {
         const element = track(traceElement_4);
-        if (element) runDirective(vTrace, element, "last", cleanup);
+        if (element?.isConnected) runDirective(vTrace, element, "last", cleanup);
       },
       { strategy: "document-ready" },
     );
@@ -84,6 +85,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         <p data-name="first" ref={traceElement_1}>
           First
         </p>
+        <Note />
         <>
           {shown.value ? (
             <div class="branch" data-name="branch" ref={traceElement_2}>
@@ -115,9 +117,9 @@ function scopeAttributes(props: object): Record<string, ""> {
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {
-  mounted?(el: E, value: T): void;
-  updated?(el: E, value: T, oldValue: T): void;
-  unmounted?(el: E): void;
+  mounted?(el: E, value: T): unknown;
+  updated?(el: E, value: T, oldValue: T): unknown;
+  unmounted?(el: E): unknown;
 }
 
 /** The value each directive's element last received, and the watch on its removal. */
@@ -170,25 +172,41 @@ function runDirective<E extends Element, T>(
   });
 }
 
-const queuedHooks: { element: Element; run: () => void }[] = [];
+/** The element a directive's hooks take. */
+type DirectiveElement<D> = D extends DirectiveHooks<infer E extends Element, never> ? E : never;
 
 /**
  * Runs a directive's hook once the turn ends, a descendant's before its ancestor's and
- * siblings' in document order, as Vue runs them.
+ * siblings' in document order, as Vue runs them, with the hooks every other output queued.
  */
 function queueHook(element: Element, run: () => void): void {
-  if (!queuedHooks.length) {
-    queueMicrotask(() => {
-      const hooks = queuedHooks.splice(0).sort((a, b) => {
-        if (a.element === b.element) return 0;
-        if (a.element.contains(b.element)) return 1;
-        if (b.element.contains(a.element)) return -1;
-        return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
-          ? -1
-          : 1;
-      });
-      for (const hook of hooks) hook.run();
-    });
+  const key: unique symbol = Symbol.for("unframework.directive-hooks");
+  const scope = globalThis as typeof globalThis & {
+    [key]?: { element: Element; run: () => void }[];
+  };
+  const queued = scope[key];
+  if (queued) {
+    queued.push({ element, run });
+    return;
   }
-  queuedHooks.push({ element, run });
+  scope[key] = [{ element, run }];
+  queueMicrotask(() => {
+    const hooks = scope[key] ?? [];
+    scope[key] = undefined;
+    hooks.sort((a, b) => {
+      if (a.element === b.element) return 0;
+      if (a.element.contains(b.element)) return 1;
+      if (b.element.contains(a.element)) return -1;
+      return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1;
+    });
+    for (const hook of hooks) {
+      try {
+        hook.run();
+      } catch (error) {
+        reportError(error);
+      }
+    }
+  });
 }
