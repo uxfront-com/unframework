@@ -134,6 +134,11 @@ first option, where HTML and the other targets select none (ADR-0033). Every oth
 native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own, and so is
 all of composition, composables and their effect order included.
 
+A directive is Vue's own custom directive (ADR-0099): an `ObjectDirective`, `vFocusTrap.ts` for a
+`.uf.ts` module's, which `<script setup>` imports and resolves by its name, or a `const` there for
+an in-file one. Its hooks read the value from Vue's binding, and `updated` returns early on the
+same value, since Vue calls it after every update of the component.
+
 A `<Teleport>` is Vue's own, behind a `mounted` ref set in `onMounted`, so neither the server nor the
 hydrating client renders its content, and a component whose whole render is a teleport sets
 `inheritAttrs: false`, so Vue doesn't warn about a parent's scope attribute (ADR-0098).

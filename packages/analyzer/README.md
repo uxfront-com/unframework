@@ -369,6 +369,15 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   a list's element, a teleport inside an `<svg>` and `Teleport` used as anything but a tag
   UF1002. A component whose whole render is a teleport is a root of kind `other`, wrapped in a
   fragment.
+- **Directives** (`directives.ts`, ADR-0099): a top-level `const vName = defineDirective<T>({ … })`
+  of a `.uf.tsx` module, or a `.uf.ts` module's named export, lowered with its method hooks, whose
+  code reads its parameters, client globals and the module's constants and value imports, and
+  `v-name={value}` on an element lowered to a `Directive` attribute. The constants an in-file
+  directive reads become the bindings of each component that applies it. A definition outside
+  that form is UF2037, a name no directive has UF3055, a directive on a component, `<Teleport>` or
+  `<component is>`, without a value or with a value built in place UF3056, and an argument, a
+  modifier, a spread's key and a list's body UF1002. A setup name that shadows a directive is
+  UF3024.
 - **Raw HTML** (`raw-html.ts`, ADR-0097): `innerHTML={markup}` lowered to a `RawHtml` attribute,
   with its warning (UF3051), on an HTML element that holds content and has no children (UF3052),
   from a string only (UF3018). A static string reads alike in JSX and in JavaScript, as a static

@@ -40,7 +40,8 @@ milestone in §9 ends with what it settled and what changed from this plan.
   - **APIs:** `ref`, `computed`, `watch` and the `defineEmits` / `defineModel` / `defineSlots` /
     `defineExpose` macros, all imported from `@uxfront/unframework` and erased at build time.
   - **JSX:** the returned JSX is the template. Control flow is plain JS (ternaries, `&&`, `.map`), and
-    `v-model` is the one directive.
+    `v-model` is the one built-in directive. Authors define their own with `defineDirective`
+    (ADR-0099).
   - **Styles:** a sibling CSS file that the component imports and the compiler scopes.
 
   It is ordinary TSX, so tsgo type-checks it, any TypeScript editor understands it, and models write it
@@ -291,7 +292,8 @@ The JSX a component returns is its template.
 
 - **Lists:** `items.value.map((item, index) => <li key={item.id}>…</li>)` over any array expression,
   with `key` on the callback's root. The compiler lowers it to `v-for`, `@for`, `{#each}` and so on.
-- **Two-way binding:** `v-model={text.value}` is the only directive.
+- **Two-way binding:** `v-model={text.value}` is the only built-in directive. Authors define their
+  own directives with `defineDirective`, applied as `v-name={value}` (ADR-0099).
   - It works on `input`, `textarea` and `select`, on boolean and array checkboxes, and on radios.
   - Modifiers use Vue JSX's form: `v-model_trim`, `v-model_lazy`, `v-model_number`.
   - On components it is `v-model:open={x.value}`.
@@ -312,7 +314,7 @@ The JSX a component returns is its template.
 - **Whitespace** follows JSX rules, which are the source of truth. The compiler emits explicit text
   for every template target.
 - **Later (M8):** `<Transition>` and `<Teleport>` (imported from `@uxfront/unframework`), `innerHTML` (with a
-  warning), and portable directives.
+  warning), and portable directives, which authors define with `defineDirective` (ADR-0099).
 
 ### 4.4 Styles
 
@@ -1417,7 +1419,7 @@ Then `1.0.0` ships.
 | ID  | Decision                                                                                                                                             | Record             |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | C1  | **Component shape:** a setup-once function in JSX. Props are in the signature, the body is the setup, and the last statement returns the JSX.        | ADR-0001, Accepted |
-| C2  | **Control flow:** plain JS (ternaries, `&&`, `.map`), with `v-model` as the only directive.                                                          | ADR-0002, Accepted |
+| C2  | **Control flow:** plain JS (ternaries, `&&`, `.map`), with `v-model` as the only built-in directive (ADR-0099).                                      | ADR-0002, Accepted |
 | C3  | **Public API:** Vue macros in the body (`defineEmits`, `defineModel`, `defineSlots`, `defineExpose`). Consumer typing comes from the layers in §5.6. | ADR-0003, Accepted |
 | C4  | **Styles:** a sibling CSS file, imported by the component and scoped by the compiler.                                                                | ADR-0004, Accepted |
 
