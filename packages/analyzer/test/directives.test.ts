@@ -88,7 +88,7 @@ describe("a `.uf.ts` module's directive", () => {
     expect(diagnostics).toEqual([]);
     expect(module!.directives![0]).toMatchObject({ name: "vFocusTrap", exported: true });
     expect(module!.directives![0]!.element!.code).toBe("HTMLDialogElement");
-    expect(api!.directives).toEqual([{ name: "vFocusTrap", element: "HTMLDialogElement" }]);
+    expect(api!.directives).toEqual([{ name: "vFocusTrap" }]);
   });
 
   it("is applied by the name a component imports it under", () => {
@@ -184,6 +184,15 @@ describe("UF2037 invalid-directive", () => {
       source("<p>a</p>", "", "const vMark = defineDirective<number>({ mounted() { this.x; } });\n"),
       "UF2037 this",
     ],
+    [
+      "a hook that reads a component",
+      source(
+        "<p>a</p>",
+        "",
+        "const vMark = defineDirective<number>({ mounted(el) { el.title = String(A); } });\n",
+      ),
+      "UF2037 A",
+    ],
   ])("reports %s", (_name, text, expected) => {
     expect(reported(text)).toContain(expected);
   });
@@ -226,9 +235,27 @@ describe("UF3056 invalid-directive-use", () => {
     ["with an object literal", source("<p v-mark={{ a: 1 }}>a</p>"), "UF3056 { a: 1 }"],
     ["with an array literal", source("<p v-mark={[1]}>a</p>"), "UF3056 [1]"],
     ["with a function written in place", source("<p v-mark={() => 1}>a</p>"), "UF3056 () => 1"],
+    [
+      "with an object literal in a branch",
+      source('<p v-mark={true ? { a: 1 } : "b"}>a</p>'),
+      'UF3056 true ? { a: 1 } : "b"',
+    ],
+    [
+      "with an array literal after `??`",
+      source("<p v-mark={null ?? []}>a</p>"),
+      "UF3056 null ?? []",
+    ],
     ["without a value", source("<p v-mark>a</p>"), "UF3056 v-mark"],
   ])("reports a directive %s", (_name, text, expected) => {
     expect(reported(text)).toContain(expected);
+  });
+
+  it("reports a directive on `<Teleport>`", () => {
+    const text = source('<div><Teleport to="body" v-mark="a"><p>a</p></Teleport></div>').replace(
+      "{ defineDirective, ref }",
+      "{ defineDirective, ref, Teleport }",
+    );
+    expect(reported(text)).toContain("UF3056 v-mark");
   });
 
   it("reports a directive on `<component is>`", () => {
@@ -252,19 +279,46 @@ describe("what is not supported yet (UF1002)", () => {
   });
 
   it("reports a directive among a spread's keys, as any `v-` key", () => {
-    const text = source("<p {...attrs}>a</p>", 'const attrs = { "v-mark": "a" } as const;\n  ');
-    expect(reported(text)).toEqual(expect.arrayContaining([expect.stringMatching(/^UF1002 /)]));
+    const text = source(
+      "<p {...attrs}>a</p>",
+      'const attrs: { "v-mark": string } = { "v-mark": "a" };\n  ',
+    );
+    const problems = run(text).diagnostics;
+    const key = problems.find((each) => each.code === "UF1002");
+    expect(key?.message).toContain("`v-mark` directive is not supported");
+  });
+
+  it("reports a directive in a scoped slot's fill, which a child may render once per row", () => {
+    const list = `export function List({ items }: { items: string[] }) {
+  const slots = defineSlots<{ item?(props: { item: string }): Element }>();
+  return <ul>{items.map((item) => <li key={item}>{slots.item?.({ item })}</li>)}</ul>;
+}
+`;
+    const text = source(
+      '<List items={["a"]}>{{ item: ({ item }) => <span v-mark={item}>{item}</span> }}</List>',
+      "",
+      `${MARK}${list}`,
+    ).replace("{ defineDirective, ref }", "{ defineDirective, defineSlots, ref, type Element }");
+    expect(reported(text)).toContain("UF1002 v-mark");
   });
 });
 
 describe("the codes it shares", () => {
-  it("reports a setup name that shadows the directive (UF3024)", () => {
-    const text = source('<p v-mark="a">a</p>', 'const vMark = "local";\n  ');
-    expect(reported(text).some((each) => each.startsWith("UF3024"))).toBe(true);
+  it("reports a setup name that shadows the directive (UF3024), once", () => {
+    const text = source(
+      '<section><p v-mark="a">a</p><p v-mark="b">b</p></section>',
+      'const vMark = "local";\n  ',
+    );
+    expect(reported(text).filter((each) => each.startsWith("UF3024"))).toEqual(["UF3024 vMark"]);
   });
 
-  it("reports an import of a name the `.uf.ts` module does not export (UF1202)", () => {
-    const text = `import { vOther } from "./focusTrap.uf.ts";\nexport function A() {\n  return <div>a</div>;\n}\n`;
+  it("reports a prop that shadows the directive (UF3024)", () => {
+    const text = `${IMPORT}${MARK}export function A({ vMark, label }: { vMark: string; label: string }) {\n  return <div v-mark={label}>{vMark}</div>;\n}\n`;
+    expect(reported(text)).toEqual(["UF3024 v-mark"]);
+  });
+
+  it("reports an import of a name the `.uf.ts` module does not export (UF1202), and its uses nothing more", () => {
+    const text = `import { vOther } from "./focusTrap.uf.ts";\nexport function A() {\n  return <div v-other={1}>a</div>;\n}\n`;
     expect(reported(text, "Test.uf.tsx", new Map([["./focusTrap.uf.ts", trapApi()]]))).toEqual([
       "UF1202 vOther",
     ]);

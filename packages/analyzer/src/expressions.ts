@@ -1704,10 +1704,13 @@ class Walk {
       // (Solid's accessor callbacks, Angular's `@if`).
       const render = this.#mode === "render";
       const prop = path.names.length === 0 && this.#context.propsByDeclaration.has(path.root);
-      const scope = facts.find(
-        (fact) => fact.present && !(render && fact.child) && (fact.scope !== "closure" || prop),
-      )?.scope;
-      if (scope) return scope;
+      // A directive's value is read outside its element's branches on React and Qwik (ADR-0099).
+      const outside = render && this.#context.directiveValue === true;
+      const found = facts.find(
+        (fact) =>
+          fact.present && !(render && fact.child && !outside) && (fact.scope !== "closure" || prop),
+      );
+      if (found) return outside && found.child ? "template" : found.scope;
     }
     // A handler's read that relies on the template's conditional around it narrowing a union of
     // kinds (`{typeof value === "string" && <input onInput={() => use(value)} />}`), which a

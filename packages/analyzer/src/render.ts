@@ -215,6 +215,17 @@ export interface RenderContext {
   readonly passThrough: PassThrough;
   /** Set while a `class` part is checked: the one place a pass-through name is called. */
   readonly classPart?: true;
+  /**
+   * Set while a directive's value is checked (ADR-0099): React and Qwik read it outside the
+   * branches around its element, so a conditional child's narrowing it relies on is recorded, as a
+   * handler's is, with the `template` scope.
+   */
+  readonly directiveValue?: true;
+  /**
+   * How many scoped slots' fills are around the node being lowered: render functions a child may
+   * call once per row, as a list's body is (ADR-0099).
+   */
+  readonly scopedFills: { depth: number };
   /** The values the module's imports of shared modules and its constants give (ADR-0070). */
   readonly shared: SharedValues;
   /** The directives an element may apply, by local name (ADR-0099). */

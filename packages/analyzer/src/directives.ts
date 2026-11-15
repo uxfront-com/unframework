@@ -573,22 +573,28 @@ export function lowerDirectiveAttribute(
     );
     return undefined;
   }
-  // A setup name of the directive's would take its place in the outputs that resolve a directive
-  // by its name (Vue's `<script setup>`, Angular's class).
+  // A prop or a setup name of the directive's would take its place in the outputs that resolve a
+  // directive by its name (Vue's `<script setup>`), or pass a value as the hooks (React). It is
+  // reported once, at its declaration where it has one.
   const local = [...render.setup.bindings.values()].find((binding) => binding.name === name);
-  if (local) {
-    reporter.report(
-      "UF3024",
-      local.declaration,
-      `\`${name}\` is declared in the setup, and shadows the directive \`${authored}\` applies: the outputs that resolve a directive by its name would read the local.`,
-      { help: `Rename the local, which no directive needs to share its name.` },
-    );
+  if (local || render.props.has(name)) {
+    const reported = shadowsReported.get(render.component) ?? new Set<string>();
+    shadowsReported.set(render.component, reported);
+    if (!reported.has(name)) {
+      reported.add(name);
+      reporter.report(
+        "UF3024",
+        local?.declaration ?? nameNode,
+        `\`${name}\` is ${local ? "declared in the setup" : "a prop"}, and shadows the directive \`${authored}\` applies: the outputs that resolve a directive by its name would read it instead.`,
+        { help: `Rename the ${local ? "local" : "prop"}: no directive needs to share its name.` },
+      );
+    }
     return undefined;
   }
-  if (render.enclosing.length) {
+  if (render.enclosing.length || render.scopedFills.depth) {
     reporter.unsupported(
       nameNode,
-      `\`${authored}\` on an element in a list's body is not supported yet: React and Qwik give a directive's state to the component, which renders the list once.`,
+      `\`${authored}\` on an element in a list's body${render.enclosing.length ? "" : ", or a scoped slot's fill a child may render once per row,"} is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`,
       {
         help: "Apply the directive to an element around the list, or render each row as a component of its own, whose element applies it.",
       },
@@ -671,7 +677,7 @@ export function lowerDirectiveAttribute(
     );
   }
   const mark = reporter.diagnostics.length;
-  const checked = checkExpression(value.expression, render);
+  const checked = checkExpression(value.expression, { ...render, directiveValue: true });
   if (!checked.clean || reporter.hasErrorsSince(mark)) return undefined;
   declareReads(info, render);
   return createDirectiveAttribute(name, checked.expression, span(item));
@@ -693,9 +699,19 @@ function setupFunction(node: AST.Node, render: ElementContext["render"]): SetupB
   return binding?.kind === "localFn" ? binding : undefined;
 }
 
-/** What a value built in place is, `an object literal`, or `undefined` for any other value. */
+/** The components whose shadowing of a directive's name is reported, with each name. */
+const shadowsReported = new WeakMap<object, Set<string>>();
+
+/**
+ * What a value built in place is, `an object literal`, or `undefined` for any other value: the
+ * value itself, or what a conditional or a logical operator may give.
+ */
 function freshValue(node: AST.Node): string | undefined {
   switch (node.type) {
+    case "ConditionalExpression":
+      return freshValue(unwrapped(node.consequent)) ?? freshValue(unwrapped(node.alternate));
+    case "LogicalExpression":
+      return freshValue(unwrapped(node.left)) ?? freshValue(unwrapped(node.right));
     case "ObjectExpression":
       return "an object literal";
     case "ArrayExpression":

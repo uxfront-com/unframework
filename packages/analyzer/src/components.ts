@@ -733,7 +733,10 @@ function lowerSlotObject(
       variables.push(...read.variables);
     }
     for (const variable of variables) render.loopVariables.set(variable.declaration, variable);
+    // A scoped fill is a render function a child may call once per row (ADR-0099).
+    if (param) render.scopedFills.depth++;
     const children = lowerContent(value.body, FILL, render);
+    if (param) render.scopedFills.depth--;
     fills.push(createSlotFill(slot, children, at, parameter ? { parameter } : {}));
   }
   if (!valid) return undefined;

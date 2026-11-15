@@ -2491,7 +2491,7 @@ function checkAttributes(
         claim(`v:${attribute.name}`, at, false);
         // A setup function by its name, which the hooks call, as a listener's names one.
         if (!isFunctionValue(attribute.value, walk)) {
-          checkExpression(attribute.value, `${at}/value`, place.scope, walk);
+          checkExpression(attribute.value, `${at}/value`, place.scope, walk, true);
         }
         break;
       default:
@@ -2807,6 +2807,7 @@ function checkExpression(
   path: string,
   scope: ReadonlySet<BindingId>,
   walk: Walk,
+  directive = false,
 ): void {
   const { errors } = walk;
   const { code, span, refs } = expression;
@@ -2831,7 +2832,7 @@ function checkExpression(
       checkImportReference(ref, text, at, walk);
     } else {
       checkBindingReference(ref, text, at, scope, "render", walk);
-      if (ref.narrowed) checkNarrowed(ref, expression, at, "render", walk);
+      if (ref.narrowed) checkNarrowed(ref, expression, at, "render", walk, directive);
     }
   }
 }
@@ -2983,6 +2984,7 @@ function checkNarrowed(
   path: string,
   context: Context,
   walk: Walk,
+  directive = false,
 ): void {
   const { errors } = walk;
   const at = `${path}/narrowed`;
@@ -3037,7 +3039,8 @@ function checkNarrowed(
           "must end at the read or at a member path off it, written with `.` and literal keys",
       });
     }
-    if (narrowing.scope === "template" && context !== "client") {
+    // A directive's value is read outside its element's branches too (ADR-0099).
+    if (narrowing.scope === "template" && context !== "client" && !directive) {
       errors.push({
         path: `${where}/scope`,
         message:

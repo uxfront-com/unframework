@@ -264,16 +264,23 @@ export function analyzeModule(
   const keyCandidates = findKeys(parsed.program);
   // What each top-level `const` writes of types, in its annotation and its value: copied as the
   // setup's types are, into the outputs that declare the constant (ADR-0070).
+  // A `.uf.ts` module's exported directive writes types too (ADR-0099).
   const constantTypes = new Map<string, AST.VariableDeclarator>(
-    parsed.program.body.flatMap((statement) =>
-      statement.type === "VariableDeclaration" && !keyCandidates.has(statement.start)
+    parsed.program.body.flatMap((each) => {
+      const statement =
+        each.type === "ExportNamedDeclaration" &&
+        composableModule &&
+        each.declaration?.type === "VariableDeclaration"
+          ? each.declaration
+          : each;
+      return statement.type === "VariableDeclaration" && !keyCandidates.has(statement.start)
         ? statement.declarations.flatMap((declarator) =>
             declarator.id.type === "Identifier"
               ? [[`${declarator.id.name}@${declarator.id.start}`, declarator] as const]
               : [],
           )
-        : [],
-    ),
+        : [];
+    }),
   );
   const types = collectTypes(declarations, candidates, [
     ...[...keyCandidates.values()].flatMap((candidate) => (candidate.type ? [candidate.type] : [])),
@@ -639,10 +646,7 @@ function composableResult(
     ...(lowered.length ? { composables: lowered.map(({ api }) => api) } : {}),
     ...(directives.lowered.length
       ? {
-          directives: directives.lowered.map(({ name, element }) => ({
-            name,
-            ...(element ? { element: element.code } : {}),
-          })),
+          directives: directives.lowered.map(({ name }) => ({ name })),
         }
       : {}),
   };
@@ -1556,6 +1560,10 @@ function composableImport(statement: AST.ImportDeclaration, context: ModuleConte
         (entry) => `\`${entry.name}\``,
       );
       context.composables.set(item.local, undefined);
+      // A directive's name, whose uses then report nothing more (UF3055).
+      if (isDirectiveName(item.local.name)) {
+        context.directiveImports.set(item.local.name, { name: item.local.name, bindings: [] });
+      }
       reporter.report(
         "UF1202",
         item,
@@ -2094,6 +2102,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     passThrough: module.passThrough,
     shared: module.shared,
     directives: module.directives,
+    scopedFills: { depth: 0 },
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {

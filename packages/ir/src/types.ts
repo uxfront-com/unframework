@@ -407,15 +407,13 @@ export interface ModuleApi {
 }
 
 /**
- * What a caller reads of a directive (ADR-0099): its name, and the element's type it takes, which
- * a target that holds the element in a typed ref of its own reads (Qwik's signal). A caller's
- * output never depends on the hooks.
+ * What a caller reads of a directive (ADR-0099): its name. A caller's output never depends on the
+ * hooks, and a target that holds the element in a typed ref of its own (Qwik's signal) reads the
+ * element's type from the directive's own module, `typeof vFocusTrap`.
  */
 export interface DirectiveApi {
   /** @pattern ^v[A-Z][A-Za-z0-9]*$ */
   name: string;
-  /** The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent. */
-  element?: string;
 }
 
 /**
