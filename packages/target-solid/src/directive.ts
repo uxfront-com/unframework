@@ -47,8 +47,8 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
   const updated = directiveHook(directive, "updated");
   const unmounted = directiveHook(directive, "unmounted");
   const element = directiveElement(directive);
-  const run = (call: string, leaving = false) =>
-    `${queue}(${own.element}, () => ${call}${leaving ? ", true" : ""});`;
+  const run = (call: string, hook: "mounted" | "updated" | "unmounted") =>
+    `${queue}(${own.element}, () => ${call}, "${hook}");`;
   const body: string[] = [`let ${own.target}: ${element} | undefined;`];
   if (mounted || updated) {
     body.push(
@@ -59,7 +59,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
     body.push(
       `${solid("onMount")}(() => {`,
       `  const ${own.element} = ${own.target};`,
-      `  if (${own.element}) ${run(hookCall(own.hooks, mounted, [own.element, own.current]))}`,
+      `  if (${own.element}) ${run(hookCall(own.hooks, mounted, [own.element, own.current]), "mounted")}`,
       "});",
     );
   }
@@ -72,7 +72,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
       ...(previous ? [`  const ${own.previous} = ${own.current};`] : []),
       `  ${own.current} = ${own.next};`,
       `  const ${own.element} = ${own.target};`,
-      `  if (${own.element}) ${run(hookCall(own.hooks, updated, [own.element, own.next, own.previous]))}`,
+      `  if (${own.element}) ${run(hookCall(own.hooks, updated, [own.element, own.next, own.previous]), "updated")}`,
       "});",
     );
   }
@@ -80,7 +80,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
     body.push(
       `${solid("onCleanup")}(() => {`,
       `  const ${own.element} = ${own.target};`,
-      `  if (${own.element}) ${run(hookCall(own.hooks, unmounted, [own.element]), true)}`,
+      `  if (${own.element}) ${run(hookCall(own.hooks, unmounted, [own.element]), "unmounted")}`,
       "});",
     );
   }

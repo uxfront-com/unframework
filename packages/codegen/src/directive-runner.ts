@@ -70,9 +70,9 @@ function ${run}<E extends Element, T>(
     current.mounted = element.isConnected;
     if (current.mounted) {
       const mounted = current.value as T;
-      ${queue}(element, () => directive.mounted?.(element, mounted));
+      ${queue}(element, () => directive.mounted?.(element, mounted), "mounted");
     } else {
-      ${queue}(element, () => directive.unmounted?.(element), true);
+      ${queue}(element, () => directive.unmounted?.(element), "unmounted");
     }
   };
   let state = elements.get(element);
@@ -81,7 +81,9 @@ function ${run}<E extends Element, T>(
     if (!Object.is(value, state.value)) {
       const previous = state.value as T;
       state.value = value;
-      if (state.mounted) ${queue}(element, () => directive.updated?.(element, value, previous));
+      if (state.mounted) {
+        ${queue}(element, () => directive.updated?.(element, value, previous), "updated");
+      }
     }
   } else {
     state = { value, mounted: false, runs: 0, unwatch: ${watch}(sync) };
@@ -95,7 +97,7 @@ function ${run}<E extends Element, T>(
       if (elements.get(element) !== taken || taken.runs !== runs) return;
       taken.unwatch();
       elements.delete(element);
-      if (taken.mounted) ${queue}(element, () => directive.unmounted?.(element), true);
+      if (taken.mounted) ${queue}(element, () => directive.unmounted?.(element), "unmounted");
     });
   };
 }`,

@@ -39,7 +39,8 @@ class FakeElement {
   }
 }
 
-type Queue = (element: FakeElement, run: () => void, leaving?: boolean) => void;
+type Hook = "mounted" | "updated" | "unmounted";
+type Queue = (element: FakeElement, run: () => void, hook: Hook) => void;
 
 /** The queue's code, with its types stripped, as a function of the globals it reads. */
 function queue(): Queue {
@@ -54,18 +55,18 @@ function queue(): Queue {
 }
 
 /** Queues the hooks in order, and gives the order they ran in once the turn ends. */
-async function run(hooks: [FakeElement, string, boolean?][]): Promise<string[]> {
+async function run(hooks: [FakeElement, Hook][]): Promise<string[]> {
   const ran: string[] = [];
   const queueHook = queue();
-  for (const [element, hook, leaving] of hooks) {
-    queueHook(element, () => ran.push(`${hook} ${element.name}`), leaving);
+  for (const [element, hook] of hooks) {
+    queueHook(element, () => ran.push(`${hook} ${element.name}`), hook);
   }
   await Promise.resolve();
   return ran;
 }
 
 afterEach(() => {
-  Reflect.deleteProperty(globalThis, Symbol.for("unframework.directive-hooks@1"));
+  Reflect.deleteProperty(globalThis, Symbol.for("unframework.directive-hooks@2"));
 });
 
 describe("the directive hook queue", () => {
@@ -88,7 +89,7 @@ describe("the directive hook queue", () => {
     expect(
       await run([
         [sibling, "mounted"],
-        [parent, "unmounted", true],
+        [parent, "unmounted"],
       ]),
     ).toEqual(["unmounted parent", "mounted sibling"]);
   });
@@ -96,19 +97,29 @@ describe("the directive hook queue", () => {
   it("runs every unmounted first when a parent and its child leave and come back in one turn", async () => {
     expect(
       await run([
-        [child, "unmounted", true],
+        [child, "unmounted"],
         [child, "mounted"],
-        [parent, "unmounted", true],
+        [parent, "unmounted"],
         [parent, "mounted"],
       ]),
     ).toEqual(["unmounted child", "unmounted parent", "mounted child", "mounted parent"]);
+  });
+
+  it("runs an unmounted first after its element's updated in the same turn, which keeps its place before it", async () => {
+    expect(
+      await run([
+        [child, "mounted"],
+        [sibling, "updated"],
+        [sibling, "unmounted"],
+      ]),
+    ).toEqual(["updated sibling", "unmounted sibling", "mounted child"]);
   });
 
   it("keeps StrictMode's mounted, unmounted and mounted on one element in order", async () => {
     expect(
       await run([
         [parent, "mounted"],
-        [parent, "unmounted", true],
+        [parent, "unmounted"],
         [parent, "mounted"],
       ]),
     ).toEqual(["mounted parent", "unmounted parent", "mounted parent"]);
