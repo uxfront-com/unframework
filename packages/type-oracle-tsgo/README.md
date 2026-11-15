@@ -1,7 +1,7 @@
 # @unframework.dev/type-oracle-tsgo
 
-The TypeOracle adapter on tsgo's checker (plan §5.5, ADR-0067). It is the only package that
-loads TypeScript's API: `typescript/unstable/sync`, pinned exactly at 7.0.2 by the catalog.
+The TypeOracle adapter on tsgo's checker (plan §5.5, ADR-0067, ADR-0107). It is the only package
+that loads TypeScript's API: `typescript/sync`, pinned exactly at `7.1.0-beta` by the catalog.
 
 - **`createTsgoOracle({ root })`** implements `TypeOracle` from `@unframework.dev/type-oracle` over the
   files under `root`, read from the disk. It is opt-in: the compiler's default stays the
@@ -37,8 +37,8 @@ loads TypeScript's API: `typescript/unstable/sync`, pinned exactly at 7.0.2 by t
   `strict`, `moduleResolution: "bundler"` and `jsx: "preserve"`, served from memory so the root
   needs no tsconfig. The first query that needs the checker starts it, a query the syntactic
   adapter resolves alone never does, and `dispose` stops it. `update` tells it which files
-  changed, were created or were deleted. A package that changed stops it, and the next query
-  that needs it starts a new one.
+  changed, were created or were deleted, and has it rebuild the program. A package that changed
+  stops it, and the next query that needs it starts a new one.
 - **`printType`** prints the resolved shape, as the syntactic adapter does, and rejects one with
   unresolved parts.
 
