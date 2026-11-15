@@ -1,5 +1,12 @@
 # @uxfront/unframework
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [6b7c023]
+  - @unframework.dev/cli@0.1.3
+
 ## 0.2.1
 
 ### Patch Changes
