@@ -1,5 +1,14 @@
 # @uxfront/unframework
 
+## 0.2.1
+
+### Patch Changes
+
+- @unframework.dev/compiler@0.2.1
+  - @unframework.dev/testing@0.2.1
+  - @unframework.dev/visual@0.2.1
+  - @unframework.dev/cli@0.1.2
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,19 @@
 # @unframework.dev/compiler
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [51da760]
+  - @unframework.dev/codegen@0.1.1
+  - @unframework.dev/target-angular@0.1.1
+  - @unframework.dev/target-astro@0.1.1
+  - @unframework.dev/target-qwik@0.1.1
+  - @unframework.dev/target-react@0.1.1
+  - @unframework.dev/target-solid@0.1.1
+  - @unframework.dev/target-svelte@0.1.1
+  - @unframework.dev/target-vue@0.1.1
+
 ## 0.2.0
 
 ### Minor Changes

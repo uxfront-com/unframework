@@ -1,5 +1,12 @@
 # @unframework.dev/target-astro
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [51da760]
+  - @unframework.dev/codegen@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
