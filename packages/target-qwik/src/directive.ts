@@ -20,10 +20,11 @@ import {
   rewriteCode,
 } from "@unframework.dev/codegen";
 import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
-import { walk } from "@unframework.dev/ir";
+import { childrenOf, walk } from "@unframework.dev/ir";
 import type {
   DirectiveAttribute,
   ElementNode,
+  RenderNode,
   UfComponent,
   UfDirective,
 } from "@unframework.dev/ir";
@@ -62,6 +63,8 @@ export class QwikDirectives {
    * the printer's element may be a copy (`qwikTitles`), whose attributes are the same.
    */
   readonly #refs = new Map<DirectiveAttribute, string>();
+  /** The elements in a conditional's branch, whose value the task reads only while they're in. */
+  readonly #branched = new Set<ElementNode>();
   readonly #helper:
     | {
         run: string;
@@ -107,12 +110,27 @@ export class QwikDirectives {
         if (own) this.#refs.set(first, this.#signals.get(node)!.name);
       },
     });
-    const waits = [...this.#signals.keys()].some((element) =>
-      element.attributes.some(
-        (attribute) =>
-          attribute.kind === "Directive" && assertedValue(attribute.value) !== attribute.value,
-      ),
-    );
+    // The elements in a conditional's branch whose directive reads a value.
+    const branched = (node: RenderNode, inBranch: boolean): void => {
+      if (node.kind === "If") {
+        for (const branch of node.branches) {
+          for (const child of branch.children) branched(child, true);
+        }
+        return;
+      }
+      if (
+        inBranch &&
+        node.kind === "Element" &&
+        node.attributes.some(
+          (attribute) => attribute.kind === "Directive" && attribute.value.refs.length > 0,
+        )
+      ) {
+        this.#branched.add(node);
+      }
+      for (const child of childrenOf(node)) branched(child, inBranch);
+    };
+    for (const child of childrenOf(component.render)) branched(child, false);
+    const waits = this.#branched.size > 0;
     this.#helper = this.#signals.size
       ? {
           run: names.fresh(DIRECTIVE_HELPER),
@@ -146,26 +164,38 @@ export class QwikDirectives {
       }
       for (const attribute of element.attributes) {
         if (attribute.kind !== "Directive") continue;
+        // The task's own names, apart from the component's.
+        const track = names.once("track");
+        const cleanup = names.once("cleanup");
+        const local = names.once("element");
+        const context = [
+          track === "track" ? track : `track: ${track}`,
+          cleanup === "cleanup" ? cleanup : `cleanup: ${cleanup}`,
+        ].join(", ");
         // Read outside the branches around the element, so what they narrow is asserted.
-        const asserted = assertedValue(attribute.value);
-        const code = rewriteCode(asserted, this.#component, this.#plan.rules(), "client");
-        const value = attribute.value.refs.length ? `track(() => ${code})` : code;
-        const run = `cleanup(${helper.run}(${attribute.name}, element, ${value}));`;
-        // An element Qwik removed stays in its signal, with what narrowed its value gone, so a
-        // narrowed value is read only while the element is in the document: until a slot puts it
-        // there, the task waits, and runs again once it is.
+        const code = rewriteCode(
+          assertedValue(attribute.value),
+          this.#component,
+          this.#plan.rules(),
+          "client",
+        );
+        const value = attribute.value.refs.length ? `${track}(() => ${code})` : code;
+        const run = `${cleanup}(${helper.run}(${attribute.name}, ${local}, ${value}));`;
+        // An element Qwik removed stays in its signal, with what its branch narrows gone, so a
+        // value in a branch is read only while the element is in the document: until a slot
+        // puts it there, the task waits, and runs again once it is.
         const body =
-          asserted === attribute.value || !helper.wait
-            ? [`    if (element) ${run}`]
+          !this.#branched.has(element) || !helper.wait
+            ? [`    if (${local}) ${run}`]
             : [
-                `    if (element?.isConnected) ${run}`,
-                `    else if (element) cleanup(${helper.wait}(element, () => ${signal.name}.trigger()));`,
+                `    if (${local}?.isConnected) ${run}`,
+                `    else if (${local}) ${cleanup}(${helper.wait}(${local}, () => ${signal.name}.trigger()));`,
               ];
         statements.push(
           [
             `${names.core("useVisibleTask$")}(`,
-            "  ({ track, cleanup }) => {",
-            `    const element = track(${signal.name});`,
+            `  ({ ${context} }) => {`,
+            `    const ${local} = ${track}(${signal.name});`,
             ...body,
             "  },",
             '  { strategy: "document-ready" },',
