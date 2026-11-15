@@ -379,13 +379,17 @@ function checkSourceMaps(
   target: string,
 ): void {
   const modules = new Set(info.modules.map((module) => basename(module.source)));
-  const problems = compiles.flatMap(({ source, text, first }) =>
-    sourceMapProblems(
+  const problems = compiles.flatMap(({ source, text, first }) => {
+    const files = first.outputs[target] ?? [];
+    // A source a target writes no file for has no map to check or corrupt: a `.uf.ts` module's
+    // directives on Astro, which runs no hook (ADR-0099).
+    if (!files.length) return [];
+    return sourceMapProblems(
       target,
-      canaryMaps(harness.canary, first.outputs[target] ?? []),
+      canaryMaps(harness.canary, files),
       { filename: source.filename, text },
       modules,
-    ),
-  );
+    );
+  });
   if (problems.length) throw new Error(problems.join("\n"));
 }
