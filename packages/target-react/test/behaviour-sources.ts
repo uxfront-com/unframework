@@ -18,7 +18,7 @@ const vLog = defineDirective<number>({
   updated(el, value, oldValue) {
     document.dispatchEvent(new CustomEvent("uf-directive", { detail: "updated " + String(value) + " " + String(oldValue) }));
   },
-  unmounted(el) {
+  unmounted() {
     document.dispatchEvent(new CustomEvent("uf-directive", { detail: "unmounted" }));
   },
 });
