@@ -32,8 +32,11 @@ export const OWNED_KEYS: readonly string[] = [
   "envDir",
 ];
 
-/** The `server` keys every server sets for itself: the preview listens on `127.0.0.1` alone. */
-export const OWNED_SERVER_KEYS: readonly string[] = ["host", "port", "strictPort"];
+/**
+ * The `server` keys every server sets for itself: the preview listens on `127.0.0.1` alone, and an
+ * HMR server of its own (`server.hmr`) would open a WebSocket server that listens beyond it.
+ */
+export const OWNED_SERVER_KEYS: readonly string[] = ["host", "port", "strictPort", "hmr"];
 
 /** Where every message about the field points. */
 const FIELD = "vite in unframework.config.ts";
@@ -66,8 +69,20 @@ async function serverConfig(vite: ProjectVite, context: ViteContext): Promise<Se
   const { plugins, ...rest } = made as Record<string, unknown>;
   const owned = OWNED_KEYS.filter((key) => key in rest);
   const server = rest.server;
-  if (typeof server === "object" && server !== null) {
-    owned.push(...OWNED_SERVER_KEYS.filter((key) => key in server).map((key) => `server.${key}`));
+  // Anything but an object would replace the server's own `server` block, its host included.
+  if (
+    "server" in rest &&
+    (typeof server !== "object" || server === null || Array.isArray(server))
+  ) {
+    throw new Error(
+      `[uf] ${FIELD} gives \`server\` as ${describeValue(server)}, which is no object: give the server keys it may set, such as \`{ fs: { allow: [".."] } }\`.`,
+    );
+  }
+  if (server) {
+    const keys = Object.keys(server);
+    owned.push(
+      ...OWNED_SERVER_KEYS.filter((key) => keys.includes(key)).map((key) => `server.${key}`),
+    );
   }
   if (owned.length) {
     throw new Error(

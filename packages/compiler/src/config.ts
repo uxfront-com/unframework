@@ -215,11 +215,12 @@ function fontList(value: unknown, report: Report): string[] {
   }
   const names: string[] = [];
   for (const [index, item] of (value as unknown[]).entries()) {
-    if (typeof item !== "string" || !item.trim()) {
+    // A space at either end would never match the name CDP reports, so it is reported here.
+    if (typeof item !== "string" || !item || item.trim() !== item) {
       report(
         "UF7002",
         `/liveFonts/${index}`,
-        "must be a font family's name, as a string that isn't empty.",
+        "must be a font family's name, as a string that isn't empty and has no space at either end.",
       );
     } else names.push(item);
   }

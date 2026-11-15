@@ -73,7 +73,7 @@ async function runProject(root: string): Promise<{ modules: ModuleResult[]; logg
 
 const SEVEN = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
 
-describe("a project's Vite plugins and declarations", () => {
+describe("a project's vite config", () => {
   it(
     "reach every browser and ssr project, so a module only the project serves renders on every target",
     { timeout: 300_000 },

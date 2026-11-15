@@ -391,6 +391,8 @@ describe("resolveConfig", () => {
       [{ liveFonts: [""] }, "/liveFonts/0"],
       [{ liveFonts: ["Inkline Sans", 1] }, "/liveFonts/1"],
       [{ liveFonts: ["  "] }, "/liveFonts/0"],
+      [{ liveFonts: [" Inkline Sans"] }, "/liveFonts/0"],
+      [{ liveFonts: ["Inkline Sans", "Inkline Mono "] }, "/liveFonts/1"],
     ])("reports %j at its JSON pointer", async (raw, pointer) => {
       const reported = await problems(raw);
       expect(reported).toHaveLength(1);

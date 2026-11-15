@@ -32,14 +32,18 @@ A plugin alone isn't always enough either. The corpus lists `@styleframe/runtime
   and `visual` on seven targets, seven for `preview`, and Astro's render servers. A plugin may hold
   one server's state in its hooks, so a shared instance would leak it between them.
 - **Merged, never replacing.** The project's `plugins`, flattened from any shape Vite's `plugins`
-  takes, go first, before the unframework plugin. Every other key is merged after the toolchain's
+  takes, are listed first, before the unframework plugin. Vite orders plugins by `enforce` first,
+  so they run first only within one group: the unframework resolver is `enforce: "pre"`, so an
+  engine plugin with no `enforce` runs after it. An engine's `virtual:` modules resolve either way, since the unframework plugin never resolves an import that passes through (ADR-0064). Every other key is merged after the toolchain's
   fragment with Vite's `mergeConfig`, so the project's scalars win and lists such as
   `optimizeDeps.include` add to the server's. `withProjectVite` in `@unframework.dev/testing/config`
   does this for both packages.
 - **Keys the server owns are refused.** `root`, `base`, `cacheDir`, `test`, `configFile`,
-  `envDir`, `server.host`, `server.port` and `server.strictPort` fail the start with a message
-  that names each one. A `configFile` would load the project's `vite.config.ts`, and a
-  `server.host` would put every preview server on the network. Other `server` keys, like
+  `envDir`, `server.host`, `server.port`, `server.strictPort` and `server.hmr` fail the start with
+  a message that names each one, and so does a `server` that isn't an object, which would replace
+  the server's whole block. A `configFile` would load the project's `vite.config.ts`, a
+  `server.host` would put every preview server on the network, and a `server.hmr` with a port of
+  its own would open a WebSocket server that listens beyond this machine. Other `server` keys, like
   `server.fs`, stay allowed, since a monorepo may need them.
 - **Failures say why.** When the function throws, a promise it gives rejects, or it gives
   something that is no config or no plugin, the message names the field and the reason, since the

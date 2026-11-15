@@ -61,7 +61,7 @@ export interface UnframeworkConfig {
    * The project's Vite config for the servers `unframework test`, `visual` and `preview` start,
    * such as the plugin of a styling engine that serves `virtual:` modules (ADR-0064). Each server
    * calls it with its target and kind, for a fresh set of plugins, since a plugin may hold one
-   * server's state. Its plugins go before the unframework plugin, and the other keys merge into
+   * server's state. Its plugins are listed before the unframework plugin, and the other keys merge into
    * the server's own config, which it never replaces (ADR-0104).
    */
   vite?: (context: ViteContext) => ProjectViteConfig | Promise<ProjectViteConfig>;

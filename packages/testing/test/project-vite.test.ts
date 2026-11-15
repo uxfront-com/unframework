@@ -205,6 +205,23 @@ describe("withProjectVite", () => {
     );
   });
 
+  it("refuses server.hmr, whose own port would listen beyond this machine", async () => {
+    await expect(
+      withProjectVite({}, () => ({ server: { hmr: { port: 24_680 } } }), context),
+    ).rejects.toThrow(
+      "[uf] vite in unframework.config.ts sets `server.hmr`, which the browser server for vue sets itself: leave it out.",
+    );
+  });
+
+  it.each([true, null, "127.0.0.1", ["fs"]])(
+    "refuses a server that is no object (%j), which would replace the server's own",
+    async (server) => {
+      await expect(withProjectVite({}, () => ({ server }), context)).rejects.toThrow(
+        /^\[uf\] vite in unframework\.config\.ts gives `server` as .+, which is no object: give the server keys it may set, such as `\{ fs: \{ allow: \["\.\."\] \} \}`\.$/,
+      );
+    },
+  );
+
   it("takes the server keys it doesn't own, such as server.fs", async () => {
     const merged = await withProjectVite(
       { server: { host: "127.0.0.1" } },
