@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByText('Outside the menu')",
+      "dom": [
+        "<section aria-label=\"Profile\" class=\"profile-menu\">",
+        "  <div class=\"menu\">",
+        "    <button aria-expanded=\"false\" type=\"button\">",
+        "      \"Account\"",
+        "    </button>",
+        "  </div>",
+        "  <p>",
+        "    \"Outside the menu\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Profile\":",
+        "  - button \"Account\"",
+        "  - paragraph: Outside the menu"
+      ],
+      "events": {
+        "closed": [
+          []
+        ]
+      }
+    }
+  ]
+}

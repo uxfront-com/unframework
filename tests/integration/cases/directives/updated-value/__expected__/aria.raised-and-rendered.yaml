@@ -1,0 +1,5 @@
+- region "Meter":
+  - status: Level 2
+  - paragraph: Rendered again 2 times
+  - button "Raise"
+  - button "Render again"

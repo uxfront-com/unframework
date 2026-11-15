@@ -1,0 +1,540 @@
+{
+  "irVersion": 1,
+  "file": "directives/focus-trap/Settings.uf.tsx",
+  "components": [
+    {
+      "name": "Settings",
+      "span": {
+        "start": 94,
+        "end": 915
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "open@139",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 139,
+            "end": 143
+          }
+        },
+        {
+          "id": "close@170",
+          "name": "close",
+          "kind": "localFn",
+          "span": {
+            "start": 170,
+            "end": 175
+          }
+        },
+        {
+          "id": "onKeydown@220",
+          "name": "onKeydown",
+          "kind": "localFn",
+          "span": {
+            "start": 220,
+            "end": 229
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@139",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 150,
+              "end": 155
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 133,
+            "end": 157
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "close@170",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    open.value = false;\n  }",
+              "span": {
+                "start": 178,
+                "end": 207
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "open@139",
+                  "operator": "=",
+                  "span": {
+                    "start": 184,
+                    "end": 202
+                  },
+                  "target": {
+                    "start": 184,
+                    "end": 194
+                  },
+                  "value": {
+                    "start": 197,
+                    "end": 202
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 175,
+              "end": 207
+            }
+          },
+          "span": {
+            "start": 161,
+            "end": 207
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onKeydown@220",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 237,
+                    "end": 250
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 230,
+                  "end": 250
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Escape\") close();\n  }",
+              "span": {
+                "start": 252,
+                "end": 298
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 262,
+                    "end": 271
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "close@170",
+                  "span": {
+                    "start": 286,
+                    "end": 291
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 229,
+              "end": 298
+            }
+          },
+          "span": {
+            "start": 211,
+            "end": 298
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "settings",
+            "span": {
+              "start": 324,
+              "end": 340
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Settings",
+            "span": {
+              "start": 341,
+              "end": 362
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 378,
+                  "end": 391
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = true)",
+                      "span": {
+                        "start": 407,
+                        "end": 426
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@139",
+                          "operator": "=",
+                          "span": {
+                            "start": 407,
+                            "end": 426
+                          },
+                          "target": {
+                            "start": 408,
+                            "end": 418
+                          },
+                          "value": {
+                            "start": 421,
+                            "end": 425
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 401,
+                      "end": 426
+                    }
+                  },
+                  "span": {
+                    "start": 401,
+                    "end": 426
+                  }
+                },
+                "span": {
+                  "start": 392,
+                  "end": 427
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Open",
+                "span": {
+                  "start": 428,
+                  "end": 448
+                }
+              }
+            ],
+            "span": {
+              "start": 370,
+              "end": 457
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 465,
+                    "end": 475
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@139",
+                      "span": {
+                        "start": 465,
+                        "end": 475
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "role",
+                        "value": "dialog",
+                        "span": {
+                          "start": 503,
+                          "end": 516
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "aria-label",
+                        "value": "Preferences",
+                        "span": {
+                          "start": 527,
+                          "end": 551
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "tabindex",
+                        "value": "-1",
+                        "span": {
+                          "start": 562,
+                          "end": 575
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "dialog",
+                        "span": {
+                          "start": 586,
+                          "end": 600
+                        }
+                      },
+                      {
+                        "kind": "Directive",
+                        "name": "vFocusTrap",
+                        "value": {
+                          "code": "open.value",
+                          "span": {
+                            "start": 625,
+                            "end": 635
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "open@139",
+                              "span": {
+                                "start": 625,
+                                "end": 635
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 611,
+                          "end": 636
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "keydown",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "onKeydown@220",
+                          "span": {
+                            "start": 658,
+                            "end": 667
+                          }
+                        },
+                        "span": {
+                          "start": 647,
+                          "end": 668
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "button",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "type",
+                            "value": "button",
+                            "span": {
+                              "start": 697,
+                              "end": 710
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Theme",
+                            "span": {
+                              "start": 711,
+                              "end": 716
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 689,
+                          "end": 725
+                        }
+                      },
+                      {
+                        "kind": "Element",
+                        "tag": "button",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "type",
+                            "value": "button",
+                            "span": {
+                              "start": 744,
+                              "end": 757
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Language",
+                            "span": {
+                              "start": 758,
+                              "end": 766
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 736,
+                          "end": 775
+                        }
+                      },
+                      {
+                        "kind": "Element",
+                        "tag": "button",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "type",
+                            "value": "button",
+                            "span": {
+                              "start": 794,
+                              "end": 807
+                            }
+                          },
+                          {
+                            "kind": "Event",
+                            "event": "click",
+                            "handler": {
+                              "kind": "Function",
+                              "binding": "close@170",
+                              "span": {
+                                "start": 817,
+                                "end": 822
+                              }
+                            },
+                            "span": {
+                              "start": 808,
+                              "end": 823
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Close",
+                            "span": {
+                              "start": 824,
+                              "end": 853
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 786,
+                          "end": 862
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 488,
+                      "end": 877
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 465,
+                  "end": 877
+                }
+              }
+            ],
+            "span": {
+              "start": 465,
+              "end": 892
+            }
+          }
+        ],
+        "span": {
+          "start": 315,
+          "end": 908
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Settings",
+      "span": {
+        "start": 94,
+        "end": 915
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./focusTrap.uf.ts",
+      "file": "focusTrap.uf.ts",
+      "api": {
+        "file": "focusTrap.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vFocusTrap"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vFocusTrap",
+          "local": "vFocusTrap",
+          "span": {
+            "start": 54,
+            "end": 64
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 92
+      }
+    }
+  ]
+}

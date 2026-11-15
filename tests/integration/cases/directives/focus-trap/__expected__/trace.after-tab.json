@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "tab",
+      "dom": [
+        "<section aria-label=\"Settings\" class=\"settings\">",
+        "  <button type=\"button\">",
+        "    \"Open\"",
+        "  </button>",
+        "  <div aria-label=\"Preferences\" class=\"dialog\" role=\"dialog\" tabindex=\"-1\">",
+        "    <button type=\"button\" uf:focused=\"\">",
+        "      \"Theme\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Language\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Close\"",
+        "    </button>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Settings\":",
+        "  - button \"Open\"",
+        "  - dialog \"Preferences\":",
+        "    - button \"Theme\"",
+        "    - button \"Language\"",
+        "    - button \"Close\""
+      ],
+      "events": {}
+    }
+  ]
+}

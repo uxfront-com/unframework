@@ -1,0 +1,30 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const level = 1 as number;
+const renders = 0 as number;
+---
+
+<section
+  class:list={["meter", className]}
+  aria-label="Meter"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <output class="level">Level {level}</output>
+  <p>Rendered again {renders} times</p>
+  <button type="button">Raise</button>
+  <button type="button">Render again</button>
+</section>

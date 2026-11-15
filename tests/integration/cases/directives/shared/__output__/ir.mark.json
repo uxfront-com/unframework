@@ -1,0 +1,47 @@
+{
+  "irVersion": 1,
+  "file": "directives/shared/mark.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "directives": [
+    {
+      "name": "vMark",
+      "exported": true,
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 230,
+          "end": 236
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    el.setAttribute(\"data-directive-mounted\", value);\n  }",
+            "span": {
+              "start": 261,
+              "end": 320
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 242,
+            "end": 320
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 193,
+        "end": 325
+      }
+    }
+  ]
+}

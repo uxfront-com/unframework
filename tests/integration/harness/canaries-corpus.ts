@@ -110,6 +110,9 @@ export function describeCorpusShard(
             const reports = results.map(({ source, text, result }) => {
               const files = result.outputs[target] ?? [];
               const input = { filename: source.filename, text };
+              // A source a target writes no file for has no map to corrupt: a `.uf.ts` module's
+              // directives on Astro, which runs no hook (ADR-0099).
+              if (!files.length) return { before: [], after: [] };
               return {
                 before: sourceMapProblems(target, files, input, modules),
                 after: sourceMapProblems(target, canaryMaps(canary.id, files), input, modules),

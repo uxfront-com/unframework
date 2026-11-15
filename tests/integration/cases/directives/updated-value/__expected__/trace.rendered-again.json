@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Render again' })",
+      "dom": [
+        "<section aria-label=\"Meter\" class=\"meter\">",
+        "  <output class=\"level\" data-updates=\"0\" data-value=\"1\">",
+        "    \"Level 1\"",
+        "  </output>",
+        "  <p>",
+        "    \"Rendered again 1 times\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Raise\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Render again\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Meter\":",
+        "  - status: Level 1",
+        "  - paragraph: Rendered again 1 times",
+        "  - button \"Raise\"",
+        "  - button \"Render again\""
+      ],
+      "events": {}
+    }
+  ]
+}

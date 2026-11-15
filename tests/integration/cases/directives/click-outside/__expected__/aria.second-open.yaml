@@ -1,0 +1,8 @@
+- region "Profile":
+  - button "Account" [expanded]
+  - list "Account actions":
+    - listitem:
+      - button "Settings"
+    - listitem:
+      - button "Sign out"
+  - paragraph: Outside the menu

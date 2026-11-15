@@ -1,0 +1,191 @@
+{
+  "irVersion": 1,
+  "file": "directives/shared/Tag.uf.tsx",
+  "components": [
+    {
+      "name": "Tag",
+      "span": {
+        "start": 86,
+        "end": 221
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 75,
+              "end": 81
+            }
+          },
+          "binding": "name@116",
+          "span": {
+            "start": 69,
+            "end": 82
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TagProps",
+          "span": {
+            "start": 124,
+            "end": 132
+          }
+        },
+        "span": {
+          "start": 114,
+          "end": 132
+        }
+      },
+      "types": [
+        "TagProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@116",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 116,
+            "end": 120
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "em",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tag",
+            "span": {
+              "start": 155,
+              "end": 166
+            }
+          },
+          {
+            "kind": "Directive",
+            "name": "vMark",
+            "value": {
+              "code": "`tag ${name}`",
+              "span": {
+                "start": 175,
+                "end": 188
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@116",
+                  "span": {
+                    "start": 182,
+                    "end": 186
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 167,
+              "end": 189
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "#",
+            "span": {
+              "start": 190,
+              "end": 198
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 199,
+                "end": 203
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@116",
+                  "span": {
+                    "start": 199,
+                    "end": 203
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 198,
+              "end": 204
+            }
+          }
+        ],
+        "span": {
+          "start": 151,
+          "end": 214
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tag",
+      "span": {
+        "start": 86,
+        "end": 221
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TagProps",
+      "exported": true,
+      "code": "interface TagProps {\n  name: string;\n}",
+      "span": {
+        "start": 46,
+        "end": 84
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./mark.uf.ts",
+      "file": "mark.uf.ts",
+      "api": {
+        "file": "mark.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vMark"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vMark",
+          "local": "vMark",
+          "span": {
+            "start": 9,
+            "end": 14
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 37
+      }
+    }
+  ]
+}

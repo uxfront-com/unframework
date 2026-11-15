@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF3055",
+    "severity": "error",
+    "message": "`v-missing` applies `vMissing`, and the module declares or imports no directive of that name.",
+    "file": "diagnostics/unknown-directive/Card.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 10,
+      "offset": 260
+    },
+    "end": {
+      "line": 8,
+      "column": 19,
+      "offset": 269
+    },
+    "help": "Import it from the `.uf.ts` module that exports it, `import { vMissing } from \"./…uf.ts\";`, or declare it at the module's top level with `defineDirective`."
+  },
+  {
+    "code": "UF3055",
+    "severity": "error",
+    "message": "`v-count` applies `vCount`, which is a constant of the module, not a directive.",
+    "file": "diagnostics/unknown-directive/Card.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 10,
+      "offset": 298
+    },
+    "end": {
+      "line": 9,
+      "column": 17,
+      "offset": 305
+    },
+    "help": "Import it from the `.uf.ts` module that exports it, `import { vCount } from \"./…uf.ts\";`, or declare it at the module's top level with `defineDirective`."
+  }
+]

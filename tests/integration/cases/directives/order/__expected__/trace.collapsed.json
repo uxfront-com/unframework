@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Toggle' })",
+      "dom": [
+        "<section aria-label=\"Tree\" class=\"tree\" data-name=\"outer\">",
+        "  <p data-name=\"first\">",
+        "    \"First\"",
+        "  </p>",
+        "  <p data-name=\"last\">",
+        "    \"Last\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tree\":",
+        "  - paragraph: First",
+        "  - paragraph: Last",
+        "  - button \"Toggle\""
+      ],
+      "events": {}
+    }
+  ]
+}

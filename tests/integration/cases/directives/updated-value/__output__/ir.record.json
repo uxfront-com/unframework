@@ -1,0 +1,109 @@
+{
+  "irVersion": 1,
+  "file": "directives/updated-value/record.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "directives": [
+    {
+      "name": "vRecord",
+      "exported": true,
+      "value": {
+        "code": "number",
+        "span": {
+          "start": 263,
+          "end": 269
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    el.setAttribute(\"data-value\", String(value));\n    el.setAttribute(\"data-updates\", \"0\");\n  }",
+            "span": {
+              "start": 294,
+              "end": 391
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "String",
+                "span": {
+                  "start": 330,
+                  "end": 336
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 275,
+            "end": 391
+          }
+        },
+        {
+          "name": "updated",
+          "parameters": [
+            "el",
+            "value",
+            "oldValue"
+          ],
+          "body": {
+            "code": "{\n    el.setAttribute(\"data-value\", String(value));\n    el.setAttribute(\"data-old-value\", String(oldValue));\n    el.setAttribute(\"data-updates\", String(Number(el.getAttribute(\"data-updates\")) + 1));\n  }",
+            "span": {
+              "start": 424,
+              "end": 626
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "String",
+                "span": {
+                  "start": 460,
+                  "end": 466
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "String",
+                "span": {
+                  "start": 514,
+                  "end": 520
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "String",
+                "span": {
+                  "start": 569,
+                  "end": 575
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "Number",
+                "span": {
+                  "start": 576,
+                  "end": 582
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 395,
+            "end": 626
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 224,
+        "end": 631
+      }
+    }
+  ]
+}

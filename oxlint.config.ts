@@ -24,6 +24,17 @@ export default defineConfig({
       },
     },
     {
+      // An element applies a directive by its name in kebab case, `v-focus-trap` for `vFocusTrap`
+      // (ADR-0099), which no JSX rule reads as a use of the name.
+      files: ["**/*.uf.tsx"],
+      rules: {
+        "no-unused-vars": [
+          "error",
+          { varsIgnorePattern: "^(?:_|v[A-Z][A-Za-z0-9]*$)", argsIgnorePattern: "^_" },
+        ],
+      },
+    },
+    {
       // A corpus spec uses the public API of @unframework.dev/testing and nothing else, as a
       // project's own specs do (ADR-0085): its root entry, never a subpath, no other
       // @unframework.dev package, and nothing of the harness's. `ignorePatterns` keeps this rule

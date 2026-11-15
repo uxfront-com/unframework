@@ -1,0 +1,174 @@
+{
+  "irVersion": 1,
+  "file": "directives/shared/Badge.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 89,
+        "end": 227
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 78,
+              "end": 84
+            }
+          },
+          "binding": "label@121",
+          "span": {
+            "start": 71,
+            "end": 85
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "BadgeProps",
+          "span": {
+            "start": 130,
+            "end": 140
+          }
+        },
+        "span": {
+          "start": 119,
+          "end": 140
+        }
+      },
+      "types": [
+        "BadgeProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@121",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 121,
+            "end": 126
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "badge",
+            "span": {
+              "start": 165,
+              "end": 178
+            }
+          },
+          {
+            "kind": "Directive",
+            "name": "vMark",
+            "value": {
+              "code": "\"badge\"",
+              "span": {
+                "start": 186,
+                "end": 193
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 179,
+              "end": 193
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 202,
+                "end": 207
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@121",
+                  "span": {
+                    "start": 202,
+                    "end": 207
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 201,
+              "end": 208
+            }
+          }
+        ],
+        "span": {
+          "start": 159,
+          "end": 220
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Badge",
+      "span": {
+        "start": 89,
+        "end": 227
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "BadgeProps",
+      "exported": true,
+      "code": "interface BadgeProps {\n  label: string;\n}",
+      "span": {
+        "start": 46,
+        "end": 87
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./mark.uf.ts",
+      "file": "mark.uf.ts",
+      "api": {
+        "file": "mark.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vMark"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vMark",
+          "local": "vMark",
+          "span": {
+            "start": 9,
+            "end": 14
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 37
+      }
+    }
+  ]
+}

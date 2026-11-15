@@ -1,0 +1,6 @@
+- region "Settings":
+  - button "Open"
+  - dialog "Preferences":
+    - button "Theme"
+    - button "Language"
+    - button "Close"

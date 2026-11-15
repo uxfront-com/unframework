@@ -1679,6 +1679,171 @@
         }
       }
     },
+    "directives/click-outside": {
+      "time": 7.3,
+      "sizes": {
+        "react": {
+          "raw": 2956,
+          "gzip": 1497
+        },
+        "vue": {
+          "raw": 1285,
+          "gzip": 774
+        },
+        "svelte": {
+          "raw": 1759,
+          "gzip": 1021
+        },
+        "solid": {
+          "raw": 2045,
+          "gzip": 1160
+        },
+        "angular": {
+          "raw": 3509,
+          "gzip": 1738
+        },
+        "qwik": {
+          "raw": 3038,
+          "gzip": 1900
+        },
+        "astro": {
+          "raw": 644,
+          "gzip": 436
+        }
+      }
+    },
+    "directives/focus-trap": {
+      "time": 9.24,
+      "sizes": {
+        "react": {
+          "raw": 3029,
+          "gzip": 1579
+        },
+        "vue": {
+          "raw": 1496,
+          "gzip": 885
+        },
+        "svelte": {
+          "raw": 1968,
+          "gzip": 1116
+        },
+        "solid": {
+          "raw": 2294,
+          "gzip": 1279
+        },
+        "angular": {
+          "raw": 4130,
+          "gzip": 1971
+        },
+        "qwik": {
+          "raw": 3445,
+          "gzip": 2187
+        },
+        "astro": {
+          "raw": 564,
+          "gzip": 385
+        }
+      }
+    },
+    "directives/order": {
+      "time": 5.18,
+      "sizes": {
+        "react": {
+          "raw": 2617,
+          "gzip": 1262
+        },
+        "vue": {
+          "raw": 1052,
+          "gzip": 558
+        },
+        "svelte": {
+          "raw": 1476,
+          "gzip": 773
+        },
+        "solid": {
+          "raw": 1860,
+          "gzip": 953
+        },
+        "angular": {
+          "raw": 3184,
+          "gzip": 1357
+        },
+        "qwik": {
+          "raw": 4009,
+          "gzip": 2500
+        },
+        "astro": {
+          "raw": 708,
+          "gzip": 453
+        }
+      }
+    },
+    "directives/shared": {
+      "time": 6.87,
+      "sizes": {
+        "react": {
+          "raw": 4152,
+          "gzip": 2338
+        },
+        "vue": {
+          "raw": 1167,
+          "gzip": 924
+        },
+        "svelte": {
+          "raw": 2051,
+          "gzip": 1431
+        },
+        "solid": {
+          "raw": 2135,
+          "gzip": 1454
+        },
+        "angular": {
+          "raw": 5220,
+          "gzip": 2849
+        },
+        "qwik": {
+          "raw": 4296,
+          "gzip": 2999
+        },
+        "astro": {
+          "raw": 1639,
+          "gzip": 1124
+        }
+      }
+    },
+    "directives/updated-value": {
+      "time": 5.69,
+      "sizes": {
+        "react": {
+          "raw": 2484,
+          "gzip": 1274
+        },
+        "vue": {
+          "raw": 1004,
+          "gzip": 587
+        },
+        "svelte": {
+          "raw": 1571,
+          "gzip": 882
+        },
+        "solid": {
+          "raw": 1789,
+          "gzip": 1013
+        },
+        "angular": {
+          "raw": 3167,
+          "gzip": 1561
+        },
+        "qwik": {
+          "raw": 2644,
+          "gzip": 1663
+        },
+        "astro": {
+          "raw": 665,
+          "gzip": 430
+        }
+      }
+    },
     "dynamic/components": {
       "time": 7.16,
       "sizes": {

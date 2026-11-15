@@ -1,0 +1,201 @@
+{
+  "irVersion": 1,
+  "file": "directives/shared/Labels.uf.tsx",
+  "components": [
+    {
+      "name": "Labels",
+      "span": {
+        "start": 69,
+        "end": 239
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "labels",
+            "span": {
+              "start": 128,
+              "end": 142
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Labels",
+            "span": {
+              "start": 143,
+              "end": 162
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Badge",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"New\"",
+                  "span": {
+                    "start": 183,
+                    "end": 188
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 177,
+                  "end": 188
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 170,
+              "end": 191
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Tag",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "name",
+                "value": {
+                  "code": "\"docs\"",
+                  "span": {
+                    "start": 208,
+                    "end": 214
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 203,
+                  "end": 214
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 198,
+              "end": 217
+            }
+          }
+        ],
+        "span": {
+          "start": 119,
+          "end": 232
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Labels",
+      "span": {
+        "start": 69,
+        "end": 239
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Badge.uf.tsx",
+      "file": "Badge.uf.tsx",
+      "api": {
+        "file": "Badge.uf.tsx",
+        "components": [
+          {
+            "name": "Badge",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Badge",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    },
+    {
+      "specifier": "./Tag.uf.tsx",
+      "file": "Tag.uf.tsx",
+      "api": {
+        "file": "Tag.uf.tsx",
+        "components": [
+          {
+            "name": "Tag",
+            "export": "default",
+            "props": [
+              {
+                "name": "name",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "em"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Tag",
+          "span": {
+            "start": 43,
+            "end": 46
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 67
+      }
+    }
+  ]
+}

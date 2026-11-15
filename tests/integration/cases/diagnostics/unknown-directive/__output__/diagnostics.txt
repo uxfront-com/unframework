@@ -1,0 +1,17 @@
+error[UF3055]: `v-missing` applies `vMissing`, and the module declares or imports no directive of that name.
+ --> diagnostics/unknown-directive/Card.uf.tsx:8:10
+  |
+8 |       <p v-missing={true}>Missing</p>
+  |          ^^^^^^^^^
+  |
+  = help: Import it from the `.uf.ts` module that exports it, `import { vMissing } from "./…uf.ts";`, or declare it at the module's top level with `defineDirective`.
+  = see: https://unframework.dev/diagnostics/UF3055
+
+error[UF3055]: `v-count` applies `vCount`, which is a constant of the module, not a directive.
+ --> diagnostics/unknown-directive/Card.uf.tsx:9:10
+  |
+9 |       <p v-count={vCount}>Count</p>
+  |          ^^^^^^^
+  |
+  = help: Import it from the `.uf.ts` module that exports it, `import { vCount } from "./…uf.ts";`, or declare it at the module's top level with `defineDirective`.
+  = see: https://unframework.dev/diagnostics/UF3055
