@@ -157,3 +157,27 @@ export const vMark = defineDirective<string>({
     },
   );
 });
+
+describe("a slot named like a directive the component applies", () => {
+  it.each(TARGET_NAMES)("is UF3024 alone on %s", async (target) => {
+    const result = await compile(
+      `import { defineDirective, defineSlots, type Element } from "@uxfront/unframework";
+
+const vMark = defineDirective<string>({
+  mounted(el, value) {
+    el.title = value;
+  },
+});
+
+export default function A() {
+  const slots = defineSlots<{ vMark?(): Element }>();
+  return <div v-mark="a">{slots.vMark?.()}</div>;
+}
+`,
+      { filename: "A.uf.tsx", targets: [target] },
+    );
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === "error").map(({ code }) => code),
+    ).toEqual(["UF3024"]);
+  });
+});

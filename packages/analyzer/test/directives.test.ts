@@ -317,19 +317,31 @@ describe("what is not supported yet (UF1002)", () => {
       "<ul>{items.map((each) => <li key={each}>{slots.default?.()}</li>)}</ul>",
     ],
     [
-      "a slot it hands to another component",
+      "a slot it renders twice",
       '<span v-mark="x">row</span>',
       "default",
-      "<Box>{slots.default?.()}</Box>",
+      "<div><section>{slots.default?.()}</section><aside>{slots.default?.()}</aside></div>",
+    ],
+    [
+      "a slot it hands to a component that renders it in a list",
+      '<span v-mark="x">row</span>',
+      "default",
+      "<Rows>{slots.default?.()}</Rows>",
+    ],
+    [
+      "a slot it forwards to a component that renders it in a list",
+      '{{ item: () => <span v-mark="x">row</span> }}',
+      "item",
+      "<Rows>{{ default: slots.item }}</Rows>",
     ],
   ])("reports a directive in a fill of %s (UF1002)", (_name, fill, slot, body) => {
     const list = `export function List({ items }: { items: string[] }) {
   const slots = defineSlots<{ ${slot}?(): Element }>();
   return ${body};
 }
-function Box() {
+function Rows() {
   const slots = defineSlots<{ default?(): Element }>();
-  return <div>{slots.default?.()}</div>;
+  return <ul>{["a", "b"].map((each) => <li key={each}>{slots.default?.()}</li>)}</ul>;
 }
 `;
     const text = source(`<List items={["a", "b"]}>${fill}</List>`, "", `${MARK}${list}`).replace(
@@ -339,20 +351,24 @@ function Box() {
     expect(reported(text)).toContain("UF1002 v-mark");
   });
 
-  it("accepts a directive in a fill the child renders once, behind its state or in a `<Teleport>`", () => {
+  it("accepts a directive in a fill the child renders once: behind its state or a presence check, in a `<Teleport>`, or through a component that renders it once", () => {
     const child = `export function Disclosure() {
-  const slots = defineSlots<{ default?(): Element; title?(): Element }>();
+  const slots = defineSlots<{ default?(): Element; title?(): Element; note?(): Element }>();
   const open = ref(false);
-  return <div>{open.value ? <div>{slots.default?.()}</div> : null}<Teleport to="body"><div>{slots.title?.()}</div></Teleport></div>;
+  return <div>{open.value ? <div>{slots.default?.()}</div> : null}<Portal to="body"><div>{slots.title ? <b>{slots.title?.()}</b> : null}</div></Portal><Box>{slots.note?.()}</Box></div>;
+}
+function Box() {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <div>{slots.default?.()}</div>;
 }
 `;
     const text = source(
-      '<Disclosure>{{ default: () => <p v-mark="a">a</p>, title: () => <p v-mark="b">b</p> }}</Disclosure>',
+      '<Disclosure>{{ default: () => <p v-mark="a">a</p>, title: () => <p v-mark="b">b</p>, note: () => <p v-mark="c">c</p> }}</Disclosure>',
       "",
       `${MARK}${child}`,
     ).replace(
       "{ defineDirective, ref }",
-      "{ defineDirective, defineSlots, ref, Teleport, type Element }",
+      "{ defineDirective, defineSlots, ref, Teleport as Portal, type Element }",
     );
     expect(reported(text)).toEqual([]);
   });

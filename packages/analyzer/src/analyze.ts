@@ -62,7 +62,7 @@ import type {
 } from "@unframework.dev/parser";
 
 import { componentApi, withReferences } from "./api.ts";
-import type { ApiContext } from "./api.ts";
+import type { ApiContext, SlotForward } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import { analyzeComposable, COMPOSABLE_FILE, findComposables } from "./composables.ts";
@@ -306,8 +306,13 @@ export function analyzeModule(
     authoring,
   };
   const apis = new Map<Candidate, ComponentApi>();
+  const forwards = new Map<ComponentApi, SlotForward[]>();
   for (const candidate of candidates) {
-    if (!candidate.value) apis.set(candidate, componentApi(candidate, apiContext));
+    if (candidate.value) continue;
+    const forwarded: SlotForward[] = [];
+    const api = componentApi(candidate, apiContext, forwarded);
+    apis.set(candidate, api);
+    if (forwarded.length) forwards.set(api, forwarded);
   }
   const keyMark = reporter.diagnostics.length;
   const keyDeclarations: InjectionKeyDeclaration[] = [];
@@ -377,6 +382,7 @@ export function analyzeModule(
     if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) continue;
     checkTopLevelStatement(statement, context);
   }
+  markForwardedRepeats(forwards, scopes, context.components);
   // Lowered once every import is known: imports are hoisted, so a constant may read one
   // written after it.
   const constants = lowerConstants(context.constants, {
@@ -482,7 +488,8 @@ export function analyzeModule(
     }
     const component = analyzeComponent(candidate, module);
     if (!component) continue;
-    reportDirectiveShadows(component, reporter);
+    // A shadowed directive's outputs would read the model or the slot in its place.
+    if (reportDirectiveShadows(component, reporter)) continue;
     lowered.push(component);
     for (const entry of candidate.exports) {
       exports.push({ ...createExport(entry.kind, candidate.name, entry.span), name: entry.name });
@@ -580,12 +587,15 @@ function directiveOwner(directive: UfDirective): UfComposable {
 /**
  * A model or a slot named like a directive the component applies (ADR-0099), which UF3024 reports
  * at its declaration, as it does a prop: the outputs that take it as a prop or a snippet (React,
- * Svelte, Qwik) would read it in the directive's place.
+ * Svelte, Qwik) would read it in the directive's place. Returns whether it reported one, which
+ * drops the component.
  */
-function reportDirectiveShadows(component: UfComponent, reporter: Reporter): void {
+function reportDirectiveShadows(component: UfComponent, reporter: Reporter): boolean {
   const applied = new Set(appliedDirectives(component));
-  if (!applied.size) return;
+  if (!applied.size) return false;
+  let reported = false;
   const report = (name: string, what: "model" | "slot", at: Span) => {
+    reported = true;
     const authored = `v-${name.slice(1).replace(/[A-Z]/g, (letter, index: number) => `${index ? "-" : ""}${letter.toLowerCase()}`)}`;
     reporter.report(
       "UF3024",
@@ -599,6 +609,38 @@ function reportDirectiveShadows(component: UfComponent, reporter: Reporter): voi
   }
   for (const slot of component.slots?.slots ?? []) {
     if (applied.has(slot.name)) report(slot.name, "slot", slot.span);
+  }
+  return reported;
+}
+
+/**
+ * Marks `repeated` each slot a component forwards into another component's content whose slot
+ * repeats there (ADR-0099): that component an import, whose API its own module marked, or another
+ * of this module's, which may forward it in turn, so it runs until nothing changes.
+ */
+function markForwardedRepeats(
+  forwards: ReadonlyMap<ComponentApi, readonly SlotForward[]>,
+  scopes: Scopes,
+  components: ReadonlyMap<object, ComponentInfo | undefined>,
+): void {
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const [api, list] of forwards) {
+      for (const forward of list) {
+        const index = api.slots.findIndex((slot) => slot.name === forward.slot);
+        const slot = api.slots[index];
+        if (!slot || slot.repeated) continue;
+        const resolution = scopes.resolve(forward.tag as unknown as AST.IdentifierReference);
+        if (resolution.kind !== "import" && resolution.kind !== "variable") continue;
+        const target = components.get(resolution.declaration);
+        const repeats = target?.api.slots.some(
+          (each) => each.name === forward.target && each.repeated === true,
+        );
+        if (!repeats) continue;
+        api.slots[index] = { ...slot, repeated: true };
+        changed = true;
+      }
+    }
   }
 }
 
