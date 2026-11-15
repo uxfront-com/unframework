@@ -123,6 +123,8 @@ const hasSpread = (element: ElementNode) =>
       case "Model":
       // Content, `{@html markup}`, never an attribute (ADR-0097).
       case "RawHtml":
+      // An attachment, `{@attach vFocusTrap(() => open)}`, never an attribute (ADR-0099).
+      case "Directive":
         return false;
       default:
         return unreachable(attribute);
@@ -335,6 +337,11 @@ export const svelteDialect: MarkupDialect = {
   },
   refAttribute: ({ name }) => [{ name: "bind:this", text: `bind:this={${name}}` }],
   rawHtmlContent: (code) => `{@html ${code}}`,
+  // An attachment (ADR-0099): the factory reads its value through a getter, inside the effect
+  // the attachment runs in, so the attachment itself is never rebuilt.
+  directiveAttribute: ({ attribute, value }) => [
+    { name: "{@attach", text: `{@attach ${attribute.name}(() => ${value})}` },
+  ],
   // A child's props and events (ADR-0053): `label="Name"`, `{tone}`, and its events' callback
   // props, `onclear` for `clear` (ADR-0012).
   propAttribute: ({ name, code, literal }) => [

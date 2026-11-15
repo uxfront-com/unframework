@@ -13,6 +13,7 @@ import type {
   Attribute,
   ComponentAttribute,
   ComponentNode,
+  DirectiveAttribute,
   DynamicNode,
   ElementNode,
   EventAttribute,
@@ -134,6 +135,13 @@ export interface PrintedRef {
   attribute: RefAttribute;
   /** The `templateRef` binding's name. */
   name: string;
+}
+
+/** A directive an element applies, as a dialect writes it (ADR-0099). */
+export interface PrintedDirective {
+  attribute: DirectiveAttribute;
+  /** The value's code. */
+  value: string;
 }
 
 /** Where a component element's attributes and fills are printed (ADR-0053). */
@@ -346,6 +354,12 @@ export interface MarkupDialect {
   eventAttribute(event: PrintedEvent, context: AttributeContext): PrintedAttribute[];
   /** Writes a template ref (ADR-0049): the element is the ref's value while it is rendered. */
   refAttribute(ref: PrintedRef, context: AttributeContext): PrintedAttribute[];
+  /**
+   * Writes a directive (ADR-0099): its hooks run in the browser with the value, once the element
+   * is in the DOM, after a render that changes the value, and once it leaves (Vue's
+   * `v-focus-trap`, Svelte's `{@attach}`, Angular's `[vFocusTrap]`).
+   */
+  directiveAttribute?(directive: PrintedDirective, context: AttributeContext): PrintedAttribute[];
   /**
    * Writes `innerHTML={markup}` (ADR-0097) as an attribute: the element's content is the markup
    * the code's string holds, parsed, never escaped (Vue's `v-html`, Angular's `[innerHTML]`,
@@ -1270,6 +1284,11 @@ export function printMarkup(
             printed.push(...hook(of, "rawHtmlAttribute")(code(attribute.value), context));
           }
           break;
+        case "Directive":
+          printed.push(
+            ...hook(of, "directiveAttribute")({ attribute, value: code(attribute.value) }, context),
+          );
+          break;
         default:
           unreachable(attribute);
       }
@@ -1562,7 +1581,8 @@ function hook<
     | "modelBinding"
     | "dynamic"
     | "teleport"
-    | "rawHtmlAttribute",
+    | "rawHtmlAttribute"
+    | "directiveAttribute",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];
   if (!found) {
@@ -1671,6 +1691,9 @@ function attributeName(attribute: Attribute): string {
     // Orders as Vue's `v-html`, which `vue/attributes-order` puts last, as content.
     case "RawHtml":
       return "v-html";
+    // Orders as Vue's custom directive, `v-focus-trap`, among the other directives.
+    case "Directive":
+      return `v-${directiveAttributeName(attribute.name)}`;
     default:
       return unreachable(attribute);
   }
@@ -1693,6 +1716,16 @@ function glue(lines: string[], next: string[]): string[] {
   if (rest === "") return [...lines.slice(0, -1), `${before}${closer}${start}`, ...more];
   const pad = first!.slice(0, first!.length - start.length);
   return [...lines.slice(0, -1), rest, `${pad}${closer}${start}`, ...more];
+}
+
+/**
+ * The kebab-case name a directive is applied by, without its `v-` (ADR-0099): `focus-trap` for
+ * `vFocusTrap`, a digit kept with the letters before it (`vStep2` is `step2`).
+ */
+export function directiveAttributeName(name: string): string {
+  return name
+    .slice(1)
+    .replace(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
 }
 
 /** The `never` default of an exhaustive switch. */

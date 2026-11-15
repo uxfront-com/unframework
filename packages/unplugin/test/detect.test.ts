@@ -17,11 +17,15 @@ import type { Project, TestServer } from "./fixtures.ts";
 const TOGGLE =
   'import { ref } from "@uxfront/unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n';
 
+const TRAP =
+  'import { defineDirective } from "@uxfront/unframework";\n\nexport const vFocusTrap = defineDirective<boolean>({\n  mounted(el) {\n    el.focus();\n  },\n});\n';
+
 let project: Project;
 beforeAll(() => {
   project = createProject({
     "Hello.uf.tsx": HELLO,
     "useToggle.uf.ts": TOGGLE,
+    "focusTrap.uf.ts": TRAP,
     "main.ts": 'import Hello from "./Hello.uf.tsx";\nexport default Hello;\n',
   });
 });
@@ -89,6 +93,22 @@ describe("target detection", () => {
       expect(codeOf(await client.pluginContainer.load(resolved!.id))).toContain("useToggle");
     });
   });
+
+  // A module of directives loads under the ids a module of composables does (ADR-0069, ADR-0099).
+  it.each<[TargetName, string, string]>([
+    ["svelte", "vite-plugin-svelte", "export function vFocusTrap("],
+    ["angular", "@analogjs/vite-plugin-angular", "export class VFocusTrap"],
+    ["vue", "vite:vue", "export const vFocusTrap: ObjectDirective"],
+  ])(
+    "loads a detected target's directives under that target's id: %s",
+    async (_target, name, code) => {
+      await withPlugins(undefined, [named(name)], async ({ client }) => {
+        const resolved = await client.pluginContainer.resolveId("./focusTrap.uf.ts", main());
+        expect(resolved?.id.startsWith(`${project.root}/focusTrap.uf.ts`)).toBe(true);
+        expect(codeOf(await client.pluginContainer.load(resolved!.id))).toContain(code);
+      });
+    },
+  );
 
   it("leaves the ids of every other target alone once the target is known", async () => {
     await withPlugins(undefined, [named("vite:vue")], async ({ client }) => {
