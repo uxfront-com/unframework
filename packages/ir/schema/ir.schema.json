@@ -90,6 +90,13 @@
             "$ref": "#/definitions/UfComposable"
           },
           "description": "The composables a `.uf.ts` module declares, in source order (ADR-0069): named exports `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module."
+        },
+        "directives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UfDirective"
+          },
+          "description": "The module's directives, in source order (ADR-0099): a `.uf.ts` module's exports `v[A-Z]…`, each compiled to one module per target, and a `.uf.tsx` module's top-level ones, which every output that applies one declares. Absent when it has none."
         }
       },
       "required": [
@@ -100,7 +107,7 @@
         "types"
       ],
       "additionalProperties": false,
-      "description": "One `.uf.tsx` module, or a `.uf.ts` module of composables (ADR-0069)."
+      "description": "One `.uf.tsx` module, or a `.uf.ts` module of composables and directives (ADR-0069, ADR-0099)."
     },
     "UfComponent": {
       "type": "object",
@@ -1840,6 +1847,9 @@
         },
         {
           "$ref": "#/definitions/RawHtmlAttribute"
+        },
+        {
+          "$ref": "#/definitions/DirectiveAttribute"
         }
       ],
       "description": "An attribute on an element."
@@ -2373,6 +2383,35 @@
       ],
       "additionalProperties": false,
       "description": "`innerHTML={markup}` (ADR-0097): the element's content is the markup a string holds, parsed by the browser, never escaped. Its element is an HTML element that holds content, and has no children of its own. A static `innerHTML=\"<b>Hi</b>\"` is a string literal's expression."
+    },
+    "DirectiveAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Directive"
+        },
+        "name": {
+          "type": "string",
+          "description": "The directive's local name: a top-level directive of the module, or a directive it imports from a `.uf.ts` module.",
+          "pattern": "^v[A-Z][A-Za-z0-9]*$"
+        },
+        "value": {
+          "$ref": "#/definitions/Expression",
+          "description": "The value the hooks receive."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`v-focus-trap={open.value}` (ADR-0099): applies a directive to the element. It renders nothing, and its hooks run in the browser only. A static `v-x=\"text\"` is a string literal's expression."
     },
     "RenderNode": {
       "anyOf": [
@@ -3079,6 +3118,13 @@
             "$ref": "#/definitions/ComposableApi"
           },
           "description": "The composables a `.uf.ts` module exports, in source order (ADR-0069). Absent when it has none."
+        },
+        "directives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DirectiveApi"
+          },
+          "description": "The directives a `.uf.ts` module exports, in source order (ADR-0099). Absent when it has none."
         }
       },
       "required": [
@@ -3463,6 +3509,24 @@
       "additionalProperties": false,
       "description": "A returned member of a composable's API: a ref of state, a derived value, a function or a constant, with its type."
     },
+    "DirectiveApi": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^v[A-Z][A-Za-z0-9]*$"
+        },
+        "element": {
+          "type": "string",
+          "description": "The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent."
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "What a caller reads of a directive (ADR-0099): its name, and the element's type it takes, which a target that holds the element in a typed ref of its own reads (Qwik's signal). A caller's output never depends on the hooks."
+    },
     "ImportedName": {
       "type": "object",
       "properties": {
@@ -3471,7 +3535,8 @@
           "enum": [
             "Component",
             "Key",
-            "Composable"
+            "Composable",
+            "Directive"
           ]
         },
         "imported": {
@@ -3493,7 +3558,7 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "A name an import binds: a component, an injection key, or a composable (ADR-0069)."
+      "description": "A name an import binds: a component, an injection key, a composable (ADR-0069) or a directive (ADR-0099)."
     },
     "InjectionKeyDeclaration": {
       "type": "object",
@@ -3911,6 +3976,106 @@
       ],
       "additionalProperties": false,
       "description": "A member of a composable's returned object: a shorthand property naming a binding."
+    },
+    "UfDirective": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The constant's name: `v` and an upper-case letter, in ASCII letters and digits. An element applies it as `v-` and the rest in kebab case (`v-focus-trap`).",
+          "pattern": "^v[A-Z][A-Za-z0-9]*$"
+        },
+        "exported": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for a `.uf.ts` module's export, which compiles to a module of its own."
+        },
+        "value": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The value's type, `T` in `defineDirective<T>`, as written."
+        },
+        "element": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent."
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DirectiveHook"
+          },
+          "description": "The hooks, in source order, each named once."
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Binding"
+          },
+          "description": "The module's constants and value imports the hooks read, in source order: `moduleConst` and `import` bindings, which its output declares and imports as a composable's does (ADR-0070)."
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names of the module's `types` its hooks name, in source order."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The `const` declaration, from `export` or `const` to its end."
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "hooks",
+        "bindings",
+        "types",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A directive (ADR-0099): `const vFocusTrap = defineDirective<boolean>({ mounted(el, value) {…} })`, a behaviour an element takes with `v-focus-trap={open.value}`. Its hooks run in the browser only, and read their parameters, their own names, the browser's globals and, in a `.uf.ts` module, the module's constants and value imports."
+    },
+    "DirectiveHook": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "mounted",
+            "updated",
+            "unmounted"
+          ],
+          "description": "When it runs: once the element is in the DOM, after a render that changes the value, and once it leaves."
+        },
+        "async": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for an `async` method, which nothing waits for."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Its parameters' names, as written and unannotated: the element, then the value and the previous value, as many as the hook takes."
+        },
+        "body": {
+          "$ref": "#/definitions/Code",
+          "description": "The method's block body, `{ … }`, with every name it reads resolved."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The method, from its name to the end of its body."
+        }
+      },
+      "required": [
+        "name",
+        "parameters",
+        "body",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A hook of a directive (ADR-0099): a method of the object `defineDirective` takes."
     }
   },
   "$id": "https://unframework.dev/schemas/ir-v1.json"

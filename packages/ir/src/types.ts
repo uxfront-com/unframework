@@ -27,7 +27,7 @@ export interface Span {
  */
 export type BindingId = string;
 
-/** One `.uf.tsx` module, or a `.uf.ts` module of composables (ADR-0069). */
+/** One `.uf.tsx` module, or a `.uf.ts` module of composables and directives (ADR-0069, ADR-0099). */
 export interface UfModule {
   /** The IR format version. Bumped, with a migration, on every breaking change. */
   irVersion: 1;
@@ -84,6 +84,61 @@ export interface UfModule {
    * `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module.
    */
   composables?: UfComposable[];
+  /**
+   * The module's directives, in source order (ADR-0099): a `.uf.ts` module's exports `v[A-Z]…`,
+   * each compiled to one module per target, and a `.uf.tsx` module's top-level ones, which every
+   * output that applies one declares. Absent when it has none.
+   */
+  directives?: UfDirective[];
+}
+
+/**
+ * A directive (ADR-0099): `const vFocusTrap = defineDirective<boolean>({ mounted(el, value) {…} })`,
+ * a behaviour an element takes with `v-focus-trap={open.value}`. Its hooks run in the browser
+ * only, and read their parameters, their own names, the browser's globals and, in a `.uf.ts`
+ * module, the module's constants and value imports.
+ */
+export interface UfDirective {
+  /**
+   * The constant's name: `v` and an upper-case letter, in ASCII letters and digits. An element
+   * applies it as `v-` and the rest in kebab case (`v-focus-trap`).
+   * @pattern ^v[A-Z][A-Za-z0-9]*$
+   */
+  name: string;
+  /** Set for a `.uf.ts` module's export, which compiles to a module of its own. */
+  exported?: true;
+  /** The value's type, `T` in `defineDirective<T>`, as written. */
+  value: TypeText;
+  /** The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent. */
+  element?: TypeText;
+  /** The hooks, in source order, each named once. */
+  hooks: DirectiveHook[];
+  /**
+   * The module's constants and value imports the hooks read, in source order: `moduleConst` and
+   * `import` bindings, which its output declares and imports as a composable's does (ADR-0070).
+   */
+  bindings: Binding[];
+  /** The names of the module's `types` its hooks name, in source order. */
+  types: string[];
+  /** The `const` declaration, from `export` or `const` to its end. */
+  span: Span;
+}
+
+/** A hook of a directive (ADR-0099): a method of the object `defineDirective` takes. */
+export interface DirectiveHook {
+  /** When it runs: once the element is in the DOM, after a render that changes the value, and once it leaves. */
+  name: "mounted" | "updated" | "unmounted";
+  /** Set for an `async` method, which nothing waits for. */
+  async?: true;
+  /**
+   * Its parameters' names, as written and unannotated: the element, then the value and the
+   * previous value, as many as the hook takes.
+   */
+  parameters: string[];
+  /** The method's block body, `{ … }`, with every name it reads resolved. */
+  body: Code;
+  /** The method, from its name to the end of its body. */
+  span: Span;
 }
 
 /** `import type { ButtonProps } from "./types"` (ADR-0067): types an output re-imports by name. */
@@ -293,9 +348,12 @@ export interface ModuleImport {
   span: Span;
 }
 
-/** A name an import binds: a component, an injection key, or a composable (ADR-0069). */
+/**
+ * A name an import binds: a component, an injection key, a composable (ADR-0069) or a directive
+ * (ADR-0099).
+ */
 export interface ImportedName {
-  kind: "Component" | "Key" | "Composable";
+  kind: "Component" | "Key" | "Composable" | "Directive";
   /** The imported name: `default` for a default import. */
   imported: string;
   /** The local name the module uses. */
@@ -341,6 +399,23 @@ export interface ModuleApi {
    * none.
    */
   composables?: ComposableApi[];
+  /**
+   * The directives a `.uf.ts` module exports, in source order (ADR-0099). Absent when it has
+   * none.
+   */
+  directives?: DirectiveApi[];
+}
+
+/**
+ * What a caller reads of a directive (ADR-0099): its name, and the element's type it takes, which
+ * a target that holds the element in a typed ref of its own reads (Qwik's signal). A caller's
+ * output never depends on the hooks.
+ */
+export interface DirectiveApi {
+  /** @pattern ^v[A-Z][A-Za-z0-9]*$ */
+  name: string;
+  /** The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent. */
+  element?: string;
 }
 
 /**
@@ -1552,7 +1627,8 @@ export type Attribute =
   | EventAttribute
   | RefAttribute
   | ModelAttribute
-  | RawHtmlAttribute;
+  | RawHtmlAttribute
+  | DirectiveAttribute;
 
 /**
  * An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child
@@ -1680,6 +1756,23 @@ export interface RefAttribute {
 export interface RawHtmlAttribute {
   kind: "RawHtml";
   /** An expression whose value is a string: the markup. */
+  value: Expression;
+  span: Span;
+}
+
+/**
+ * `v-focus-trap={open.value}` (ADR-0099): applies a directive to the element. It renders nothing,
+ * and its hooks run in the browser only. A static `v-x="text"` is a string literal's expression.
+ */
+export interface DirectiveAttribute {
+  kind: "Directive";
+  /**
+   * The directive's local name: a top-level directive of the module, or a directive it imports
+   * from a `.uf.ts` module.
+   * @pattern ^v[A-Z][A-Za-z0-9]*$
+   */
+  name: string;
+  /** The value the hooks receive. */
   value: Expression;
   span: Span;
 }
