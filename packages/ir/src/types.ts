@@ -551,12 +551,6 @@ export interface ApiSlot {
   props?: string;
   /** The names its props' type references, as `ApiMember.references`. */
   references?: string[];
-  /**
-   * Set where the component may render the slot more than once (ADR-0099): in a function, as a
-   * list's body or a fill is, or in another component's content, which that component may
-   * render so. A parent's directive in its fill is UF1002, as in a list's body.
-   */
-  repeated?: true;
 }
 
 /** An injection key of a child module's API. */

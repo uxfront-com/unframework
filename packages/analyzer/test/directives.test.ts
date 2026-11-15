@@ -118,6 +118,11 @@ describe("UF2037 invalid-directive", () => {
       "UF2037 defineDirective",
     ],
     [
+      "a call nested in a constant's value",
+      source("<p>a</p>", "", "const vC = { x: defineDirective<string>({ mounted() {} }) };\n"),
+      "UF2037 defineDirective",
+    ],
+    [
       "a name that is not `v` and a capital",
       source("<p>a</p>", "", "const mark = defineDirective<boolean>({ mounted() {} });\n"),
       "UF2037 mark",
@@ -289,7 +294,7 @@ describe("what is not supported yet (UF1002)", () => {
     expect(key?.message).toContain("`v-mark` directive is not supported");
   });
 
-  it("reports a directive in a scoped slot's fill, which a child may render once per row", () => {
+  it("reports a directive in a scoped slot's fill whose value reads the fill's own names", () => {
     const list = `export function List({ items }: { items: string[] }) {
   const slots = defineSlots<{ item?(props: { item: string }): Element }>();
   return <ul>{items.map((item) => <li key={item}>{slots.item?.({ item })}</li>)}</ul>;
@@ -300,62 +305,62 @@ describe("what is not supported yet (UF1002)", () => {
       "",
       `${MARK}${list}`,
     ).replace("{ defineDirective, ref }", "{ defineDirective, defineSlots, ref, type Element }");
-    expect(reported(text)).toContain("UF1002 v-mark");
+    expect(reported(text)).toEqual(["UF1002 item"]);
   });
 
+  // React and Qwik follow each element one use renders, so how often a child renders the
+  // content doesn't matter: only a list's body and a scoped fill's own names are UF1002.
   it.each([
     [
-      "a named slot it renders in a list",
+      "a scoped slot's fill whose value reads only the component's state",
+      "{{ item: ({ item }) => <span v-mark={label.value}>{item}</span> }}",
+      "item?(props: { item: string }): Element",
+      "<ul>{items.map((each) => <li key={each}>{slots.item?.({ item: each })}</li>)}</ul>",
+    ],
+    [
+      "a named slot the child renders in a list",
       '{{ item: () => <span v-mark="x">row</span> }}',
-      "item",
+      "item?(): Element",
       "<ul>{items.map((each) => <li key={each}>{slots.item?.()}</li>)}</ul>",
     ],
     [
-      "the default slot it renders in a list",
+      "the default slot the child renders twice",
       '<span v-mark="x">row</span>',
-      "default",
-      "<ul>{items.map((each) => <li key={each}>{slots.default?.()}</li>)}</ul>",
-    ],
-    [
-      "a slot it renders twice",
-      '<span v-mark="x">row</span>',
-      "default",
+      "default?(): Element",
       "<div><section>{slots.default?.()}</section><aside>{slots.default?.()}</aside></div>",
     ],
     [
-      "a slot it hands to a component that renders it in a list",
+      "a slot the child renders in either branch of a ternary",
       '<span v-mark="x">row</span>',
-      "default",
-      "<Rows>{slots.default?.()}</Rows>",
+      "default?(): Element",
+      "<div>{items.length ? <b>{slots.default?.()}</b> : <i>{slots.default?.()}</i>}</div>",
     ],
     [
-      "a slot it forwards to a component that renders it in a list",
+      "a slot the child forwards to a component in either branch of a ternary",
       '{{ item: () => <span v-mark="x">row</span> }}',
-      "item",
+      "item?(): Element",
+      "<div>{items.length ? <Rows>{{ default: slots.item }}</Rows> : <Box>{{ default: slots.item }}</Box>}</div>",
+    ],
+    [
+      "a slot the child forwards to a component that renders it in a list",
+      '{{ item: () => <span v-mark="x">row</span> }}',
+      "item?(): Element",
       "<Rows>{{ default: slots.item }}</Rows>",
     ],
-  ])("reports a directive in a fill of %s (UF1002)", (_name, fill, slot, body) => {
+    [
+      "a slot the child forwards through a `<component is>`",
+      '{{ item: () => <span v-mark="x">row</span> }}',
+      "item?(): Element",
+      "<component is={items.length ? Rows : Box}>{{ default: slots.item }}</component>",
+    ],
+  ])("accepts a directive in %s", (_name, fill, slot, body) => {
     const list = `export function List({ items }: { items: string[] }) {
-  const slots = defineSlots<{ ${slot}?(): Element }>();
+  const slots = defineSlots<{ ${slot} }>();
   return ${body};
 }
 function Rows() {
   const slots = defineSlots<{ default?(): Element }>();
   return <ul>{["a", "b"].map((each) => <li key={each}>{slots.default?.()}</li>)}</ul>;
-}
-`;
-    const text = source(`<List items={["a", "b"]}>${fill}</List>`, "", `${MARK}${list}`).replace(
-      "{ defineDirective, ref }",
-      "{ defineDirective, defineSlots, ref, type Element }",
-    );
-    expect(reported(text)).toContain("UF1002 v-mark");
-  });
-
-  it("accepts a directive in a fill the child renders once: behind its state or a presence check, in a `<Teleport>`, or through a component that renders it once", () => {
-    const child = `export function Disclosure() {
-  const slots = defineSlots<{ default?(): Element; title?(): Element; note?(): Element }>();
-  const open = ref(false);
-  return <div>{open.value ? <div>{slots.default?.()}</div> : null}<Portal to="body"><div>{slots.title ? <b>{slots.title?.()}</b> : null}</div></Portal><Box>{slots.note?.()}</Box></div>;
 }
 function Box() {
   const slots = defineSlots<{ default?(): Element }>();
@@ -363,13 +368,10 @@ function Box() {
 }
 `;
     const text = source(
-      '<Disclosure>{{ default: () => <p v-mark="a">a</p>, title: () => <p v-mark="b">b</p>, note: () => <p v-mark="c">c</p> }}</Disclosure>',
-      "",
-      `${MARK}${child}`,
-    ).replace(
-      "{ defineDirective, ref }",
-      "{ defineDirective, defineSlots, ref, Teleport as Portal, type Element }",
-    );
+      `<List items={["a", "b"]}>${fill}</List>`,
+      'const label = ref("a");\n  ',
+      `${MARK}${list}`,
+    ).replace("{ defineDirective, ref }", "{ defineDirective, defineSlots, ref, type Element }");
     expect(reported(text)).toEqual([]);
   });
 });

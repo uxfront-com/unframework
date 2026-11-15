@@ -141,7 +141,7 @@ const COMPOSABLE_MODULES = /^(?:composables|modules)\/|^semantics\/composable-/;
  * checks their Angular outputs.
  */
 const DIRECTIVE_MODULES =
-  /^directives\/(?:click-outside|focus-trap|order|shapes|shared|slotted|updated-value)$/;
+  /^directives\/(?:click-outside|focus-trap|order|repeated|shapes|shared|slotted|updated-value)$/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

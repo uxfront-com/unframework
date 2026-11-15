@@ -62,7 +62,7 @@ import type {
 } from "@unframework.dev/parser";
 
 import { componentApi, withReferences } from "./api.ts";
-import type { ApiContext, SlotForward } from "./api.ts";
+import type { ApiContext } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import { analyzeComposable, COMPOSABLE_FILE, findComposables } from "./composables.ts";
@@ -306,13 +306,8 @@ export function analyzeModule(
     authoring,
   };
   const apis = new Map<Candidate, ComponentApi>();
-  const forwards = new Map<ComponentApi, SlotForward[]>();
   for (const candidate of candidates) {
-    if (candidate.value) continue;
-    const forwarded: SlotForward[] = [];
-    const api = componentApi(candidate, apiContext, forwarded);
-    apis.set(candidate, api);
-    if (forwarded.length) forwards.set(api, forwarded);
+    if (!candidate.value) apis.set(candidate, componentApi(candidate, apiContext));
   }
   const keyMark = reporter.diagnostics.length;
   const keyDeclarations: InjectionKeyDeclaration[] = [];
@@ -382,7 +377,6 @@ export function analyzeModule(
     if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) continue;
     checkTopLevelStatement(statement, context);
   }
-  markForwardedRepeats(forwards, scopes, context.components);
   // Lowered once every import is known: imports are hoisted, so a constant may read one
   // written after it.
   const constants = lowerConstants(context.constants, {
@@ -390,6 +384,7 @@ export function analyzeModule(
     scopes,
     reporter,
     shared: context.shared,
+    authoring,
   });
   // The module's directives (ADR-0099), which read its constants and imports as hooks.
   const directives = lowerDirectives(context.directives, {
@@ -611,37 +606,6 @@ function reportDirectiveShadows(component: UfComponent, reporter: Reporter): boo
     if (applied.has(slot.name)) report(slot.name, "slot", slot.span);
   }
   return reported;
-}
-
-/**
- * Marks `repeated` each slot a component forwards into another component's content whose slot
- * repeats there (ADR-0099): that component an import, whose API its own module marked, or another
- * of this module's, which may forward it in turn, so it runs until nothing changes.
- */
-function markForwardedRepeats(
-  forwards: ReadonlyMap<ComponentApi, readonly SlotForward[]>,
-  scopes: Scopes,
-  components: ReadonlyMap<object, ComponentInfo | undefined>,
-): void {
-  for (let changed = true; changed;) {
-    changed = false;
-    for (const [api, list] of forwards) {
-      for (const forward of list) {
-        const index = api.slots.findIndex((slot) => slot.name === forward.slot);
-        const slot = api.slots[index];
-        if (!slot || slot.repeated) continue;
-        const resolution = scopes.resolve(forward.tag as unknown as AST.IdentifierReference);
-        if (resolution.kind !== "import" && resolution.kind !== "variable") continue;
-        const target = components.get(resolution.declaration);
-        const repeats = target?.api.slots.some(
-          (each) => each.name === forward.target && each.repeated === true,
-        );
-        if (!repeats) continue;
-        api.slots[index] = { ...slot, repeated: true };
-        changed = true;
-      }
-    }
-  }
 }
 
 /** The names of the directives a component's elements apply (ADR-0099). */
@@ -2171,7 +2135,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     passThrough: module.passThrough,
     shared: module.shared,
     directives: module.directives,
-    repeatedFills: { depth: 0 },
+    fillVariables: new Set(),
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {

@@ -591,12 +591,10 @@ export function lowerDirectiveAttribute(
     }
     return undefined;
   }
-  if (render.enclosing.length || render.repeatedFills.depth) {
+  if (render.enclosing.length) {
     reporter.unsupported(
       nameNode,
-      render.enclosing.length
-        ? `\`${authored}\` on an element in a list's body is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`
-        : `\`${authored}\` in a slot's fill that the child may render more than once, as a scoped slot's or one it renders in a list, is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`,
+      `\`${authored}\` on an element in a list's body is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`,
       {
         help: "Apply the directive to an element around the list, or render each row as a component of its own, whose element applies it.",
       },
@@ -681,6 +679,23 @@ export function lowerDirectiveAttribute(
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(value.expression, { ...render, directiveValue: true });
   if (!checked.clean || reporter.hasErrorsSince(mark)) return undefined;
+  // One helper call per use gives React and Qwik one value, where a scoped fill's variables may
+  // differ at each call, as a list's row does.
+  const variable = checked.expression.refs.flatMap((reference) =>
+    reference.kind === "Binding" && render.fillVariables.has(reference.binding)
+      ? [reference.binding.slice(0, reference.binding.lastIndexOf("@"))]
+      : [],
+  )[0];
+  if (variable !== undefined) {
+    reporter.unsupported(
+      value.expression,
+      `\`${authored}\`'s value reads \`${variable}\`, which the scoped slot's fill declares, and that is not supported yet: React and Qwik give a directive one value per use, where the child may call the fill with other props each time.`,
+      {
+        help: "Read only the component's own names in the value, or render each row as a component of its own, whose element applies the directive.",
+      },
+    );
+    return undefined;
+  }
   declareReads(info, render);
   return createDirectiveAttribute(name, checked.expression, span(item));
 }

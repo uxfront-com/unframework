@@ -317,7 +317,7 @@ export function analyzeComposable(
     shared: module.shared,
     // A composable renders no element, so it applies no directive (ADR-0099).
     directives: new Map(),
-    repeatedFills: { depth: 0 },
+    fillVariables: new Set(),
   };
   setup.lower(render);
   const returns =

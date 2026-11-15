@@ -33,11 +33,7 @@ export interface ApiCandidate {
 }
 
 /** Reads a component's API from its declarations (ADR-0055). */
-export function componentApi(
-  candidate: ApiCandidate,
-  context: ApiContext,
-  forwards?: SlotForward[],
-): ComponentApi {
+export function componentApi(candidate: ApiCandidate, context: ApiContext): ComponentApi {
   const { node } = candidate;
   const body = node.body?.type === "BlockStatement" ? node.body.body : [];
   const api: ComponentApi = {
@@ -58,7 +54,6 @@ export function componentApi(
   // A parent reads it to reject explicit type arguments and `<component is>` (UF6006).
   const parameters = node.typeParameters?.params ?? [];
   if (parameters.length) api.typeParameters = parameters.map((parameter) => parameter.name.name);
-  let slotsBinding: string | undefined;
   for (const statement of body) {
     const call = macroCall(statement, context);
     if (!call) continue;
@@ -69,12 +64,6 @@ export function componentApi(
         break;
       case "defineSlots":
         api.slots = type ? slotsOf(type, context) : [];
-        if (
-          statement.type === "VariableDeclaration" &&
-          statement.declarations[0]!.id.type === "Identifier"
-        ) {
-          slotsBinding = statement.declarations[0]!.id.name;
-        }
         break;
       case "defineExpose":
         api.exposes = exposedOf(call.call);
@@ -91,133 +80,10 @@ export function componentApi(
         break;
     }
   }
-  if (slotsBinding !== undefined && api.slots.length) {
-    const { repeated, forwards: found } = repeatedSlots(node, slotsBinding, context);
-    api.slots = api.slots.map((slot) =>
-      repeated.has(slot.name) ? { ...slot, repeated: true } : slot,
-    );
-    forwards?.push(...found);
-  }
   const root = rootOf(node, context);
   api.root = root.kind;
   if (root.tag !== undefined) api.rootTag = root.tag;
   return api;
-}
-
-/**
- * A slot a component renders once in another component's content, which that component renders
- * as its `target` slot (ADR-0099): the analyser marks it `repeated` where that slot is.
- */
-export interface SlotForward {
-  slot: string;
-  tag: AST.JSXIdentifier;
-  target: string;
-}
-
-/**
- * The slots a component may render more than once (ADR-0099): those it renders, `slots.item?.()`,
- * twice or more, or in a function of its body, as a list's body or a scoped fill is. A slot it
- * renders in another component's content, `<Panel>{slots.default?.()}</Panel>` or a slot object's
- * fill without props, is a forward, which repeats where the other component's slot does.
- * `<Teleport>` renders its content once, where the component does, and `<component is>`'s
- * candidates aren't known here, so its content counts as repeated. Read from the syntax.
- */
-function repeatedSlots(
-  node: ComponentFunction,
-  binding: string,
-  context: ApiContext,
-): { repeated: Set<string>; forwards: SlotForward[] } {
-  const repeated = new Set<string>();
-  const forwards: SlotForward[] = [];
-  const renders = new Map<string, number>();
-  type Target = { tag: AST.JSXIdentifier; slot: string } | undefined;
-  const slotOf = (value: AST.Node | null | undefined): string | undefined =>
-    value?.type === "MemberExpression" &&
-    !value.computed &&
-    value.object.type === "Identifier" &&
-    value.object.name === binding
-      ? value.property.name
-      : undefined;
-  // A slot a call or a fill renders: in a function it repeats, in a component's content it is
-  // that component's, and anywhere else it renders where the component does.
-  const rendered = (slot: string, inFunction: boolean, target: Target): void => {
-    renders.set(slot, (renders.get(slot) ?? 0) + 1);
-    if (inFunction) repeated.add(slot);
-    else if (target) forwards.push({ slot, tag: target.tag, target: target.slot });
-  };
-  const isTeleport = (tag: AST.JSXIdentifier): boolean => {
-    const resolution = context.scopes.resolve(tag as unknown as AST.IdentifierReference);
-    return (
-      resolution.kind === "import" && context.authoring.get(resolution.declaration) === "Teleport"
-    );
-  };
-  const visit = (value: unknown, inFunction: boolean, target: Target): void => {
-    if (Array.isArray(value)) {
-      for (const each of value) visit(each, inFunction, target);
-      return;
-    }
-    if (typeof value !== "object" || value === null || !("type" in value)) return;
-    const current = value as AST.Node;
-    if (current.type === "CallExpression") {
-      const slot = slotOf(current.callee);
-      if (slot !== undefined) rendered(slot, inFunction, target);
-    }
-    if (current.type === "JSXElement") {
-      visit(current.openingElement, inFunction, target);
-      const tag = current.openingElement.name;
-      if (tag.type === "JSXIdentifier" && tag.name === "component") {
-        visit(current.children, true, undefined);
-        return;
-      }
-      if (tag.type !== "JSXIdentifier" || !isComponentName(tag.name) || isTeleport(tag)) {
-        visit(current.children, inFunction || tag.type === "JSXMemberExpression", target);
-        return;
-      }
-      const content = current.children.filter(
-        (child) => child.type !== "JSXText" || child.value.trim() !== "",
-      );
-      const [only] = content;
-      if (
-        content.length === 1 &&
-        only!.type === "JSXExpressionContainer" &&
-        only!.expression.type === "ObjectExpression"
-      ) {
-        // A slot object: each member fills the named slot of its key.
-        for (const property of only!.expression.properties) {
-          if (property.type !== "Property" || property.key.type !== "Identifier") {
-            visit(property, true, undefined);
-            continue;
-          }
-          const slot = property.key.name;
-          const forwarded = slotOf(property.value);
-          if (forwarded !== undefined) {
-            rendered(forwarded, inFunction, { tag, slot });
-            continue;
-          }
-          const fill = property.value;
-          if (fill.type === "ArrowFunctionExpression" && fill.params.length === 0) {
-            visit(fill.body, inFunction, { tag, slot });
-          } else {
-            visit(fill, true, undefined);
-          }
-        }
-        return;
-      }
-      visit(current.children, inFunction, { tag, slot: "default" });
-      return;
-    }
-    const nested =
-      inFunction ||
-      current.type === "ArrowFunctionExpression" ||
-      current.type === "FunctionExpression" ||
-      current.type === "FunctionDeclaration";
-    for (const [key, child] of Object.entries(current)) {
-      if (key !== "type" && key !== "parent") visit(child, nested, nested ? undefined : target);
-    }
-  };
-  visit(node.body, false, undefined);
-  for (const [slot, count] of renders) if (count > 1) repeated.add(slot);
-  return { repeated, forwards: forwards.filter(({ slot }) => !repeated.has(slot)) };
 }
 
 /** The authoring macro a top-level statement calls, as a statement or a `const`'s value. */

@@ -222,11 +222,10 @@ export interface RenderContext {
    */
   readonly directiveValue?: true;
   /**
-   * How many fills a child may render more than once are around the node being lowered (ADR-0099):
-   * a scoped slot's, a render function a child may call once per row as a list's body is, and
-   * one of a slot the child's API marks `repeated`.
+   * The variables of the scoped slots' fills around the node being lowered (ADR-0099): a child
+   * may call the fill with other props each time, so a directive's value can't read them.
    */
-  readonly repeatedFills: { depth: number };
+  readonly fillVariables: Set<BindingId>;
   /** The values the module's imports of shared modules and its constants give (ADR-0070). */
   readonly shared: SharedValues;
   /** The directives an element may apply, by local name (ADR-0099). */

@@ -181,3 +181,51 @@ export default function A() {
     ).toEqual(["UF3024"]);
   });
 });
+
+describe("content a child renders any number of times", () => {
+  // QA's three files: a list two files away, which a wrapper forwards the slot to (ADR-0099).
+  const FILES: Record<string, string> = {
+    "/project/Panel.uf.tsx": `import { defineSlots, type Element } from "@uxfront/unframework";
+export default function Panel({ items }: { items: string[] }) {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <ul>{items.map((item) => <li key={item}>{slots.default?.()}</li>)}</ul>;
+}
+`,
+    "/project/Wrapper.uf.tsx": `import { defineSlots, type Element } from "@uxfront/unframework";
+import Panel from "./Panel.uf.tsx";
+export default function Wrapper() {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <Panel items={["a", "b"]}>{slots.default?.()}</Panel>;
+}
+`,
+  };
+  const USE = `import { defineDirective } from "@uxfront/unframework";
+import Wrapper from "./Wrapper.uf.tsx";
+
+const vX = defineDirective<string>({
+  mounted(el, value) {
+    el.title = value;
+  },
+});
+
+export default function Use() {
+  return (
+    <Wrapper>
+      <p v-x="a">Row</p>
+    </Wrapper>
+  );
+}
+`;
+
+  it.each(TARGET_NAMES)("compiles a directive in it with no diagnostic on %s", async (target) => {
+    const result = await compile(USE, {
+      filename: "Use.uf.tsx",
+      targets: [target],
+      resolve: createFileResolver({
+        root: "/project",
+        readFile: (path) => Promise.resolve(FILES[path]),
+      }),
+    });
+    expect(result.diagnostics.filter(({ severity }) => severity !== "info")).toEqual([]);
+  });
+});
