@@ -9,7 +9,7 @@ pnpm dev          # dev server on http://localhost:3000
 pnpm build        # nuxt generate → dist
 pnpm preview      # serve the generated site
 pnpm check-types  # type-check the .ts sources (.vue files aren't covered, see "The docs" for what else it skips)
-pnpm lighthouse   # Lighthouse CI against dist, fails below 100 in any category (add new routes to `url` in `lighthouserc.json`)
+pnpm lighthouse   # Lighthouse CI on the homepage and five docs pages, served from dist with wrangler dev (add new routes to `url` in `lighthouserc.json`)
 ```
 
 ## The homepage
@@ -65,6 +65,8 @@ How it shares the app with the homepage:
 - Docus adds Tailwind CSS and Nuxt UI to the entry stylesheet. On the homepage, `@uxfront/layer-ui` loads that stylesheet after first paint, and the `.ux-site` styles take precedence over it. Keep `app/app.css`, which Docus imports into the same stylesheet, off `.ux-site` too.
 - `@uxfront/layer-ui` turns off Nuxt's prefetch hints. Otherwise every page, the homepage included, would prefetch the docs' lazy chunks, which delays the homepage's fonts and stylesheet, and with them its LCP.
 - `app/app.config.ts` sets the theme colors and the GitHub, "Edit this page" and "Report an issue" links (with `rootDir: "apps/web"`, since the docs don't live at the repository root). `app/app.css` darkens Nuxt UI's light-mode primary to pass WCAG AA contrast. Nuxt UI's callouts (`::tip`, `::note`, …) still draw their text in fixed shades that fail it in light mode, so avoid them until they're themed.
+- `app/components/` replaces three components of the docs theme to name controls it leaves without one: the header's menu button (`IconMenuToggle.vue`), the button that opens the "Copy page" menu (`docs/DocsPageHeaderLinks.vue`, a copy of Docus's) and the sidebar's Framework select (`docs/DocsAsideLeftTop.vue`, a copy of `@uxfront/layer-docs`'s, whose `useId()` label changes its id as the page hydrates). Compare the copies with the originals when Docus or the layer is updated.
+- Code blocks use GitHub's light high-contrast and dark themes (`content.build.markdown.highlight.theme` in `nuxt.config.ts`), since the light tokens of Docus's Material themes fall below WCAG AA contrast.
 - Docus reads the site URL from `NUXT_SITE_URL`, which `nuxt.config.ts` defaults to the production origin, and generates `robots.txt` (with `@nuxtjs/robots`). Don't add a `public/robots.txt`: the module renames it to `_robots.txt` and merges it in.
 - The site is static, so Docus's MCP server is off (`mcp.enabled` in `nuxt.config.ts`), and so is its AI assistant, which only starts with an `AI_GATEWAY_API_KEY`.
 - The `cloudflare_pages_static` preset is set for production builds only: under it, `nuxt dev` serves Nuxt Content's browser database from a dump frozen at startup, so after a reload the docs would show stale content.
@@ -113,4 +115,8 @@ With Amplitude built in, the homepage keeps its 100 in Performance (no added Tot
 
 ## Keeping 100s
 
-The rules are the same as for [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web#keeping-100s-as-the-site-grows): no render-blocking resources, heavy code behind dynamic `import()`, images through `@nuxt/image`, and a title, meta description, canonical link and single `<h1>` on every page. `lighthouserc.json` covers the homepage only. The docs pages are Docus's theme as it ships, which scores below 100 in performance and accessibility, so they're not in it yet. The Lighthouse CI server also doesn't serve `/docs/<path>` from `<path>.html` the way Cloudflare does: measure them on `npx wrangler dev` instead.
+The rules are the same as for [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web#keeping-100s-as-the-site-grows): no render-blocking resources, heavy code behind dynamic `import()`, images through `@nuxt/image`, and a title, meta description, canonical link and single `<h1>` on every page.
+
+`lighthouserc.json` audits the homepage and five docs pages. Each fails below 0.95 in accessibility and best practices and below 1 in SEO, and the homepage also fails below 0.95 in performance. The docs pages are Docus's theme, which scores lower in performance on phones, so they don't assert it yet.
+
+Lighthouse CI serves `dist` with `wrangler dev`, which reads `wrangler.jsonc` and serves `/docs/<path>` from `<path>.html` and unknown paths with `404.html`, as Cloudflare does. Keep it: Lighthouse CI's own static server answers 404 for every docs page.

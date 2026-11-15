@@ -47,6 +47,15 @@ export default defineNuxtConfig({
       markdown: {
         highlight: {
           langs: ["tsx", "svelte", "astro"],
+          // Docus's Material themes draw light-mode tokens at 1.6:1 to 4:1 on the code
+          // background, below WCAG AA. These keep every token at 4.5:1 or more on it in
+          // both modes. Each key replaces Docus's: `default` applies before the colour
+          // mode is set, `light` and `dark` once it is.
+          theme: {
+            default: "github-light-high-contrast",
+            light: "github-light-high-contrast",
+            dark: "github-dark-default",
+          },
         },
       },
     },
