@@ -3,6 +3,10 @@ import {
   addTypeImports,
   componentTypes,
   defineTarget,
+  directiveSpecifier,
+  hookQueueCode,
+  importedDirectives,
+  ownDirectives,
   moduleHelperName,
   exportDeclaration,
   exportsOf,
@@ -26,6 +30,7 @@ import {
   moduleValueNames,
 } from "./composable.ts";
 import { SolidComposition } from "./composition.ts";
+import { emitDirective, factoryCode, QUEUE_HELPER } from "./directive.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import {
@@ -168,6 +173,13 @@ export const solid: Target = defineTarget({
       note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through an inline helper over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
     },
     // `<Portal>` wraps its content in a `<div>` (ADR-0098).
+    // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through an inline queue
+    // in Vue's order: Solid runs a parent's ref before its children's (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: QUEUE_HELPER,
+      note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+    },
     teleport: {
       support: "emulated",
       helper: TELEPORT_HELPER,
@@ -206,6 +218,10 @@ export const solid: Target = defineTarget({
     addTypeImports(component, context.module, imports, (name) => name);
     // The composables it calls, from their outputs (ADR-0069).
     addComposableImports(component, context.module, imports);
+    // The directives it applies from `.uf.ts` modules, from their outputs (ADR-0099).
+    for (const { specifier, imported, local } of importedDirectives(component, context.module)) {
+      imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+    }
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
     const props = solidProps(component, imports, placeholders, {
@@ -258,6 +274,19 @@ export const solid: Target = defineTarget({
       exportsOf(component.name, context.module.exports),
     );
     const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
+    // The module's own directives it applies, as ref factories, with the queue they run their
+    // hooks through (ADR-0099).
+    const own = ownDirectives(component, context.module);
+    const queue = own.length
+      ? { name: scope.claim(QUEUE_HELPER), list: scope.claim("queuedHooks") }
+      : undefined;
+    const directives = queue
+      ? own.map((directive) =>
+          placeholders.statements(
+            `${factoryCode(directive, { solid: (name) => code.solid(name), queue: queue.name })}\n`,
+          ),
+        )
+      : [];
     // What it reads of its module: its imported values and its constants (ADR-0070).
     const reads = moduleReads(component.name, context.module, imports, placeholders);
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
@@ -277,8 +306,12 @@ export const solid: Target = defineTarget({
               ...(props.events ? [props.events] : []),
               ...composition.types,
             ],
-            body: [...keys, ...reads.constants, ...setup.hoisted, ...statements],
-            helpers: [...helpers(), ...code.helpers()],
+            body: [...keys, ...reads.constants, ...directives, ...setup.hoisted, ...statements],
+            helpers: [
+              ...helpers(),
+              ...code.helpers(),
+              ...(queue ? [hookQueueCode(queue.name, queue.list)] : []),
+            ],
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],
             placeholders,
@@ -289,6 +322,7 @@ export const solid: Target = defineTarget({
     ];
   },
   emitComposable,
+  emitDirective,
 });
 
 /**

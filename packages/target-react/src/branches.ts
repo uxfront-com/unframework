@@ -164,6 +164,8 @@ function statefulElement(element: ElementNode): boolean {
         case "Event":
         case "Ref":
         case "Model":
+        // A directive keeps its state on the element (ADR-0099).
+        case "Directive":
           return true;
         case "Static":
         case "Bound":

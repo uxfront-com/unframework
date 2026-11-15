@@ -19,6 +19,7 @@ import type {
   ConstItem,
   ElementNode,
   EventAttribute,
+  Expression,
   FunctionCode,
   FunctionItem,
   ListenerAttribute,
@@ -926,6 +927,19 @@ function declaredQrls(
   for (const id of [...(component.exposes?.functions ?? []), ...returned]) {
     if (client(id)) need(id);
   }
+  // A directive's value is read in its visible task (./directive.ts), and a function it names is
+  // a QRL its hooks call (ADR-0099).
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind !== "Directive") continue;
+        for (const reference of attribute.value.refs) {
+          if (reference.kind === "Binding" && client(reference.binding)) need(reference.binding);
+        }
+      }
+    },
+  });
   for (const item of component.setup) {
     switch (item.kind) {
       // A task's calls run in place (./setup.ts `bodyStatements`).
@@ -1388,8 +1402,18 @@ function planFunctions(
   };
   // A fill's code runs as a `$` scope (./composition.ts `fillExpressions`): client code.
   const fills = fillExpressions(component);
+  // A directive's value is read in its visible task (./directive.ts): client code.
+  const directed = new Set<Expression>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Directive") directed.add(attribute.value);
+      }
+    },
+  });
   for (const { expression } of expressionsOf(component)) {
-    mark(fills.has(expression) ? client : render, expression.refs);
+    mark(fills.has(expression) || directed.has(expression) ? client : render, expression.refs);
   }
   for (const item of component.setup) {
     switch (item.kind) {

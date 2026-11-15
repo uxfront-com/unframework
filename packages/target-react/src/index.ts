@@ -3,9 +3,12 @@ import {
   bindingOf,
   componentTypes,
   defineTarget,
+  directiveSpecifier,
   exportDeclaration,
   exportsOf,
   expressionCode,
+  importedDirectives,
+  ownDirectives,
   js,
   jsxContext,
   jsxNode,
@@ -19,6 +22,8 @@ import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.d
 import type {
   Attribute,
   ClassAttribute,
+  Code,
+  DirectiveAttribute,
   ComponentAttribute,
   ComponentNode,
   DynamicNode,
@@ -45,6 +50,7 @@ import { ReactComposer } from "./compose.ts";
 import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
+import { emitDirective, hooksCode, useDirectiveHelper } from "./directive.ts";
 import {
   modelTextHelper,
   nextTickHelper,
@@ -177,6 +183,12 @@ export const react: Target = defineTarget({
     "keyed-identity": { support: "native" },
     // React 19's server render cannot portal, so the element is portalled once the component
     // has mounted (ADR-0098).
+    // An inline hook per element, whose ref callback and layout effect run the hooks (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: "useDirective",
+      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records the element and whose layout effect runs `mounted`, `updated` behind `Object.is`, and `unmounted`. Its calls are declared in a post-order of the elements, so a component's hooks run in Vue's order.",
+    },
     teleport: {
       support: "emulated",
       helper: "teleport",
@@ -185,6 +197,7 @@ export const react: Target = defineTarget({
   },
   // A custom hook (ADR-0069).
   emitComposable,
+  emitDirective,
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
@@ -212,6 +225,14 @@ export const react: Target = defineTarget({
     importChildren(plan);
     const setup = printSetup(plan, code);
     const hooks = hookCalls(plan).map((text) => ({ text, group: -1, compact: true }));
+    // Each directive's call, after the setup whose values it reads (ADR-0099).
+    // A setup function is passed as client code passes one, its stable variant where it has one,
+    // so its identity changes no more than on Vue.
+    const directives = [...plan.directiveRefs].map(([attribute, ref]) => ({
+      text: `const ${ref} = ${plan.helpers.directive!.hook}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(attribute.value, jsx)});`,
+      group: -150,
+      compact: true,
+    }));
     // The ref callbacks declared once, after the guards their listeners call.
     const callbacks = listeners
       .declarations()
@@ -234,6 +255,7 @@ export const react: Target = defineTarget({
     const body = [
       ...setup.body,
       ...hooks,
+      ...directives,
       ...callbacks,
       ...rendered,
       ...(handle ? [{ text: handle, group: -200, compact: false }] : []),
@@ -260,8 +282,13 @@ export const react: Target = defineTarget({
     // The module's values it reads, as the source declares and imports them (ADR-0070).
     const reads = moduleReads(component, module, plan.names);
     const constants = reads.constants.length ? [reads.constants.join("\n")] : [];
-    const hoisted = [...constants, ...keyDeclarations(plan), ...setup.module].map((statement) =>
-      jsx.placeholders.statements(`${statement}\n`),
+    // The module's own directives it applies, as their plain hooks (ADR-0099).
+    const ownHooks = ownDirectives(component, module).map((directive) => hooksCode(directive));
+    for (const { specifier, imported, local } of importedDirectives(component, module)) {
+      plan.names.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+    }
+    const hoisted = [...constants, ...ownHooks, ...keyDeclarations(plan), ...setup.module].map(
+      (statement) => jsx.placeholders.statements(`${statement}\n`),
     );
     // The types it imports, by name, from where the source imports them, a child's from its
     // output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
@@ -289,6 +316,7 @@ export const react: Target = defineTarget({
         : []),
       ...compositionHelpers(plan),
       ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
+      ...(plan.helpers.directive ? [useDirectiveHelper(plan.helpers.directive, plan.names)] : []),
     ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
@@ -321,6 +349,18 @@ export const react: Target = defineTarget({
     ];
   },
 });
+
+/** Whether a directive's value is a setup function by its name alone (ADR-0099). */
+function isFunctionValue(attribute: DirectiveAttribute, plan: ReactPlan): boolean {
+  const [ref, other] = attribute.value.refs;
+  return (
+    ref?.kind === "Binding" &&
+    other === undefined &&
+    plan.bindings.get(ref.binding)?.kind === "localFn" &&
+    ref.span.start === attribute.value.span.start &&
+    ref.span.end === attribute.value.span.end
+  );
+}
 
 /**
  * The types the output declares before the component, in source order: those its props reach,

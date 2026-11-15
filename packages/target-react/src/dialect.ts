@@ -159,6 +159,8 @@ export function reactDialect(
     conditional: (node, context) => keyedTernary(node, context, names.imports),
 
     eventAttribute: (attribute, element, context) => listeners.event(attribute, element, context),
+    directiveAttribute: (attribute, element, context) =>
+      listeners.directive(attribute, element, context),
 
     // React's raw HTML prop takes an object, which marks the markup as set on purpose (ADR-0097).
     rawHtmlAttribute: (attribute, _element, context) => [

@@ -4,7 +4,11 @@ import {
   codeNames,
   codeKind,
   defineTarget,
+  directiveSpecifier,
   exportDeclaration,
+  hookQueueCode,
+  importedDirectives,
+  ownDirectives,
   exportsOf,
   componentTypes,
   js,
@@ -40,6 +44,13 @@ import {
   tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
+import {
+  directiveClassCode,
+  directiveClassName,
+  directiveFile,
+  emitDirective,
+  QUEUE_HELPER,
+} from "./directive.ts";
 import {
   directiveCode,
   scopeDirectiveCode,
@@ -239,6 +250,12 @@ export const angular: Target = defineTarget({
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
     // Angular's CDK portal is no framework import (P7), so an inline directive moves the view.
+    // An attribute directive whose hooks run through an inline queue in Vue's order (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: QUEUE_HELPER,
+      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` runs its hooks. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+    },
     teleport: {
       support: "emulated",
       helper: "Teleport",
@@ -249,6 +266,7 @@ export const angular: Target = defineTarget({
     return [emitComponent(component, context)];
   },
   emitComposable,
+  emitDirective,
 });
 
 export default angular;
@@ -340,6 +358,21 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
   // A teleport mounts its view through an inline directive (ADR-0098).
   const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
+  // The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
+  // and its module's own as classes of this file, with the queue their hooks run through.
+  const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>
+    imports.add(
+      directiveSpecifier(specifier, directiveFile(imported)),
+      directiveClassName(imported),
+      { exact: true },
+    ),
+  );
+  const ownApplied = ownDirectives(component, module);
+  const queue = ownApplied.length ? imports.claim(QUEUE_HELPER) : undefined;
+  const ownClasses = ownApplied.map((directive) => ({
+    directive,
+    className: imports.claim(directiveClassName(directive.name)),
+  }));
   // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
   // attributes the component's styled parents put on its host.
   const roots = scopedRoots(component);
@@ -385,7 +418,9 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     scope ||
     models.textCaret ||
     trustedHtml ||
-    teleport
+    teleport ||
+    appliedImports.length ||
+    ownClasses.length
       ? [
           [
             "imports",
@@ -397,6 +432,8 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...(models.textCaret === undefined ? [] : [models.textCaret]),
                 ...(trustedHtml === undefined ? [] : [trustedHtml]),
                 ...(teleport === undefined ? [] : [teleport]),
+                ...appliedImports,
+                ...ownClasses.map(({ className: name }) => name),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -508,6 +545,10 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
     ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
     ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
+    ...(queue === undefined ? [] : [`${hookQueueCode(queue, imports.claim("queuedHooks"))}\n`]),
+    ...ownClasses.map(({ directive, className: name }) =>
+      directiveClassCode(directive, name, queue ?? QUEUE_HELPER, imports),
+    ),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });

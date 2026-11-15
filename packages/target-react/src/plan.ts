@@ -32,6 +32,8 @@ import type {
   Code,
   ComposableApi,
   ComposableMemberApi,
+  DirectiveAttribute,
+  Expression,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -50,6 +52,7 @@ import type {
 
 import { planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
+import { directiveRefBase, directivesInPostOrder } from "./directive.ts";
 import { elementInterface } from "./elements.ts";
 import { synthetic } from "./events.ts";
 
@@ -203,9 +206,16 @@ export interface ReactPlan {
      * that says the component has mounted, where the template holds a `<Teleport>` (ADR-0098).
      */
     teleport?: TeleportNames;
+    /** The inline hook a directive's element calls, and the hooks' type (ADR-0099). */
+    directive?: { hook: string; hooks: string };
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
+  /**
+   * The ref callback each directive's call returns (ADR-0099), in a post-order of the elements,
+   * the order the calls are declared in.
+   */
+  readonly directiveRefs: Map<DirectiveAttribute, string>;
 }
 
 /**
@@ -221,7 +231,13 @@ export function planComponent(
 ): ReactPlan {
   const bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
   const kindOf = (id: BindingId) => bindings.get(id)?.kind;
-  const returned = new Set(composable?.returns.map((member) => member.binding));
+  // A composable's returned functions, and a directive's value that is a setup function, which
+  // its hooks call (ADR-0099), run as client code a value passed out of the component runs.
+  const passedToDirectives = directiveFunctionValues(component);
+  const returned = new Set([
+    ...(composable?.returns.map((member) => member.binding) ?? []),
+    ...passedToDirectives.keys(),
+  ]);
   const summaries = new Map(
     [...summarize(component)].map(([id, summary]) => [
       id,
@@ -451,7 +467,9 @@ export function planComponent(
       }
     }
   };
-  for (const { expression } of expressionsOf(component)) renderCalls(expression);
+  for (const { expression } of expressionsOf(component)) {
+    if (![...passedToDirectives.values()].includes(expression)) renderCalls(expression);
+  }
   for (const { code, context } of codeOf(component)) if (context === "pure") renderCalls(code);
   for (const { function: fn, role } of functionsOf(component)) {
     if (role === "getter") renderCalls(fn.body);
@@ -703,6 +721,17 @@ export function planComponent(
     };
   }
 
+  // Each directive's call, in a post-order of the elements, so a component's hooks run in Vue's
+  // order (ADR-0099).
+  const directiveRefs = new Map(
+    directivesInPostOrder(component).map(
+      (attribute) => [attribute, names.claim(directiveRefBase(attribute.name))] as const,
+    ),
+  );
+  if (directiveRefs.size) {
+    helpers.directive = { hook: names.claim("useDirective"), hooks: names.claim("DirectiveHooks") };
+  }
+
   return {
     owner: component,
     ...(composable ? { composable } : {}),
@@ -730,7 +759,29 @@ export function planComponent(
     ...(nextTick ? { nextTick } : {}),
     helpers,
     composition,
+    directiveRefs,
   };
+}
+
+/** The setup functions directives take by name as their values, by binding (ADR-0099). */
+function directiveFunctionValues(component: UfComponent): Map<BindingId, Expression> {
+  const found = new Map<BindingId, Expression>();
+  const functions = new Set(
+    component.bindings.filter(({ kind }) => kind === "localFn").map(({ id }) => id),
+  );
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind !== "Directive") continue;
+        const [ref, other] = attribute.value.refs;
+        if (ref?.kind === "Binding" && other === undefined && functions.has(ref.binding)) {
+          found.set(ref.binding, attribute.value);
+        }
+      }
+    },
+  });
+  return found;
 }
 
 /**

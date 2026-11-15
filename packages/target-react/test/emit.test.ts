@@ -117,6 +117,7 @@ describe("react target", () => {
       "contextual-root",
       "default-slot",
       "default-slot-presence",
+      "directive",
       "dynamic-component",
       "element",
       "event-capture",

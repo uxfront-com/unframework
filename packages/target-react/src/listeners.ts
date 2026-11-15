@@ -14,6 +14,7 @@ import { handlerText, js, parameterText, parseStatementsSource } from "@unframew
 import type { JsxContext } from "@unframework.dev/codegen";
 import type {
   Attribute,
+  DirectiveAttribute,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -43,6 +44,8 @@ interface ElementListeners {
   callback?: string;
   /** Whether the callback puts a `<textarea>`'s caret after its text (`Caret`, ADR-0060). */
   caret?: boolean;
+  /** The ref callbacks of the directives it applies, in attribute order (ADR-0099). */
+  directives: string[];
 }
 
 /** Prints the listeners and template refs of a planned component's elements. */
@@ -96,7 +99,7 @@ export class ReactListeners {
     const listened = element.attributes.find((attribute) => attribute.kind === "Event");
     const planned = listened && this.#plan.listeners.get(listened)!.element;
     const native = planned && this.#plan.nativeElements.get(planned);
-    found = { props: new Map(), native: native?.groups ?? [] };
+    found = { props: new Map(), native: native?.groups ?? [], directives: [] };
     if (native?.callback) found.callback = native.callback;
     for (const attribute of element.attributes) {
       if (attribute.kind === "Ref") {
@@ -122,8 +125,32 @@ export class ReactListeners {
       const { callback } = this.#plan.carets.get(model)!;
       if (callback) found.callback ??= callback;
     }
+    // Each directive's ref callback, which the element's own callback calls where it has one.
+    for (const attribute of element.attributes) {
+      if (attribute.kind !== "Directive") continue;
+      found.directives.push(this.#plan.directiveRefs.get(attribute)!);
+      found.refAt ??= attribute;
+    }
     this.#elements.set(element, found);
     return found;
+  }
+
+  /**
+   * A directive's attribute (ADR-0099): `ref={focusTrapRef}`, the ref callback its call returns,
+   * or the element's own callback, which calls each directive's, where it has one.
+   */
+  directive(
+    attribute: DirectiveAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): JsxAttributeItem[] {
+    const listeners = this.#of(element);
+    if (listeners.refAt !== attribute) return [];
+    const [only, ...others] = listeners.directives;
+    if (!listeners.native.length && !listeners.caret && !listeners.ref && !others.length) {
+      return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(only!)))];
+    }
+    return [this.#refAttribute(listeners, context)];
   }
 
   /**
@@ -178,7 +205,7 @@ export class ReactListeners {
   ref(attribute: RefAttribute, element: ElementNode, context: JsxContext): JsxAttributeItem[] {
     const listeners = this.#of(element);
     if (listeners.refAt !== attribute) return [];
-    if (listeners.native.length === 0 && !listeners.caret) {
+    if (listeners.native.length === 0 && !listeners.caret && !listeners.directives.length) {
       const { name } = this.#plan.bindings.get(attribute.binding)!;
       const own = this.#plan.refInterfaces.get(attribute);
       if (own === templateRefType(this.#plan, attribute.binding)) {
@@ -347,7 +374,9 @@ export class ReactListeners {
       return `${listen}(${local.element}, "${first!.event}", ${handlers[index]!}${options})`;
     });
     const parameter = type ? `(${local.element}: ${type})` : `(${local.element})`;
-    if (!ref && !listeners.caret && calls.length === 1) return `${parameter} => ${calls[0]!}`;
+    if (!ref && !listeners.caret && !listeners.directives.length && calls.length === 1) {
+      return `${parameter} => ${calls[0]!}`;
+    }
     const lines = ref ? [`${ref}.current = ${local.element};`] : [];
     if (listeners.caret) {
       // Set as Vue's `vModelText` sets it, on a field that holds no text: the caret ends after the
@@ -357,7 +386,15 @@ export class ReactListeners {
         `if (${element}) {\nconst ${text} = ${element}.value;\n${element}.value = "";\n${element}.value = ${text};\n}`,
       );
     }
-    const stops = [ref ? `${ref}.current = null;` : undefined];
+    // Each directive's callback records the element, and forgets it once the element's own
+    // callback is cleaned up, as React would call a callback with no cleanup with `null`.
+    for (const directive of listeners.directives) {
+      lines.push(`${directive}(${local.element});`);
+    }
+    const stops = [
+      ref ? `${ref}.current = null;` : undefined,
+      ...listeners.directives.map((directive) => `${directive}(null);`),
+    ];
     if (calls.length === 1) {
       lines.push(`const ${local.stop} = ${calls[0]!};`);
       stops.push(`${local.stop}();`);

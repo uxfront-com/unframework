@@ -7,6 +7,37 @@
 
 /** Component name → source. */
 export const BEHAVIOUR_SOURCES: Readonly<Record<string, string>> = {
+  // A directive (ADR-0099), whose hooks report each call on the document: \`useDirective\`'s ref
+  // callback only records the element, and its layout effects run the hooks.
+  Marked: `import { defineDirective, ref } from "@uxfront/unframework";
+
+const vLog = defineDirective<number>({
+  mounted(el, value) {
+    document.dispatchEvent(new CustomEvent("uf-directive", { detail: "mounted " + String(value) }));
+  },
+  updated(el, value, oldValue) {
+    document.dispatchEvent(new CustomEvent("uf-directive", { detail: "updated " + String(value) + " " + String(oldValue) }));
+  },
+  unmounted(el) {
+    document.dispatchEvent(new CustomEvent("uf-directive", { detail: "unmounted" }));
+  },
+});
+
+export default function Marked() {
+  const shown = ref(true);
+  const level = ref(0);
+  const renders = ref(0);
+  return (
+    <section>
+      {shown.value ? <p v-log={level.value}>Level {level.value}</p> : null}
+      <p>Rendered {renders.value}</p>
+      <button type="button" onClick={() => level.value++}>Raise</button>
+      <button type="button" onClick={() => renders.value++}>Render</button>
+      <button type="button" onClick={() => (shown.value = !shown.value)}>Toggle</button>
+    </section>
+  );
+}
+`,
   // Listeners beside a \`v-model\` (ADR-0054): each runs after the model's write, and reads it.
   ModelReads: `import { defineEmits, ref } from "@uxfront/unframework";
 

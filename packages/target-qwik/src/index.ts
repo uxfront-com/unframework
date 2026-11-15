@@ -6,9 +6,11 @@ import {
   childImports,
   componentTypes,
   defineTarget,
+  directiveSpecifier,
   exportDeclaration,
   exportsOf,
   expressionCode,
+  importedDirectives,
   ImportSet,
   js,
   jsxAttributeValue,
@@ -22,6 +24,7 @@ import {
   keyOwner,
   mapCall,
   moduleHelperName,
+  ownDirectives,
   printComponentModule,
   printProgram,
   rewriteExpression,
@@ -86,6 +89,7 @@ import {
   withLocals,
   slotProp,
 } from "./composition.ts";
+import { DIRECTIVE_HELPER, emitDirective, hooksCode, QwikDirectives } from "./directive.ts";
 import { qwikEventProp } from "./events.ts";
 import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
@@ -239,6 +243,12 @@ export const qwik: Target = defineTarget({
     },
     "keyed-identity": { support: "native" },
     // Qwik has no portal (ADR-0098).
+    // A signal ref and a visible task per directive, through an inline helper (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: DIRECTIVE_HELPER,
+      note: "Qwik has no directive, so an element's directive is a signal ref and a document-ready visible task that tracks it and the value, and calls an inline helper, `runDirective`, which runs `mounted`, `updated` behind `Object.is`, and `unmounted` once a `MutationObserver` sees the element leave or the component unmounts, in Vue's order through an inline queue.",
+    },
     teleport: {
       support: "emulated",
       helper: "teleport",
@@ -324,6 +334,11 @@ export const qwik: Target = defineTarget({
     const plan = planSetup(component, module, names);
     const scope = scopePlan(component, names);
     const listeners = new Listeners(plan);
+    // Each directive's signal ref and visible task (ADR-0099).
+    const directives = new QwikDirectives(component, module, plan, names);
+    for (const { specifier, imported, local } of importedDirectives(component, module)) {
+      imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+    }
     // The dialect reads the namespaces of the tree it prints, which is the render tree with
     // Qwik's form of each `<title>`: they are filled in once that tree is built.
     const namespaces = new Map<ElementNode, Namespace>();
@@ -350,6 +365,7 @@ export const qwik: Target = defineTarget({
           scope,
         ),
         ...(teleport ? { teleport: teleportJsx(teleport) } : {}),
+        directiveAttribute: (attribute) => directives.attribute(attribute),
       },
       rules: plan.rules(),
     });
@@ -382,6 +398,7 @@ export const qwik: Target = defineTarget({
       sheet ? `${names.core("useStyles$")}(${sheet.local});` : "",
       setup.body,
       teleport ? teleportSetup(teleport, names) : "",
+      directives.setup(names),
       exposeStatement(plan),
       locals.statements.join("\n"),
     ]
@@ -430,12 +447,17 @@ export const qwik: Target = defineTarget({
     const constants = reads.constants.length
       ? [jsx.placeholders.statements(`${reads.constants.join("\n")}\n`)]
       : [];
+    // The module's own directives it applies, as their plain hooks (ADR-0099).
+    const ownHooks = ownDirectives(component, module).map((directive) =>
+      jsx.placeholders.statements(`${hooksCode(directive)}\n`),
+    );
     const keys = keyDeclarations(component, module, plan);
     const exported = exportsOf(component.name, module.exports);
     // A component that renders itself refers to its own `const` (ADR-0053).
     const helperCode = helpers(plan, listeners);
     if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
     if (teleport) helperCode.push(teleportHelper(teleport));
+    helperCode.push(...directives.helpers());
     // The sheet's import comes after the other imports, as on the other targets: an `?inline`
     // import loads nothing, and `useStyles$` attaches the sheet as the component first renders
     // (`sheet-order`). Collected last: the types and the helpers import what they name.
@@ -471,6 +493,7 @@ export const qwik: Target = defineTarget({
             ],
             body: [
               ...constants,
+              ...ownHooks,
               ...(keys ? [jsx.placeholders.statements(`${keys}\n`)] : []),
               ...hoisted,
               ...declared,
@@ -484,6 +507,7 @@ export const qwik: Target = defineTarget({
     ];
   },
   emitComposable,
+  emitDirective,
 });
 
 export default qwik;

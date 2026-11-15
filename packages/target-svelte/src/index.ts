@@ -3,6 +3,7 @@ import type { MarkupDialect } from "@unframework.dev/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type { ElementNode, UfComponent, UfComposable } from "@unframework.dev/ir";
 
+import { emitDirective } from "./directive.ts";
 import { composableModule, instanceScript } from "./script.ts";
 
 /**
@@ -96,6 +97,8 @@ export const svelte: Target = defineTarget({
       helper: "teleport",
       note: "Svelte has no portal, so a `<Teleport>`'s element renders once the component has mounted, in an `{#if}` of its own, and an attachment, `teleport`, moves it into `to` and removes it on teardown (ADR-0098).",
     },
+    // An attachment, `{@attach vFocusTrap(() => open)}` (ADR-0099).
+    directive: { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):
@@ -169,6 +172,7 @@ export const svelte: Target = defineTarget({
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },
+  emitDirective,
   // A composable is a `.svelte.ts` module, whose runes vite-plugin-svelte compiles (ADR-0069).
   emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
     return [

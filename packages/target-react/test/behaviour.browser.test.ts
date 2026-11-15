@@ -424,6 +424,47 @@ describe("react output in the browser", () => {
     expect(logged).toEqual([]);
   });
 
+  describe("a directive", () => {
+    /** The calls `Marked`'s directive reports, in order. */
+    const calls: string[] = [];
+    const record = (event: Event) => void calls.push(String((event as CustomEvent).detail));
+    beforeEach(() => {
+      calls.length = 0;
+      document.addEventListener("uf-directive", record);
+    });
+    afterEach(() => document.removeEventListener("uf-directive", record));
+
+    it("mounts once, updates on a new value only, and unmounts when its element goes", async () => {
+      await start(await component("Marked"), []);
+      expect(calls).toEqual(["mounted 0"]);
+      await act(() => userEvent.click(button("Render")));
+      expect(calls).toEqual(["mounted 0"]);
+      await act(() => userEvent.click(button("Raise")));
+      expect(calls).toEqual(["mounted 0", "updated 1 0"]);
+      await act(() => userEvent.click(button("Toggle")));
+      expect(calls.at(-1)).toBe("unmounted");
+      await act(() => userEvent.click(button("Toggle")));
+      expect(calls.at(-1)).toBe("mounted 1");
+      await mounted!.unmount();
+      mounted = undefined;
+      expect(calls.at(-1)).toBe("unmounted");
+      expect(logged).toEqual([]);
+    });
+
+    it("under StrictMode, mounts, unmounts and mounts again, and ends unmounted", async () => {
+      await startStrict(await component("Marked"), []);
+      // StrictMode attaches the ref and runs the layout effects twice, as onMounted's (ADR-0048).
+      expect(calls).toEqual(["mounted 0", "unmounted", "mounted 0"]);
+      await act(() => userEvent.click(button("Raise")));
+      expect(calls.at(-1)).toBe("updated 1 0");
+      await mounted!.unmount();
+      mounted = undefined;
+      const count = (prefix: string) => calls.filter((call) => call.startsWith(prefix)).length;
+      expect(count("mounted")).toBe(count("unmounted"));
+      expect(logged).toEqual([]);
+    });
+  });
+
   describe("under StrictMode", () => {
     it("keeps an onMounted timer running, and stops it at unmount", async () => {
       await startStrict(await component("Ticker"), ["mounted", "tick", "unmounted"]);
