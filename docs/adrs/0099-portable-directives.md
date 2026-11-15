@@ -108,15 +108,15 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
 
 ### The lowering
 
-| Target  | Cell                       | Lowering                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vue     | native                     | `<div v-focus-trap="open">`, an `ObjectDirective<E, T>` imported in `<script setup>`, or declared there for an in-file one. Its hooks read the value from the binding, `mounted(el, { value })`, and `updated` returns early on the same value. No `created`, which turns off the hydration attribute check, and no `getSSRProps`.                                                              |
-| React   | emulated, `useDirective`   | `const focusTrapRef = useDirective(vFocusTrap, () => open)` at the component's top level, and `ref={focusTrapRef}`, or a call in the element's own ref callback. The module exports the plain hooks, which run through `queueHook`. The calls are declared in a post-order of the elements.                                                                                                     |
-| Svelte  | native                     | `<div {@attach vFocusTrap(() => open)}>`, a factory in `vFocusTrap.svelte.ts` whose attachment runs `mounted` untracked, an `$effect` that reads the value for `updated`, and returns its teardown for `unmounted`.                                                                                                                                                                             |
-| Solid   | emulated, `queueHook`      | `ref={vFocusTrap(() => open())}`, Solid 2's own form, a factory that registers `onMount`, an effect for `updated` and `onCleanup` while its element renders, composed into the element's one ref callback where it has one.                                                                                                                                                                     |
-| Angular | emulated, `queueHook`      | `<div [vFocusTrap]="open()">`, a standalone `VFocusTrap` class in `v-focus-trap.ts`, selected by its input, whose `afterRenderEffect` runs `mounted` and `updated` and whose `DestroyRef` runs `unmounted` once `mounted` did.                                                                                                                                                                  |
-| Qwik    | emulated, `runDirective`   | A signal ref on the element, its template ref's where it has one, and a `document-ready` visible task per directive that tracks the element and the value and calls the inline `runDirective`. A `MutationObserver` sees the element leave, and the task's cleanup covers the component's own unmount. The module exports the plain hooks, which the optimizer imports into the task's segment. |
-| Astro   | unsupported, UF4001 (info) | Prints nothing for the attribute and imports nothing for it: a static page never runs a hook.                                                                                                                                                                                                                                                                                                   |
+| Target  | Cell                       | Lowering                                                                                                                                                                                                                                                                                                                                             |
+| ------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vue     | native                     | `<div v-focus-trap="open">`, an `ObjectDirective<E, T>` imported in `<script setup>`, or declared there for an in-file one. Its hooks read the value from the binding, `mounted(el, { value })`, and `updated` returns early on the same value. No `created`, which turns off the hydration attribute check, and no `getSSRProps`.                   |
+| React   | emulated, `useDirective`   | `const focusTrapRef = useDirective(vFocusTrap, () => open)` at the component's top level, and `ref={focusTrapRef}`, or a call in the element's own ref callback. The module exports the plain hooks, which run through `queueHook`. The calls are declared in a post-order of the elements.                                                          |
+| Svelte  | native                     | `<div {@attach vFocusTrap(() => open)}>`, a factory in `vFocusTrap.svelte.ts` whose attachment runs `mounted` untracked, an `$effect` that reads the value for `updated`, and returns its teardown for `unmounted`.                                                                                                                                  |
+| Solid   | emulated, `queueHook`      | `ref={vFocusTrap(() => open())}`, Solid 2's own form, a factory that registers `onMount`, an effect for `updated` and `onCleanup` while its element renders, composed into the element's one ref callback where it has one.                                                                                                                          |
+| Angular | emulated, `runDirective`   | `<div [vFocusTrap]="open()">`, a standalone `VFocusTrap` class in `v-focus-trap.ts`, selected by its input, whose `afterRenderEffect` passes the value to the inline `runDirective` and whose `DestroyRef` stops it.                                                                                                                                 |
+| Qwik    | emulated, `runDirective`   | A signal ref on the element, its template ref's where it has one, and a `document-ready` visible task per directive that tracks the element and the value and calls the inline `runDirective`. The task's cleanup stops it, at the component's own unmount. The module exports the plain hooks, which the optimizer imports into the task's segment. |
+| Astro   | unsupported, UF4001 (info) | Prints nothing for the attribute and imports nothing for it: a static page never runs a hook.                                                                                                                                                                                                                                                        |
 
 `queueHook` is one inline helper: hooks one turn queues run in a microtask, sorted descendant
 before ancestor and then by `compareDocumentPosition`. A detached subtree keeps its shape, so an
@@ -155,8 +155,19 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
 - **Qwik's task tracks the value itself**, `track(() => open.value)`, rather than a
   `useComputed$` of it: one name fewer, and the same reads.
 - **Svelte's factory takes `getValue`**, not `value`, which a hook's own parameter would shadow.
-- **Angular needs no platform check.** `afterRenderEffect` never runs on the server, so
-  `DestroyRef` unmounts only an element that `mounted` saw.
+- **Angular and Qwik follow the element's place in the document.** Angular creates a component's
+  projected content with the component, before a child puts it in the document, and keeps it
+  while the child takes it out and back, with no lifecycle event either way. Qwik sets a signal
+  ref when it creates the element, which may be before a slot projects it, and runs no task when
+  a conditional removes it. So both call one inline helper, `runDirective`, with the element and
+  the value, and it runs `mounted` once a `MutationObserver` sees the element in the document,
+  `updated` for a value that changed while it is, and `unmounted` once it leaves. The stop it
+  returns ends the watch when the element's owner goes. `afterRenderEffect` and Qwik's visible
+  task never run on the server, so neither needs a platform check. The `directives/slotted` case
+  checks content a child shows and hides by its own state. On Qwik, an element whose value reads
+  what a condition narrows is run only while it is in the document, since its value can't be read
+  once the condition fails: such an element in projected content mounts only if it is in the
+  document when the task first runs.
 
 A directive on an element in a list's body is UF1002 for now (Alex's answer to this plan's second
 decision). React gives a directive's state to its component, which renders the list once, so a row
@@ -181,7 +192,8 @@ would need a helper component of its own, and Qwik gives a row no signal of its 
 - P9's Solid 2 variant keeps the ref factory, with `onSettled` for `onMount`, and must do nothing
   on the server, where Solid 2 evaluates a ref.
 - The cases are `directives/click-outside`, `directives/focus-trap`, `directives/updated-value`,
-  `directives/shared`, `directives/order`, `directives/shapes`, `diagnostics/invalid-directive`,
+  `directives/shared`, `directives/order`, `directives/shapes`, `directives/slotted`,
+  `diagnostics/invalid-directive`,
   `diagnostics/unknown-directive` and `diagnostics/invalid-directive-use`.
 
 ## Alternatives considered
