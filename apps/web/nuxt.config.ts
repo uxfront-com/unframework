@@ -33,6 +33,13 @@ export default defineNuxtConfig({
     name: "Unframework",
   },
 
+  // The summary under llms.txt's title (nuxt-llms writes it as a blockquote, as llmstxt.org asks).
+  // Docus falls back to the package description, which apps/web doesn't have.
+  llms: {
+    description:
+      "Unframework is the compiler that speaks seven UI frameworks: write a component once, and it compiles to native React, Vue, Svelte, Angular, Solid, Qwik and Astro code, and to whichever faster framework comes next, with no migration.",
+  },
+
   // The docs show the source and each framework's output. Docus highlights `vue`, `ts` and a
   // few others; these join its list (layers concatenate arrays), or their blocks show as plain text.
   content: {

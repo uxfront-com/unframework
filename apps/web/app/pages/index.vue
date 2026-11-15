@@ -7,9 +7,9 @@ import { DOCS_URL, GITHUB_URL, UXFRONT_URL } from "~/data/site";
 import { spotlight } from "~/lib/formations";
 
 useUxHead({
-  title: "Unframework - The compiler that speaks seven UI frameworks",
+  title: "Unframework - Compile UI components to React, Vue and more",
   description:
-    "Write UI components once and compile them to native React, Vue, Svelte, Angular, Solid, Qwik and Astro. When a faster framework ships, you add a target, not a migration.",
+    "Write UI components once and compile them to native React, Vue, Svelte, Angular, Solid, Qwik and Astro. A new framework is a new target, not a migration.",
   siteName: "Unframework",
   image: {
     path: "/og.jpg",
