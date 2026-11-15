@@ -1,5 +1,12 @@
 # @unframework.dev/unplugin
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [fc310cc]
+  - @unframework.dev/compiler@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
