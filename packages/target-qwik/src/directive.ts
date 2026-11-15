@@ -12,8 +12,8 @@
 import {
   dependencyImports,
   directiveDependencies,
-  directiveElement,
   directiveHooksObject,
+  assertedValue,
   hookQueueCode,
   js,
   rewriteCode,
@@ -21,12 +21,10 @@ import {
 import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
 import type {
-  Code,
   DirectiveAttribute,
   ElementNode,
   UfComponent,
   UfDirective,
-  UfModule,
 } from "@unframework.dev/ir";
 
 import type { OutputNames, SetupPlan } from "./plan.ts";
@@ -52,20 +50,6 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
   return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
 }
 
-/** The element's type a directive the module declares or imports takes. */
-function elementType(name: string, module: UfModule): string {
-  const own = module.directives?.find(
-    (directive) => directive.name === name && !directive.exported,
-  );
-  if (own) return directiveElement(own);
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find((each) => each.kind === "Directive" && each.local === name);
-    const api = imported && entry.api.directives?.find((each) => each.name === imported.imported);
-    if (api) return api.element ?? "HTMLElement";
-  }
-  return "HTMLElement";
-}
-
 /** The signal refs and visible tasks of a component's directives, and their helpers. */
 export class QwikDirectives {
   readonly #component: UfComponent;
@@ -78,10 +62,10 @@ export class QwikDirectives {
    */
   readonly #refs = new Map<DirectiveAttribute, string>();
   readonly #helper:
-    | { run: string; hooks: string; queue: string; list: string; values: string }
+    | { run: string; hooks: string; element: string; queue: string; values: string }
     | undefined;
 
-  constructor(component: UfComponent, module: UfModule, plan: SetupPlan, names: OutputNames) {
+  constructor(component: UfComponent, plan: SetupPlan, names: OutputNames) {
     this.#component = component;
     this.#plan = plan;
     walk(component.render, {
@@ -92,7 +76,8 @@ export class QwikDirectives {
         );
         if (!first) return;
         const ref = node.attributes.find((attribute) => attribute.kind === "Ref");
-        const type = elementType(first.name, module);
+        // The element's type the directive's own hooks take, which its module names.
+        const type = `DirectiveElement<typeof ${first.name}>`;
         const own = ref?.kind !== "Ref";
         this.#signals.set(
           node,
@@ -115,8 +100,8 @@ export class QwikDirectives {
       ? {
           run: names.fresh(DIRECTIVE_HELPER),
           hooks: names.fresh("DirectiveHooks"),
+          element: names.fresh("DirectiveElement"),
           queue: names.fresh("queueHook"),
-          list: names.fresh("queuedHooks"),
           values: names.fresh("directiveStates"),
         }
       : undefined;
@@ -136,12 +121,14 @@ export class QwikDirectives {
     const statements: string[] = [];
     for (const [element, signal] of this.#signals) {
       if (signal.own) {
-        statements.push(`const ${signal.name} = ${names.core("useSignal")}<${signal.type}>();`);
+        const type = signal.type.replace("DirectiveElement", helper.element);
+        statements.push(`const ${signal.name} = ${names.core("useSignal")}<${type}>();`);
       }
       for (const attribute of element.attributes) {
         if (attribute.kind !== "Directive") continue;
+        // Read outside the branches around the element, so what they narrow is asserted.
         const code = rewriteCode(
-          attribute.value as Code,
+          assertedValue(attribute.value),
           this.#component,
           this.#plan.rules(),
           "client",
@@ -152,7 +139,8 @@ export class QwikDirectives {
             `${names.core("useVisibleTask$")}(`,
             "  ({ track, cleanup }) => {",
             `    const element = track(${signal.name});`,
-            `    if (element) ${helper.run}(${attribute.name}, element, ${value}, cleanup);`,
+            // An element Qwik removed stays in its signal, with what narrowed its value gone.
+            `    if (element?.isConnected) ${helper.run}(${attribute.name}, element, ${value}, cleanup);`,
             "  },",
             '  { strategy: "document-ready" },',
             ");",
@@ -167,13 +155,13 @@ export class QwikDirectives {
   helpers(): string[] {
     const helper = this.#helper;
     if (!helper) return [];
-    const { run, hooks, queue, list, values } = helper;
+    const { run, hooks, element, queue, values } = helper;
     return [
       `/** The hooks of a directive, which \`${run}\` runs on its element. */
 interface ${hooks}<E extends Element, T> {
-  mounted?(el: E, value: T): void;
-  updated?(el: E, value: T, oldValue: T): void;
-  unmounted?(el: E): void;
+  mounted?(el: E, value: T): unknown;
+  updated?(el: E, value: T, oldValue: T): unknown;
+  unmounted?(el: E): unknown;
 }`,
       `/** The value each directive's element last received, and the watch on its removal. */
 const ${values} = new WeakMap<object, WeakMap<Element, { value: unknown; observer: MutationObserver }>>();`,
@@ -220,7 +208,9 @@ function ${run}<E extends Element, T>(
     });
   });
 }`,
-      hookQueueCode(queue, list),
+      `/** The element a directive's hooks take. */
+type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : never;`,
+      hookQueueCode(queue),
     ];
   }
 }

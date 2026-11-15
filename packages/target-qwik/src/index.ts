@@ -335,7 +335,7 @@ export const qwik: Target = defineTarget({
     const scope = scopePlan(component, names);
     const listeners = new Listeners(plan);
     // Each directive's signal ref and visible task (ADR-0099).
-    const directives = new QwikDirectives(component, module, plan, names);
+    const directives = new QwikDirectives(component, plan, names);
     for (const { specifier, imported, local } of importedDirectives(component, module)) {
       imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
     }

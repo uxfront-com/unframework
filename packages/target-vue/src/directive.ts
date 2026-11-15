@@ -8,7 +8,9 @@ import {
   dependencyImports,
   directiveDependencies,
   directiveElement,
+  codeNames,
   directiveSpecifier,
+  hookParameters,
   importedDirectives,
 } from "@unframework.dev/codegen";
 import type { EmitContext, ImportSet, OutputFile } from "@unframework.dev/codegen";
@@ -21,26 +23,33 @@ export function directiveCode(directive: UfDirective, type: string, exported = f
 }
 
 /**
- * A hook as Vue's: the element, then the binding, destructured to the names the author gives
- * the value and the previous one. `updated` names both, for its early return.
+ * A hook as Vue's: the element, then the binding, destructured to the names the author gives the
+ * value and the previous one, as many as the hook reads. `updated` names both, for its early
+ * return, under names no other name of the hook's takes.
  */
 function hookCode(hook: DirectiveHook): string {
-  const [element, value, previous] = hook.parameters;
+  const [element, value, previous] = hookParameters(hook);
   const head = `${hook.async ? "async " : ""}${hook.name}`;
-  const named = (name: string, as: string | undefined) =>
-    as === undefined || as === name ? name : `${name}: ${as}`;
+  const taken = codeNames(hook.body.code, "statements");
+  const fresh = (base: string) => {
+    let name = base;
+    for (let index = 1; taken.has(name); index++) name = `${base}_${index}`;
+    taken.add(name);
+    return name;
+  };
+  const named = (name: string, as: string) => (as === name ? name : `${name}: ${as}`);
   if (hook.name !== "updated") {
     const parameters = [
-      ...(element === undefined && value === undefined ? [] : [element ?? "_el"]),
+      ...(element === undefined ? [] : [element]),
       ...(value === undefined ? [] : [`{ ${named("value", value)} }`]),
     ];
     return `${head}(${parameters.join(", ")}) ${hook.body.code}`;
   }
-  const valueName = value ?? "value";
-  const previousName = previous ?? "oldValue";
+  const valueName = value ?? fresh("value");
+  const previousName = previous ?? fresh("oldValue");
   const binding = `{ ${named("value", valueName)}, ${named("oldValue", previousName)} }`;
   const body = `{\n    if (Object.is(${valueName}, ${previousName})) return;${hook.body.code.slice(1)}`;
-  return `${head}(${element ?? "_el"}, ${binding}) ${body}`;
+  return `${head}(${element ?? fresh("_el")}, ${binding}) ${body}`;
 }
 
 /**

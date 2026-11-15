@@ -167,6 +167,8 @@ export const svelte: Target = defineTarget({
     const markup = printMarkup(render, dialect, {
       component: script.component,
       module: context.module,
+      // An attachment reads its value through a getter, a closure (ADR-0099).
+      closureDirectiveValues: true,
       ...options,
     });
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];

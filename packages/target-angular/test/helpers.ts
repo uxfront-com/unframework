@@ -140,7 +140,8 @@ const COMPOSABLE_MODULES = /^(?:composables|modules)\/|^semantics\/composable-/;
  * (ADR-0099), which `compile()` resolves and `lower` does not. The corpus's toolchain project
  * checks their Angular outputs.
  */
-const DIRECTIVE_MODULES = /^directives\/(?:click-outside|focus-trap|shared|updated-value)$/;
+const DIRECTIVE_MODULES =
+  /^directives\/(?:click-outside|focus-trap|order|shapes|shared|updated-value)$/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

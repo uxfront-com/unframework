@@ -37,6 +37,7 @@ import type {
   UfModule,
 } from "@unframework.dev/ir";
 
+import { assertedValue } from "../directives.ts";
 import { functionSource, handlerText } from "../functions.ts";
 import { parseExpression } from "../parse.ts";
 import { referencedBindings } from "../references.ts";
@@ -458,6 +459,12 @@ export interface MarkupOptions {
    * spells.
    */
   component?: UfComponent;
+  /**
+   * Whether the language reads a directive's value in a closure, where TypeScript no longer
+   * narrows what a conditional around the element narrows: the value's narrowed paths are then
+   * asserted present (ADR-0099).
+   */
+  closureDirectiveValues?: boolean;
   /**
    * The component's module, whose imports give a child's scoped styles: without it, the content
    * filled into a styled child carries no `-s` attribute (ADR-0063). The component's own
@@ -1284,11 +1291,17 @@ export function printMarkup(
             printed.push(...hook(of, "rawHtmlAttribute")(code(attribute.value), context));
           }
           break;
-        case "Directive":
+        case "Directive": {
+          // A language that reads the value in a closure (Svelte's attachment's getter) asserts
+          // what the element's branches narrow, as TypeScript narrows it no more there.
+          const value = options.closureDirectiveValues
+            ? assertedValue(attribute.value)
+            : attribute.value;
           printed.push(
-            ...hook(of, "directiveAttribute")({ attribute, value: code(attribute.value) }, context),
+            ...hook(of, "directiveAttribute")({ attribute, value: code(value) }, context),
           );
           break;
+        }
         default:
           unreachable(attribute);
       }

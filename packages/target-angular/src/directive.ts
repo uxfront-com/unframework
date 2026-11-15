@@ -14,6 +14,7 @@ import {
   directiveHooksObject,
   hookCall,
   hookQueueCode,
+  wrapperNames,
   ImportSet,
   js,
   kebabCase,
@@ -44,40 +45,44 @@ export function directiveClassCode(
   imports: ImportSet,
 ): string {
   const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+  // Its own names, apart from every name a hook reads.
+  const own = wrapperNames(directive, ["hooks", "element", "last", "value", "previous"] as const);
   const mounted = directiveHook(directive, "mounted");
   const updated = directiveHook(directive, "updated");
   const unmounted = directiveHook(directive, "unmounted");
   const element = directiveElement(directive);
-  const run = (call: string) => `${queue}(element, () => ${call});`;
+  const run = (call: string) => `${queue}(${own.element}, () => ${call});`;
   const effect: string[] = [
-    `const value = this.${directive.name}();`,
-    "const previous = last;",
-    "last = { value };",
+    `const ${own.value} = this.${directive.name}();`,
+    `const ${own.previous} = ${own.last};`,
+    `${own.last} = { value: ${own.value} };`,
   ];
   if (mounted) {
-    effect.push(`if (!previous) ${run(hookCall("hooks", mounted, ["element", "value"]))}`);
+    effect.push(
+      `if (!${own.previous}) ${run(hookCall(own.hooks, mounted, [own.element, own.value]))}`,
+    );
   } else {
-    effect.push("if (!previous) return;");
+    effect.push(`if (!${own.previous}) return;`);
   }
   if (updated) {
     effect.push(
-      `${mounted ? "else " : ""}if (!Object.is(value, previous.value)) {`,
-      `  ${run(hookCall("hooks", updated, ["element", "value", "previous.value"]))}`,
+      `${mounted ? "else " : ""}if (!Object.is(${own.value}, ${own.previous}.value)) {`,
+      `  ${run(hookCall(own.hooks, updated, [own.element, own.value, `${own.previous}.value`]))}`,
       "}",
     );
   }
   const hooks = directiveHooksObject(directive).replaceAll("\n", "\n    ");
   const body = [
-    `const hooks = ${hooks};`,
-    "const element = this.element.nativeElement;",
-    `let last: { value: ${directive.value.code} } | undefined;`,
+    `const ${own.hooks} = ${hooks};`,
+    `const ${own.element} = this.element.nativeElement;`,
+    `let ${own.last}: { value: ${directive.value.code} } | undefined;`,
     `${core("afterRenderEffect")}(() => {`,
     ...effect.map((line) => `  ${line}`),
     "});",
     ...(unmounted
       ? [
           `${core("inject")}(${core("DestroyRef")}).onDestroy(() => {`,
-          `  if (last) ${run(hookCall("hooks", unmounted, ["element"]))}`,
+          `  if (${own.last}) ${run(hookCall(own.hooks, unmounted, [own.element]))}`,
           "});",
         ]
       : []),
@@ -99,7 +104,7 @@ export function directiveClassCode(
 /** `v-focus-trap.ts`: a `.uf.ts` module's directive, as a standalone attribute directive. */
 export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
   const dependencies = directiveDependencies(directive, context.module);
-  const imports = new ImportSet(new NameScope([directive.name, QUEUE_HELPER, "queuedHooks"]));
+  const imports = new ImportSet(new NameScope([directive.name, QUEUE_HELPER]));
   const directiveCode = directiveClassCode(
     directive,
     directiveClassName(directive.name),
@@ -115,7 +120,7 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
         "",
         ...dependencies.types.map((code) => `${code}\n`),
         ...(dependencies.constants.length ? [`${dependencies.constants.join("\n")}\n`] : []),
-        `${hookQueueCode(QUEUE_HELPER, "queuedHooks")}\n`,
+        `${hookQueueCode(QUEUE_HELPER)}\n`,
         directiveCode,
       ].join("\n"),
     },

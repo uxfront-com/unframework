@@ -3,8 +3,10 @@ import {
   bindingOf,
   componentTypes,
   defineTarget,
+  assertedValue,
   directiveSpecifier,
   exportDeclaration,
+  hookQueueCode,
   exportsOf,
   expressionCode,
   importedDirectives,
@@ -187,7 +189,7 @@ export const react: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: "useDirective",
-      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records the element and whose layout effect runs `mounted`, `updated` behind `Object.is`, and `unmounted`. Its calls are declared in a post-order of the elements, so a component's hooks run in Vue's order.",
+      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records the element and whose layout effect runs `mounted`, `updated` behind `Object.is`, and `unmounted`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     teleport: {
       support: "emulated",
@@ -227,9 +229,10 @@ export const react: Target = defineTarget({
     const hooks = hookCalls(plan).map((text) => ({ text, group: -1, compact: true }));
     // Each directive's call, after the setup whose values it reads (ADR-0099).
     // A setup function is passed as client code passes one, its stable variant where it has one,
-    // so its identity changes no more than on Vue.
+    // so its identity changes no more than on Vue. Any other value is read in a getter outside
+    // the branches around its element, so what they narrow is asserted.
     const directives = [...plan.directiveRefs].map(([attribute, ref]) => ({
-      text: `const ${ref} = ${plan.helpers.directive!.hook}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(attribute.value, jsx)});`,
+      text: `const ${ref} = ${plan.helpers.directive!.hook}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
       group: -150,
       compact: true,
     }));
@@ -316,7 +319,12 @@ export const react: Target = defineTarget({
         : []),
       ...compositionHelpers(plan),
       ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
-      ...(plan.helpers.directive ? [useDirectiveHelper(plan.helpers.directive, plan.names)] : []),
+      ...(plan.helpers.directive
+        ? [
+            useDirectiveHelper(plan.helpers.directive, plan.names),
+            hookQueueCode(plan.helpers.directive.queue),
+          ]
+        : []),
     ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a

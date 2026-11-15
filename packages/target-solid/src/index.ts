@@ -194,7 +194,7 @@ export const solid: Target = defineTarget({
     for (const name of freeNames(component, names)) names.delete(name);
     for (const name of moduleValueNames(context.module)) names.add(name);
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-    // the class, scope, style and keyed list helpers from bases of its own (`cx_1`), past the
+    // the class, scope, style, keyed list, teleport and directive queue helpers from bases of its own (`cx_1`), past the
     // names any other component declares.
     const index = context.module.components.findIndex((each) => each.name === component.name);
     const reserved = context.module.components.map((each) => {
@@ -202,13 +202,18 @@ export const solid: Target = defineTarget({
       for (const name of freeNames(each, taken)) taken.delete(name);
       return taken;
     });
-    const bases = [CLASS_HELPER, SCOPE_HELPER, STYLE_HELPER, KEYED_HELPER, TELEPORT_HELPER].map(
-      (helper) => {
-        const { base, others } = moduleHelperName(helper, reserved, index);
-        for (const name of others) names.add(name);
-        return [helper, base] as const;
-      },
-    );
+    const bases = [
+      CLASS_HELPER,
+      SCOPE_HELPER,
+      STYLE_HELPER,
+      KEYED_HELPER,
+      TELEPORT_HELPER,
+      QUEUE_HELPER,
+    ].map((helper) => {
+      const { base, others } = moduleHelperName(helper, reserved, index);
+      for (const name of others) names.add(name);
+      return [helper, base] as const;
+    });
     const scope = new NameScope(names);
     for (const [helper, base] of bases) scope.rebase(helper, base);
     const imports = new ImportSet(scope);
@@ -277,9 +282,7 @@ export const solid: Target = defineTarget({
     // The module's own directives it applies, as ref factories, with the queue they run their
     // hooks through (ADR-0099).
     const own = ownDirectives(component, context.module);
-    const queue = own.length
-      ? { name: scope.claim(QUEUE_HELPER), list: scope.claim("queuedHooks") }
-      : undefined;
+    const queue = own.length ? { name: scope.claim(QUEUE_HELPER) } : undefined;
     const directives = queue
       ? own.map((directive) =>
           placeholders.statements(
@@ -310,7 +313,7 @@ export const solid: Target = defineTarget({
             helpers: [
               ...helpers(),
               ...code.helpers(),
-              ...(queue ? [hookQueueCode(queue.name, queue.list)] : []),
+              ...(queue ? [hookQueueCode(queue.name)] : []),
             ],
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],

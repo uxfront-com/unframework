@@ -11,6 +11,8 @@ import {
   directiveHook,
   directiveHooksObject,
   hookCall,
+  hookParameters,
+  wrapperNames,
 } from "@unframework.dev/codegen";
 import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
 import type { UfDirective } from "@unframework.dev/ir";
@@ -28,36 +30,44 @@ export function attachmentCode(
   exported = false,
 ): string {
   const { untrack, attachment } = names;
+  // Its own names, apart from every name a hook reads.
+  const own = wrapperNames(directive, [
+    "hooks",
+    "getValue",
+    "element",
+    "current",
+    "next",
+    "previous",
+  ] as const);
   const mounted = directiveHook(directive, "mounted");
   const updated = directiveHook(directive, "updated");
   const unmounted = directiveHook(directive, "unmounted");
   const body: string[] = [];
-  if (updated) body.push(`let current = ${untrack}(getValue);`);
+  if (updated) body.push(`let ${own.current} = ${untrack}(${own.getValue});`);
   if (mounted) {
-    body.push(
-      `${untrack}(() => ${hookCall("hooks", mounted, ["element", updated ? "current" : `${untrack}(getValue)`])});`,
-    );
+    const value = updated ? own.current : `${untrack}(${own.getValue})`;
+    body.push(`${untrack}(() => ${hookCall(own.hooks, mounted, [own.element, value])});`);
   }
   if (updated) {
     // The previous value only where the hook takes it.
-    const previous = updated.parameters.length > 2;
+    const previous = hookParameters(updated).length > 2;
     body.push(
       "$effect(() => {",
-      "  const next = getValue();",
-      "  if (Object.is(next, current)) return;",
-      ...(previous ? ["  const previous = current;"] : []),
-      "  current = next;",
-      `  ${untrack}(() => ${hookCall("hooks", updated, ["element", "next", "previous"])});`,
+      `  const ${own.next} = ${own.getValue}();`,
+      `  if (Object.is(${own.next}, ${own.current})) return;`,
+      ...(previous ? [`  const ${own.previous} = ${own.current};`] : []),
+      `  ${own.current} = ${own.next};`,
+      `  ${untrack}(() => ${hookCall(own.hooks, updated, [own.element, own.next, own.previous])});`,
       "});",
     );
   }
-  if (unmounted) body.push(`return () => ${hookCall("hooks", unmounted, ["element"])};`);
+  if (unmounted) body.push(`return () => ${hookCall(own.hooks, unmounted, [own.element])};`);
   const element = directiveElement(directive);
   const hooks = directiveHooksObject(directive).replaceAll("\n", "\n  ");
   return [
-    `${exported ? "export " : ""}function ${directive.name}(getValue: () => ${directive.value.code}): ${attachment}<${element}> {`,
-    `  const hooks = ${hooks};`,
-    `  return (element) => {`,
+    `${exported ? "export " : ""}function ${directive.name}(${own.getValue}: () => ${directive.value.code}): ${attachment}<${element}> {`,
+    `  const ${own.hooks} = ${hooks};`,
+    `  return (${own.element}) => {`,
     ...body.map((line) => `    ${line}`),
     "  };",
     "}",

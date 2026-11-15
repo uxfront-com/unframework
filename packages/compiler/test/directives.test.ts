@@ -75,3 +75,56 @@ describe("a module of directives on each target", () => {
     expect(contents).not.toContain("use:");
   });
 });
+
+// A directive whose hooks read module constants named like a wrapper's own locals, declare a
+// local named like Vue's binding field, and take a parameter they never read.
+const SHADOWED = `import { defineDirective } from "@uxfront/unframework";
+
+const hooks = "data-hooks";
+const element = "data-element";
+
+export const vMark = defineDirective<string>({
+  mounted(el, value) {
+    el.setAttribute(hooks, value);
+    el.setAttribute(element, "mounted");
+  },
+  updated(el, value) {
+    const oldValue = "updated";
+    el.setAttribute(hooks, \`\${oldValue} \${value}\`);
+  },
+  unmounted(_el) {},
+});
+`;
+
+describe("a directive's wrapper on each target", () => {
+  const output = async (target: TargetName) => {
+    const result = await compile(SHADOWED, { filename: "mark.uf.ts", targets: [target] });
+    expect(result.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+    return result.outputs[target]?.[0]?.contents ?? "";
+  };
+
+  it.each(["svelte", "solid", "angular"] as const)(
+    "%s names its own locals apart from the constants the hooks read",
+    async (target) => {
+      const contents = await output(target);
+      expect(contents).toContain('const hooks = "data-hooks";');
+      expect(contents).toContain('const element = "data-element";');
+      expect(contents).toContain("const hooks_1 = {");
+      expect(contents).not.toMatch(/(?:const|let) hooks = \{/);
+      expect(contents).not.toMatch(/(?:const|let) element = (?!"data-element")/);
+    },
+  );
+
+  it("names Vue's previous value apart from a local of the hook", async () => {
+    const contents = await output("vue");
+    expect(contents).toContain("updated(el, { value, oldValue: oldValue_1 }) {");
+    expect(contents).toContain("if (Object.is(value, oldValue_1)) return;");
+  });
+
+  it.each(["react", "qwik"] as const)(
+    "%s drops a trailing parameter the hook never reads",
+    async (target) => {
+      expect(await output(target)).toContain("unmounted() {}");
+    },
+  );
+});

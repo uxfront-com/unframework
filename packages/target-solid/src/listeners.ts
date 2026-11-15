@@ -184,8 +184,8 @@ interface ElementPlan {
   added: readonly EventAttribute[];
   /**
    * The attribute the `ref` callback prints at: the template ref, the first added listener, or
-   * the first of two or more directives, which the callback calls each (ADR-0099). An element
-   * with one directive and nothing else for a callback prints `ref={vX(() => value)}` itself.
+   * its first directive, whose callback calls each directive and a `v-model`'s helper (ADR-0099).
+   * An element with one directive and nothing else for a callback prints `ref={vX(() => value)}`.
    */
   carrier: RefAttribute | EventAttribute | DirectiveAttribute | undefined;
   /** The directives it applies, in attribute order (ADR-0099). */
@@ -319,8 +319,10 @@ export function solidListeners(
     },
     directiveAttribute(attribute, element, context) {
       const plan = planOf(element);
-      if (plan.carrier === undefined) {
-        // The element's one ref: the factory's callback itself (`modelRef` joins no directive).
+      if (plan.carrier !== attribute) return [];
+      // The element's one ref is the factory's callback itself, unless a `v-model`'s helper or
+      // another directive needs the element too: then one callback calls each.
+      if (plan.directives.length === 1 && !modelRef(element, context)) {
         const value = jsxExpression(attribute.value, context);
         return [
           js.jsxAttribute(
@@ -331,7 +333,7 @@ export function solidListeners(
           ),
         ];
       }
-      return plan.carrier === attribute ? [refCallback(element, context)] : [];
+      return [refCallback(element, context)];
     },
     carries: (element) => planOf(element).carrier !== undefined,
     componentEvent(attribute) {
@@ -435,7 +437,7 @@ function elementPlan(element: ElementNode, component: UfComponent): ElementPlan 
   );
   return {
     added,
-    carrier: ref ?? added[0] ?? (directives.length > 1 ? directives[0] : undefined),
+    carrier: ref ?? added[0] ?? directives[0],
     directives,
   };
 }

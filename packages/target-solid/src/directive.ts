@@ -12,7 +12,9 @@ import {
   directiveHook,
   directiveHooksObject,
   hookCall,
+  hookParameters,
   hookQueueCode,
+  wrapperNames,
 } from "@unframework.dev/codegen";
 import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
 import type { UfDirective } from "@unframework.dev/ir";
@@ -29,48 +31,61 @@ export interface FactoryNames {
 /** `function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void { … }`. */
 export function factoryCode(directive: UfDirective, names: FactoryNames, exported = false): string {
   const { solid, queue } = names;
+  // Its own names, apart from every name a hook reads.
+  const own = wrapperNames(directive, [
+    "hooks",
+    "getValue",
+    "target",
+    "current",
+    "element",
+    "next",
+    "previous",
+  ] as const);
   const mounted = directiveHook(directive, "mounted");
   const updated = directiveHook(directive, "updated");
   const unmounted = directiveHook(directive, "unmounted");
   const element = directiveElement(directive);
-  const body: string[] = [`let target: ${element} | undefined;`];
+  const run = (call: string) => `${queue}(${own.element}, () => ${call});`;
+  const body: string[] = [`let ${own.target}: ${element} | undefined;`];
   if (mounted || updated) {
-    body.push(`${updated ? "let" : "const"} current = ${solid("untrack")}(getValue);`);
+    body.push(
+      `${updated ? "let" : "const"} ${own.current} = ${solid("untrack")}(${own.getValue});`,
+    );
   }
   if (mounted) {
     body.push(
       `${solid("onMount")}(() => {`,
-      "  const element = target;",
-      `  if (element) ${queue}(element, () => ${hookCall("hooks", mounted, ["element", "current"])});`,
+      `  const ${own.element} = ${own.target};`,
+      `  if (${own.element}) ${run(hookCall(own.hooks, mounted, [own.element, own.current]))}`,
       "});",
     );
   }
   if (updated) {
-    const previous = updated.parameters.length > 2;
+    const previous = hookParameters(updated).length > 2;
     body.push(
       `${solid("createEffect")}(() => {`,
-      "  const next = getValue();",
-      "  if (Object.is(next, current)) return;",
-      ...(previous ? ["  const previous = current;"] : []),
-      "  current = next;",
-      "  const element = target;",
-      `  if (element) ${queue}(element, () => ${hookCall("hooks", updated, ["element", "next", "previous"])});`,
+      `  const ${own.next} = ${own.getValue}();`,
+      `  if (Object.is(${own.next}, ${own.current})) return;`,
+      ...(previous ? [`  const ${own.previous} = ${own.current};`] : []),
+      `  ${own.current} = ${own.next};`,
+      `  const ${own.element} = ${own.target};`,
+      `  if (${own.element}) ${run(hookCall(own.hooks, updated, [own.element, own.next, own.previous]))}`,
       "});",
     );
   }
   if (unmounted) {
     body.push(
       `${solid("onCleanup")}(() => {`,
-      "  const element = target;",
-      `  if (element) ${queue}(element, () => ${hookCall("hooks", unmounted, ["element"])});`,
+      `  const ${own.element} = ${own.target};`,
+      `  if (${own.element}) ${run(hookCall(own.hooks, unmounted, [own.element]))}`,
       "});",
     );
   }
-  body.push("return (element) => {", "  target = element;", "};");
+  body.push(`return (${own.element}) => {`, `  ${own.target} = ${own.element};`, "};");
   const hooks = directiveHooksObject(directive).replaceAll("\n", "\n  ");
   return [
-    `${exported ? "export " : ""}function ${directive.name}(getValue: () => ${directive.value.code}): (element: ${element}) => void {`,
-    `  const hooks = ${hooks};`,
+    `${exported ? "export " : ""}function ${directive.name}(${own.getValue}: () => ${directive.value.code}): (element: ${element}) => void {`,
+    `  const ${own.hooks} = ${hooks};`,
     ...body.map((line) => `  ${line}`),
     "}",
   ].join("\n");
@@ -99,7 +114,7 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
     ...dependencies.types,
     ...(dependencies.constants.length ? [dependencies.constants.join("\n")] : []),
     factory,
-    hookQueueCode(QUEUE_HELPER, "queuedHooks"),
+    hookQueueCode(QUEUE_HELPER),
   ].join("\n\n");
   return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
 }

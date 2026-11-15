@@ -545,7 +545,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
     ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
     ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
-    ...(queue === undefined ? [] : [`${hookQueueCode(queue, imports.claim("queuedHooks"))}\n`]),
+    ...(queue === undefined ? [] : [`${hookQueueCode(queue)}\n`]),
     ...ownClasses.map(({ directive, className: name }) =>
       directiveClassCode(directive, name, queue ?? QUEUE_HELPER, imports),
     ),

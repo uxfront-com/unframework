@@ -207,7 +207,7 @@ export interface ReactPlan {
      */
     teleport?: TeleportNames;
     /** The inline hook a directive's element calls, and the hooks' type (ADR-0099). */
-    directive?: { hook: string; hooks: string };
+    directive?: { hook: string; hooks: string; queue: string };
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
@@ -729,7 +729,11 @@ export function planComponent(
     ),
   );
   if (directiveRefs.size) {
-    helpers.directive = { hook: names.claim("useDirective"), hooks: names.claim("DirectiveHooks") };
+    helpers.directive = {
+      hook: names.claim("useDirective"),
+      hooks: names.claim("DirectiveHooks"),
+      queue: names.claim("queueHook"),
+    };
   }
 
   return {
@@ -854,6 +858,9 @@ const HELPER_NAMES = [
   "useModelText",
   "looseToNumber",
   "scopeAttributes",
+  "useDirective",
+  "DirectiveHooks",
+  "queueHook",
 ];
 
 /**
