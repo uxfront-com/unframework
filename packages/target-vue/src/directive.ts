@@ -8,6 +8,8 @@ import {
   dependencyImports,
   directiveDependencies,
   directiveElement,
+  directiveModuleNames,
+  NameScope,
   codeNames,
   directiveSpecifier,
   hookParameters,
@@ -69,11 +71,16 @@ export function addDirectiveImports(
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, exported as Vue's `ObjectDirective`. */
 export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
   const dependencies = directiveDependencies(directive, context.module);
+  // Vue's type, under a name apart from everything the copied code declares or reads.
+  const type = new NameScope(directiveModuleNames(directive, dependencies)).claim(
+    "ObjectDirective",
+  );
+  const specifier = type === "ObjectDirective" ? type : `ObjectDirective as ${type}`;
   const code = [
-    ['import type { ObjectDirective } from "vue";', ...dependencyImports(dependencies)].join("\n"),
+    [`import type { ${specifier} } from "vue";`, ...dependencyImports(dependencies)].join("\n"),
     ...dependencies.types,
     ...(dependencies.constants.length ? [dependencies.constants.join("\n")] : []),
-    directiveCode(directive, "ObjectDirective", true),
+    directiveCode(directive, type, true),
   ].join("\n\n");
   return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
 }

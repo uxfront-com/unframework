@@ -90,7 +90,7 @@ function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>, getValue: () =
     const { element, mounted } = current;
     if (mounted && mounted !== element) {
       current.mounted = null;
-      ${queue}(mounted, () => directive.unmounted?.(mounted));
+      ${queue}(mounted, () => directive.unmounted?.(mounted), true);
     }
     if (!element) return;
     const value = current.getValue();

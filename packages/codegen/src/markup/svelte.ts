@@ -312,6 +312,7 @@ export const svelteDialect: MarkupDialect = {
       },
     ];
   },
+  branchConstant: (name, value) => `{@const ${name} = ${value}}`,
   list: ({ node, source, item, index, key }) => [
     {
       kind: "block",

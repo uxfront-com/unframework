@@ -82,7 +82,7 @@ import {
   takesFallthrough,
 } from "./composition.ts";
 import type { Fallthrough } from "./composition.ts";
-import { attachmentCode } from "./directive.ts";
+import { attachmentCode, narrowedDirectiveValues } from "./directive.ts";
 import { isAttached } from "./events.ts";
 import { handlerTypes } from "./handlers.ts";
 import {
@@ -112,7 +112,13 @@ export interface InstanceScript {
    */
   markup: Pick<
     MarkupOptions,
-    "rewrite" | "attribute" | "handler" | "componentTag" | "scopeRootAttributes" | "candidates"
+    | "rewrite"
+    | "attribute"
+    | "handler"
+    | "componentTag"
+    | "scopeRootAttributes"
+    | "candidates"
+    | "narrowedDirectiveValues"
   >;
   /** The render tree the markup prints (`composition.ts`). */
   render: ElementNode | FragmentNode;
@@ -714,6 +720,7 @@ class ScriptWriter {
       (parameter) => this.#fillParameter(parameter),
       (expression) => rewriteExpression(expression, component, this.rules, "render"),
     );
+    const narrowed = narrowedDirectiveValues(composed.render, (base) => this.#names.claim(base));
     const markup: InstanceScript["markup"] = {
       rewrite: this.rules,
       handler: (attribute) => this.#inlineHandler(attribute),
@@ -746,6 +753,8 @@ class ScriptWriter {
       ...(composed.candidates.size
         ? { candidates: (child: ComponentNode) => composed.candidates.get(child) }
         : {}),
+      // A narrowed directive value's constant, which its branch declares (ADR-0099).
+      ...(narrowed.size ? { narrowedDirectiveValues: narrowed } : {}),
     };
     const moduleBlock = moduleScript
       ? this.#moduleScript(types, constants, Boolean(owner))

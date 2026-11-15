@@ -274,6 +274,8 @@ export type MarkupPiece =
 export interface BlockSegment {
   open: string;
   content: MarkupPiece;
+  /** Code the segment writes before its content: the constants a branch declares. */
+  leading?: readonly string[];
   /**
    * Whether the content goes in parentheses when it takes lines of its own, as JSX in an
    * expression does (Astro's `{c ? (` … `) : null}`).
@@ -344,6 +346,11 @@ export interface MarkupDialect {
   styleAttribute(parts: readonly StylePart[], context: AttributeContext): PrintedAttribute[];
   /** Writes a conditional: the first branch whose condition is truthy renders, or the else. */
   conditional(branches: readonly ConditionalBranch[]): MarkupPiece[];
+  /**
+   * Writes a constant a branch declares before its content, for a language that declares one in
+   * markup (Svelte's `{@const name = value}`, ADR-0099).
+   */
+  branchConstant?(name: string, value: string): string;
   /** Writes a list: the body for each item of the source, in order. */
   list(list: ListParts): MarkupPiece[];
   /**
@@ -465,6 +472,16 @@ export interface MarkupOptions {
    * asserted present (ADR-0099).
    */
   closureDirectiveValues?: boolean;
+  /**
+   * The directives whose value a closure reads and a branch around the element narrows, by the
+   * branch that declares a constant of each value (Svelte's `{@const}`) under the name given:
+   * TypeScript keeps no narrowing of a reassigned variable in a closure, nor one a `!` can't
+   * write (`typeof`), while the constant takes the narrowed type (ADR-0099).
+   */
+  narrowedDirectiveValues?: ReadonlyMap<
+    Container,
+    readonly { attribute: DirectiveAttribute; name: string }[]
+  >;
   /**
    * The component's module, whose imports give a child's scoped styles: without it, the content
    * filled into a styled child carries no `-s` attribute (ADR-0063). The component's own
@@ -738,6 +755,12 @@ export function printMarkup(
       : expression.code;
   const indent = options.indent ?? "  ";
   const printWidth = options.printWidth ?? 100;
+  // Each narrowed directive value's constant, by its attribute (ADR-0099).
+  const narrowedNames = new Map(
+    [...(options.narrowedDirectiveValues?.values() ?? [])].flatMap((entries) =>
+      entries.map(({ attribute, name }) => [attribute, name] as const),
+    ),
+  );
   const scope: Scope = {
     dialect,
     element: undefined,
@@ -802,12 +825,15 @@ export function printMarkup(
           return node.branches.length === 0
             ? []
             : piecesItems(
-                at.dialect.conditional(
-                  node.branches.map((branch) =>
-                    branch.condition === undefined
-                      ? { branch }
-                      : { condition: code(branch.condition), branch },
+                withBranchConstants(
+                  at.dialect.conditional(
+                    node.branches.map((branch) =>
+                      branch.condition === undefined
+                        ? { branch }
+                        : { condition: code(branch.condition), branch },
+                    ),
                   ),
+                  at,
                 ),
                 at,
               );
@@ -870,6 +896,28 @@ export function printMarkup(
     };
   }
 
+  /** A conditional's blocks, each branch's segment with the constants the branch declares. */
+  function withBranchConstants(pieces: readonly MarkupPiece[], at: Scope): MarkupPiece[] {
+    const constants = options.narrowedDirectiveValues;
+    if (!constants?.size || !at.dialect.branchConstant) return [...pieces];
+    const declare = hook(at.dialect, "branchConstant");
+    return pieces.map((piece) => {
+      if (piece.kind !== "block") return piece;
+      return {
+        ...piece,
+        segments: piece.segments.map((segment) => {
+          const { content } = segment;
+          const declared = content.kind === "nodes" ? constants.get(content.container) : undefined;
+          if (!declared?.length) return segment;
+          return {
+            ...segment,
+            leading: declared.map(({ attribute, name }) => declare(name, code(attribute.value))),
+          };
+        }),
+      };
+    });
+  }
+
   function piecesItems(pieces: readonly MarkupPiece[], at: Scope): Item[] {
     return pieces.flatMap((piece) => pieceItems(piece, at));
   }
@@ -901,7 +949,10 @@ export function printMarkup(
             kind: "block",
             segments: piece.segments.map((segment) => ({
               open: segment.open,
-              children: pieceItems(segment.content, at),
+              children: [
+                ...(segment.leading ?? []).map((text) => inline(text)),
+                ...pieceItems(segment.content, at),
+              ],
               parentheses: segment.parentheses ?? false,
             })),
             close: piece.close,
@@ -1294,11 +1345,15 @@ export function printMarkup(
         case "Directive": {
           // A language that reads the value in a closure (Svelte's attachment's getter) asserts
           // what the element's branches narrow, as TypeScript narrows it no more there.
+          const constant = narrowedNames.get(attribute);
           const value = options.closureDirectiveValues
             ? assertedValue(attribute.value)
             : attribute.value;
           printed.push(
-            ...hook(of, "directiveAttribute")({ attribute, value: code(value) }, context),
+            ...hook(of, "directiveAttribute")(
+              { attribute, value: constant ?? code(value) },
+              context,
+            ),
           );
           break;
         }
@@ -1595,7 +1650,8 @@ function hook<
     | "dynamic"
     | "teleport"
     | "rawHtmlAttribute"
-    | "directiveAttribute",
+    | "directiveAttribute"
+    | "branchConstant",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];
   if (!found) {

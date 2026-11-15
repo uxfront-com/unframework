@@ -128,3 +128,32 @@ describe("a directive's wrapper on each target", () => {
     },
   );
 });
+
+describe("a directive module's own imports on each target", () => {
+  const CLASHING = `import { defineDirective } from "@uxfront/unframework";
+
+const untrack = "done";
+const ObjectDirective = "type";
+
+export const vMark = defineDirective<string>({
+  mounted(el, value) {
+    el.title = value + untrack + ObjectDirective;
+  },
+});
+`;
+
+  it.each([
+    ["solid", 'import { onMount, untrack as untrack_1 } from "solid-js";'],
+    ["svelte", 'import { untrack as untrack_1 } from "svelte";'],
+    ["vue", 'import type { ObjectDirective as ObjectDirective_1 } from "vue";'],
+  ] as const)(
+    "%s imports its framework under names the module leaves free",
+    async (target, line) => {
+      const result = await compile(CLASHING, { filename: "mark.uf.ts", targets: [target] });
+      expect(result.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      const contents = result.outputs[target]?.[0]?.contents ?? "";
+      expect(contents).toContain(line);
+      expect(contents).toContain('const untrack = "done";');
+    },
+  );
+});

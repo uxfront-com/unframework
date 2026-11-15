@@ -275,7 +275,7 @@ export default function Picker() {
   );
 }`,
   // Scoped slots filled without a parameter, named and default.
-  scopedFills: `import { defineSlots } from "@uxfront/unframework";
+  repeatedFills: `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 function List({ items }: { items: number[] }) {
   const slots = defineSlots<{ default?(props: { n: number }): Element; item?(props: { n: number }): Element }>();
@@ -390,7 +390,7 @@ describe("react composition beyond the corpus", () => {
   });
 
   it("passes a scoped slot's fill as a render prop, with a parameter or without", () => {
-    const dots = emitted.get("scopedFills")!.get("Dots")!;
+    const dots = emitted.get("repeatedFills")!.get("Dots")!;
     expect(dots).toContain("renderItem={() => <i>dot</i>}");
     expect(dots).toContain("renderDefault={() => <b>x</b>}");
   });

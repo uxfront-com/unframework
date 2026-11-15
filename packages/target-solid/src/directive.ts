@@ -11,9 +11,11 @@ import {
   directiveElement,
   directiveHook,
   directiveHooksObject,
+  directiveModuleNames,
   hookCall,
   hookParameters,
   hookQueueCode,
+  NameScope,
   wrapperNames,
 } from "@unframework.dev/codegen";
 import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
@@ -45,7 +47,8 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
   const updated = directiveHook(directive, "updated");
   const unmounted = directiveHook(directive, "unmounted");
   const element = directiveElement(directive);
-  const run = (call: string) => `${queue}(${own.element}, () => ${call});`;
+  const run = (call: string, leaving = false) =>
+    `${queue}(${own.element}, () => ${call}${leaving ? ", true" : ""});`;
   const body: string[] = [`let ${own.target}: ${element} | undefined;`];
   if (mounted || updated) {
     body.push(
@@ -77,7 +80,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
     body.push(
       `${solid("onCleanup")}(() => {`,
       `  const ${own.element} = ${own.target};`,
-      `  if (${own.element}) ${run(hookCall(own.hooks, unmounted, [own.element]))}`,
+      `  if (${own.element}) ${run(hookCall(own.hooks, unmounted, [own.element]), true)}`,
       "});",
     );
   }
@@ -94,27 +97,32 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, as a ref factory. */
 export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
   const dependencies = directiveDependencies(directive, context.module);
-  const used = new Set<string>(["untrack"]);
-  const factory = factoryCode(
-    directive,
-    {
-      solid: (name) => {
-        used.add(name);
-        return name;
-      },
-      queue: QUEUE_HELPER,
-    },
-    true,
-  );
+  // Solid's names and the queue's, apart from everything the copied code declares or reads.
+  const scope = new NameScope(directiveModuleNames(directive, dependencies));
+  const used = new Map<string, string>();
+  const solid = (name: string) => {
+    let local = used.get(name);
+    if (local === undefined) {
+      local = scope.claim(name);
+      used.set(name, local);
+    }
+    return local;
+  };
+  solid("untrack");
+  const queue = scope.claim(QUEUE_HELPER);
+  const factory = factoryCode(directive, { solid, queue }, true);
+  const specifiers = [...used]
+    .toSorted(([a], [b]) => (a < b ? -1 : 1))
+    .map(([imported, local]) => (imported === local ? local : `${imported} as ${local}`));
   const code = [
     [
-      `import { ${[...used].toSorted().join(", ")} } from "solid-js";`,
+      `import { ${specifiers.join(", ")} } from "solid-js";`,
       ...dependencyImports(dependencies),
     ].join("\n"),
     ...dependencies.types,
     ...(dependencies.constants.length ? [dependencies.constants.join("\n")] : []),
     factory,
-    hookQueueCode(QUEUE_HELPER),
+    hookQueueCode(queue),
   ].join("\n\n");
   return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
 }

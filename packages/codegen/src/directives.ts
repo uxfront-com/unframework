@@ -166,6 +166,27 @@ export function directiveDependencies(
   };
 }
 
+/**
+ * The names a directive's own module leaves to what it copies (ADR-0099): every name the hooks,
+ * the copied constants and types and their imports declare or read, and the directive's own. The
+ * module's imports of its framework and its helpers take other names.
+ */
+export function directiveModuleNames(
+  directive: UfDirective,
+  dependencies: DirectiveDependencies,
+): Set<string> {
+  const taken = new Set<string>([directive.name]);
+  for (const code of [
+    ...directive.hooks.map((hook) => hook.body.code),
+    ...dependencies.types,
+    ...dependencies.constants,
+  ]) {
+    for (const name of codeNames(code, "statements")) taken.add(name);
+  }
+  for (const { local } of [...dependencies.imports, ...dependencies.typeImports]) taken.add(local);
+  return taken;
+}
+
 /** The import declarations of a directive module's dependencies, as written. */
 export function dependencyImports(dependencies: DirectiveDependencies): string[] {
   const lines: string[] = [];

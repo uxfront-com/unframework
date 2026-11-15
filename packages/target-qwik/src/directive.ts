@@ -13,6 +13,7 @@ import {
   directiveDependencies,
   directiveHooksObject,
   directiveRunnerCode,
+  waitCode,
   assertedValue,
   hookQueueCode,
   js,
@@ -62,7 +63,17 @@ export class QwikDirectives {
    */
   readonly #refs = new Map<DirectiveAttribute, string>();
   readonly #helper:
-    | { run: string; hooks: string; element: string; queue: string; values: string }
+    | {
+        run: string;
+        hooks: string;
+        element: string;
+        queue: string;
+        values: string;
+        watch: string;
+        watches: string;
+        /** `waitForDocument`, where a narrowed value waits for its element (ADR-0099). */
+        wait?: string;
+      }
     | undefined;
 
   constructor(component: UfComponent, plan: SetupPlan, names: OutputNames) {
@@ -96,6 +107,12 @@ export class QwikDirectives {
         if (own) this.#refs.set(first, this.#signals.get(node)!.name);
       },
     });
+    const waits = [...this.#signals.keys()].some((element) =>
+      element.attributes.some(
+        (attribute) =>
+          attribute.kind === "Directive" && assertedValue(attribute.value) !== attribute.value,
+      ),
+    );
     this.#helper = this.#signals.size
       ? {
           run: names.fresh(DIRECTIVE_HELPER),
@@ -103,6 +120,9 @@ export class QwikDirectives {
           element: names.fresh("DirectiveElement"),
           queue: names.fresh("queueHook"),
           values: names.fresh("directiveStates"),
+          watch: names.fresh("watchDocument"),
+          watches: names.fresh("documentWatches"),
+          ...(waits ? { wait: names.fresh("waitForDocument") } : {}),
         }
       : undefined;
   }
@@ -130,15 +150,23 @@ export class QwikDirectives {
         const asserted = assertedValue(attribute.value);
         const code = rewriteCode(asserted, this.#component, this.#plan.rules(), "client");
         const value = attribute.value.refs.length ? `track(() => ${code})` : code;
+        const run = `cleanup(${helper.run}(${attribute.name}, element, ${value}));`;
         // An element Qwik removed stays in its signal, with what narrowed its value gone, so a
-        // narrowed value is read only while the element is in the document.
-        const present = asserted === attribute.value ? "element" : "element?.isConnected";
+        // narrowed value is read only while the element is in the document: until a slot puts it
+        // there, the task waits, and runs again once it is.
+        const body =
+          asserted === attribute.value || !helper.wait
+            ? [`    if (element) ${run}`]
+            : [
+                `    if (element?.isConnected) ${run}`,
+                `    else if (element) cleanup(${helper.wait}(element, () => ${signal.name}.trigger()));`,
+              ];
         statements.push(
           [
             `${names.core("useVisibleTask$")}(`,
             "  ({ track, cleanup }) => {",
             `    const element = track(${signal.name});`,
-            `    if (${present}) cleanup(${helper.run}(${attribute.name}, element, ${value}));`,
+            ...body,
             "  },",
             '  { strategy: "document-ready" },',
             ");",
@@ -153,9 +181,10 @@ export class QwikDirectives {
   helpers(): string[] {
     const helper = this.#helper;
     if (!helper) return [];
-    const { run, hooks, element, queue, values } = helper;
+    const { run, hooks, element, queue, values, watch, watches, wait } = helper;
     return [
-      ...directiveRunnerCode({ run, hooks, states: values, queue }),
+      ...directiveRunnerCode({ run, hooks, states: values, watch, watches, queue }),
+      ...(wait ? [waitCode(wait, watch)] : []),
       `/** The element a directive's hooks take. */
 type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : never;`,
       hookQueueCode(queue),

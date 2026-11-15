@@ -10,12 +10,22 @@ import {
   directiveElement,
   directiveHook,
   directiveHooksObject,
+  directiveModuleNames,
   hookCall,
   hookParameters,
+  NameScope,
   wrapperNames,
 } from "@unframework.dev/codegen";
-import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
-import type { UfDirective } from "@unframework.dev/ir";
+import type { Container, EmitContext, OutputFile } from "@unframework.dev/codegen";
+import { childrenOf } from "@unframework.dev/ir";
+import type {
+  DirectiveAttribute,
+  ElementNode,
+  FragmentNode,
+  IfBranch,
+  RenderNode,
+  UfDirective,
+} from "@unframework.dev/ir";
 
 /** The local names an attachment factory reads: Svelte's `untrack` and its `Attachment` type. */
 export interface AttachmentNames {
@@ -77,15 +87,53 @@ export function attachmentCode(
 /** `vFocusTrap.svelte.ts`: a `.uf.ts` module's directive, as an attachment factory. */
 export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
   const dependencies = directiveDependencies(directive, context.module);
+  // Svelte's names, apart from everything the copied code declares or reads.
+  const scope = new NameScope(directiveModuleNames(directive, dependencies));
+  const untrack = scope.claim("untrack");
+  const attachment = scope.claim("Attachment");
+  const named = (imported: string, local: string) =>
+    imported === local ? local : `${imported} as ${local}`;
   const code = [
     [
-      'import { untrack } from "svelte";',
-      'import type { Attachment } from "svelte/attachments";',
+      `import { ${named("untrack", untrack)} } from "svelte";`,
+      `import type { ${named("Attachment", attachment)} } from "svelte/attachments";`,
       ...dependencyImports(dependencies),
     ].join("\n"),
     ...dependencies.types,
     ...(dependencies.constants.length ? [dependencies.constants.join("\n")] : []),
-    attachmentCode(directive, { untrack: "untrack", attachment: "Attachment" }, true),
+    attachmentCode(directive, { untrack, attachment }, true),
   ].join("\n\n");
   return [{ path: `${directive.name}.svelte.ts`, contents: `${code}\n` }];
+}
+
+/**
+ * The directives in a branch whose value reads a binding, by the innermost branch, each with the
+ * name of the constant the branch declares from it, `{@const markValue = user.name}`. The
+ * attachment's getter reads the constant, whose type is what the branch narrows: TypeScript keeps
+ * no narrowing of a reassigned `$state` in a closure, nor one a `!` can't write (`typeof`), and
+ * the analyser records only the narrowings a read needs (ADR-0099).
+ */
+export function narrowedDirectiveValues(
+  render: ElementNode | FragmentNode,
+  claim: (base: string) => string,
+): Map<Container, { attribute: DirectiveAttribute; name: string }[]> {
+  const found = new Map<Container, { attribute: DirectiveAttribute; name: string }[]>();
+  const visit = (node: RenderNode | FragmentNode, branch: IfBranch | undefined): void => {
+    if (node.kind === "If") {
+      for (const each of node.branches) {
+        for (const child of each.children) visit(child, each);
+      }
+      return;
+    }
+    if (node.kind === "Element" && branch) {
+      for (const attribute of node.attributes) {
+        if (attribute.kind !== "Directive" || !attribute.value.refs.length) continue;
+        const name = claim(`${attribute.name[1]!.toLowerCase()}${attribute.name.slice(2)}Value`);
+        found.set(branch, [...(found.get(branch) ?? []), { attribute, name }]);
+      }
+    }
+    for (const child of childrenOf(node)) visit(child, branch);
+  };
+  visit(render, undefined);
+  return found;
 }

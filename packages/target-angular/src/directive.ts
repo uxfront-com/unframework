@@ -16,7 +16,7 @@ import {
   directiveRunnerCode,
   hookQueueCode,
   wrapperNames,
-  codeNames,
+  directiveModuleNames,
   ImportSet,
   js,
   kebabCase,
@@ -35,6 +35,8 @@ export function runnerNames(claim: (base: string) => string): DirectiveRunnerNam
     run: claim(RUNNER_HELPER),
     hooks: claim("DirectiveHooks"),
     states: claim("directiveStates"),
+    watch: claim("watchDocument"),
+    watches: claim("documentWatches"),
     queue: claim("queueHook"),
   };
 }
@@ -93,16 +95,7 @@ export function directiveClassCode(
 export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
   const dependencies = directiveDependencies(directive, context.module);
   // The module's helpers take names apart from everything the copied code declares or reads.
-  const taken = new Set<string>([directive.name]);
-  for (const code of [
-    ...directive.hooks.map((hook) => hook.body.code),
-    ...dependencies.types,
-    ...dependencies.constants,
-  ]) {
-    for (const name of codeNames(code, "statements")) taken.add(name);
-  }
-  for (const { local } of [...dependencies.imports, ...dependencies.typeImports]) taken.add(local);
-  const imports = new ImportSet(new NameScope(taken));
+  const imports = new ImportSet(new NameScope(directiveModuleNames(directive, dependencies)));
   const runner = runnerNames((base) => imports.claim(base));
   const directiveCode = directiveClassCode(
     directive,
