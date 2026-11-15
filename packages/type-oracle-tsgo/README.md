@@ -2,6 +2,7 @@
 
 The TypeOracle adapter on tsgo's checker (plan §5.5, ADR-0067, ADR-0107). It is the only package
 that loads TypeScript's API: `typescript/sync`, pinned exactly at `7.1.0-beta` by the catalog.
+Here is how it works:
 
 - **`createTsgoOracle({ root })`** implements `TypeOracle` from `@unframework.dev/type-oracle` over the
   files under `root`, read from the disk. It is opt-in: the compiler's default stays the

@@ -1,7 +1,8 @@
 // Rendered values as one JavaScript string (src/js/text.ts): the template literal's escaping, the
-// nullish guard's placement, and its reading of nullishness checked against TypeScript 7 itself,
-// whose TS2869 and TS2871 the guard must never trigger.
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+// nullish guard's placement, and its reading of nullishness checked against TypeScript 6 and 7
+// themselves, whose TS2869 and TS2871 the guard must never trigger.
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -125,9 +126,11 @@ describe("isAlwaysNullish", () => {
 });
 
 // The guard's placement stands on this reading: each form, guarded with `??`, is checked by
-// TypeScript 7, which must report TS2869 where the reading is "never", TS2871 where it is
-// "always", and nothing where it is "sometimes".
-describe("syntacticNullishness, as TypeScript 7 reads it", { timeout: 60_000 }, () => {
+// TypeScript 6, the checker of the Vue, Svelte, Astro and Angular outputs, which must report
+// TS2869 where the reading is "never", TS2871 where it is "always", and nothing where it is
+// "sometimes". TypeScript 7.0 read every form alike. 7.1 reads some "always" forms as
+// "sometimes" (`a ?? null`), where the guard it takes is still clean: no other difference holds.
+describe("syntacticNullishness, as TypeScript reads it", { timeout: 60_000 }, () => {
   const FORMS = [
     "a",
     "undefined",
@@ -165,44 +168,97 @@ describe("syntacticNullishness, as TypeScript 7 reads it", { timeout: 60_000 }, 
   afterAll(() => {
     for (const directory of temporaries) rmSync(directory, { recursive: true, force: true });
   });
+  const source = [
+    "declare const a: string | undefined;",
+    "declare const b: string | undefined;",
+    "declare const c: boolean;",
+    "declare const n: number;",
+    "declare const o: { p?: string } | undefined;",
+    "declare function f(): string | undefined;",
+    // One form a line, from line 7.
+    ...FORMS.map((form, index) => `export const r${index} = (${form}) ?? "";`),
+    "",
+  ].join("\n");
+  const compilerOptions = { target: "es2024", lib: ["es2024"], strict: true, types: [] };
+  /** Each form's reading, from the line TS2869 or TS2871 is reported on. */
+  const readings = (messages: readonly { line?: number; code?: string }[]): Nullishness[] =>
+    FORMS.map((_, index) => {
+      const code = messages.find(({ line }) => line === index + 7)?.code;
+      return code === "TS2869" ? "never" : code === "TS2871" ? "always" : "sometimes";
+    });
 
-  it("reads every form as tsgo does", async () => {
+  /** TypeScript 7's readings, the repo's tsgo. */
+  async function sevenReads(): Promise<Nullishness[]> {
     const directory = mkdtempSync(join(tmpdir(), "uf-nullish-"));
     temporaries.push(directory);
     const typescript = dirname(createRequire(import.meta.url).resolve("typescript/package.json"));
     mkdirSync(join(directory, "node_modules"));
     symlinkSync(typescript, join(directory, "node_modules/typescript"), "dir");
     writeFileSync(join(directory, "package.json"), `{ "name": "private", "private": true }\n`);
-    const compilerOptions = { target: "es2024", lib: ["es2024"], strict: true, types: [] };
     writeFileSync(join(directory, "tsconfig.json"), JSON.stringify({ compilerOptions }));
     const file = join(directory, "Forms.ts");
-    writeFileSync(
-      file,
-      [
-        "declare const a: string | undefined;",
-        "declare const b: string | undefined;",
-        "declare const c: boolean;",
-        "declare const n: number;",
-        "declare const o: { p?: string } | undefined;",
-        "declare function f(): string | undefined;",
-        // One form a line, from line 7.
-        ...FORMS.map((form, index) => `export const r${index} = (${form}) ?? "";`),
-        "",
-      ].join("\n"),
-    );
+    writeFileSync(file, source);
     const messages = (await typecheckWithTsgo([file], { toolchainDir: directory, root: directory }))
       .get(file)!
       .filter(({ code }) => code === "TS2869" || code === "TS2871");
-    const reported = (index: number): Nullishness => {
-      const code = messages.find(({ line }) => line === index + 7)?.code;
-      return code === "TS2869" ? "never" : code === "TS2871" ? "always" : "sometimes";
-    };
+    return readings(messages);
+  }
+
+  /** TypeScript 6's readings, the Vue toolchain's. */
+  function sixReads(): Nullishness[] {
+    const directory = mkdtempSync(join(tmpdir(), "uf-nullish-"));
+    temporaries.push(directory);
+    writeFileSync(
+      join(directory, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: { ...compilerOptions, noEmit: true },
+        files: ["Forms.ts"],
+      }),
+    );
+    writeFileSync(join(directory, "Forms.ts"), source);
+    const manifest = createRequire(
+      new URL("../../../tests/toolchains/vue/package.json", import.meta.url),
+    ).resolve("typescript/package.json");
+    const { version, bin }: { version: string; bin: Record<string, string> } = JSON.parse(
+      readFileSync(manifest, "utf8"),
+    );
+    expect(version).toMatch(/^6\./);
+    const result = spawnSync(
+      process.execPath,
+      [join(dirname(manifest), Object.values(bin)[0]!), "-p", directory, "--pretty", "false"],
+      { cwd: directory, encoding: "utf8" },
+    );
+    if (result.error) throw result.error;
+    const messages = [
+      ...result.stdout.matchAll(/^(?:.*[\\/])?Forms\.ts\((\d+),\d+\): error (TS\d+)/gm),
+    ]
+      .map((match) => ({ line: Number(match[1]), code: match[2]! }))
+      .filter(({ code }) => code === "TS2869" || code === "TS2871");
+    return readings(messages);
+  }
+
+  it("reads every form as TypeScript 6 does", () => {
+    const six = sixReads();
     expect(FORMS.map((form) => [form, syntacticNullishness(parseExpression(form))])).toEqual(
-      FORMS.map((form, index) => [form, reported(index)]),
+      FORMS.map((form, index) => [form, six[index]]),
     );
     // The forms cover every reading.
-    expect(new Set(FORMS.map((_, index) => reported(index)))).toEqual(
-      new Set(["never", "sometimes", "always"]),
+    expect(new Set(six)).toEqual(new Set(["never", "sometimes", "always"]));
+  });
+
+  it("reads no form less strictly than TypeScript 7 does", async () => {
+    const seven = await sevenReads();
+    const six = sixReads();
+    expect(
+      FORMS.flatMap((form, index) =>
+        seven[index] === six[index] ? [] : [[form, six[index], seven[index]]],
+      ),
+    ).toEqual(
+      FORMS.flatMap((form, index) =>
+        six[index] === "always" && seven[index] === "sometimes"
+          ? [[form, "always", "sometimes"]]
+          : [],
+      ),
     );
   });
 });

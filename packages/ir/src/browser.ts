@@ -4,9 +4,10 @@
 // members it reads only through `window`. The analyser reports a name outside them (UF3020),
 // and `checkInvariants` rejects one in any IR.
 //
-// Source: TypeScript 7.0.2's `lib.dom.d.ts`, its `declare var`, `declare function` and
-// `declare namespace` names, which TypeScript 6.0.2's, the checker of the Vue, Svelte, Astro and
-// Angular outputs, matches. The analyser's `globals-conformance` test pins both.
+// Source: TypeScript 6.0.2's `lib.dom.d.ts`, the checker of the Vue, Svelte, Astro and Angular
+// outputs, its `declare var`, `declare function` and `declare namespace` names. TypeScript 7's
+// declares all of them, and 7.1's some newer APIs too, which stay out because those four outputs
+// would fail their check. The analyser's `globals-conformance` test pins both.
 
 import { words } from "./tables.ts";
 
