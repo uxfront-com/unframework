@@ -97,9 +97,8 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
   this is Vue's own order, and Svelte and Angular remove the DOM before their teardowns run.
 - **Order, Vue's.** Within one render, a descendant's hook runs before its ancestor's, and
   siblings' `mounted` in document order, whichever outputs the directives and the elements come
-  from. For `unmounted`, only "descendant before ancestor". An element that a render
-  removes unmounts before one it adds mounts, so a branch that replaces another mounts after the
-  other unmounts.
+  from. For `unmounted`, only "descendant before ancestor". Every `unmounted` of a render runs
+  before its `mounted`, so a branch that replaces another mounts after the other unmounts.
 - **A hook's return value** is ignored, as Vue ignores it.
 - **Not guaranteed:**
   - Whether a directive mounted during an event sees that event at `document`. Vue and Svelte
@@ -121,11 +120,12 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
 | Qwik    | emulated, `runDirective`   | A signal ref on the element, its template ref's where it has one, and a `document-ready` visible task per directive that tracks the element and the value and calls the inline `runDirective`. The task's cleanup stops it, at the component's own unmount. The module exports the plain hooks, which the optimizer imports into the task's segment. |
 | Astro   | unsupported, UF4001 (info) | Prints nothing for the attribute and imports nothing for it: a static page never runs a hook.                                                                                                                                                                                                                                                        |
 
-`queueHook` is one inline helper: hooks one turn queues run in a microtask, those of the
-elements whose first hook of the turn is `unmounted` first, which `compareDocumentPosition`
-can't order against an attached element, then sorted descendant before ancestor and then by
-`compareDocumentPosition`. One element's hooks keep the order they came in, as StrictMode's
-`mounted`, `unmounted` and `mounted` do. A detached subtree keeps its shape, so an
+`queueHook` is one inline helper: hooks one turn queues run in a microtask, every `unmounted`
+first, which `compareDocumentPosition` can't order against an attached element, then sorted
+descendant before ancestor and then by `compareDocumentPosition`. An `unmounted` that follows its
+own element's `mounted` in the turn, as StrictMode's `mounted`, `unmounted` and `mounted` do,
+keeps its place among the rest, and one element's hooks keep the order they came in. The
+codegen's `hook-queue` test runs the helper on a tree of elements. A detached subtree keeps its shape, so an
 element removed with its descendants still sorts after them. Solid runs an element's ref before
 its children's, Angular mixes the two orders, Qwik's is its own, and React's helper runs from
 effects and microtasks, so each queues its hooks. Every output declares the helper, since none
@@ -172,10 +172,12 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
   The stop it returns ends the watch when the element's owner goes. `afterRenderEffect` and
   Qwik's visible task never run on the server, so neither needs a platform check. The
   `directives/slotted` case checks content a child shows and hides by its own state. On Qwik, a
-  value that reads what a condition narrows, `user.value!.name`, can't be read once the condition
-  fails, so the task reads it only while the element is in the document. Until then it waits
-  (`waitForDocument`) and runs again once the element enters, through the signal's `trigger()`.
-  The observer doesn't see into a shadow root.
+  value in a conditional's branch may read what the condition narrows, `user.value!.name`, which
+  can't be read once the condition fails, or a `typeof` narrowing, so the task reads it only
+  while the element is in the document. Until then it waits (`waitForDocument`) and runs again
+  once the element enters, through the signal's `trigger()`. The task's context and its own
+  `element` take names apart from the component's (`track_1`). The observer doesn't see into a
+  shadow root.
 - **Svelte's getter reads a branch's constant.** An attachment's getter is a closure, where
   TypeScript keeps no narrowing of a reassigned `$state`, and a `typeof` narrowing takes no `!`.
   So a directive's value in a branch is a `{@const markValue = user.name}` at the start of its
@@ -185,11 +187,14 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
 A directive on an element in a list's body is UF1002 for now (Alex's answer to this plan's second
 decision). React gives a directive's state to its component, which renders the list once, so a row
 would need a helper component of its own, and Qwik gives a row no signal of its own. A fill the
-child may render more than once is the same: a scoped slot's, and one of a slot the child reads in
-a function of its body, as a list's body or a fill is, or in another component's content, which
-that component may render so. The child's API marks such a slot `repeated` (`ApiSlot.repeated`),
-read from its syntax, so a slot a function reads without rendering counts too. `<Teleport>`
-renders its content once.
+child may render more than once is the same: a scoped slot's, and one of a slot the child's API
+marks `repeated` (`ApiSlot.repeated`). The child renders such a slot twice or more, or in a
+function of its body, as a list's body or a scoped fill is, or passes it to another component's
+slot that is itself repeated: a wrapper that forwards its content to a component that renders it
+once, as a dialog or a card does, keeps its directives. The analyser reads where the child
+renders each slot from its syntax, and resolves a forward once every component of the module and
+its imports is known, through the module's own components in turn. `<Teleport>`, under any
+local name, renders its content once, and `<component is>`'s content counts as repeated.
 
 ### Tooling
 
