@@ -34,6 +34,7 @@ import type { AST } from "@unframework.dev/parser";
 import { keyName } from "./api.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";
 import { closest, literalOutsideUnion, renameFix } from "./cross-component.ts";
+import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, shadowing, span } from "./expressions.ts";
 import { lowerComponentHandler, lowerRef } from "./listeners.ts";
@@ -167,6 +168,14 @@ export function lowerComponentAs(
     }
     if (CONTROL_MODEL.test(attribute)) {
       namelessModel(item.name, api, info, render);
+      continue;
+    }
+    if (isDirectiveAttribute(attribute)) {
+      directiveOnNonElement(
+        item.name,
+        skip ? "`<component is>`" : `<${info.name}>, a component`,
+        reporter,
+      );
       continue;
     }
     if (/^on[A-Z]/.test(attribute)) {

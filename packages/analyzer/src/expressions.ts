@@ -71,6 +71,7 @@ import {
   widened,
 } from "./code.ts";
 import type { Reporter } from "./context.ts";
+import { misplacedDirective } from "./directives.ts";
 import { readLiteral } from "./literals.ts";
 import {
   ancestorsOf,
@@ -1260,6 +1261,10 @@ class Walk {
     if (api === undefined) return UNKNOWN;
     if (api === "Teleport") {
       teleportNotTag(node, this.#context.reporter);
+      return UNKNOWN;
+    }
+    if (api === "defineDirective") {
+      misplacedDirective(node, this.#context.reporter);
       return UNKNOWN;
     }
     if (api === "nextTick" && this.#mode === "client") {
@@ -2666,6 +2671,7 @@ class Walk {
         // A call the import reports, or a macro in the wrong place, whose arguments would say
         // nothing more.
         if (api === "Teleport") teleportNotTag(callee, context.reporter);
+        else if (api === "defineDirective") misplacedDirective(callee, context.reporter);
         else if (api !== undefined) this.#misplaced(callee, api, true);
         this.#skip(node.arguments);
         return UNKNOWN;

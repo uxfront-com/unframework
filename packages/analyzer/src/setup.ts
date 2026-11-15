@@ -71,6 +71,7 @@ import type { AuthoringApi } from "./authoring.ts";
 import { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, checkType, closure } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
+import { misplacedDirective } from "./directives.ts";
 import { checkCode, checkDirectives, lowerFunction, span } from "./expressions.ts";
 import { annotatedInterface, listenerName } from "./listeners.ts";
 import { isStatic } from "./props.ts";
@@ -394,6 +395,8 @@ export function declareSetup(context: SetupContext): Setup {
         else if (BOUND_MACROS.has(api)) unbound(call, api, "statement");
         else if (api === "Teleport") {
           teleportNotTag(call.callee as AST.IdentifierReference, reporter);
+        } else if (api === "defineDirective") {
+          misplacedDirective(call.callee as AST.IdentifierReference, reporter);
         } else misplacedNextTick(call.callee as AST.IdentifierReference);
         continue;
       }
@@ -775,6 +778,9 @@ export function declareSetup(context: SetupContext): Setup {
         return;
       case "Teleport":
         teleportNotTag(call.callee as AST.IdentifierReference, reporter);
+        return;
+      case "defineDirective":
+        misplacedDirective(call.callee as AST.IdentifierReference, reporter);
         return;
       default:
         unreachable(api);

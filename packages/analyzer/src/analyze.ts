@@ -19,6 +19,7 @@ import {
   createTypeText,
   codeOf,
   functionsOf,
+  isDirectiveName,
   isExportName,
   walk,
 } from "@unframework.dev/ir";
@@ -39,6 +40,7 @@ import type {
   TypeParameter,
   UfComponent,
   UfComposable,
+  UfDirective,
   UfExport,
   UfModule,
 } from "@unframework.dev/ir";
@@ -73,6 +75,13 @@ import {
   setupTypes,
 } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
+import {
+  directiveCandidate,
+  isDirectiveCall,
+  lowerDirectives,
+  misplacedDirective,
+} from "./directives.ts";
+import type { DirectiveCandidate, DirectiveInfo } from "./directives.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
 import {
@@ -351,6 +360,9 @@ export function analyzeModule(
     composableModule,
     composableImports: new Map(),
     composables: new Map(),
+    authoring,
+    directives: [],
+    directiveImports: new Map(),
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -365,6 +377,17 @@ export function analyzeModule(
     reporter,
     shared: context.shared,
   });
+  // The module's directives (ADR-0099), which read its constants and imports as hooks.
+  const directives = lowerDirectives(context.directives, {
+    source: parsed.source,
+    scopes,
+    reporter,
+    types,
+    authoring,
+    shared: context.shared,
+    composableModule,
+  });
+  const directiveInfos = new Map([...context.directiveImports, ...directives.infos]);
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
   const moduleErrors = keyErrors || reporter.hasErrorsSince(moduleMark);
@@ -372,6 +395,7 @@ export function analyzeModule(
     const errors = moduleErrors || foundErrors;
     return composableResult(
       composableCandidates,
+      { lowered: directives.directives, count: context.directives.length },
       errors,
       constants,
       constantTypes,
@@ -434,6 +458,7 @@ export function analyzeModule(
     passThrough: context.passThrough,
     shared: context.shared,
     composables: context.composables,
+    directives: directiveInfos,
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -494,7 +519,11 @@ export function analyzeModule(
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
   exports.sort((a, b) => a.span.start - b.span.start);
+  // An in-file directive's constants are its components' (`lowerDirectiveAttribute`), so only
+  // what the components read is declared, and the directives that some component applies.
   const read = readConstants(constants, lowered, types.declarations, parsed.source);
+  const applied = new Set(lowered.flatMap((component) => appliedDirectives(component)));
+  const ownDirectives = directives.directives.filter((directive) => applied.has(directive.name));
   const readTypes = new Set(
     closure(
       read.map(({ binding }) => constantTypes.get(binding)),
@@ -518,11 +547,39 @@ export function analyzeModule(
         ].toSorted((a, b) => a.span.start - b.span.start),
         moduleImports: context.moduleImports,
         constants: read,
+        directives: ownDirectives,
       },
     ),
     diagnostics: reporter.diagnostics,
     api,
   };
+}
+
+/** A directive as an owner of what it reads of its module, for `readConstants` (ADR-0099). */
+function directiveOwner(directive: UfDirective): UfComposable {
+  return {
+    name: directive.name,
+    span: directive.span,
+    parameters: [],
+    types: directive.types,
+    bindings: [...directive.bindings],
+    setup: [],
+    returns: [],
+  };
+}
+
+/** The names of the directives a component's elements apply (ADR-0099). */
+function appliedDirectives(component: UfComponent): string[] {
+  const names: string[] = [];
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Directive") names.push(attribute.name);
+      }
+    },
+  });
+  return names;
 }
 
 /**
@@ -531,6 +588,7 @@ export function analyzeModule(
  */
 function composableResult(
   candidates: readonly ComposableCandidate[],
+  directives: { lowered: readonly UfDirective[]; count: number },
   moduleErrors: boolean,
   constants: readonly ModuleConstant[],
   constantTypes: ReadonlyMap<string, AST.VariableDeclarator>,
@@ -579,6 +637,14 @@ function composableResult(
     components: [],
     keys: [],
     ...(lowered.length ? { composables: lowered.map(({ api }) => api) } : {}),
+    ...(directives.lowered.length
+      ? {
+          directives: directives.lowered.map(({ name, element }) => ({
+            name,
+            ...(element ? { element: element.code } : {}),
+          })),
+        }
+      : {}),
   };
   const uncalled =
     !reporter.diagnostics.some(({ severity }) => severity === "error") &&
@@ -586,19 +652,30 @@ function composableResult(
   if (moduleErrors || uncalled || reporter.hasErrorsSince(mark)) {
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
-  if (!candidates.length) {
-    reporter.report("UF2035", { start: 0, end: 0 }, "This file exports no composable.", {
-      help: "A module of composables exports functions named `use` and an upper-case letter, each returning a shorthand object.",
-    });
+  if (!candidates.length && !directives.count) {
+    reporter.report(
+      "UF2035",
+      { start: 0, end: 0 },
+      "This file exports no composable or directive.",
+      {
+        help: "A `.uf.ts` module exports functions named `use` and an upper-case letter, each returning a shorthand object, and directives named `v` and an upper-case letter, each declared with `defineDirective` (ADR-0099).",
+      },
+    );
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
-  if (lowered.length < candidates.length) {
+  if (lowered.length < candidates.length || directives.lowered.length < directives.count) {
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
   const composables = lowered.map(({ composable }) => composable);
-  const read = readConstants(constants, composables, types.declarations, parsed.source);
+  const read = readConstants(
+    constants,
+    [...composables, ...directives.lowered.map(directiveOwner)],
+    types.declarations,
+    parsed.source,
+  );
   const used = new Set([
     ...composables.flatMap((composable) => composable.types),
+    ...directives.lowered.flatMap((directive) => directive.types),
     ...closure(
       read.map(({ binding }) => constantTypes.get(binding)),
       types.table,
@@ -631,6 +708,7 @@ function composableResult(
         moduleImports: context.moduleImports,
         constants: read,
         composables,
+        directives: [...directives.lowered],
       },
     ),
     diagnostics: reporter.diagnostics,
@@ -894,6 +972,12 @@ interface ModuleContext {
    * the API the resolver gave (ADR-0069): `undefined` for one reported where it is imported.
    */
   composables: Map<object, ComposableApi | undefined>;
+  /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
+  authoring: ReadonlyMap<object, AuthoringApi | undefined>;
+  /** The module's top-level directives, in source order, lowered once every import is known (ADR-0099). */
+  directives: DirectiveCandidate[];
+  /** The directives a `.uf.tsx` module imports from `.uf.ts` modules, by local name (ADR-0099). */
+  directiveImports: Map<string, DirectiveInfo>;
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -961,9 +1045,24 @@ function checkTopLevelStatement(
     // A stray `;`, such as one after a function, does nothing.
     case "EmptyStatement":
       return;
-    case "VariableDeclaration":
-      moduleConstant(statement, context);
+    case "VariableDeclaration": {
+      const directive = directiveCandidate(statement, undefined, context.scopes, context.authoring);
+      if (directive) context.directives.push(directive);
+      else moduleConstant(statement, context);
       return;
+    }
+    case "ExpressionStatement": {
+      // `defineDirective(…)` alone declares nothing (ADR-0099).
+      const { expression } = statement;
+      if (isDirectiveCall(expression, context.scopes, context.authoring)) {
+        misplacedDirective(
+          (expression as AST.CallExpression).callee as AST.IdentifierReference,
+          reporter,
+        );
+        return;
+      }
+      break;
+    }
     case "ImportDeclaration":
       if (COMPONENT_SPECIFIER.test(statement.source.value) && statement.importKind !== "type") {
         componentImport(statement, context);
@@ -1037,6 +1136,14 @@ function checkTopLevelStatement(
         return;
       }
       if (statement.declaration?.type === "VariableDeclaration") {
+        // A `.uf.ts` module's directive, a named export (ADR-0099).
+        const directive = context.composableModule
+          ? directiveCandidate(statement.declaration, statement, context.scopes, context.authoring)
+          : undefined;
+        if (directive) {
+          context.directives.push(directive);
+          return;
+        }
         reporter.unsupported(
           statement,
           "A module exports its components and injection keys, and no other value.",
@@ -1400,7 +1507,13 @@ function composableImport(statement: AST.ImportDeclaration, context: ModuleConte
       item.type === "ImportSpecifier" && item.importKind === "type",
   );
   if (!api) {
-    for (const item of values) context.composables.set(item.local, undefined);
+    for (const item of values) {
+      context.composables.set(item.local, undefined);
+      // A directive's name, whose uses then report nothing more (UF3055).
+      if (isDirectiveName(item.local.name)) {
+        context.directiveImports.set(item.local.name, { name: item.local.name, bindings: [] });
+      }
+    }
     reporter.report(
       "UF1202",
       statement.source,
@@ -1426,15 +1539,28 @@ function composableImport(statement: AST.ImportDeclaration, context: ModuleConte
       continue;
     }
     const imported = exportName(item.imported);
+    // A directive, which an element applies by its local name in kebab case (ADR-0099).
+    if (api.directives?.some((entry) => entry.name === imported)) {
+      names.push(
+        createImportedName("Directive", imported, item.local.name, {
+          start: item.start,
+          end: item.end,
+        }),
+      );
+      context.directiveImports.set(item.local.name, { name: item.local.name, bindings: [] });
+      continue;
+    }
     const composable = api.composables?.find((entry) => entry.name === imported);
     if (!composable) {
-      const exported = (api.composables ?? []).map((entry) => `\`${entry.name}\``);
+      const exported = [...(api.composables ?? []), ...(api.directives ?? [])].map(
+        (entry) => `\`${entry.name}\``,
+      );
       context.composables.set(item.local, undefined);
       reporter.report(
         "UF1202",
         item,
-        `"${specifier}" exports no composable named \`${imported}\`: it exports ${exported.join(", ") || "no composable"}.`,
-        { help: "Import a composable the module exports." },
+        `"${specifier}" exports no composable or directive named \`${imported}\`: it exports ${exported.join(", ") || "neither"}.`,
+        { help: "Import a composable or a directive the module exports." },
       );
       continue;
     }
@@ -1874,6 +2000,8 @@ interface ComponentModule {
   shared: SharedValues;
   /** The composables the module imports, by the identifier that declares each (ADR-0069). */
   composables: ReadonlyMap<object, ComposableApi | undefined>;
+  /** The directives an element may apply, by local name (ADR-0099). */
+  directives: ReadonlyMap<string, DirectiveInfo>;
   observe?: SetupObserver;
 }
 
@@ -1965,6 +2093,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     slots: setup.slots,
     passThrough: module.passThrough,
     shared: module.shared,
+    directives: module.directives,
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {

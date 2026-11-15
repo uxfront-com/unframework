@@ -11,6 +11,7 @@ import type { AST } from "@unframework.dev/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
+import type { DirectiveInfo } from "./directives.ts";
 import type { PassThrough } from "./pass-through.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
@@ -216,6 +217,8 @@ export interface RenderContext {
   readonly classPart?: true;
   /** The values the module's imports of shared modules and its constants give (ADR-0070). */
   readonly shared: SharedValues;
+  /** The directives an element may apply, by local name (ADR-0099). */
+  readonly directives: ReadonlyMap<string, DirectiveInfo>;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */

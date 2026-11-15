@@ -315,6 +315,8 @@ export function analyzeComposable(
     slots: undefined,
     passThrough: module.passThrough,
     shared: module.shared,
+    // A composable renders no element, so it applies no directive (ADR-0099).
+    directives: new Map(),
   };
   setup.lower(render);
   const returns =

@@ -237,5 +237,37 @@ export function Teleport(_props: { to: string; children?: Children }): JSX.Eleme
   return compileTimeOnly("Teleport");
 }
 
+// Directives
+
+declare const directiveBrand: unique symbol;
+
+/**
+ * The hooks of a directive (ADR-0099). Each runs in the browser only, never on the server:
+ * `mounted` once the element is in the DOM, `updated` after a render in which the value changed
+ * (`Object.is`), and `unmounted` once, when the element leaves the DOM, which it may have left
+ * already. A descendant's hook runs before its ancestor's.
+ */
+export interface DirectiveHooks<T, E extends globalThis.Element = HTMLElement> {
+  mounted?(el: E, value: T): void;
+  updated?(el: E, value: T, oldValue: T): void;
+  unmounted?(el: E): void;
+}
+
+/** A directive `defineDirective` returns, which an element applies as `v-name={value}`. */
+export interface Directive<T, E extends globalThis.Element = HTMLElement> {
+  readonly [directiveBrand]: { value: T; element: E };
+}
+
+/**
+ * Declares a directive: `export const vFocusTrap = defineDirective<boolean>({ mounted(el, value) {…} })`
+ * in a `.uf.ts` module, applied as `v-focus-trap={open.value}` (ADR-0099). The name is `v` and an
+ * upper-case letter, and `T`, the value's type, is required.
+ */
+export function defineDirective<T = never, E extends globalThis.Element = HTMLElement>(
+  _hooks: DirectiveHooks<T, E>,
+): Directive<T, E> {
+  return compileTimeOnly("defineDirective");
+}
+
 /** `JSX.Element` without a second import, for slot types: `defineSlots<{ default?(): Element }>()`. */
 export type Element = JSX.Element;
