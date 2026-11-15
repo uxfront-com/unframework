@@ -14,6 +14,9 @@
         "  <i data-element=\"mounted\" data-hooks=\"Al\">",
         "    \"Al\"",
         "  </i>",
+        "  <s data-element=\"mounted\" data-hooks=\"TidyTrail\">",
+        "    \"Tidy\"",
+        "  </s>",
         "  <textarea aria-label=\"Note\" data-element=\"mounted\" data-hooks=\"updated Hi\" data-queue=\"queued\" data-selectable=\"true\" data-untrack=\"mounted\" uf:value=\"Hi\"></textarea>",
         "  <button type=\"button\" uf:focused=\"\">",
         "    \"Toggle\"",
@@ -29,7 +32,7 @@
       "aria": [
         "- region \"Profile\":",
         "  - paragraph: Grace",
-        "  - text: LovelaceAl",
+        "  - text: LovelaceAlTidy",
         "  - textbox \"Note\": Hi",
         "  - button \"Toggle\"",
         "  - button \"Count\"",

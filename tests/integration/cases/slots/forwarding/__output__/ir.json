@@ -159,13 +159,11 @@
             "slots": [
               {
                 "name": "title",
-                "optional": true,
-                "repeated": true
+                "optional": true
               },
               {
                 "name": "default",
-                "optional": true,
-                "repeated": true
+                "optional": true
               }
             ],
             "exposes": [],

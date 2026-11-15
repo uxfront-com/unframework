@@ -21,6 +21,8 @@
   let note = $state("Hello");
   let label = $state<string | number>("Lovelace");
   let nick = $state<string | undefined>("Al");
+  let track = $state("Trail");
+  let cleanup = $state<string | null>("Tidy");
 
   /** The scope attributes of the styled parents that render this component, for its root. */
   function scopeAttributes(props: object): Record<string, ""> {
@@ -64,7 +66,9 @@
 >
   {#if user}{@const markValue = user.name}<p {@attach vMark(() => markValue)}>{user.name}</p>{/if}{#if typeof label === "string"}{@const markValue_1 = label}<b
     {@attach vMark(() => markValue_1)}
-  >{label}</b>{/if}{#if nick}{@const markValue_2 = nick}<i {@attach vMark(() => markValue_2)}>{nick}</i>{/if}<textarea
+  >{label}</b>{/if}{#if nick}{@const markValue_2 = nick}<i {@attach vMark(() => markValue_2)}>{nick}</i>{/if}{#if cleanup}{@const markValue_3 = cleanup + track}<s
+    {@attach vMark(() => markValue_3)}
+  >{cleanup}</s>{/if}<textarea
     aria-label="Note"
     bind:value={note}
     {@attach vMark(() => note)}

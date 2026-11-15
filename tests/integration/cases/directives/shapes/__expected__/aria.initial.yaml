@@ -1,6 +1,6 @@
 - region "Profile":
   - paragraph: Ada
-  - text: LovelaceAl
+  - text: LovelaceAlTidy
   - textbox "Note": Hello
   - button "Toggle"
   - button "Count"

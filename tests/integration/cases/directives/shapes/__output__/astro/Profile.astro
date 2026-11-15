@@ -21,6 +21,7 @@ const user = { name: "Ada" } as User | null;
 const note = "Hello" as string;
 const label = "Lovelace" as string | number;
 const nick = "Al" as string | undefined;
+const cleanup = "Tidy" as string | null;
 ---
 
 <section
@@ -37,6 +38,9 @@ const nick = "Al" as string | undefined;
   ) : null}
   {nick ? (
     <i>{nick}</i>
+  ) : null}
+  {cleanup ? (
+    <s>{cleanup}</s>
   ) : null}
   <textarea aria-label="Note">{note}</textarea>
   <button type="button">Toggle</button>

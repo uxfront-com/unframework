@@ -1,5 +1,6 @@
 - region "Profile":
   - paragraph: Grace
+  - text: Tidy
   - textbox "Note": Hi
   - button "Toggle"
   - button "Count"

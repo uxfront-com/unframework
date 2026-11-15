@@ -28,12 +28,16 @@ export default function Profile() {
   const note = ref("Hello");
   const label = ref<string | number>("Lovelace");
   const nick = ref<string | undefined>("Al");
+  // Names Qwik's visible task gives its own context and locals.
+  const track = ref("Trail");
+  const cleanup = ref<string | null>("Tidy");
 
   return (
     <section class="profile" aria-label="Profile">
       {user.value ? <p v-mark={user.value.name}>{user.value.name}</p> : null}
       {typeof label.value === "string" ? <b v-mark={label.value}>{label.value}</b> : null}
       {nick.value ? <i v-mark={nick.value}>{nick.value}</i> : null}
+      {cleanup.value ? <s v-mark={cleanup.value + track.value}>{cleanup.value}</s> : null}
       <textarea aria-label="Note" v-model={note.value} v-mark={note.value} v-selectable={true} />
       <button type="button" onClick={() => (user.value = user.value ? null : { name: "Grace" })}>
         Toggle

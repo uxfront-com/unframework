@@ -1,6 +1,6 @@
 - region "Profile":
   - paragraph: Grace
-  - text: LovelaceAl
+  - text: LovelaceAlTidy
   - textbox "Note": Hi
   - button "Toggle"
   - button "Count"

@@ -1,5 +1,5 @@
 - region "Profile":
-  - text: LovelaceAl
+  - text: LovelaceAlTidy
   - textbox "Note": Hi
   - button "Toggle"
   - button "Count"

@@ -154,9 +154,9 @@ function runDirective<E extends Element, T>(
 }
 
 /**
- * Runs a directive's hook once the turn ends, as Vue runs them: the elements that leave first,
- * then a descendant's before its ancestor's and siblings' in document order, one element's in
- * the order they came, with the hooks every other output queued.
+ * Runs a directive's hook once the turn ends, as Vue runs them: every `unmounted` first, then
+ * a descendant's before its ancestor's and siblings' in document order, one element's in the
+ * order they came, with the hooks every other output queued.
  */
 function queueHook(element: Element, run: () => void, leaving = false): void {
   const key: unique symbol = Symbol.for("unframework.directive-hooks@1");
@@ -172,15 +172,17 @@ function queueHook(element: Element, run: () => void, leaving = false): void {
   queueMicrotask(() => {
     const hooks = scope[key] ?? [];
     scope[key] = undefined;
-    // An element whose first hook of the turn is `unmounted` leaves before any other mounts.
-    const leaves = new Map<Element, boolean>();
+    // Every `unmounted` runs first, but one after its own element's `mounted` this turn, as
+    // StrictMode's, which keeps its place among the rest.
+    const first = new Set<{ element: Element; run: () => void; leaving: boolean }>();
+    const entered = new Set<Element>();
     for (const hook of hooks) {
-      if (!leaves.has(hook.element)) leaves.set(hook.element, hook.leaving);
+      if (!hook.leaving) entered.add(hook.element);
+      else if (!entered.has(hook.element)) first.add(hook);
     }
     hooks.sort((a, b) => {
+      if (first.has(a) !== first.has(b)) return first.has(a) ? -1 : 1;
       if (a.element === b.element) return 0;
-      const leaving = leaves.get(a.element) === true;
-      if (leaving !== (leaves.get(b.element) === true)) return leaving ? -1 : 1;
       if (a.element.contains(b.element)) return 1;
       if (b.element.contains(a.element)) return -1;
       return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -234,6 +236,8 @@ export class VMark {
     @let note = this.note();
     @let label = this.label();
     @let nick = this.nick();
+    @let track = this.track();
+    @let cleanup = this.cleanup();
     <section
       class="profile"
       aria-label="Profile"
@@ -249,6 +253,9 @@ export class VMark {
       }
       @if (nick) {
         <i [vMark]="nick">{{ nick }}</i>
+      }
+      @if (cleanup) {
+        <s [vMark]="cleanup + track">{{ cleanup }}</s>
       }
       <textarea
         aria-label="Note"
@@ -271,6 +278,8 @@ export default class Profile {
   protected readonly note = signal("Hello");
   protected readonly label = signal<string | number>("Lovelace");
   protected readonly nick = signal<string | undefined>("Al");
+  protected readonly track = signal("Trail");
+  protected readonly cleanup = signal<string | null>("Tidy");
 
   protected onToggle() {
     this.user.set(this.user() ? null : { name: "Grace" });

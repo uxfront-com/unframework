@@ -27,6 +27,8 @@ const user = shallowRef<User | null>({ name: "Ada" });
 const note = ref("Hello");
 const label = ref<string | number>("Lovelace");
 const nick = ref<string | undefined>("Al");
+const track = ref("Trail");
+const cleanup = ref<string | null>("Tidy");
 
 const vTextCaret = {
   mounted(element: HTMLTextAreaElement) {
@@ -42,6 +44,7 @@ const vTextCaret = {
     <p v-if="user" v-mark="user.name">{{ user.name }}</p>
     <b v-if="typeof label === 'string'" v-mark="label">{{ label }}</b>
     <i v-if="nick" v-mark="nick">{{ nick }}</i>
+    <s v-if="cleanup" v-mark="cleanup + track">{{ cleanup }}</s>
     <textarea
       v-model="note"
       v-text-caret

@@ -4,7 +4,8 @@
 // `unmounted` never reads its own. A conditional narrows one value, which React and Qwik read
 // outside it, and two more that a handler reassigns: one a `typeof` narrows, one optional. A
 // `<textarea>` with a `v-model` applies two directives, one imported with an element type its
-// module names and a hook that reads constants named like its output's imports.
+// module names and a hook that reads constants named like its output's imports. Two states take
+// the names Qwik's task gives its own context, `track` and `cleanup`.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
@@ -27,6 +28,7 @@ describeTargets("directives/shapes", () => {
       await expect.element(note).toHaveAttribute("data-queue", "queued");
       await expect.element(view.getByText("Lovelace")).toHaveAttribute("data-hooks", "Lovelace");
       await expect.element(view.getByText("Al")).toHaveAttribute("data-hooks", "Al");
+      await expect.element(view.getByText("Tidy")).toHaveAttribute("data-hooks", "TidyTrail");
     },
   );
 

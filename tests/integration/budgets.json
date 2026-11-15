@@ -1680,11 +1680,11 @@
       }
     },
     "directives/click-outside": {
-      "time": 5.49,
+      "time": 10.62,
       "sizes": {
         "react": {
-          "raw": 3640,
-          "gzip": 1843
+          "raw": 3627,
+          "gzip": 1842
         },
         "vue": {
           "raw": 1285,
@@ -1695,16 +1695,16 @@
           "gzip": 1021
         },
         "solid": {
-          "raw": 2372,
-          "gzip": 1304
+          "raw": 2359,
+          "gzip": 1299
         },
         "angular": {
-          "raw": 4629,
-          "gzip": 2185
+          "raw": 4616,
+          "gzip": 2179
         },
         "qwik": {
-          "raw": 3752,
-          "gzip": 2196
+          "raw": 3739,
+          "gzip": 2193
         },
         "astro": {
           "raw": 644,
@@ -1713,11 +1713,11 @@
       }
     },
     "directives/focus-trap": {
-      "time": 6.91,
+      "time": 14.06,
       "sizes": {
         "react": {
-          "raw": 3713,
-          "gzip": 1904
+          "raw": 3700,
+          "gzip": 1903
         },
         "vue": {
           "raw": 1496,
@@ -1728,16 +1728,16 @@
           "gzip": 1128
         },
         "solid": {
-          "raw": 2621,
-          "gzip": 1421
+          "raw": 2608,
+          "gzip": 1417
         },
         "angular": {
-          "raw": 5295,
-          "gzip": 2426
+          "raw": 5282,
+          "gzip": 2422
         },
         "qwik": {
-          "raw": 4159,
-          "gzip": 2485
+          "raw": 4250,
+          "gzip": 2523
         },
         "astro": {
           "raw": 564,
@@ -1746,11 +1746,11 @@
       }
     },
     "directives/order": {
-      "time": 6.32,
+      "time": 13.95,
       "sizes": {
         "react": {
-          "raw": 5824,
-          "gzip": 2913
+          "raw": 5798,
+          "gzip": 2909
         },
         "vue": {
           "raw": 1807,
@@ -1761,16 +1761,16 @@
           "gzip": 1453
         },
         "solid": {
-          "raw": 3956,
-          "gzip": 2082
+          "raw": 3930,
+          "gzip": 2073
         },
         "angular": {
-          "raw": 8226,
-          "gzip": 3744
+          "raw": 8200,
+          "gzip": 3733
         },
         "qwik": {
-          "raw": 7905,
-          "gzip": 4672
+          "raw": 7879,
+          "gzip": 4662
         },
         "astro": {
           "raw": 1269,
@@ -1779,44 +1779,44 @@
       }
     },
     "directives/shapes": {
-      "time": 8,
+      "time": 18.82,
       "sizes": {
         "react": {
-          "raw": 4288,
-          "gzip": 2151
+          "raw": 4519,
+          "gzip": 2274
         },
         "vue": {
-          "raw": 1568,
-          "gzip": 850
+          "raw": 1682,
+          "gzip": 888
         },
         "svelte": {
-          "raw": 2509,
-          "gzip": 1157
+          "raw": 2691,
+          "gzip": 1210
         },
         "solid": {
-          "raw": 3704,
-          "gzip": 1840
+          "raw": 3863,
+          "gzip": 1863
         },
         "angular": {
-          "raw": 7917,
-          "gzip": 3230
+          "raw": 8346,
+          "gzip": 3299
         },
         "qwik": {
-          "raw": 5826,
-          "gzip": 3462
+          "raw": 6511,
+          "gzip": 3850
         },
         "astro": {
-          "raw": 772,
-          "gzip": 475
+          "raw": 794,
+          "gzip": 487
         }
       }
     },
     "directives/shared": {
-      "time": 4.63,
+      "time": 8.53,
       "sizes": {
         "react": {
-          "raw": 5520,
-          "gzip": 2999
+          "raw": 5494,
+          "gzip": 2997
         },
         "vue": {
           "raw": 1167,
@@ -1827,16 +1827,16 @@
           "gzip": 1431
         },
         "solid": {
-          "raw": 2459,
-          "gzip": 1611
+          "raw": 2446,
+          "gzip": 1607
         },
         "angular": {
-          "raw": 6450,
-          "gzip": 3363
+          "raw": 6437,
+          "gzip": 3357
         },
         "qwik": {
-          "raw": 5724,
-          "gzip": 3589
+          "raw": 5698,
+          "gzip": 3576
         },
         "astro": {
           "raw": 1639,
@@ -1845,10 +1845,10 @@
       }
     },
     "directives/slotted": {
-      "time": 6.34,
+      "time": 11.21,
       "sizes": {
         "react": {
-          "raw": 4094,
+          "raw": 4081,
           "gzip": 2141
         },
         "vue": {
@@ -1860,16 +1860,16 @@
           "gzip": 1239
         },
         "solid": {
-          "raw": 2743,
-          "gzip": 1483
+          "raw": 2730,
+          "gzip": 1478
         },
         "angular": {
-          "raw": 5837,
-          "gzip": 2675
+          "raw": 5824,
+          "gzip": 2669
         },
         "qwik": {
-          "raw": 4489,
-          "gzip": 2757
+          "raw": 4476,
+          "gzip": 2751
         },
         "astro": {
           "raw": 1258,
@@ -1878,10 +1878,10 @@
       }
     },
     "directives/updated-value": {
-      "time": 4.28,
+      "time": 7.61,
       "sizes": {
         "react": {
-          "raw": 3168,
+          "raw": 3155,
           "gzip": 1604
         },
         "vue": {
@@ -1893,16 +1893,16 @@
           "gzip": 882
         },
         "solid": {
-          "raw": 2113,
-          "gzip": 1170
+          "raw": 2100,
+          "gzip": 1164
         },
         "angular": {
-          "raw": 4344,
-          "gzip": 2056
+          "raw": 4331,
+          "gzip": 2049
         },
         "qwik": {
-          "raw": 3358,
-          "gzip": 1960
+          "raw": 3345,
+          "gzip": 1954
         },
         "astro": {
           "raw": 665,
