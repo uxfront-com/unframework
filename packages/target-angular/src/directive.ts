@@ -1,31 +1,48 @@
 // A directive as an Angular attribute directive (ADR-0099): `<div [vFocusTrap]="open()">`, a
 // standalone class, `VFocusTrap`, selected by its input and always bound, since a static
-// `vFocusTrap="x"` would render a DOM attribute too. Its constructor's `afterRenderEffect` reads
-// the input after each render that changes it, which the server never runs: the first run is
-// `mounted`, any later one with another value (`Object.is`) `updated`. `DestroyRef` runs
-// `unmounted`, on the server too, so it runs only after `mounted` did. Angular mounts a parent in
-// the same view before its child and a child in an `@if` before its parent, so each hook goes
-// through the inline `queueHook`, which runs them in Vue's order (`emulated`).
+// `vFocusTrap="x"` would render a DOM attribute too. Its constructor's `afterRenderEffect` passes
+// the input to the inline `runDirective` after each render that changes it, which the server
+// never runs, and `DestroyRef` stops it. Angular creates projected content with the component
+// that writes it, before a child puts it in the document, and keeps it while the child takes it
+// out, so the runner follows the element's place in the document (`directive-runner.ts` in the
+// codegen). Angular mounts a parent in the same view before its child and a child in an `@if`
+// before its parent, so each hook goes through the inline `queueHook`, which runs them in Vue's
+// order (`emulated`).
 import {
   dependencyImports,
   directiveDependencies,
   directiveElement,
-  directiveHook,
   directiveHooksObject,
-  hookCall,
+  directiveRunnerCode,
   hookQueueCode,
   wrapperNames,
+  codeNames,
   ImportSet,
   js,
   kebabCase,
   NameScope,
   printProgram,
 } from "@unframework.dev/codegen";
-import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
+import type { DirectiveRunnerNames, EmitContext, OutputFile } from "@unframework.dev/codegen";
 import type { UfDirective } from "@unframework.dev/ir";
 
-/** The inline helper that runs a directive's hooks in Vue's order. */
-export const QUEUE_HELPER = "queueHook";
+/** The inline helper that runs a directive's hooks as its element comes and goes. */
+export const RUNNER_HELPER = "runDirective";
+
+/** The runner's names, each claimed through `claim` from its base. */
+export function runnerNames(claim: (base: string) => string): DirectiveRunnerNames {
+  return {
+    run: claim(RUNNER_HELPER),
+    hooks: claim("DirectiveHooks"),
+    states: claim("directiveStates"),
+    queue: claim("queueHook"),
+  };
+}
+
+/** The runner and the queue it calls, as a file declares them. */
+export function runnerCode(names: DirectiveRunnerNames): string[] {
+  return [...directiveRunnerCode(names), hookQueueCode(names.queue)].map((code) => `${code}\n`);
+}
 
 /** The class an Angular directive is declared as: `VFocusTrap` for `vFocusTrap`. */
 export function directiveClassName(name: string): string {
@@ -41,51 +58,22 @@ export function directiveFile(name: string): string {
 export function directiveClassCode(
   directive: UfDirective,
   className: string,
-  queue: string,
+  run: string,
   imports: ImportSet,
 ): string {
   const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
   // Its own names, apart from every name a hook reads.
-  const own = wrapperNames(directive, ["hooks", "element", "last", "value", "previous"] as const);
-  const mounted = directiveHook(directive, "mounted");
-  const updated = directiveHook(directive, "updated");
-  const unmounted = directiveHook(directive, "unmounted");
+  const own = wrapperNames(directive, ["hooks", "element", "stop"] as const);
   const element = directiveElement(directive);
-  const run = (call: string) => `${queue}(${own.element}, () => ${call});`;
-  const effect: string[] = [
-    `const ${own.value} = this.${directive.name}();`,
-    `const ${own.previous} = ${own.last};`,
-    `${own.last} = { value: ${own.value} };`,
-  ];
-  if (mounted) {
-    effect.push(
-      `if (!${own.previous}) ${run(hookCall(own.hooks, mounted, [own.element, own.value]))}`,
-    );
-  } else {
-    effect.push(`if (!${own.previous}) return;`);
-  }
-  if (updated) {
-    effect.push(
-      `${mounted ? "else " : ""}if (!Object.is(${own.value}, ${own.previous}.value)) {`,
-      `  ${run(hookCall(own.hooks, updated, [own.element, own.value, `${own.previous}.value`]))}`,
-      "}",
-    );
-  }
   const hooks = directiveHooksObject(directive).replaceAll("\n", "\n    ");
   const body = [
     `const ${own.hooks} = ${hooks};`,
     `const ${own.element} = this.element.nativeElement;`,
-    `let ${own.last}: { value: ${directive.value.code} } | undefined;`,
+    `let ${own.stop}: (() => void) | undefined;`,
     `${core("afterRenderEffect")}(() => {`,
-    ...effect.map((line) => `  ${line}`),
+    `  ${own.stop} = ${run}(${own.hooks}, ${own.element}, this.${directive.name}());`,
     "});",
-    ...(unmounted
-      ? [
-          `${core("inject")}(${core("DestroyRef")}).onDestroy(() => {`,
-          `  if (${own.last}) ${run(hookCall(own.hooks, unmounted, [own.element]))}`,
-          "});",
-        ]
-      : []),
+    `${core("inject")}(${core("DestroyRef")}).onDestroy(() => ${own.stop}?.());`,
   ];
   return [
     `@${core("Directive")}({ selector: "[${directive.name}]" })`,
@@ -104,11 +92,22 @@ export function directiveClassCode(
 /** `v-focus-trap.ts`: a `.uf.ts` module's directive, as a standalone attribute directive. */
 export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
   const dependencies = directiveDependencies(directive, context.module);
-  const imports = new ImportSet(new NameScope([directive.name, QUEUE_HELPER]));
+  // The module's helpers take names apart from everything the copied code declares or reads.
+  const taken = new Set<string>([directive.name]);
+  for (const code of [
+    ...directive.hooks.map((hook) => hook.body.code),
+    ...dependencies.types,
+    ...dependencies.constants,
+  ]) {
+    for (const name of codeNames(code, "statements")) taken.add(name);
+  }
+  for (const { local } of [...dependencies.imports, ...dependencies.typeImports]) taken.add(local);
+  const imports = new ImportSet(new NameScope(taken));
+  const runner = runnerNames((base) => imports.claim(base));
   const directiveCode = directiveClassCode(
     directive,
     directiveClassName(directive.name),
-    QUEUE_HELPER,
+    runner.run,
     imports,
   );
   return [
@@ -120,7 +119,7 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
         "",
         ...dependencies.types.map((code) => `${code}\n`),
         ...(dependencies.constants.length ? [`${dependencies.constants.join("\n")}\n`] : []),
-        `${hookQueueCode(QUEUE_HELPER)}\n`,
+        ...runnerCode(runner),
         directiveCode,
       ].join("\n"),
     },

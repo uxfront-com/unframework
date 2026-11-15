@@ -375,7 +375,7 @@ cannot infer. Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 
-`directive` is emulated (ADR-0099): a standalone attribute directive, `VFocusTrap` in `v-focus-trap.ts` for a `.uf.ts` module's, bound as `[vFocusTrap]` and in the component's `imports`, whose `afterRenderEffect` and `DestroyRef` queue the hooks through an inline `queueHook`, which runs them in Vue's order.
+`directive` is emulated (ADR-0099): a standalone attribute directive, `VFocusTrap` in `v-focus-trap.ts` for a `.uf.ts` module's, bound as `[vFocusTrap]` and in the component's `imports`, whose `afterRenderEffect` passes the value to an inline `runDirective` and whose `DestroyRef` stops it. The helper runs the hooks as a `MutationObserver` sees the element come into the document and leave it, since Angular creates projected content before a child puts it there, and queues them through an inline `queueHook`, which runs them in Vue's order.
 
 `teleport` is emulated (ADR-0098): an `<ng-template ufTeleport>` whose inline directive, `Teleport`, creates its view in its own view container once the application has rendered and moves the view's nodes into `to`. A render's teleports mount in the document's order, and a root teleport takes its parents' scope attributes off the host.
 

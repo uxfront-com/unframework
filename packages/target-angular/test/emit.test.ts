@@ -146,7 +146,7 @@ describe("angular target", () => {
       ["child-root-scope", "unsupported", undefined],
       ["sheet-order", "unsupported", undefined],
       ["generic-slot-props", "unsupported", undefined],
-      ["directive", "emulated", "queueHook"],
+      ["directive", "emulated", "runDirective"],
       ["teleport", "emulated", "Teleport"],
     ]);
   });

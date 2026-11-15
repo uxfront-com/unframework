@@ -247,7 +247,7 @@ export const qwik: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: DIRECTIVE_HELPER,
-      note: "Qwik has no directive, so an element's directive is a signal ref and a document-ready visible task that tracks it and the value, and calls an inline helper, `runDirective`, which runs `mounted`, `updated` behind `Object.is`, and `unmounted` once a `MutationObserver` sees the element leave or the component unmounts, in Vue's order through an inline queue.",
+      note: "Qwik has no directive, so an element's directive is a signal ref and a document-ready visible task that tracks it and the value, and calls an inline helper, `runDirective`, which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik sets the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
     },
     teleport: {
       support: "emulated",

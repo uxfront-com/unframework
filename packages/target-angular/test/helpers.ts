@@ -136,12 +136,12 @@ const TYPE_MODULES = /^types\/(?!exported-types$)|^generics\/(?:scoped-slot|sele
 const COMPOSABLE_MODULES = /^(?:composables|modules)\/|^semantics\/composable-/;
 
 /**
- * The directive cases whose sources import a directive from a `.uf.ts` module beside them
- * (ADR-0099), which `compile()` resolves and `lower` does not. The corpus's toolchain project
+ * The directive cases whose sources import a directive from a `.uf.ts` module, or a child
+ * component, beside them (ADR-0099), which `compile()` resolves and `lower` does not. The corpus's toolchain project
  * checks their Angular outputs.
  */
 const DIRECTIVE_MODULES =
-  /^directives\/(?:click-outside|focus-trap|order|shapes|shared|updated-value)$/;
+  /^directives\/(?:click-outside|focus-trap|order|shapes|shared|slotted|updated-value)$/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

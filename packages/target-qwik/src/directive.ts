@@ -1,18 +1,18 @@
 // A directive on Qwik (ADR-0099): Qwik has no directive, so an element that applies one takes a
 // signal ref, its template ref's where it has one (`ref` takes one value), and each directive a
 // `document-ready` visible task of its own, which tracks the element and the value and calls the
-// inline `runDirective`: a new element is `mounted`, a value that changed (`Object.is`)
-// `updated`. A visible task never runs on the server. Qwik sets a signal ref only when it creates
-// the element, and a conditional's removal runs no task, so the helper watches the document for
-// the element leaving (a `MutationObserver`), and the task's cleanup covers the component's own
-// unmount: either runs `unmounted` once. The hooks stay module-level code, never `$()`, so the
-// optimizer imports them into the task's segment: a `.uf.ts` module's directive is its plain
-// hooks object. Qwik's order is its own, so each hook goes through the inline `queueHook`, which
-// runs them in Vue's order (`emulated`).
+// inline `runDirective`. A visible task never runs on the server. Qwik sets a signal ref only when
+// it creates the element, which may be before a slot projects it, and a conditional's removal
+// runs no task, so the runner follows the element's place in the document (`directive-runner.ts`
+// in the codegen), and the task's cleanup covers the component's own unmount. The hooks stay
+// module-level code, never `$()`, so the optimizer imports them into the task's segment: a
+// `.uf.ts` module's directive is its plain hooks object. Qwik's order is its own, so each hook
+// goes through the inline `queueHook`, which runs them in Vue's order (`emulated`).
 import {
   dependencyImports,
   directiveDependencies,
   directiveHooksObject,
+  directiveRunnerCode,
   assertedValue,
   hookQueueCode,
   js,
@@ -127,20 +127,18 @@ export class QwikDirectives {
       for (const attribute of element.attributes) {
         if (attribute.kind !== "Directive") continue;
         // Read outside the branches around the element, so what they narrow is asserted.
-        const code = rewriteCode(
-          assertedValue(attribute.value),
-          this.#component,
-          this.#plan.rules(),
-          "client",
-        );
+        const asserted = assertedValue(attribute.value);
+        const code = rewriteCode(asserted, this.#component, this.#plan.rules(), "client");
         const value = attribute.value.refs.length ? `track(() => ${code})` : code;
+        // An element Qwik removed stays in its signal, with what narrowed its value gone, so a
+        // narrowed value is read only while the element is in the document.
+        const present = asserted === attribute.value ? "element" : "element?.isConnected";
         statements.push(
           [
             `${names.core("useVisibleTask$")}(`,
             "  ({ track, cleanup }) => {",
             `    const element = track(${signal.name});`,
-            // An element Qwik removed stays in its signal, with what narrowed its value gone.
-            `    if (element?.isConnected) ${helper.run}(${attribute.name}, element, ${value}, cleanup);`,
+            `    if (${present}) cleanup(${helper.run}(${attribute.name}, element, ${value}));`,
             "  },",
             '  { strategy: "document-ready" },',
             ");",
@@ -151,63 +149,13 @@ export class QwikDirectives {
     return statements.join("\n\n");
   }
 
-  /** The module's helpers: the hooks' type, the queue, and the function the tasks call. */
+  /** The module's helpers: the hooks' type, the runner the tasks call, and the queue. */
   helpers(): string[] {
     const helper = this.#helper;
     if (!helper) return [];
     const { run, hooks, element, queue, values } = helper;
     return [
-      `/** The hooks of a directive, which \`${run}\` runs on its element. */
-interface ${hooks}<E extends Element, T> {
-  mounted?(el: E, value: T): unknown;
-  updated?(el: E, value: T, oldValue: T): unknown;
-  unmounted?(el: E): unknown;
-}`,
-      `/** The value each directive's element last received, and the watch on its removal. */
-const ${values} = new WeakMap<object, WeakMap<Element, { value: unknown; observer: MutationObserver }>>();`,
-      `/**
- * Runs a directive's hooks on its element, from the task that tracks the element and the value:
- * \`mounted\` for a new element, \`updated\` for a value that changed, and \`unmounted\` once the
- * element leaves the document, or the component unmounts.
- */
-function ${run}<E extends Element, T>(
-  directive: ${hooks}<E, T>,
-  element: E,
-  value: T,
-  cleanup: (callback: () => void) => void,
-): void {
-  let states = ${values}.get(directive);
-  if (!states) {
-    states = new WeakMap();
-    ${values}.set(directive, states);
-  }
-  const own = states;
-  const unmount = () => {
-    const state = own.get(element);
-    if (!state) return;
-    state.observer.disconnect();
-    own.delete(element);
-    ${queue}(element, () => directive.unmounted?.(element));
-  };
-  const state = own.get(element);
-  if (!state) {
-    const observer = new MutationObserver(() => {
-      if (!element.isConnected) unmount();
-    });
-    observer.observe(document, { childList: true, subtree: true });
-    own.set(element, { value, observer });
-    ${queue}(element, () => directive.mounted?.(element, value));
-  } else if (!Object.is(value, state.value)) {
-    const previous = state.value as T;
-    state.value = value;
-    ${queue}(element, () => directive.updated?.(element, value, previous));
-  }
-  cleanup(() => {
-    queueMicrotask(() => {
-      if (!element.isConnected) unmount();
-    });
-  });
-}`,
+      ...directiveRunnerCode({ run, hooks, states: values, queue }),
       `/** The element a directive's hooks take. */
 type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : never;`,
       hookQueueCode(queue),

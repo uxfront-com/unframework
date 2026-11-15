@@ -233,4 +233,6 @@ export {
   moduleDirectives,
 } from "./directives.ts";
 export type { DirectiveDependencies } from "./directives.ts";
+export { directiveRunnerCode } from "./directive-runner.ts";
+export type { DirectiveRunnerNames } from "./directive-runner.ts";
 export { hookQueueCode } from "./hook-queue.ts";
