@@ -72,16 +72,16 @@ The diagnostics:
 
 A setup name, a prop, a model or a slot that shadows a directive an element applies is UF3024,
 once per name, since Vue's `<script setup>` and Angular's class resolve a directive by its name and
-React, Svelte and Qwik take a model or a slot as a prop. A directive in a slot's fill that the
-child may render more than once is UF1002, as in a list's body (below): a scoped slot's fill, or
-one of a slot the child's API marks `repeated`. An import of a name a `.uf.ts` module doesn't
-export is UF1202.
+React, Svelte and Qwik take a model or a slot as a prop. A directive whose value reads a name a
+scoped slot's fill declares, such as its parameter, is UF1002, as in a list's body (below). A
+`defineDirective` nested in a constant's value is UF2037. An import of a name a `.uf.ts` module
+doesn't export is UF1202.
 
 The IR gains a `Directive` attribute, `{ kind: "Directive", name, value, span }`, and a module's
 `directives`, each with its hooks' code, the module's bindings they read and the types they name.
 `ImportedName.kind` gains `"Directive"`, and `ModuleApi.directives` lists a `.uf.ts` module's by
-name. A caller's output depends on nothing else of a directive: Qwik's typed signal ref reads the
-element's type from the directive itself, `DirectiveElement<typeof vFocusTrap>`. The constants an in-file directive's hooks read are the bindings of
+name. A caller's output depends on nothing else of a directive: Qwik's typed list of elements reads
+the element's type from the directive itself, `DirectiveElement<typeof vFocusTrap>`. The constants an in-file directive's hooks read are the bindings of
 each component that applies it, so each output declares them as its own. `Target.emitDirective`
 emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
 
@@ -110,15 +110,15 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
 
 ### The lowering
 
-| Target  | Cell                       | Lowering                                                                                                                                                                                                                                                                                                                                             |
-| ------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vue     | native                     | `<div v-focus-trap="open">`, an `ObjectDirective<E, T>` imported in `<script setup>`, or declared there for an in-file one. Its hooks read the value from the binding, `mounted(el, { value })`, and `updated` returns early on the same value. No `created`, which turns off the hydration attribute check, and no `getSSRProps`.                   |
-| React   | emulated, `useDirective`   | `const focusTrapRef = useDirective(vFocusTrap, () => open)` at the component's top level, and `ref={focusTrapRef}`, or a call in the element's own ref callback. The module exports the plain hooks, which run through `queueHook`. The calls are declared in a post-order of the elements.                                                          |
-| Svelte  | native                     | `<div {@attach vFocusTrap(() => open)}>`, a factory in `vFocusTrap.svelte.ts` whose attachment runs `mounted` untracked, an `$effect` that reads the value for `updated`, and returns its teardown for `unmounted`.                                                                                                                                  |
-| Solid   | emulated, `queueHook`      | `ref={vFocusTrap(() => open())}`, Solid 2's own form, a factory that registers `onMount`, an effect for `updated` and `onCleanup` while its element renders, composed into the element's one ref callback where it has one.                                                                                                                          |
-| Angular | emulated, `runDirective`   | `<div [vFocusTrap]="open()">`, a standalone `VFocusTrap` class in `v-focus-trap.ts`, selected by its input, whose `afterRenderEffect` passes the value to the inline `runDirective` and whose `DestroyRef` stops it.                                                                                                                                 |
-| Qwik    | emulated, `runDirective`   | A signal ref on the element, its template ref's where it has one, and a `document-ready` visible task per directive that tracks the element and the value and calls the inline `runDirective`. The task's cleanup stops it, at the component's own unmount. The module exports the plain hooks, which the optimizer imports into the task's segment. |
-| Astro   | unsupported, UF4001 (info) | Prints nothing for the attribute and imports nothing for it: a static page never runs a hook.                                                                                                                                                                                                                                                        |
+| Target  | Cell                       | Lowering                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Vue     | native                     | `<div v-focus-trap="open">`, an `ObjectDirective<E, T>` imported in `<script setup>`, or declared there for an in-file one. Its hooks read the value from the binding, `mounted(el, { value })`, and `updated` returns early on the same value. No `created`, which turns off the hydration attribute check, and no `getSSRProps`.                                                                                                   |
+| React   | emulated, `useDirective`   | `const focusTrapRef = useDirective(vFocusTrap, () => open)` at the component's top level, and `ref={focusTrapRef}`, or a call in the element's own ref callback. The module exports the plain hooks, which run through `queueHook`. The calls are declared in a post-order of the elements.                                                                                                                                          |
+| Svelte  | native                     | `<div {@attach vFocusTrap(() => open)}>`, a factory in `vFocusTrap.svelte.ts` whose attachment runs `mounted` untracked, an `$effect` that reads the value for `updated`, and returns its teardown for `unmounted`.                                                                                                                                                                                                                  |
+| Solid   | emulated, `queueHook`      | `ref={vFocusTrap(() => open())}`, Solid 2's own form, a factory that registers `onMount`, an effect for `updated` and `onCleanup` while its element renders, composed into the element's one ref callback where it has one.                                                                                                                                                                                                          |
+| Angular | emulated, `runDirective`   | `<div [vFocusTrap]="open()">`, a standalone `VFocusTrap` class in `v-focus-trap.ts`, selected by its input, whose `afterRenderEffect` passes the value to the inline `runDirective` and whose `DestroyRef` stops it.                                                                                                                                                                                                                 |
+| Qwik    | emulated, `runDirective`   | A `ref` function that adds each element to a signal of the use's elements, and fills the element's template ref too where it has one, and a `document-ready` visible task per directive that tracks the elements and the value and calls the inline `runDirective` for each. The task's cleanup stops them, at the component's own unmount. The module exports the plain hooks, which the optimizer imports into the task's segment. |
+| Astro   | unsupported, UF4001 (info) | Prints nothing for the attribute and imports nothing for it: a static page never runs a hook.                                                                                                                                                                                                                                                                                                                                        |
 
 `queueHook` is one inline helper: hooks one turn queues run in a microtask, every `unmounted`
 first, which `compareDocumentPosition` can't order against an attached element, then sorted
@@ -138,15 +138,26 @@ Svelte runs its attachments in Vue's order with no queue.
 
 Some lowerings differ from the plan's starting points, each for a reason the work found:
 
-- **React's ref callback only records its element.** The plan's helper ran `unmounted` in the ref
+- **React's ref callback only records its elements.** The plan's helper ran `unmounted` in the ref
   callback's cleanup. A ref callback written in place, as the element's merged callback is where
   a listener reads a narrowed value, is detached and attached again at every render, which would
-  unmount and mount the directive each time. The callback records the element and schedules a
-  sync in a microtask, and a layout effect syncs after each render: the sync compares the element
-  with the one it mounted, so the same element keeps its directive, whatever React does with the
-  callback. This settles the plan's R3. The microtask covers an element a child component renders
-  in the component's slot content, whose callback runs without a render of the component. A
-  second layout effect unmounts on the component's own unmount.
+  unmount and mount the directive each time. The callback adds the element it receives to the
+  use's attached elements, its React 19 cleanup removes that one, and each schedules a sync in a
+  microtask; a layout effect syncs after each render too. The sync compares the attached elements
+  with those it mounted, so the same element keeps its directive, whatever React does with the
+  callback, and each element of one use gets its own hooks. This settles the plan's R3. The
+  microtask covers an element a child component renders in the component's slot content, whose
+  callback runs without a render of the component. A second layout effect unmounts every element
+  on the component's own unmount. An element's merged callback keeps each directive's cleanup.
+- **One use follows every element it renders (PLAN v3).** A child may render slot content any
+  number of times: once per row of a list, in either branch of a ternary, through a forward into
+  another file's list. Vue, Svelte, Solid and Angular apply a directive per element already. React
+  keeps the use's elements in a set, and Qwik's `ref` function adds each element to a signal of
+  them, `collectElement`. On the server Qwik calls it with a `DomRef`, which the signal
+  serialises, so a resumed page reads every element the server rendered. The visible task runs
+  `runDirective` for each, which keeps its state per element. So how often a child renders the
+  content doesn't matter, and the compiler predicts none of it. The `directives/repeated` case
+  checks each count element by element.
 - **A narrowed value is asserted where it is read outside its branch.** React's getter, Qwik's
   task and Svelte's attachment read the value after the conditional that narrowed it, so a read
   the condition narrows takes `!`, as Solid's and Angular's do (`assertedValue`). Qwik's task
@@ -174,8 +185,8 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
   `directives/slotted` case checks content a child shows and hides by its own state. On Qwik, a
   value in a conditional's branch may read what the condition narrows, `user.value!.name`, which
   can't be read once the condition fails, or a `typeof` narrowing, so the task reads it only
-  while the element is in the document. Until then it waits (`waitForDocument`) and runs again
-  once the element enters, through the signal's `trigger()`. The task's context and its own
+  while one of the elements is in the document. Until then it waits (`waitForDocument`) and runs
+  again once one enters, through the list signal's `trigger()`. The task's context and its own
   `element` take names apart from the component's (`track_1`). The observer doesn't see into a
   shadow root.
 - **Svelte's getter reads a branch's constant.** An attachment's getter is a closure, where
@@ -186,15 +197,13 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
 
 A directive on an element in a list's body is UF1002 for now (Alex's answer to this plan's second
 decision). React gives a directive's state to its component, which renders the list once, so a row
-would need a helper component of its own, and Qwik gives a row no signal of its own. A fill the
-child may render more than once is the same: a scoped slot's, and one of a slot the child's API
-marks `repeated` (`ApiSlot.repeated`). The child renders such a slot twice or more, or in a
-function of its body, as a list's body or a scoped fill is, or passes it to another component's
-slot that is itself repeated: a wrapper that forwards its content to a component that renders it
-once, as a dialog or a card does, keeps its directives. The analyser reads where the child
-renders each slot from its syntax, and resolves a forward once every component of the module and
-its imports is known, through the module's own components in turn. `<Teleport>`, under any
-local name, renders its content once, and `<component is>`'s content counts as repeated.
+would need a helper component of its own, and Qwik gives a row no signal of its own. The reason
+is that one helper call can't give a value that differs per call, and a directive in a scoped
+slot's fill whose value reads a name the fill declares is UF1002 for the same reason (Alex's
+approval of PLAN v3). A scoped fill whose value reads only the component's own names compiles,
+and so does slot content however often a child renders it, since every element gets its own
+hooks. Both are read from the author's own component. UXF-715 holds the follow-up: a helper
+component per row or fill on React and Qwik.
 
 ### Tooling
 
@@ -216,6 +225,7 @@ local name, renders its content once, and `<component is>`'s content counts as r
   on the server, where Solid 2 evaluates a ref.
 - The cases are `directives/click-outside`, `directives/focus-trap`, `directives/updated-value`,
   `directives/shared`, `directives/order`, `directives/shapes`, `directives/slotted`,
+  `directives/repeated`,
   `diagnostics/invalid-directive`,
   `diagnostics/unknown-directive` and `diagnostics/invalid-directive-use`.
 
