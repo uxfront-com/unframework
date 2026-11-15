@@ -42,7 +42,9 @@ export const vFocusTrap = defineDirective<boolean>({
 
 - A `.uf.ts` module exports its directives, beside its composables or alone, and a component
   imports one by name. Each compiles to one module per target. A `.uf.tsx` module may declare its
-  own, not exported, which every output that applies one declares.
+  own, not exported, which every output that applies one declares. Two components of one source
+  that apply it each declare it, so their outputs can't be joined into one module (ADR-0053), as
+  with a constant both read: each such component goes in a file of its own.
 - The name is `v` and an upper-case letter, in ASCII letters and digits. An element applies it as
   `v-` and the rest in kebab case: `vFocusTrap` is `v-focus-trap`. The names of Vue's own
   directives (`v-if`, `v-show`, `v-html`, …) are reserved: an attribute of one stays UF1002, and a
@@ -68,15 +70,17 @@ The diagnostics:
 | UF3055 | `unknown-directive`     | `v-name` where the module declares or imports no `vName`, or `vName` is a constant. A directive whose import failed (UF1202) reports nothing more                                                                                                                                                                         |
 | UF3056 | `invalid-directive-use` | A directive on a component, `<Teleport>` or `<component is>`, without a value, or with a value built in place                                                                                                                                                                                                             |
 
-A setup name that shadows a directive an element applies is UF3024 at the local, since Vue's
-`<script setup>` and Angular's class resolve a directive by its name. An import of a name a
+A setup name or a prop that shadows a directive an element applies is UF3024, once per component,
+since Vue's `<script setup>` and Angular's class resolve a directive by its name. A directive in a
+scoped slot's content is UF1002, as in a list's body (below): the content renders once per call of
+the slot. An import of a name a
 `.uf.ts` module doesn't export is UF1202.
 
 The IR gains a `Directive` attribute, `{ kind: "Directive", name, value, span }`, and a module's
 `directives`, each with its hooks' code, the module's bindings they read and the types they name.
-`ImportedName.kind` gains `"Directive"`, and `ModuleApi.directives` lists a `.uf.ts` module's,
-with each one's element type, which Qwik's typed signal ref reads. A caller's output depends on
-nothing else of a directive. The constants an in-file directive's hooks read are the bindings of
+`ImportedName.kind` gains `"Directive"`, and `ModuleApi.directives` lists a `.uf.ts` module's by
+name. A caller's output depends on nothing else of a directive: Qwik's typed signal ref reads the
+element's type from the directive itself, `DirectiveElement<typeof vFocusTrap>`. The constants an in-file directive's hooks read are the bindings of
 each component that applies it, so each output declares them as its own. `Target.emitDirective`
 emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
 
@@ -91,7 +95,9 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
   unmounts. The element may already be detached (Alex's answer to this plan's first decision):
   this is Vue's own order, and Svelte and Angular remove the DOM before their teardowns run.
 - **Order, Vue's.** Within one render, a descendant's hook runs before its ancestor's, and
-  siblings' `mounted` in document order. For `unmounted`, only "descendant before ancestor".
+  siblings' `mounted` in document order, whichever outputs the directives and the elements come
+  from. For `unmounted`, only "descendant before ancestor".
+- **A hook's return value** is ignored, as Vue ignores it.
 - **Not guaranteed:**
   - Whether a directive mounted during an event sees that event at `document`. Vue and Svelte
     flush during the dispatch, Solid renders synchronously from its handler.
@@ -99,16 +105,13 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
   - The value's type at the call site: TypeScript doesn't type a dashed JSX attribute. Each
     output's own type check (L4) catches it where the target checks a directive's value.
   - React's development StrictMode runs `mounted`, `unmounted` and `mounted`, as `onMounted`'s.
-  - The order between two queues (below): Solid's and Angular's hooks of one directive share its
-    module's queue, an in-file directive's share its component's, and Qwik's share their
-    component's. The cases check the order within one component.
 
 ### The lowering
 
 | Target  | Cell                       | Lowering                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Vue     | native                     | `<div v-focus-trap="open">`, an `ObjectDirective<E, T>` imported in `<script setup>`, or declared there for an in-file one. Its hooks read the value from the binding, `mounted(el, { value })`, and `updated` returns early on the same value. No `created`, which turns off the hydration attribute check, and no `getSSRProps`.                                                              |
-| React   | emulated, `useDirective`   | `const focusTrapRef = useDirective(vFocusTrap, () => open)` at the component's top level, and `ref={focusTrapRef}`, or a call in the element's own ref callback. The module exports the plain hooks. The calls are declared in a post-order of the elements.                                                                                                                                    |
+| React   | emulated, `useDirective`   | `const focusTrapRef = useDirective(vFocusTrap, () => open)` at the component's top level, and `ref={focusTrapRef}`, or a call in the element's own ref callback. The module exports the plain hooks, which run through `queueHook`. The calls are declared in a post-order of the elements.                                                                                                     |
 | Svelte  | native                     | `<div {@attach vFocusTrap(() => open)}>`, a factory in `vFocusTrap.svelte.ts` whose attachment runs `mounted` untracked, an `$effect` that reads the value for `updated`, and returns its teardown for `unmounted`.                                                                                                                                                                             |
 | Solid   | emulated, `queueHook`      | `ref={vFocusTrap(() => open())}`, Solid 2's own form, a factory that registers `onMount`, an effect for `updated` and `onCleanup` while its element renders, composed into the element's one ref callback where it has one.                                                                                                                                                                     |
 | Angular | emulated, `queueHook`      | `<div [vFocusTrap]="open()">`, a standalone `VFocusTrap` class in `v-focus-trap.ts`, selected by its input, whose `afterRenderEffect` runs `mounted` and `updated` and whose `DestroyRef` runs `unmounted` once `mounted` did.                                                                                                                                                                  |
@@ -118,19 +121,34 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
 `queueHook` is one inline helper: hooks one turn queues run in a microtask, sorted descendant
 before ancestor and then by `compareDocumentPosition`. A detached subtree keeps its shape, so an
 element removed with its descendants still sorts after them. Solid runs an element's ref before
-its children's, Angular mixes the two orders, and Qwik's is its own, so each queues its hooks. The
-`directives/order` case runs Svelte's attachments and React's post-ordered calls in Vue's order
-with no queue.
+its children's, Angular mixes the two orders, Qwik's is its own, and React's helper runs from
+effects and microtasks, so each queues its hooks. Every output declares the helper, since none
+imports another's (P7), but they share one queue, an array on `globalThis` under
+`Symbol.for("unframework.directive-hooks")`: a directive module's hooks and a component's own sort
+together, which the `directives/order` case checks with a child's root that applies a `.uf.ts`
+module's directive. A hook that throws goes to `reportError`, and the rest of its turn still runs.
+Svelte runs its attachments in Vue's order with no queue.
 
 Some lowerings differ from the plan's starting points, each for a reason the work found:
 
 - **React's ref callback only records its element.** The plan's helper ran `unmounted` in the ref
   callback's cleanup. A ref callback written in place, as the element's merged callback is where
   a listener reads a narrowed value, is detached and attached again at every render, which would
-  unmount and mount the directive each time. The callback records the element, and the layout
-  effect compares it with the one it mounted: the same element keeps its directive, whatever
-  React does with the callback. This settles the plan's R3. A second layout effect, with the hooks
-  as its one dependency, unmounts on the component's own unmount.
+  unmount and mount the directive each time. The callback records the element and schedules a
+  sync in a microtask, and a layout effect syncs after each render: the sync compares the element
+  with the one it mounted, so the same element keeps its directive, whatever React does with the
+  callback. This settles the plan's R3. The microtask covers an element a child component renders
+  in the component's slot content, whose callback runs without a render of the component. A
+  second layout effect unmounts on the component's own unmount.
+- **A narrowed value is asserted where it is read outside its branch.** React's getter, Qwik's
+  task and Svelte's attachment read the value after the conditional that narrowed it, so a read
+  the condition narrows takes `!`, as Solid's and Angular's do (`assertedValue`). Qwik's task
+  first checks that the element is still in the document.
+- **The wrappers' own names never hide the hooks' reads.** A target's wrapper (Svelte's and
+  Solid's factory, Angular's class) names its locals apart from every name a hook reads, `hooks_1`
+  beside a module's `hooks` constant, and Vue names the binding's fields apart from a hook's
+  locals, `{ value, oldValue: oldValue_1 }`. A hook's trailing parameters that its body never
+  reads are left out, so no output declares an unused one.
 - **A setup function as the value keeps one identity.** React reads it as the stable function it
   passes to client code (`useState(() => fn)`), Angular as an arrow member, and Qwik as a QRL, so
   `updated` doesn't run at every render.
@@ -163,7 +181,7 @@ would need a helper component of its own, and Qwik gives a row no signal of its 
 - P9's Solid 2 variant keeps the ref factory, with `onSettled` for `onMount`, and must do nothing
   on the server, where Solid 2 evaluates a ref.
 - The cases are `directives/click-outside`, `directives/focus-trap`, `directives/updated-value`,
-  `directives/shared`, `directives/order`, `diagnostics/invalid-directive`,
+  `directives/shared`, `directives/order`, `directives/shapes`, `diagnostics/invalid-directive`,
   `diagnostics/unknown-directive` and `diagnostics/invalid-directive-use`.
 
 ## Alternatives considered
@@ -174,5 +192,6 @@ would need a helper component of its own, and Qwik gives a row no signal of its 
   gives, and Vue's nested order would turn parent first.
 - **Solid's `use:`.** Solid 2 drops it, and it needs a global `JSX.Directives` augmentation.
 - **Svelte actions.** An action's `update` treats an object as always changed.
-- **One queue for every directive.** No output imports another's helper (P7), so each output that
-  needs the queue declares its own.
+- **A queue for each output.** No import is needed either way, but hooks from two outputs, a
+  directive module's and a component's, would each sort only among their own, and run out of
+  Vue's order.
