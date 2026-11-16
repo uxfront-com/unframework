@@ -1,5 +1,23 @@
 # @unframework.dev/testing
 
+## 0.2.2
+
+### Patch Changes
+
+- 561e45f: Point the `homepage` link npm shows for each package at https://unframework.dev, the site and its docs, in place of the package's README on GitHub.
+- Updated dependencies [561e45f]
+  - @unframework.dev/codegen@0.1.2
+  - @unframework.dev/compiler@0.2.2
+  - @unframework.dev/ir@0.1.1
+  - @unframework.dev/target-angular@0.1.2
+  - @unframework.dev/target-astro@0.1.2
+  - @unframework.dev/target-qwik@0.1.2
+  - @unframework.dev/target-react@0.1.2
+  - @unframework.dev/target-solid@0.1.2
+  - @unframework.dev/target-svelte@0.1.2
+  - @unframework.dev/target-vue@0.1.2
+  - @unframework.dev/unplugin@0.1.3
+
 ## 0.2.1
 
 ### Patch Changes

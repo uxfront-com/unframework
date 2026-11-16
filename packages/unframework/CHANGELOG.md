@@ -1,5 +1,16 @@
 # @uxfront/unframework
 
+## 0.2.3
+
+### Patch Changes
+
+- 561e45f: Point the `homepage` link npm shows for each package at https://unframework.dev, the site and its docs, in place of the package's README on GitHub.
+- Updated dependencies [561e45f]
+  - @unframework.dev/cli@0.1.4
+  - @unframework.dev/compiler@0.2.2
+  - @unframework.dev/testing@0.2.2
+  - @unframework.dev/visual@0.2.2
+
 ## 0.2.2
 
 ### Patch Changes
