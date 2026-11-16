@@ -112,6 +112,7 @@ describeTargets("directives/rows", () => {
         // The listener beside a directive runs once per event.
         const output = () => view.container.querySelector("output")?.textContent;
         await view.user.click(view.getByRole("button", { name: "Focus Alpha" }));
+        await view.expectParity("focused");
         await expect.poll(output).toBe("1");
 
         // Renaming one row runs `updated` on that row's elements only, and no other directive.
@@ -126,6 +127,7 @@ describeTargets("directives/rows", () => {
         ]);
         // A render of the list adds the listener no second time.
         await view.user.click(view.getByRole("button", { name: "Focus Beta" }));
+        await view.expectParity("focused-again");
         await expect.poll(output).toBe("2");
 
         // A keyed reverse keeps every row's element, and runs no hook.
