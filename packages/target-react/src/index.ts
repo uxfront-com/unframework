@@ -191,7 +191,7 @@ export const react: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: "useDirective",
-      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose ref callback, written in place, takes each element's own value. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose function makes each element's ref callback from its value as the row renders, joined with the element's other callbacks through an inline `mergeRefs`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // React has no transition primitive (ADR-0100).
     transition: {

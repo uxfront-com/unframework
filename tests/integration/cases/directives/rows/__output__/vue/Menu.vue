@@ -4,8 +4,8 @@ import { vMark } from "./vMark";
 import { vTrace } from "./vTrace";
 import { ref, shallowRef } from "vue";
 
-const items = shallowRef([
-  { id: "a", label: "Alpha" },
+const items = shallowRef<{ id: string; label: string; note?: string }[]>([
+  { id: "a", label: "Alpha", note: "First" },
   { id: "b", label: "Beta" },
   { id: "c", label: "Gamma" },
 ]);
@@ -22,7 +22,11 @@ const focused = ref(0);
         :key="item.id"
         v-trace="item.label"
         :data-name="item.id"
-      >{{ item.label }}</li>
+      >{{ item.label }}<b
+        v-if="item.note"
+        v-trace="item.note"
+        :data-name="`note-${item.id}`"
+      >{{ item.note }}</b></li>
     </ul>
     <ul aria-label="Marked">
       <li
@@ -63,7 +67,7 @@ const focused = ref(0);
     <button
       type="button"
       @click="items = items.map((item) =>
-        item.id === 'a' ? { id: 'a', label: 'Alpha 2' } : item,
+        item.id === 'a' ? { id: 'a', label: 'Alpha 2', note: 'First' } : item,
       )"
     >Rename first</button>
     <button type="button" @click="items = [...items].reverse()">Reverse</button>

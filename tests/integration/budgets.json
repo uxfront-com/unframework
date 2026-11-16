@@ -1713,11 +1713,11 @@
       }
     },
     "directives/fill-props": {
-      "time": 12.01,
+      "time": 14.51,
       "sizes": {
         "react": {
-          "raw": 4353,
-          "gzip": 2257
+          "raw": 4347,
+          "gzip": 2258
         },
         "vue": {
           "raw": 1590,
@@ -1845,35 +1845,35 @@
       }
     },
     "directives/rows": {
-      "time": 29.38,
+      "time": 38.2,
       "sizes": {
         "react": {
-          "raw": 8049,
-          "gzip": 3666
+          "raw": 8211,
+          "gzip": 3733
         },
         "vue": {
-          "raw": 3662,
-          "gzip": 1709
+          "raw": 3836,
+          "gzip": 1770
         },
         "svelte": {
-          "raw": 5488,
-          "gzip": 2373
+          "raw": 5850,
+          "gzip": 2484
         },
         "solid": {
-          "raw": 7107,
-          "gzip": 3235
+          "raw": 7425,
+          "gzip": 3340
         },
         "angular": {
-          "raw": 13730,
-          "gzip": 5465
+          "raw": 14091,
+          "gzip": 5543
         },
         "qwik": {
-          "raw": 10510,
-          "gzip": 6018
+          "raw": 11096,
+          "gzip": 6360
         },
         "astro": {
-          "raw": 2077,
-          "gzip": 1093
+          "raw": 2156,
+          "gzip": 1132
         }
       }
     },

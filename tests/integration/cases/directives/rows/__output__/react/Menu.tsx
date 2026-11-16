@@ -9,8 +9,8 @@ export interface MenuAttributes {
 }
 
 export default function Menu({ className, style, ...attributes }: MenuAttributes) {
-  const [items, setItems] = useState([
-    { id: "a", label: "Alpha" },
+  const [items, setItems] = useState<{ id: string; label: string; note?: string }[]>([
+    { id: "a", label: "Alpha", note: "First" },
     { id: "b", label: "Beta" },
     { id: "c", label: "Gamma" },
   ]);
@@ -21,10 +21,11 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
   const focusedRef = useRef(focused);
   const withTrace = useElementDirective(vTrace);
   const withTrace_1 = useElementDirective(vTrace);
-  const withMark = useElementDirective(vMark);
   const withTrace_2 = useElementDirective(vTrace);
+  const withMark = useElementDirective(vMark);
   const withTrace_3 = useElementDirective(vTrace);
   const withTrace_4 = useElementDirective(vTrace);
+  const withTrace_5 = useElementDirective(vTrace);
 
   return (
     <section
@@ -35,8 +36,13 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
     >
       <ul aria-label="Items">
         {items.map((item) => (
-          <li key={item.id} data-name={item.id} ref={withTrace(item.label)}>
+          <li key={item.id} data-name={item.id} ref={withTrace_1(item.label)}>
             {item.label}
+            {item.note ? (
+              <b data-name={`note-${item.id}`} ref={withTrace(item.note)}>
+                {item.note}
+              </b>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -45,7 +51,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
           <li
             key={item.id}
             data-name={`both-${item.id}`}
-            ref={mergeRefs(withTrace_1(item.label), withMark(item.id))}
+            ref={mergeRefs(withTrace_2(item.label), withMark(item.id))}
           >
             {item.label}
           </li>
@@ -57,7 +63,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
             key={item.id}
             type="button"
             data-name={`focus-${item.id}`}
-            ref={mergeRefs(withTrace_2(item.label), (element) =>
+            ref={mergeRefs(withTrace_3(item.label), (element) =>
               listen(element, "focusin", () => {
                 focusedRef.current++;
                 setFocused(focusedRef.current);
@@ -74,7 +80,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
           <li
             key={item.id}
             data-name={`prefixed-${item.id}`}
-            ref={withTrace_3(`${prefix} ${item.label}`)}
+            ref={withTrace_4(`${prefix} ${item.label}`)}
           >
             {item.label}
           </li>
@@ -82,7 +88,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
       </ul>
       <Picker
         renderOption={({ option }) => (
-          <span data-name={`option-${option.id}`} ref={withTrace_4(`${prefix} ${option.label}`)}>
+          <span data-name={`option-${option.id}`} ref={withTrace_5(`${prefix} ${option.label}`)}>
             {option.label}
           </span>
         )}
@@ -91,7 +97,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
         type="button"
         onClick={() => {
           itemsRef.current = itemsRef.current.map((item) =>
-            item.id === "a" ? { id: "a", label: "Alpha 2" } : item,
+            item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
           );
           setItems(itemsRef.current);
         }}

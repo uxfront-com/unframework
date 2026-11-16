@@ -1,6 +1,6 @@
 - region "Menu":
   - list "Items":
-    - listitem: Alpha 2
+    - listitem: Alpha 2First
     - listitem: Beta
     - listitem: Gamma
   - list "Marked":

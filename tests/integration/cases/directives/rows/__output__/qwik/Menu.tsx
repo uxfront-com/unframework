@@ -12,8 +12,8 @@ import {
 
 export default component$<{ class?: ClassList; style?: CSSProperties }>(
   ({ class: className, style, ...attributes }) => {
-    const items = useSignal([
-      { id: "a", label: "Alpha" },
+    const items = useSignal<{ id: string; label: string; note?: string }[]>([
+      { id: "a", label: "Alpha", note: "First" },
       { id: "b", label: "Beta" },
       { id: "c", label: "Gamma" },
     ]);
@@ -39,10 +39,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     );
 
     const traceElements_1 = useSignal<
-      {
-        element: DirectiveElement<typeof vTrace>;
-        values: [DirectiveValue<typeof vTrace>, DirectiveValue<typeof vMark>];
-      }[]
+      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
     >([]);
 
     useVisibleTask$(
@@ -50,20 +47,6 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         for (const { element, values } of track(traceElements_1)) {
           cleanup(
             runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements_1, left),
-              back: collectValues(traceElements_1, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements_1)) {
-          cleanup(
-            runDirective(vMark, element, values[1], {
               leave: (left) => forgetValues(traceElements_1, left),
               back: collectValues(traceElements_1, values),
             }),
@@ -74,7 +57,10 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     );
 
     const traceElements_2 = useSignal<
-      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+      {
+        element: DirectiveElement<typeof vTrace>;
+        values: [DirectiveValue<typeof vTrace>, DirectiveValue<typeof vMark>];
+      }[]
     >([]);
 
     useVisibleTask$(
@@ -82,6 +68,20 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         for (const { element, values } of track(traceElements_2)) {
           cleanup(
             runDirective(vTrace, element, values[0], {
+              leave: (left) => forgetValues(traceElements_2, left),
+              back: collectValues(traceElements_2, values),
+            }),
+          );
+        }
+      },
+      { strategy: "document-ready" },
+    );
+
+    useVisibleTask$(
+      ({ track, cleanup }) => {
+        for (const { element, values } of track(traceElements_2)) {
+          cleanup(
+            runDirective(vMark, element, values[1], {
               leave: (left) => forgetValues(traceElements_2, left),
               back: collectValues(traceElements_2, values),
             }),
@@ -127,6 +127,24 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       { strategy: "document-ready" },
     );
 
+    const traceElements_5 = useSignal<
+      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+    >([]);
+
+    useVisibleTask$(
+      ({ track, cleanup }) => {
+        for (const { element, values } of track(traceElements_5)) {
+          cleanup(
+            runDirective(vTrace, element, values[0], {
+              leave: (left) => forgetValues(traceElements_5, left),
+              back: collectValues(traceElements_5, values),
+            }),
+          );
+        }
+      },
+      { strategy: "document-ready" },
+    );
+
     return (
       <section
         class={["menu", className]}
@@ -138,6 +156,11 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           {items.value.map((item) => (
             <li key={item.id} data-name={item.id} ref={collectValues(traceElements, [item.label])}>
               {item.label}
+              {item.note ? (
+                <b data-name={`note-${item.id}`} ref={collectValues(traceElements_1, [item.note])}>
+                  {item.note}
+                </b>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -146,7 +169,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
             <li
               key={item.id}
               data-name={`both-${item.id}`}
-              ref={collectValues(traceElements_1, [item.label, item.id])}
+              ref={collectValues(traceElements_2, [item.label, item.id])}
             >
               {item.label}
             </li>
@@ -159,7 +182,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
               type="button"
               data-name={`focus-${item.id}`}
               onFocusIn$={() => focused.value++}
-              ref={collectValues(traceElements_2, [item.label])}
+              ref={collectValues(traceElements_3, [item.label])}
             >
               Focus {item.label}
             </button>
@@ -171,7 +194,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
             <li
               key={item.id}
               data-name={`prefixed-${item.id}`}
-              ref={collectValues(traceElements_3, [`${prefix.value} ${item.label}`])}
+              ref={collectValues(traceElements_4, [`${prefix.value} ${item.label}`])}
             >
               {item.label}
             </li>
@@ -181,7 +204,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           option$={({ option }) => (
             <span
               data-name={`option-${option.id}`}
-              ref={collectValues(traceElements_4, [`${prefix.value} ${option.label}`])}
+              ref={collectValues(traceElements_5, [`${prefix.value} ${option.label}`])}
             >
               {option.label}
             </span>
@@ -191,7 +214,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           type="button"
           onClick$={() =>
             (items.value = items.value.map((item) =>
-              item.id === "a" ? { id: "a", label: "Alpha 2" } : item,
+              item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
             ))
           }
         >

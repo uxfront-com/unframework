@@ -16,10 +16,10 @@ function scopeAttributes(props: object): Record<string, ""> {
 }
 
 const items = [
-  { id: "a", label: "Alpha" },
+  { id: "a", label: "Alpha", note: "First" },
   { id: "b", label: "Beta" },
   { id: "c", label: "Gamma" },
-];
+] as { id: string; label: string; note?: string }[];
 
 const focused = 0 as number;
 ---
@@ -32,7 +32,9 @@ const focused = 0 as number;
 >
   <ul aria-label="Items">
     {items.map((item) => (
-      <li data-name={item.id}>{item.label}</li>
+      <li
+        data-name={item.id}
+      >{item.label}{item.note ? <b data-name={`note-${item.id}`}>{item.note}</b> : null}</li>
     ))}
   </ul>
   <ul aria-label="Marked">

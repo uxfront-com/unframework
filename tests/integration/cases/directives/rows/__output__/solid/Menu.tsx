@@ -1,11 +1,11 @@
 import Picker from "./Picker";
 import { vMark } from "./vMark";
 import { vTrace } from "./vTrace";
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import { For, type JSX, Show, createMemo, createSignal, untrack } from "solid-js";
 
 export default function Menu(props: { class?: string; style?: JSX.CSSProperties }) {
-  const [items, setItems] = createSignal([
-    { id: "a", label: "Alpha" },
+  const [items, setItems] = createSignal<{ id: string; label: string; note?: string }[]>([
+    { id: "a", label: "Alpha", note: "First" },
     { id: "b", label: "Beta" },
     { id: "c", label: "Gamma" },
   ]);
@@ -24,6 +24,15 @@ export default function Menu(props: { class?: string; style?: JSX.CSSProperties 
           {(item) => (
             <li data-name={item.value.id} ref={vTrace(() => item.value.label)}>
               {item.value.label}
+              <Show
+                when={item.value.note ? { item: item.value, note: item.value.note } : undefined}
+              >
+                {(narrowed) => (
+                  <b data-name={`note-${narrowed().item.id}`} ref={vTrace(() => narrowed().note)}>
+                    {narrowed().note}
+                  </b>
+                )}
+              </Show>
             </li>
           )}
         </KeyedFor>
@@ -80,7 +89,11 @@ export default function Menu(props: { class?: string; style?: JSX.CSSProperties 
       <button
         type="button"
         onClick={() =>
-          setItems(items().map((item) => (item.id === "a" ? { id: "a", label: "Alpha 2" } : item)))
+          setItems(
+            items().map((item) =>
+              item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
+            ),
+          )
         }
       >
         Rename first

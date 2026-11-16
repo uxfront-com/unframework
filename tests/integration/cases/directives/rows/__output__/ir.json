@@ -5,132 +5,139 @@
     {
       "name": "Menu",
       "span": {
-        "start": 490,
-        "end": 2937
+        "start": 546,
+        "end": 3235
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "items@531",
+          "id": "items@587",
           "name": "items",
           "kind": "state",
           "span": {
-            "start": 531,
-            "end": 536
+            "start": 587,
+            "end": 592
           }
         },
         {
-          "id": "prefix@657",
+          "id": "prefix@776",
           "name": "prefix",
           "kind": "state",
           "span": {
-            "start": 657,
-            "end": 663
+            "start": 776,
+            "end": 782
           }
         },
         {
-          "id": "focused@687",
+          "id": "focused@806",
           "name": "focused",
           "kind": "state",
           "span": {
-            "start": 687,
-            "end": 694
+            "start": 806,
+            "end": 813
           }
         },
         {
-          "id": "item@818",
+          "id": "item@937",
           "name": "item",
           "kind": "loopVar",
           "span": {
-            "start": 818,
-            "end": 822
+            "start": 937,
+            "end": 941
           }
         },
         {
-          "id": "item@1021",
+          "id": "item@1304",
           "name": "item",
           "kind": "loopVar",
           "span": {
-            "start": 1021,
-            "end": 1025
+            "start": 1304,
+            "end": 1308
           }
         },
         {
-          "id": "item@1246",
+          "id": "item@1529",
           "name": "item",
           "kind": "loopVar",
           "span": {
-            "start": 1246,
-            "end": 1250
+            "start": 1529,
+            "end": 1533
           }
         },
         {
-          "id": "item@1635",
+          "id": "item@1918",
           "name": "item",
           "kind": "loopVar",
           "span": {
-            "start": 1635,
-            "end": 1639
+            "start": 1918,
+            "end": 1922
           }
         },
         {
-          "id": "option@1910",
+          "id": "option@2193",
           "name": "option",
           "kind": "slotScope",
           "span": {
-            "start": 1910,
-            "end": 1916
+            "start": 2193,
+            "end": 2199
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "items@531",
-          "initial": {
-            "code": "[\n    { id: \"a\", label: \"Alpha\" },\n    { id: \"b\", label: \"Beta\" },\n    { id: \"c\", label: \"Gamma\" },\n  ]",
+          "binding": "items@587",
+          "type": {
+            "code": "{ id: string; label: string; note?: string }[]",
             "span": {
-              "start": 543,
-              "end": 646
+              "start": 599,
+              "end": 645
+            }
+          },
+          "initial": {
+            "code": "[\n    { id: \"a\", label: \"Alpha\", note: \"First\" },\n    { id: \"b\", label: \"Beta\" },\n    { id: \"c\", label: \"Gamma\" },\n  ]",
+            "span": {
+              "start": 647,
+              "end": 765
             },
             "refs": []
           },
           "span": {
-            "start": 525,
-            "end": 648
+            "start": 581,
+            "end": 767
           }
         },
         {
           "kind": "State",
-          "binding": "prefix@657",
+          "binding": "prefix@776",
           "initial": {
             "code": "\"Open\"",
             "span": {
-              "start": 670,
-              "end": 676
+              "start": 789,
+              "end": 795
             },
             "refs": []
           },
           "span": {
-            "start": 651,
-            "end": 678
+            "start": 770,
+            "end": 797
           }
         },
         {
           "kind": "State",
-          "binding": "focused@687",
+          "binding": "focused@806",
           "initial": {
             "code": "0",
             "span": {
-              "start": 701,
-              "end": 702
+              "start": 820,
+              "end": 821
             },
             "refs": []
           },
           "span": {
-            "start": 681,
-            "end": 704
+            "start": 800,
+            "end": 823
           }
         }
       ],
@@ -143,8 +150,8 @@
             "name": "class",
             "value": "menu",
             "span": {
-              "start": 730,
-              "end": 742
+              "start": 849,
+              "end": 861
             }
           },
           {
@@ -152,8 +159,8 @@
             "name": "aria-label",
             "value": "Menu",
             "span": {
-              "start": 743,
-              "end": 760
+              "start": 862,
+              "end": 879
             }
           }
         ],
@@ -167,8 +174,8 @@
                 "name": "aria-label",
                 "value": "Items",
                 "span": {
-                  "start": 772,
-                  "end": 790
+                  "start": 891,
+                  "end": 909
                 }
               }
             ],
@@ -178,34 +185,34 @@
                 "source": {
                   "code": "items.value",
                   "span": {
-                    "start": 801,
-                    "end": 812
+                    "start": 920,
+                    "end": 931
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "items@531",
+                      "binding": "items@587",
                       "span": {
-                        "start": 801,
-                        "end": 812
+                        "start": 920,
+                        "end": 931
                       }
                     }
                   ]
                 },
-                "item": "item@818",
+                "item": "item@937",
                 "key": {
                   "code": "item.id",
                   "span": {
-                    "start": 848,
-                    "end": 855
+                    "start": 967,
+                    "end": 974
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "item@818",
+                      "binding": "item@937",
                       "span": {
-                        "start": 848,
-                        "end": 852
+                        "start": 967,
+                        "end": 971
                       }
                     }
                   ]
@@ -220,23 +227,23 @@
                       "value": {
                         "code": "item.id",
                         "span": {
-                          "start": 868,
-                          "end": 875
+                          "start": 987,
+                          "end": 994
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@818",
+                            "binding": "item@937",
                             "span": {
-                              "start": 868,
-                              "end": 872
+                              "start": 987,
+                              "end": 991
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 857,
-                        "end": 876
+                        "start": 976,
+                        "end": 995
                       }
                     },
                     {
@@ -245,23 +252,23 @@
                       "value": {
                         "code": "item.label",
                         "span": {
-                          "start": 886,
-                          "end": 896
+                          "start": 1005,
+                          "end": 1015
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@818",
+                            "binding": "item@937",
                             "span": {
-                              "start": 886,
-                              "end": 890
+                              "start": 1005,
+                              "end": 1009
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 877,
-                        "end": 897
+                        "start": 996,
+                        "end": 1016
                       }
                     }
                   ],
@@ -271,40 +278,160 @@
                       "value": {
                         "code": "item.label",
                         "span": {
-                          "start": 912,
-                          "end": 922
+                          "start": 1031,
+                          "end": 1041
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@818",
+                            "binding": "item@937",
                             "span": {
-                              "start": 912,
-                              "end": 916
+                              "start": 1031,
+                              "end": 1035
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 911,
-                        "end": 923
+                        "start": 1030,
+                        "end": 1042
+                      }
+                    },
+                    {
+                      "kind": "If",
+                      "branches": [
+                        {
+                          "condition": {
+                            "code": "item.note",
+                            "span": {
+                              "start": 1056,
+                              "end": 1065
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "item@937",
+                                "span": {
+                                  "start": 1056,
+                                  "end": 1060
+                                }
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "kind": "Element",
+                              "tag": "b",
+                              "attributes": [
+                                {
+                                  "kind": "Bound",
+                                  "name": "data-name",
+                                  "value": {
+                                    "code": "`note-${item.id}`",
+                                    "span": {
+                                      "start": 1098,
+                                      "end": 1115
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "item@937",
+                                        "span": {
+                                          "start": 1106,
+                                          "end": 1110
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 1087,
+                                    "end": 1116
+                                  }
+                                },
+                                {
+                                  "kind": "Directive",
+                                  "name": "vTrace",
+                                  "value": {
+                                    "code": "item.note",
+                                    "span": {
+                                      "start": 1126,
+                                      "end": 1135
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "item@937",
+                                        "span": {
+                                          "start": 1126,
+                                          "end": 1130
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 1117,
+                                    "end": 1136
+                                  }
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "kind": "Interpolation",
+                                  "value": {
+                                    "code": "item.note",
+                                    "span": {
+                                      "start": 1155,
+                                      "end": 1164
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "item@937",
+                                        "span": {
+                                          "start": 1155,
+                                          "end": 1159
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 1154,
+                                    "end": 1165
+                                  }
+                                }
+                              ],
+                              "span": {
+                                "start": 1084,
+                                "end": 1184
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 1056,
+                            "end": 1184
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 1056,
+                        "end": 1205
                       }
                     }
                   ],
                   "span": {
-                    "start": 839,
-                    "end": 939
+                    "start": 958,
+                    "end": 1222
                   }
                 },
                 "span": {
-                  "start": 801,
-                  "end": 950
+                  "start": 920,
+                  "end": 1233
                 }
               }
             ],
             "span": {
-              "start": 768,
-              "end": 963
+              "start": 887,
+              "end": 1246
             }
           },
           {
@@ -316,8 +443,8 @@
                 "name": "aria-label",
                 "value": "Marked",
                 "span": {
-                  "start": 974,
-                  "end": 993
+                  "start": 1257,
+                  "end": 1276
                 }
               }
             ],
@@ -327,34 +454,34 @@
                 "source": {
                   "code": "items.value",
                   "span": {
-                    "start": 1004,
-                    "end": 1015
+                    "start": 1287,
+                    "end": 1298
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "items@531",
+                      "binding": "items@587",
                       "span": {
-                        "start": 1004,
-                        "end": 1015
+                        "start": 1287,
+                        "end": 1298
                       }
                     }
                   ]
                 },
-                "item": "item@1021",
+                "item": "item@1304",
                 "key": {
                   "code": "item.id",
                   "span": {
-                    "start": 1051,
-                    "end": 1058
+                    "start": 1334,
+                    "end": 1341
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "item@1021",
+                      "binding": "item@1304",
                       "span": {
-                        "start": 1051,
-                        "end": 1055
+                        "start": 1334,
+                        "end": 1338
                       }
                     }
                   ]
@@ -369,23 +496,23 @@
                       "value": {
                         "code": "`both-${item.id}`",
                         "span": {
-                          "start": 1071,
-                          "end": 1088
+                          "start": 1354,
+                          "end": 1371
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1021",
+                            "binding": "item@1304",
                             "span": {
-                              "start": 1079,
-                              "end": 1083
+                              "start": 1362,
+                              "end": 1366
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1060,
-                        "end": 1089
+                        "start": 1343,
+                        "end": 1372
                       }
                     },
                     {
@@ -394,23 +521,23 @@
                       "value": {
                         "code": "item.label",
                         "span": {
-                          "start": 1099,
-                          "end": 1109
+                          "start": 1382,
+                          "end": 1392
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1021",
+                            "binding": "item@1304",
                             "span": {
-                              "start": 1099,
-                              "end": 1103
+                              "start": 1382,
+                              "end": 1386
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1090,
-                        "end": 1110
+                        "start": 1373,
+                        "end": 1393
                       }
                     },
                     {
@@ -419,23 +546,23 @@
                       "value": {
                         "code": "item.id",
                         "span": {
-                          "start": 1119,
-                          "end": 1126
+                          "start": 1402,
+                          "end": 1409
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1021",
+                            "binding": "item@1304",
                             "span": {
-                              "start": 1119,
-                              "end": 1123
+                              "start": 1402,
+                              "end": 1406
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1111,
-                        "end": 1127
+                        "start": 1394,
+                        "end": 1410
                       }
                     }
                   ],
@@ -445,40 +572,40 @@
                       "value": {
                         "code": "item.label",
                         "span": {
-                          "start": 1142,
-                          "end": 1152
+                          "start": 1425,
+                          "end": 1435
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1021",
+                            "binding": "item@1304",
                             "span": {
-                              "start": 1142,
-                              "end": 1146
+                              "start": 1425,
+                              "end": 1429
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1141,
-                        "end": 1153
+                        "start": 1424,
+                        "end": 1436
                       }
                     }
                   ],
                   "span": {
-                    "start": 1042,
-                    "end": 1169
+                    "start": 1325,
+                    "end": 1452
                   }
                 },
                 "span": {
-                  "start": 1004,
-                  "end": 1180
+                  "start": 1287,
+                  "end": 1463
                 }
               }
             ],
             "span": {
-              "start": 970,
-              "end": 1193
+              "start": 1253,
+              "end": 1476
             }
           },
           {
@@ -490,8 +617,8 @@
                 "name": "class",
                 "value": "focus",
                 "span": {
-                  "start": 1205,
-                  "end": 1218
+                  "start": 1488,
+                  "end": 1501
                 }
               }
             ],
@@ -501,34 +628,34 @@
                 "source": {
                   "code": "items.value",
                   "span": {
-                    "start": 1229,
-                    "end": 1240
+                    "start": 1512,
+                    "end": 1523
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "items@531",
+                      "binding": "items@587",
                       "span": {
-                        "start": 1229,
-                        "end": 1240
+                        "start": 1512,
+                        "end": 1523
                       }
                     }
                   ]
                 },
-                "item": "item@1246",
+                "item": "item@1529",
                 "key": {
                   "code": "item.id",
                   "span": {
-                    "start": 1292,
-                    "end": 1299
+                    "start": 1575,
+                    "end": 1582
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "item@1246",
+                      "binding": "item@1529",
                       "span": {
-                        "start": 1292,
-                        "end": 1296
+                        "start": 1575,
+                        "end": 1579
                       }
                     }
                   ]
@@ -542,8 +669,8 @@
                       "name": "type",
                       "value": "button",
                       "span": {
-                        "start": 1313,
-                        "end": 1326
+                        "start": 1596,
+                        "end": 1609
                       }
                     },
                     {
@@ -552,23 +679,23 @@
                       "value": {
                         "code": "`focus-${item.id}`",
                         "span": {
-                          "start": 1350,
-                          "end": 1368
+                          "start": 1633,
+                          "end": 1651
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1246",
+                            "binding": "item@1529",
                             "span": {
-                              "start": 1359,
-                              "end": 1363
+                              "start": 1642,
+                              "end": 1646
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1339,
-                        "end": 1369
+                        "start": 1622,
+                        "end": 1652
                       }
                     },
                     {
@@ -581,21 +708,21 @@
                           "body": {
                             "code": "focused.value++",
                             "span": {
-                              "start": 1399,
-                              "end": 1414
+                              "start": 1682,
+                              "end": 1697
                             },
                             "refs": [
                               {
                                 "kind": "Write",
-                                "binding": "focused@687",
+                                "binding": "focused@806",
                                 "operator": "++",
                                 "span": {
-                                  "start": 1399,
-                                  "end": 1414
+                                  "start": 1682,
+                                  "end": 1697
                                 },
                                 "target": {
-                                  "start": 1399,
-                                  "end": 1412
+                                  "start": 1682,
+                                  "end": 1695
                                 },
                                 "arrowBody": true
                               }
@@ -603,18 +730,18 @@
                           },
                           "expression": true,
                           "span": {
-                            "start": 1393,
-                            "end": 1414
+                            "start": 1676,
+                            "end": 1697
                           }
                         },
                         "span": {
-                          "start": 1393,
-                          "end": 1414
+                          "start": 1676,
+                          "end": 1697
                         }
                       },
                       "span": {
-                        "start": 1382,
-                        "end": 1415
+                        "start": 1665,
+                        "end": 1698
                       }
                     },
                     {
@@ -623,23 +750,23 @@
                       "value": {
                         "code": "item.label",
                         "span": {
-                          "start": 1437,
-                          "end": 1447
+                          "start": 1720,
+                          "end": 1730
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1246",
+                            "binding": "item@1529",
                             "span": {
-                              "start": 1437,
-                              "end": 1441
+                              "start": 1720,
+                              "end": 1724
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1428,
-                        "end": 1448
+                        "start": 1711,
+                        "end": 1731
                       }
                     }
                   ],
@@ -648,8 +775,8 @@
                       "kind": "Text",
                       "value": "Focus ",
                       "span": {
-                        "start": 1460,
-                        "end": 1479
+                        "start": 1743,
+                        "end": 1762
                       }
                     },
                     {
@@ -657,40 +784,40 @@
                       "value": {
                         "code": "item.label",
                         "span": {
-                          "start": 1480,
-                          "end": 1490
+                          "start": 1763,
+                          "end": 1773
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1246",
+                            "binding": "item@1529",
                             "span": {
-                              "start": 1480,
-                              "end": 1484
+                              "start": 1763,
+                              "end": 1767
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1479,
-                        "end": 1491
+                        "start": 1762,
+                        "end": 1774
                       }
                     }
                   ],
                   "span": {
-                    "start": 1267,
-                    "end": 1511
+                    "start": 1550,
+                    "end": 1794
                   }
                 },
                 "span": {
-                  "start": 1229,
-                  "end": 1522
+                  "start": 1512,
+                  "end": 1805
                 }
               }
             ],
             "span": {
-              "start": 1200,
-              "end": 1536
+              "start": 1483,
+              "end": 1819
             }
           },
           {
@@ -703,29 +830,29 @@
                 "value": {
                   "code": "focused.value",
                   "span": {
-                    "start": 1552,
-                    "end": 1565
+                    "start": 1835,
+                    "end": 1848
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "focused@687",
+                      "binding": "focused@806",
                       "span": {
-                        "start": 1552,
-                        "end": 1565
+                        "start": 1835,
+                        "end": 1848
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1551,
-                  "end": 1566
+                  "start": 1834,
+                  "end": 1849
                 }
               }
             ],
             "span": {
-              "start": 1543,
-              "end": 1575
+              "start": 1826,
+              "end": 1858
             }
           },
           {
@@ -737,8 +864,8 @@
                 "name": "aria-label",
                 "value": "Prefixed",
                 "span": {
-                  "start": 1586,
-                  "end": 1607
+                  "start": 1869,
+                  "end": 1890
                 }
               }
             ],
@@ -748,34 +875,34 @@
                 "source": {
                   "code": "items.value",
                   "span": {
-                    "start": 1618,
-                    "end": 1629
+                    "start": 1901,
+                    "end": 1912
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "items@531",
+                      "binding": "items@587",
                       "span": {
-                        "start": 1618,
-                        "end": 1629
+                        "start": 1901,
+                        "end": 1912
                       }
                     }
                   ]
                 },
-                "item": "item@1635",
+                "item": "item@1918",
                 "key": {
                   "code": "item.id",
                   "span": {
-                    "start": 1677,
-                    "end": 1684
+                    "start": 1960,
+                    "end": 1967
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "item@1635",
+                      "binding": "item@1918",
                       "span": {
-                        "start": 1677,
-                        "end": 1681
+                        "start": 1960,
+                        "end": 1964
                       }
                     }
                   ]
@@ -790,23 +917,23 @@
                       "value": {
                         "code": "`prefixed-${item.id}`",
                         "span": {
-                          "start": 1709,
-                          "end": 1730
+                          "start": 1992,
+                          "end": 2013
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1635",
+                            "binding": "item@1918",
                             "span": {
-                              "start": 1721,
-                              "end": 1725
+                              "start": 2004,
+                              "end": 2008
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1698,
-                        "end": 1731
+                        "start": 1981,
+                        "end": 2014
                       }
                     },
                     {
@@ -815,31 +942,31 @@
                       "value": {
                         "code": "`${prefix.value} ${item.label}`",
                         "span": {
-                          "start": 1753,
-                          "end": 1784
+                          "start": 2036,
+                          "end": 2067
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "prefix@657",
+                            "binding": "prefix@776",
                             "span": {
-                              "start": 1756,
-                              "end": 1768
+                              "start": 2039,
+                              "end": 2051
                             }
                           },
                           {
                             "kind": "Binding",
-                            "binding": "item@1635",
+                            "binding": "item@1918",
                             "span": {
-                              "start": 1772,
-                              "end": 1776
+                              "start": 2055,
+                              "end": 2059
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1744,
-                        "end": 1785
+                        "start": 2027,
+                        "end": 2068
                       }
                     }
                   ],
@@ -849,40 +976,40 @@
                       "value": {
                         "code": "item.label",
                         "span": {
-                          "start": 1811,
-                          "end": 1821
+                          "start": 2094,
+                          "end": 2104
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "item@1635",
+                            "binding": "item@1918",
                             "span": {
-                              "start": 1811,
-                              "end": 1815
+                              "start": 2094,
+                              "end": 2098
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1810,
-                        "end": 1822
+                        "start": 2093,
+                        "end": 2105
                       }
                     }
                   ],
                   "span": {
-                    "start": 1656,
-                    "end": 1838
+                    "start": 1939,
+                    "end": 2121
                   }
                 },
                 "span": {
-                  "start": 1618,
-                  "end": 1849
+                  "start": 1901,
+                  "end": 2132
                 }
               }
             ],
             "span": {
-              "start": 1582,
-              "end": 1862
+              "start": 1865,
+              "end": 2145
             }
           },
           {
@@ -899,13 +1026,13 @@
                       "option"
                     ],
                     "span": {
-                      "start": 1908,
-                      "end": 1918
+                      "start": 2191,
+                      "end": 2201
                     }
                   },
                   "span": {
-                    "start": 1908,
-                    "end": 1918
+                    "start": 2191,
+                    "end": 2201
                   }
                 },
                 "children": [
@@ -919,23 +1046,23 @@
                         "value": {
                           "code": "`option-${option.id}`",
                           "span": {
-                            "start": 1954,
-                            "end": 1975
+                            "start": 2237,
+                            "end": 2258
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "option@1910",
+                              "binding": "option@2193",
                               "span": {
-                                "start": 1964,
-                                "end": 1970
+                                "start": 2247,
+                                "end": 2253
                               }
                             }
                           ]
                         },
                         "span": {
-                          "start": 1943,
-                          "end": 1976
+                          "start": 2226,
+                          "end": 2259
                         }
                       },
                       {
@@ -944,31 +1071,31 @@
                         "value": {
                           "code": "`${prefix.value} ${option.label}`",
                           "span": {
-                            "start": 1986,
-                            "end": 2019
+                            "start": 2269,
+                            "end": 2302
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "prefix@657",
+                              "binding": "prefix@776",
                               "span": {
-                                "start": 1989,
-                                "end": 2001
+                                "start": 2272,
+                                "end": 2284
                               }
                             },
                             {
                               "kind": "Binding",
-                              "binding": "option@1910",
+                              "binding": "option@2193",
                               "span": {
-                                "start": 2005,
-                                "end": 2011
+                                "start": 2288,
+                                "end": 2294
                               }
                             }
                           ]
                         },
                         "span": {
-                          "start": 1977,
-                          "end": 2020
+                          "start": 2260,
+                          "end": 2303
                         }
                       }
                     ],
@@ -978,41 +1105,41 @@
                         "value": {
                           "code": "option.label",
                           "span": {
-                            "start": 2037,
-                            "end": 2049
+                            "start": 2320,
+                            "end": 2332
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "option@1910",
+                              "binding": "option@2193",
                               "span": {
-                                "start": 2037,
-                                "end": 2043
+                                "start": 2320,
+                                "end": 2326
                               }
                             }
                           ]
                         },
                         "span": {
-                          "start": 2036,
-                          "end": 2050
+                          "start": 2319,
+                          "end": 2333
                         }
                       }
                     ],
                     "span": {
-                      "start": 1937,
-                      "end": 2070
+                      "start": 2220,
+                      "end": 2353
                     }
                   }
                 ],
                 "span": {
-                  "start": 1899,
-                  "end": 2082
+                  "start": 2182,
+                  "end": 2365
                 }
               }
             ],
             "span": {
-              "start": 1869,
-              "end": 2110
+              "start": 2152,
+              "end": 2393
             }
           },
           {
@@ -1024,8 +1151,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2133,
-                  "end": 2146
+                  "start": 2416,
+                  "end": 2429
                 }
               },
               {
@@ -1036,54 +1163,54 @@
                   "function": {
                     "parameters": [],
                     "body": {
-                      "code": "(items.value = items.value.map((item) =>\n            item.id === \"a\" ? { id: \"a\", label: \"Alpha 2\" } : item,\n          ))",
+                      "code": "(items.value = items.value.map((item) =>\n            item.id === \"a\" ? { id: \"a\", label: \"Alpha 2\", note: \"First\" } : item,\n          ))",
                       "span": {
-                        "start": 2180,
-                        "end": 2301
+                        "start": 2463,
+                        "end": 2599
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "operator": "=",
                           "span": {
-                            "start": 2180,
-                            "end": 2301
+                            "start": 2463,
+                            "end": 2599
                           },
                           "target": {
-                            "start": 2181,
-                            "end": 2192
+                            "start": 2464,
+                            "end": 2475
                           },
                           "value": {
-                            "start": 2195,
-                            "end": 2300
+                            "start": 2478,
+                            "end": 2598
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "span": {
-                            "start": 2195,
-                            "end": 2206
+                            "start": 2478,
+                            "end": 2489
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 2164,
-                      "end": 2301
+                      "start": 2447,
+                      "end": 2599
                     }
                   },
                   "span": {
-                    "start": 2164,
-                    "end": 2301
+                    "start": 2447,
+                    "end": 2599
                   }
                 },
                 "span": {
-                  "start": 2155,
-                  "end": 2311
+                  "start": 2438,
+                  "end": 2609
                 }
               }
             ],
@@ -1092,14 +1219,14 @@
                 "kind": "Text",
                 "value": "Rename first",
                 "span": {
-                  "start": 2319,
-                  "end": 2347
+                  "start": 2617,
+                  "end": 2645
                 }
               }
             ],
             "span": {
-              "start": 2117,
-              "end": 2356
+              "start": 2400,
+              "end": 2654
             }
           },
           {
@@ -1111,8 +1238,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2371,
-                  "end": 2384
+                  "start": 2669,
+                  "end": 2682
                 }
               },
               {
@@ -1125,52 +1252,52 @@
                     "body": {
                       "code": "(items.value = [...items.value].reverse())",
                       "span": {
-                        "start": 2400,
-                        "end": 2442
+                        "start": 2698,
+                        "end": 2740
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "operator": "=",
                           "span": {
-                            "start": 2400,
-                            "end": 2442
+                            "start": 2698,
+                            "end": 2740
                           },
                           "target": {
-                            "start": 2401,
-                            "end": 2412
+                            "start": 2699,
+                            "end": 2710
                           },
                           "value": {
-                            "start": 2415,
-                            "end": 2441
+                            "start": 2713,
+                            "end": 2739
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "span": {
-                            "start": 2419,
-                            "end": 2430
+                            "start": 2717,
+                            "end": 2728
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 2394,
-                      "end": 2442
+                      "start": 2692,
+                      "end": 2740
                     }
                   },
                   "span": {
-                    "start": 2394,
-                    "end": 2442
+                    "start": 2692,
+                    "end": 2740
                   }
                 },
                 "span": {
-                  "start": 2385,
-                  "end": 2443
+                  "start": 2683,
+                  "end": 2741
                 }
               }
             ],
@@ -1179,14 +1306,14 @@
                 "kind": "Text",
                 "value": "Reverse",
                 "span": {
-                  "start": 2444,
-                  "end": 2467
+                  "start": 2742,
+                  "end": 2765
                 }
               }
             ],
             "span": {
-              "start": 2363,
-              "end": 2476
+              "start": 2661,
+              "end": 2774
             }
           },
           {
@@ -1198,8 +1325,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2499,
-                  "end": 2512
+                  "start": 2797,
+                  "end": 2810
                 }
               },
               {
@@ -1212,52 +1339,52 @@
                     "body": {
                       "code": "(items.value = items.value.filter((item) => item.id !== \"b\"))",
                       "span": {
-                        "start": 2536,
-                        "end": 2597
+                        "start": 2834,
+                        "end": 2895
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "operator": "=",
                           "span": {
-                            "start": 2536,
-                            "end": 2597
+                            "start": 2834,
+                            "end": 2895
                           },
                           "target": {
-                            "start": 2537,
-                            "end": 2548
+                            "start": 2835,
+                            "end": 2846
                           },
                           "value": {
-                            "start": 2551,
-                            "end": 2596
+                            "start": 2849,
+                            "end": 2894
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "span": {
-                            "start": 2551,
-                            "end": 2562
+                            "start": 2849,
+                            "end": 2860
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 2530,
-                      "end": 2597
+                      "start": 2828,
+                      "end": 2895
                     }
                   },
                   "span": {
-                    "start": 2530,
-                    "end": 2597
+                    "start": 2828,
+                    "end": 2895
                   }
                 },
                 "span": {
-                  "start": 2521,
-                  "end": 2598
+                  "start": 2819,
+                  "end": 2896
                 }
               }
             ],
@@ -1266,14 +1393,14 @@
                 "kind": "Text",
                 "value": "Remove second",
                 "span": {
-                  "start": 2606,
-                  "end": 2635
+                  "start": 2904,
+                  "end": 2933
                 }
               }
             ],
             "span": {
-              "start": 2483,
-              "end": 2644
+              "start": 2781,
+              "end": 2942
             }
           },
           {
@@ -1285,8 +1412,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2667,
-                  "end": 2680
+                  "start": 2965,
+                  "end": 2978
                 }
               },
               {
@@ -1299,52 +1426,52 @@
                     "body": {
                       "code": "(items.value = [...items.value, { id: \"d\", label: \"Delta\" }])",
                       "span": {
-                        "start": 2704,
-                        "end": 2765
+                        "start": 3002,
+                        "end": 3063
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "operator": "=",
                           "span": {
-                            "start": 2704,
-                            "end": 2765
+                            "start": 3002,
+                            "end": 3063
                           },
                           "target": {
-                            "start": 2705,
-                            "end": 2716
+                            "start": 3003,
+                            "end": 3014
                           },
                           "value": {
-                            "start": 2719,
-                            "end": 2764
+                            "start": 3017,
+                            "end": 3062
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "items@531",
+                          "binding": "items@587",
                           "span": {
-                            "start": 2723,
-                            "end": 2734
+                            "start": 3021,
+                            "end": 3032
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 2698,
-                      "end": 2765
+                      "start": 2996,
+                      "end": 3063
                     }
                   },
                   "span": {
-                    "start": 2698,
-                    "end": 2765
+                    "start": 2996,
+                    "end": 3063
                   }
                 },
                 "span": {
-                  "start": 2689,
-                  "end": 2766
+                  "start": 2987,
+                  "end": 3064
                 }
               }
             ],
@@ -1353,14 +1480,14 @@
                 "kind": "Text",
                 "value": "Add item",
                 "span": {
-                  "start": 2774,
-                  "end": 2798
+                  "start": 3072,
+                  "end": 3096
                 }
               }
             ],
             "span": {
-              "start": 2651,
-              "end": 2807
+              "start": 2949,
+              "end": 3105
             }
           },
           {
@@ -1372,8 +1499,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2822,
-                  "end": 2835
+                  "start": 3120,
+                  "end": 3133
                 }
               },
               {
@@ -1386,25 +1513,25 @@
                     "body": {
                       "code": "(prefix.value = \"Close\")",
                       "span": {
-                        "start": 2851,
-                        "end": 2875
+                        "start": 3149,
+                        "end": 3173
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "prefix@657",
+                          "binding": "prefix@776",
                           "operator": "=",
                           "span": {
-                            "start": 2851,
-                            "end": 2875
+                            "start": 3149,
+                            "end": 3173
                           },
                           "target": {
-                            "start": 2852,
-                            "end": 2864
+                            "start": 3150,
+                            "end": 3162
                           },
                           "value": {
-                            "start": 2867,
-                            "end": 2874
+                            "start": 3165,
+                            "end": 3172
                           },
                           "arrowBody": true
                         }
@@ -1412,18 +1539,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 2845,
-                      "end": 2875
+                      "start": 3143,
+                      "end": 3173
                     }
                   },
                   "span": {
-                    "start": 2845,
-                    "end": 2875
+                    "start": 3143,
+                    "end": 3173
                   }
                 },
                 "span": {
-                  "start": 2836,
-                  "end": 2876
+                  "start": 3134,
+                  "end": 3174
                 }
               }
             ],
@@ -1432,20 +1559,20 @@
                 "kind": "Text",
                 "value": "Change prefix",
                 "span": {
-                  "start": 2877,
-                  "end": 2906
+                  "start": 3175,
+                  "end": 3204
                 }
               }
             ],
             "span": {
-              "start": 2814,
-              "end": 2915
+              "start": 3112,
+              "end": 3213
             }
           }
         ],
         "span": {
-          "start": 721,
-          "end": 2930
+          "start": 840,
+          "end": 3228
         }
       }
     }
@@ -1456,8 +1583,8 @@
       "name": "default",
       "local": "Menu",
       "span": {
-        "start": 490,
-        "end": 2937
+        "start": 546,
+        "end": 3235
       }
     }
   ],

@@ -8,6 +8,9 @@
         "  <ul aria-label=\"Items\">",
         "    <li data-name=\"a\">",
         "      \"Alpha 2\"",
+        "      <b data-name=\"note-a\">",
+        "        \"First\"",
+        "      </b>",
         "    </li>",
         "    <li data-name=\"b\">",
         "      \"Beta\"",
@@ -92,7 +95,7 @@
       "aria": [
         "- region \"Menu\":",
         "  - list \"Items\":",
-        "    - listitem: Alpha 2",
+        "    - listitem: Alpha 2First",
         "    - listitem: Beta",
         "    - listitem: Gamma",
         "  - list \"Marked\":",

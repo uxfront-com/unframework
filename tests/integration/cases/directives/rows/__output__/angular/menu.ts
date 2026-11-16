@@ -55,7 +55,13 @@ export class ScopeAttributes implements OnInit {
     >
       <ul aria-label="Items">
         @for (item of items; track item.id) {
-          <li [attr.data-name]="item.id" [vTrace]="item.label">{{ item.label }}</li>
+          <li
+            [attr.data-name]="item.id"
+            [vTrace]="item.label"
+          >{{ item.label }}@if (item.note) {<b
+            [attr.data-name]="'note-' + item.id"
+            [vTrace]="item.note"
+          >{{ item.note }}</b>}</li>
         }
       </ul>
       <ul aria-label="Marked">
@@ -105,8 +111,8 @@ export class ScopeAttributes implements OnInit {
 export default class Menu {
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
-  protected readonly items = signal([
-    { id: "a", label: "Alpha" },
+  protected readonly items = signal<{ id: string; label: string; note?: string }[]>([
+    { id: "a", label: "Alpha", note: "First" },
     { id: "b", label: "Beta" },
     { id: "c", label: "Gamma" },
   ]);
@@ -119,7 +125,9 @@ export default class Menu {
 
   protected onRenameFirst() {
     this.items.set(
-      this.items().map((item) => (item.id === "a" ? { id: "a", label: "Alpha 2" } : item)),
+      this.items().map((item) =>
+        item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
+      ),
     );
   }
 

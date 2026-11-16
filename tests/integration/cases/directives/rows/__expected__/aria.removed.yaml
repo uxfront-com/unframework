@@ -1,7 +1,7 @@
 - region "Menu":
   - list "Items":
     - listitem: Gamma
-    - listitem: Alpha 2
+    - listitem: Alpha 2First
   - list "Marked":
     - listitem: Gamma
     - listitem: Alpha 2

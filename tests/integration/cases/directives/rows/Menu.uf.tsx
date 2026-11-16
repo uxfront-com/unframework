@@ -6,11 +6,11 @@ import { vTrace } from "./trace.uf.ts";
 
 // A directive on each row a list renders, and on each element a scoped fill renders, whose value
 // reads the row's item or the fill's props (ADR-0108): each element gets its own hooks with its
-// own value. A row applies two such directives, another listens beside one, and another's value
-// reads the component's state too.
+// own value. A row applies two such directives, another listens beside one, another's value
+// reads the component's state too, and one in a branch of a row reads what the branch narrows.
 export default function Menu() {
-  const items = ref([
-    { id: "a", label: "Alpha" },
+  const items = ref<{ id: string; label: string; note?: string }[]>([
+    { id: "a", label: "Alpha", note: "First" },
     { id: "b", label: "Beta" },
     { id: "c", label: "Gamma" },
   ]);
@@ -23,6 +23,11 @@ export default function Menu() {
         {items.value.map((item) => (
           <li key={item.id} data-name={item.id} v-trace={item.label}>
             {item.label}
+            {item.note ? (
+              <b data-name={`note-${item.id}`} v-trace={item.note}>
+                {item.note}
+              </b>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -71,7 +76,7 @@ export default function Menu() {
         type="button"
         onClick={() =>
           (items.value = items.value.map((item) =>
-            item.id === "a" ? { id: "a", label: "Alpha 2" } : item,
+            item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
           ))
         }
       >

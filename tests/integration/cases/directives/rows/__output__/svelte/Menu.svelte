@@ -10,8 +10,8 @@
 
   let { class: className, style, ...attributes }: Props = $props();
 
-  let items = $state.raw([
-    { id: "a", label: "Alpha" },
+  let items = $state.raw<{ id: string; label: string; note?: string }[]>([
+    { id: "a", label: "Alpha", note: "First" },
     { id: "b", label: "Beta" },
     { id: "c", label: "Gamma" },
   ]);
@@ -30,7 +30,13 @@
 <section class={["menu", className]} aria-label="Menu" {style} {...scopeAttributes(attributes)}>
   <ul aria-label="Items">
     {#each items as item (item.id)}
-      <li data-name={item.id} {@attach vTrace(() => item.label)}>{item.label}</li>
+      <li
+        data-name={item.id}
+        {@attach vTrace(() => item.label)}
+      >{item.label}{#if item.note}{@const traceValue = item.note}<b
+        data-name={`note-${item.id}`}
+        {@attach vTrace(() => traceValue)}
+      >{item.note}</b>{/if}</li>
     {/each}
   </ul
   ><ul aria-label="Marked">
@@ -72,7 +78,7 @@
   ><button
     type="button"
     onclick={() => (items = items.map((item) =>
-      item.id === "a" ? { id: "a", label: "Alpha 2" } : item,
+      item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
     ))}
   >Rename first</button
   ><button type="button" onclick={() => (items = [...items].reverse())}>Reverse</button

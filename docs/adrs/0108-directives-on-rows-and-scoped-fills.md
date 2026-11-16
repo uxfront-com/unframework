@@ -23,9 +23,9 @@ Vue, Svelte, Solid and Angular apply a directive per element already, inside `v-
 
 Two facts settle how React and Qwik can do it without a component per row:
 
-- **React calls a ref callback written in place again at each render.** It runs the old
-  callback's cleanup, then the new callback, with the same element. A callback written in a row
-  reads the row's values.
+- **React calls a new ref callback again at each render.** It runs the old callback's cleanup,
+  then the new callback, with the same element. A callback made as the row renders carries the
+  row's values.
 - **Qwik calls a function `ref` again when it changes.** Qwik 2's `diffProps` patches a prop
   whose value is not the old one, and `applyRef` calls a function `ref` with the element. A
   function written in a row is a new one each time the row renders.
@@ -43,21 +43,22 @@ categories are on), so a helper component would pass lint. It isn't needed.
   other use keeps ADR-0099's form, wherever it is, so no existing output changes. Which form a use
   takes depends only on what its value reads, never on how often a child renders it.
 - **React.** The component calls a second inline hook, `useElementDirective(vTrace)`, once per
-  use at its top level, as the rules of hooks want. The element's ref callback is written in
-  place and passes the value beside the element:
-  `ref={(element) => traceRef(element, item.label)}`. The hook records each element with its value, and its sync runs `mounted`,
-  `updated` behind `Object.is` and `unmounted` on each element apart, as `useDirective` does. An
-  element with several needs (two directives, a native listener, a `<textarea>`'s caret) merges
-  them into one callback, written in place as soon as one of its directives passes a value, by
-  the rule a listener that reads the row already follows (ADR-0047). The listeners are then added
-  again at each render, and a `<textarea>`'s `v-model` takes no caret callback (ADR-0060). The
-  value is read as the getter at the top level reads one, with what a branch narrows asserted
-  (`assertedValue`), since TypeScript keeps no narrowing of a property in a callback.
+  use at its top level, as the rules of hooks want. It returns `withTrace`, which makes the
+  element's ref callback from the element's value as the row renders: `ref={withTrace(item.label)}`.
+  The value is read there, where the branches around the element still narrow it. The callback
+  is a new one at each render, so React calls it again with the element, and the hook records the
+  element with that render's value. Its sync runs `mounted`, `updated` behind `Object.is` and
+  `unmounted` on each element apart, as `useDirective` does. The function isn't named `…Ref`,
+  since React Compiler reads a `…Ref` name called during render as a ref read. An element with
+  other needs (another directive, a native listener, a template ref in a fill) joins their
+  callbacks in attribute order through an inline `mergeRefs`, so the callback of its native
+  listeners and its template ref is written in place too. Its listeners are then added again at
+  each render, and a `<textarea>`'s `v-model` takes no caret callback (ADR-0060).
 - **Qwik.** The element's list holds each element with the values of its directives that read
   the row, `{ element, values }`. Its `ref` is
-  `collectValues(traceElements, [item.label, item.id])`, which returns the function `ref` Qwik calls. The values are read in the call's
-  arguments, as the row renders, never in the function it returns, which Qwik calls outside the
-  component's tracking: a value that also reads the component's state renders the row again when
+  `collectValues(traceElements, [item.label, item.id])`, which returns the function `ref` Qwik
+  calls. The values are read in the call's arguments, as the row renders, never in the function
+  it returns, which Qwik calls outside the component's tracking: a value that also reads the component's state renders the row again when
   that state changes. A value that changed writes a new list, and each directive's task runs each
   element with its own value. An element that leaves its list keeps the values it last had, and
   the runner's `back` path adds it again with them. A directive of the same element whose value
@@ -65,19 +66,17 @@ categories are on), so a helper component would pass lint. It isn't needed.
   keeps ADR-0099's plain list.
 - **Vue, Svelte, Solid, Angular and Astro** need nothing new. Astro still drops directives.
 
+<!-- prettier-ignore -->
 ```tsx
-{
-  items.value.map((item) => (
-    <li key={item.id} v-trace={item.label}>
-      {item.label}
-    </li>
-  ));
-}
+{items.value.map((item) => (
+  <li key={item.id} v-trace={item.label}>
+    {item.label}
+  </li>
+))}
 ```
 
-React writes `ref={(element) => traceRef(element, item.label)}` with
-`const traceRef = useElementDirective(vTrace);`, and Qwik writes
-`ref={collectValues(traceElements, [item.label])}`.
+React writes `ref={withTrace(item.label)}` with `const withTrace = useElementDirective(vTrace);`,
+and Qwik writes `ref={collectValues(traceElements, [item.label])}`.
 
 ## Consequences
 
@@ -112,6 +111,10 @@ React writes `ref={(element) => traceRef(element, item.label)}` with
 - **A helper component per row or fill on React and Qwik.** It passes lint, but it moves the
   row's rendering into a component the author didn't write, which changes what reaches the
   row's props, and it gives each row its own instance for one directive.
+- **Reading the value inside React's ref callback,**
+  `ref={(element) => traceRef(element, item.label)}`. It needs no `mergeRefs`, but TypeScript
+  forgets in the callback what a branch around the element narrows (`row.note ? … : null`), and
+  the analyser doesn't type a row's members well enough to assert them.
 - **Reading the value inside Qwik's `ref` function.** It's shorter, but Qwik calls the function
   outside the component's tracking, so a value that also reads the component's state would never
   render the row again when that state changes.
