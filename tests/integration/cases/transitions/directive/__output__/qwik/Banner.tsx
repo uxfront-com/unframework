@@ -36,6 +36,14 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           if (!fadeShown.value.includes(next)) {
             fadeState.entering.push(next);
             fadeShown.value = [...fadeShown.value, next];
+            // Qwik renders the branch within the frame, unless a condition around the transition
+            // hides it: then the mark goes, so the element it shows later enters only with appear.
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                const left = fadeState.entering.indexOf(next);
+                if (left >= 0) fadeState.entering.splice(left, 1);
+              }),
+            );
           }
         }
         const leaving = previous < 0 ? undefined : fadeState.elements[previous];

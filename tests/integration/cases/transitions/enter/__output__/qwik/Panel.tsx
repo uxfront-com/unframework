@@ -34,6 +34,14 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           if (!vShown.value.includes(next)) {
             vState.entering.push(next);
             vShown.value = [...vShown.value, next];
+            // Qwik renders the branch within the frame, unless a condition around the transition
+            // hides it: then the mark goes, so the element it shows later enters only with appear.
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                const left = vState.entering.indexOf(next);
+                if (left >= 0) vState.entering.splice(left, 1);
+              }),
+            );
           }
         }
         const leaving = previous < 0 ? undefined : vState.elements[previous];

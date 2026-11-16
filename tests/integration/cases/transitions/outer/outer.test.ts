@@ -204,4 +204,52 @@ describeTargets("transitions/outer", () => {
       }
     },
   );
+
+  it(
+    "runs no enter when its own condition changed while the outer one hid it",
+    { requires: ["transition", "interactivity"] },
+    async () => {
+      const restore = slowDown();
+      try {
+        const view = await mountScenario(Drawer, "default");
+        await view.user.click(view.getByRole("button", { name: "Drawer" }));
+        await view.user.click(view.getByRole("button", { name: "Body" }));
+        await view.user.click(view.getByRole("button", { name: "Body" }));
+        await view.expectParity("toggled-while-hidden");
+        await expect.element(view.getByRole("button", { name: "Drawer" })).toBeVisible();
+        const seen = new Set<string>();
+        const observer = new MutationObserver((records) => {
+          for (const each of records) {
+            for (const name of each.oldValue?.split(/\s+/) ?? []) if (name) seen.add(name);
+            for (const node of [each.target, ...each.addedNodes]) {
+              if (!(node instanceof Element)) continue;
+              for (const element of [node, ...node.querySelectorAll(".body")]) {
+                if (element.classList.contains("body")) {
+                  for (const name of element.classList) seen.add(name);
+                }
+              }
+            }
+          }
+        });
+        observer.observe(view.container, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ["class"],
+          attributeOldValue: true,
+        });
+        try {
+          await view.user.click(view.getByRole("button", { name: "Drawer" }));
+          await view.expectParity("shown-after-toggles");
+          observer.takeRecords();
+        } finally {
+          observer.disconnect();
+        }
+        await expect.element(view.getByText("Colour, size")).toBeVisible();
+        expect([...seen].toSorted()).toEqual(["body"]);
+      } finally {
+        restore();
+      }
+    },
+  );
 });

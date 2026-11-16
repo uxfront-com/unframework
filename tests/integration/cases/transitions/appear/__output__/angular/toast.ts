@@ -45,7 +45,11 @@ export class Transition implements OnInit {
   }
 
   ngOnInit(): void {
-    this.entering = Boolean(this.region?.ready) || this.ufTransitionAppear();
+    // Only an element with a branch of its own reads the region: one of a transition without a
+    // conditional finds the region of a transition around it, which says nothing of its own.
+    this.entering =
+      (this.ufTransitionBranch() !== undefined && Boolean(this.region?.ready)) ||
+      this.ufTransitionAppear();
   }
 
   /**
@@ -60,6 +64,7 @@ export class Transition implements OnInit {
     }
     this.run("leave", () => event.animationComplete());
   }
+
   private run(phase: "enter" | "leave", done?: () => void): () => void {
     const { element } = this;
     const from = `${this.ufTransition()}-${phase}-from`;

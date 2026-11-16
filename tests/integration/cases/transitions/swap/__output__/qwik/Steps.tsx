@@ -35,6 +35,14 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           if (!swapShown.value.includes(next)) {
             swapState.entering.push(next);
             swapShown.value = [...swapShown.value, next];
+            // Qwik renders the branch within the frame, unless a condition around the transition
+            // hides it: then the mark goes, so the element it shows later enters only with appear.
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                const left = swapState.entering.indexOf(next);
+                if (left >= 0) swapState.entering.splice(left, 1);
+              }),
+            );
           }
         }
         const leaving = previous < 0 ? undefined : swapState.elements[previous];
@@ -69,6 +77,14 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           if (!stepShown.value.includes(next)) {
             stepState.entering.push(next);
             stepShown.value = [...stepShown.value, next];
+            // Qwik renders the branch within the frame, unless a condition around the transition
+            // hides it: then the mark goes, so the element it shows later enters only with appear.
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                const left = stepState.entering.indexOf(next);
+                if (left >= 0) stepState.entering.splice(left, 1);
+              }),
+            );
           }
         }
         const leaving = previous < 0 ? undefined : stepState.elements[previous];
