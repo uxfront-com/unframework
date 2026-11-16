@@ -62,6 +62,7 @@ const named = (name: string): UfExport => ({ ...createExport("named", "Hello", a
 describe("qwik target", () => {
   it("declares every capability", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
+      "async-setup",
       "attribute-spread",
       "bound-attribute",
       "child-root-scope",
@@ -620,5 +621,107 @@ describe("qwik target: transitions", () => {
     expect(contents).toContain(`const ${state} = useConstant(`);
     expect(contents).toContain(`const ${shown} = useSignal<number[]>(`);
     expect(contents).toContain(`ref={transition(${state}, ${JSON.stringify(name)}, 0, false)}`);
+  });
+});
+
+// Async setup (ADR-0101): each await is an async `useComputed$` the body reads, which throws its
+// promise while pending, so Qwik runs the body again once it settles.
+describe("qwik target: async setup", () => {
+  const loader = [
+    "const loadUser = async (id: string) => ({ name: `User ${id}`, visits: id.length, teamId: `t${id}` });",
+    "const loadTeam = async (id: string) => ({ name: `Team ${id}` });",
+    "",
+  ].join("\n");
+
+  it("reads each await from a computed, in two statements, before every other item", async () => {
+    const contents = await emitSource(
+      [
+        'import { ref } from "@uxfront/unframework";',
+        loader,
+        "export async function Profile({ id }: { id: string }) {",
+        "  const user = await loadUser(id);",
+        "  const visits = ref(user.visits);",
+        '  return <button type="button" onClick={() => visits.value++}>{user.name}: {visits.value}</button>;',
+        "}",
+      ].join("\n"),
+    );
+    expect(contents).toContain(
+      ['import { component$, untrack, useComputed$, useSignal } from "@qwik.dev/core";', ""].join(
+        "\n",
+      ),
+    );
+    expect(contents).toContain(
+      [
+        "export const Profile = component$<{ id: string }>(({ id }) => {",
+        "  const userLoad = useComputed$(() => untrack(() => loadUser(id)));",
+        "  const user = userLoad.value;",
+        "  const visits = useSignal(user.visits);",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("never reads `.value` off the call: the optimizer would declare `computed$` twice", async () => {
+    const contents = await emitSource(
+      [
+        loader,
+        "export async function Membership({ id }: { id: string }) {",
+        "  const user = await loadUser(id);",
+        "  const team = await loadTeam(user.teamId);",
+        "  function show() { console.log(user.name, team.name); }",
+        '  return <button type="button" onClick={show}>{team.name}</button>;',
+        "}",
+      ].join("\n"),
+    );
+    expect(contents).not.toMatch(/useComputed\$\([^;]*\)\.value/);
+    // The second await reads only the first's value, which no prop change reaches: no `untrack`.
+    expect(contents).toContain(
+      [
+        "  const userLoad = useComputed$(() => untrack(() => loadUser(id)));",
+        "  const user = userLoad.value;",
+        "  const teamLoad = useComputed$(() => loadTeam(user.teamId));",
+        "  const team = teamLoad.value;",
+      ].join("\n"),
+    );
+  });
+
+  it("keeps an await that reads no prop in the component, never at module scope", async () => {
+    const contents = await emitSource(
+      [
+        "const loadConfig = async () => ({ theme: 'dark' });",
+        "export async function Theme() {",
+        "  const config = await loadConfig();",
+        "  return <p>{config.theme}</p>;",
+        "}",
+      ].join("\n"),
+    );
+    expect(contents).toContain(
+      [
+        "export const Theme = component$(() => {",
+        "  const configLoad = useComputed$(() => loadConfig());",
+        "  const config = configLoad.value;",
+      ].join("\n"),
+    );
+    expect(contents).not.toContain("untrack");
+  });
+
+  it("reads the `props` object as written, keeps the annotation and names the computed apart", async () => {
+    const contents = await emitSource(
+      [
+        loader,
+        "export async function Card(props: { id: string }) {",
+        "  const user: { name: string } = await loadUser(props.id);",
+        '  const userLoad = user.name + "!";',
+        "  return <p>{userLoad}</p>;",
+        "}",
+      ].join("\n"),
+    );
+    expect(contents).toContain(
+      [
+        "  const userLoad_1 = useComputed$(() => untrack(() => loadUser(props.id)));",
+        "  const user: { name: string } = userLoad_1.value;",
+        '  const userLoad = user.name + "!";',
+      ].join("\n"),
+    );
   });
 });

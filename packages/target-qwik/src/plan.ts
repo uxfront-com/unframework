@@ -954,6 +954,8 @@ function declaredQrls(
       case "Lifecycle":
         visit(item.callback.body, kindOf(item.callback), true, item.hook === "mounted");
         break;
+      // An awaited value reads no setup function (ADR-0101).
+      case "Await":
       case "State":
       case "Variable":
       case "Const":
@@ -1016,6 +1018,8 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
         case "state":
         case "derived":
         case "localConst":
+        // A plain value the body reads from its computed (./setup.ts, ADR-0101).
+        case "awaited":
         case "emit":
         case "model":
         case "slots":
@@ -1135,6 +1139,7 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
         if (item.initial) codes.push(item.initial);
         break;
       case "Const":
+      case "Await":
         codes.push(item.value);
         break;
       case "Derived":
@@ -1424,6 +1429,7 @@ function planFunctions(
         if (item.initial) mark(render, item.initial.refs);
         break;
       case "Const":
+      case "Await":
         mark(render, item.value.refs);
         break;
       case "Derived":
@@ -1637,6 +1643,8 @@ export function isReactive(kind: BindingKind): boolean {
     case "loopVar":
     case "templateRef":
     case "localConst":
+    // An awaited value is evaluated once each time the setup runs (ADR-0101).
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":
@@ -1676,6 +1684,8 @@ function emittedEvents(component: UfComponent): Set<string> {
       case "Lifecycle":
         visit(item.callback.body.refs);
         break;
+      // An awaited value cannot emit (UF2039).
+      case "Await":
       case "State":
       case "Derived":
       case "TemplateRef":
