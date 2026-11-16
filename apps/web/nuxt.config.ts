@@ -4,6 +4,21 @@ import { join } from "node:path";
 
 const SITE_URL = "https://unframework.dev";
 
+// The crawlers that build AI search answers and models, which robots.txt names
+// one by one so the policy is stated, not left to `User-agent: *` (audit
+// finding A3).
+const AI_CRAWLERS = [
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "PerplexityBot",
+  "Claude-SearchBot",
+  "Claude-User",
+  "GPTBot",
+  "ClaudeBot",
+  "Google-Extended",
+  "CCBot",
+];
+
 // Hosts that serve the site but must stay out of the index (audit findings C1
 // and C3): only the apex is the production host. `www` waits for a 301 at the
 // zone, and the Worker's production and preview hosts on workers.dev keep
@@ -68,6 +83,11 @@ export default defineNuxtConfig({
         },
       },
     },
+  },
+
+  // Docus allows every crawler (`User-agent: *`). These add a group per AI crawler.
+  robots: {
+    groups: AI_CRAWLERS.map((userAgent) => ({ userAgent: [userAgent], allow: ["/"] })),
   },
 
   // Docus's MCP server needs a server at runtime, and the site is static.
