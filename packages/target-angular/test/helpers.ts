@@ -77,6 +77,7 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !HYDRATION_COMPOSITION.test(name) &&
         !TELEPORT_COMPOSITION.test(name) &&
         !THROWN_COMPOSITION.test(name) &&
+        !TRANSITION_COMPOSITION.test(name) &&
         !TYPE_MODULES.test(name) &&
         !COMPOSABLE_MODULES.test(name) &&
         !DIRECTIVE_MODULES.test(name),
@@ -118,6 +119,13 @@ const TELEPORT_COMPOSITION = /^teleport\/(?:components|dialog|root|siblings)$/;
  * checks its Angular outputs.
  */
 const THROWN_COMPOSITION = /^sourcemaps\/mounted-throws$/;
+
+/**
+ * The transition cases whose main source renders a child, or applies a `.uf.ts` module's
+ * directive (ADR-0100): they resolve it as `compile()` does, which `lower` has not. The corpus's
+ * toolchain project checks their Angular outputs.
+ */
+const TRANSITION_COMPOSITION = /^transitions\/(?:appear|directive)$/;
 
 /**
  * The types and generics cases whose sources import types from a module beside them, or render

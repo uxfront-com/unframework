@@ -920,6 +920,7 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
         node.fallback.forEach(visit);
         return;
       case "Teleport":
+      case "Transition":
         node.children.forEach(visit);
         return;
       default:

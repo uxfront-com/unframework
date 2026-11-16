@@ -87,6 +87,8 @@ export const vue: Target = defineTarget({
     // Vue's own `<Teleport>`, behind a ref set once mounted, so the server renders none of it
     // (ADR-0098).
     teleport: { support: "native" },
+    // Vue's own `<Transition>` (ADR-0100), whose contract the other targets emulate.
+    transition: { support: "native" },
     // Vue's own custom directive, whose `updated` returns early on the same value (ADR-0099).
     directive: { support: "native" },
   },
@@ -122,6 +124,23 @@ export const vue: Target = defineTarget({
               },
             ],
           }),
+      // Vue's own `<Transition>` (ADR-0100). `appear` is bound as an object: the server compiler
+      // wraps the child in `<template>` when it finds `appear` as an attribute or a `:appear`
+      // binding (compiler-ssr's `ssrTransformTransition`), which would leave the server HTML
+      // unsettled, but it reads no object binding.
+      transition: ({ node, container }) => [
+        {
+          kind: "tag",
+          tag: "Transition",
+          attributes: [
+            ...(node.name === "v"
+              ? []
+              : [{ name: "name", text: vueDialect.attribute("name", node.name, "") }]),
+            ...(node.appear ? [{ name: "v-bind", text: 'v-bind="{ appear: true }"' }] : []),
+          ],
+          content: [{ kind: "nodes", nodes: node.children, container }],
+        },
+      ],
     };
     // The component resolves the names of loop variables.
     const template = printMarkup(component.render, dialect, {

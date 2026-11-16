@@ -234,6 +234,140 @@ export class ${className} implements ${core("OnInit", true)} {
 `;
 }
 
+/** The attribute that selects the transition directive, and the name it is exported as (ADR-0100). */
+export const TRANSITION_ATTRIBUTE = "ufTransition";
+
+/** The input that hands the transition directive its component's gate. */
+export const TRANSITION_GATE_INPUT = "ufTransitionGate";
+
+/** The input that runs the enter on the element's first render too (`appear`). */
+export const TRANSITION_APPEAR_INPUT = "ufTransitionAppear";
+
+/**
+ * The gate a component that holds a `<Transition>` creates with itself (ADR-0100): `ready` turns
+ * true once it has rendered, so an element created later enters, and one of its first render
+ * enters only with `appear`, as on Vue. `afterNextRender` never runs on the server.
+ */
+export function transitionGateCode(className: string, imports: ImportSet): string {
+  const core = (name: string) => imports.add("@angular/core", name);
+  return `/** Whether its component has rendered once: a transition's element created later enters. */
+class ${className} {
+  ready = false;
+
+  constructor() {
+    ${core("afterNextRender")}(() => {
+      this.ready = true;
+    });
+  }
+}
+`;
+}
+
+/**
+ * The directive that runs Vue's transition classes on its element (ADR-0100):
+ * `<p ufTransition="fade" [ufTransitionGate]="this.gate">`. After the render that created the
+ * element, it runs the enter if its component had rendered before, or with `appear`. Angular's
+ * `(animate.leave)` holds the element's removal until `animationComplete()`, and the template
+ * passes whether the element's own branch is still shown, read as Angular removes it: Angular
+ * also runs the leave of every element in a view that something around it removes, or that goes
+ * with its component, where Vue removes the element at once, so it completes at once there. Each
+ * phase adds its `-from` and `-active` classes, swaps `-from` for `-to` two frames later, as Vue
+ * does, and removes them at the end: the element's own `transitionend` or `animationend`, or its
+ * longest duration and delay, whichever comes first. Angular also completes a leave on any
+ * `animationend` that reaches the element, a child's included. It is exported, as ngtsc's
+ * type-check imports every directive a template uses.
+ */
+export function transitionDirectiveCode(
+  className: string,
+  gate: string,
+  imports: ImportSet,
+): string {
+  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+  return `/** Runs Vue's transition classes of \`${TRANSITION_ATTRIBUTE}\` on its element as it enters and leaves. */
+@${core("Directive")}({ selector: "[${TRANSITION_ATTRIBUTE}]", exportAs: "${TRANSITION_ATTRIBUTE}" })
+export class ${className} implements ${core("OnInit", true)} {
+  readonly ${TRANSITION_ATTRIBUTE} = ${core("input")}.required<string>();
+  readonly ${TRANSITION_GATE_INPUT} = ${core("input")}.required<${gate}>();
+  readonly ${TRANSITION_APPEAR_INPUT} = ${core("input")}(false);
+  private readonly element: Element = ${core("inject")}<${core("ElementRef", true)}<Element>>(${core("ElementRef")}).nativeElement;
+  private entering = false;
+  private stopEnter: (() => void) | undefined;
+
+  constructor() {
+    ${core("afterNextRender")}({
+      write: () => {
+        if (this.entering) this.stopEnter = this.run("enter");
+      },
+    });
+    ${core("inject")}(${core("DestroyRef")}).onDestroy(() => this.stopEnter?.());
+  }
+
+  ngOnInit(): void {
+    this.entering = this.${TRANSITION_GATE_INPUT}().ready || this.${TRANSITION_APPEAR_INPUT}();
+  }
+
+  /**
+   * \`(animate.leave)\`: runs the leave when the element's own branch is no longer shown, and lets
+   * the element go at once when it still is: something around it removed it.
+   */
+  leave(event: ${core("AnimationCallbackEvent", true)}, shown: boolean): void {
+    this.stopEnter?.();
+    if (shown) {
+      event.animationComplete();
+      return;
+    }
+    this.run("leave", () => event.animationComplete());
+  }
+
+  private run(phase: "enter" | "leave", done?: () => void): () => void {
+    const { element } = this;
+    const from = \`\${this.${TRANSITION_ATTRIBUTE}()}-\${phase}-from\`;
+    const active = \`\${this.${TRANSITION_ATTRIBUTE}()}-\${phase}-active\`;
+    const to = \`\${this.${TRANSITION_ATTRIBUTE}()}-\${phase}-to\`;
+    let frame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      element.removeEventListener("transitionend", end);
+      element.removeEventListener("animationend", end);
+      element.classList.remove(from, active, to);
+    };
+    const end = (event?: Event) => {
+      if (event && event.target !== element) return;
+      stop();
+      done?.();
+    };
+    element.classList.add(from, active);
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        element.classList.remove(from);
+        element.classList.add(to);
+        const style = getComputedStyle(element);
+        const longest = (delays: string, durations: string) => {
+          const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);
+          const delay = each(delays);
+          return Math.max(0, ...each(durations).map((duration, index) => duration + (delay[index % delay.length] ?? 0)));
+        };
+        const time = Math.max(
+          longest(style.transitionDelay, style.transitionDuration),
+          longest(style.animationDelay, style.animationDuration),
+        );
+        if (!time) {
+          end();
+          return;
+        }
+        element.addEventListener("transitionend", end);
+        element.addEventListener("animationend", end);
+        timer = setTimeout(end, time + 1);
+      });
+    });
+    return stop;
+  }
+}
+`;
+}
+
 /**
  * The pure pipe `[innerHTML]` reads its markup through (ADR-0097). Angular sanitises a bound
  * `innerHTML`, dropping `id`, `data-*` and `style` attributes, form controls and SVG, and marking

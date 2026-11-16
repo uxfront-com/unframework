@@ -797,6 +797,8 @@ function planListeners(component: UfComponent): ListenerPlan {
         for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
         return;
       case "Teleport":
+      // A transition's child renders in its place (ADR-0100).
+      case "Transition":
         for (const child of node.children) visit(child, path);
         return;
       default:
@@ -1762,6 +1764,10 @@ function refsInConditionals(component: UfComponent): Set<BindingId> {
       // A teleport renders once the component has mounted (ADR-0098).
       case "Teleport":
         for (const child of node.children) visit(child, true);
+        return;
+      // A transition's element comes and goes as its branch does (ADR-0100).
+      case "Transition":
+        for (const child of node.children) visit(child, conditional);
         return;
       default:
         unreachable(node);

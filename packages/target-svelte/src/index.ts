@@ -97,6 +97,12 @@ export const svelte: Target = defineTarget({
       helper: "teleport",
       note: "Svelte has no portal, so a `<Teleport>`'s element renders once the component has mounted, in an `{#if}` of its own, and an attachment, `teleport`, moves it into `to` and removes it on teardown (ADR-0098).",
     },
+    // Svelte's `transition:` runs its own CSS, never Vue's classes (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "enter",
+      note: "Svelte's transitions run their own CSS or ticks, never Vue's classes, so each element of a `<Transition>`'s conditional takes `in:enter` and `out:leave`, local, whose functions run the classes and return the transition's time as their `duration`. With `appear`, `in:` is global, so the enter runs as the element first mounts too (ADR-0100).",
+    },
     // An attachment, `{@attach vFocusTrap(() => open)}` (ADR-0099).
     directive: { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
@@ -125,7 +131,7 @@ export const svelte: Target = defineTarget({
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const { styleText, teleport } = script;
+    const { styleText, teleport, transition } = script;
     const dialect: MarkupDialect = {
       ...svelteDialect,
       // A style bound to one value is the declaration list `styleText` writes (ADR-0065).
@@ -164,6 +170,27 @@ export const svelte: Target = defineTarget({
           }
         : {}),
     };
+    // `<p in:enter={"fade"} out:leave={"fade"}>` on each element of the conditional, and
+    // `in:enter|global` for `appear` (ADR-0100).
+    if (transition) {
+      dialect.transitionAttributes = ({ node }) => {
+        const name = `{${JSON.stringify(node.name)}}`;
+        const conditional = node.children[0]?.kind === "If";
+        return [
+          ...((conditional || node.appear) && transition.enter !== undefined
+            ? [
+                {
+                  name: "in:",
+                  text: `in:${transition.enter}${node.appear ? "|global" : ""}=${name}`,
+                },
+              ]
+            : []),
+          ...(conditional && transition.leave !== undefined
+            ? [{ name: "out:", text: `out:${transition.leave}=${name}` }]
+            : []),
+        ];
+      };
+    }
     const markup = printMarkup(render, dialect, {
       component: script.component,
       module: context.module,

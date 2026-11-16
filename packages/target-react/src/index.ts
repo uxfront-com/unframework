@@ -69,6 +69,7 @@ import { reactCode } from "./rules.ts";
 import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
 import { teleportCall, teleportHelpers } from "./teleport.ts";
 import { titleChildren } from "./title.ts";
+import { transitionCall, transitionHelpers } from "./transition.ts";
 
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
 type BindingProperty = ReturnType<typeof js.bindingProperty>;
@@ -191,6 +192,12 @@ export const react: Target = defineTarget({
       helper: "useDirective",
       note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
+    // React has no transition primitive (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "Transition",
+      note: "A `<Transition>` is an inline component, `Transition`, around its child, whose branches each take a key: a change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, sets state only in frame and event callbacks or as its child changes, and keeps the child's own ref. The server and the hydrating client render no class (ADR-0100).",
+    },
     teleport: {
       support: "emulated",
       helper: "teleport",
@@ -221,7 +228,11 @@ export const react: Target = defineTarget({
     const jsx = jsxContext({
       component,
       module,
-      dialect: { ...reactDialect(names, listeners, composer), teleport: teleportCall(plan) },
+      dialect: {
+        ...reactDialect(names, listeners, composer),
+        teleport: teleportCall(plan),
+        transition: transitionCall(plan),
+      },
       rules: code.rules,
     });
     importChildren(plan);
@@ -319,6 +330,9 @@ export const react: Target = defineTarget({
         : []),
       ...compositionHelpers(plan),
       ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
+      ...(plan.helpers.transition
+        ? transitionHelpers(plan.helpers.transition, plan.names, !plan.helpers.teleport)
+        : []),
       ...(plan.helpers.directive
         ? [
             useDirectiveHelper(plan.helpers.directive, plan.names),
@@ -958,6 +972,7 @@ function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): 
           : {}),
       };
     case "Teleport":
+    case "Transition":
       return { ...node, children: children(node.children) };
     case "Text":
     case "Interpolation":

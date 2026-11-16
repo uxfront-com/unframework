@@ -93,6 +93,7 @@ describe("astro target", () => {
       "model-modifiers",
       "expose",
       "teleport",
+      "transition",
     ] as const) {
       expect(target.capabilities[name], name).toMatchObject({
         support: "unsupported",

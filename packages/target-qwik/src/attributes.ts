@@ -192,6 +192,10 @@ export function elementNamespaces(root: ElementNode | FragmentNode): Map<Element
       case "Teleport":
         for (const child of node.children) visit(child, "html");
         return;
+      // A transition's child renders in its place (ADR-0100).
+      case "Transition":
+        for (const child of node.children) visit(child, parent);
+        return;
       default:
         return node satisfies never;
     }

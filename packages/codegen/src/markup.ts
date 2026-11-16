@@ -31,6 +31,7 @@ export type {
   PrintedRef,
   PrintedTeleport,
   PrintedTransition,
+  PrintedTransitionElement,
   StylePart,
   TextPosition,
 } from "./markup/printer.ts";

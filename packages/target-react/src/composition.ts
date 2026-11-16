@@ -295,6 +295,7 @@ export function planComposition(
           }
           break;
         case "Teleport":
+        case "Transition":
           visit(node.children, scoped);
           break;
         case "Text":

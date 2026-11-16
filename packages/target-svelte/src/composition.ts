@@ -245,6 +245,7 @@ export function composedRender(
         return name === undefined ? chosenComponent(node, candidate) : candidate(name);
       }
       case "Teleport":
+      case "Transition":
         return { ...node, children: rewrite(node.children) };
       case "Text":
       case "Interpolation":

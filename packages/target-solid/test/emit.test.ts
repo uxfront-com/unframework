@@ -93,12 +93,13 @@ describe("solid target", () => {
       "svg",
       "teleport",
       "text",
+      "transition",
       "two-way-binding",
       "use-id",
     ]);
   });
 
-  it("emulates watchers, nextTick, class and style bindings, the child-root rule, keyed lists and directives with the helpers it prints, declares a composable's effect order, the rest natively", () => {
+  it("emulates watchers, nextTick, class and style bindings, the child-root rule, keyed lists, directives, transitions and teleports with the helpers it prints, declares a composable's effect order, the rest natively", () => {
     // Only a composable's effect order is unsupported: the watchers' scheduler coalesces every
     // shape of a synchronous run of client code in one module (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
@@ -120,6 +121,8 @@ describe("solid target", () => {
       // A ref factory, whose hooks run through a queue in Vue's order (ADR-0099).
       ["directive", expect.objectContaining({ helper: "queueHook" })],
       // `<Portal>` wraps its content in a `<div>` (ADR-0098).
+      // A transition runs through an inline component (ADR-0100).
+      ["transition", expect.objectContaining({ helper: "Transition" })],
       ["teleport", expect.objectContaining({ helper: "Teleport" })],
     ]);
   });

@@ -220,10 +220,24 @@ export interface PrintedTeleport {
 /**
  * `<Transition name appear>` (ADR-0100): the dialect writes what runs Vue's classes on the child,
  * with a `nodes` piece of the node's children in `container`, printed in the transition's place.
+ * `branch` is the code of the index of the conditional's branch that shows an element, or `-1`
+ * when none does: `0` where the child is one element.
  */
 export interface PrintedTransition {
   node: TransitionNode;
   container: Container;
+  branch: string;
+}
+
+/**
+ * The element of a `<Transition>` (ADR-0100), or of a branch of its conditional, with `branch`:
+ * the index of that branch, which {@link PrintedTransition}'s `branch` holds while it is shown,
+ * and absent for an element with no conditional.
+ */
+export interface PrintedTransitionElement {
+  node: TransitionNode;
+  element: ElementNode;
+  branch?: number;
 }
 
 /** A slot outlet, with its props as code, and key by key when they are an object literal. */
@@ -439,9 +453,9 @@ export interface MarkupDialect {
   /**
    * The attributes that run a transition's classes on its element, or on each branch's element
    * of its conditional (ADR-0100), written before the element's own: Svelte's `in:` and `out:`,
-   * Angular's directive and `(animate.leave)`.
+   * Angular's directive and `(animate.leave)`. See {@link PrintedTransitionElement}.
    */
-  transitionAttributes?(node: TransitionNode, element: ElementNode): PrintedAttribute[];
+  transitionAttributes?(element: PrintedTransitionElement): PrintedAttribute[];
   /**
    * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
    * them against the child's props (Svelte): `name=""` each, as on an element, without it.
@@ -744,9 +758,10 @@ interface Scope {
   candidates: readonly string[] | undefined;
   /**
    * The transition whose child the nodes are (ADR-0100): its element, or each branch's element of
-   * its conditional, takes the dialect's {@link MarkupDialect.transitionAttributes}.
+   * its conditional, takes the dialect's {@link MarkupDialect.transitionAttributes}, with the
+   * index of its branch.
    */
-  transition?: TransitionNode;
+  transition?: { node: TransitionNode; branches: ReadonlyMap<ElementNode, number> };
   /**
    * Whether the nodes are the template's own top level, outside every element and fill, where
    * a component's roots are (`scopeRoots`).
@@ -888,9 +903,18 @@ export function printMarkup(
           });
         case "Transition": {
           // The child renders in the transition's place, inside the same element.
-          const inner: Scope = { ...at, transition: node };
+          const [child] = node.children;
+          const branches = new Map<ElementNode, number>();
+          if (child?.kind === "If") {
+            for (const [index, branch] of child.branches.entries()) {
+              for (const each of branch.children) {
+                if (each.kind === "Element") branches.set(each, index);
+              }
+            }
+          }
+          const inner: Scope = { ...at, transition: { node, branches } };
           return at.dialect.transition
-            ? piecesItems(at.dialect.transition({ node, container }), inner)
+            ? piecesItems(at.dialect.transition({ node, container, branch: branchOf(node) }), inner)
             : itemsOf(node.children, container, inner);
         }
         default:
@@ -913,6 +937,24 @@ export function printMarkup(
       first: index === 0,
       last: index === nodes.length - 1,
     };
+  }
+
+  /**
+   * The code of the index of the branch of a transition's conditional that shows an element, or
+   * `-1` (ADR-0100): a ternary chain of the branches' conditions, each in parentheses, which every
+   * dialect's expressions read alike. `0` where the child is one element.
+   */
+  function branchOf(node: TransitionNode): string {
+    const [child] = node.children;
+    if (child?.kind !== "If") return "0";
+    const value = (index: number) => (child.branches[index]!.children.length ? `${index}` : "-1");
+    const last = child.branches.length - 1;
+    let chain = child.branches[last]!.condition === undefined ? value(last) : "-1";
+    for (let index = child.branches.length - 1; index >= 0; index -= 1) {
+      const { condition } = child.branches[index]!;
+      if (condition !== undefined) chain = `(${code(condition)}) ? ${value(index)} : ${chain}`;
+    }
+    return chain;
   }
 
   function listParts(node: ForNode): ListParts {
@@ -1238,9 +1280,17 @@ export function printMarkup(
         children.length === 0 &&
         (inner.dialect.selfClosingSvg?.(element.tag) ?? true));
     const name = inner.dialect.elementName?.(element.tag, namespace) ?? element.tag;
+    const branch = at.transition?.branches.get(element);
     const marked =
       at.transition && at.dialect.transitionAttributes
-        ? [...at.dialect.transitionAttributes(at.transition, element), ...directives]
+        ? [
+            ...at.dialect.transitionAttributes({
+              node: at.transition.node,
+              element,
+              ...(branch === undefined ? {} : { branch }),
+            }),
+            ...directives,
+          ]
         : directives;
     return {
       kind: "element",

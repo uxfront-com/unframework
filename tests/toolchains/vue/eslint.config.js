@@ -40,6 +40,11 @@ export default [
       // source, which the analyser reports as a warning (UF3051), and every target renders as
       // markup (ADR-0097).
       "vue/no-v-html": "off",
+      // Judges a `<Transition>` whose child has no toggle: the author's `<Transition><p /></Transition>`
+      // without `appear`, which never runs, and with `appear`, which the output binds as an object
+      // (`v-bind="{ appear: true }"`) so that Vue's server compiler wraps nothing in `<template>`,
+      // and which the rule doesn't read (ADR-0100).
+      "vue/require-toggle-inside-transition": "off",
     },
   },
 ];

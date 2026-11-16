@@ -74,7 +74,7 @@ const SCOPE_HELPER = [
 ];
 
 describe("svelte target", () => {
-  it("declares every capability, natively but for once listeners, fallthrough, model modifiers, reactive context, the child root, a style bound to a value and a teleport", () => {
+  it("declares every capability, natively but for once listeners, fallthrough, model modifiers, reactive context, the child root, a style bound to a value, a teleport and a transition", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
       "attribute-spread",
       "bound-attribute",
@@ -128,6 +128,7 @@ describe("svelte target", () => {
       "svg",
       "teleport",
       "text",
+      "transition",
       "two-way-binding",
       "use-id",
     ]);
@@ -139,6 +140,7 @@ describe("svelte target", () => {
       "reactive-context": "refObject",
       "style-binding": "styleText",
       teleport: "teleport",
+      transition: "enter",
     };
     for (const [name, cell] of Object.entries(target.capabilities)) {
       const helper = helpers[name];

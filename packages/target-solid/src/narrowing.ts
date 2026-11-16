@@ -221,6 +221,7 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
       case "Dynamic":
         return;
       case "Teleport":
+      case "Transition":
         node.children.forEach(visit);
         return;
       default:

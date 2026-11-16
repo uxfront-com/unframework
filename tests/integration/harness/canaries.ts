@@ -1255,8 +1255,9 @@ function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
-      // A teleport's element (ADR-0098).
+      // A teleport's element (ADR-0098), and a transition's (ADR-0100).
       case "Teleport":
+      case "Transition":
         return elementsOf(childrenOf(node));
       case "Text":
       case "Interpolation":
@@ -1383,7 +1384,10 @@ function markText(render: ElementNode | FragmentNode): boolean {
               ? node.fills.flatMap((fill) =>
                   fill.children.filter((child): child is ElementNode => child.kind === "Element"),
                 )
-              : [],
+              : // A root transition's element renders in its place (ADR-0100).
+                node.kind === "Transition"
+                ? node.children.filter((child): child is ElementNode => child.kind === "Element")
+                : [],
         );
   // A root teleport's element renders in `to` once mounted (ADR-0098): the DOM, the ARIA tree and
   // the client's render show its text, and a parent's server HTML its own. An element in place
@@ -1521,6 +1525,9 @@ function topElements(nodes: readonly RenderNode[]): ElementNode[] {
       // A teleport's element mounts in `to`, not among the roots (ADR-0098).
       case "Teleport":
         return [];
+      // A transition's child renders in its place (ADR-0100).
+      case "Transition":
+        return topElements(node.children);
       default:
         return unreachable(node);
     }

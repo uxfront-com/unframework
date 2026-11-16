@@ -114,6 +114,7 @@ describe("qwik target", () => {
       "svg",
       "teleport",
       "text",
+      "transition",
       "two-way-binding",
       "use-id",
     ]);
