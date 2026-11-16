@@ -137,6 +137,15 @@ describe("<Transition>", () => {
     });
   });
 
+  it.each([
+    ['appear="yes"', "`appear` is a string"],
+    ["appear={open.value}", "`appear` is bound"],
+  ])("says what %s is (UF3058)", (attribute, message) => {
+    const text = source(`<div><Transition ${attribute}><p /></Transition></div>`);
+    const [diagnostic] = run(text).diagnostics;
+    expect(diagnostic!.message.startsWith(message)).toBe(true);
+  });
+
   describe("the codes it reuses", () => {
     it("rejects an attribute other than `name` and `appear` (UF3035)", () => {
       expect(reported('<div><Transition mode="out-in"><p /></Transition></div>')).toEqual([

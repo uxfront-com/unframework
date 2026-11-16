@@ -2439,9 +2439,10 @@ const entries: CatalogueEntry[] = [
     title: "`<Transition>`'s `name` and `appear` are literals",
     description: [
       "Each target writes the transition's class names when the component compiles (ADR-0100), so",
-      "`name` is a string literal that is not empty, and `v` when it is left out. `appear` is the",
-      "bare attribute, or `{true}` or `{false}` written as literals. A bound `name`, a template",
-      "literal with expressions, an empty `name` or a bound `appear` can't be read then.",
+      "`name` is a string literal that is not empty and holds no whitespace, and `v` when it is left",
+      "out. `appear` is the bare attribute, or `{true}` or `{false}` written as literals. A bound",
+      "`name`, a template literal with expressions, an empty `name`, one with whitespace, or a",
+      "bound `appear` can't be read then.",
       "",
       "```tsx",
       '<Transition name="fade" appear>',

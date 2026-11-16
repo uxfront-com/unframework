@@ -160,12 +160,20 @@ export function lowerTransition(
   const props = propsOf(node, name, render);
   const content = contentOf(node.children);
   const [first, second] = content;
-  const report = (at: AST.JSXChild | AST.Expression | AST.JSXIdentifier, why: string) =>
+  const report = (
+    at: AST.JSXChild | AST.Expression | AST.JSXIdentifier,
+    why: string,
+    branch = false,
+  ) =>
     reporter.report(
       "UF3057",
       at,
       `<${name.name}> holds one element, or one conditional of elements, and this ${why}: each target runs the classes on that element.`,
-      { help: "Wrap the content in one element, inside the conditional." },
+      {
+        help: branch
+          ? "Wrap what the branch renders in one element."
+          : "Wrap the content in one element, and keep a condition inside the <Transition>.",
+      },
     );
   if (!first) {
     reporter.report(
@@ -201,7 +209,7 @@ export function lowerTransition(
     for (const branch of branches) {
       if (isPlainElement(branch) || isNothing(branch)) continue;
       valid = false;
-      report(branch, `has a branch that ${describeChild(branch)}`);
+      report(branch, `has a branch that ${describeChild(branch)}`, true);
     }
     if (!valid) return undefined;
     children = lowerChildren([first], place, render);
@@ -304,7 +312,7 @@ function propsOf(
         reporter.report(
           "UF3058",
           item,
-          "`appear` is bound: each target decides when the component compiles whether the first element enters, so it is the bare attribute, `{true}` or `{false}`.",
+          `\`appear\` is ${value?.type === "Literal" ? "a string" : "bound"}: each target decides when the component compiles whether the first element enters, so it is the bare attribute, \`{true}\` or \`{false}\`.`,
           { help: "Write `appear` alone, or leave it out." },
         );
         valid = false;
