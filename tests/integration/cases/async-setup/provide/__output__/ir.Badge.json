@@ -1,6 +1,6 @@
 {
   "irVersion": 1,
-  "file": "async-setup/rerun/Badge.uf.tsx",
+  "file": "async-setup/provide/Badge.uf.tsx",
   "components": [
     {
       "name": "Badge",

@@ -5,8 +5,8 @@
     {
       "name": "Note",
       "span": {
-        "start": 361,
-        "end": 858
+        "start": 273,
+        "end": 725
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 410,
-              "end": 416
+              "start": 322,
+              "end": 328
             }
           },
-          "binding": "id@398",
+          "binding": "id@310",
           "span": {
-            "start": 406,
-            "end": 416
+            "start": 318,
+            "end": 328
           }
         }
       ],
@@ -31,23 +31,23 @@
         "type": {
           "code": "{ id: string }",
           "span": {
-            "start": 404,
-            "end": 418
+            "start": 316,
+            "end": 330
           }
         },
         "span": {
-          "start": 396,
-          "end": 418
+          "start": 308,
+          "end": 330
         }
       },
       "types": [],
       "emits": {
-        "binding": "emit@430",
+        "binding": "emit@342",
         "type": {
           "code": "{ ready: [name: string] }",
           "span": {
-            "start": 449,
-            "end": 474
+            "start": 361,
+            "end": 386
           }
         },
         "events": [
@@ -59,138 +59,122 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 465,
-                    "end": 471
+                    "start": 377,
+                    "end": 383
                   }
                 },
                 "span": {
-                  "start": 459,
-                  "end": 471
+                  "start": 371,
+                  "end": 383
                 }
               }
             ],
             "span": {
-              "start": 451,
-              "end": 472
+              "start": 363,
+              "end": 384
             }
           }
         ],
         "span": {
-          "start": 424,
-          "end": 478
+          "start": 336,
+          "end": 390
         }
       },
       "bindings": [
         {
-          "id": "loadUser@98",
+          "id": "loadUser@89",
           "name": "loadUser",
           "kind": "import",
           "span": {
-            "start": 98,
-            "end": 106
+            "start": 89,
+            "end": 97
           }
         },
         {
-          "id": "id@398",
+          "id": "id@310",
           "name": "id",
           "kind": "prop",
           "span": {
-            "start": 398,
-            "end": 400
+            "start": 310,
+            "end": 312
           }
         },
         {
-          "id": "emit@430",
+          "id": "emit@342",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 430,
-            "end": 434
+            "start": 342,
+            "end": 346
           }
         },
         {
-          "id": "user@487",
+          "id": "user@399",
           "name": "user",
           "kind": "awaited",
           "span": {
-            "start": 487,
-            "end": 491
+            "start": 399,
+            "end": 403
           }
         },
         {
-          "id": "input@522",
+          "id": "input@434",
           "name": "input",
           "kind": "templateRef",
           "span": {
-            "start": 522,
-            "end": 527
+            "start": 434,
+            "end": 439
           }
         }
       ],
       "setup": [
         {
           "kind": "Await",
-          "binding": "user@487",
+          "binding": "user@399",
           "value": {
             "code": "loadUser(id)",
             "span": {
-              "start": 500,
-              "end": 512
+              "start": 412,
+              "end": 424
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "loadUser@98",
+                "binding": "loadUser@89",
                 "span": {
-                  "start": 500,
-                  "end": 508
+                  "start": 412,
+                  "end": 420
                 },
                 "call": true
               },
               {
                 "kind": "Binding",
-                "binding": "id@398",
+                "binding": "id@310",
                 "span": {
-                  "start": 509,
-                  "end": 511
+                  "start": 421,
+                  "end": 423
                 }
               }
             ]
           },
           "span": {
-            "start": 481,
-            "end": 513
+            "start": 393,
+            "end": 425
           }
         },
         {
           "kind": "TemplateRef",
-          "binding": "input@522",
+          "binding": "input@434",
           "type": {
             "code": "HTMLInputElement",
             "span": {
-              "start": 545,
-              "end": 561
+              "start": 457,
+              "end": 473
             }
           },
           "span": {
-            "start": 516,
-            "end": 565
-          }
-        },
-        {
-          "kind": "Provide",
-          "key": "ToneKey",
-          "value": {
-            "code": "\"calm\"",
-            "span": {
-              "start": 586,
-              "end": 592
-            },
-            "refs": []
-          },
-          "span": {
-            "start": 569,
-            "end": 594
+            "start": 428,
+            "end": 477
           }
         },
         {
@@ -201,51 +185,51 @@
             "body": {
               "code": "{\n    input.value?.focus();\n    emit(\"ready\", user.name);\n  }",
               "span": {
-                "start": 614,
-                "end": 675
+                "start": 497,
+                "end": 558
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "input@522",
+                  "binding": "input@434",
                   "span": {
-                    "start": 620,
-                    "end": 631
+                    "start": 503,
+                    "end": 514
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@430",
+                  "binding": "emit@342",
                   "event": "ready",
                   "span": {
-                    "start": 646,
-                    "end": 670
+                    "start": 529,
+                    "end": 553
                   },
                   "arguments": [
                     {
-                      "start": 660,
-                      "end": 669
+                      "start": 543,
+                      "end": 552
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "user@487",
+                  "binding": "user@399",
                   "span": {
-                    "start": 660,
-                    "end": 664
+                    "start": 543,
+                    "end": 547
                   }
                 }
               ]
             },
             "span": {
-              "start": 608,
-              "end": 675
+              "start": 491,
+              "end": 558
             }
           },
           "span": {
-            "start": 598,
-            "end": 677
+            "start": 481,
+            "end": 560
           }
         }
       ],
@@ -258,8 +242,8 @@
             "name": "class",
             "value": "note",
             "span": {
-              "start": 700,
-              "end": 712
+              "start": 583,
+              "end": 595
             }
           },
           {
@@ -267,8 +251,8 @@
             "name": "aria-label",
             "value": "Note",
             "span": {
-              "start": 713,
-              "end": 730
+              "start": 596,
+              "end": 613
             }
           }
         ],
@@ -282,8 +266,8 @@
                 "kind": "Text",
                 "value": "Note for ",
                 "span": {
-                  "start": 745,
-                  "end": 763
+                  "start": 628,
+                  "end": 646
                 }
               },
               {
@@ -291,31 +275,31 @@
                 "value": {
                   "code": "user.name",
                   "span": {
-                    "start": 764,
-                    "end": 773
+                    "start": 647,
+                    "end": 656
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "user@487",
+                      "binding": "user@399",
                       "span": {
-                        "start": 764,
-                        "end": 768
+                        "start": 647,
+                        "end": 651
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 763,
-                  "end": 774
+                  "start": 646,
+                  "end": 657
                 }
               },
               {
                 "kind": "Text",
                 "value": " ",
                 "span": {
-                  "start": 774,
-                  "end": 775
+                  "start": 657,
+                  "end": 658
                 }
               },
               {
@@ -324,10 +308,10 @@
                 "attributes": [
                   {
                     "kind": "Ref",
-                    "binding": "input@522",
+                    "binding": "input@434",
                     "span": {
-                      "start": 782,
-                      "end": 793
+                      "start": 665,
+                      "end": 676
                     }
                   },
                   {
@@ -335,37 +319,27 @@
                     "name": "type",
                     "value": "text",
                     "span": {
-                      "start": 794,
-                      "end": 805
+                      "start": 677,
+                      "end": 688
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 775,
-                  "end": 808
+                  "start": 658,
+                  "end": 691
                 }
               }
             ],
             "span": {
-              "start": 738,
-              "end": 823
-            }
-          },
-          {
-            "kind": "Component",
-            "component": "Badge",
-            "attributes": [],
-            "fills": [],
-            "span": {
-              "start": 830,
-              "end": 839
+              "start": 621,
+              "end": 706
             }
           }
         ],
         "span": {
-          "start": 694,
-          "end": 851
+          "start": 577,
+          "end": 718
         }
       }
     }
@@ -376,66 +350,12 @@
       "name": "default",
       "local": "Note",
       "span": {
-        "start": 361,
-        "end": 858
+        "start": 273,
+        "end": 725
       }
     }
   ],
   "types": [],
-  "imports": [
-    {
-      "specifier": "./Badge.uf.tsx",
-      "file": "Badge.uf.tsx",
-      "api": {
-        "file": "Badge.uf.tsx",
-        "components": [
-          {
-            "name": "Badge",
-            "export": "default",
-            "props": [],
-            "events": [],
-            "models": [],
-            "slots": [],
-            "exposes": [],
-            "inheritAttrs": true,
-            "root": "element",
-            "rootTag": "span"
-          }
-        ],
-        "keys": [
-          {
-            "name": "ToneKey",
-            "description": "uf.tone",
-            "type": "string"
-          }
-        ]
-      },
-      "names": [
-        {
-          "kind": "Component",
-          "imported": "default",
-          "local": "Badge",
-          "span": {
-            "start": 130,
-            "end": 135
-          }
-        },
-        {
-          "kind": "Key",
-          "imported": "ToneKey",
-          "local": "ToneKey",
-          "span": {
-            "start": 139,
-            "end": 146
-          }
-        }
-      ],
-      "span": {
-        "start": 123,
-        "end": 171
-      }
-    }
-  ],
   "moduleImports": [
     {
       "specifier": "./api",
@@ -445,14 +365,14 @@
           "imported": "loadUser",
           "local": "loadUser",
           "span": {
-            "start": 98,
-            "end": 106
+            "start": 89,
+            "end": 97
           }
         }
       ],
       "span": {
-        "start": 89,
-        "end": 122
+        "start": 80,
+        "end": 113
       }
     }
   ]

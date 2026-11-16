@@ -6,14 +6,6 @@ error[UF9001] (angular): The angular target failed on Member: Unexpected value: 
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
-error[UF9001] (astro): The astro target failed on Member: Unexpected IR value: "awaited"
- --> async-setup/nested/Member.uf.tsx:1:1
-  |
-1 | import { defineExpose, ref } from "@uxfront/unframework";
-  | ^
-  |
-  = see: https://unframework.dev/diagnostics/UF9001
-
 error[UF9001] (qwik): The qwik target failed on Member: Unexpected IR value: {"kind":"Await","binding":"user@257","value":{"code":"loadUser(id)","span":{"start":270,"end":282},"refs":[{"kind":"Binding","binding":"loadUser@68","span":{"start":270,"end":278},"call":true},{"kind":"Binding","binding":"id@225","span":{"start":279,"end":281}}]},"span":{"start":251,"end":283}}
  --> async-setup/nested/Member.uf.tsx:1:1
   |
@@ -47,14 +39,6 @@ error[UF9001] (svelte): The svelte target failed on Member: Unexpected IR value:
   = see: https://unframework.dev/diagnostics/UF9001
 
 error[UF4001] (angular): The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
- --> async-setup/nested/Member.uf.tsx:7:3
-  |
-7 |   const user = await loadUser(id);
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (astro): The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
  --> async-setup/nested/Member.uf.tsx:7:3
   |
 7 |   const user = await loadUser(id);

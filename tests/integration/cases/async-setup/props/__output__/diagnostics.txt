@@ -6,14 +6,6 @@ error[UF9001] (angular): The angular target failed on Greeting: Unexpected value
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
-error[UF9001] (astro): The astro target failed on Greeting: Unexpected IR value: "awaited"
- --> async-setup/props/Greeting.uf.tsx:1:1
-  |
-1 | import { loadUser } from "./api";
-  | ^
-  |
-  = see: https://unframework.dev/diagnostics/UF9001
-
 error[UF9001] (qwik): The qwik target failed on Greeting: Unexpected IR value: {"kind":"Await","binding":"user@253","value":{"code":"loadUser(prefix + id)","span":{"start":266,"end":287},"refs":[{"kind":"Binding","binding":"loadUser@9","span":{"start":266,"end":274},"call":true},{"kind":"Binding","binding":"prefix@201","span":{"start":275,"end":281}},{"kind":"Binding","binding":"id@197","span":{"start":284,"end":286}}]},"span":{"start":247,"end":288}}
  --> async-setup/props/Greeting.uf.tsx:1:1
   |
@@ -47,14 +39,6 @@ error[UF9001] (svelte): The svelte target failed on Greeting: Unexpected IR valu
   = see: https://unframework.dev/diagnostics/UF9001
 
 error[UF4001] (angular): The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
- --> async-setup/props/Greeting.uf.tsx:6:3
-  |
-6 |   const user = await loadUser(prefix + id);
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (astro): The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
  --> async-setup/props/Greeting.uf.tsx:6:3
   |
 6 |   const user = await loadUser(prefix + id);

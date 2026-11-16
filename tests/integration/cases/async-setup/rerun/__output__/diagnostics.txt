@@ -1,31 +1,15 @@
-warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
- --> async-setup/rerun/Badge.uf.tsx:8:3
-  |
-8 |   const tone = inject(ToneKey, "plain");
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF9001] (angular): The angular target failed on Note: Unexpected value: {"kind":"Await","binding":"user@487","value":{"code":"loadUser(id)","span":{"start":500,"end":512},"refs":[{"kind":"Binding","binding":"loadUser@98","span":{"start":500,"end":508},"call":true},{"kind":"Binding","binding":"id@398","span":{"start":509,"end":511}}]},"span":{"start":481,"end":513}}
+error[UF9001] (angular): The angular target failed on Note: Unexpected value: {"kind":"Await","binding":"user@399","value":{"code":"loadUser(id)","span":{"start":412,"end":424},"refs":[{"kind":"Binding","binding":"loadUser@89","span":{"start":412,"end":420},"call":true},{"kind":"Binding","binding":"id@310","span":{"start":421,"end":423}}]},"span":{"start":393,"end":425}}
  --> async-setup/rerun/Note.uf.tsx:1:1
   |
-1 | import { defineEmits, onMounted, provide, useTemplateRef } from "@uxfront/unframework";
+1 | import { defineEmits, onMounted, useTemplateRef } from "@uxfront/unframework";
   | ^
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
-error[UF9001] (astro): The astro target failed on Note: Unexpected IR value: "awaited"
+error[UF9001] (qwik): The qwik target failed on Note: Unexpected IR value: {"kind":"Await","binding":"user@399","value":{"code":"loadUser(id)","span":{"start":412,"end":424},"refs":[{"kind":"Binding","binding":"loadUser@89","span":{"start":412,"end":420},"call":true},{"kind":"Binding","binding":"id@310","span":{"start":421,"end":423}}]},"span":{"start":393,"end":425}}
  --> async-setup/rerun/Note.uf.tsx:1:1
   |
-1 | import { defineEmits, onMounted, provide, useTemplateRef } from "@uxfront/unframework";
-  | ^
-  |
-  = see: https://unframework.dev/diagnostics/UF9001
-
-error[UF9001] (qwik): The qwik target failed on Note: Unexpected IR value: {"kind":"Await","binding":"user@487","value":{"code":"loadUser(id)","span":{"start":500,"end":512},"refs":[{"kind":"Binding","binding":"loadUser@98","span":{"start":500,"end":508},"call":true},{"kind":"Binding","binding":"id@398","span":{"start":509,"end":511}}]},"span":{"start":481,"end":513}}
- --> async-setup/rerun/Note.uf.tsx:1:1
-  |
-1 | import { defineEmits, onMounted, provide, useTemplateRef } from "@uxfront/unframework";
+1 | import { defineEmits, onMounted, useTemplateRef } from "@uxfront/unframework";
   | ^
   |
   = see: https://unframework.dev/diagnostics/UF9001
@@ -33,90 +17,74 @@ error[UF9001] (qwik): The qwik target failed on Note: Unexpected IR value: {"kin
 error[UF9001] (react): The react target failed on Note: printItem is not a function or its return value is not iterable
  --> async-setup/rerun/Note.uf.tsx:1:1
   |
-1 | import { defineEmits, onMounted, provide, useTemplateRef } from "@uxfront/unframework";
+1 | import { defineEmits, onMounted, useTemplateRef } from "@uxfront/unframework";
   | ^
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
-error[UF9001] (solid): The solid target failed on Note: Unexpected IR value: {"kind":"Await","binding":"user@487","value":{"code":"loadUser(id)","span":{"start":500,"end":512},"refs":[{"kind":"Binding","binding":"loadUser@98","span":{"start":500,"end":508},"call":true},{"kind":"Binding","binding":"id@398","span":{"start":509,"end":511}}]},"span":{"start":481,"end":513}}
+error[UF9001] (solid): The solid target failed on Note: Unexpected IR value: {"kind":"Await","binding":"user@399","value":{"code":"loadUser(id)","span":{"start":412,"end":424},"refs":[{"kind":"Binding","binding":"loadUser@89","span":{"start":412,"end":420},"call":true},{"kind":"Binding","binding":"id@310","span":{"start":421,"end":423}}]},"span":{"start":393,"end":425}}
  --> async-setup/rerun/Note.uf.tsx:1:1
   |
-1 | import { defineEmits, onMounted, provide, useTemplateRef } from "@uxfront/unframework";
+1 | import { defineEmits, onMounted, useTemplateRef } from "@uxfront/unframework";
   | ^
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
-error[UF9001] (svelte): The svelte target failed on Note: Unexpected IR value: {"kind":"Await","binding":"user@487","value":{"code":"loadUser(id)","span":{"start":500,"end":512},"refs":[{"kind":"Binding","binding":"loadUser@98","span":{"start":500,"end":508},"call":true},{"kind":"Binding","binding":"id@398","span":{"start":509,"end":511}}]},"span":{"start":481,"end":513}}
+error[UF9001] (svelte): The svelte target failed on Note: Unexpected IR value: {"kind":"Await","binding":"user@399","value":{"code":"loadUser(id)","span":{"start":412,"end":424},"refs":[{"kind":"Binding","binding":"loadUser@89","span":{"start":412,"end":420},"call":true},{"kind":"Binding","binding":"id@310","span":{"start":421,"end":423}}]},"span":{"start":393,"end":425}}
  --> async-setup/rerun/Note.uf.tsx:1:1
   |
-1 | import { defineEmits, onMounted, provide, useTemplateRef } from "@uxfront/unframework";
+1 | import { defineEmits, onMounted, useTemplateRef } from "@uxfront/unframework";
   | ^
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
 error[UF4001] (angular): The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
-  --> async-setup/rerun/Note.uf.tsx:10:3
-   |
-10 |   const user = await loadUser(id);
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (astro): The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
-  --> async-setup/rerun/Note.uf.tsx:10:3
-   |
-10 |   const user = await loadUser(id);
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
+ --> async-setup/rerun/Note.uf.tsx:9:3
+  |
+9 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
 
 error[UF4001] (qwik): The qwik target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
-  --> async-setup/rerun/Note.uf.tsx:10:3
-   |
-10 |   const user = await loadUser(id);
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
+ --> async-setup/rerun/Note.uf.tsx:9:3
+  |
+9 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
 
 error[UF4001] (react): The react target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
-  --> async-setup/rerun/Note.uf.tsx:10:3
-   |
-10 |   const user = await loadUser(id);
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
+ --> async-setup/rerun/Note.uf.tsx:9:3
+  |
+9 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
 
 error[UF4001] (solid): The solid target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
-  --> async-setup/rerun/Note.uf.tsx:10:3
-   |
-10 |   const user = await loadUser(id);
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
+ --> async-setup/rerun/Note.uf.tsx:9:3
+  |
+9 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
 
 error[UF4001] (svelte): The svelte target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
-  --> async-setup/rerun/Note.uf.tsx:10:3
-   |
-10 |   const user = await loadUser(id);
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
-  --> async-setup/rerun/Note.uf.tsx:13:3
-   |
-13 |   provide(ToneKey, "calm");
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
+ --> async-setup/rerun/Note.uf.tsx:9:3
+  |
+9 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> async-setup/rerun/Note.uf.tsx:15:3
+  --> async-setup/rerun/Note.uf.tsx:12:3
    |
-15 |   onMounted(() => {
+12 |   onMounted(() => {
    |   ^^^^^^^^^^^^^^^^^
    | ...
-18 |   });
+15 |   });
    | ^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001

@@ -25,9 +25,7 @@ describeTargets("async-setup/nested", () => {
       await view.expectParity("after-count");
       await view.user.click(view.getByRole("button", { name: "Reset" }));
       await view.expectParity("after-reset");
-      await expect
-        .element(view.getByRole("button", { name: "User ada visits: 0" }))
-        .toBeVisible();
+      await expect.element(view.getByRole("button", { name: "User ada visits: 0" })).toBeVisible();
       await expect
         .element(view.getByRole("button", { name: "User grace visits: 5" }))
         .toBeVisible();

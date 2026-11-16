@@ -6,14 +6,6 @@ error[UF9001] (angular): The angular target failed on Membership: Unexpected val
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
-error[UF9001] (astro): The astro target failed on Membership: Unexpected IR value: {"kind":"Await","binding":"user@253","value":{"code":"loadUser(id)","span":{"start":266,"end":278},"refs":[{"kind":"Binding","binding":"loadUser@69","span":{"start":266,"end":274},"call":true},{"kind":"Binding","binding":"id@221","span":{"start":275,"end":277}}]},"span":{"start":247,"end":279}}
- --> async-setup/chained/Membership.uf.tsx:1:1
-  |
-1 | import { computed } from "@uxfront/unframework";
-  | ^
-  |
-  = see: https://unframework.dev/diagnostics/UF9001
-
 error[UF9001] (qwik): The qwik target failed on Membership: Unexpected IR value: {"kind":"Await","binding":"user@253","value":{"code":"loadUser(id)","span":{"start":266,"end":278},"refs":[{"kind":"Binding","binding":"loadUser@69","span":{"start":266,"end":274},"call":true},{"kind":"Binding","binding":"id@221","span":{"start":275,"end":277}}]},"span":{"start":247,"end":279}}
  --> async-setup/chained/Membership.uf.tsx:1:1
   |
@@ -47,14 +39,6 @@ error[UF9001] (svelte): The svelte target failed on Membership: Unexpected IR va
   = see: https://unframework.dev/diagnostics/UF9001
 
 error[UF4001] (angular): The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
- --> async-setup/chained/Membership.uf.tsx:7:3
-  |
-7 |   const user = await loadUser(id);
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (astro): The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
  --> async-setup/chained/Membership.uf.tsx:7:3
   |
 7 |   const user = await loadUser(id);

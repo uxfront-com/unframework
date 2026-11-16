@@ -1,25 +1,8 @@
 [
   {
-    "code": "UF4001",
-    "severity": "warning",
-    "message": "The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).",
-    "file": "async-setup/rerun/Badge.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 3,
-      "offset": 261
-    },
-    "end": {
-      "line": 8,
-      "column": 41,
-      "offset": 299
-    },
-    "target": "astro"
-  },
-  {
     "code": "UF9001",
     "severity": "error",
-    "message": "The angular target failed on Note: Unexpected value: {\"kind\":\"Await\",\"binding\":\"user@487\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":500,\"end\":512},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@98\",\"span\":{\"start\":500,\"end\":508},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@398\",\"span\":{\"start\":509,\"end\":511}}]},\"span\":{\"start\":481,\"end\":513}}",
+    "message": "The angular target failed on Note: Unexpected value: {\"kind\":\"Await\",\"binding\":\"user@399\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":412,\"end\":424},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@89\",\"span\":{\"start\":412,\"end\":420},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@310\",\"span\":{\"start\":421,\"end\":423}}]},\"span\":{\"start\":393,\"end\":425}}",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
       "line": 1,
@@ -36,24 +19,7 @@
   {
     "code": "UF9001",
     "severity": "error",
-    "message": "The astro target failed on Note: Unexpected IR value: \"awaited\"",
-    "file": "async-setup/rerun/Note.uf.tsx",
-    "start": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "target": "astro"
-  },
-  {
-    "code": "UF9001",
-    "severity": "error",
-    "message": "The qwik target failed on Note: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@487\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":500,\"end\":512},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@98\",\"span\":{\"start\":500,\"end\":508},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@398\",\"span\":{\"start\":509,\"end\":511}}]},\"span\":{\"start\":481,\"end\":513}}",
+    "message": "The qwik target failed on Note: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@399\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":412,\"end\":424},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@89\",\"span\":{\"start\":412,\"end\":420},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@310\",\"span\":{\"start\":421,\"end\":423}}]},\"span\":{\"start\":393,\"end\":425}}",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
       "line": 1,
@@ -87,7 +53,7 @@
   {
     "code": "UF9001",
     "severity": "error",
-    "message": "The solid target failed on Note: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@487\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":500,\"end\":512},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@98\",\"span\":{\"start\":500,\"end\":508},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@398\",\"span\":{\"start\":509,\"end\":511}}]},\"span\":{\"start\":481,\"end\":513}}",
+    "message": "The solid target failed on Note: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@399\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":412,\"end\":424},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@89\",\"span\":{\"start\":412,\"end\":420},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@310\",\"span\":{\"start\":421,\"end\":423}}]},\"span\":{\"start\":393,\"end\":425}}",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
       "line": 1,
@@ -104,7 +70,7 @@
   {
     "code": "UF9001",
     "severity": "error",
-    "message": "The svelte target failed on Note: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@487\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":500,\"end\":512},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@98\",\"span\":{\"start\":500,\"end\":508},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@398\",\"span\":{\"start\":509,\"end\":511}}]},\"span\":{\"start\":481,\"end\":513}}",
+    "message": "The svelte target failed on Note: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@399\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":412,\"end\":424},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@89\",\"span\":{\"start\":412,\"end\":420},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@310\",\"span\":{\"start\":421,\"end\":423}}]},\"span\":{\"start\":393,\"end\":425}}",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
       "line": 1,
@@ -124,33 +90,16 @@
     "message": "The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
-      "line": 10,
+      "line": 9,
       "column": 3,
-      "offset": 481
+      "offset": 393
     },
     "end": {
-      "line": 10,
+      "line": 9,
       "column": 35,
-      "offset": 513
+      "offset": 425
     },
     "target": "angular"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
-    "file": "async-setup/rerun/Note.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 3,
-      "offset": 481
-    },
-    "end": {
-      "line": 10,
-      "column": 35,
-      "offset": 513
-    },
-    "target": "astro"
   },
   {
     "code": "UF4001",
@@ -158,14 +107,14 @@
     "message": "The qwik target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
-      "line": 10,
+      "line": 9,
       "column": 3,
-      "offset": 481
+      "offset": 393
     },
     "end": {
-      "line": 10,
+      "line": 9,
       "column": 35,
-      "offset": 513
+      "offset": 425
     },
     "target": "qwik"
   },
@@ -175,14 +124,14 @@
     "message": "The react target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
-      "line": 10,
+      "line": 9,
       "column": 3,
-      "offset": 481
+      "offset": 393
     },
     "end": {
-      "line": 10,
+      "line": 9,
       "column": 35,
-      "offset": 513
+      "offset": 425
     },
     "target": "react"
   },
@@ -192,14 +141,14 @@
     "message": "The solid target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
-      "line": 10,
+      "line": 9,
       "column": 3,
-      "offset": 481
+      "offset": 393
     },
     "end": {
-      "line": 10,
+      "line": 9,
       "column": 35,
-      "offset": 513
+      "offset": 425
     },
     "target": "solid"
   },
@@ -209,33 +158,16 @@
     "message": "The svelte target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
-      "line": 10,
+      "line": 9,
       "column": 3,
-      "offset": 481
+      "offset": 393
     },
     "end": {
-      "line": 10,
+      "line": 9,
       "column": 35,
-      "offset": 513
+      "offset": 425
     },
     "target": "svelte"
-  },
-  {
-    "code": "UF4001",
-    "severity": "warning",
-    "message": "The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).",
-    "file": "async-setup/rerun/Note.uf.tsx",
-    "start": {
-      "line": 13,
-      "column": 3,
-      "offset": 569
-    },
-    "end": {
-      "line": 13,
-      "column": 28,
-      "offset": 594
-    },
-    "target": "astro"
   },
   {
     "code": "UF4001",
@@ -243,14 +175,14 @@
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "async-setup/rerun/Note.uf.tsx",
     "start": {
-      "line": 15,
+      "line": 12,
       "column": 3,
-      "offset": 598
+      "offset": 481
     },
     "end": {
-      "line": 18,
+      "line": 15,
       "column": 6,
-      "offset": 677
+      "offset": 560
     },
     "target": "astro"
   }

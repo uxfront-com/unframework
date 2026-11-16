@@ -19,23 +19,6 @@
   {
     "code": "UF9001",
     "severity": "error",
-    "message": "The astro target failed on Member: Unexpected IR value: \"awaited\"",
-    "file": "async-setup/nested/Member.uf.tsx",
-    "start": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "target": "astro"
-  },
-  {
-    "code": "UF9001",
-    "severity": "error",
     "message": "The qwik target failed on Member: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@257\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":270,\"end\":282},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@68\",\"span\":{\"start\":270,\"end\":278},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@225\",\"span\":{\"start\":279,\"end\":281}}]},\"span\":{\"start\":251,\"end\":283}}",
     "file": "async-setup/nested/Member.uf.tsx",
     "start": {
@@ -117,23 +100,6 @@
       "offset": 283
     },
     "target": "angular"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
-    "file": "async-setup/nested/Member.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 251
-    },
-    "end": {
-      "line": 7,
-      "column": 35,
-      "offset": 283
-    },
-    "target": "astro"
   },
   {
     "code": "UF4001",

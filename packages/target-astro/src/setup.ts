@@ -69,6 +69,18 @@ export function setupCode(
       case "Derived":
         if (live.has(item.binding)) statements.push(...derived(item, component, spelling));
         break;
+      // Top-level `await` in the frontmatter, which the Container API waits for (ADR-0101). The
+      // setup always awaits, so an await no server code reads is a statement of its own.
+      case "Await": {
+        const value = `await ${initialiser(item.value, component, spelling)}`;
+        if (!live.has(item.binding)) {
+          statements.push(`${value};`);
+          break;
+        }
+        const type = item.type ? `: ${item.type.code}` : "";
+        statements.push(`const ${spelling.name(item.binding)}${type} = ${value};`);
+        break;
+      }
       case "Const":
         if (live.has(item.binding)) {
           const type = item.type ? `: ${item.type.code}` : "";

@@ -6,14 +6,6 @@ error[UF9001] (angular): The angular target failed on Profile: Unexpected value:
   |
   = see: https://unframework.dev/diagnostics/UF9001
 
-error[UF9001] (astro): The astro target failed on Profile: Unexpected IR value: "awaited"
- --> async-setup/resolved/Profile.uf.tsx:1:1
-  |
-1 | import { ref } from "@uxfront/unframework";
-  | ^
-  |
-  = see: https://unframework.dev/diagnostics/UF9001
-
 error[UF9001] (qwik): The qwik target failed on Profile: Unexpected IR value: {"kind":"Await","binding":"user@235","value":{"code":"loadUser(id)","span":{"start":248,"end":260},"refs":[{"kind":"Binding","binding":"loadUser@54","span":{"start":248,"end":256},"call":true},{"kind":"Binding","binding":"id@203","span":{"start":257,"end":259}}]},"span":{"start":229,"end":261}}
  --> async-setup/resolved/Profile.uf.tsx:1:1
   |
@@ -47,14 +39,6 @@ error[UF9001] (svelte): The svelte target failed on Profile: Unexpected IR value
   = see: https://unframework.dev/diagnostics/UF9001
 
 error[UF4001] (angular): The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
- --> async-setup/resolved/Profile.uf.tsx:7:3
-  |
-7 |   const user = await loadUser(id);
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (astro): The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
  --> async-setup/resolved/Profile.uf.tsx:7:3
   |
 7 |   const user = await loadUser(id);

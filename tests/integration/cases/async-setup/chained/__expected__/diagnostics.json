@@ -19,23 +19,6 @@
   {
     "code": "UF9001",
     "severity": "error",
-    "message": "The astro target failed on Membership: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@253\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":266,\"end\":278},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@69\",\"span\":{\"start\":266,\"end\":274},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@221\",\"span\":{\"start\":275,\"end\":277}}]},\"span\":{\"start\":247,\"end\":279}}",
-    "file": "async-setup/chained/Membership.uf.tsx",
-    "start": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "target": "astro"
-  },
-  {
-    "code": "UF9001",
-    "severity": "error",
     "message": "The qwik target failed on Membership: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@253\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":266,\"end\":278},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@69\",\"span\":{\"start\":266,\"end\":274},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@221\",\"span\":{\"start\":275,\"end\":277}}]},\"span\":{\"start\":247,\"end\":279}}",
     "file": "async-setup/chained/Membership.uf.tsx",
     "start": {
@@ -117,23 +100,6 @@
       "offset": 279
     },
     "target": "angular"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
-    "file": "async-setup/chained/Membership.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 247
-    },
-    "end": {
-      "line": 7,
-      "column": 35,
-      "offset": 279
-    },
-    "target": "astro"
   },
   {
     "code": "UF4001",

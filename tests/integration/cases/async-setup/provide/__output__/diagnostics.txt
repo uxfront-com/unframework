@@ -1,0 +1,95 @@
+warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
+ --> async-setup/provide/Badge.uf.tsx:8:3
+  |
+8 |   const tone = inject(ToneKey, "plain");
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF9001] (angular): The angular target failed on Panel: Unexpected value: {"kind":"Await","binding":"user@423","value":{"code":"loadUser(id)","span":{"start":436,"end":448},"refs":[{"kind":"Binding","binding":"loadUser@124","span":{"start":436,"end":444},"call":true},{"kind":"Binding","binding":"id@335","span":{"start":445,"end":447}}]},"span":{"start":417,"end":449}}
+ --> async-setup/provide/Panel.uf.tsx:1:1
+  |
+1 | import { defineSlots, provide } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (qwik): The qwik target failed on Panel: Unexpected IR value: {"kind":"Await","binding":"user@423","value":{"code":"loadUser(id)","span":{"start":436,"end":448},"refs":[{"kind":"Binding","binding":"loadUser@124","span":{"start":436,"end":444},"call":true},{"kind":"Binding","binding":"id@335","span":{"start":445,"end":447}}]},"span":{"start":417,"end":449}}
+ --> async-setup/provide/Panel.uf.tsx:1:1
+  |
+1 | import { defineSlots, provide } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (react): The react target failed on Panel: printItem is not a function or its return value is not iterable
+ --> async-setup/provide/Panel.uf.tsx:1:1
+  |
+1 | import { defineSlots, provide } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (solid): The solid target failed on Panel: Unexpected IR value: {"kind":"Await","binding":"user@423","value":{"code":"loadUser(id)","span":{"start":436,"end":448},"refs":[{"kind":"Binding","binding":"loadUser@124","span":{"start":436,"end":444},"call":true},{"kind":"Binding","binding":"id@335","span":{"start":445,"end":447}}]},"span":{"start":417,"end":449}}
+ --> async-setup/provide/Panel.uf.tsx:1:1
+  |
+1 | import { defineSlots, provide } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (svelte): The svelte target failed on Panel: Unexpected IR value: {"kind":"Await","binding":"user@423","value":{"code":"loadUser(id)","span":{"start":436,"end":448},"refs":[{"kind":"Binding","binding":"loadUser@124","span":{"start":436,"end":444},"call":true},{"kind":"Binding","binding":"id@335","span":{"start":445,"end":447}}]},"span":{"start":417,"end":449}}
+ --> async-setup/provide/Panel.uf.tsx:1:1
+  |
+1 | import { defineSlots, provide } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF4001] (angular): The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+  --> async-setup/provide/Panel.uf.tsx:10:3
+   |
+10 |   const user = await loadUser(id);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (qwik): The qwik target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+  --> async-setup/provide/Panel.uf.tsx:10:3
+   |
+10 |   const user = await loadUser(id);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (react): The react target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+  --> async-setup/provide/Panel.uf.tsx:10:3
+   |
+10 |   const user = await loadUser(id);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (solid): The solid target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+  --> async-setup/provide/Panel.uf.tsx:10:3
+   |
+10 |   const user = await loadUser(id);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (svelte): The svelte target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+  --> async-setup/provide/Panel.uf.tsx:10:3
+   |
+10 |   const user = await loadUser(id);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
+  --> async-setup/provide/Panel.uf.tsx:12:3
+   |
+12 |   provide(ToneKey, "calm");
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

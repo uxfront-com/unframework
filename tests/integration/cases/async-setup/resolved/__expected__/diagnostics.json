@@ -19,23 +19,6 @@
   {
     "code": "UF9001",
     "severity": "error",
-    "message": "The astro target failed on Profile: Unexpected IR value: \"awaited\"",
-    "file": "async-setup/resolved/Profile.uf.tsx",
-    "start": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 1,
-      "offset": 0
-    },
-    "target": "astro"
-  },
-  {
-    "code": "UF9001",
-    "severity": "error",
     "message": "The qwik target failed on Profile: Unexpected IR value: {\"kind\":\"Await\",\"binding\":\"user@235\",\"value\":{\"code\":\"loadUser(id)\",\"span\":{\"start\":248,\"end\":260},\"refs\":[{\"kind\":\"Binding\",\"binding\":\"loadUser@54\",\"span\":{\"start\":248,\"end\":256},\"call\":true},{\"kind\":\"Binding\",\"binding\":\"id@203\",\"span\":{\"start\":257,\"end\":259}}]},\"span\":{\"start\":229,\"end\":261}}",
     "file": "async-setup/resolved/Profile.uf.tsx",
     "start": {
@@ -117,23 +100,6 @@
       "offset": 261
     },
     "target": "angular"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.",
-    "file": "async-setup/resolved/Profile.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 229
-    },
-    "end": {
-      "line": 7,
-      "column": 35,
-      "offset": 261
-    },
-    "target": "astro"
   },
   {
     "code": "UF4001",
