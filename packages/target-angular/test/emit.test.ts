@@ -24,6 +24,7 @@ import {
   lower,
   removeScratch,
   scratchDir,
+  writeFiles,
 } from "./helpers.ts";
 
 afterAll(removeScratch);
@@ -318,7 +319,10 @@ describe("angular target", () => {
  */
 function classBody(contents: string): string[] {
   const component = contents.slice(Math.max(contents.indexOf("@Component("), 0));
-  const body = /\n(?:export (?:default )?)?class \w+ \{\n([\s\S]*?)\n\}\n/.exec(component);
+  const body =
+    /\n(?:export (?:default )?)?class \w+(?: implements [\w, ]+)? \{\n([\s\S]*?)\n\}\n/.exec(
+      component,
+    );
   return body ? body[1]!.split("\n").map((line) => line.trim()) : [];
 }
 
@@ -942,5 +946,175 @@ export default function Badge({ tone = "info" }: BadgeProps) {
       "readonly style = input<Record<string, string | null | undefined>>();",
       HOST,
     ]);
+  });
+});
+
+describe("async setup (ADR-0101)", () => {
+  // A loader the module declares, so the file compiles alone.
+  const PROFILE = `
+import { ref } from "@uxfront/unframework";
+
+interface User {
+  name: string;
+  visits: number;
+}
+
+const loadUser = async (id: string): Promise<User> => ({ name: \`User \${id}\`, visits: id.length });
+
+export default async function Profile({ id }: { id: string }) {
+  const user = await loadUser(id);
+  const visits = ref(user.visits);
+  return (
+    <button type="button" onClick={() => visits.value++}>
+      {user.name}: {visits.value}
+    </button>
+  );
+}
+`;
+
+  // Every kind of item after the awaits that reads one, and the hooks and watchers after them.
+  const CARD = `
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";
+
+interface User {
+  name: string;
+  visits: number;
+}
+
+const loadUser = async (id: string): Promise<User> => ({ name: id, visits: id.length });
+
+export default async function Card({ id }: { id: string }) {
+  const user = await loadUser(id);
+  const again: User = await loadUser(user.name);
+  const visits = ref(user.visits);
+  const label = \`\${user.name}!\`;
+  let seen = again.visits;
+  const doubled = computed(() => visits.value * 2);
+  watch(visits, (value) => {
+    seen = value;
+  });
+  watchEffect(() => {
+    console.log(doubled.value);
+  });
+  onMounted(() => {
+    console.log(label, seen);
+  });
+  onUnmounted(() => {
+    console.log(user.name);
+  });
+  return (
+    <button type="button" onClick={() => visits.value++}>
+      {label} {doubled.value}
+    </button>
+  );
+}
+`;
+
+  it("goes on in ngOnInit as a pending task, and renders the template once the setup resolves", async () => {
+    const file = await formatted(PROFILE);
+    expect(templateLines(file.contents)).toEqual([
+      "@if (resolved()) {",
+      "@let visits = this.visits();",
+      "<button",
+      'type="button"',
+      '(click)="onClick()"',
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      '[ufScope]="this.host"',
+      ">{{ user.name }}: {{ visits }}</button>",
+      "}",
+    ]);
+    expect(classBody(file.contents)).toEqual([
+      "readonly id = input.required<string>();",
+      "readonly class = input<string>();",
+      "readonly style = input<Record<string, string | null | undefined>>();",
+      "private readonly pendingTasks = inject(PendingTasks);",
+      "private readonly destroyRef = inject(DestroyRef);",
+      "protected readonly resolved = signal(false);",
+      "protected user!: Awaited<ReturnType<typeof this.initialUser>>;",
+      "protected readonly visits = linkedSignal(() => untracked(() => this.user.visits));",
+      "",
+      "ngOnInit(): void {",
+      "this.pendingTasks.run(async () => {",
+      "this.user = await this.initialUser();",
+      "",
+      "// Destroyed while it waited: the rest of the setup never runs.",
+      "if (this.destroyRef.destroyed) return;",
+      "",
+      "// Read once the inputs are set: these keep the values they start with.",
+      "this.visits();",
+      "",
+      "this.resolved.set(true);",
+      "});",
+      "}",
+      "",
+      "private initialUser() {",
+      "return loadUser(this.id());",
+      "}",
+      "",
+      "protected onClick() {",
+      "this.visits.update((visits) => visits + 1);",
+      "}",
+      HOST,
+    ]);
+  });
+
+  it("types an awaited value by its annotation, and defers what reads one as what reads an input", async () => {
+    const lines = classBody((await formatted(CARD)).contents);
+    expect(lines).toEqual(
+      expect.arrayContaining([
+        "private again!: User;",
+        "private readonly visits = linkedSignal(() => untracked(() => this.user.visits));",
+        "protected readonly label = computed(() => untracked(() => `${this.user.name}!`));",
+        "private seen!: ReturnType<typeof this.initialSeen>;",
+        "this.again = await loadUser(this.user.name);",
+      ]),
+    );
+    const body = lines.join("\n");
+    // The awaits run first, the guard next, then today's `ngOnInit` code, the hooks and the
+    // watchers registered with the injector, and the template last.
+    const order = [
+      "this.user = await this.initialUser();",
+      "if (this.destroyRef.destroyed) return;",
+      "this.visits();\nthis.label();\nthis.seen = this.initialSeen();",
+      "effect(",
+      "afterRenderEffect(",
+      "afterNextRender(",
+      "this.resolved.set(true);",
+    ].map((snippet) => body.indexOf(snippet));
+    expect(order.every((index) => index !== -1)).toBe(true);
+    expect(order).toEqual(order.toSorted((a, b) => a - b));
+    expect(body.match(/\{ injector: this\.injector \}/g)).toHaveLength(3);
+    // A component destroyed before its setup resolved runs no `onUnmounted` hook.
+    expect(body).toContain(
+      [
+        "ngOnDestroy(): void {",
+        "if (this.resolved()) {",
+        "if (isPlatformBrowser(this.platformId)) {",
+        "console.log(this.user.name);",
+      ].join("\n"),
+    );
+  });
+
+  it("names the signal past a binding of its name", async () => {
+    const file = await formatted(
+      PROFILE.replace("const visits = ref(user.visits);", "const resolved = ref(user.visits);")
+        .replace("visits.value++", "resolved.value++")
+        .replace("{visits.value}", "{resolved.value}"),
+    );
+    expect(templateLines(file.contents)[0]).toBe("@if (resolved_1()) {");
+    expect(classBody(file.contents)).toContain("protected readonly resolved_1 = signal(false);");
+  });
+
+  it("passes L3, L4 and L5 with no message", { timeout: 120_000 }, async () => {
+    for (const source of [PROFILE, CARD]) {
+      const file = await formatted(source);
+      expect(await l3Errors(file)).toEqual([]);
+      const [path] = Object.values(writeFiles(scratchDir(), { [file.path]: file.contents }));
+      const checked = await toolchain.typecheck([path!], context);
+      for (const [each, messages] of checked) expect(messages, each).toEqual([]);
+      const linted = await toolchain.lint([path!], context);
+      for (const [each, messages] of linted) expect(messages, each).toEqual([]);
+    }
   });
 });

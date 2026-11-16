@@ -90,7 +90,9 @@ export function template(
   transition?: { ref: string },
 ): string {
   const { component } = plan;
-  const pad = INDENT.repeat(LEVEL);
+  // A setup that awaits renders its template, `@let`s included, once it resolves (ADR-0101).
+  const level = plan.resolved === undefined ? LEVEL : LEVEL + 1;
+  const pad = INDENT.repeat(level);
   const lets: string[] = [];
   const declare = (id: BindingId | undefined) => {
     if (id === undefined || !reads.read.has(id)) return;
@@ -227,7 +229,7 @@ export function template(
   const render = fallthrough ? withFallthrough(models.render) : models.render;
   const markup = printMarkup(render, dialect, {
     indent: INDENT,
-    level: LEVEL,
+    level,
     component,
     module: plan.module,
     rewrite: templateRules(plan, reads.signals),
@@ -243,10 +245,17 @@ export function template(
   });
   // A slot's templates are projected here, so none counts as the default slot's content
   // (ADR-0056); an `<ng-template>` renders nothing where it is projected.
+  const outer = INDENT.repeat(LEVEL);
   const selects = composition.slots.map(
-    ({ attribute }) => `${pad}<ng-content select="[${attribute}]" />`,
+    ({ attribute }) => `${outer}<ng-content select="[${attribute}]" />`,
   );
-  return [...lets, markup, ...selects].join("\n");
+  const content = [...lets, markup].join("\n");
+  return [
+    plan.resolved === undefined
+      ? content
+      : `${outer}@if (${plan.resolved}()) {\n${content}\n${outer}}`,
+    ...selects,
+  ].join("\n");
 }
 
 /**

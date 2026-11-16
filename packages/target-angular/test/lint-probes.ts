@@ -1415,4 +1415,33 @@ export default function Tuples({ label }: TuplesProps) {
   );
 }
 `,
+  // An async setup (ADR-0101) whose await resolves after a microtask, so a test that destroys it
+  // at once destroys it before it resolves; its hooks write what they saw on `<body>`.
+  "AsyncTeardown.uf.tsx": `import { onMounted, onUnmounted, ref, watchEffect } from "@uxfront/unframework";
+
+const loadLabel = async (id: string): Promise<string> => \`Label \${id}\`;
+
+export default async function AsyncTeardown({ id }: { id: string }) {
+  const label = await loadLabel(id);
+  const count = ref(label.length);
+
+  watchEffect(() => {
+    document.body.setAttribute("data-uf-count", String(count.value));
+  });
+
+  onMounted(() => {
+    document.body.setAttribute("data-uf-mounted", label);
+  });
+
+  onUnmounted(() => {
+    document.body.setAttribute("data-uf-unmounted", label);
+  });
+
+  return (
+    <button type="button" onClick={() => count.value++}>
+      {label}: {count.value}
+    </button>
+  );
+}
+`,
 };

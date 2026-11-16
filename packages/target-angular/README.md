@@ -113,6 +113,7 @@ the template itself, which reads through `@let`, and a template statement's inpu
 | `watchEffect(effect)`                     | `afterRenderEffect(effect)` in the constructor: after the render, in the browser only                                          |
 | `onMounted(callback)`                     | `afterNextRender(callback)` in the constructor: in the browser, once the view is in the document                               |
 | `onUnmounted(callback)`                   | in `ngOnDestroy`, in the browser only                                                                                          |
+| `const user = await loadUser(id)`         | `protected user!: …;`, assigned in `ngOnInit` inside `PendingTasks.run`, the template behind `@if (resolved())` (below)        |
 
 A watcher is created in `ngOnInit`, once the inputs are set, so the source's value at creation is
 known and typed: `let lastCount = currentCount();`. Its source goes through a `computed`
@@ -159,6 +160,23 @@ component still emits. So a watcher or a `watchEffect` with an `onCleanup` keeps
 returns runs in a function of its own (`(() => { … })();`), so its `return` ends it and not
 `ngOnDestroy`. A callback the class runs (a hook, an effect, a watcher's) returns no value, as
 none is read: its `return x;` keeps only what `x` changes.
+
+An async setup (ADR-0101) goes on in `ngOnInit`, where the inputs are set, inside
+`this.pendingTasks.run(async () => { … })`: the server's render waits for the application to be
+stable, which a pending task holds off, and so does every settle of the harness. Each awaited
+binding is a field `ngOnInit` assigns, `protected user!: User;` with its annotation, or typed by
+what the promise resolves to through a private method that makes it,
+`Awaited<ReturnType<typeof this.initialUser>>` and `this.user = await this.initialUser();`. After
+the awaits, `if (this.destroyRef.destroyed) return;` ends a setup whose component went while it
+waited, then `ngOnInit`'s other code runs (the seeded reads, the watchers, and every hook and
+`watchEffect`, registered there with `{ injector }`), then `this.resolved.set(true)`. What reads an
+awaited binding is deferred as what reads an input is: a state is `linkedSignal`, a constant a
+setup-once `computed`, a `let` assigned in `ngOnInit`, a composable's call made there. The
+template, its `@let`s included, sits in `@if (resolved()) { … }`, which renders nothing but its
+anchor comment until then; on a hydrated page Angular keeps the server's view of the `@if` and
+claims it once `resolved` is set. `ngOnDestroy` runs the `onUnmounted` hooks only
+`if (this.resolved())`. `PendingTasks.run` is a developer preview; `add()` with `finally` is its
+stable form, and the target uses `run`, which reports a rejection to the `ErrorHandler`.
 
 ### Composables (ADR-0069)
 
