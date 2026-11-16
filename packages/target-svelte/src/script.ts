@@ -627,6 +627,7 @@ class ScriptWriter {
             ...(phases.enter ? { enter: this.#names.claim("enter") } : {}),
             ...(phases.leave ? { leave: this.#names.claim("leave") } : {}),
             classes: this.#names.claim("transitionClasses"),
+            runs: this.#names.claim("transitionRuns"),
             config: this.#names.import("svelte/transition", "TransitionConfig", { type: true }),
           }
         : undefined;
@@ -2057,53 +2058,61 @@ function transitionPhases(component: UfComponent): { enter: boolean; leave: bool
 
 /**
  * The transition functions of a `<Transition>` (`transition`, emulated, ADR-0100), which `in:`
- * and `out:` name: Svelte's `transition:` runs its own CSS or tick, never Vue's classes. Each adds
- * the phase's `-from` and `-active` classes as Svelte starts it, before the element is painted,
- * and swaps `-from` for `-to` two frames later, as Vue does. Its config is deferred, so Svelte
- * reads it once the element is in the document: the element's longest duration and delay, which
- * Svelte waits before it ends the phase and removes a leaving element. The classes go at that end,
+ * and `out:` name: Svelte's `transition:` runs its own CSS or tick, never Vue's classes. Each
+ * returns a deferred config, which Svelte calls for every run, once the element is in the document
+ * and before it is painted. The call stops what the element's other phase still runs, as when
+ * Svelte reverses a leave, adds the phase's `-from` and `-active` classes, swaps `-from` for `-to`
+ * two frames later, as Vue does, and reads the element's longest duration and delay, which Svelte
+ * waits before it ends the phase and removes a leaving element. The classes go at that end,
  * Svelte's `introend` or `outroend`, so both elements of a swap end in one frame.
  */
 function transitionHelpers(names: {
   enter?: string;
   leave?: string;
   classes: string;
+  runs: string;
   config: string;
 }): string[] {
-  const { enter, leave, classes, config } = names;
+  const { enter, leave, classes, runs, config } = names;
   return [
+    `/** The stop of the classes each element runs now, which its next phase stops first. */\nconst ${runs} = new WeakMap<Element, () => void>();`,
     `/** Runs \`name\`'s classes of one phase on the element, as Vue's \`<Transition>\` does. */\n${block(
       `function ${classes}(element: Element, name: string, phase: "enter" | "leave"): () => ${config} {`,
       [
-        "const from = `${name}-${phase}-from`;",
-        "const active = `${name}-${phase}-active`;",
-        "const to = `${name}-${phase}-to`;",
-        "let ended = false;",
-        block(
-          "const end = () => {",
-          ["ended = true;", "element.classList.remove(from, active, to);"],
-          "};",
-        ),
-        'element.addEventListener(phase === "enter" ? "introend" : "outroend", end, { once: true });',
-        "element.classList.add(from, active);",
-        block(
-          "requestAnimationFrame(() => {",
-          [
-            block(
-              "requestAnimationFrame(() => {",
-              [
-                "if (ended) return;",
-                "element.classList.remove(from);",
-                "element.classList.add(to);",
-              ],
-              "});",
-            ),
-          ],
-          "});",
-        ),
         block(
           "return () => {",
           [
+            "// A phase that starts while the other runs, as Svelte reverses one, takes over from it.",
+            `${runs}.get(element)?.();`,
+            "const from = `${name}-${phase}-from`;",
+            "const active = `${name}-${phase}-active`;",
+            "const to = `${name}-${phase}-to`;",
+            'const event = phase === "enter" ? "introend" : "outroend";',
+            "let frame = 0;",
+            block(
+              "const stop = () => {",
+              [
+                "cancelAnimationFrame(frame);",
+                "element.removeEventListener(event, stop);",
+                "element.classList.remove(from, active, to);",
+                `if (${runs}.get(element) === stop) ${runs}.delete(element);`,
+              ],
+              "};",
+            ),
+            `${runs}.set(element, stop);`,
+            "element.addEventListener(event, stop, { once: true });",
+            "element.classList.add(from, active);",
+            block(
+              "frame = requestAnimationFrame(() => {",
+              [
+                block(
+                  "frame = requestAnimationFrame(() => {",
+                  ["element.classList.remove(from);", "element.classList.add(to);"],
+                  "});",
+                ),
+              ],
+              "});",
+            ),
             "const style = getComputedStyle(element);",
             block(
               "const longest = (delays: string, durations: string) => {",

@@ -57,7 +57,7 @@ import {
   scopeDirectiveCode,
   teleportDirectiveCode,
   transitionDirectiveCode,
-  transitionGateCode,
+  transitionRegionCode,
   textCaretDirectiveCode,
   trustedHtmlPipeCode,
 } from "./directives.ts";
@@ -265,7 +265,7 @@ export const angular: Target = defineTarget({
     transition: {
       support: "emulated",
       helper: "Transition",
-      note: "A `<Transition>`'s element takes an inline directive, `ufTransition`, which runs Vue's classes as the element enters, after its component's first render unless `appear`, and as it leaves through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when something around the element removes it, so the template passes whether the element's own branch is still shown, and the directive lets the element go at once when it is (ADR-0100).",
+      note: "A `<Transition>`'s element takes an inline directive, `ufTransition`, and a conditional child sits in an `<ng-container>` whose inline directive, `TransitionRegion`, is created with the transition and holds the branch shown. The directive runs Vue's enter classes once its region has rendered, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when something around the element removes it, so the directive lets the element go at once while its region still shows its branch (ADR-0100).",
     },
     teleport: {
       support: "emulated",
@@ -369,12 +369,14 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
   // A teleport mounts its view through an inline directive (ADR-0098).
   const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
-  // A transition runs through an inline directive, and a gate its component creates (ADR-0100).
+  // A transition runs through an inline directive, and a region directive around a conditional
+  // child (ADR-0100).
   const transition = holdsTransition(component)
     ? {
         className: imports.claim("Transition"),
-        gateClass: imports.claim("TransitionGate"),
-        gate: plan.members.claim("transitions"),
+        regionClass: imports.claim("TransitionRegion"),
+        // The region wraps a conditional child only, and the template imports it only then.
+        regions: holdsTransition(component, true),
         ref: plan.members.claim("transition"),
       }
     : undefined;
@@ -453,7 +455,12 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...(models.textCaret === undefined ? [] : [models.textCaret]),
                 ...(trustedHtml === undefined ? [] : [trustedHtml]),
                 ...(teleport === undefined ? [] : [teleport]),
-                ...(transition === undefined ? [] : [transition.className]),
+                ...(transition === undefined
+                  ? []
+                  : [
+                      transition.className,
+                      ...(transition.regions ? [transition.regionClass] : []),
+                    ]),
                 ...appliedImports,
                 ...ownClasses.map(({ className: name }) => name),
               ].map((name) => js.identifier(name)),
@@ -518,22 +525,9 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       { accessibility: "protected", readonly: true },
     ),
   ];
-  // The gate the template hands each transition's directive (ADR-0100).
-  const gateMember = transition && [
-    js.propertyDefinition(
-      transition.gate,
-      placeholders.expression(`new ${transition.gateClass}()`),
-      { accessibility: "protected", readonly: true },
-    ),
-  ];
-  const declaration = js.classDeclaration(
-    className,
-    [],
-    [...members, ...(hostMember || []), ...(gateMember || [])],
-    {
-      implements: interfaces,
-    },
-  );
+  const declaration = js.classDeclaration(className, [], [...members, ...(hostMember || [])], {
+    implements: interfaces,
+  });
   declaration.typeParameters = typeParameters(component, placeholders);
   const statements = exportDeclaration(
     className,
@@ -583,8 +577,8 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(transition === undefined
       ? []
       : [
-          transitionGateCode(transition.gateClass, imports),
-          transitionDirectiveCode(transition.className, transition.gateClass, imports),
+          transitionRegionCode(transition.regionClass, imports),
+          transitionDirectiveCode(transition.className, transition.regionClass, imports),
         ]),
     ...(runner === undefined ? [] : runnerCode(runner)),
     ...ownClasses.map(({ directive, className: name }) =>
@@ -646,12 +640,14 @@ function rendersRawHtml(component: UfComponent): boolean {
   return found;
 }
 
-/** Whether the template holds a `<Transition>` (ADR-0100). */
-function holdsTransition(component: UfComponent): boolean {
+/** Whether the template holds a `<Transition>`, or one around a conditional (ADR-0100). */
+function holdsTransition(component: UfComponent, conditional = false): boolean {
   let found = false;
   walk(component.render, {
     enter: (node) => {
-      if (node.kind === "Transition") found = true;
+      if (node.kind === "Transition" && (!conditional || node.children[0]?.kind === "If")) {
+        found = true;
+      }
       return found ? false : undefined;
     },
   });

@@ -237,21 +237,30 @@ export class ${className} implements ${core("OnInit", true)} {
 /** The attribute that selects the transition directive, and the name it is exported as (ADR-0100). */
 export const TRANSITION_ATTRIBUTE = "ufTransition";
 
-/** The input that hands the transition directive its component's gate. */
-export const TRANSITION_GATE_INPUT = "ufTransitionGate";
-
 /** The input that runs the enter on the element's first render too (`appear`). */
 export const TRANSITION_APPEAR_INPUT = "ufTransitionAppear";
 
+/** The input that names the element's branch of the transition's conditional. */
+export const TRANSITION_BRANCH_INPUT = "ufTransitionBranch";
+
+/** The attribute that selects a transition's region, around its conditional. */
+export const TRANSITION_REGION_ATTRIBUTE = "ufTransitionRegion";
+
 /**
- * The gate a component that holds a `<Transition>` creates with itself (ADR-0100): `ready` turns
- * true once it has rendered, so an element created later enters, and one of its first render
- * enters only with `appear`, as on Vue. `afterNextRender` never runs on the server.
+ * The region of a `<Transition>` whose child is a conditional (ADR-0100):
+ * `<ng-container [ufTransitionRegion]="(open) ? 0 : -1">`, created with the transition, whose input
+ * is the branch shown. Angular sets it before it renders the conditional inside, so the branch is
+ * the new one as Angular removes an element. `ready` turns true once the region has rendered, so an
+ * element the conditional creates later enters, and one of the region's first render, as when a
+ * condition around the transition shows it again, enters only with `appear`, as on Vue.
+ * `afterNextRender` never runs on the server.
  */
-export function transitionGateCode(className: string, imports: ImportSet): string {
+export function transitionRegionCode(className: string, imports: ImportSet): string {
   const core = (name: string) => imports.add("@angular/core", name);
-  return `/** Whether its component has rendered once: a transition's element created later enters. */
-class ${className} {
+  return `/** A transition's conditional: the branch it shows, and whether it has rendered once. */
+@${core("Directive")}({ selector: "ng-container[${TRANSITION_REGION_ATTRIBUTE}]" })
+export class ${className} {
+  readonly ${TRANSITION_REGION_ATTRIBUTE} = ${core("input")}.required<number>();
   ready = false;
 
   constructor() {
@@ -265,21 +274,21 @@ class ${className} {
 
 /**
  * The directive that runs Vue's transition classes on its element (ADR-0100):
- * `<p [ufTransition]="'fade'" [ufTransitionGate]="this.gate">`. After the render that created the
- * element, it runs the enter if its component had rendered before, or with `appear`. Angular's
- * `(animate.leave)` holds the element's removal until `animationComplete()`, and the template
- * passes whether the element's own branch is still shown, read as Angular removes it: Angular
+ * `<p [ufTransition]="'fade'" [ufTransitionBranch]="0">`. After the render that created the
+ * element, it runs the enter if its transition's region had rendered before, or with `appear`.
+ * Angular's `(animate.leave)` holds the element's removal until `animationComplete()`. Angular
  * also runs the leave of every element in a view that something around it removes, or that goes
- * with its component, where Vue removes the element at once, so it completes at once there. Each
- * phase adds its `-from` and `-active` classes, swaps `-from` for `-to` two frames later, as Vue
- * does, and removes them at the end: the element's own `transitionend` or `animationend`, or its
- * longest duration and delay, whichever comes first. Angular also completes a leave on any
- * `animationend` that reaches the element, a child's included. It is exported, as ngtsc's
- * type-check imports every directive a template uses.
+ * with its component, where Vue removes the element at once, so the leave runs only when the
+ * region shows another branch than the element's, and completes at once otherwise. Each phase adds
+ * its `-from` and `-active` classes, swaps `-from` for `-to` two frames later, as Vue does, and
+ * removes them at the end: the element's own `transitionend` or `animationend`, or its longest
+ * duration and delay, whichever comes first. Angular also completes a leave on any `animationend`
+ * that reaches the element, a child's included. It is exported, as ngtsc's type-check imports
+ * every directive a template uses.
  */
 export function transitionDirectiveCode(
   className: string,
-  gate: string,
+  region: string,
   imports: ImportSet,
 ): string {
   const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
@@ -287,8 +296,9 @@ export function transitionDirectiveCode(
 @${core("Directive")}({ selector: "[${TRANSITION_ATTRIBUTE}]", exportAs: "${TRANSITION_ATTRIBUTE}" })
 export class ${className} implements ${core("OnInit", true)} {
   readonly ${TRANSITION_ATTRIBUTE} = ${core("input")}.required<string>();
-  readonly ${TRANSITION_GATE_INPUT} = ${core("input")}.required<${gate}>();
   readonly ${TRANSITION_APPEAR_INPUT} = ${core("input")}(false);
+  readonly ${TRANSITION_BRANCH_INPUT} = ${core("input")}<number>();
+  private readonly region = ${core("inject")}(${region}, { optional: true });
   private readonly element: Element = ${core("inject")}<${core("ElementRef", true)}<Element>>(${core("ElementRef")}).nativeElement;
   private entering = false;
   private stopEnter: (() => void) | undefined;
@@ -303,22 +313,21 @@ export class ${className} implements ${core("OnInit", true)} {
   }
 
   ngOnInit(): void {
-    this.entering = this.${TRANSITION_GATE_INPUT}().ready || this.${TRANSITION_APPEAR_INPUT}();
+    this.entering = Boolean(this.region?.ready) || this.${TRANSITION_APPEAR_INPUT}();
   }
 
   /**
-   * \`(animate.leave)\`: runs the leave when the element's own branch is no longer shown, and lets
-   * the element go at once when it still is: something around it removed it.
+   * \`(animate.leave)\`: runs the leave when the region shows another branch than the element's,
+   * and lets the element go at once when it still shows it: something around it removed it.
    */
-  leave(event: ${core("AnimationCallbackEvent", true)}, shown: boolean): void {
+  leave(event: ${core("AnimationCallbackEvent", true)}): void {
     this.stopEnter?.();
-    if (shown) {
+    if (!this.region || this.region.${TRANSITION_REGION_ATTRIBUTE}() === this.${TRANSITION_BRANCH_INPUT}()) {
       event.animationComplete();
       return;
     }
     this.run("leave", () => event.animationComplete());
   }
-
   private run(phase: "enter" | "leave", done?: () => void): () => void {
     const { element } = this;
     const from = \`\${this.${TRANSITION_ATTRIBUTE}()}-\${phase}-from\`;

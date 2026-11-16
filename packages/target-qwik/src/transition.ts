@@ -47,12 +47,14 @@ export function qwikTransitions(
   const helper = names.once("transition");
   const run = names.once("runTransition");
   const stateType = names.once("TransitionState");
+  const stops = names.once("transitionStops");
+  const stopRun = names.once("stopTransition");
   const locals = new Map<number, TransitionLocals>(
     nodes.map((node) => [
       node.span.start,
       {
-        shown: names.fresh(`${node.name.replace(/\W/g, "_")}Shown`),
-        state: names.fresh(`${node.name.replace(/\W/g, "_")}State`),
+        shown: names.fresh(`${localBase(node.name)}Shown`),
+        state: names.fresh(`${localBase(node.name)}State`),
       },
     ]),
   );
@@ -83,7 +85,7 @@ export function qwikTransitions(
           const branch = branchOf(node);
           const conditional = node.children[0]?.kind === "If";
           return [
-            `const ${state} = ${names.core("useConstant")}((): ${stateType} => ({ ready: false, current: ${branch}, elements: [] }));`,
+            `const ${state} = ${names.core("useConstant")}((): ${stateType} => ({ current: ${branch}, elements: [], entering: [] }));`,
             ...(conditional
               ? [
                   `const ${shown} = ${names.core("useSignal")}<number[]>([${branch}].filter((index) => index >= 0));`,
@@ -91,34 +93,31 @@ export function qwikTransitions(
                     `${names.core("useVisibleTask$")}(`,
                     `  ({ track }) => {`,
                     `    const next = track(() => ${branch});`,
-                    `    ${state}.ready = true;`,
                     `    const previous = ${state}.current;`,
                     `    if (next === previous) return;`,
                     `    ${state}.current = next;`,
-                    `    if (next >= 0) ${shown}.value = [...${shown}.value.filter((index) => index !== next), next];`,
+                    `    if (next >= 0) {`,
+                    `      // Shown again while it leaves: its leave stops, and it stays as it is.`,
+                    `      ${stopRun}(${state}.elements[next]);`,
+                    `      if (!${shown}.value.includes(next)) {`,
+                    `        ${state}.entering.push(next);`,
+                    `        ${shown}.value = [...${shown}.value, next];`,
+                    `      }`,
+                    `    }`,
                     `    const leaving = previous < 0 ? undefined : ${state}.elements[previous];`,
                     `    if (!leaving) {`,
                     `      ${shown}.value = ${shown}.value.filter((index) => index !== previous);`,
                     `      return;`,
                     `    }`,
                     `    ${run}(leaving, ${JSON.stringify(node.name)}, "leave", () => {`,
-                    `      ${shown}.value = ${shown}.value.filter((index) => index !== previous);`,
+                    `      if (${state}.current !== previous) ${shown}.value = ${shown}.value.filter((index) => index !== previous);`,
                     `    });`,
                     `  },`,
                     `  { strategy: "document-ready" },`,
                     `);`,
                   ].join("\n"),
                 ]
-              : [
-                  [
-                    `${names.core("useVisibleTask$")}(`,
-                    `  () => {`,
-                    `    ${state}.ready = true;`,
-                    `  },`,
-                    `  { strategy: "document-ready" },`,
-                    `);`,
-                  ].join("\n"),
-                ]),
+              : []),
           ];
         })
         .join("\n"),
@@ -155,6 +154,9 @@ export function qwikTransitions(
         helper,
         run,
         stateType,
+        stops,
+        // Only a conditional's visible task stops a phase from outside it.
+        nodes.some((node) => node.children[0]?.kind === "If") ? stopRun : undefined,
         names.imports.add("@qwik.dev/core/build", "isServer"),
       ),
   };
@@ -213,36 +215,62 @@ function transitionHelpers(
   helper: string,
   run: string,
   stateType: string,
+  stops: string,
+  stopRun: string | undefined,
   isServer: string,
 ): string {
-  return `/** A transition's state: whether its component has mounted, the branch shown, and its elements. */
+  return `/**
+ * A transition's state: the branch shown, each branch's element, and the branches a change of the
+ * branch shown adds, which enter. Qwik serialises it, so it holds no function.
+ */
 interface ${stateType} {
-  ready: boolean;
   current: number;
   elements: Element[];
+  entering: number[];
 }
 
+/** What stops the phase each element runs now, which its next phase stops first. */
+const ${stops} = new WeakMap<Element, () => void>();
+${
+  stopRun === undefined
+    ? ""
+    : `
+/** Stops the phase an element runs, if any, with its classes and without its \`done\`. */
+function ${stopRun}(element: Element | undefined): void {
+  if (element) ${stops}.get(element)?.();
+}
+`
+}
 /**
  * Runs Vue's transition classes of \`name\` of one phase on \`element\`, then \`done\`: \`-from\` and
  * \`-active\`, \`-to\` for \`-from\` two frames later, and none once the element's own
- * \`transitionend\` or \`animationend\` fires, or its longest duration and delay pass.
+ * \`transitionend\` or \`animationend\` fires, or its longest duration and delay pass. A phase the
+ * element still runs stops first.
  */
 function ${run}(element: Element, name: string, phase: "enter" | "leave", done?: () => void): void {
+  ${stops}.get(element)?.();
   const from = \`\${name}-\${phase}-from\`;
   const active = \`\${name}-\${phase}-active\`;
   const to = \`\${name}-\${phase}-to\`;
+  let frame = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const end = (event?: Event) => {
-    if (event && event.target !== element) return;
+  const stop = () => {
+    cancelAnimationFrame(frame);
     clearTimeout(timer);
     element.removeEventListener("transitionend", end);
     element.removeEventListener("animationend", end);
     element.classList.remove(from, active, to);
+    if (${stops}.get(element) === stop) ${stops}.delete(element);
+  };
+  ${stops}.set(element, stop);
+  const end = (event?: Event) => {
+    if (event && event.target !== element) return;
+    stop();
     done?.();
   };
   element.classList.add(from, active);
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+  frame = requestAnimationFrame(() => {
+    frame = requestAnimationFrame(() => {
       element.classList.remove(from);
       element.classList.add(to);
       const style = getComputedStyle(element);
@@ -267,9 +295,11 @@ function ${run}(element: Element, name: string, phase: "enter" | "leave", done?:
 }
 
 /**
- * The ref of a transition's element: it records the element, and runs its enter once the
- * component has mounted, or with \`appear\`. Qwik calls a ref again when its value changes, and
- * each render makes a new one, so it takes an element once. It calls the element's own ref first.
+ * The ref of a transition's element: it records the element, and runs its enter when a change of
+ * the branch shown added it, or with \`appear\`, as the transition first mounts. An element that
+ * a condition around the transition shows again enters only with \`appear\`, as on Vue. Qwik calls
+ * a ref again when its value changes, and each render makes a new one, so it takes an element
+ * once. It calls the element's own ref first.
  */
 function ${helper}(
   state: ${stateType},
@@ -285,7 +315,19 @@ function ${helper}(
     if (${isServer}) return;
     if (state.elements[index] === element) return;
     state.elements[index] = element;
-    if (state.ready || appear) ${run}(element, name, "enter");
+    const entering = state.entering.indexOf(index);
+    if (entering >= 0) state.entering.splice(entering, 1);
+    if (entering >= 0 || appear) ${run}(element, name, "enter");
   };
 }`;
+}
+
+/** The base of a transition's local names: \`fade\` for \`fade\`, \`slideUp\` for \`slide-up\`. */
+function localBase(name: string): string {
+  const words = name.split(/[^A-Za-z0-9]+/).filter(Boolean);
+  const joined = words
+    .map((word, index) => (index ? word[0]!.toUpperCase() + word.slice(1) : word))
+    .join("");
+  // A name that starts with no letter, \`2col\`, makes no identifier.
+  return /^[A-Za-z]/.test(joined) ? joined : "transition";
 }

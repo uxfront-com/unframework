@@ -124,7 +124,7 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   `reactive-context` (`refObject`) are emulated, and the others native; of styling's,
   `child-root-scope` (`scopeAttributes`) is emulated.
 - `directive` is native (ADR-0099): an attachment, `{@attach vFocusTrap(() => open)}`, whose factory, `vFocusTrap.svelte.ts` for a `.uf.ts` module's, runs `mounted` untracked, an `$effect` for `updated` and its teardown for `unmounted`. In a branch, the value is a `{@const}` the branch declares, which the getter reads, so it keeps the branch's narrowing.
-- `transition` is emulated (ADR-0100): each element of a `<Transition>`'s conditional takes a local `in:enter` and `out:leave`, whose functions run Vue's classes and give Svelte the element's duration in a deferred config. The classes go at `introend` and `outroend`. With `appear`, `in:` is global, so the enter runs as the element first mounts too.
+- `transition` is emulated (ADR-0100): each element of a `<Transition>`'s conditional takes a local `in:enter` and `out:leave`, whose functions return a deferred config that Svelte calls for every run: it stops what the element's other phase still runs, runs Vue's classes and gives Svelte the element's duration. The classes go at `introend` and `outroend`. With `appear`, `in:` is global, so the enter runs as the element first mounts too.
 - `teleport` is emulated (ADR-0098): the element renders once the component has mounted, in an `{#if}` of its own, and an attachment, `teleport`, moves it into `to`, gives back the focus the move took, and removes it on teardown.
 - **Composition** (ADR-0053 to ADR-0055), with what it imports beside `svelte`:
 
