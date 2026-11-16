@@ -21,16 +21,6 @@ export default function Picker(props: PickerSlots & { class?: string; style?: JS
           {(option) => <li>{props.option?.({ option: option.value })}</li>}
         </KeyedFor>
       </ul>
-      <button
-        type="button"
-        onClick={() =>
-          setOptions(
-            options().map((option) => (option.id === "x" ? { id: "x", label: "Xenon" } : option)),
-          )
-        }
-      >
-        Rename option
-      </button>
       <button type="button" onClick={() => setOptions([...options()].reverse())}>
         Reverse options
       </button>

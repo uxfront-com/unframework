@@ -1,0 +1,314 @@
+{
+  "irVersion": 1,
+  "file": "directives/fill-props/Picker.uf.tsx",
+  "components": [
+    {
+      "name": "Picker",
+      "span": {
+        "start": 298,
+        "end": 1009
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@341",
+        "type": {
+          "code": "{\n    option?(props: { option: { id: string; label: string } }): Element;\n  }",
+          "span": {
+            "start": 361,
+            "end": 438
+          }
+        },
+        "slots": [
+          {
+            "name": "option",
+            "optional": true,
+            "props": {
+              "code": "{ option: { id: string; label: string } }",
+              "span": {
+                "start": 382,
+                "end": 423
+              }
+            },
+            "span": {
+              "start": 367,
+              "end": 434
+            }
+          }
+        ],
+        "span": {
+          "start": 335,
+          "end": 442
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@341",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 341,
+            "end": 346
+          }
+        },
+        {
+          "id": "options@451",
+          "name": "options",
+          "kind": "state",
+          "span": {
+            "start": 451,
+            "end": 458
+          }
+        },
+        {
+          "id": "option@636",
+          "name": "option",
+          "kind": "loopVar",
+          "span": {
+            "start": 636,
+            "end": 642
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "options@451",
+          "initial": {
+            "code": "[\n    { id: \"x\", label: \"Xray\" },\n    { id: \"y\", label: \"Yankee\" },\n  ]",
+            "span": {
+              "start": 465,
+              "end": 536
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 445,
+            "end": 538
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "picker",
+            "span": {
+              "start": 560,
+              "end": 574
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Options",
+                "span": {
+                  "start": 586,
+                  "end": 606
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "options.value",
+                  "span": {
+                    "start": 617,
+                    "end": 630
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "options@451",
+                      "span": {
+                        "start": 617,
+                        "end": 630
+                      }
+                    }
+                  ]
+                },
+                "item": "option@636",
+                "key": {
+                  "code": "option.id",
+                  "span": {
+                    "start": 668,
+                    "end": 677
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "option@636",
+                      "span": {
+                        "start": 668,
+                        "end": 674
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "SlotOutlet",
+                      "slot": "option",
+                      "props": {
+                        "code": "{ option }",
+                        "span": {
+                          "start": 695,
+                          "end": 705
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "option@636",
+                            "span": {
+                              "start": 697,
+                              "end": 703
+                            },
+                            "shorthand": true
+                          }
+                        ]
+                      },
+                      "fallback": [],
+                      "span": {
+                        "start": 679,
+                        "end": 707
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 659,
+                    "end": 712
+                  }
+                },
+                "span": {
+                  "start": 617,
+                  "end": 723
+                }
+              }
+            ],
+            "span": {
+              "start": 582,
+              "end": 736
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 759,
+                  "end": 772
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(options.value = options.value.map((option) =>\n            option.id === \"x\" ? { id: \"x\", label: \"Xenon\" } : option,\n          ))",
+                      "span": {
+                        "start": 806,
+                        "end": 935
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "options@451",
+                          "operator": "=",
+                          "span": {
+                            "start": 806,
+                            "end": 935
+                          },
+                          "target": {
+                            "start": 807,
+                            "end": 820
+                          },
+                          "value": {
+                            "start": 823,
+                            "end": 934
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "options@451",
+                          "span": {
+                            "start": 823,
+                            "end": 836
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 790,
+                      "end": 935
+                    }
+                  },
+                  "span": {
+                    "start": 790,
+                    "end": 935
+                  }
+                },
+                "span": {
+                  "start": 781,
+                  "end": 945
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Rename option",
+                "span": {
+                  "start": 953,
+                  "end": 982
+                }
+              }
+            ],
+            "span": {
+              "start": 743,
+              "end": 991
+            }
+          }
+        ],
+        "span": {
+          "start": 555,
+          "end": 1002
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Picker",
+      "span": {
+        "start": 298,
+        "end": 1009
+      }
+    }
+  ],
+  "types": []
+}

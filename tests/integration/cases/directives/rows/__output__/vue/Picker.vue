@@ -16,12 +16,6 @@ const options = shallowRef([
         <slot name="option" :option="option" />
       </li>
     </ul>
-    <button
-      type="button"
-      @click="options = options.map((option) =>
-        option.id === 'x' ? { id: 'x', label: 'Xenon' } : option,
-      )"
-    >Rename option</button>
     <button type="button" @click="options = [...options].reverse()">Reverse options</button>
     <button
       type="button"

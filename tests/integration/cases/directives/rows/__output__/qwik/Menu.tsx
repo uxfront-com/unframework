@@ -181,7 +181,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
           option$={({ option }) => (
             <span
               data-name={`option-${option.id}`}
-              ref={collectValues(traceElements_4, [option.label])}
+              ref={collectValues(traceElements_4, [`${prefix.value} ${option.label}`])}
             >
               {option.label}
             </span>

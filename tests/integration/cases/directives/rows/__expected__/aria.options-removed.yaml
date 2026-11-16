@@ -16,8 +16,7 @@
     - listitem: Alpha 2
     - listitem: Delta
   - list "Options":
-    - listitem: Xenon
-  - button "Rename option"
+    - listitem: Xray
   - button "Reverse options"
   - button "Remove option"
   - button "Rename first"

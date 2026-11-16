@@ -31,12 +31,6 @@
       <li>{@render optionSnippet?.({ option })}</li>
     {/each}
   </ul
-  ><button
-    type="button"
-    onclick={() => (options = options.map((option) =>
-      option.id === "x" ? { id: "x", label: "Xenon" } : option,
-    ))}
-  >Rename option</button
   ><button type="button" onclick={() => (options = [...options].reverse())}>Reverse options</button
   ><button
     type="button"

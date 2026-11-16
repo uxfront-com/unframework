@@ -25,16 +25,6 @@ export default component$<PickerSlots & { class?: ClassList; style?: CSSProperti
             <li key={option.id}>{option$?.({ option })}</li>
           ))}
         </ul>
-        <button
-          type="button"
-          onClick$={() =>
-            (options.value = options.value.map((option) =>
-              option.id === "x" ? { id: "x", label: "Xenon" } : option,
-            ))
-          }
-        >
-          Rename option
-        </button>
         <button type="button" onClick$={() => (options.value = [...options.value].reverse())}>
           Reverse options
         </button>

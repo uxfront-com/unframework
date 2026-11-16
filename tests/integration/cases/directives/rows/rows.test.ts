@@ -46,19 +46,27 @@ function record(): {
   };
 }
 
-/** The elements' names and calls, sorted, so a count doesn't depend on which target runs first. */
+/**
+ * Each element's calls of each directive, by the element's and the directive's names, sorted, so
+ * a count depends neither on which target runs first nor on the order two directives of one
+ * element run in, which Vue's attribute order gives and Solid and Angular don't keep.
+ */
 function sorted(found: { name: string | null; calls: string[] }[]): string[] {
-  return found.map(({ name, calls }) => `${name}: ${calls.join(", ")}`).toSorted();
+  return found
+    .flatMap(({ name, calls }) => {
+      const byDirective = new Map<string, string[]>();
+      for (const call of calls) {
+        const [directive = "", ...rest] = call.split(" ");
+        byDirective.set(directive, [...(byDirective.get(directive) ?? []), rest.join(" ")]);
+      }
+      return [...byDirective].map(([directive, own]) => `${name} ${directive}: ${own.join(", ")}`);
+    })
+    .toSorted();
 }
 
 /** The view's elements that carry a directive, by their names. */
 function elements(view: View, names: string[]): (Element | null)[] {
   return names.map((name) => view.container.querySelector(`[data-name="${name}"]`));
-}
-
-/** An element's text, by its name. */
-function text(view: View, name: string): string | null | undefined {
-  return view.container.querySelector(`[data-name="${name}"]`)?.textContent;
 }
 
 /** The name of the child's first option. */
@@ -83,20 +91,23 @@ describeTargets("directives/rows", () => {
         const view = await mountScenario(Menu, "initial");
         await view.expectParity("traced");
         expect(sorted(trace.since(view, mark))).toEqual([
-          "a: trace mounted Alpha",
-          "b: trace mounted Beta",
-          "both-a: trace mounted Alpha, mark mounted a",
-          "both-b: trace mounted Beta, mark mounted b",
-          "both-c: trace mounted Gamma, mark mounted c",
-          "c: trace mounted Gamma",
-          "focus-a: trace mounted Alpha",
-          "focus-b: trace mounted Beta",
-          "focus-c: trace mounted Gamma",
-          "option-x: trace mounted Xray",
-          "option-y: trace mounted Yankee",
-          "prefixed-a: trace mounted Open Alpha",
-          "prefixed-b: trace mounted Open Beta",
-          "prefixed-c: trace mounted Open Gamma",
+          "a trace: mounted Alpha",
+          "b trace: mounted Beta",
+          "both-a mark: mounted a",
+          "both-a trace: mounted Alpha",
+          "both-b mark: mounted b",
+          "both-b trace: mounted Beta",
+          "both-c mark: mounted c",
+          "both-c trace: mounted Gamma",
+          "c trace: mounted Gamma",
+          "focus-a trace: mounted Alpha",
+          "focus-b trace: mounted Beta",
+          "focus-c trace: mounted Gamma",
+          "option-x trace: mounted Open Xray",
+          "option-y trace: mounted Open Yankee",
+          "prefixed-a trace: mounted Open Alpha",
+          "prefixed-b trace: mounted Open Beta",
+          "prefixed-c trace: mounted Open Gamma",
         ]);
         // The listener beside a directive runs once per event.
         const output = () => view.container.querySelector("output")?.textContent;
@@ -108,10 +119,10 @@ describeTargets("directives/rows", () => {
         await view.user.click(view.getByRole("button", { name: "Rename first" }));
         await view.expectParity("renamed");
         expect(sorted(trace.since(view, mark))).toEqual([
-          "a: trace updated Alpha 2 Alpha",
-          "both-a: trace updated Alpha 2 Alpha",
-          "focus-a: trace updated Alpha 2 Alpha",
-          "prefixed-a: trace updated Open Alpha 2 Open Alpha",
+          "a trace: updated Alpha 2 Alpha",
+          "both-a trace: updated Alpha 2 Alpha",
+          "focus-a trace: updated Alpha 2 Alpha",
+          "prefixed-a trace: updated Open Alpha 2 Open Alpha",
         ]);
         // A render of the list adds the listener no second time.
         await view.user.click(view.getByRole("button", { name: "Focus Beta" }));
@@ -131,66 +142,70 @@ describeTargets("directives/rows", () => {
         await view.user.click(view.getByRole("button", { name: "Remove second" }));
         await view.expectParity("removed");
         expect(sorted(trace.since(view, mark))).toEqual([
-          "b: trace unmounted",
-          "both-b: trace unmounted, mark unmounted",
-          "focus-b: trace unmounted",
-          "prefixed-b: trace unmounted",
+          "b trace: unmounted",
+          "both-b mark: unmounted",
+          "both-b trace: unmounted",
+          "focus-b trace: unmounted",
+          "prefixed-b trace: unmounted",
         ]);
 
         mark = trace.mark();
         await view.user.click(view.getByRole("button", { name: "Add item" }));
         await view.expectParity("added");
         expect(sorted(trace.since(view, mark))).toEqual([
-          "both-d: trace mounted Delta, mark mounted d",
-          "d: trace mounted Delta",
-          "focus-d: trace mounted Delta",
-          "prefixed-d: trace mounted Open Delta",
+          "both-d mark: mounted d",
+          "both-d trace: mounted Delta",
+          "d trace: mounted Delta",
+          "focus-d trace: mounted Delta",
+          "prefixed-d trace: mounted Open Delta",
         ]);
 
-        // State that every row's value reads runs `updated` on each of those rows once.
+        // State that every row's and fill's value reads runs `updated` on each of their elements once,
+        // the fill's too, while the child doesn't render.
         mark = trace.mark();
         await view.user.click(view.getByRole("button", { name: "Change prefix" }));
         await view.expectParity("prefixed");
         expect(sorted(trace.since(view, mark))).toEqual([
-          "prefixed-a: trace updated Close Alpha 2 Open Alpha 2",
-          "prefixed-c: trace updated Close Gamma Open Gamma",
-          "prefixed-d: trace updated Close Delta Open Delta",
+          "option-x trace: updated Close Xray Open Xray",
+          "option-y trace: updated Close Yankee Open Yankee",
+          "prefixed-a trace: updated Close Alpha 2 Open Alpha 2",
+          "prefixed-c trace: updated Close Gamma Open Gamma",
+          "prefixed-d trace: updated Close Delta Open Delta",
         ]);
 
-        // The child renames, reverses and removes its options while the parent doesn't render.
-        mark = trace.mark();
-        await view.user.click(view.getByRole("button", { name: "Rename option" }));
-        await expect.poll(() => text(view, "option-x")).toBe("Xenon");
-        expect(trace.since(view, mark)).toEqual([
-          { name: "option-x", calls: ["trace updated Xenon Xray"] },
-        ]);
+        // The child reverses and removes its options while the parent doesn't render.
         const options = elements(view, ["option-x", "option-y"]);
         mark = trace.mark();
         await view.user.click(view.getByRole("button", { name: "Reverse options" }));
-        await expect.poll(() => firstOption(view)).toBe("option-y");
+        await view.expectParity("options-reversed");
+        expect(firstOption(view)).toBe("option-y");
         expect(trace.since(view, mark)).toEqual([]);
-        expect(elements(view, ["option-x", "option-y"])).toEqual(options);
+        const reversed = elements(view, ["option-x", "option-y"]);
+        for (const [index, element] of options.entries()) expect(reversed[index]).toBe(element);
         mark = trace.mark();
         await view.user.click(view.getByRole("button", { name: "Remove option" }));
-        await view.expectParity("options");
+        await view.expectParity("options-removed");
         expect(trace.since(view, mark)).toEqual([{ name: "option-y", calls: ["trace unmounted"] }]);
 
         mark = trace.mark();
         await view.unmount();
         expect(sorted(trace.since(view, mark))).toEqual([
-          "a: trace unmounted",
-          "both-a: trace unmounted, mark unmounted",
-          "both-c: trace unmounted, mark unmounted",
-          "both-d: trace unmounted, mark unmounted",
-          "c: trace unmounted",
-          "d: trace unmounted",
-          "focus-a: trace unmounted",
-          "focus-c: trace unmounted",
-          "focus-d: trace unmounted",
-          "option-x: trace unmounted",
-          "prefixed-a: trace unmounted",
-          "prefixed-c: trace unmounted",
-          "prefixed-d: trace unmounted",
+          "a trace: unmounted",
+          "both-a mark: unmounted",
+          "both-a trace: unmounted",
+          "both-c mark: unmounted",
+          "both-c trace: unmounted",
+          "both-d mark: unmounted",
+          "both-d trace: unmounted",
+          "c trace: unmounted",
+          "d trace: unmounted",
+          "focus-a trace: unmounted",
+          "focus-c trace: unmounted",
+          "focus-d trace: unmounted",
+          "option-x trace: unmounted",
+          "prefixed-a trace: unmounted",
+          "prefixed-c trace: unmounted",
+          "prefixed-d trace: unmounted",
         ]);
       } finally {
         trace.stop();

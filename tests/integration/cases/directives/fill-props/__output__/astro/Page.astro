@@ -1,0 +1,26 @@
+---
+import Picker from "./Picker.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<section
+  class:list={["page", className]}
+  aria-label="Page"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <Picker option={({ option }) => <span data-name={`option-${option.id}`}>{option.label}</span>} />
+</section>

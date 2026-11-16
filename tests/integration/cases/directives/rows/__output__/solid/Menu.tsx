@@ -72,7 +72,7 @@ export default function Menu(props: { class?: string; style?: JSX.CSSProperties 
       </ul>
       <Picker
         option={({ option }) => (
-          <span data-name={`option-${option.id}`} ref={vTrace(() => option.label)}>
+          <span data-name={`option-${option.id}`} ref={vTrace(() => `${prefix()} ${option.label}`)}>
             {option.label}
           </span>
         )}

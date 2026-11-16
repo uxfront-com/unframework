@@ -94,7 +94,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
         renderOption={({ option }) => (
           <span
             data-name={`option-${option.id}`}
-            ref={(element) => traceRef_4(element, option.label)}
+            ref={(element) => traceRef_4(element, `${prefix} ${option.label}`)}
           >
             {option.label}
           </span>

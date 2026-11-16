@@ -65,7 +65,7 @@
     {#snippet option({ option })}
       <span
         data-name={`option-${option.id}`}
-        {@attach vTrace(() => option.label)}
+        {@attach vTrace(() => `${prefix} ${option.label}`)}
       >{option.label}</span>
     {/snippet}
   </Picker

@@ -5,14 +5,14 @@
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "directives/rows/Menu.uf.tsx",
     "start": {
-      "line": 41,
+      "line": 42,
       "column": 13,
-      "offset": 1351
+      "offset": 1382
     },
     "end": {
-      "line": 41,
+      "line": 42,
       "column": 46,
-      "offset": 1384
+      "offset": 1415
     },
     "target": "astro"
   },
@@ -23,13 +23,13 @@
     "file": "directives/rows/Picker.uf.tsx",
     "start": {
       "line": 22,
-      "column": 9,
-      "offset": 760
+      "column": 29,
+      "offset": 742
     },
     "end": {
-      "line": 26,
-      "column": 10,
-      "offset": 924
+      "line": 22,
+      "column": 91,
+      "offset": 804
     },
     "target": "astro"
   }

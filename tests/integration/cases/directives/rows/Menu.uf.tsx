@@ -1,7 +1,8 @@
 import { ref } from "@uxfront/unframework";
 
+import { vMark } from "./mark.uf.ts";
 import Picker from "./Picker.uf.tsx";
-import { vMark, vTrace } from "./trace.uf.ts";
+import { vTrace } from "./trace.uf.ts";
 
 // A directive on each row a list renders, and on each element a scoped fill renders, whose value
 // reads the row's item or the fill's props (ADR-0108): each element gets its own hooks with its
@@ -60,7 +61,7 @@ export default function Menu() {
       <Picker>
         {{
           option: ({ option }) => (
-            <span data-name={`option-${option.id}`} v-trace={option.label}>
+            <span data-name={`option-${option.id}`} v-trace={`${prefix.value} ${option.label}`}>
               {option.label}
             </span>
           ),

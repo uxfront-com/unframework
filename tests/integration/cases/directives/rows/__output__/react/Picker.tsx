@@ -31,17 +31,6 @@ export default function Picker({
       <button
         type="button"
         onClick={() => {
-          optionsRef.current = optionsRef.current.map((option) =>
-            option.id === "x" ? { id: "x", label: "Xenon" } : option,
-          );
-          setOptions(optionsRef.current);
-        }}
-      >
-        Rename option
-      </button>
-      <button
-        type="button"
-        onClick={() => {
           optionsRef.current = [...optionsRef.current].reverse();
           setOptions(optionsRef.current);
         }}

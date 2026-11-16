@@ -14,7 +14,6 @@
   - list "Options":
     - listitem: Xray
     - listitem: Yankee
-  - button "Rename option"
   - button "Reverse options"
   - button "Remove option"
   - button "Rename first"

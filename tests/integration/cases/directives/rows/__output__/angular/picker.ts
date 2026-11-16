@@ -71,7 +71,6 @@ export class ScopeAttributes implements OnInit {
           </li>
         }
       </ul>
-      <button type="button" (click)="onRenameOption()">Rename option</button>
       <button type="button" (click)="onReverseOptions()">Reverse options</button>
       <button type="button" (click)="onRemoveOption()">Remove option</button>
     </div>
@@ -86,12 +85,6 @@ export default class Picker {
     { id: "x", label: "Xray" },
     { id: "y", label: "Yankee" },
   ]);
-
-  protected onRenameOption() {
-    this.options.set(
-      this.options().map((option) => (option.id === "x" ? { id: "x", label: "Xenon" } : option)),
-    );
-  }
 
   protected onReverseOptions() {
     this.options.set([...this.options()].reverse());

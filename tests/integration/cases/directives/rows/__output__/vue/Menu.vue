@@ -54,7 +54,10 @@ const focused = ref(0);
     </ul>
     <Picker>
       <template #option="{ option }">
-        <span v-trace="option.label" :data-name="`option-${option.id}`">{{ option.label }}</span>
+        <span
+          v-trace="`${prefix} ${option.label}`"
+          :data-name="`option-${option.id}`"
+        >{{ option.label }}</span>
       </template>
     </Picker>
     <button

@@ -90,7 +90,7 @@ export class ScopeAttributes implements OnInit {
         <ng-template ufPickerOption let-option="option">
           <span
             [attr.data-name]="'option-' + option.id"
-            [vTrace]="option.label"
+            [vTrace]="prefix + ' ' + option.label"
           >{{ option.label }}</span>
         </ng-template>
       </uf-picker>
