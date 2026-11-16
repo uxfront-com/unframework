@@ -1,6 +1,6 @@
 # ADR-0099: Portable directives
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0100, ADR-0109
 - **Date:** 2026-11-15
 - **Plan:** §4.3, §5.3, §6, §7.2 L5 to L12 and L14, §9 M8; P2, P4, P7; ADR-0033, ADR-0048,
   ADR-0069, ADR-0070, ADR-0095, ADR-0098; amends ADR-0002 (`v-model` is the only built-in
