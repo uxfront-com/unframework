@@ -1,21 +1,39 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { relative } from "node:path";
+import { dirname, relative } from "node:path";
 
 import { createSyntacticOracle, printShape } from "@unframework.dev/type-oracle";
-import type { ShapeQuery, Span, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
+import type {
+  DirectiveValueChecks,
+  DirectiveValueQuery,
+  ShapeQuery,
+  Span,
+  TypeOracle,
+  TypeShape,
+} from "@unframework.dev/type-oracle";
 import type { Node, SourceFile, TypeNode } from "typescript/ast";
 import { isTypeNode } from "typescript/ast/is";
 import { serverFS } from "typescript/fs";
 import { API } from "typescript/sync";
 import type { Program, Project, Snapshot } from "typescript/sync";
 
+import { checkDirectiveValues } from "./directive-values.ts";
 import { evaluate } from "./evaluate.ts";
 
 /** Options for {@link createTsgoOracle}. */
 export interface TsgoOracleOptions {
   /** The directory query files are relative to, read from the disk. */
   root: string;
+  /**
+   * The files the checker's project holds, as a tsconfig's `include` relative to the root:
+   * `["**\/*"]`, every TypeScript file under it, when absent.
+   */
+  include?: readonly string[];
+  /**
+   * Reads a file the syntactic layer asks for, by its absolute path, or gives `undefined` for
+   * one it cannot read: the disk when absent. The checker itself reads the disk.
+   */
+  readFile?: (path: string) => Promise<string | undefined>;
 }
 
 /**
@@ -48,9 +66,10 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   const root = options.root.replace(/\/+$/, "");
   const roots = [...new Set([root, realpathSync(root)])];
   const config = `${root}/tsconfig.unframework-oracle.json`;
+  const include = options.include ?? ["**/*"];
   const syntactic = createSyntacticOracle({
     root,
-    readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+    readFile: options.readFile ?? ((path) => readFile(path, "utf8").catch(() => undefined)),
   });
   let api: API | undefined;
   let snapshot: Snapshot | undefined;
@@ -74,7 +93,7 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
       fs: {
         readFile: (path) =>
           path === config
-            ? JSON.stringify({ compilerOptions: COMPILER_OPTIONS, include: ["**/*"] })
+            ? JSON.stringify({ compilerOptions: COMPILER_OPTIONS, include })
             : serverFS.useOS,
         fileExists: (path) => (path === config ? true : serverFS.useOS),
         directoryExists: serverFS.useOS,
@@ -165,8 +184,45 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     return type ? evaluate(shape, type, context) : shape;
   };
 
+  /**
+   * The authoring package's directory, as a file's directory resolves it: the first
+   * `node_modules/@uxfront/unframework` up from it, by its real path, since a workspace links it.
+   */
+  const authoringDirectories = new Map<string, string | undefined>();
+  const authoringOf = (directory: string): string | undefined => {
+    if (authoringDirectories.has(directory)) return authoringDirectories.get(directory);
+    const own = realpathOrUndefined(`${directory}/node_modules/@uxfront/unframework`);
+    const parent = dirname(directory);
+    const found = own ?? (parent === directory ? undefined : authoringOf(parent));
+    authoringDirectories.set(directory, found);
+    return found;
+  };
+
+  const directiveValues = async (
+    file: string,
+    queries: DirectiveValueQuery[],
+  ): Promise<DirectiveValueChecks> => {
+    const none = { checks: queries.map(() => null), dependencies: [] };
+    // A module that applies no directive needs no checker.
+    if (!queries.length) return none;
+    const { checker, program } = project();
+    const source = program.getSourceFile(`${root}/${file}`);
+    if (!source) return none;
+    const authoring = authoringOf(dirname(`${root}/${file}`));
+    if (authoring === undefined) return none;
+    return checkDirectiveValues(queries, {
+      checker,
+      source,
+      file,
+      fileOf,
+      isAuthoring: (fileName) =>
+        realpathOrUndefined(fileName)?.startsWith(`${authoring}/`) ?? false,
+    });
+  };
+
   return {
     resolveShape,
+    checkDirectiveValues: directiveValues,
     printType: async (query) => {
       // A type with unresolved parts has no text every target accepts, so none is printed.
       const shape = await resolveShape(query);

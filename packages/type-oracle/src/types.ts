@@ -21,6 +21,39 @@ export interface ShapeQuery {
 /** A type to print, named as a {@link ShapeQuery} names it. */
 export type TypeQuery = ShapeQuery;
 
+/**
+ * A directive's value to check (ADR-0109): `v-focus-trap={open.value}` against the `T` of the
+ * `defineDirective<T>` that `vFocusTrap` names. Its spans are in the queried file.
+ */
+export interface DirectiveValueQuery {
+  /** The value as the parser spans it: a container's expression, or a string attribute's literal. */
+  value: Span;
+  /** The source's text at `value`. An adapter that reads other text there answers `null`. */
+  text: string;
+  /** An identifier in the same file bound to the directive: its `const`'s name, or its import's local name. */
+  directive: Span;
+}
+
+/** What the checker says of one directive's value. */
+export interface DirectiveValueCheck {
+  assignable: boolean;
+  /** The value's type, as the checker prints it. */
+  value: string;
+  /** The directive's `T`, as the checker prints it. */
+  expected: string;
+}
+
+/** The answer to {@link TypeOracle.checkDirectiveValues}. */
+export interface DirectiveValueChecks {
+  /** One per query, in order: `null` where the adapter can't type the value or the directive. */
+  checks: (DirectiveValueCheck | null)[];
+  /**
+   * The files the answers read besides the queried one, sorted, named as
+   * {@link TypeShape.dependencies} names them.
+   */
+  dependencies: string[];
+}
+
 /** The files that changed, were created or were deleted, relative to the oracle's root. */
 export interface FileChanges {
   /**
@@ -35,6 +68,15 @@ export interface TypeOracle {
   resolveShape(query: ShapeQuery): Promise<TypeShape>;
   /** Prints a type in a form every target's type system accepts. */
   printType(query: TypeQuery): Promise<string>;
+  /**
+   * Checks each directive's value in a file against the directive's type argument (ADR-0109):
+   * one call per module, with every use. Only a type-checker can type a value, so an adapter
+   * without one leaves the method out, and nothing is checked.
+   */
+  checkDirectiveValues?(
+    file: string,
+    queries: DirectiveValueQuery[],
+  ): Promise<DirectiveValueChecks>;
   /** Tells the oracle which files changed, for incremental builds. */
   update(changes: FileChanges): Promise<void>;
   dispose(): Promise<void>;

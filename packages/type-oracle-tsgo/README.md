@@ -4,9 +4,12 @@ The TypeOracle adapter on tsgo's checker (plan §5.5, ADR-0067, ADR-0107). It is
 that loads TypeScript's API: `typescript/sync`, pinned exactly at `7.1.0-beta` by the catalog.
 Here is how it works:
 
-- **`createTsgoOracle({ root })`** implements `TypeOracle` from `@unframework.dev/type-oracle` over the
-  files under `root`, read from the disk. It is opt-in: the compiler's default stays the
-  syntactic adapter.
+- **`createTsgoOracle({ root, include, readFile })`** implements `TypeOracle` from
+  `@unframework.dev/type-oracle` over the files under `root`, read from the disk. It is opt-in: the
+  compiler's default stays the syntactic adapter. `include` names the files the checker's project
+  holds, as a tsconfig's `include` relative to `root`, every TypeScript file under it by default.
+  `readFile` reads the files its syntactic layer asks for, the disk by default. The checker itself
+  always reads the disk.
 - **What it adds.** Each query is resolved by the syntactic adapter first. A part it leaves
   `unsupported` (a conditional or mapped type, `infer`, `keyof`, `typeof`, an indexed access, a
   template literal with holes) is evaluated by tsgo, and replaced by its result when a
@@ -42,6 +45,19 @@ Here is how it works:
   stops it, and the next query that needs it starts a new one.
 - **`printType`** prints the resolved shape, as the syntactic adapter does, and rejects one with
   unresolved parts.
+- **`checkDirectiveValues`** (ADR-0109) checks every directive's value in a module, in one call.
+  It finds the value and the directive's name at their spans, follows an import to its
+  declaration, and takes `T` from the name's type when that is the `Directive` interface of
+  `@uxfront/unframework`, as the first `node_modules/@uxfront/unframework` up from the file
+  resolves it, by its real path. An expression is typed where it is written, narrowed by its
+  branch, and tested with the checker's assignability. A static string is tested by its text,
+  since the checker gives a JSX attribute's string literal the error type: it matches when
+  `string` is assignable to `T`, or a member of `T` is that literal. The answer is `null` where the
+  file's text differs from the queried text, the name holds no `Directive` of the authoring
+  package, either type is the error type, `T` is `never`, or a string meets a template literal, a
+  string mapping or an intersection. Its `dependencies` name each directive's declaration file
+  but the queried one. A module with a directive's value starts the checker, even when no type
+  needs it, and one with none never does.
 
 Its tests run the contract suite from `@unframework.dev/type-oracle/contract` with
 `{ checker: true }`, and start and stop their own checker processes.
