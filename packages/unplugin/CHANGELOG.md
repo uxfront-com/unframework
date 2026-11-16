@@ -1,5 +1,16 @@
 # @unframework.dev/unplugin
 
+## 0.1.3
+
+### Patch Changes
+
+- 561e45f: Point the `homepage` link npm shows for each package at https://unframework.dev, the site and its docs, in place of the package's README on GitHub.
+- Updated dependencies [561e45f]
+  - @unframework.dev/codegen@0.1.2
+  - @unframework.dev/compiler@0.2.2
+  - @unframework.dev/diagnostics@0.1.1
+  - @unframework.dev/parser@0.1.1
+
 ## 0.1.2
 
 ### Patch Changes

@@ -820,6 +820,11 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # The search and AI search rules every page of the built site keeps (apps/web/README.md,
+      # "The SEO check"). It reads apps/web/dist, so it runs here rather than in a job of its own.
+      - name: Check SEO
+        run: pnpm --filter web check:seo
+
       - name: Upload web build
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

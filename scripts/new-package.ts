@@ -25,7 +25,7 @@ export function packageTemplate(options: PackageTemplateOptions): Record<string,
     private: true,
     description: options.description,
     keywords: ["unframework"],
-    homepage: `https://github.com/uxfront-com/unframework/tree/main/packages/${options.directory}#readme`,
+    homepage: "https://unframework.dev",
     bugs: "https://github.com/uxfront-com/unframework/issues",
     license: "MIT",
     repository: {

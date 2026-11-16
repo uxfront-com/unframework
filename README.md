@@ -81,12 +81,13 @@ it's one more compile target: your components move on the next build, not in a m
 
 ## Status
 
-Unframework is in early development, and the compiler isn't published yet. The walking skeleton
-is in place: the compiler's pipeline, and the verification machine that checks every case on all
+Unframework is in early development, and its first releases are on npm: `@uxfront/unframework`,
+the bundler plugin `@unframework.dev/unplugin` and the test API `@unframework.dev/testing`.
+[Installation](https://unframework.dev/docs/getting-started/installation) says what to install.
+The compiler's pipeline is in place, with the verification machine that checks every case on all
 seven frameworks, from golden output and each framework's own compiler and type checker to server
 HTML, the DOM, the accessibility tree and pixels in a real browser. Watch this repository to hear
-when the first release lands, and read the [documentation](https://unframework.dev/docs) as it
-grows with it.
+about each release, and read the [documentation](https://unframework.dev/docs) as it grows.
 
 ## Part of UXFront
 

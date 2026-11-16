@@ -1,13 +1,13 @@
 {
   "name": "@unframework.dev/target-astro",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The Astro 7 target of the Unframework compiler: emits idiomatic Astro components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
   "keywords": [
     "astro",
     "compiler",
     "unframework"
   ],
-  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/target-astro#readme",
+  "homepage": "https://unframework.dev",
   "bugs": "https://github.com/uxfront-com/unframework/issues",
   "license": "MIT",
   "repository": {

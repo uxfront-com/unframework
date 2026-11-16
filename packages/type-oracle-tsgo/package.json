@@ -1,13 +1,13 @@
 {
   "name": "@unframework.dev/type-oracle-tsgo",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "The TypeOracle adapter on tsgo's checker.",
   "keywords": [
     "tsgo",
     "types",
     "unframework"
   ],
-  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/type-oracle-tsgo#readme",
+  "homepage": "https://unframework.dev",
   "bugs": "https://github.com/uxfront-com/unframework/issues",
   "license": "MIT",
   "repository": {
