@@ -1325,6 +1325,7 @@ function printedAsName(kind: BindingKind): "accessor" | undefined {
     case "localFn":
     case "localVar":
     case "emit":
+    case "awaited":
       return undefined;
     case "model":
     case "slots":
