@@ -177,6 +177,13 @@ export default defineNuxtConfig({
   },
 
   hooks: {
+    // server/routes/llms-full.txt.ts writes llms-full.txt from the source markdown.
+    // nuxt-llms registers its own route as a handler, which Nitro would match first.
+    "nitro:config"(config) {
+      config.handlers = config.handlers?.filter(
+        (entry) => !(entry?.route === "/llms-full.txt" && entry.handler?.includes("nuxt-llms")),
+      );
+    },
     // Registered here, not in nitro.hooks, so these run after the preset's
     // compiled hook, which writes _headers and _redirects, instead of replacing it.
     "nitro:init"(nitro) {
