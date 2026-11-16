@@ -1,9 +1,11 @@
 import { queryCollection } from "@nuxt/content/server";
 
+import seoData from "#seo-data";
+
 // The fields read below. Nitro's types don't see the collections Docus defines.
 interface DocsPage {
   path: string;
-  meta: { sitemap?: boolean; modifiedAt?: string };
+  meta: { sitemap?: boolean };
 }
 
 /**
@@ -11,35 +13,39 @@ interface DocsPage {
  * crawlers at. Docus lists its docs and landing pages, and skips the landing
  * collection when the app has its own app/pages/index.vue, so the homepage
  * never made it in. This lists the homepage first, then the docs pages by
- * Docus's rules: `sitemap: false` in a page's frontmatter leaves it out, and
- * `modifiedAt` sets its `<lastmod>`.
+ * Docus's rule: `sitemap: false` in a page's frontmatter leaves it out.
+ *
+ * Each `<lastmod>` is the date of the last commit of the page's source file,
+ * which modules/seo.ts reads at build time (audit finding C5).
  *
  * Nitro keeps the first handler for a route, and it scans the app's server/
  * before the layers'. Docus still adds the route to the prerendered ones.
  */
 export default defineEventHandler(async (event) => {
   const { siteUrl } = useRuntimeConfig(event).public;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
   const pages = (await queryCollection(event, "docs" as never).all()) as DocsPage[];
 
-  const urls = [
-    { loc: "/", lastmod: undefined },
+  const paths = [
+    "/",
     ...pages
       .filter((page) => page.meta.sitemap !== false && !isNavigationPath(page.path))
-      .map((page) => ({ loc: page.path, lastmod: page.meta.modifiedAt?.split("T")[0] })),
+      .map((page) => page.path),
   ];
 
   setHeader(event, "Content-Type", "application/xml");
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...urls.map(({ loc, lastmod }) =>
-      [
+    ...paths.map((path) => {
+      const lastmod = seoData.lastmod[path];
+      return [
         "  <url>",
-        `    <loc>${escapeXml(siteUrl + loc)}</loc>`,
+        `    <loc>${escapeXml(siteUrl + path)}</loc>`,
         ...(lastmod ? [`    <lastmod>${escapeXml(lastmod)}</lastmod>`] : []),
         "  </url>",
-      ].join("\n"),
-    ),
+      ].join("\n");
+    }),
     "</urlset>",
   ].join("\n");
 });

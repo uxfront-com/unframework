@@ -13,7 +13,7 @@
     "unframework",
     "vue"
   ],
-  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/compiler#readme",
+  "homepage": "https://unframework.dev",
   "bugs": "https://github.com/uxfront-com/unframework/issues",
   "license": "MIT",
   "repository": {
