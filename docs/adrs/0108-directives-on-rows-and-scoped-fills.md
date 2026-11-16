@@ -16,8 +16,10 @@ Both limits had one cause. React and Qwik read a directive's value once per use,
 component's top level (`useDirective(vTrace, () => label)` on React, a visible task that tracks
 the value on Qwik). Both already follow each element one use renders. What they couldn't do is
 give each element a value of its own, and a row's value (`v-tooltip={item.label}`) differs on
-each row, as a fill's does on each call. Vue, Svelte, Solid and Angular apply a directive per
-element already, inside `v-for`, `{#each}`, `KeyedFor`, `@for` and fills.
+each row, as a fill's does on each call.
+
+Vue, Svelte, Solid and Angular apply a directive per element already, inside `v-for`, `{#each}`,
+`KeyedFor`, `@for` and fills.
 
 Two facts settle how React and Qwik can do it without a component per row:
 
@@ -99,7 +101,7 @@ React writes `ref={(element) => traceRef(element, item.label)}` with
 - Solid replaces a scoped fill's element when the child passes that row new props, so a directive
   there runs `unmounted` and `mounted` where the other targets run `updated` on the same element.
   That is Solid's slot lowering, with or without a directive. `directives/fill-props` pins it,
-  quarantined on Solid's L8 and L12 under UXF-827.
+  and its L8 and L12 cells on Solid are quarantined until that lowering keeps the element.
 - Two directives on one element run in attribute order on Vue, React, Svelte and Qwik. Solid
   unmounts them in the reverse order, and Angular mounts them in another, in a list's body or
   outside it. `directives/rows` counts each directive's calls apart, and the difference is left
