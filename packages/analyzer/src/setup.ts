@@ -89,6 +89,7 @@ import { setupBindingOf } from "./render.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
 import { teleportNotTag } from "./teleport.ts";
+import { transitionNotTag } from "./transition.ts";
 import { TypeTable } from "./types/from-type.ts";
 import {
   FUNCTION,
@@ -395,6 +396,8 @@ export function declareSetup(context: SetupContext): Setup {
         else if (BOUND_MACROS.has(api)) unbound(call, api, "statement");
         else if (api === "Teleport") {
           teleportNotTag(call.callee as AST.IdentifierReference, reporter);
+        } else if (api === "Transition") {
+          transitionNotTag(call.callee as AST.IdentifierReference, reporter);
         } else if (api === "defineDirective") {
           misplacedDirective(call.callee as AST.IdentifierReference, reporter);
         } else misplacedNextTick(call.callee as AST.IdentifierReference);
@@ -778,6 +781,9 @@ export function declareSetup(context: SetupContext): Setup {
         return;
       case "Teleport":
         teleportNotTag(call.callee as AST.IdentifierReference, reporter);
+        return;
+      case "Transition":
+        transitionNotTag(call.callee as AST.IdentifierReference, reporter);
         return;
       case "defineDirective":
         misplacedDirective(call.callee as AST.IdentifierReference, reporter);

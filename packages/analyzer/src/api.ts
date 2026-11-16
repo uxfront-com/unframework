@@ -413,7 +413,7 @@ export function inheritAttrsOption(object: AST.ObjectExpression): AST.ObjectProp
 
 /**
  * What a component's returned JSX is: one element (with its tag), one component, or other, as a
- * `<Teleport>` is (ADR-0098).
+ * `<Teleport>` or a `<Transition>` is (ADR-0098, ADR-0100).
  */
 function rootOf(
   node: ComponentFunction,
@@ -441,7 +441,8 @@ function rootOf(
   const resolution = context.scopes.resolve(name as unknown as AST.IdentifierReference);
   if (
     resolution.kind === "import" &&
-    context.authoring.get(resolution.declaration) === "Teleport"
+    (context.authoring.get(resolution.declaration) === "Teleport" ||
+      context.authoring.get(resolution.declaration) === "Transition")
   ) {
     return { kind: "other" };
   }

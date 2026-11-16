@@ -227,12 +227,13 @@ export function lowerList(
     ? lowerKey(lowered.key ?? written, body, callback, variables, render)
     : undefined;
   render.enclosing.splice(render.enclosing.length - variables.length, variables.length);
-  // `<component is>` and `<Teleport>` are no list's body: `lowerDynamic` and `lowerTeleport`
-  // report them there.
+  // `<component is>`, `<Teleport>` and `<Transition>` are no list's body: `lowerDynamic`,
+  // `lowerTeleport` and `lowerTransition` report them there.
   if (
     !lowered.element ||
     lowered.element.kind === "Dynamic" ||
-    lowered.element.kind === "Teleport"
+    lowered.element.kind === "Teleport" ||
+    lowered.element.kind === "Transition"
   ) {
     return undefined;
   }
