@@ -216,6 +216,15 @@ export declare namespace JSX {
   interface ElementChildrenAttribute {
     children: {};
   }
+  /**
+   * What may be written as a tag: an intrinsic element's name, or a component that returns JSX,
+   * `null`, or, for an async component, a promise of either (ADR-0101). A component that returns
+   * anything else, a string included, stays TS2786.
+   */
+  type ElementType =
+    | string
+    | ((props: any) => Element | null)
+    | ((props: any) => Promise<Element | null>);
   interface IntrinsicElements extends UfIntrinsicElements {
     component: DynamicComponentAttributes;
     [customElement: `${string}-${string}`]: CustomElementAttributes;
