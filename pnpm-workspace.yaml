@@ -31,11 +31,12 @@ overrides:
   # overflows the stack, and llms-full.txt fails to prerender. Drop this once
   # remark-mdc handles it.
   mdast-util-to-markdown: 2.1.2
-  # @nuxtjs/partytown (2.0.0) asks for ^0.11.0, which reads the deprecated
-  # attributionSrc of every element when it mirrors the page for its worker:
-  # Chrome logs a deprecation, and the homepage loses its Best Practices 100.
-  # 0.14 skips it. Drop this once @nuxtjs/partytown depends on 0.14.
-  "@nuxtjs/partytown>@qwik.dev/partytown": 0.14.4
+  # @nuxtjs/partytown (2.0.0) asks for ^0.11.0, which reads deprecated APIs when
+  # it mirrors the page for its worker: the attributionSrc of every element
+  # (fixed in 0.14) and window.fence, which Chrome reports as FencedFrame
+  # (fixed in 1.0.5). Each deprecation Chrome logs costs every page its Best
+  # Practices 100. Drop this once @nuxtjs/partytown depends on 1.0.5.
+  "@nuxtjs/partytown>@qwik.dev/partytown": 1.0.5
   # @typescript/typescript6 depends on `@typescript/old: npm:typescript@^6`. Pin the real
   # TypeScript 6, which Angular checks at runtime, so a lockfile refresh cannot move it.
   "@typescript/typescript6>@typescript/old": npm:typescript@6.0.3
