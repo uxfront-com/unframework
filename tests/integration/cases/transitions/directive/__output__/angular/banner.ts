@@ -39,8 +39,10 @@ export class ScopeAttributes implements OnInit {
   }
 }
 
-/** Whether its component has rendered once: a transition's element created later enters. */
-class TransitionGate {
+/** A transition's conditional: the branch it shows, and whether it has rendered once. */
+@Directive({ selector: "ng-container[ufTransitionRegion]" })
+export class TransitionRegion {
+  readonly ufTransitionRegion = input.required<number>();
   ready = false;
 
   constructor() {
@@ -54,8 +56,9 @@ class TransitionGate {
 @Directive({ selector: "[ufTransition]", exportAs: "ufTransition" })
 export class Transition implements OnInit {
   readonly ufTransition = input.required<string>();
-  readonly ufTransitionGate = input.required<TransitionGate>();
   readonly ufTransitionAppear = input(false);
+  readonly ufTransitionBranch = input<number>();
+  private readonly region = inject(TransitionRegion, { optional: true });
   private readonly element: Element = inject<ElementRef<Element>>(ElementRef).nativeElement;
   private entering = false;
   private stopEnter: (() => void) | undefined;
@@ -70,22 +73,21 @@ export class Transition implements OnInit {
   }
 
   ngOnInit(): void {
-    this.entering = this.ufTransitionGate().ready || this.ufTransitionAppear();
+    this.entering = Boolean(this.region?.ready) || this.ufTransitionAppear();
   }
 
   /**
-   * `(animate.leave)`: runs the leave when the element's own branch is no longer shown, and lets
-   * the element go at once when it still is: something around it removed it.
+   * `(animate.leave)`: runs the leave when the region shows another branch than the element's,
+   * and lets the element go at once when it still shows it: something around it removed it.
    */
-  leave(event: AnimationCallbackEvent, shown: boolean): void {
+  leave(event: AnimationCallbackEvent): void {
     this.stopEnter?.();
-    if (shown) {
+    if (!this.region || this.region.ufTransitionRegion() === this.ufTransitionBranch()) {
       event.animationComplete();
       return;
     }
     this.run("leave", () => event.animationComplete());
   }
-
   private run(phase: "enter" | "leave", done?: () => void): () => void {
     const { element } = this;
     const from = `${this.ufTransition()}-${phase}-from`;
@@ -141,7 +143,7 @@ export class Transition implements OnInit {
 
 @Component({
   selector: "uf-banner",
-  imports: [ScopeAttributes, Transition, VMark],
+  imports: [ScopeAttributes, Transition, TransitionRegion, VMark],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -153,15 +155,20 @@ export class Transition implements OnInit {
       data-uf-53025c4a=""
       [ufScope]="this.host"
     >
-      <button type="button" (click)="onDismiss()" data-uf-53025c4a="">Dismiss</button>@let fadeBranch = (shown) ? 0 : -1;@if (shown) {<p
-        [ufTransition]="'fade'"
-        [ufTransitionGate]="this.transitions"
-        #transition="ufTransition"
-        (animate.leave)="transition.leave($event, fadeBranch === 0)"
-        class="banner"
-        [vMark]="'banner'"
-        data-uf-53025c4a=""
-      >New releases are out.</p>}
+      <button type="button" (click)="onDismiss()" data-uf-53025c4a="">Dismiss</button>
+      <ng-container [ufTransitionRegion]="(shown) ? 0 : -1">
+        @if (shown) {
+          <p
+            [ufTransition]="'fade'"
+            [ufTransitionBranch]="0"
+            #transition="ufTransition"
+            (animate.leave)="transition.leave($event)"
+            class="banner"
+            [vMark]="'banner'"
+            data-uf-53025c4a=""
+          >New releases are out.</p>
+        }
+      </ng-container>
     </section>
   `,
   styleUrl: "./Banner.uf.tsx.css",
@@ -176,5 +183,4 @@ export default class Banner {
     this.shown.set(false);
   }
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  protected readonly transitions = new TransitionGate();
 }

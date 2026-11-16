@@ -91,4 +91,117 @@ describeTargets("transitions/outer", () => {
       }
     },
   );
+
+  it("runs no enter as it first mounts", async () => {
+    const restore = slowDown();
+    // Watched from before the mount: the first render's child enters only with `appear`.
+    const seen = new Set<string>();
+    const record = (element: Element) => {
+      if (!element.classList.contains("body")) return;
+      for (const name of element.classList) seen.add(name);
+    };
+    const observer = new MutationObserver((records) => {
+      for (const each of records) {
+        if (each.target instanceof Element) record(each.target);
+        for (const name of each.oldValue?.split(/\s+/) ?? [])
+          if (name.startsWith("fade-")) seen.add(name);
+        for (const node of each.addedNodes) {
+          if (node instanceof Element) [node, ...node.querySelectorAll(".body")].forEach(record);
+        }
+      }
+    });
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"],
+      attributeOldValue: true,
+    });
+    try {
+      const view = await mountScenario(Drawer, "default");
+      await view.expectParity("first-mount");
+      await expect.element(view.getByText("Colour, size")).toBeVisible();
+      for (const each of observer.takeRecords()) {
+        if (each.target instanceof Element) record(each.target);
+      }
+      expect([...seen].filter((name) => name.startsWith("fade-"))).toEqual([]);
+    } finally {
+      observer.disconnect();
+      restore();
+    }
+  });
+
+  it(
+    "runs no enter when the outer condition shows it again",
+    { requires: ["transition", "interactivity"] },
+    async () => {
+      const restore = slowDown();
+      try {
+        const view = await mountScenario(Drawer, "default");
+        await view.user.click(view.getByRole("button", { name: "Drawer" }));
+        await view.expectParity("drawer-hidden");
+        await expect.element(view.getByRole("button", { name: "Drawer" })).toBeVisible();
+        const seen = new Set<string>();
+        const observer = new MutationObserver((records) => {
+          for (const each of records) {
+            for (const name of each.oldValue?.split(/\s+/) ?? []) if (name) seen.add(name);
+            const targets = [each.target, ...each.addedNodes];
+            for (const node of targets) {
+              if (!(node instanceof Element)) continue;
+              for (const element of [node, ...node.querySelectorAll(".body")]) {
+                if (element.classList.contains("body")) {
+                  for (const name of element.classList) seen.add(name);
+                }
+              }
+            }
+          }
+        });
+        observer.observe(view.container, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ["class"],
+          attributeOldValue: true,
+        });
+        try {
+          await view.user.click(view.getByRole("button", { name: "Drawer" }));
+          await view.expectParity("drawer-shown");
+          observer.takeRecords();
+        } finally {
+          observer.disconnect();
+        }
+        await expect.element(view.getByText("Colour, size")).toBeVisible();
+        expect([...seen].toSorted()).toEqual(["body"]);
+      } finally {
+        restore();
+      }
+    },
+  );
+
+  it(
+    "runs the leave when its own condition turns false",
+    { requires: ["transition", "interactivity"] },
+    async () => {
+      const restore = slowDown();
+      try {
+        const view = await mountScenario(Drawer, "default");
+        const body = view.container.querySelector(".body")!;
+        const classes = watchClasses(body);
+        await view.user.click(view.getByRole("button", { name: "Body" }));
+        await view.expectParity("body-hidden");
+        // The positive control of the tests above: the same element, with the same duration,
+        // runs its leave when the transition's own child changes.
+        expect(classes.stop()).toEqual([
+          "body",
+          "fade-leave-active",
+          "fade-leave-from",
+          "fade-leave-to",
+        ]);
+        expect(body.isConnected).toBe(false);
+        await expect.element(view.getByRole("button", { name: "Drawer" })).toBeVisible();
+      } finally {
+        restore();
+      }
+    },
+  );
 });

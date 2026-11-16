@@ -38,8 +38,10 @@ export class ScopeAttributes implements OnInit {
   }
 }
 
-/** Whether its component has rendered once: a transition's element created later enters. */
-class TransitionGate {
+/** A transition's conditional: the branch it shows, and whether it has rendered once. */
+@Directive({ selector: "ng-container[ufTransitionRegion]" })
+export class TransitionRegion {
+  readonly ufTransitionRegion = input.required<number>();
   ready = false;
 
   constructor() {
@@ -53,8 +55,9 @@ class TransitionGate {
 @Directive({ selector: "[ufTransition]", exportAs: "ufTransition" })
 export class Transition implements OnInit {
   readonly ufTransition = input.required<string>();
-  readonly ufTransitionGate = input.required<TransitionGate>();
   readonly ufTransitionAppear = input(false);
+  readonly ufTransitionBranch = input<number>();
+  private readonly region = inject(TransitionRegion, { optional: true });
   private readonly element: Element = inject<ElementRef<Element>>(ElementRef).nativeElement;
   private entering = false;
   private stopEnter: (() => void) | undefined;
@@ -69,22 +72,21 @@ export class Transition implements OnInit {
   }
 
   ngOnInit(): void {
-    this.entering = this.ufTransitionGate().ready || this.ufTransitionAppear();
+    this.entering = Boolean(this.region?.ready) || this.ufTransitionAppear();
   }
 
   /**
-   * `(animate.leave)`: runs the leave when the element's own branch is no longer shown, and lets
-   * the element go at once when it still is: something around it removed it.
+   * `(animate.leave)`: runs the leave when the region shows another branch than the element's,
+   * and lets the element go at once when it still shows it: something around it removed it.
    */
-  leave(event: AnimationCallbackEvent, shown: boolean): void {
+  leave(event: AnimationCallbackEvent): void {
     this.stopEnter?.();
-    if (shown) {
+    if (!this.region || this.region.ufTransitionRegion() === this.ufTransitionBranch()) {
       event.animationComplete();
       return;
     }
     this.run("leave", () => event.animationComplete());
   }
-
   private run(phase: "enter" | "leave", done?: () => void): () => void {
     const { element } = this;
     const from = `${this.ufTransition()}-${phase}-from`;
@@ -140,7 +142,7 @@ export class Transition implements OnInit {
 
 @Component({
   selector: "uf-steps",
-  imports: [ScopeAttributes, Transition],
+  imports: [ScopeAttributes, Transition, TransitionRegion],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -154,43 +156,59 @@ export class Transition implements OnInit {
       data-uf-84fe8ccf=""
       [ufScope]="this.host"
     >
-      <button type="button" (click)="onSwap()" data-uf-84fe8ccf="">Swap</button>@let swapBranch = (first) ? 0 : 1;@if (first) {<p
-        [ufTransition]="'swap'"
-        [ufTransitionGate]="this.transitions"
-        #transition="ufTransition"
-        (animate.leave)="transition.leave($event, swapBranch === 0)"
-        class="card"
-        data-uf-84fe8ccf=""
-      >Cart</p>} @else {<p
-        [ufTransition]="'swap'"
-        [ufTransitionGate]="this.transitions"
-        #transition="ufTransition"
-        (animate.leave)="transition.leave($event, swapBranch === 1)"
-        class="card"
-        data-uf-84fe8ccf=""
-      >Payment</p>}
-      <button type="button" (click)="onNext()" data-uf-84fe8ccf="">Next</button>@let stepBranch = (step === 1) ? 0 : (step === 2) ? 1 : 2;@if (step === 1) {<p
-        [ufTransition]="'step'"
-        [ufTransitionGate]="this.transitions"
-        #transition="ufTransition"
-        (animate.leave)="transition.leave($event, stepBranch === 0)"
-        class="step"
-        data-uf-84fe8ccf=""
-      >Step one</p>} @else if (step === 2) {<p
-        [ufTransition]="'step'"
-        [ufTransitionGate]="this.transitions"
-        #transition="ufTransition"
-        (animate.leave)="transition.leave($event, stepBranch === 1)"
-        class="step"
-        data-uf-84fe8ccf=""
-      >Step two</p>} @else {<p
-        [ufTransition]="'step'"
-        [ufTransitionGate]="this.transitions"
-        #transition="ufTransition"
-        (animate.leave)="transition.leave($event, stepBranch === 2)"
-        class="step"
-        data-uf-84fe8ccf=""
-      >Step three</p>}
+      <button type="button" (click)="onSwap()" data-uf-84fe8ccf="">Swap</button>
+      <ng-container [ufTransitionRegion]="(first) ? 0 : 1">
+        @if (first) {
+          <p
+            [ufTransition]="'swap'"
+            [ufTransitionBranch]="0"
+            #transition="ufTransition"
+            (animate.leave)="transition.leave($event)"
+            class="card"
+            data-uf-84fe8ccf=""
+          >Cart</p>
+        } @else {
+          <p
+            [ufTransition]="'swap'"
+            [ufTransitionBranch]="1"
+            #transition="ufTransition"
+            (animate.leave)="transition.leave($event)"
+            class="card"
+            data-uf-84fe8ccf=""
+          >Payment</p>
+        }
+      </ng-container>
+      <button type="button" (click)="onNext()" data-uf-84fe8ccf="">Next</button>
+      <ng-container [ufTransitionRegion]="(step === 1) ? 0 : (step === 2) ? 1 : 2">
+        @if (step === 1) {
+          <p
+            [ufTransition]="'step'"
+            [ufTransitionBranch]="0"
+            #transition="ufTransition"
+            (animate.leave)="transition.leave($event)"
+            class="step"
+            data-uf-84fe8ccf=""
+          >Step one</p>
+        } @else if (step === 2) {
+          <p
+            [ufTransition]="'step'"
+            [ufTransitionBranch]="1"
+            #transition="ufTransition"
+            (animate.leave)="transition.leave($event)"
+            class="step"
+            data-uf-84fe8ccf=""
+          >Step two</p>
+        } @else {
+          <p
+            [ufTransition]="'step'"
+            [ufTransitionBranch]="2"
+            #transition="ufTransition"
+            (animate.leave)="transition.leave($event)"
+            class="step"
+            data-uf-84fe8ccf=""
+          >Step three</p>
+        }
+      </ng-container>
     </section>
   `,
   styleUrl: "./Steps.uf.tsx.css",
@@ -210,5 +228,4 @@ export default class Steps {
     this.step.set((this.step() % 3) + 1);
   }
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  protected readonly transitions = new TransitionGate();
 }

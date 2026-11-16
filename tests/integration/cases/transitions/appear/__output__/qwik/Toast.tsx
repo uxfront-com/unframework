@@ -1,17 +1,11 @@
-import { component$, useConstant, useStyles$, useVisibleTask$ } from "@qwik.dev/core";
+import { component$, useConstant, useStyles$ } from "@qwik.dev/core";
 import { isServer } from "@qwik.dev/core/build";
 import styles from "./Toast.uf.tsx.css?inline";
 
 export default component$(() => {
   useStyles$(styles);
 
-  const popState = useConstant((): TransitionState => ({ ready: false, current: 0, elements: [] }));
-  useVisibleTask$(
-    () => {
-      popState.ready = true;
-    },
-    { strategy: "document-ready" },
-  );
+  const popState = useConstant((): TransitionState => ({ current: 0, elements: [], entering: [] }));
 
   return (
     <>
@@ -22,17 +16,24 @@ export default component$(() => {
   );
 });
 
-/** A transition's state: whether its component has mounted, the branch shown, and its elements. */
+/**
+ * A transition's state: the branch shown, each branch's element, and the branches a change of the
+ * branch shown adds, which enter. Qwik serialises it, so it holds no function.
+ */
 interface TransitionState {
-  ready: boolean;
   current: number;
   elements: Element[];
+  entering: number[];
 }
+
+/** What stops the phase each element runs now, which its next phase stops first. */
+const transitionStops = new WeakMap<Element, () => void>();
 
 /**
  * Runs Vue's transition classes of `name` of one phase on `element`, then `done`: `-from` and
  * `-active`, `-to` for `-from` two frames later, and none once the element's own
- * `transitionend` or `animationend` fires, or its longest duration and delay pass.
+ * `transitionend` or `animationend` fires, or its longest duration and delay pass. A phase the
+ * element still runs stops first.
  */
 function runTransition(
   element: Element,
@@ -40,21 +41,29 @@ function runTransition(
   phase: "enter" | "leave",
   done?: () => void,
 ): void {
+  transitionStops.get(element)?.();
   const from = `${name}-${phase}-from`;
   const active = `${name}-${phase}-active`;
   const to = `${name}-${phase}-to`;
+  let frame = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const end = (event?: Event) => {
-    if (event && event.target !== element) return;
+  const stop = () => {
+    cancelAnimationFrame(frame);
     clearTimeout(timer);
     element.removeEventListener("transitionend", end);
     element.removeEventListener("animationend", end);
     element.classList.remove(from, active, to);
+    if (transitionStops.get(element) === stop) transitionStops.delete(element);
+  };
+  transitionStops.set(element, stop);
+  const end = (event?: Event) => {
+    if (event && event.target !== element) return;
+    stop();
     done?.();
   };
   element.classList.add(from, active);
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+  frame = requestAnimationFrame(() => {
+    frame = requestAnimationFrame(() => {
       element.classList.remove(from);
       element.classList.add(to);
       const style = getComputedStyle(element);
@@ -85,9 +94,11 @@ function runTransition(
 }
 
 /**
- * The ref of a transition's element: it records the element, and runs its enter once the
- * component has mounted, or with `appear`. Qwik calls a ref again when its value changes, and
- * each render makes a new one, so it takes an element once. It calls the element's own ref first.
+ * The ref of a transition's element: it records the element, and runs its enter when a change of
+ * the branch shown added it, or with `appear`, as the transition first mounts. An element that
+ * a condition around the transition shows again enters only with `appear`, as on Vue. Qwik calls
+ * a ref again when its value changes, and each render makes a new one, so it takes an element
+ * once. It calls the element's own ref first.
  */
 function transition(
   state: TransitionState,
@@ -103,6 +114,8 @@ function transition(
     if (isServer) return;
     if (state.elements[index] === element) return;
     state.elements[index] = element;
-    if (state.ready || appear) runTransition(element, name, "enter");
+    const entering = state.entering.indexOf(index);
+    if (entering >= 0) state.entering.splice(entering, 1);
+    if (entering >= 0 || appear) runTransition(element, name, "enter");
   };
 }

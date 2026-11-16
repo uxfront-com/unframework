@@ -4,30 +4,38 @@
   import type { TransitionConfig } from "svelte/transition";
   import "./Toast.uf.tsx.css";
 
+  /** The stop of the classes each element runs now, which its next phase stops first. */
+  const transitionRuns = new WeakMap<Element, () => void>();
+
   /** Runs `name`'s classes of one phase on the element, as Vue's `<Transition>` does. */
   function transitionClasses(
     element: Element,
     name: string,
     phase: "enter" | "leave",
   ): () => TransitionConfig {
-    const from = `${name}-${phase}-from`;
-    const active = `${name}-${phase}-active`;
-    const to = `${name}-${phase}-to`;
-    let ended = false;
-    const end = () => {
-      ended = true;
-      element.classList.remove(from, active, to);
-    };
-    element.addEventListener(phase === "enter" ? "introend" : "outroend", end, { once: true });
-    element.classList.add(from, active);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (ended) return;
-        element.classList.remove(from);
-        element.classList.add(to);
-      });
-    });
     return () => {
+      // A phase that starts while the other runs, as Svelte reverses one, takes over from it.
+      transitionRuns.get(element)?.();
+      const from = `${name}-${phase}-from`;
+      const active = `${name}-${phase}-active`;
+      const to = `${name}-${phase}-to`;
+      const event = phase === "enter" ? "introend" : "outroend";
+      let frame = 0;
+      const stop = () => {
+        cancelAnimationFrame(frame);
+        element.removeEventListener(event, stop);
+        element.classList.remove(from, active, to);
+        if (transitionRuns.get(element) === stop) transitionRuns.delete(element);
+      };
+      transitionRuns.set(element, stop);
+      element.addEventListener(event, stop, { once: true });
+      element.classList.add(from, active);
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => {
+          element.classList.remove(from);
+          element.classList.add(to);
+        });
+      });
       const style = getComputedStyle(element);
       const longest = (delays: string, durations: string) => {
         const each = (list: string) =>

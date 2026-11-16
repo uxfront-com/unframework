@@ -4,7 +4,7 @@ error[UF3057]: <Transition> holds one element, or one conditional of elements, a
 14 |         <p>Second</p>
    |         ^^^^^^^^^^^^^
    |
-   = help: Wrap the content in one element, inside the conditional.
+   = help: Wrap the content in one element, and keep a condition inside the <Transition>.
    = see: https://unframework.dev/diagnostics/UF3057
 
 error[UF3057]: <Transition> holds one element, or one conditional of elements, and this is text: each target runs the classes on that element.
@@ -13,7 +13,7 @@ error[UF3057]: <Transition> holds one element, or one conditional of elements, a
 16 |       <Transition>Saved</Transition>
    |                   ^^^^^
    |
-   = help: Wrap the content in one element, inside the conditional.
+   = help: Wrap the content in one element, and keep a condition inside the <Transition>.
    = see: https://unframework.dev/diagnostics/UF3057
 
 error[UF3057]: <Transition> holds one element, or one conditional of elements, and this is a component: each target runs the classes on that element.
@@ -22,5 +22,5 @@ error[UF3057]: <Transition> holds one element, or one conditional of elements, a
 18 |         <Hint />
    |         ^^^^^^^^
    |
-   = help: Wrap the content in one element, inside the conditional.
+   = help: Wrap the content in one element, and keep a condition inside the <Transition>.
    = see: https://unframework.dev/diagnostics/UF3057

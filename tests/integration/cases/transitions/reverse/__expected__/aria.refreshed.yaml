@@ -1,0 +1,4 @@
+- navigation "Account":
+  - button "Refresh" [expanded]
+  - list:
+    - listitem: Profile
