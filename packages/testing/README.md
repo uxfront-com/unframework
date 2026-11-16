@@ -134,6 +134,11 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   children, in a `<uf:teleported>` marker, and L7's ARIA snapshot, L10's geometry (under
   `uf:teleported[i]/`) and screenshot, and L11's axe cover it too. An element with a `data-testid`
   of its own fails the test, since the stamp would replace it.
+- **Settling waits for animations** (ADR-0100): each settle also waits until no CSS transition,
+  CSS animation or Web Animation in the page runs, for at most 2 seconds, so no capture samples one
+  mid-way. The reset gives every transition and animation no duration, so only one a test gives a
+  duration of its own, in a `<style>` it appends to `<head>`, makes a settle wait. One still running
+  after 2 seconds fails the settle.
 - **The after-test check** (ADR-0098): once a test's views are unmounted, `<body>` holds no
   element the test added, or the test fails L8, naming each one. A component removes what it
   appends to `<body>`, a teleport's content or a toast container among it, as it unmounts.

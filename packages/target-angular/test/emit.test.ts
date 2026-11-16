@@ -120,7 +120,7 @@ describe("angular target", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
   });
 
-  it("emulates the listener options, ids, nextTick, class and style bindings, raw HTML, composition's cells, teleports and directives, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
+  it("emulates the listener options, ids, nextTick, class and style bindings, raw HTML, composition's cells, teleports, transitions and directives, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
     const emulated = Object.entries(target.capabilities)
       .filter(([, cell]) => cell.support !== "native")
       .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
@@ -147,6 +147,7 @@ describe("angular target", () => {
       ["sheet-order", "unsupported", undefined],
       ["generic-slot-props", "unsupported", undefined],
       ["directive", "emulated", "runDirective"],
+      ["transition", "emulated", "Transition"],
       ["teleport", "emulated", "Teleport"],
     ]);
   });

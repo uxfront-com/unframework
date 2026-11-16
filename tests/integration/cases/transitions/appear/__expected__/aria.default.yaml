@@ -1,0 +1,3 @@
+- region "Inbox":
+  - button "Hide"
+  - status: Saved

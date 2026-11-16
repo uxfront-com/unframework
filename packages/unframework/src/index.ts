@@ -237,6 +237,22 @@ export function Teleport(_props: { to: string; children?: Children }): JSX.Eleme
   return compileTimeOnly("Teleport");
 }
 
+// Transitions
+
+/**
+ * Runs Vue's CSS-class transition on its child when it enters or leaves (ADR-0100):
+ * `<Transition name="fade">{open.value && <div>…</div>}</Transition>`. The child is one element,
+ * or one conditional of elements. `name` is a string literal, `"v"` by default, and `appear` runs
+ * the enter on the first client mount too. The server renders the settled child.
+ */
+export function Transition(_props: {
+  name?: string;
+  appear?: boolean;
+  children?: Children;
+}): JSX.Element {
+  return compileTimeOnly("Transition");
+}
+
 // Directives
 
 declare const directiveBrand: unique symbol;

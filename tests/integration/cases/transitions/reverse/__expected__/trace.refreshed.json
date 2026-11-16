@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Refresh' })",
+      "dom": [
+        "<nav aria-label=\"Account\" class=\"menu\" data-uf-e688a71a=\"\">",
+        "  <button aria-expanded=\"true\" data-uf-e688a71a=\"\" type=\"button\" uf:focused=\"\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <p data-uf-e688a71a=\"\" role=\"status\">",
+        "    \"Refreshes: 1\"",
+        "  </p>",
+        "  <ul class=\"items\" data-uf-e688a71a=\"\">",
+        "    <li data-uf-e688a71a=\"\">",
+        "      \"Profile\"",
+        "    </li>",
+        "  </ul>",
+        "</nav>"
+      ],
+      "aria": [
+        "- navigation \"Account\":",
+        "  - button \"Refresh\" [expanded]",
+        "  - status: \"Refreshes: 1\"",
+        "  - list:",
+        "    - listitem: Profile"
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Drawer' })",
+      "dom": [
+        "<section aria-label=\"Filters\" data-uf-54e3e959=\"\">",
+        "  <button data-uf-54e3e959=\"\" type=\"button\" uf:focused=\"\">",
+        "    \"Drawer\"",
+        "  </button>",
+        "  <button data-uf-54e3e959=\"\" type=\"button\">",
+        "    \"Body\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Filters\":",
+        "  - button \"Drawer\"",
+        "  - button \"Body\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Body' })",
+      "dom": [
+        "<section aria-label=\"Filters\" data-uf-54e3e959=\"\">",
+        "  <button data-uf-54e3e959=\"\" type=\"button\">",
+        "    \"Drawer\"",
+        "  </button>",
+        "  <button data-uf-54e3e959=\"\" type=\"button\" uf:focused=\"\">",
+        "    \"Body\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Filters\":",
+        "  - button \"Drawer\"",
+        "  - button \"Body\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Body' })",
+      "dom": [
+        "<section aria-label=\"Filters\" data-uf-54e3e959=\"\">",
+        "  <button data-uf-54e3e959=\"\" type=\"button\">",
+        "    \"Drawer\"",
+        "  </button>",
+        "  <button data-uf-54e3e959=\"\" type=\"button\" uf:focused=\"\">",
+        "    \"Body\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Filters\":",
+        "  - button \"Drawer\"",
+        "  - button \"Body\""
+      ],
+      "events": {}
+    }
+  ]
+}

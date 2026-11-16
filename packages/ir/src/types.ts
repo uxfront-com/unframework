@@ -1430,7 +1430,8 @@ export type RenderNode =
   | ComponentNode
   | SlotOutletNode
   | DynamicNode
-  | TeleportNode;
+  | TeleportNode
+  | TransitionNode;
 
 /**
  * A component element, `<Field label="Name" onClear={reset} />` (ADR-0053): an imported
@@ -1490,6 +1491,26 @@ export interface TeleportNode {
   /** The CSS selector of the element the content mounts into: a static string, not empty. */
   to: string;
   /** The content: exactly one element (ADR-0098). */
+  children: RenderNode[];
+  span: Span;
+}
+
+/**
+ * `<Transition name="fade">` (ADR-0100): Vue's CSS-class contract around one element, or one
+ * conditional of elements. When the child enters or leaves, `<name>-enter-*` or `<name>-leave-*`
+ * classes run, and a leaving element is removed only once its transition ends. The server renders
+ * the settled child.
+ */
+export interface TransitionNode {
+  kind: "Transition";
+  /** The prefix of the transition's classes, a static string: `"v"` when the source leaves it out. */
+  name: string;
+  /** Set when the first element enters on a client mount too (`appear`). */
+  appear?: true;
+  /**
+   * The child: exactly one element, or one `If` whose every branch holds one element or nothing
+   * (ADR-0100).
+   */
   children: RenderNode[];
   span: Span;
 }

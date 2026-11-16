@@ -1,0 +1,8 @@
+{
+  "description": "A ternary swap and an else-if chain, each in a `<Transition>` and each of one tag: when the shown branch changes, the old element leaves while the new one enters, so both are in the DOM until the leave ends, and only the new one stays.",
+  "ssr": {
+    "default": {
+      "props": {}
+    }
+  }
+}

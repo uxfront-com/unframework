@@ -130,10 +130,20 @@ export interface InstanceScript {
    * moves its element into `to`.
    */
   teleport?: { mounted: string; helper: string };
+  /**
+   * Where the markup holds a `<Transition>` (ADR-0100): the transition functions that run Vue's
+   * enter and leave classes, which the elements' `in:` and `out:` name.
+   */
+  transition?: { enter?: string; leave?: string };
 }
 
 /** The modules a script imports from, in the order it prints them. */
-type Module = "svelte" | "svelte/attachments" | "svelte/elements" | "svelte/events";
+type Module =
+  | "svelte"
+  | "svelte/attachments"
+  | "svelte/elements"
+  | "svelte/events"
+  | "svelte/transition";
 
 /**
  * An import of a sibling output: a child component (its default export) or injection keys; or of
@@ -280,7 +290,13 @@ class Names {
       return [`import ${clause.join(", ")} from ${JSON.stringify(entry.specifier)};`];
     });
     const modules = (
-      ["svelte", "svelte/attachments", "svelte/elements", "svelte/events"] as const
+      [
+        "svelte",
+        "svelte/attachments",
+        "svelte/elements",
+        "svelte/events",
+        "svelte/transition",
+      ] as const
     ).flatMap((source) => {
       const names = this.#imports.get(source);
       if (!names?.size) return [];
@@ -603,6 +619,18 @@ class ScriptWriter {
       ? { mounted: this.#names.claim("mounted"), helper: this.#names.claim("teleport") }
       : undefined;
     const onMount = teleport ? this.#names.import("svelte", "onMount") : undefined;
+    // A transition's classes run through transition functions of its own (ADR-0100).
+    const phases = transitionPhases(component);
+    const transition =
+      phases.enter || phases.leave
+        ? {
+            ...(phases.enter ? { enter: this.#names.claim("enter") } : {}),
+            ...(phases.leave ? { leave: this.#names.claim("leave") } : {}),
+            classes: this.#names.claim("transitionClasses"),
+            runs: this.#names.claim("transitionRuns"),
+            config: this.#names.import("svelte/transition", "TransitionConfig", { type: true }),
+          }
+        : undefined;
     // The module's own directives it applies, as attachment factories (ADR-0099).
     const directives = ownDirectives(component, this.#module);
     const attachments = directives.length
@@ -670,6 +698,7 @@ class ScriptWriter {
       ...(styleText ? [styleTextHelper(styleText)] : []),
       ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
       ...(teleport ? [teleportHelper(teleport.helper)] : []),
+      ...(transition ? transitionHelpers(transition) : []),
       ...(attachments ? directives.map((directive) => attachmentCode(directive, attachments)) : []),
     ];
     // A teleport's content waits for the component to mount, so the server and the hydrating
@@ -767,6 +796,14 @@ class ScriptWriter {
       render: composed.render,
       ...(styleText ? { styleText } : {}),
       ...(teleport ? { teleport } : {}),
+      ...(transition
+        ? {
+            transition: {
+              ...(transition.enter === undefined ? {} : { enter: transition.enter }),
+              ...(transition.leave === undefined ? {} : { leave: transition.leave }),
+            },
+          }
+        : {}),
     });
     if (!pieces.length) {
       // Svelte parses the markup's code as TypeScript only in a component whose script is: a
@@ -2000,6 +2037,118 @@ function holdsTeleport(component: UfComponent): boolean {
     },
   });
   return found;
+}
+
+/**
+ * The phases the markup's transitions run (ADR-0100): a conditional's elements enter and leave,
+ * and an element with `appear` enters. One element without `appear` runs neither.
+ */
+function transitionPhases(component: UfComponent): { enter: boolean; leave: boolean } {
+  const phases = { enter: false, leave: false };
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Transition") return;
+      const conditional = node.children[0]?.kind === "If";
+      if (conditional || node.appear) phases.enter = true;
+      if (conditional) phases.leave = true;
+    },
+  });
+  return phases;
+}
+
+/**
+ * The transition functions of a `<Transition>` (`transition`, emulated, ADR-0100), which `in:`
+ * and `out:` name: Svelte's `transition:` runs its own CSS or tick, never Vue's classes. Each
+ * returns a deferred config, which Svelte calls for every run, once the element is in the document
+ * and before it is painted. The call stops what the element's other phase still runs, as when
+ * Svelte reverses a leave, adds the phase's `-from` and `-active` classes, swaps `-from` for `-to`
+ * two frames later, as Vue does, and reads the element's longest duration and delay, which Svelte
+ * waits before it ends the phase and removes a leaving element. The classes go at that end,
+ * Svelte's `introend` or `outroend`, so both elements of a swap end in one frame.
+ */
+function transitionHelpers(names: {
+  enter?: string;
+  leave?: string;
+  classes: string;
+  runs: string;
+  config: string;
+}): string[] {
+  const { enter, leave, classes, runs, config } = names;
+  return [
+    `/** The stop of the classes each element runs now, which its next phase stops first. */\nconst ${runs} = new WeakMap<Element, () => void>();`,
+    `/** Runs \`name\`'s classes of one phase on the element, as Vue's \`<Transition>\` does. */\n${block(
+      `function ${classes}(element: Element, name: string, phase: "enter" | "leave"): () => ${config} {`,
+      [
+        block(
+          "return () => {",
+          [
+            "// A phase that starts while the other runs, as Svelte reverses one, takes over from it.",
+            `${runs}.get(element)?.();`,
+            "const from = `${name}-${phase}-from`;",
+            "const active = `${name}-${phase}-active`;",
+            "const to = `${name}-${phase}-to`;",
+            'const event = phase === "enter" ? "introend" : "outroend";',
+            "let frame = 0;",
+            block(
+              "const stop = () => {",
+              [
+                "cancelAnimationFrame(frame);",
+                "element.removeEventListener(event, stop);",
+                "element.classList.remove(from, active, to);",
+                `if (${runs}.get(element) === stop) ${runs}.delete(element);`,
+              ],
+              "};",
+            ),
+            `${runs}.set(element, stop);`,
+            "element.addEventListener(event, stop, { once: true });",
+            "element.classList.add(from, active);",
+            block(
+              "frame = requestAnimationFrame(() => {",
+              [
+                block(
+                  "frame = requestAnimationFrame(() => {",
+                  ["element.classList.remove(from);", "element.classList.add(to);"],
+                  "});",
+                ),
+              ],
+              "});",
+            ),
+            "const style = getComputedStyle(element);",
+            block(
+              "const longest = (delays: string, durations: string) => {",
+              [
+                'const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);',
+                "const delay = each(delays);",
+                "return Math.max(0, ...each(durations).map((duration, index) => duration + (delay[index % delay.length] ?? 0)));",
+              ],
+              "};",
+            ),
+            "return { duration: Math.max(longest(style.transitionDelay, style.transitionDuration), longest(style.animationDelay, style.animationDuration)) };",
+          ],
+          "};",
+        ),
+      ],
+      "}",
+    )}`,
+    ...(enter === undefined
+      ? []
+      : [
+          `/** Runs \`name\`'s enter classes, as \`in:\` starts it. */\n${block(
+            `function ${enter}(element: Element, name: string): () => ${config} {`,
+            [`return ${classes}(element, name, "enter");`],
+            "}",
+          )}`,
+        ]),
+    ...(leave === undefined
+      ? []
+      : [
+          `/** Runs \`name\`'s leave classes, as \`out:\` starts it. */\n${block(
+            `function ${leave}(element: Element, name: string): () => ${config} {`,
+            [`return ${classes}(element, name, "leave");`],
+            "}",
+          )}`,
+        ]),
+  ];
 }
 
 /**

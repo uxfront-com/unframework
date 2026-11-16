@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Account' })",
+      "dom": [
+        "<nav aria-label=\"Account\" class=\"menu\" data-uf-e688a71a=\"\">",
+        "  <button aria-expanded=\"false\" data-uf-e688a71a=\"\" type=\"button\" uf:focused=\"\">",
+        "    \"Account\"",
+        "  </button>",
+        "</nav>"
+      ],
+      "aria": [
+        "- navigation \"Account\":",
+        "  - button \"Account\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+.menu[data-uf-e688a71a] {
+  padding: 8px;
+  background-color: rgb(243, 244, 246);
+}
+
+.items[data-uf-e688a71a] {
+  margin: 8px 0 0;
+  padding-left: 16px;
+}
+
+.fade-enter-active[data-uf-e688a71a],
+.fade-leave-active[data-uf-e688a71a] {
+  transition: opacity 100ms ease;
+}
+
+.fade-enter-from[data-uf-e688a71a],
+.fade-leave-to[data-uf-e688a71a] {
+  opacity: 0;
+}

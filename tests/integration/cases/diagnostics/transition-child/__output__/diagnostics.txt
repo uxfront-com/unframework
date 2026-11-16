@@ -1,0 +1,26 @@
+error[UF3057]: <Transition> holds one element, or one conditional of elements, and this is a second node: each target runs the classes on that element.
+  --> diagnostics/transition-child/Disclosure.uf.tsx:14:9
+   |
+14 |         <p>Second</p>
+   |         ^^^^^^^^^^^^^
+   |
+   = help: Wrap the content in one element, and keep a condition inside the <Transition>.
+   = see: https://unframework.dev/diagnostics/UF3057
+
+error[UF3057]: <Transition> holds one element, or one conditional of elements, and this is text: each target runs the classes on that element.
+  --> diagnostics/transition-child/Disclosure.uf.tsx:16:19
+   |
+16 |       <Transition>Saved</Transition>
+   |                   ^^^^^
+   |
+   = help: Wrap the content in one element, and keep a condition inside the <Transition>.
+   = see: https://unframework.dev/diagnostics/UF3057
+
+error[UF3057]: <Transition> holds one element, or one conditional of elements, and this is a component: each target runs the classes on that element.
+  --> diagnostics/transition-child/Disclosure.uf.tsx:18:9
+   |
+18 |         <Hint />
+   |         ^^^^^^^^
+   |
+   = help: Wrap the content in one element, and keep a condition inside the <Transition>.
+   = see: https://unframework.dev/diagnostics/UF3057

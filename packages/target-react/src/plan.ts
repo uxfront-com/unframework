@@ -206,6 +206,8 @@ export interface ReactPlan {
      * that says the component has mounted, where the template holds a `<Teleport>` (ADR-0098).
      */
     teleport?: TeleportNames;
+    /** The inline components a `<Transition>` runs through, where the template holds one (ADR-0100). */
+    transition?: TransitionNames;
     /** The inline hook a directive's element calls, and the hooks' type (ADR-0099). */
     directive?: { hook: string; hooks: string; queue: string };
   };
@@ -720,6 +722,22 @@ export function planComponent(
       mounted: names.claim("mounted"),
     };
   }
+  let transitions = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Transition") transitions = true;
+    },
+  });
+  if (transitions) {
+    helpers.transition = {
+      component: names.claim("Transition"),
+      item: names.claim("TransitionItem"),
+      entry: names.claim("TransitionEntry"),
+      attach: names.claim("attachRef"),
+      // One store subscription serves the teleports and the transitions.
+      subscribe: helpers.teleport?.subscribe ?? names.claim("subscribeNothing"),
+    };
+  }
 
   // Each directive's call, in a post-order of the elements, so a component's hooks run in Vue's
   // order (ADR-0099).
@@ -834,6 +852,20 @@ export function liveReaderNames(
     readers.set(name, reader);
   }
   return readers;
+}
+
+/** The names a `<Transition>` needs (ADR-0100), as the target claims them. */
+export interface TransitionNames {
+  /** The inline component that runs the classes around a transition's child. */
+  component: string;
+  /** The inline component that renders one of its elements with its classes and refs. */
+  item: string;
+  /** The type of one of its elements' state. */
+  entry: string;
+  /** The inline helper that gives an element's own ref the element. */
+  attach: string;
+  /** The subscription `useSyncExternalStore` takes, to a store that never changes. */
+  subscribe: string;
 }
 
 /** The names a `<Teleport>` needs (ADR-0098), as the target claims them. */

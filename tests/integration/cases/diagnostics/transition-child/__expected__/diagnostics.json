@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF3057",
+    "severity": "error",
+    "message": "<Transition> holds one element, or one conditional of elements, and this is a second node: each target runs the classes on that element.",
+    "file": "diagnostics/transition-child/Disclosure.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 9,
+      "offset": 369
+    },
+    "end": {
+      "line": 14,
+      "column": 22,
+      "offset": 382
+    },
+    "help": "Wrap the content in one element, and keep a condition inside the <Transition>."
+  },
+  {
+    "code": "UF3057",
+    "severity": "error",
+    "message": "<Transition> holds one element, or one conditional of elements, and this is text: each target runs the classes on that element.",
+    "file": "diagnostics/transition-child/Disclosure.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 19,
+      "offset": 421
+    },
+    "end": {
+      "line": 16,
+      "column": 24,
+      "offset": 426
+    },
+    "help": "Wrap the content in one element, and keep a condition inside the <Transition>."
+  },
+  {
+    "code": "UF3057",
+    "severity": "error",
+    "message": "<Transition> holds one element, or one conditional of elements, and this is a component: each target runs the classes on that element.",
+    "file": "diagnostics/transition-child/Disclosure.uf.tsx",
+    "start": {
+      "line": 18,
+      "column": 9,
+      "offset": 467
+    },
+    "end": {
+      "line": 18,
+      "column": 17,
+      "offset": 475
+    },
+    "help": "Wrap the content in one element, and keep a condition inside the <Transition>."
+  }
+]

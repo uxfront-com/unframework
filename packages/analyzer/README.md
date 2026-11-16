@@ -369,13 +369,21 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   a list's element, a teleport inside an `<svg>` and `Teleport` used as anything but a tag
   UF1002. A component whose whole render is a teleport is a root of kind `other`, wrapped in a
   fragment.
+- **Transition** (`transition.ts`, ADR-0100): `<Transition name appear>`, the authoring API written
+  only as a tag, recognised by its import's binding, lowered to a `Transition` node around its one
+  element or one conditional of elements. `name` is a string literal with no whitespace, `"v"` by
+  default, and `appear` a literal (UF3058). The child is one element, or one conditional whose
+  every branch is one element or nothing (UF3057). Another attribute is UF3035, `key` UF3014, `ref`
+  UF3046, a directive UF3056, and a spread, a transition anywhere in a list's body and `Transition`
+  used as anything but a tag UF1002. A component whose whole render is a transition is a root of
+  kind `other`, wrapped in a fragment.
 - **Directives** (`directives.ts`, ADR-0099): a top-level `const vName = defineDirective<T>({ … })`
   of a `.uf.tsx` module, or a `.uf.ts` module's named export, lowered with its method hooks, whose
   code reads its parameters, client globals and the module's constants and value imports, and
   `v-name={value}` on an element lowered to a `Directive` attribute. The constants an in-file
   directive reads become the bindings of each component that applies it. A definition outside
-  that form is UF2037, a name no directive has UF3055, a directive on a component, `<Teleport>` or
-  `<component is>`, without a value or with a value built in place UF3056, and an argument, a
+  that form is UF2037, a name no directive has UF3055, a directive on a component, `<Teleport>`,
+  `<Transition>` or `<component is>`, without a value or with a value built in place UF3056, and an argument, a
   modifier, a spread's key and a list's body UF1002. A setup name that shadows a directive is
   UF3024.
 - **Raw HTML** (`raw-html.ts`, ADR-0097): `innerHTML={markup}` lowered to a `RawHtml` attribute,

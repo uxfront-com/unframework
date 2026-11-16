@@ -55,6 +55,7 @@ import {
   createParameterPattern,
   createRawHtmlAttribute,
   createTeleportNode,
+  createTransitionNode,
   createRefAttribute,
   createRefSource,
   createWriteReference,
@@ -396,6 +397,23 @@ describe("checkInvariants on M1's IR", () => {
     ["raw HTML on an element without children", node("div", [createRawHtmlAttribute(label(), at)])],
     // A teleport around one element (ADR-0098).
     ["a teleport", node("div", [], [createTeleportNode("body", [node("p", [], [text("a")])], at)])],
+    // A transition around one element, and around a conditional of elements (ADR-0100).
+    ["a transition", node("div", [], [createTransitionNode("v", true, [node("p")], at)])],
+    [
+      "a transition around a conditional",
+      node(
+        "div",
+        [],
+        [
+          createTransitionNode(
+            "fade",
+            false,
+            [createIf([branch([node("p")]), branch([]), branch([node("b")], false)], at)],
+            at,
+          ),
+        ],
+      ),
+    ],
     [
       "a bound attribute of each kind",
       node("button", [
@@ -733,6 +751,51 @@ describe("checkInvariants on M1's IR", () => {
       svg(createTeleportNode("body", [node("p")], at)),
       "/children/0",
       "must not be inside SVG",
+    ],
+    // Transitions (ADR-0100).
+    [
+      "a transition with an empty name",
+      node("div", [], [createTransitionNode("", false, [node("p")], at)]),
+      "/children/0/name",
+      "must be a class prefix",
+    ],
+    [
+      "a transition whose name holds a space",
+      node("div", [], [createTransitionNode("a b", false, [node("p")], at)]),
+      "/children/0/name",
+      "must be a class prefix",
+    ],
+    [
+      "a transition around text",
+      node("div", [], [createTransitionNode("v", false, [text("a")], at)]),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
+    ],
+    [
+      "a transition around two elements",
+      node("div", [], [createTransitionNode("v", false, [node("p"), node("p")], at)]),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
+    ],
+    [
+      "a transition around a conditional of text",
+      node(
+        "div",
+        [],
+        [createTransitionNode("v", false, [createIf([branch([text("a")])], at)], at)],
+      ),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
+    ],
+    [
+      "a transition around a branch of two elements",
+      node(
+        "div",
+        [],
+        [createTransitionNode("v", false, [createIf([branch([node("p"), node("p")])], at)], at)],
+      ),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
     ],
     // Raw HTML (ADR-0097).
     [

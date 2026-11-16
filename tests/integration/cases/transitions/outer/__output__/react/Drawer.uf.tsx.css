@@ -1,0 +1,13 @@
+.body[data-uf-54e3e959] {
+  margin: 8px 0 0;
+}
+
+.fade-enter-active[data-uf-54e3e959],
+.fade-leave-active[data-uf-54e3e959] {
+  transition: opacity 80ms ease;
+}
+
+.fade-enter-from[data-uf-54e3e959],
+.fade-leave-to[data-uf-54e3e959] {
+  opacity: 0;
+}

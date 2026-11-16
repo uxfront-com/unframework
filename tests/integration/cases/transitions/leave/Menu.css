@@ -1,0 +1,19 @@
+.menu {
+  padding: 8px;
+  background-color: rgb(243, 244, 246);
+}
+
+.items {
+  margin: 8px 0 0;
+  padding-left: 16px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 100ms ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

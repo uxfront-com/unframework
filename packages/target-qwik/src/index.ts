@@ -101,6 +101,7 @@ import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
 import { teleportHelper, teleportJsx, teleportNames, teleportSetup } from "./teleport.ts";
 import { qwikTitles } from "./title.ts";
+import { qwikTransitions } from "./transition.ts";
 import { isPrimitiveValue } from "./values.ts";
 
 /** The scope helper's name, before the name scope makes it unique. */
@@ -250,6 +251,12 @@ export const qwik: Target = defineTarget({
       helper: DIRECTIVE_HELPER,
       note: "Qwik has no directive, so an element's directive is a `ref` function that adds each element one use renders to a signal of them, and a document-ready visible task that tracks them and the value, and calls an inline helper, `runDirective`, for each, which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik calls the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
     },
+    // Qwik removes a node at once and has no transition primitive (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "transition",
+      note: "A `<Transition>`'s branches lag its conditional: a signal lists the branches it renders, and a document-ready visible task that tracks the branch shown runs the old one's leave, drops it at the leave's end and adds the new one, whose ref, `transition`, runs its enter as Qwik creates it. The signal starts at the condition's value, so the server renders the settled child and resumption changes nothing (ADR-0100).",
+    },
     teleport: {
       support: "emulated",
       helper: "teleport",
@@ -350,6 +357,8 @@ export const qwik: Target = defineTarget({
     const locals = new RenderLocals(plan);
     // A teleport mounts once the component has (ADR-0098).
     const teleport = teleportNames(component, names);
+    // A transition's branches lag its conditional (ADR-0100).
+    const transitions = qwikTransitions(component, plan, names);
     const jsx = jsxContext({
       component,
       module,
@@ -366,6 +375,7 @@ export const qwik: Target = defineTarget({
           scope,
         ),
         ...(teleport ? { teleport: teleportJsx(teleport) } : {}),
+        ...(transitions ? { transition: transitions.jsx } : {}),
         directiveAttribute: (attribute, _element, context) =>
           directives.attribute(attribute, context),
         // A template ref beside a directive is filled by the directive's own `ref` (ADR-0099).
@@ -405,6 +415,7 @@ export const qwik: Target = defineTarget({
       sheet ? `${names.core("useStyles$")}(${sheet.local});` : "",
       setup.body,
       teleport ? teleportSetup(teleport, names) : "",
+      transitions ? transitions.setup() : "",
       directives.setup(names),
       exposeStatement(plan),
       locals.statements.join("\n"),
@@ -464,6 +475,7 @@ export const qwik: Target = defineTarget({
     const helperCode = helpers(plan, listeners);
     if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
     if (teleport) helperCode.push(teleportHelper(teleport));
+    if (transitions) helperCode.push(transitions.helpers());
     helperCode.push(...directives.helpers(names));
     // The sheet's import comes after the other imports, as on the other targets: an `?inline`
     // import loads nothing, and `useStyles$` attaches the sheet as the component first renders

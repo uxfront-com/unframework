@@ -180,6 +180,12 @@ export const solid: Target = defineTarget({
       helper: QUEUE_HELPER,
       note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
+    // Solid's transitions are a package of their own, which no output imports (P7, ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "Transition",
+      note: "A `<Transition>` is an inline component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
+    },
     teleport: {
       support: "emulated",
       helper: TELEPORT_HELPER,

@@ -234,6 +234,154 @@ export class ${className} implements ${core("OnInit", true)} {
 `;
 }
 
+/** The attribute that selects the transition directive, and the name it is exported as (ADR-0100). */
+export const TRANSITION_ATTRIBUTE = "ufTransition";
+
+/** The input that runs the enter on the element's first render too (`appear`). */
+export const TRANSITION_APPEAR_INPUT = "ufTransitionAppear";
+
+/** The input that names the element's branch of the transition's conditional. */
+export const TRANSITION_BRANCH_INPUT = "ufTransitionBranch";
+
+/** The attribute that selects a transition's region, around its conditional. */
+export const TRANSITION_REGION_ATTRIBUTE = "ufTransitionRegion";
+
+/**
+ * The region of a `<Transition>` whose child is a conditional (ADR-0100):
+ * `<ng-container [ufTransitionRegion]="(open) ? 0 : -1">`, created with the transition, whose input
+ * is the branch shown. Angular sets it before it renders the conditional inside, so the branch is
+ * the new one as Angular removes an element. `ready` turns true once the region has rendered, so an
+ * element the conditional creates later enters, and one of the region's first render, as when a
+ * condition around the transition shows it again, enters only with `appear`, as on Vue.
+ * `afterNextRender` never runs on the server.
+ */
+export function transitionRegionCode(className: string, imports: ImportSet): string {
+  const core = (name: string) => imports.add("@angular/core", name);
+  return `/** A transition's conditional: the branch it shows, and whether it has rendered once. */
+@${core("Directive")}({ selector: "ng-container[${TRANSITION_REGION_ATTRIBUTE}]" })
+export class ${className} {
+  readonly ${TRANSITION_REGION_ATTRIBUTE} = ${core("input")}.required<number>();
+  ready = false;
+
+  constructor() {
+    ${core("afterNextRender")}(() => {
+      this.ready = true;
+    });
+  }
+}
+`;
+}
+
+/**
+ * The directive that runs Vue's transition classes on its element (ADR-0100):
+ * `<p [ufTransition]="'fade'" [ufTransitionBranch]="0">`. After the render that created the
+ * element, it runs the enter if its transition's region had rendered before, or with `appear`.
+ * Angular's `(animate.leave)` holds the element's removal until `animationComplete()`. Angular
+ * also runs the leave of every element in a view that something around it removes, or that goes
+ * with its component, where Vue removes the element at once, so the leave runs only when the
+ * region shows another branch than the element's, and completes at once otherwise. Each phase adds
+ * its `-from` and `-active` classes, swaps `-from` for `-to` two frames later, as Vue does, and
+ * removes them at the end: the element's own `transitionend` or `animationend`, or its longest
+ * duration and delay, whichever comes first. Angular also completes a leave on any `animationend`
+ * that reaches the element, a child's included. It is exported, as ngtsc's type-check imports
+ * every directive a template uses.
+ */
+export function transitionDirectiveCode(
+  className: string,
+  region: string,
+  imports: ImportSet,
+): string {
+  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+  return `/** Runs Vue's transition classes of \`${TRANSITION_ATTRIBUTE}\` on its element as it enters and leaves. */
+@${core("Directive")}({ selector: "[${TRANSITION_ATTRIBUTE}]", exportAs: "${TRANSITION_ATTRIBUTE}" })
+export class ${className} implements ${core("OnInit", true)} {
+  readonly ${TRANSITION_ATTRIBUTE} = ${core("input")}.required<string>();
+  readonly ${TRANSITION_APPEAR_INPUT} = ${core("input")}(false);
+  readonly ${TRANSITION_BRANCH_INPUT} = ${core("input")}<number>();
+  private readonly region = ${core("inject")}(${region}, { optional: true });
+  private readonly element: Element = ${core("inject")}<${core("ElementRef", true)}<Element>>(${core("ElementRef")}).nativeElement;
+  private entering = false;
+  private stopEnter: (() => void) | undefined;
+
+  constructor() {
+    ${core("afterNextRender")}({
+      write: () => {
+        if (this.entering) this.stopEnter = this.run("enter");
+      },
+    });
+    ${core("inject")}(${core("DestroyRef")}).onDestroy(() => this.stopEnter?.());
+  }
+
+  ngOnInit(): void {
+    // Only an element with a branch of its own reads the region: one of a transition without a
+    // conditional finds the region of a transition around it, which says nothing of its own.
+    this.entering =
+      (this.${TRANSITION_BRANCH_INPUT}() !== undefined && Boolean(this.region?.ready)) ||
+      this.${TRANSITION_APPEAR_INPUT}();
+  }
+
+  /**
+   * \`(animate.leave)\`: runs the leave when the region shows another branch than the element's,
+   * and lets the element go at once when it still shows it: something around it removed it.
+   */
+  leave(event: ${core("AnimationCallbackEvent", true)}): void {
+    this.stopEnter?.();
+    if (!this.region || this.region.${TRANSITION_REGION_ATTRIBUTE}() === this.${TRANSITION_BRANCH_INPUT}()) {
+      event.animationComplete();
+      return;
+    }
+    this.run("leave", () => event.animationComplete());
+  }
+
+  private run(phase: "enter" | "leave", done?: () => void): () => void {
+    const { element } = this;
+    const from = \`\${this.${TRANSITION_ATTRIBUTE}()}-\${phase}-from\`;
+    const active = \`\${this.${TRANSITION_ATTRIBUTE}()}-\${phase}-active\`;
+    const to = \`\${this.${TRANSITION_ATTRIBUTE}()}-\${phase}-to\`;
+    let frame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      element.removeEventListener("transitionend", end);
+      element.removeEventListener("animationend", end);
+      element.classList.remove(from, active, to);
+    };
+    const end = (event?: Event) => {
+      if (event && event.target !== element) return;
+      stop();
+      done?.();
+    };
+    element.classList.add(from, active);
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        element.classList.remove(from);
+        element.classList.add(to);
+        const style = getComputedStyle(element);
+        const longest = (delays: string, durations: string) => {
+          const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);
+          const delay = each(delays);
+          return Math.max(0, ...each(durations).map((duration, index) => duration + (delay[index % delay.length] ?? 0)));
+        };
+        const time = Math.max(
+          longest(style.transitionDelay, style.transitionDuration),
+          longest(style.animationDelay, style.animationDuration),
+        );
+        if (!time) {
+          end();
+          return;
+        }
+        element.addEventListener("transitionend", end);
+        element.addEventListener("animationend", end);
+        timer = setTimeout(end, time + 1);
+      });
+    });
+    return stop;
+  }
+}
+`;
+}
+
 /**
  * The pure pipe `[innerHTML]` reads its markup through (ADR-0097). Angular sanitises a bound
  * `innerHTML`, dropping `id`, `data-*` and `style` attributes, form controls and SVG, and marking

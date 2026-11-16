@@ -113,6 +113,7 @@ import type { EventParameter, PropBinding, RenderContext, SetupBinding } from ".
 import { setupBindingOf } from "./render.ts";
 import type { SharedValue } from "./shared.ts";
 import { teleportNotTag } from "./teleport.ts";
+import { transitionNotTag } from "./transition.ts";
 import {
   arrayOf,
   BOOLEAN,
@@ -1261,6 +1262,10 @@ class Walk {
     if (api === undefined) return UNKNOWN;
     if (api === "Teleport") {
       teleportNotTag(node, this.#context.reporter);
+      return UNKNOWN;
+    }
+    if (api === "Transition") {
+      transitionNotTag(node, this.#context.reporter);
       return UNKNOWN;
     }
     if (api === "defineDirective") {
@@ -2674,6 +2679,7 @@ class Walk {
         // A call the import reports, or a macro in the wrong place, whose arguments would say
         // nothing more.
         if (api === "Teleport") teleportNotTag(callee, context.reporter);
+        else if (api === "Transition") transitionNotTag(callee, context.reporter);
         else if (api === "defineDirective") misplacedDirective(callee, context.reporter);
         else if (api !== undefined) this.#misplaced(callee, api, true);
         this.#skip(node.arguments);

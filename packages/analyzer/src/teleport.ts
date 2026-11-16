@@ -128,7 +128,7 @@ export function lowerTeleport(
  * decodes is a warning (UF3011), as on any attribute, with no fix: the character it would write
  * can make a selector Angular's template refuses, like `{{`.
  */
-function readTo(literal: AST.StringLiteral, reporter: Reporter): string {
+export function readTo(literal: AST.StringLiteral, reporter: Reporter): string {
   const reading = readJsxAttribute(literal.value);
   const at: RawSpan = (range) => ({
     start: literal.start + 1 + range.start,

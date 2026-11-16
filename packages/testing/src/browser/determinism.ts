@@ -135,10 +135,54 @@ async function install(): Promise<void> {
   }
 }
 
-/** Waits for what a capture depends on: the fonts, the target's settle hook and two frames. */
+/** How long a settle waits for the page's running animations to end (ADR-0100). */
+export const ANIMATION_WAIT_MS = 2000;
+
+/**
+ * Waits until no CSS transition, CSS animation or Web Animation in the document runs (ADR-0100,
+ * extending plan §7.6's settling). The reset gives each transition and animation no duration, so
+ * a capture waits for one only where a spec gives a `<Transition>`'s classes a duration of its
+ * own, and never samples it mid-way. One still running after `ANIMATION_WAIT_MS` fails the
+ * settle, as a page that never quiets does: never a retry.
+ */
+export async function settleAnimations(): Promise<void> {
+  const deadline = performance.now() + ANIMATION_WAIT_MS;
+  for (;;) {
+    const running = document
+      .getAnimations()
+      .filter((animation) => animation.playState === "running" || animation.pending);
+    if (!running.length) return;
+    const left = deadline - performance.now();
+    if (left <= 0) {
+      throw new Error(
+        `Visual determinism: the page did not settle: ${running.map(describeAnimation).join(", ")} still ran after ${ANIMATION_WAIT_MS} ms. A transition or an animation a spec gives a duration ends within it.`,
+      );
+    }
+    await Promise.race([
+      Promise.allSettled(running.map((animation) => animation.finished)),
+      new Promise((resolve) => setTimeout(resolve, left)),
+    ]);
+  }
+}
+
+/** An animation, for a settle's error: what runs, and on which element. */
+function describeAnimation(animation: Animation): string {
+  const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
+  const on = target ? ` on <${target.tagName.toLowerCase()}>` : "";
+  if (animation instanceof CSSTransition)
+    return `a transition of ${animation.transitionProperty}${on}`;
+  if (animation instanceof CSSAnimation) return `the animation ${animation.animationName}${on}`;
+  return `a Web Animation${on}`;
+}
+
+/**
+ * Waits for what a capture depends on: the fonts, the target's settle hook, the page's running
+ * animations and two frames.
+ */
 export async function settleFrame(targetSettle?: () => Promise<void>): Promise<void> {
   await installDeterminism();
   await targetSettle?.();
+  await settleAnimations();
   await document.fonts.ready;
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));

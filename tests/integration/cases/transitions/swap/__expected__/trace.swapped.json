@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Swap' })",
+      "dom": [
+        "<section aria-label=\"Checkout\" class=\"steps\" data-uf-84fe8ccf=\"\">",
+        "  <button data-uf-84fe8ccf=\"\" type=\"button\" uf:focused=\"\">",
+        "    \"Swap\"",
+        "  </button>",
+        "  <p class=\"card\" data-uf-84fe8ccf=\"\">",
+        "    \"Payment\"",
+        "  </p>",
+        "  <button data-uf-84fe8ccf=\"\" type=\"button\">",
+        "    \"Next\"",
+        "  </button>",
+        "  <p class=\"step\" data-uf-84fe8ccf=\"\">",
+        "    \"Step one\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Checkout\":",
+        "  - button \"Swap\"",
+        "  - paragraph: Payment",
+        "  - button \"Next\"",
+        "  - paragraph: Step one"
+      ],
+      "events": {}
+    }
+  ]
+}

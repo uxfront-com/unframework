@@ -11,7 +11,10 @@ import type {
   UfComponent,
 } from "@unframework.dev/ir";
 
-/** The component without its teleports, and its elements without their directives. */
+/**
+ * The component without its teleports, its transitions unwrapped, and its elements without their
+ * directives.
+ */
 export function withoutTeleports(component: UfComponent): UfComponent {
   return { ...component, render: root(component.render) };
 }
@@ -41,6 +44,10 @@ function nodes(list: readonly RenderNode[]): RenderNode[] {
     switch (node.kind) {
       case "Teleport":
         return [];
+      // A static page runs no transition (ADR-0100): its child prints as it would without it,
+      // settled, with no class of the transition.
+      case "Transition":
+        return nodes(node.children);
       case "Element":
         return [element(node)];
       case "If": {

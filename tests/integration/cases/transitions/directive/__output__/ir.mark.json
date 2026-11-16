@@ -1,0 +1,63 @@
+{
+  "irVersion": 1,
+  "file": "transitions/directive/mark.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "directives": [
+    {
+      "name": "vMark",
+      "exported": true,
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 187,
+          "end": 193
+        }
+      },
+      "hooks": [
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    document.dispatchEvent(new CustomEvent(\"mark-unmounted\", { detail: el }));\n  }",
+            "span": {
+              "start": 213,
+              "end": 297
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 219,
+                  "end": 227
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 246,
+                  "end": 257
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 199,
+            "end": 297
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 150,
+        "end": 302
+      }
+    }
+  ]
+}

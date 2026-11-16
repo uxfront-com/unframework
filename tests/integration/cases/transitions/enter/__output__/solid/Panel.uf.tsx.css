@@ -1,0 +1,18 @@
+.panel[data-uf-eab7eeb4] {
+  padding: 8px;
+  background-color: rgb(243, 244, 246);
+}
+
+.details[data-uf-eab7eeb4] {
+  margin: 8px 0 0;
+}
+
+.v-enter-active[data-uf-eab7eeb4],
+.v-leave-active[data-uf-eab7eeb4] {
+  transition: opacity 80ms ease;
+}
+
+.v-enter-from[data-uf-eab7eeb4],
+.v-leave-to[data-uf-eab7eeb4] {
+  opacity: 0;
+}

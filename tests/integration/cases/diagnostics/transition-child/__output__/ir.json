@@ -1,0 +1,38 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/transition-child/Disclosure.uf.tsx",
+  "components": [
+    {
+      "name": "Hint",
+      "span": {
+        "start": 214,
+        "end": 255
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Hint",
+            "span": {
+              "start": 244,
+              "end": 248
+            }
+          }
+        ],
+        "span": {
+          "start": 241,
+          "end": 252
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

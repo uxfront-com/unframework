@@ -1,0 +1,22 @@
+.steps[data-uf-84fe8ccf] {
+  padding: 8px;
+}
+
+.card[data-uf-84fe8ccf],
+.step[data-uf-84fe8ccf] {
+  margin: 4px 0;
+}
+
+.swap-enter-active[data-uf-84fe8ccf],
+.swap-leave-active[data-uf-84fe8ccf],
+.step-enter-active[data-uf-84fe8ccf],
+.step-leave-active[data-uf-84fe8ccf] {
+  transition: opacity 80ms ease;
+}
+
+.swap-enter-from[data-uf-84fe8ccf],
+.swap-leave-to[data-uf-84fe8ccf],
+.step-enter-from[data-uf-84fe8ccf],
+.step-leave-to[data-uf-84fe8ccf] {
+  opacity: 0;
+}

@@ -143,6 +143,11 @@ A `<Teleport>` is Vue's own, behind a `mounted` ref set in `onMounted`, so neith
 hydrating client renders its content, and a component whose whole render is a teleport sets
 `inheritAttrs: false`, so Vue doesn't warn about a parent's scope attribute (ADR-0098).
 
+A `<Transition>` is Vue's own, around `v-if` and its branches, with no `name` when it is `"v"`.
+`appear` is bound as an object, `v-bind="{ appear: true }"`: Vue's server compiler wraps the child
+in `<template>` when it finds `appear` as an attribute or a `:appear` binding, and reads no object
+binding, so the server renders the settled child (ADR-0100).
+
 ## Composables
 
 A `.uf.ts` module's composable is its own module, `useToggle.ts` (ADR-0069, `src/composable.ts`):

@@ -1,0 +1,282 @@
+{
+  "irVersion": 1,
+  "file": "transitions/enter/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 149,
+        "end": 513
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "open@191",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 191,
+            "end": 195
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@191",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 202,
+              "end": 207
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 185,
+            "end": 209
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panel",
+            "span": {
+              "start": 235,
+              "end": 248
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Delivery",
+            "span": {
+              "start": 249,
+              "end": 270
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 286,
+                  "end": 299
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 315,
+                    "end": 325
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@191",
+                      "span": {
+                        "start": 315,
+                        "end": 325
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 300,
+                  "end": 326
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = !open.value)",
+                      "span": {
+                        "start": 342,
+                        "end": 368
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@191",
+                          "operator": "=",
+                          "span": {
+                            "start": 342,
+                            "end": 368
+                          },
+                          "target": {
+                            "start": 343,
+                            "end": 353
+                          },
+                          "value": {
+                            "start": 356,
+                            "end": 367
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "open@191",
+                          "span": {
+                            "start": 357,
+                            "end": 367
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 336,
+                      "end": 368
+                    }
+                  },
+                  "span": {
+                    "start": 336,
+                    "end": 368
+                  }
+                },
+                "span": {
+                  "start": 327,
+                  "end": 369
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Details",
+                "span": {
+                  "start": 370,
+                  "end": 393
+                }
+              }
+            ],
+            "span": {
+              "start": 278,
+              "end": 402
+            }
+          },
+          {
+            "kind": "Transition",
+            "name": "v",
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "open.value",
+                      "span": {
+                        "start": 422,
+                        "end": 432
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "open@191",
+                          "span": {
+                            "start": 422,
+                            "end": 432
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "details",
+                            "span": {
+                              "start": 439,
+                              "end": 454
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Ships in two days.",
+                            "span": {
+                              "start": 455,
+                              "end": 473
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 436,
+                          "end": 477
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 422,
+                      "end": 477
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 422,
+                  "end": 477
+                }
+              }
+            ],
+            "span": {
+              "start": 409,
+              "end": 491
+            }
+          }
+        ],
+        "span": {
+          "start": 226,
+          "end": 506
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Panel.css",
+          "source": ".panel {\n  padding: 8px;\n  background-color: rgb(243, 244, 246);\n}\n\n.details {\n  margin: 8px 0 0;\n}\n\n.v-enter-active,\n.v-leave-active {\n  transition: opacity 80ms ease;\n}\n\n.v-enter-from,\n.v-leave-to {\n  opacity: 0;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 21
+          }
+        }
+      ],
+      "scopeId": "eab7eeb4"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 149,
+        "end": 513
+      }
+    }
+  ],
+  "types": []
+}

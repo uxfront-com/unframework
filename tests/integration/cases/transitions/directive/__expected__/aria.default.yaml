@@ -1,0 +1,3 @@
+- region "News":
+  - button "Dismiss"
+  - paragraph: New releases are out.

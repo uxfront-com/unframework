@@ -13,8 +13,9 @@ import { isAuthoringModule } from "./frameworks.ts";
 /**
  * The APIs the analyser lowers: M2's macros, reactive APIs and `nextTick` (ADR-0045), and M3's
  * `defineSlots`, `defineExpose`, `defineOptions`, `defineModel`, `provide` and `inject`
- * (ADR-0054), and M8's `Teleport`, a component written only as a tag (ADR-0098), and
- * `defineDirective`, called only to initialise a module's top-level `const` (ADR-0099).
+ * (ADR-0054), and M8's `Teleport` and `Transition`, components written only as tags (ADR-0098,
+ * ADR-0100), and `defineDirective`, called only to initialise a module's top-level `const`
+ * (ADR-0099).
  */
 export type AuthoringApi =
   | "ref"
@@ -34,6 +35,7 @@ export type AuthoringApi =
   | "provide"
   | "inject"
   | "Teleport"
+  | "Transition"
   | "defineDirective";
 
 /** The APIs the analyser lowers. */
@@ -55,6 +57,7 @@ export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
   "provide",
   "inject",
   "Teleport",
+  "Transition",
   "defineDirective",
 ]);
 

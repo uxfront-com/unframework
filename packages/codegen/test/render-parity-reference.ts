@@ -162,6 +162,10 @@ class Evaluator {
         // A static render holds none of a teleport's content, on every target (ADR-0098).
         case "Teleport":
           return;
+        // A static render holds a transition's child settled, with no class (ADR-0100).
+        case "Transition":
+          for (const child of node.children) visit(child, names);
+          return;
         // Composition (ADR-0055) renders through its lanes in M3, not here yet.
         case "Component":
         case "SlotOutlet":

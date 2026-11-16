@@ -1,0 +1,43 @@
+---
+import "./Steps.uf.tsx.css";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const first = true as boolean;
+const step = 1 as number;
+---
+
+<section
+  class:list={["steps", className]}
+  aria-label="Checkout"
+  style={style}
+  data-uf-84fe8ccf=""
+  {...scopeAttributes(Astro.props)}
+>
+  <button type="button" data-uf-84fe8ccf="">Swap</button>
+  {first ? (
+    <p class="card" data-uf-84fe8ccf="">Cart</p>
+  ) : (
+    <p class="card" data-uf-84fe8ccf="">Payment</p>
+  )}
+  <button type="button" data-uf-84fe8ccf="">Next</button>
+  {step === 1 ? (
+    <p class="step" data-uf-84fe8ccf="">Step one</p>
+  ) : step === 2 ? (
+    <p class="step" data-uf-84fe8ccf="">Step two</p>
+  ) : (
+    <p class="step" data-uf-84fe8ccf="">Step three</p>
+  )}
+</section>

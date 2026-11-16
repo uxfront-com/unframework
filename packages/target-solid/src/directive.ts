@@ -87,7 +87,8 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
   body.push(`return (${own.element}) => {`, `  ${own.target} = ${own.element};`, "};");
   const hooks = directiveHooksObject(directive).replaceAll("\n", "\n  ");
   return [
-    `${exported ? "export " : ""}function ${directive.name}(${own.getValue}: () => ${directive.value.code}): (element: ${element}) => void {`,
+    // A directive with only `unmounted` reads no value: its getter is unused.
+    `${exported ? "export " : ""}function ${directive.name}(${mounted || updated ? own.getValue : `_${own.getValue}`}: () => ${directive.value.code}): (element: ${element}) => void {`,
     `  const ${own.hooks} = ${hooks};`,
     ...body.map((line) => `  ${line}`),
     "}",
@@ -108,7 +109,6 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
     }
     return local;
   };
-  solid("untrack");
   const queue = scope.claim(QUEUE_HELPER);
   const factory = factoryCode(directive, { solid, queue }, true);
   const specifiers = [...used]

@@ -56,6 +56,8 @@ import {
   directiveCode,
   scopeDirectiveCode,
   teleportDirectiveCode,
+  transitionDirectiveCode,
+  transitionRegionCode,
   textCaretDirectiveCode,
   trustedHtmlPipeCode,
 } from "./directives.ts";
@@ -257,6 +259,14 @@ export const angular: Target = defineTarget({
       helper: RUNNER_HELPER,
       note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
+    // Angular's `animate.enter` and `animate.leave` take one class list, which can't run Vue's
+    // three phases, so an inline directive runs them, with `animate.leave`'s function form
+    // holding the removal (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "Transition",
+      note: "A `<Transition>`'s element takes an inline directive, `ufTransition`, and a conditional child sits in an `<ng-container>` whose inline directive, `TransitionRegion`, is created with the transition and holds the branch shown. The directive runs Vue's enter classes once its region has rendered, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when something around the element removes it, so the directive lets the element go at once while its region still shows its branch (ADR-0100).",
+    },
     teleport: {
       support: "emulated",
       helper: "Teleport",
@@ -359,6 +369,17 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
   // A teleport mounts its view through an inline directive (ADR-0098).
   const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
+  // A transition runs through an inline directive, and a region directive around a conditional
+  // child (ADR-0100).
+  const transition = holdsTransition(component)
+    ? {
+        className: imports.claim("Transition"),
+        regionClass: imports.claim("TransitionRegion"),
+        // The region wraps a conditional child only, and the template imports it only then.
+        regions: holdsTransition(component, true),
+        ref: plan.members.claim("transition"),
+      }
+    : undefined;
   // The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
   // and its module's own as classes of this file, with the runner and queue their hooks run through.
   const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>
@@ -420,6 +441,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     models.textCaret ||
     trustedHtml ||
     teleport ||
+    transition ||
     appliedImports.length ||
     ownClasses.length
       ? [
@@ -433,6 +455,12 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...(models.textCaret === undefined ? [] : [models.textCaret]),
                 ...(trustedHtml === undefined ? [] : [trustedHtml]),
                 ...(teleport === undefined ? [] : [teleport]),
+                ...(transition === undefined
+                  ? []
+                  : [
+                      transition.className,
+                      ...(transition.regions ? [transition.regionClass] : []),
+                    ]),
                 ...appliedImports,
                 ...ownClasses.map(({ className: name }) => name),
               ].map((name) => js.identifier(name)),
@@ -461,7 +489,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     [
       "template",
       js.templateLiteral(
-        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host }, teleportHost)}\n  `,
+        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host }, teleportHost, transition)}\n  `,
       ),
     ],
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own
@@ -546,6 +574,12 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
     ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
     ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
+    ...(transition === undefined
+      ? []
+      : [
+          transitionRegionCode(transition.regionClass, imports),
+          transitionDirectiveCode(transition.className, transition.regionClass, imports),
+        ]),
     ...(runner === undefined ? [] : runnerCode(runner)),
     ...ownClasses.map(({ directive, className: name }) =>
       directiveClassCode(directive, name, runner?.run ?? RUNNER_HELPER, imports),
@@ -598,6 +632,20 @@ function rendersRawHtml(component: UfComponent): boolean {
   walk(component.render, {
     enter: (node) => {
       if (node.kind === "Element" && node.attributes.some(({ kind }) => kind === "RawHtml")) {
+        found = true;
+      }
+      return found ? false : undefined;
+    },
+  });
+  return found;
+}
+
+/** Whether the template holds a `<Transition>`, or one around a conditional (ADR-0100). */
+function holdsTransition(component: UfComponent, conditional = false): boolean {
+  let found = false;
+  walk(component.render, {
+    enter: (node) => {
+      if (node.kind === "Transition" && (!conditional || node.children[0]?.kind === "If")) {
         found = true;
       }
       return found ? false : undefined;

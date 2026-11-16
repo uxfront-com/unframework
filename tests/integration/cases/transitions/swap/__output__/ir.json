@@ -1,0 +1,570 @@
+{
+  "irVersion": 1,
+  "file": "transitions/swap/Steps.uf.tsx",
+  "components": [
+    {
+      "name": "Steps",
+      "span": {
+        "start": 170,
+        "end": 938
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "first@212",
+          "name": "first",
+          "kind": "state",
+          "span": {
+            "start": 212,
+            "end": 217
+          }
+        },
+        {
+          "id": "step@239",
+          "name": "step",
+          "kind": "state",
+          "span": {
+            "start": 239,
+            "end": 243
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "first@212",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 224,
+              "end": 228
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 206,
+            "end": 230
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "step@239",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 250,
+              "end": 251
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 233,
+            "end": 253
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "steps",
+            "span": {
+              "start": 279,
+              "end": 292
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Checkout",
+            "span": {
+              "start": 293,
+              "end": 314
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 330,
+                  "end": 343
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(first.value = !first.value)",
+                      "span": {
+                        "start": 359,
+                        "end": 387
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "first@212",
+                          "operator": "=",
+                          "span": {
+                            "start": 359,
+                            "end": 387
+                          },
+                          "target": {
+                            "start": 360,
+                            "end": 371
+                          },
+                          "value": {
+                            "start": 374,
+                            "end": 386
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "first@212",
+                          "span": {
+                            "start": 375,
+                            "end": 386
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 353,
+                      "end": 387
+                    }
+                  },
+                  "span": {
+                    "start": 353,
+                    "end": 387
+                  }
+                },
+                "span": {
+                  "start": 344,
+                  "end": 388
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Swap",
+                "span": {
+                  "start": 389,
+                  "end": 409
+                }
+              }
+            ],
+            "span": {
+              "start": 322,
+              "end": 418
+            }
+          },
+          {
+            "kind": "Transition",
+            "name": "swap",
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "first.value",
+                      "span": {
+                        "start": 459,
+                        "end": 470
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "first@212",
+                          "span": {
+                            "start": 459,
+                            "end": 470
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "card",
+                            "span": {
+                              "start": 476,
+                              "end": 488
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Cart",
+                            "span": {
+                              "start": 489,
+                              "end": 493
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 473,
+                          "end": 497
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 459,
+                      "end": 497
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "card",
+                            "span": {
+                              "start": 503,
+                              "end": 515
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Payment",
+                            "span": {
+                              "start": 516,
+                              "end": 523
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 500,
+                          "end": 527
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 500,
+                      "end": 527
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 459,
+                  "end": 527
+                }
+              }
+            ],
+            "span": {
+              "start": 425,
+              "end": 548
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 563,
+                  "end": 576
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(step.value = (step.value % 3) + 1)",
+                      "span": {
+                        "start": 592,
+                        "end": 627
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "step@239",
+                          "operator": "=",
+                          "span": {
+                            "start": 592,
+                            "end": 627
+                          },
+                          "target": {
+                            "start": 593,
+                            "end": 603
+                          },
+                          "value": {
+                            "start": 606,
+                            "end": 626
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "step@239",
+                          "span": {
+                            "start": 607,
+                            "end": 617
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 586,
+                      "end": 627
+                    }
+                  },
+                  "span": {
+                    "start": 586,
+                    "end": 627
+                  }
+                },
+                "span": {
+                  "start": 577,
+                  "end": 628
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Next",
+                "span": {
+                  "start": 629,
+                  "end": 649
+                }
+              }
+            ],
+            "span": {
+              "start": 555,
+              "end": 658
+            }
+          },
+          {
+            "kind": "Transition",
+            "name": "step",
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "step.value === 1",
+                      "span": {
+                        "start": 699,
+                        "end": 715
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "step@239",
+                          "span": {
+                            "start": 699,
+                            "end": 709
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "step",
+                            "span": {
+                              "start": 733,
+                              "end": 745
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Step one",
+                            "span": {
+                              "start": 746,
+                              "end": 754
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 730,
+                          "end": 758
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 699,
+                      "end": 758
+                    }
+                  },
+                  {
+                    "condition": {
+                      "code": "step.value === 2",
+                      "span": {
+                        "start": 771,
+                        "end": 787
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "step@239",
+                          "span": {
+                            "start": 771,
+                            "end": 781
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "step",
+                            "span": {
+                              "start": 805,
+                              "end": 817
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Step two",
+                            "span": {
+                              "start": 818,
+                              "end": 826
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 802,
+                          "end": 830
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 771,
+                      "end": 830
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "step",
+                            "span": {
+                              "start": 858,
+                              "end": 870
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Step three",
+                            "span": {
+                              "start": 871,
+                              "end": 881
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 855,
+                          "end": 885
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 855,
+                      "end": 885
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 699,
+                  "end": 895
+                }
+              }
+            ],
+            "span": {
+              "start": 665,
+              "end": 916
+            }
+          }
+        ],
+        "span": {
+          "start": 270,
+          "end": 931
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Steps.css",
+          "source": ".steps {\n  padding: 8px;\n}\n\n.card,\n.step {\n  margin: 4px 0;\n}\n\n.swap-enter-active,\n.swap-leave-active,\n.step-enter-active,\n.step-leave-active {\n  transition: opacity 80ms ease;\n}\n\n.swap-enter-from,\n.swap-leave-to,\n.step-enter-from,\n.step-leave-to {\n  opacity: 0;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 21
+          }
+        }
+      ],
+      "scopeId": "84fe8ccf"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Steps",
+      "span": {
+        "start": 170,
+        "end": 938
+      }
+    }
+  ],
+  "types": []
+}

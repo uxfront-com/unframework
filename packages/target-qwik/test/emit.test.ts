@@ -114,6 +114,7 @@ describe("qwik target", () => {
       "svg",
       "teleport",
       "text",
+      "transition",
       "two-way-binding",
       "use-id",
     ]);
@@ -596,5 +597,28 @@ export default function Icon(props: P) {
   return <svg viewBox="0 0 10 10"><title>{label}: {size}</title><title>{label}</title></svg>;
 }`),
     ).toContain("<title>{`${label}: ${size}`}</title>\n      <title>{label}</title>");
+  });
+});
+
+// `<Transition>` (ADR-0100): each transition's locals take their names from its `name`.
+describe("qwik target: transitions", () => {
+  it.each([
+    ["fade", "fadeState", "fadeShown"],
+    ["slide-up", "slideUpState", "slideUpShown"],
+    // A name that starts with no letter makes no identifier.
+    ["2col", "transitionState", "transitionShown"],
+  ])("names the locals of `name=%j` as identifiers", async (name, state, shown) => {
+    const contents = await emitSource(
+      [
+        'import { Transition, ref } from "@uxfront/unframework";',
+        "export function Grid() {",
+        "  const open = ref(true);",
+        `  return <div><Transition name="${name}">{open.value && <p>Hi</p>}</Transition></div>;`,
+        "}",
+      ].join("\n"),
+    );
+    expect(contents).toContain(`const ${state} = useConstant(`);
+    expect(contents).toContain(`const ${shown} = useSignal<number[]>(`);
+    expect(contents).toContain(`ref={transition(${state}, ${JSON.stringify(name)}, 0, false)}`);
   });
 });

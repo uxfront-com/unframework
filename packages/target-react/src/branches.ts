@@ -79,6 +79,15 @@ export function keyedTernary(node: IfNode, context: JsxContext, imports: ImportS
 }
 
 /**
+ * A transition's conditional (ADR-0100) as a ternary chain whose every branch takes its own key,
+ * so a change of branch is a change of key the transition sees.
+ */
+export function keyedBranches(node: IfNode, context: JsxContext, imports: ImportSet): Expression {
+  KEYED.add(node);
+  return keyedTernary(node, context, imports);
+}
+
+/**
  * Gives the keyed conditionals among one parent's children keys no sibling shares: where two or
  * more are keyed, each key starts with its conditional's position (`key="2-0"`), as React warns
  * about two children with one key and reconciles them by it. Call it on the children a parent
@@ -140,8 +149,10 @@ function holdsState(node: RenderNode): boolean {
       return node.branches.some((branch) => branch.children.some(holdsState));
     case "For":
       return holdsState(node.body);
-    // A portal's element is React's to keep or remount as its branch is (ADR-0098).
+    // A portal's element is React's to keep or remount as its branch is (ADR-0098), and so is a
+    // transition's (ADR-0100).
     case "Teleport":
+    case "Transition":
       return node.children.some(holdsState);
     case "Text":
     case "Interpolation":
@@ -221,8 +232,10 @@ function topTags(nodes: readonly RenderNode[]): Set<string> {
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
-      // A portal renders nothing in place (ADR-0098).
+      // A portal renders nothing in place (ADR-0098), and a transition is a component of its own,
+      // which React never reconciles with an element (ADR-0100).
       case "Teleport":
+      case "Transition":
         break;
       default:
         node satisfies never;

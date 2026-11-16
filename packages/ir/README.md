@@ -20,7 +20,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   `ModuleApi` the compiler's resolver returned (ADR-0053), and its injection `keys`; a
   component's `slots`, `exposes` and `inheritAttrs`; the render nodes `Component`, `SlotOutlet`
   and `Dynamic` (`<component is>`), the render node `Teleport` (`<Teleport to>`, one element
-  mounted elsewhere, ADR-0098), the `Directive` attribute and a module's `directives`, each with
+  mounted elsewhere, ADR-0098), the render node `Transition` (`<Transition name appear>`, Vue's
+  classes on one element or one conditional of elements, ADR-0100), the `Directive` attribute and a module's `directives`, each with
   its hooks' code (`v-focus-trap={open.value}`, ADR-0099), a list's body that is a component, a component's attributes
   (`Prop`, `Listener`, `ModelBinding`, `Class`, `Style`, `Ref`) and fills, an element's `v-model`
   (`Model`), the setup items `Model`, `Provide` and `Inject`, the binding kinds `model`, `slots`,
@@ -103,7 +104,9 @@ plain, versioned, schema-validated JSON (plan §5.3).
   slot; a model's binding is a `state`'s or a `model`'s `.value`; an injected value is never
   written; a `Dynamic` node's candidates are all tags, whose attributes and children each tag
   keeps as an element, or all components; a `Teleport` (ADR-0098) holds exactly one element,
-  outside SVG, and its `to` is not empty; a `Directive` names a directive the module declares or
+  outside SVG, and its `to` is not empty; a `Transition` (ADR-0100) holds one element, or one `If`
+  whose every branch holds one element or nothing, outside a list's body, and its `name` has no
+  whitespace; a `Directive` names a directive the module declares or
   imports, once per element and outside a list's body, and a directive's hooks read their own
   names, client globals and the bindings it lists (ADR-0099); slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or

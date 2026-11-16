@@ -1,0 +1,312 @@
+{
+  "irVersion": 1,
+  "file": "transitions/leave/Menu.uf.tsx",
+  "components": [
+    {
+      "name": "Menu",
+      "span": {
+        "start": 144,
+        "end": 598
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "open@185",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 185,
+            "end": 189
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@185",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 196,
+              "end": 200
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 179,
+            "end": 202
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "nav",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "menu",
+            "span": {
+              "start": 224,
+              "end": 236
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Account",
+            "span": {
+              "start": 237,
+              "end": 257
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 273,
+                  "end": 286
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 302,
+                    "end": 312
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@185",
+                      "span": {
+                        "start": 302,
+                        "end": 312
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 287,
+                  "end": 313
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = !open.value)",
+                      "span": {
+                        "start": 329,
+                        "end": 355
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@185",
+                          "operator": "=",
+                          "span": {
+                            "start": 329,
+                            "end": 355
+                          },
+                          "target": {
+                            "start": 330,
+                            "end": 340
+                          },
+                          "value": {
+                            "start": 343,
+                            "end": 354
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "open@185",
+                          "span": {
+                            "start": 344,
+                            "end": 354
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 323,
+                      "end": 355
+                    }
+                  },
+                  "span": {
+                    "start": 323,
+                    "end": 355
+                  }
+                },
+                "span": {
+                  "start": 314,
+                  "end": 356
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Account",
+                "span": {
+                  "start": 357,
+                  "end": 380
+                }
+              }
+            ],
+            "span": {
+              "start": 265,
+              "end": 389
+            }
+          },
+          {
+            "kind": "Transition",
+            "name": "fade",
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "open.value",
+                      "span": {
+                        "start": 430,
+                        "end": 440
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "open@185",
+                          "span": {
+                            "start": 430,
+                            "end": 440
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "ul",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "items",
+                            "span": {
+                              "start": 460,
+                              "end": 473
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "li",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Profile",
+                                "span": {
+                                  "start": 491,
+                                  "end": 498
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 487,
+                              "end": 503
+                            }
+                          },
+                          {
+                            "kind": "Element",
+                            "tag": "li",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Sign out",
+                                "span": {
+                                  "start": 520,
+                                  "end": 528
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 516,
+                              "end": 533
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 456,
+                          "end": 549
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 430,
+                      "end": 559
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 430,
+                  "end": 559
+                }
+              }
+            ],
+            "span": {
+              "start": 396,
+              "end": 580
+            }
+          }
+        ],
+        "span": {
+          "start": 219,
+          "end": 591
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Menu.css",
+          "source": ".menu {\n  padding: 8px;\n  background-color: rgb(243, 244, 246);\n}\n\n.items {\n  margin: 8px 0 0;\n  padding-left: 16px;\n}\n\n.fade-enter-active,\n.fade-leave-active {\n  transition: opacity 100ms ease;\n}\n\n.fade-enter-from,\n.fade-leave-to {\n  opacity: 0;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 20
+          }
+        }
+      ],
+      "scopeId": "e688a71a"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Menu",
+      "span": {
+        "start": 144,
+        "end": 598
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,0 +1,11 @@
+.banner[data-uf-53025c4a] {
+  margin: 8px 0 0;
+}
+
+.fade-leave-active[data-uf-53025c4a] {
+  transition: opacity 80ms ease;
+}
+
+.fade-leave-to[data-uf-53025c4a] {
+  opacity: 0;
+}

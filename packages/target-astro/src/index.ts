@@ -133,6 +133,8 @@ export const astro: Target = defineTarget({
     },
     // A teleport mounts once its component has, in the browser (ADR-0098).
     teleport: inert("A `<Teleport>` renders nothing"),
+    // A transition runs in the browser (ADR-0100): its child renders settled.
+    transition: inert("A `<Transition>`'s classes never run: its child renders settled"),
     // A directive's hooks run in the browser (ADR-0099): the element renders without them.
     directive: inert("A directive's hooks never run"),
   },
@@ -146,7 +148,8 @@ export const astro: Target = defineTarget({
    */
   emit(source: UfComponent, context): OutputFile[] {
     const { module } = context;
-    // A teleport prints nothing (ADR-0098), and neither does a directive (ADR-0099).
+    // A teleport prints nothing (ADR-0098), nor does a directive (ADR-0099), and a transition's
+    // child prints in its place (ADR-0100).
     const component = withoutTeleports(source);
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);

@@ -173,6 +173,7 @@ export function forSolid(
             },
           ];
         case "Teleport":
+        case "Transition":
           return [{ ...node, children: children(node.children) }];
         default:
           return node satisfies never;

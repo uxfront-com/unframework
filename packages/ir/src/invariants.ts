@@ -93,6 +93,7 @@ import type {
   DirectiveHook,
   DynamicNode,
   TeleportNode,
+  TransitionNode,
   ElementNode,
   Emits,
   EventAttribute,
@@ -1589,6 +1590,9 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
     case "Teleport":
       checkTeleport(node, place, walk);
       return;
+    case "Transition":
+      checkTransition(node, place, walk);
+      return;
     default:
       unreachable(node);
   }
@@ -1621,6 +1625,46 @@ function checkTeleport(node: TeleportNode, place: Place, walk: Walk): void {
       controlled: false,
     },
     walk,
+  );
+}
+
+/**
+ * Checks a transition (ADR-0100): a class prefix with no whitespace, outside a list's body, around
+ * exactly one element, or one conditional whose every branch holds one element or nothing. The
+ * child renders in the transition's place, so it is checked there.
+ */
+function checkTransition(node: TransitionNode, place: Place, walk: Walk): void {
+  const { errors } = walk;
+  if (!/^[^\s]+$/.test(node.name)) {
+    errors.push({
+      path: `${place.path}/name`,
+      message: "must be a class prefix, not empty and with no whitespace",
+    });
+  }
+  if (place.inList) {
+    errors.push({ path: place.path, message: "must not be inside a list's body" });
+  }
+  if (!isTransitionChild(node.children)) {
+    errors.push({
+      path: `${place.path}/children`,
+      message: "must hold exactly one element, or one conditional of elements",
+    });
+  }
+  checkChildren(node.children, { ...place, path: `${place.path}/children` }, walk);
+}
+
+/** Whether a transition's children are one element, or one `If` of one element or nothing per branch. */
+function isTransitionChild(children: readonly RenderNode[]): boolean {
+  const [child] = children;
+  if (children.length !== 1 || !child) return false;
+  if (child.kind === "Element") return true;
+  return (
+    child.kind === "If" &&
+    child.branches.every(
+      (branch) =>
+        branch.children.length === 0 ||
+        (branch.children.length === 1 && branch.children[0]!.kind === "Element"),
+    )
   );
 }
 

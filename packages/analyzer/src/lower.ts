@@ -32,6 +32,7 @@ import type {
   RenderNode,
   Span,
   TeleportNode,
+  TransitionNode,
   TextNode,
 } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
@@ -51,6 +52,7 @@ import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
 import { referencePath } from "./narrowing.ts";
 import type { RenderContext } from "./render.ts";
 import { isTeleportTag, lowerTeleport } from "./teleport.ts";
+import { isTransitionTag, lowerTransition } from "./transition.ts";
 import { describe, has, mayBeNullish, outside } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
@@ -74,10 +76,10 @@ export const ROOT: Place = { ancestors: [], namespace: "html" };
 /** An element lowered, and the `key` a list lifts off it. */
 export interface LoweredElement {
   /**
-   * The element, a component element (ADR-0053), `<component is>` (ADR-0054), or `<Teleport>`
-   * (ADR-0098).
+   * The element, a component element (ADR-0053), `<component is>` (ADR-0054), `<Teleport>`
+   * (ADR-0098), or `<Transition>` (ADR-0100).
    */
-  element: ElementNode | ComponentNode | DynamicNode | TeleportNode | undefined;
+  element: ElementNode | ComponentNode | DynamicNode | TeleportNode | TransitionNode | undefined;
   key: AST.JSXAttribute | undefined;
   /**
    * Whether the element or anything inside it binds (a binding, an expression, a conditional,
@@ -132,6 +134,9 @@ export function lowerElement(
       key: undefined,
       binds: true,
     };
+  }
+  if (isTransitionTag(name, render)) {
+    return { element: lowerTransition(node, name, place, render), key: undefined, binds: true };
   }
   if (/^[A-Z]/.test(name.name)) {
     const lowered = lowerComponent(node, name, place, render, listBody);

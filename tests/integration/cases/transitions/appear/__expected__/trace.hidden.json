@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Hide' })",
+      "dom": [
+        "<section aria-label=\"Inbox\">",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Show\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Inbox\":",
+        "  - button \"Show\""
+      ],
+      "events": {}
+    }
+  ]
+}
