@@ -135,7 +135,7 @@ export function template(
       },
     ],
     // `@let fadeBranch = (open) ? 0 : -1;` before the conditional, and on each element
-    // `<p ufTransition="fade" [ufTransitionGate]="this.transitions" #transition="ufTransition"
+    // `<p [ufTransition]="'fade'" [ufTransitionGate]="this.transitions" #transition="ufTransition"
     // (animate.leave)="transition.leave($event, fadeBranch === 0)">`: the leave reads, as Angular
     // removes the element, whether its own branch is still the one shown. The branch is read
     // before the conditional, where Angular's template check narrows no condition (ADR-0100).
@@ -150,9 +150,10 @@ export function template(
       transitionAttributes: ({ node, branch }) => {
         const local = branchLets.get(node);
         return [
+          // Bound, so the element carries no attribute of the directive's.
           {
             name: TRANSITION_ATTRIBUTE,
-            text: angularDialect.attribute(TRANSITION_ATTRIBUTE, node.name, ""),
+            text: `[${TRANSITION_ATTRIBUTE}]="${angularString(node.name)}"`,
           },
           {
             name: TRANSITION_GATE_INPUT,
@@ -378,4 +379,10 @@ function branchName(name: string): string {
     .map((word, index) => (index ? word[0]!.toUpperCase() + word.slice(1) : word))
     .join("");
   return /^[A-Za-z]/.test(joined) ? `${joined}Branch` : "transitionBranch";
+}
+
+/** A string literal in a bound attribute's expression: single-quoted, its quotes escaped. */
+function angularString(value: string): string {
+  const quoted = value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  return `'${quoted.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}'`;
 }

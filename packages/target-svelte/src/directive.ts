@@ -75,7 +75,8 @@ export function attachmentCode(
   const element = directiveElement(directive);
   const hooks = directiveHooksObject(directive).replaceAll("\n", "\n  ");
   return [
-    `${exported ? "export " : ""}function ${directive.name}(${own.getValue}: () => ${directive.value.code}): ${attachment}<${element}> {`,
+    // A directive with only `unmounted` reads no value: its getter is unused.
+    `${exported ? "export " : ""}function ${directive.name}(${mounted || updated ? own.getValue : `_${own.getValue}`}: () => ${directive.value.code}): ${attachment}<${element}> {`,
     `  const ${own.hooks} = ${hooks};`,
     `  return (${own.element}) => {`,
     ...body.map((line) => `    ${line}`),
@@ -93,9 +94,11 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
   const attachment = scope.claim("Attachment");
   const named = (imported: string, local: string) =>
     imported === local ? local : `${imported} as ${local}`;
+  // `untrack` reads the value for `mounted` and `updated`, which a directive may leave out.
+  const reads = directiveHook(directive, "mounted") || directiveHook(directive, "updated");
   const code = [
     [
-      `import { ${named("untrack", untrack)} } from "svelte";`,
+      ...(reads ? [`import { ${named("untrack", untrack)} } from "svelte";`] : []),
       `import type { ${named("Attachment", attachment)} } from "svelte/attachments";`,
       ...dependencyImports(dependencies),
     ].join("\n"),

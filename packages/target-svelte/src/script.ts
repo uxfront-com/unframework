@@ -2058,10 +2058,11 @@ function transitionPhases(component: UfComponent): { enter: boolean; leave: bool
 /**
  * The transition functions of a `<Transition>` (`transition`, emulated, ADR-0100), which `in:`
  * and `out:` name: Svelte's `transition:` runs its own CSS or tick, never Vue's classes. Each adds
- * the phase's `-from` and `-active` classes as Svelte starts it, swaps `-from` for `-to` two
- * frames later, as Vue does, and removes them at the end: the element's own `transitionend` or
- * `animationend`, or its longest duration and delay, whichever comes first. It returns that time
- * as its `duration`, which Svelte waits before it removes a leaving element.
+ * the phase's `-from` and `-active` classes as Svelte starts it, before the element is painted,
+ * and swaps `-from` for `-to` two frames later, as Vue does. Its config is deferred, so Svelte
+ * reads it once the element is in the document: the element's longest duration and delay, which
+ * Svelte waits before it ends the phase and removes a leaving element. The classes go at that end,
+ * Svelte's `introend` or `outroend`, so both elements of a swap end in one frame.
  */
 function transitionHelpers(names: {
   enter?: string;
@@ -2072,54 +2073,51 @@ function transitionHelpers(names: {
   const { enter, leave, classes, config } = names;
   return [
     `/** Runs \`name\`'s classes of one phase on the element, as Vue's \`<Transition>\` does. */\n${block(
-      `function ${classes}(element: Element, name: string, phase: "enter" | "leave"): ${config} {`,
+      `function ${classes}(element: Element, name: string, phase: "enter" | "leave"): () => ${config} {`,
       [
         "const from = `${name}-${phase}-from`;",
         "const active = `${name}-${phase}-active`;",
         "const to = `${name}-${phase}-to`;",
+        "let ended = false;",
+        block(
+          "const end = () => {",
+          ["ended = true;", "element.classList.remove(from, active, to);"],
+          "};",
+        ),
+        'element.addEventListener(phase === "enter" ? "introend" : "outroend", end, { once: true });',
         "element.classList.add(from, active);",
-        "const style = getComputedStyle(element);",
-        block(
-          "const longest = (delays: string, durations: string) => {",
-          [
-            'const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);',
-            "const delay = each(delays);",
-            "return Math.max(0, ...each(durations).map((duration, index) => duration + (delay[index % delay.length] ?? 0)));",
-          ],
-          "};",
-        ),
-        "const time = Math.max(longest(style.transitionDelay, style.transitionDuration), longest(style.animationDelay, style.animationDuration));",
-        "let timer: ReturnType<typeof setTimeout> | undefined;",
-        block(
-          "const end = (event?: Event) => {",
-          [
-            "if (event && event.target !== element) return;",
-            "clearTimeout(timer);",
-            'element.removeEventListener("transitionend", end);',
-            'element.removeEventListener("animationend", end);',
-            "element.classList.remove(from, active, to);",
-          ],
-          "};",
-        ),
         block(
           "requestAnimationFrame(() => {",
           [
             block(
               "requestAnimationFrame(() => {",
               [
+                "if (ended) return;",
                 "element.classList.remove(from);",
                 "element.classList.add(to);",
-                "if (!time) return end();",
-                'element.addEventListener("transitionend", end);',
-                'element.addEventListener("animationend", end);',
-                "timer = setTimeout(end, time + 1);",
               ],
               "});",
             ),
           ],
           "});",
         ),
-        "return { duration: time };",
+        block(
+          "return () => {",
+          [
+            "const style = getComputedStyle(element);",
+            block(
+              "const longest = (delays: string, durations: string) => {",
+              [
+                'const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);',
+                "const delay = each(delays);",
+                "return Math.max(0, ...each(durations).map((duration, index) => duration + (delay[index % delay.length] ?? 0)));",
+              ],
+              "};",
+            ),
+            "return { duration: Math.max(longest(style.transitionDelay, style.transitionDuration), longest(style.animationDelay, style.animationDuration)) };",
+          ],
+          "};",
+        ),
       ],
       "}",
     )}`,
@@ -2127,7 +2125,7 @@ function transitionHelpers(names: {
       ? []
       : [
           `/** Runs \`name\`'s enter classes, as \`in:\` starts it. */\n${block(
-            `function ${enter}(element: Element, name: string): ${config} {`,
+            `function ${enter}(element: Element, name: string): () => ${config} {`,
             [`return ${classes}(element, name, "enter");`],
             "}",
           )}`,
@@ -2136,7 +2134,7 @@ function transitionHelpers(names: {
       ? []
       : [
           `/** Runs \`name\`'s leave classes, as \`out:\` starts it. */\n${block(
-            `function ${leave}(element: Element, name: string): ${config} {`,
+            `function ${leave}(element: Element, name: string): () => ${config} {`,
             [`return ${classes}(element, name, "leave");`],
             "}",
           )}`,

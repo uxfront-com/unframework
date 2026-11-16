@@ -265,7 +265,7 @@ class ${className} {
 
 /**
  * The directive that runs Vue's transition classes on its element (ADR-0100):
- * `<p ufTransition="fade" [ufTransitionGate]="this.gate">`. After the render that created the
+ * `<p [ufTransition]="'fade'" [ufTransitionGate]="this.gate">`. After the render that created the
  * element, it runs the enter if its component had rendered before, or with `appear`. Angular's
  * `(animate.leave)` holds the element's removal until `animationComplete()`, and the template
  * passes whether the element's own branch is still shown, read as Angular removes it: Angular

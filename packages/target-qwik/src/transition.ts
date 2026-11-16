@@ -150,7 +150,13 @@ export function qwikTransitions(
         }),
       );
     },
-    helpers: () => transitionHelpers(helper, run, stateType),
+    helpers: () =>
+      transitionHelpers(
+        helper,
+        run,
+        stateType,
+        names.imports.add("@qwik.dev/core/build", "isServer"),
+      ),
   };
 }
 
@@ -203,7 +209,12 @@ function withTransitionRef(
 }
 
 /** The inline helpers, after the component. */
-function transitionHelpers(helper: string, run: string, stateType: string): string {
+function transitionHelpers(
+  helper: string,
+  run: string,
+  stateType: string,
+  isServer: string,
+): string {
   return `/** A transition's state: whether its component has mounted, the branch shown, and its elements. */
 interface ${stateType} {
   ready: boolean;
@@ -270,6 +281,8 @@ function ${helper}(
   return (element) => {
     if (typeof own === "function") own(element);
     else if (own) own.value = element;
+    // Qwik's server render calls a ref too, with no DOM: the server renders the settled child.
+    if (${isServer}) return;
     if (state.elements[index] === element) return;
     state.elements[index] = element;
     if (state.ready || appear) ${run}(element, name, "enter");

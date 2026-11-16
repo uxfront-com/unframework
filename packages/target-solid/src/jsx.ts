@@ -1229,14 +1229,17 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
   let first = true;
   const hydrating = Boolean(${sharedConfig}.context);
   ${createComputed}(() => {
+    // The server resolves nothing here, and has no \`Element\`.
+    if (${isServer}) return;
     const value = resolved();
     const next = value instanceof Element ? value : undefined;
     ${untrack}(() => {
+      const initial = first;
+      first = false;
       if (next === current) return;
       const previous = current;
       current = next;
-      const entering = next !== undefined && (first ? Boolean(props.appear) && !hydrating : true);
-      first = false;
+      const entering = next !== undefined && (initial ? Boolean(props.appear) && !hydrating : true);
       if (previous) {
         run(previous, "leave", () => setKept((list) => list.filter((each) => each !== previous)));
       }
