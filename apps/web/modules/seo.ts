@@ -77,24 +77,31 @@ function readSeoData(rootDir: string, logger: ReturnType<typeof useLogger>): Seo
 }
 
 function ensureHistory(rootDir: string, logger: ReturnType<typeof useLogger>) {
-  let shallow: string;
+  const isShallow = () => git(rootDir, "rev-parse", "--is-shallow-repository") === "true";
+  let shallow: boolean;
   try {
-    shallow = git(rootDir, "rev-parse", "--is-shallow-repository");
+    shallow = isShallow();
   } catch (error) {
     throw new Error(
       "The site's build reads each page's last commit date for the sitemap, and needs a Git checkout.",
       { cause: error },
     );
   }
-  if (shallow !== "true") return;
+  if (!shallow) return;
 
   logger.info("Shallow clone: fetching the history for the sitemap's dates.");
+  let failure: unknown;
   try {
     git(rootDir, "fetch", "--unshallow", "--quiet");
   } catch (error) {
+    failure = error;
+  }
+  // Checked again, since `git fetch` succeeds without fetching anything when
+  // the clone has no remote.
+  if (failure !== undefined || isShallow()) {
     throw new Error(
-      "The clone is shallow and `git fetch --unshallow` failed, so the sitemap's dates would be wrong. Clone the full history (`fetch-depth: 0`, or `git fetch --unshallow` before the build).",
-      { cause: error },
+      "The clone is shallow and `git fetch --unshallow` didn't fetch its history, so the sitemap's dates would be wrong. Clone the full history (`fetch-depth: 0`, or `git fetch --unshallow` before the build).",
+      { cause: failure },
     );
   }
 }
