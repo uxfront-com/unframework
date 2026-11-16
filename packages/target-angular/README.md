@@ -377,6 +377,8 @@ re-projects `<ng-content />`.
 
 `directive` is emulated (ADR-0099): a standalone attribute directive, `VFocusTrap` in `v-focus-trap.ts` for a `.uf.ts` module's, bound as `[vFocusTrap]` and in the component's `imports`, whose `afterRenderEffect` passes the value to an inline `runDirective` and whose `DestroyRef` stops it. The helper runs the hooks as a `MutationObserver` sees the element come into the document and leave it, since Angular creates projected content before a child puts it there, and queues them through an inline `queueHook`, which runs them in Vue's order.
 
+`transition` is emulated (ADR-0100): a `<Transition>`'s element takes an inline directive, `Transition`, bound as `[ufTransition]="'fade'"`, with its component's `TransitionGate`. It runs Vue's enter classes after its component's first render, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when a view around the element goes, so the template reads, in a `@let` before the conditional, which branch is shown, and the directive lets the element go at once when its own branch still is.
+
 `teleport` is emulated (ADR-0098): an `<ng-template ufTeleport>` whose inline directive, `Teleport`, creates its view in its own view container once the application has rendered and moves the view's nodes into `to`. A render's teleports mount in the document's order, and a root teleport takes its parents' scope attributes off the host.
 
 Inline content on either side of a child component's host reads with a space in the accessible

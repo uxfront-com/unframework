@@ -131,6 +131,8 @@ native.
 
 `directive` is emulated (ADR-0099): an element's directive goes through an inline hook, `useDirective`, called once per use at the component's top level, in a post-order of the elements, whose ref callback records each element it receives, and its cleanup forgets that one, and whose layout effect runs `mounted`, `updated` when the value changes and `unmounted` on each element apart, queued through an inline `queueHook` that runs them in Vue's order. Its ref callback joins the element's own where it has one. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
 
+`transition` is emulated (ADR-0100): a `<Transition>` is an inline component, `Transition`, around its child, whose branches each take a key. A change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, keeps the child's own ref through an inline `TransitionItem`, and renders no class on the server or while the client hydrates, through `useSyncExternalStore`.
+
 `teleport` is emulated (ADR-0098): a `<Teleport>` is `createPortal` from react-dom, through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted, so neither the server nor the hydrating client renders it. The output imports `react-dom`, React's renderer, and a React package peers on it.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,

@@ -173,6 +173,8 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 
 `directive` is unsupported (UF4001, info, ADR-0099): a static page runs no hook, so the element renders without its directive, and a `.uf.ts` module's directive has no file.
 
+`transition` is unsupported (UF4001, info, ADR-0100): a static page runs no transition, so the child prints in its place, settled, with no class.
+
 `teleport` is unsupported (UF4001, info, ADR-0098): a static page has no client to mount the content, so the output prints nothing for it.
 
 `keyed-identity` is unsupported (UF4001, for information): a list renders once on the server, and

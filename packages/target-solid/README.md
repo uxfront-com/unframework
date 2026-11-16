@@ -127,6 +127,7 @@ export default function Counter(
   `by` takes the item and the index as values, as the key reads them. A parameter neither
   callback reads is left out of it.
 - `directive` is emulated (ADR-0099): a ref factory, `ref={vFocusTrap(() => open())}`, joined to the element's own ref callback where it has one, whose `onMount`, effect and `onCleanup` queue the hooks through an inline `queueHook`, which runs them in Vue's order.
+- `transition` is emulated (ADR-0100): an inline component, `Transition`, resolves the child with `children()` and renders a signal of the elements it keeps, the shown one and each one leaving until its leave ends, running Vue's classes on each. The server renders the child as it is.
 - `teleport` is emulated (ADR-0098): an inline helper, `Teleport`, inserts the element into `to` once the component has mounted, as `<Portal>` does in `<head>`, with no wrapper, in a root its owner owns.
 - HTML's attribute names as written (`class`, `for`, `tabindex`, `readonly`), which Solid's JSX
   takes; SVG's in their own case (`viewBox`, `stroke-width`). Every bindable boolean attribute
