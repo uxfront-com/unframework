@@ -249,7 +249,7 @@ export const qwik: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: DIRECTIVE_HELPER,
-      note: "Qwik has no directive, so an element's directive is a `ref` function that adds each element one use renders to a signal of them, and a document-ready visible task that tracks them and the value, and calls an inline helper, `runDirective`, for each, which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik calls the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
+      note: "Qwik has no directive, so an element's directive is a `ref` function that adds each element one use renders to a signal of them, and a document-ready visible task that tracks them and the value, and calls an inline helper, `runDirective`, for each (with each element's own value, which its `ref` passes through `collectValues` where it reads a list's row or a scoped fill's props), which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik calls the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
     },
     // Qwik removes a node at once and has no transition primitive (ADR-0100).
     transition: {

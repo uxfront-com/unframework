@@ -186,11 +186,12 @@ export const react: Target = defineTarget({
     "keyed-identity": { support: "native" },
     // React 19's server render cannot portal, so the element is portalled once the component
     // has mounted (ADR-0098).
-    // An inline hook per element, whose ref callback and layout effect run the hooks (ADR-0099).
+    // An inline hook per element, whose ref callback and layout effect run the hooks (ADR-0099),
+    // with each element's own value where it reads a row or a fill's props (ADR-0108).
     directive: {
       support: "emulated",
       helper: "useDirective",
-      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose ref callback, written in place, takes each element's own value. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // React has no transition primitive (ADR-0100).
     transition: {

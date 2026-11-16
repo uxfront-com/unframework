@@ -162,7 +162,9 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   branch shown) and `directiveAttribute` (`v-name={value}`, ADR-0099, which each
   JSX target composes with the element's ref its own way; a markup dialect writes Vue's
   `v-focus-trap`, Svelte's `{@attach}` or Angular's `[vFocusTrap]`). `directives.ts` prints a
-  directive's hooks and the module text its own module copies, `directive-runner.ts` the inline
+  directive's hooks and the module text its own module copies, and `readsElementScope` says
+  whether a directive's value reads a list's row or a scoped fill's props, which React and Qwik
+  then take from each element (ADR-0108). `directive-runner.ts` prints the inline
   `runDirective` that runs them as their element comes into the document and leaves it, for
   Angular and Qwik, and `hook-queue.ts` the inline `queueHook` that runs the hooks in Vue's
   order on the targets whose own order differs. Text

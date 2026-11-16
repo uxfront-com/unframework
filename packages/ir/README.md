@@ -107,7 +107,7 @@ plain, versioned, schema-validated JSON (plan §5.3).
   outside SVG, and its `to` is not empty; a `Transition` (ADR-0100) holds one element, or one `If`
   whose every branch holds one element or nothing, outside a list's body, and its `name` has no
   whitespace; a `Directive` names a directive the module declares or
-  imports, once per element and outside a list's body, and a directive's hooks read their own
+  imports, once per element, in a list's body too (ADR-0108), and a directive's hooks read their own
   names, client globals and the bindings it lists (ADR-0099); slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or
   imports, and a key of a ref (`InjectionKey<Ref<number>>`, ADR-0054) is provided, or injected

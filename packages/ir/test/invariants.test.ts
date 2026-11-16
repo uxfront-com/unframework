@@ -3893,8 +3893,9 @@ describe("checkInvariants on styles (ADR-0063)", () => {
   });
 });
 
-// Directives (ADR-0099): a module's own, or one it imports, applied once on an element outside a
-// list's body, whose hooks read their own names, client globals and the module's bindings.
+// Directives (ADR-0099): a module's own, or one it imports, applied once on an element, in a
+// list's body too (ADR-0108), whose hooks read their own names, client globals and the module's
+// bindings.
 describe("checkInvariants on directives", () => {
   /** `const vMark = defineDirective<string>({ mounted(el, value) { document.title = value; } })`. */
   const directive = (
@@ -3933,7 +3934,7 @@ describe("checkInvariants on directives", () => {
     ]);
   });
 
-  it("reports a directive applied twice on one element, and one in a list's body", () => {
+  it("reports a directive applied twice on one element, and accepts one in a list's body", () => {
     const twice = node("p", [
       createDirectiveAttribute("vMark", label(), at),
       createDirectiveAttribute("vMark", label(), at),
@@ -3941,10 +3942,11 @@ describe("checkInvariants on directives", () => {
     expect(checkInvariants(withDirective(twice)).map(({ message }) => message)).toEqual([
       'must set "v:vMark" once',
     ]);
-    const listed = node("ul", [], [createFor(label(), ids.item, item(), applied(), at)]);
-    expect(checkInvariants(withDirective(listed)).map(({ message }) => message)).toContain(
-      "must not be in a list's body (ADR-0099)",
-    );
+    // A row's value reads the row, which each element passes (ADR-0108).
+    const row = node("li", [createDirectiveAttribute("vMark", item(), at)]);
+    const listed = withDirective(node("ul", [], [createFor(label(), ids.item, item(), row, at)]));
+    listed.components[0]!.bindings.push(createBinding("item", "loopVar", span(300, 301)));
+    expect(checkInvariants(listed)).toEqual([]);
   });
 
   it.each<[string, ReturnType<typeof directive>, string]>([
