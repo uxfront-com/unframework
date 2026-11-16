@@ -33,6 +33,7 @@ import type {
   SlotReference,
   StyleAttribute,
   TeleportNode,
+  TransitionNode,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
@@ -58,7 +59,8 @@ export type Container =
   | ForNode
   | SlotFill
   | SlotOutletNode
-  | TeleportNode;
+  | TeleportNode
+  | TransitionNode;
 
 /** Where a text or an interpolation sits, for the compilers that treat edges differently. */
 export interface TextPosition {
@@ -213,6 +215,15 @@ export interface PrintedDynamic {
  */
 export interface PrintedTeleport {
   node: TeleportNode;
+}
+
+/**
+ * `<Transition name appear>` (ADR-0100): the dialect writes what runs Vue's classes on the child,
+ * with a `nodes` piece of the node's children in `container`, printed in the transition's place.
+ */
+export interface PrintedTransition {
+  node: TransitionNode;
+  container: Container;
 }
 
 /** A slot outlet, with its props as code, and key by key when they are an object literal. */
@@ -420,6 +431,17 @@ export interface MarkupDialect {
   dynamic?(dynamic: PrintedDynamic): MarkupPiece[];
   /** Writes `<Teleport to>` (ADR-0098): see {@link PrintedTeleport}. */
   teleport?(teleport: PrintedTeleport): MarkupPiece[];
+  /**
+   * Writes `<Transition>` around its child (ADR-0100): see {@link PrintedTransition}. By default
+   * the child prints in its place, with no wrapper, and {@link transitionAttributes} marks it.
+   */
+  transition?(transition: PrintedTransition): MarkupPiece[];
+  /**
+   * The attributes that run a transition's classes on its element, or on each branch's element
+   * of its conditional (ADR-0100), written before the element's own: Svelte's `in:` and `out:`,
+   * Angular's directive and `(animate.leave)`.
+   */
+  transitionAttributes?(node: TransitionNode, element: ElementNode): PrintedAttribute[];
   /**
    * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
    * them against the child's props (Svelte): `name=""` each, as on an element, without it.
@@ -721,6 +743,11 @@ interface Scope {
   /** The components a `<component is>` whose pieces are printed may render. */
   candidates: readonly string[] | undefined;
   /**
+   * The transition whose child the nodes are (ADR-0100): its element, or each branch's element of
+   * its conditional, takes the dialect's {@link MarkupDialect.transitionAttributes}.
+   */
+  transition?: TransitionNode;
+  /**
    * Whether the nodes are the template's own top level, outside every element and fill, where
    * a component's roots are (`scopeRoots`).
    */
@@ -859,6 +886,13 @@ export function printMarkup(
             preformatted: false,
             top: false,
           });
+        case "Transition": {
+          // The child renders in the transition's place, inside the same element.
+          const inner: Scope = { ...at, transition: node };
+          return at.dialect.transition
+            ? piecesItems(at.dialect.transition({ node, container }), inner)
+            : itemsOf(node.children, container, inner);
+        }
         default:
           return unreachable(node);
       }
@@ -1204,10 +1238,14 @@ export function printMarkup(
         children.length === 0 &&
         (inner.dialect.selfClosingSvg?.(element.tag) ?? true));
     const name = inner.dialect.elementName?.(element.tag, namespace) ?? element.tag;
+    const marked =
+      at.transition && at.dialect.transitionAttributes
+        ? [...at.dialect.transitionAttributes(at.transition, element), ...directives]
+        : directives;
     return {
       kind: "element",
       tag: name,
-      attributes: attributesOf(element, directives, inner, rootAttributes(element, at)),
+      attributes: attributesOf(element, marked, inner, rootAttributes(element, at)),
       end: selfClosing ? " />" : ">",
       children,
       close: isVoid || selfClosing ? "" : `</${name}>`,

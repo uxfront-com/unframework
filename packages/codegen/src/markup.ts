@@ -30,6 +30,7 @@ export type {
   PrintedEvent,
   PrintedRef,
   PrintedTeleport,
+  PrintedTransition,
   StylePart,
   TextPosition,
 } from "./markup/printer.ts";

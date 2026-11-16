@@ -138,6 +138,12 @@ export type CapabilityName =
    */
   | "teleport"
   /**
+   * `<Transition name appear>` (`TransitionNode`, ADR-0100): Vue's CSS-class contract on one
+   * element as it enters or leaves, which stays in the DOM until its leave ends. The server
+   * renders the settled child.
+   */
+  | "transition"
+  /**
    * `v-name={value}` on an element (`DirectiveAttribute`, ADR-0099): a directive's hooks run in
    * the browser once the element is in the DOM, after a render that changes the value, and once
    * it leaves, descendants' before their ancestors'. Refines `interactivity`.
@@ -242,6 +248,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "reactive-context",
   "dynamic-component",
   "teleport",
+  "transition",
   "directive",
   "scoped-styles",
   "child-root-scope",
@@ -286,6 +293,9 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   // No target renders a teleport's content on the server, so a static render's markup is the
   // same without it (ADR-0098): only a mounted component shows it, in `to`.
   "teleport",
+  // The server renders a transition's child settled, with no class (ADR-0100): only the browser
+  // runs its classes.
+  "transition",
   // A directive's hooks run in the browser only (ADR-0099), so the server's markup is the same
   // without them.
   "directive",

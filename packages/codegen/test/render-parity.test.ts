@@ -477,6 +477,7 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       "reactive-context": cell("reactive-context"),
       "dynamic-component": cell("dynamic-component"),
       teleport: cell("teleport"),
+      transition: cell("transition"),
       directive: cell("directive"),
       "scoped-styles": cell("scoped-styles"),
       "child-root-scope": cell("child-root-scope"),

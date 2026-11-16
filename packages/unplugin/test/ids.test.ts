@@ -71,6 +71,7 @@ const html = defineTarget({
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
     teleport: { support: "native" },
+    transition: { support: "native" },
     directive: { support: "native" },
   },
   emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>\n" }],

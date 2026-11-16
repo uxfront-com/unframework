@@ -36,6 +36,7 @@ import type {
   StaticAttribute,
   StyleAttribute,
   TeleportNode,
+  TransitionNode,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
@@ -212,6 +213,12 @@ export interface JsxDialect {
    */
   teleport?(node: TeleportNode, context: JsxContext): AST.Expression;
   /**
+   * `<Transition name appear>` (ADR-0100): its child, one element or one conditional of
+   * elements, with Vue's classes as it enters or leaves. No default: React, Solid and Qwik run
+   * them with inline helpers.
+   */
+  transition?(node: TransitionNode, context: JsxContext): AST.Expression;
+  /**
    * What an element, a component's tag or a `<component is>` carries after its scope attributes:
    * the JSX targets spread, on the component's root nodes (`scopeRoots`), the scope attributes
    * the styled parents that render it pass (the child-root rule, ADR-0063). The node is the
@@ -338,6 +345,8 @@ export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): A
       return hook(context, "dynamic")(node, context);
     case "Teleport":
       return hook(context, "teleport")(node, context);
+    case "Transition":
+      return hook(context, "transition")(node, context);
     default:
       return unreachable(node);
   }
@@ -361,7 +370,8 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
       case "For":
       case "SlotOutlet":
       case "Dynamic":
-      case "Teleport": {
+      case "Teleport":
+      case "Transition": {
         const expression = jsxNode(node, context);
         return expression.type === "JSXElement" || expression.type === "JSXFragment"
           ? expression
@@ -646,6 +656,7 @@ function hook<
     | "modelBinding"
     | "dynamic"
     | "teleport"
+    | "transition"
     | "directiveAttribute",
 >(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
