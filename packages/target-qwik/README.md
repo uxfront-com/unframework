@@ -154,7 +154,7 @@ What stops a running phase is in a module-level `WeakMap`, since Qwik serialises
 `teleport` is emulated (ADR-0098): the element renders once a visible task says the component has mounted, after the empty text of `{""}` in a fragment, and a ref, `teleport`, moves it into `to`, makes it stand in for its Qwik container there, and removes it once the element that held it leaves the document.
 
 `async-setup` is native (ADR-0101). Each await is an async `useComputed$` the body reads in its
-own statement: the optimizer renames the binding of `useComputed$(…).value` written in one
+own statement: the optimiser renames the binding of `useComputed$(…).value` written in one
 statement to `computed$`, and two of them that a later `$` scope captures declare `computed$`
 twice, a module that fails to import with nothing at L3 to see it. The awaits open the body, so
 every hook after them runs once the values are set. An await never moves to module scope, where
@@ -170,7 +170,7 @@ Composition follows ADR-0053 to ADR-0055 (`src/composition.ts`, `src/index.ts`).
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `import Field from "./Field.uf.tsx"`          | `import Field from "./Field"`: each component is its own `<Name>.tsx`, a local one exported by name; a key is imported from its module's main component                                                                                                                                                                       |
 | A component that renders itself               | a named `const Countdown = component$(…)`, exported after it                                                                                                                                                                                                                                                                  |
-| `onClear={clear}` on a component              | `onClear$={clear}`, the setup function a QRL; an arrow written in place is one the optimizer makes                                                                                                                                                                                                                            |
+| `onClear={clear}` on a component              | `onClear$={clear}`, the setup function a QRL; an arrow written in place is one the optimiser makes                                                                                                                                                                                                                            |
 | `{slots.default?.()}`, with a fallback        | `<Slot />`, `<Slot>{fallback}</Slot>`; the consumer's children are projected                                                                                                                                                                                                                                                  |
 | Any other slot, `{slots.item?.({ item })}`    | a QRL render prop declared in `<Name>Slots`, `item$?: QRL<(props: …) => JSXOutput>`, rendered `{item$?.({ item })}`, with a fallback `{item$?.() ?? fallback}`, tested `item$`; a consumer fills it `item$={({ item }) => …}`                                                                                                 |
 | `slots.default` as a condition, or forwarded  | `default-slot-presence`, unsupported (an error)                                                                                                                                                                                                                                                                               |
@@ -303,7 +303,7 @@ own, destructured after it: `const counter_1 = useCounter(4, …);` then
 `const { reset: resetB } = counter_1;`.
 
 A module's values reach an output as module-level bindings, which a `$` scope reads without
-capturing them, since the optimizer imports them into the segments it writes (ADR-0070,
+capturing them, since the optimiser imports them into the segments it writes (ADR-0070,
 `src/modules.ts`): a value imported from a relative `.ts` module is imported from the output
 tree's copy of the module as the source imports it, and a top-level `const` the output reaches is
 declared at module scope as written, in source order, with the module's types its annotations
@@ -327,7 +327,7 @@ Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in
 - **L3** runs the Rust optimizer from `@qwik.dev/optimizer` (the exact version
   `@qwik.dev/core` depends on, checked at start) over each file, for the client and the
   server, with the `segment` entry strategy, after a strict parse of the file as TSX, or as
-  TypeScript for a `.ts` module, which the optimizer would repair silently otherwise.
+  TypeScript for a `.ts` module, which the optimiser would repair silently otherwise.
 - **L4** runs TypeScript 7 (tsgo) once over every file, through a temporary tsconfig in
   `<toolchainDir>/.uf-tmp/` that extends `<toolchainDir>/tsconfig.json`. In this repo the
   toolchain directory is `tests/toolchains/qwik`.
@@ -348,10 +348,10 @@ or at module scope, and a setup `let` a signal: a `$` scope captures only what Q
 serialise, and never assigns a `let` it captures.
 
 The mount adapter renders the component through
-`Host` (`src/toolchain/host.qwik.ts`), a `component$` the optimizer compiles, which passes it the
+`Host` (`src/toolchain/host.qwik.ts`), a `component$` the optimiser compiles, which passes it the
 props a signal holds: `rerender` replaces the signal's props whole, so an absent prop takes its
 default again (ADR-0043). Both adapters hand the props over as a parent's written attributes
-do (`<Card bio={bio} />`, which the optimizer compiles to `_jsxSorted`), so a `null` arrives as
+do (`<Card bio={bio} />`, which the optimiser compiles to `_jsxSorted`), so a `null` arrives as
 `null`, as it does through Qwik's public `jsx()` or a consumer's spread (`<Card {...user} />`)
 from Qwik 2.0.0-rc.3 (`src/toolchain/element.ts`). A rerender whose props
 gain a key (a parent's spread) reaches the template, but no `useComputed$` or task that read the
@@ -360,7 +360,7 @@ internals (`_jsxSorted`, `_getDomContainer`, `_waitUntilRendered`) until Qwik 2 
 ways to do both.
 
 Handlers, tasks and local functions load lazily: each runs once its QRL has resolved, and a QRL
-resolves on its first run, through the dynamic import of its segment the optimizer writes, which
+resolves on its first run, through the dynamic import of its segment the optimiser writes, which
 the browser answers in a later task even when Qwik's preloader has fetched the segment. Once
 resolved, a QRL runs inside the event's dispatch. The browser configuration passes every QRL a
 module creates, and its segment's import, through a registry (`src/toolchain/loads.ts`, a Vite

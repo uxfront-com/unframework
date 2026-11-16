@@ -175,6 +175,8 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 
 `transition` is unsupported (UF4001, info, ADR-0100): a static page runs no transition, so the child prints in its place, settled, with no class.
 
+`async-setup` is native (ADR-0101): an await is a top-level `await` in the frontmatter, which the Container API waits for, and an await whose value no server code reads is a statement of its own.
+
 `teleport` is unsupported (UF4001, info, ADR-0098): a static page has no client to mount the content, so the output prints nothing for it.
 
 `keyed-identity` is unsupported (UF4001, for information): a list renders once on the server, and
