@@ -4,7 +4,7 @@ import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type { ElementNode, UfComponent, UfComposable } from "@unframework.dev/ir";
 
 import { emitDirective } from "./directive.ts";
-import { composableModule, instanceScript } from "./script.ts";
+import { composableModule, instanceScript, lateProvides } from "./script.ts";
 
 /**
  * The options every component declares, so that it compiles the same whatever the consumer's
@@ -126,8 +126,24 @@ export const svelte: Target = defineTarget({
     "next-tick": { support: "native" },
     // `$props()` is reactive whatever keys a parent passes.
     "late-prop": { support: "native" },
+    // Top-level `await` in the instance script, under Svelte's `experimental.async` compiler
+    // option, which the host sets (ADR-0101).
+    "async-setup": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // `setContext` after an await throws `set_context_after_init`, and a `provide` that reads what
+    // the awaits or a later item set cannot move above them (ADR-0101).
+    const late = lateProvides(component);
+    for (const item of late) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message:
+          "The svelte target does not provide a value that reads an awaited value or a later setup item yet: Svelte sets a context only before a component's first await. Provide a value that reads only props and module values, or provide it from a component that does not await.",
+        span: item.span,
+      });
+    }
+    if (late.length) return [];
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
