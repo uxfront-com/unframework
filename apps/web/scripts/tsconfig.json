@@ -1,0 +1,10 @@
+{
+  // The scripts run under Node's type stripping, outside Nuxt's tsconfigs.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "declaration": false,
+    "isolatedDeclarations": false
+  },
+  "include": ["."]
+}

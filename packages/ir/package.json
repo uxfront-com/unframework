@@ -1,13 +1,13 @@
 {
   "name": "@unframework.dev/ir",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The Unframework intermediate representation: plain-data types, builders, visitors and the JSON Schema that every IR snapshot is validated against.",
   "keywords": [
     "compiler",
     "ir",
     "unframework"
   ],
-  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/ir#readme",
+  "homepage": "https://unframework.dev",
   "bugs": "https://github.com/uxfront-com/unframework/issues",
   "license": "MIT",
   "repository": {

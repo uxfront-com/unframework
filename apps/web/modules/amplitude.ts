@@ -99,9 +99,15 @@ const workerScript = (
   options: object,
   replay: boolean,
 ) => `(function (apiKey, options, replay) {
-  // Partytown's fallback, for browsers it can't run in, runs this on the main
-  // thread without loading the SDK's script.
-  if (!window.amplitude) return;
+  // No SDK: an ad blocker blocked Amplitude's CDN, or Partytown's fallback, for
+  // browsers it can't run in, runs this on the main thread before the SDK's
+  // script. Partytown still forwards track() and the replay's request here,
+  // and a forwarded call with nothing to call throws, so give them no-ops.
+  if (!window.amplitude) {
+    window.amplitude = { track: function () {} };
+    window.amplitudeSessionReplayReady = function () {};
+    return;
+  }
   var initialized = amplitude.init(apiKey, options).promise;
   if (!replay) return;
 

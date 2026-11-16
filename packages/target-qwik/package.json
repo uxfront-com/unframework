@@ -1,13 +1,13 @@
 {
   "name": "@unframework.dev/target-qwik",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The Qwik 2 target of the Unframework compiler: emits idiomatic Qwik components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
   "keywords": [
     "compiler",
     "qwik",
     "unframework"
   ],
-  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/target-qwik#readme",
+  "homepage": "https://unframework.dev",
   "bugs": "https://github.com/uxfront-com/unframework/issues",
   "license": "MIT",
   "repository": {

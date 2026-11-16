@@ -10,6 +10,15 @@ const isDocs = computed(() => route.path === "/docs" || route.path.startsWith("/
 useHead({
   titleTemplate: (title) => (title ? `${title} - Unframework` : "Unframework"),
 });
+
+// Points answer engines and agents at each docs page's markdown copy
+// (server/middleware/raw-markdown.ts), as llms.txt does (audit finding A5).
+useHead(() => ({
+  link:
+    isDocs.value && route.path !== "/docs"
+      ? [{ rel: "alternate", type: "text/markdown", href: `/raw${route.path}.md` }]
+      : [],
+}));
 </script>
 
 <template>

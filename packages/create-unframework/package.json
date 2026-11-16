@@ -1,11 +1,11 @@
 {
   "name": "create-unframework",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create a new Unframework project: a `package.json`, then what `unframework init` writes.",
   "keywords": [
     "unframework"
   ],
-  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/create-unframework#readme",
+  "homepage": "https://unframework.dev",
   "bugs": "https://github.com/uxfront-com/unframework/issues",
   "license": "MIT",
   "repository": {
