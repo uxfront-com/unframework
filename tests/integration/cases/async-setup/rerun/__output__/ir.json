@@ -1,0 +1,459 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/rerun/Note.uf.tsx",
+  "components": [
+    {
+      "name": "Note",
+      "span": {
+        "start": 361,
+        "end": 858
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 410,
+              "end": 416
+            }
+          },
+          "binding": "id@398",
+          "span": {
+            "start": 406,
+            "end": 416
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 404,
+            "end": 418
+          }
+        },
+        "span": {
+          "start": 396,
+          "end": 418
+        }
+      },
+      "types": [],
+      "emits": {
+        "binding": "emit@430",
+        "type": {
+          "code": "{ ready: [name: string] }",
+          "span": {
+            "start": 449,
+            "end": 474
+          }
+        },
+        "events": [
+          {
+            "name": "ready",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 465,
+                    "end": 471
+                  }
+                },
+                "span": {
+                  "start": 459,
+                  "end": 471
+                }
+              }
+            ],
+            "span": {
+              "start": 451,
+              "end": 472
+            }
+          }
+        ],
+        "span": {
+          "start": 424,
+          "end": 478
+        }
+      },
+      "bindings": [
+        {
+          "id": "loadUser@98",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 98,
+            "end": 106
+          }
+        },
+        {
+          "id": "id@398",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 398,
+            "end": 400
+          }
+        },
+        {
+          "id": "emit@430",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 430,
+            "end": 434
+          }
+        },
+        {
+          "id": "user@487",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 487,
+            "end": 491
+          }
+        },
+        {
+          "id": "input@522",
+          "name": "input",
+          "kind": "templateRef",
+          "span": {
+            "start": 522,
+            "end": 527
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@487",
+          "value": {
+            "code": "loadUser(id)",
+            "span": {
+              "start": 500,
+              "end": 512
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@98",
+                "span": {
+                  "start": 500,
+                  "end": 508
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@398",
+                "span": {
+                  "start": 509,
+                  "end": 511
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 481,
+            "end": 513
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "input@522",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 545,
+              "end": 561
+            }
+          },
+          "span": {
+            "start": 516,
+            "end": 565
+          }
+        },
+        {
+          "kind": "Provide",
+          "key": "ToneKey",
+          "value": {
+            "code": "\"calm\"",
+            "span": {
+              "start": 586,
+              "end": 592
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 569,
+            "end": 594
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    input.value?.focus();\n    emit(\"ready\", user.name);\n  }",
+              "span": {
+                "start": 614,
+                "end": 675
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "input@522",
+                  "span": {
+                    "start": 620,
+                    "end": 631
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@430",
+                  "event": "ready",
+                  "span": {
+                    "start": 646,
+                    "end": 670
+                  },
+                  "arguments": [
+                    {
+                      "start": 660,
+                      "end": 669
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "user@487",
+                  "span": {
+                    "start": 660,
+                    "end": 664
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 608,
+              "end": 675
+            }
+          },
+          "span": {
+            "start": 598,
+            "end": 677
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "note",
+            "span": {
+              "start": 700,
+              "end": 712
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Note",
+            "span": {
+              "start": 713,
+              "end": 730
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note for ",
+                "span": {
+                  "start": 745,
+                  "end": 763
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "user.name",
+                  "span": {
+                    "start": 764,
+                    "end": 773
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "user@487",
+                      "span": {
+                        "start": 764,
+                        "end": 768
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 763,
+                  "end": 774
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " ",
+                "span": {
+                  "start": 774,
+                  "end": 775
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Ref",
+                    "binding": "input@522",
+                    "span": {
+                      "start": 782,
+                      "end": 793
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "text",
+                    "span": {
+                      "start": 794,
+                      "end": 805
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 775,
+                  "end": 808
+                }
+              }
+            ],
+            "span": {
+              "start": 738,
+              "end": 823
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Badge",
+            "attributes": [],
+            "fills": [],
+            "span": {
+              "start": 830,
+              "end": 839
+            }
+          }
+        ],
+        "span": {
+          "start": 694,
+          "end": 851
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Note",
+      "span": {
+        "start": 361,
+        "end": 858
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Badge.uf.tsx",
+      "file": "Badge.uf.tsx",
+      "api": {
+        "file": "Badge.uf.tsx",
+        "components": [
+          {
+            "name": "Badge",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": [
+          {
+            "name": "ToneKey",
+            "description": "uf.tone",
+            "type": "string"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Badge",
+          "span": {
+            "start": 130,
+            "end": 135
+          }
+        },
+        {
+          "kind": "Key",
+          "imported": "ToneKey",
+          "local": "ToneKey",
+          "span": {
+            "start": 139,
+            "end": 146
+          }
+        }
+      ],
+      "span": {
+        "start": 123,
+        "end": 171
+      }
+    }
+  ],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 98,
+            "end": 106
+          }
+        }
+      ],
+      "span": {
+        "start": 89,
+        "end": 122
+      }
+    }
+  ]
+}

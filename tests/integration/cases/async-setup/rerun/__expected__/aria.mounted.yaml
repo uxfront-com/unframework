@@ -1,0 +1,4 @@
+- form "Note":
+  - text: Note for User ada
+  - textbox "Note for User ada"
+  - text: "Tone: calm"

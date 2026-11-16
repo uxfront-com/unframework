@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Visits: 3' })",
+      "dom": [
+        "<p class=\"profile\">",
+        "  \"User ada \"",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Visits: 4\"",
+        "  </button>",
+        "</p>"
+      ],
+      "aria": [
+        "- paragraph:",
+        "  - text: User ada",
+        "  - 'button \"Visits: 4\"'"
+      ],
+      "events": {}
+    }
+  ]
+}

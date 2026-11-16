@@ -1,0 +1,7 @@
+{
+  "description": "After its await, a setup holds a template ref, a mounted hook that focuses it and emits, and a provided constant: on a hydrated page they run again once the client's setup resolves.",
+  "main": "Note.uf.tsx",
+  "ssr": {
+    "ada": { "props": { "id": "ada" } }
+  }
+}

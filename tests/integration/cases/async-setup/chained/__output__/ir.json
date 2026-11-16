@@ -1,0 +1,307 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/chained/Membership.uf.tsx",
+  "components": [
+    {
+      "name": "Membership",
+      "span": {
+        "start": 178,
+        "end": 483
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 233,
+              "end": 239
+            }
+          },
+          "binding": "id@221",
+          "span": {
+            "start": 229,
+            "end": 239
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 227,
+            "end": 241
+          }
+        },
+        "span": {
+          "start": 219,
+          "end": 241
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "loadTeam@59",
+          "name": "loadTeam",
+          "kind": "import",
+          "span": {
+            "start": 59,
+            "end": 67
+          }
+        },
+        {
+          "id": "loadUser@69",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 69,
+            "end": 77
+          }
+        },
+        {
+          "id": "id@221",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 221,
+            "end": 223
+          }
+        },
+        {
+          "id": "user@253",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 253,
+            "end": 257
+          }
+        },
+        {
+          "id": "team@288",
+          "name": "team",
+          "kind": "awaited",
+          "span": {
+            "start": 288,
+            "end": 292
+          }
+        },
+        {
+          "id": "summary@332",
+          "name": "summary",
+          "kind": "derived",
+          "span": {
+            "start": 332,
+            "end": 339
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@253",
+          "value": {
+            "code": "loadUser(id)",
+            "span": {
+              "start": 266,
+              "end": 278
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@69",
+                "span": {
+                  "start": 266,
+                  "end": 274
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@221",
+                "span": {
+                  "start": 275,
+                  "end": 277
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 247,
+            "end": 279
+          }
+        },
+        {
+          "kind": "Await",
+          "binding": "team@288",
+          "value": {
+            "code": "loadTeam(user.teamId)",
+            "span": {
+              "start": 301,
+              "end": 322
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadTeam@59",
+                "span": {
+                  "start": 301,
+                  "end": 309
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "user@253",
+                "span": {
+                  "start": 310,
+                  "end": 314
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 282,
+            "end": 323
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "summary@332",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "`${user.name} is in ${team.name}`",
+              "span": {
+                "start": 357,
+                "end": 390
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "user@253",
+                  "span": {
+                    "start": 360,
+                    "end": 364
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "team@288",
+                  "span": {
+                    "start": 379,
+                    "end": 383
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 351,
+              "end": 390
+            }
+          },
+          "span": {
+            "start": 326,
+            "end": 392
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "membership",
+            "span": {
+              "start": 412,
+              "end": 430
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "status",
+            "span": {
+              "start": 431,
+              "end": 444
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "summary.value",
+              "span": {
+                "start": 453,
+                "end": 466
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "summary@332",
+                  "span": {
+                    "start": 453,
+                    "end": 466
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 452,
+              "end": 467
+            }
+          }
+        ],
+        "span": {
+          "start": 409,
+          "end": 476
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Membership",
+      "span": {
+        "start": 178,
+        "end": 483
+      }
+    }
+  ],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadTeam",
+          "local": "loadTeam",
+          "span": {
+            "start": 59,
+            "end": 67
+          }
+        },
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 69,
+            "end": 77
+          }
+        }
+      ],
+      "span": {
+        "start": 50,
+        "end": 93
+      }
+    }
+  ]
+}

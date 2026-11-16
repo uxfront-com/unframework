@@ -347,3 +347,22 @@ export function keyImports(
       : { local, name: local, specifier: `./${file(owner)}` };
   });
 }
+
+/**
+ * Whether a child's setup awaits (ADR-0101), as a parent reads it: an imported child's API says,
+ * and one of the module's own components says through its setup.
+ */
+export function childIsAsync(module: UfModule, local: string): boolean {
+  for (const entry of module.imports ?? []) {
+    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+    if (!imported) continue;
+    const api = entry.api.components.find((each) =>
+      imported.imported === "default"
+        ? each.export === "default"
+        : each.export === "named" && each.name === imported.imported,
+    );
+    return api?.async === true;
+  }
+  const own = module.components.find((component) => component.name === local);
+  return own?.setup.some((item) => item.kind === "Await") ?? false;
+}

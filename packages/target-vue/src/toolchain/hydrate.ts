@@ -1,7 +1,7 @@
 // The Vue hydrate adapter (browser, L12, ADR-0095): hydrates the server's HTML with an SSR app,
 // then behaves as the mount adapter does.
 import type { HydrateAdapter, MountListener } from "@unframework.dev/codegen";
-import { createSSRApp, h, nextTick, shallowReactive } from "vue";
+import { createSSRApp, h, nextTick, shallowReactive, Suspense } from "vue";
 import type { Component } from "vue";
 
 /** Vue's hydration warnings start with `Hydration`, and its summary line names the mismatches. */
@@ -21,7 +21,7 @@ export const hydrate: HydrateAdapter = async (component, container, html, { prop
   const listeners = listenerProps(on);
   const mismatches: string[] = [];
   const app = createSSRApp({
-    render: () => h(component as Component, { ...current, ...listeners }),
+    render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
   });
   app.config.warnHandler = (message, _instance, trace) => {
     if (MISMATCH.test(message)) mismatches.push(message);
@@ -67,4 +67,17 @@ function listenerProps(
       listener,
     ]),
   );
+}
+
+/**
+ * The root's vnode: an async setup renders only under a `<Suspense>` (ADR-0101), so a root whose
+ * setup awaits takes one, as a hand-written host's would. Any other root renders alone, so no
+ * other case mounts through `<Suspense>`'s hidden container.
+ */
+function rootOf(component: Component, props: () => Record<string, unknown>) {
+  const { setup } = component as { setup?: unknown };
+  if (Object.prototype.toString.call(setup) !== "[object AsyncFunction]") {
+    return h(component, props());
+  }
+  return h(Suspense, null, { default: () => h(component, props()) });
 }

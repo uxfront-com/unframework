@@ -10,6 +10,7 @@ import {
   addTypeImports,
   bindingOf,
   childImports,
+  childIsAsync,
   keyImports,
   keyOwner,
   componentTypes,
@@ -29,6 +30,7 @@ import type {
   Binding,
   BindingId,
   Code,
+  ComponentNode,
   FunctionCode,
   Prop,
   PropsParameter,
@@ -227,27 +229,40 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   const options = [
     ...(recursive ? [`name: ${JSON.stringify(recursive)}`] : []),
     // A teleport root takes no attribute, which Vue would warn about (ADR-0098).
-    ...(component.inheritAttrs === false || teleportRoot(component) ? ["inheritAttrs: false"] : []),
+    ...(component.inheritAttrs === false ||
+    teleportRoot(component) ||
+    asyncRootChild(component, module)
+      ? ["inheritAttrs: false"]
+      : []),
   ];
   if (options.length) {
     statements.push({ code: `defineOptions({ ${options.join(", ")} });`, layout: "macro" });
   }
+  const exposed = component.exposes?.functions.map((id) => {
+    const binding = bindingOf(component, id);
+    const local = names.local(binding);
+    return local === binding.name ? local : `${binding.name}: ${local}`;
+  });
+  const expose = exposed && `defineExpose({ ${exposed.join(", ")} });`;
+  // An async setup exposes before its first await, or the parent's ref keeps the bare proxy
+  // (ADR-0101): the functions it names are then declarations, which hoist.
+  const awaits = component.setup.some((item) => item.kind === "Await");
+  if (expose && awaits) statements.push({ code: expose, layout: "block" });
+  const hoisted = new Set(awaits ? component.exposes?.functions : []);
   for (const item of component.setup) {
-    const code = itemCode(item, component, module, names, imports, script);
+    const code =
+      item.kind === "Function" && hoisted.has(item.binding)
+        ? functionText(item.function, component, script, "client", {
+            name: names.local(bindingOf(component, item.binding)),
+          })
+        : itemCode(item, component, module, names, imports, script);
     statements.push({ code: names.ownQueries(code), layout: itemLayout(item, code) });
   }
   for (const code of listeners.functions) {
     statements.push({ code: names.ownQueries(code), layout: "block" });
   }
   // Last, once every function it names is declared (ADR-0054).
-  if (component.exposes) {
-    const exposed = component.exposes.functions.map((id) => {
-      const binding = bindingOf(component, id);
-      const local = names.local(binding);
-      return local === binding.name ? local : `${binding.name}: ${local}`;
-    });
-    statements.push({ code: `defineExpose({ ${exposed.join(", ")} });`, layout: "block" });
-  }
+  if (expose && !awaits) statements.push({ code: expose, layout: "block" });
   // A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
   // before it, where a client render's `vModelText` sets the text of an empty field and leaves the
   // caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
@@ -310,6 +325,24 @@ function teleportRoot(component: UfComponent): boolean {
     render.children.length === 1 &&
     render.children[0]!.kind === "Teleport"
   );
+}
+
+/**
+ * The async child that is the component's whole render (ADR-0101): `<Suspense>` around it drops
+ * fallthrough, so the component turns `inheritAttrs` off and binds `$attrs` on the child.
+ */
+export function asyncRootChild(
+  component: UfComponent,
+  module: UfModule,
+): ComponentNode | undefined {
+  const { render } = component;
+  if (component.inheritAttrs === false || render.kind !== "Fragment") return undefined;
+  const [child] = render.children;
+  return render.children.length === 1 &&
+    child?.kind === "Component" &&
+    childIsAsync(module, child.component)
+    ? child
+    : undefined;
 }
 
 /** Whether the template holds a `<Teleport>` (ADR-0098). */
@@ -630,6 +663,7 @@ export function itemLayout(item: SetupItem, code: string): Statement["layout"] {
 /** Whether a setup item declares a binding, rather than registering an effect or a hook. */
 function declares(item: SetupItem): boolean {
   switch (item.kind) {
+    case "Await":
     case "State":
     case "Derived":
     case "TemplateRef":
@@ -699,6 +733,9 @@ export function itemCode(
     }
     case "Const":
       return `const ${local(item.binding)}${annotation(item.type)} = ${code(item.value, "pure")};`;
+    // Top-level `await` in `<script setup>` (ADR-0101): Vue restores the instance after it.
+    case "Await":
+      return `const ${local(item.binding)}${annotation(item.type)} = await ${code(item.value, "pure")};`;
     case "Variable": {
       const initial = item.initial ? ` = ${code(item.initial, "pure")}` : "";
       return `let ${local(item.binding)}${annotation(item.type)}${initial};`;

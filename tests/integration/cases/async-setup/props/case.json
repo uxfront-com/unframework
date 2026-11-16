@@ -1,0 +1,8 @@
+{
+  "description": "The awaited call reads two props: the server renders each scenario's resolved data, and a later prop changes what the template reads, not what the setup loaded.",
+  "main": "Greeting.uf.tsx",
+  "ssr": {
+    "ada": { "props": { "id": "ada", "prefix": "dr-" } },
+    "grace": { "props": { "id": "grace", "prefix": "rear-admiral-" } }
+  }
+}

@@ -1,0 +1,111 @@
+error[UF9001] (angular): The angular target failed on Member: Unexpected value: {"kind":"Await","binding":"user@257","value":{"code":"loadUser(id)","span":{"start":270,"end":282},"refs":[{"kind":"Binding","binding":"loadUser@68","span":{"start":270,"end":278},"call":true},{"kind":"Binding","binding":"id@225","span":{"start":279,"end":281}}]},"span":{"start":251,"end":283}}
+ --> async-setup/nested/Member.uf.tsx:1:1
+  |
+1 | import { defineExpose, ref } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (astro): The astro target failed on Member: Unexpected IR value: "awaited"
+ --> async-setup/nested/Member.uf.tsx:1:1
+  |
+1 | import { defineExpose, ref } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (qwik): The qwik target failed on Member: Unexpected IR value: {"kind":"Await","binding":"user@257","value":{"code":"loadUser(id)","span":{"start":270,"end":282},"refs":[{"kind":"Binding","binding":"loadUser@68","span":{"start":270,"end":278},"call":true},{"kind":"Binding","binding":"id@225","span":{"start":279,"end":281}}]},"span":{"start":251,"end":283}}
+ --> async-setup/nested/Member.uf.tsx:1:1
+  |
+1 | import { defineExpose, ref } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (react): The react target failed on Member: printItem is not a function or its return value is not iterable
+ --> async-setup/nested/Member.uf.tsx:1:1
+  |
+1 | import { defineExpose, ref } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (solid): The solid target failed on Member: Unexpected IR value: {"kind":"Await","binding":"user@257","value":{"code":"loadUser(id)","span":{"start":270,"end":282},"refs":[{"kind":"Binding","binding":"loadUser@68","span":{"start":270,"end":278},"call":true},{"kind":"Binding","binding":"id@225","span":{"start":279,"end":281}}]},"span":{"start":251,"end":283}}
+ --> async-setup/nested/Member.uf.tsx:1:1
+  |
+1 | import { defineExpose, ref } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF9001] (svelte): The svelte target failed on Member: Unexpected IR value: {"kind":"Await","binding":"user@257","value":{"code":"loadUser(id)","span":{"start":270,"end":282},"refs":[{"kind":"Binding","binding":"loadUser@68","span":{"start":270,"end":278},"call":true},{"kind":"Binding","binding":"id@225","span":{"start":279,"end":281}}]},"span":{"start":251,"end":283}}
+ --> async-setup/nested/Member.uf.tsx:1:1
+  |
+1 | import { defineExpose, ref } from "@uxfront/unframework";
+  | ^
+  |
+  = see: https://unframework.dev/diagnostics/UF9001
+
+error[UF4001] (angular): The angular target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+ --> async-setup/nested/Member.uf.tsx:7:3
+  |
+7 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (astro): The astro target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+ --> async-setup/nested/Member.uf.tsx:7:3
+  |
+7 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (qwik): The qwik target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+ --> async-setup/nested/Member.uf.tsx:7:3
+  |
+7 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (react): The react target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+ --> async-setup/nested/Member.uf.tsx:7:3
+  |
+7 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (solid): The solid target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+ --> async-setup/nested/Member.uf.tsx:7:3
+  |
+7 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (svelte): The svelte target does not declare whether it supports async-setup, so the compiler treats it as unsupported.
+ --> async-setup/nested/Member.uf.tsx:7:3
+  |
+7 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> async-setup/nested/Member.uf.tsx:19:29
+   |
+19 |       <button type="button" onClick={() => visits.value++}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> async-setup/nested/Team.uf.tsx:14:29
+   |
+14 |       <button type="button" onClick={() => first.value?.reset()}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

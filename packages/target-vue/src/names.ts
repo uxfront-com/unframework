@@ -184,6 +184,7 @@ export class VueNames {
       case "derived":
       case "templateRef":
       case "localConst":
+      case "awaited":
       case "localFn":
       case "localVar":
       case "emit":
@@ -231,6 +232,7 @@ export class VueNames {
       case "prop":
       case "loopVar":
       case "localConst":
+      case "awaited":
       case "localFn":
       case "localVar":
       case "emit":
@@ -609,6 +611,7 @@ function declaredBySetup(kind: BindingKind): boolean {
     case "derived":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":
