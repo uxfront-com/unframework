@@ -44,6 +44,7 @@
     "@unframework.dev/target-svelte": "workspace:*",
     "@unframework.dev/target-vue": "workspace:*",
     "@unframework.dev/testing": "workspace:*",
+    "@unframework.dev/type-oracle-tsgo": "workspace:*",
     "@unframework.dev/unplugin": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@uxfront/unframework": "workspace:*",

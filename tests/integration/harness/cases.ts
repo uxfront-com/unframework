@@ -10,6 +10,15 @@ import type { CaseConfig } from "@unframework.dev/testing/node";
 import { CASES_DIR } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";
 
+/**
+ * A corpus case's `case.json`: the public keys, and the type oracle its sources compile with,
+ * `"tsgo"` for a case whose check only a type-checker makes (UF6007, ADR-0109). The syntactic
+ * oracle when absent, as `compile()`'s default.
+ */
+export interface CorpusCaseConfig extends CaseConfig {
+  typeOracle?: "tsgo";
+}
+
 /** One input of a case the compiler compiles: a `.uf.tsx` component, or a `.uf.ts` composable. */
 export interface CaseSource {
   /** The `.uf.tsx` or `.uf.ts` file (absolute). */
@@ -53,7 +62,7 @@ export interface CaseInfo {
   modules: CaseModule[];
   /** The browser spec, absent for diagnostics cases. */
   spec: string | undefined;
-  config: CaseConfig;
+  config: CorpusCaseConfig;
 }
 
 const CASE_KEYS = new Set([
@@ -65,6 +74,7 @@ const CASE_KEYS = new Set([
   "requires",
   "reference",
   "colorScheme",
+  "typeOracle",
 ]);
 
 /** Every case, sorted by id. Throws on a malformed case, so a broken corpus is loud. */
@@ -151,7 +161,7 @@ function mainSource(id: string, inputs: readonly string[], main: string | undefi
   return main;
 }
 
-function readConfig(id: string, file: string): CaseConfig {
+function readConfig(id: string, file: string): CorpusCaseConfig {
   if (!existsSync(file)) return {};
   const config = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
   const problems: string[] = [];
@@ -230,8 +240,11 @@ function readConfig(id: string, file: string): CaseConfig {
       }
     }
   }
+  if (config.typeOracle !== undefined && config.typeOracle !== "tsgo") {
+    problems.push(`"typeOracle" must be "tsgo", or absent for the syntactic oracle`);
+  }
   if (problems.length) throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
-  return config as CaseConfig;
+  return config as CorpusCaseConfig;
 }
 
 /** The diagnostics a case expects (`__expected__/diagnostics.json`), or `undefined` if missing. */

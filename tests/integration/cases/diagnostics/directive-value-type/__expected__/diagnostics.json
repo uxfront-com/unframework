@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF6007",
+    "severity": "error",
+    "message": "`v-focus-trap`'s value is `1`, and `vFocusTrap` takes `boolean`.",
+    "file": "diagnostics/directive-value-type/Panel.uf.tsx",
+    "start": {
+      "line": 22,
+      "column": 26,
+      "offset": 840
+    },
+    "end": {
+      "line": 22,
+      "column": 27,
+      "offset": 841
+    },
+    "help": "Pass a value of type `boolean`, or change the type argument of `vFocusTrap`'s `defineDirective`."
+  },
+  {
+    "code": "UF6007",
+    "severity": "error",
+    "message": "`v-tone`'s value is `\"loud\"`, and `vTone` takes `\"info\" | \"warn\"`.",
+    "file": "diagnostics/directive-value-type/Panel.uf.tsx",
+    "start": {
+      "line": 23,
+      "column": 17,
+      "offset": 872
+    },
+    "end": {
+      "line": 23,
+      "column": 23,
+      "offset": 878
+    },
+    "help": "Pass a value of type `\"info\" | \"warn\"`, or change the type argument of `vTone`'s `defineDirective`."
+  },
+  {
+    "code": "UF6007",
+    "severity": "error",
+    "message": "`v-box`'s value is `{ name: string; }`, and `vBox` takes `{ id: string; }`.",
+    "file": "diagnostics/directive-value-type/Panel.uf.tsx",
+    "start": {
+      "line": 24,
+      "column": 17,
+      "offset": 904
+    },
+    "end": {
+      "line": 24,
+      "column": 28,
+      "offset": 915
+    },
+    "help": "Pass a value of type `{ id: string; }`, or change the type argument of `vBox`'s `defineDirective`."
+  }
+]

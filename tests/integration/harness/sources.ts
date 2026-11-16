@@ -10,6 +10,7 @@ import { createFileResolver, createSyntacticOracle } from "@unframework.dev/comp
 import type { CompileResult, Resolver, TypeOracle } from "@unframework.dev/compiler";
 import { sortDiagnostics } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
+import { createTsgoOracle } from "@unframework.dev/type-oracle-tsgo";
 
 import type { CaseInfo, CaseSource } from "./cases.ts";
 
@@ -102,23 +103,28 @@ export function caseResolver(
  * directory, which reads the case's own files, as `caseResolver` does, and the packages they
  * import, from `node_modules`. Any other file is missing (UF6001). `compiled` is the source a
  * compile is given, which the oracle reads for its file: a canary's corruption of it, or the
- * source with its fixes applied.
+ * source with its fixes applied. A case whose `case.json` names `"typeOracle": "tsgo"` compiles
+ * with the tsgo adapter (ADR-0109), whose syntactic layer reads the same files, and whose checker
+ * builds a project of the case's own directory, from the disk: where the compiled text differs,
+ * it answers nothing about a directive's value.
  */
 export function caseOracle(
-  info: Pick<CaseInfo, "dir">,
+  info: Pick<CaseInfo, "dir" | "config">,
   casesDir: string,
   compiled: { filename: string; text: string },
 ): TypeOracle {
   const root = casesDir.split(sep).join("/");
-  return createSyntacticOracle({
-    root,
-    readFile: async (path) => {
-      if (path === `${root}/${compiled.filename}`) return compiled.text;
-      const file = join(path);
-      if (relative(info.dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
-        return undefined;
-      }
-      return readFile(file, "utf8").catch(() => undefined);
-    },
-  });
+  const read = async (path: string) => {
+    if (path === `${root}/${compiled.filename}`) return compiled.text;
+    const file = join(path);
+    if (relative(info.dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
+      return undefined;
+    }
+    return readFile(file, "utf8").catch(() => undefined);
+  };
+  if (info.config.typeOracle === "tsgo") {
+    const directory = relative(casesDir, info.dir).split(sep).join("/");
+    return createTsgoOracle({ root, include: [`${directory}/**/*`], readFile: read });
+  }
+  return createSyntacticOracle({ root, readFile: read });
 }

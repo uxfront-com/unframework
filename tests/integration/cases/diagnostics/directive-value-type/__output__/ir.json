@@ -1,0 +1,50 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/directive-value-type/Panel.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./focus.uf.ts",
+      "file": "focus.uf.ts",
+      "api": {
+        "file": "focus.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vFocusTrap"
+          },
+          {
+            "name": "vTone"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vFocusTrap",
+          "local": "vFocusTrap",
+          "span": {
+            "start": 435,
+            "end": 445
+          }
+        },
+        {
+          "kind": "Directive",
+          "imported": "vTone",
+          "local": "vTone",
+          "span": {
+            "start": 447,
+            "end": 452
+          }
+        }
+      ],
+      "span": {
+        "start": 426,
+        "end": 476
+      }
+    }
+  ]
+}
