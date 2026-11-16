@@ -5,6 +5,15 @@ import { breadcrumbList, homeGraph, techArticle } from "~/lib/structured-data";
 // Marks the meta tags this plugin fills in from the page's own tags.
 const INFER = "data-seo-infer";
 
+// The payload key that carries a docs page's og:image to the client.
+const IMAGE = "seo-head:image";
+
+/** A docs page's canonical URL and its og:image, as the server rendered them. */
+interface PageImage {
+  url: string;
+  image: string;
+}
+
 interface Tag {
   tag: string;
   props: Record<string, unknown>;
@@ -26,19 +35,32 @@ interface Tag {
  * server and the client alike, so hydration and client-side navigation keep
  * the same tags.
  */
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const head = injectHead();
 
-  // nuxt-og-image sets og:image on the server only. The client's JSON-LD must
-  // match the server's to the byte, or Unhead keeps the server's block and adds
-  // a second one, so as it hydrates a page, it takes the image the server
-  // rendered for that page.
-  const rendered = import.meta.client
-    ? {
-        url: document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href,
-        image: document.querySelector<HTMLMetaElement>('meta[property="og:image"]')?.content,
-      }
-    : undefined;
+  // nuxt-og-image sets og:image on the server only: Docus defines it once, as
+  // its page hydrates, and its client code skips hydration. So the server puts
+  // each docs page's image in the page's payload, which the client loads as it
+  // hydrates or navigates to the page, and the TechArticle takes it from there.
+  // The client's JSON-LD must match the server's to the byte, or Unhead keeps
+  // the server's block and adds a second one. Images seen on the client stay
+  // here, keyed by page URL, so Back finds them too.
+  const images = new Map<string, string>();
+  let rendered: PageImage | undefined;
+  if (import.meta.server) {
+    // The payload is serialised after `app:rendered` and the head only after
+    // that, so resolve the head here to read the page's og:image.
+    nuxtApp.hook("app:rendered", () => {
+      head.render();
+      if (rendered) nuxtApp.payload.data[IMAGE] = rendered;
+    });
+  }
+  const loaded = (url: string) => {
+    for (const entry of [nuxtApp.payload.data[IMAGE], nuxtApp.static.data[IMAGE]]) {
+      if (isPageImage(entry)) images.set(entry.url, entry.image);
+    }
+    return images.get(url);
+  };
 
   // Low priority, so a page's own tag wins. A placeholder left empty isn't
   // rendered (Unhead drops a meta tag without content).
@@ -86,9 +108,10 @@ export default defineNuxtPlugin(() => {
             rewritten = homeGraph(typeof block.description === "string" ? block.description : "");
           } else if (block["@type"] === "Article") {
             const url = typeof block.url === "string" ? block.url : "";
+            if (import.meta.server && image) rendered = { url, image };
             rewritten = techArticle(block, {
               dateModified: seoData.lastmod[url.slice(SITE_URL.length) || "/"],
-              image: image ?? (rendered?.url === url ? rendered.image : undefined),
+              image: image ?? (import.meta.client ? loaded(url) : undefined),
             });
           } else if (block["@type"] === "BreadcrumbList") {
             rewritten = breadcrumbList(block, seoData.sections);
@@ -99,6 +122,17 @@ export default defineNuxtPlugin(() => {
     },
   });
 });
+
+function isPageImage(value: unknown): value is PageImage {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "url" in value &&
+    typeof value.url === "string" &&
+    "image" in value &&
+    typeof value.image === "string"
+  );
+}
 
 function metaKey(tag: Tag) {
   return (tag.props.property ?? tag.props.name) as string | undefined;

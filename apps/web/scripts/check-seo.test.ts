@@ -7,6 +7,7 @@ import { test } from "node:test";
 import {
   AI_CRAWLERS,
   NOINDEX_HOSTS,
+  PAYLOAD_IMAGE,
   checkSite,
   format,
   headerNoindex,
@@ -52,6 +53,19 @@ ${jsonLd.map((block) => `<script type="application/ld+json">${JSON.stringify(blo
 </head><body><h1>${title}</h1><script>window.x = "<h1>not a heading</h1>"</script></body></html>`;
 }
 
+/** A payload as devalue flattens it, with a docs page's og:image under `data`. */
+function payload(url: string, image: string) {
+  return JSON.stringify([
+    { data: 1, prerenderedAt: 6 },
+    ["ShallowReactive", 2],
+    { [PAYLOAD_IMAGE]: 3 },
+    { url: 4, image: 5 },
+    url,
+    image,
+    1763251200000,
+  ]);
+}
+
 function writeSite(dist: string) {
   const write = (file: string, content: string | Buffer) => {
     mkdirSync(dirname(join(dist, file)), { recursive: true });
@@ -92,6 +106,7 @@ function writeSite(dist: string) {
       ],
     }),
   );
+  write(`${DOCS.slice(1)}/_payload.json`, payload(`${SITE}${DOCS}`, `${SITE}/og${DOCS}.png`));
   write("og/home.png", png(1200, 630));
   write(`og${DOCS}.png`, png(1200, 630));
   write(
@@ -198,6 +213,18 @@ await test("check:seo", async (t) => {
       assert.deepEqual(problems(), [`${DOCS} json-ld`, `${DOCS} json-ld`]);
     },
   );
+
+  await t.test("requires a docs page's payload to carry its og:image", () => {
+    const file = `${DOCS.slice(1)}/_payload.json`;
+    edit(file, (json) => json.replace(`${DOCS}.png`, "/docs/components/slots.png"));
+    assert.deepEqual(problems(), [`${DOCS} payload`]);
+    writeFileSync(join(dist, file), JSON.stringify([{ data: 1 }, ["ShallowReactive", 2], {}]));
+    assert.deepEqual(problems(), [`${DOCS} payload`]);
+    writeFileSync(join(dist, file), "not JSON");
+    assert.deepEqual(problems(), [`${DOCS} payload`]);
+    rmSync(join(dist, file));
+    assert.deepEqual(problems(), [`${DOCS} payload`]);
+  });
 
   await t.test("fails an Organization named Unframework on the homepage", () => {
     edit("index.html", (html) => html.replace('"name":"UXFront"', '"name":"Unframework"'));

@@ -16,6 +16,9 @@ export const TITLE_MAX = 60;
 export const DESCRIPTION_RANGE: readonly [number, number] = [70, 160];
 export const IMAGE_SIZE: readonly [number, number] = [1200, 630];
 
+/** The payload key that carries a docs page's og:image to the client (app/plugins/seo-head.ts). */
+export const PAYLOAD_IMAGE = "seo-head:image";
+
 /** The crawlers robots.txt allows by name (plan decision Q1). */
 export const AI_CRAWLERS: readonly string[] = [
   "OAI-SearchBot",
@@ -106,6 +109,7 @@ export function checkSite(dist: string): Report {
       descriptions.set(description, [...(descriptions.get(description) ?? []), path]);
     }
     checkJsonLd(page, { urls, lastmod: lastmods.get(loc), image: first(page, "og:image") }, report);
+    checkPayload(page, loc, dist, report);
   }
   for (const [title, paths] of titles) {
     if (paths.length > 1) {
@@ -268,6 +272,60 @@ function checkJsonLd(
     }
   }
 }
+
+/**
+ * A docs page's `_payload.json` carries its og:image, which the client gives the
+ * TechArticle after a client-side navigation, since nuxt-og-image doesn't set
+ * og:image again on the client.
+ */
+function checkPayload(page: Page, loc: string, dist: string, report: Reporter) {
+  const image = first(page, "og:image");
+  if (!page.path.startsWith("/docs/") || !image) return;
+  const text = readText(dist, join(page.path, "_payload.json"));
+  if (text === undefined) return report(page.path, "payload", "no _payload.json");
+  const entry = payloadImage(text);
+  if (entry?.url !== loc || entry.image !== image) {
+    report(
+      page.path,
+      "payload",
+      "_payload.json doesn't carry the og:image, so the TechArticle loses it after a client-side navigation",
+    );
+  }
+}
+
+/**
+ * The `{ url, image }` under `data[PAYLOAD_IMAGE]` in a payload, which devalue
+ * flattens into one array whose values point at each other by index.
+ */
+function payloadImage(text: string): { url?: unknown; image?: unknown } | undefined {
+  let values: unknown;
+  try {
+    values = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(values)) return undefined;
+  const at = (index: unknown): unknown => {
+    let value: unknown = typeof index === "number" ? values[index] : undefined;
+    // A reducer wraps a value as its name and its index, like `["ShallowReactive", 2]`.
+    for (let depth = 0; depth < 8 && isReduced(value); depth++) value = values[value[1]];
+    return value;
+  };
+  const field = (value: unknown, key: string) =>
+    value && typeof value === "object" && key in value
+      ? at((value as Record<string, unknown>)[key])
+      : undefined;
+  const entry = field(field(at(0), "data"), PAYLOAD_IMAGE);
+  return entry === undefined
+    ? undefined
+    : { url: field(entry, "url"), image: field(entry, "image") };
+}
+
+const isReduced = (value: unknown): value is [string, number] =>
+  Array.isArray(value) &&
+  value.length === 2 &&
+  typeof value[0] === "string" &&
+  typeof value[1] === "number";
 
 function readSitemap(dist: string, report: Reporter): SitemapEntry[] {
   const xml = readText(dist, "sitemap.xml");

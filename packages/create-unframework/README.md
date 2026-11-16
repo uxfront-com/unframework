@@ -14,9 +14,8 @@ lists them.
 
 `create-unframework` has no dependencies and installs nothing. So unless the directory already has
 `@uxfront/unframework` in its `node_modules`, it stops after the `package.json`, and tells you to install the
-dependencies and run `unframework init` there yourself. Keep in mind that nothing is published yet,
-so an install from the registry finds no `@uxfront/unframework` until our first release
-(ADR-0090). The `package.json` lists only
+dependencies and run `unframework init` there yourself. `@uxfront/unframework` is on npm, so
+`npm install` in the new directory finds it. The `package.json` lists only
 `@uxfront/unframework`, so add `typescript` to run `tsc --noEmit -p tsconfig.uf.json`.
 
 | Exit code | Meaning                                                                                       |

@@ -28,6 +28,8 @@ build
 dist
 # Nuxt builds, and the visual report fixtures rendered by @unframework.dev/visual's tests
 .output/
+# The build info `tsc -b` writes, which names dependencies by their store paths
+*.tsbuildinfo
 
 
 # Debug
