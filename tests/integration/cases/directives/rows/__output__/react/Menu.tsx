@@ -19,12 +19,12 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
   const prefixRef = useRef(prefix);
   const [focused, setFocused] = useState(0);
   const focusedRef = useRef(focused);
-  const traceRef = useElementDirective(vTrace);
-  const traceRef_1 = useElementDirective(vTrace);
-  const markRef = useElementDirective(vMark);
-  const traceRef_2 = useElementDirective(vTrace);
-  const traceRef_3 = useElementDirective(vTrace);
-  const traceRef_4 = useElementDirective(vTrace);
+  const withTrace = useElementDirective(vTrace);
+  const withTrace_1 = useElementDirective(vTrace);
+  const withMark = useElementDirective(vMark);
+  const withTrace_2 = useElementDirective(vTrace);
+  const withTrace_3 = useElementDirective(vTrace);
+  const withTrace_4 = useElementDirective(vTrace);
 
   return (
     <section
@@ -35,7 +35,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
     >
       <ul aria-label="Items">
         {items.map((item) => (
-          <li key={item.id} data-name={item.id} ref={(element) => traceRef(element, item.label)}>
+          <li key={item.id} data-name={item.id} ref={withTrace(item.label)}>
             {item.label}
           </li>
         ))}
@@ -45,12 +45,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
           <li
             key={item.id}
             data-name={`both-${item.id}`}
-            ref={(element) => {
-              const detaches = [traceRef_1(element, item.label), markRef(element, item.id)];
-              return () => {
-                for (const detach of detaches) detach();
-              };
-            }}
+            ref={mergeRefs(withTrace_1(item.label), withMark(item.id))}
           >
             {item.label}
           </li>
@@ -62,17 +57,12 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
             key={item.id}
             type="button"
             data-name={`focus-${item.id}`}
-            ref={(element) => {
-              const detach = traceRef_2(element, item.label);
-              const stop = listen(element, "focusin", () => {
+            ref={mergeRefs(withTrace_2(item.label), (element) =>
+              listen(element, "focusin", () => {
                 focusedRef.current++;
                 setFocused(focusedRef.current);
-              });
-              return () => {
-                detach();
-                stop();
-              };
-            }}
+              }),
+            )}
           >
             Focus {item.label}
           </button>
@@ -84,7 +74,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
           <li
             key={item.id}
             data-name={`prefixed-${item.id}`}
-            ref={(element) => traceRef_3(element, `${prefix} ${item.label}`)}
+            ref={withTrace_3(`${prefix} ${item.label}`)}
           >
             {item.label}
           </li>
@@ -92,10 +82,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
       </ul>
       <Picker
         renderOption={({ option }) => (
-          <span
-            data-name={`option-${option.id}`}
-            ref={(element) => traceRef_4(element, `${prefix} ${option.label}`)}
-          >
+          <span data-name={`option-${option.id}`} ref={withTrace_4(`${prefix} ${option.label}`)}>
             {option.label}
           </span>
         )}
@@ -197,12 +184,13 @@ interface DirectiveHooks<E extends Element, T> {
 }
 
 /**
- * Runs a directive's hooks on each element its ref callback receives, apart, with the value the
- * element passes beside it: a list's rows, or a scoped slot a child calls with other props each
- * time, give each element its own. The element's callback is written in place, so it records
- * the element with its value at each render, and its cleanup forgets the element. `mounted`
- * runs once the element is rendered, `updated` after a render that changes its value, and
- * `unmounted` once that element is gone, whichever component renders or removes it.
+ * Runs a directive's hooks on each element, apart, with the element's own value: a list's rows,
+ * or a scoped slot a child calls with other props each time, give each element its own. It
+ * returns a function that makes an element's ref callback from its value as the element renders,
+ * a new one each render, which records the element with that value, and whose cleanup forgets
+ * the element. `mounted` runs once the element is rendered, `updated` after a render that
+ * changes its value, and `unmounted` once that element is gone, whichever component renders or
+ * removes it.
  */
 function useElementDirective<E extends Element, T>(directive: DirectiveHooks<E, T>) {
   const state = useRef<{ attached: Map<E, T>; mounted: Map<E, T> }>({
@@ -228,7 +216,7 @@ function useElementDirective<E extends Element, T>(directive: DirectiveHooks<E, 
       queueHook(element, () => directive.updated?.(element, value, previous), "updated");
     }
   });
-  const [ref] = useState(() => (element: E | null, value: T) => {
+  const [withValue] = useState(() => (value: T) => (element: E | null) => {
     if (!element) return () => {};
     state.current.attached.set(element, value);
     queueMicrotask(sync);
@@ -247,7 +235,7 @@ function useElementDirective<E extends Element, T>(directive: DirectiveHooks<E, 
     },
     [sync],
   );
-  return ref;
+  return withValue;
 }
 
 /**
@@ -303,4 +291,16 @@ function queueHook(
       }
     }
   });
+}
+
+/** Joins an element's ref callbacks into one, whose cleanup runs each one's. */
+function mergeRefs<E extends Element>(
+  ...refs: ((element: E | null) => (() => void) | void)[]
+): (element: E | null) => () => void {
+  return (element) => {
+    const cleanups = refs.map((ref) => ref(element));
+    return () => {
+      for (const cleanup of cleanups) cleanup?.();
+    };
+  };
 }

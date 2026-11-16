@@ -52,7 +52,7 @@ import { ReactComposer } from "./compose.ts";
 import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
-import { emitDirective, hooksCode, useDirectiveHelper } from "./directive.ts";
+import { emitDirective, hooksCode, mergeRefsHelper, useDirectiveHelper } from "./directive.ts";
 import {
   modelTextHelper,
   nextTickHelper,
@@ -343,6 +343,7 @@ export const react: Target = defineTarget({
             hookQueueCode(plan.helpers.directive.queue),
           ]
         : []),
+      ...(plan.helpers.mergeRefs ? [mergeRefsHelper(plan.helpers.mergeRefs)] : []),
     ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a

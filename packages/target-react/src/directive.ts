@@ -12,9 +12,11 @@
 // Vue's order with every other output's. Refs and effects never run on the server. A `.uf.ts`
 // module's directive is the plain hooks object, which the hook reads. A use whose value reads a
 // list's row or a scoped fill's props has a value for each element, which one getter can't give,
-// so it calls `useElementDirective` instead (ADR-0108): the element's ref callback, written in
-// place, passes its value, `ref={(element) => tooltipRef(element, item.label)}`, and the hook
-// records it beside the element at each render.
+// so it calls `useElementDirective` instead (ADR-0108), which returns a function that makes the
+// element's callback from its value as the row renders, `ref={withTooltip(item.label)}`: the
+// branches around the element still narrow the value there, and the callback is a new one at
+// each render, which React calls again with the element, so the hook records the element with
+// the value of each render.
 import {
   dependencyImports,
   directiveDependencies,
@@ -158,12 +160,13 @@ function useElementDirectiveCode(
   react: (name: string) => string,
 ): string {
   return `/**
- * Runs a directive's hooks on each element its ref callback receives, apart, with the value the
- * element passes beside it: a list's rows, or a scoped slot a child calls with other props each
- * time, give each element its own. The element's callback is written in place, so it records
- * the element with its value at each render, and its cleanup forgets the element. \`mounted\`
- * runs once the element is rendered, \`updated\` after a render that changes its value, and
- * \`unmounted\` once that element is gone, whichever component renders or removes it.
+ * Runs a directive's hooks on each element, apart, with the element's own value: a list's rows,
+ * or a scoped slot a child calls with other props each time, give each element its own. It
+ * returns a function that makes an element's ref callback from its value as the element renders,
+ * a new one each render, which records the element with that value, and whose cleanup forgets
+ * the element. \`mounted\` runs once the element is rendered, \`updated\` after a render that
+ * changes its value, and \`unmounted\` once that element is gone, whichever component renders or
+ * removes it.
  */
 function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>) {
   const state = ${react("useRef")}<{ attached: Map<E, T>; mounted: Map<E, T> }>({
@@ -189,7 +192,7 @@ function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>) {
       ${queue}(element, () => directive.updated?.(element, value, previous), "updated");
     }
   });
-  const [ref] = ${react("useState")}(() => (element: E | null, value: T) => {
+  const [withValue] = ${react("useState")}(() => (value: T) => (element: E | null) => {
     if (!element) return () => {};
     state.current.attached.set(element, value);
     queueMicrotask(sync);
@@ -208,7 +211,7 @@ function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>) {
     },
     [sync],
   );
-  return ref;
+  return withValue;
 }`;
 }
 
@@ -226,4 +229,19 @@ export function appliesDirective(node: RenderNode): boolean {
     },
   });
   return found;
+}
+
+/** \`mergeRefs\`: an element's ref callbacks as one, whose cleanup runs each one's (ADR-0108). */
+export function mergeRefsHelper(name: string): string {
+  return `/** Joins an element's ref callbacks into one, whose cleanup runs each one's. */
+function ${name}<E extends Element>(
+  ...refs: ((element: E | null) => (() => void) | void)[]
+): (element: E | null) => () => void {
+  return (element) => {
+    const cleanups = refs.map((ref) => ref(element));
+    return () => {
+      for (const cleanup of cleanups) cleanup?.();
+    };
+  };
+}`;
 }

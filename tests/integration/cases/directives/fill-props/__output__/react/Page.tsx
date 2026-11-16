@@ -8,7 +8,7 @@ export interface PageAttributes {
 }
 
 export default function Page({ className, style, ...attributes }: PageAttributes) {
-  const traceRef = useElementDirective(vTrace);
+  const withTrace = useElementDirective(vTrace);
 
   return (
     <section
@@ -19,10 +19,7 @@ export default function Page({ className, style, ...attributes }: PageAttributes
     >
       <Picker
         renderOption={({ option }) => (
-          <span
-            data-name={`option-${option.id}`}
-            ref={(element) => traceRef(element, option.label)}
-          >
+          <span data-name={`option-${option.id}`} ref={withTrace(option.label)}>
             {option.label}
           </span>
         )}
@@ -63,12 +60,13 @@ interface DirectiveHooks<E extends Element, T> {
 }
 
 /**
- * Runs a directive's hooks on each element its ref callback receives, apart, with the value the
- * element passes beside it: a list's rows, or a scoped slot a child calls with other props each
- * time, give each element its own. The element's callback is written in place, so it records
- * the element with its value at each render, and its cleanup forgets the element. `mounted`
- * runs once the element is rendered, `updated` after a render that changes its value, and
- * `unmounted` once that element is gone, whichever component renders or removes it.
+ * Runs a directive's hooks on each element, apart, with the element's own value: a list's rows,
+ * or a scoped slot a child calls with other props each time, give each element its own. It
+ * returns a function that makes an element's ref callback from its value as the element renders,
+ * a new one each render, which records the element with that value, and whose cleanup forgets
+ * the element. `mounted` runs once the element is rendered, `updated` after a render that
+ * changes its value, and `unmounted` once that element is gone, whichever component renders or
+ * removes it.
  */
 function useElementDirective<E extends Element, T>(directive: DirectiveHooks<E, T>) {
   const state = useRef<{ attached: Map<E, T>; mounted: Map<E, T> }>({
@@ -94,7 +92,7 @@ function useElementDirective<E extends Element, T>(directive: DirectiveHooks<E, 
       queueHook(element, () => directive.updated?.(element, value, previous), "updated");
     }
   });
-  const [ref] = useState(() => (element: E | null, value: T) => {
+  const [withValue] = useState(() => (value: T) => (element: E | null) => {
     if (!element) return () => {};
     state.current.attached.set(element, value);
     queueMicrotask(sync);
@@ -113,7 +111,7 @@ function useElementDirective<E extends Element, T>(directive: DirectiveHooks<E, 
     },
     [sync],
   );
-  return ref;
+  return withValue;
 }
 
 /**
