@@ -183,6 +183,26 @@ describe("parsePreviewArguments", () => {
     expect(parsePreviewArguments(["--port", "5173"])).toEqual({ targets: [], port: 5173 });
   });
 
+  it("reads build, its targets and --out", () => {
+    expect(parsePreviewArguments(["build"])).toEqual({ build: true, targets: [] });
+    expect(
+      parsePreviewArguments([
+        "build",
+        "--target",
+        "astro",
+        "--target=vue",
+        "--out",
+        "dist/preview",
+      ]),
+    ).toEqual({ build: true, targets: ["astro", "vue"], out: "dist/preview" });
+    expect(parsePreviewArguments(["build", "--out=site"])).toEqual({
+      build: true,
+      targets: [],
+      out: "site",
+    });
+    expect(parsePreviewArguments([]).build).toBeUndefined();
+  });
+
   it.each([
     [["--target", "preact"], "unknown target preact"],
     [["--target"], "--target needs a value"],
@@ -192,6 +212,16 @@ describe("parsePreviewArguments", () => {
     [["--port", "65536"], "--port takes a whole number"],
     [["--port", "1", "--port", "2"], "--port is given twice"],
     [["--watch"], 'unknown argument "--watch"'],
+    [["--out", "site"], "--out is preview build's"],
+    [["--target", "vue", "build"], "build comes first"],
+    [["build", "build"], "build comes first"],
+    [["build", "--port", "5173"], "--port is the served preview's"],
+    [["build", "--out"], "--out needs a value"],
+    [["build", "--out="], "--out needs a value"],
+    [["build", "--out", "--target", "vue"], "--out needs a value"],
+    [["build", "--out", "a", "--out", "b"], "--out is given twice"],
+    [["build", "--target", "preact"], "unknown target preact"],
+    [["build", "site"], 'unknown argument "site"'],
   ])("refuses %j", (args, message) => {
     expect(() => parsePreviewArguments(args)).toThrow(VisualUsageError);
     expect(() => parsePreviewArguments(args)).toThrow(message);

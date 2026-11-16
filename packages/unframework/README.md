@@ -47,7 +47,7 @@ export default function Counter({ initial = 0, step = 1 }: CounterProps) {
 | `@uxfront/unframework/config`          | `defineConfig` and the `UnframeworkConfig` type, for a project's `unframework.config.ts` (plan §8.1). Its one import is type-only, so importing it loads no compiler.                                                                                                                                          |
 | `@uxfront/unframework/jsx-runtime`     | The `JSX` namespace TypeScript reads for `"jsxImportSource": "@uxfront/unframework"`. Types only.                                                                                                                                                                                                              |
 | `@uxfront/unframework/jsx-dev-runtime` | The same types, for tools that pick the `react-jsxdev` transform.                                                                                                                                                                                                                                              |
-| `@uxfront/unframework/cli`             | `main(argv, io?)`, the command line the bin runs: `@unframework.dev/cli`'s commands, `test` (ADR-0086), `visual` (ADR-0087) and `preview` (ADR-0088).                                                                                                                                                          |
+| `@uxfront/unframework/cli`             | `main(argv, io?)`, the command line the bin runs: `@unframework.dev/cli`'s commands, `test` (ADR-0086), `visual` (ADR-0087) and `preview` (ADR-0088, ADR-0111).                                                                                                                                                |
 
 The package's bin is `unframework` (`build`, `check`, `explain`, `init`, `test`, `visual` and `preview`). `@unframework.dev/cli`'s
 README documents the first four.
@@ -66,7 +66,7 @@ missing, `visual` exits 2 and lists what to install (`VISUAL_PACKAGES`: the visu
 `TEST_PACKAGES`). `@unframework.dev/visual`'s README documents the command.
 
 `preview` shows every example and component on every target side by side until it's interrupted,
-through the same entry's `preview` export. When it, or a package it loads, is missing, it exits 2
+through the same entry's `preview` export, and `preview build` writes the same as a static site. When it, or a package it loads, is missing, it exits 2
 and lists what to install (`PREVIEW_PACKAGES`: `VISUAL_PACKAGES` and `vite`).
 
 The root entry's functions are inert stubs. The compiler recognises them by binding and erases them,

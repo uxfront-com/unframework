@@ -1,5 +1,6 @@
-// What the preview's shell and its frames say to each other (ADR-0088), through `postMessage`.
-// Types and constants only, so the frame's browser code imports this file without Node.
+// What the preview's shell and its frames say to each other (ADR-0088), through `postMessage`, and
+// where a static preview keeps its files (ADR-0111). Types and constants only, so the frame's
+// browser code imports this file without Node.
 
 /** Marks the preview's messages among any others a page receives. */
 export const PREVIEW_MESSAGE = "unframework:preview";
@@ -9,6 +10,31 @@ export const FRAME_PATH = "/__uf/frame";
 
 /** The path each target's server runs its render command at, for a target with no client runtime. */
 export const RENDER_PATH = "/__uf/render";
+
+/**
+ * A static preview's frame page, in each target's directory: `<out>/<target>/frame.html`, which
+ * the shell at `<out>/index.html` frames by a relative URL (ADR-0111).
+ */
+export const STATIC_FRAME_FILE = "frame.html";
+
+/**
+ * Where a static preview keeps the renders made at build time for a target with no client
+ * runtime, relative to its frame page: `<out>/astro/renders/<n>.json`, each a
+ * {@link StaticRender}.
+ */
+export const STATIC_RENDERS_DIR = "renders";
+
+/** What a static preview's frame says when asked for a render the build did not make. */
+export const STATIC_RENDER_MESSAGE =
+  "The static preview renders this target with each entry's initial props only: run unframework preview to change them.";
+
+/**
+ * A render made at build time: the props it was made with, and the HTML it gave or why it failed,
+ * which the frame shows as a dev server's failed render.
+ */
+export type StaticRender =
+  | { props: Record<string, unknown>; html: string }
+  | { props: Record<string, unknown>; error: string };
 
 /** The shell asks a frame to render an entry with props: mounted, or rerendered in place. */
 export interface RenderMessage {
@@ -60,4 +86,10 @@ export interface FrameOptions {
   entries: Record<string, () => Promise<{ default?: unknown }>>;
   /** Whether the target renders on the server through {@link RENDER_PATH} (Astro). */
   serverRender: boolean;
+  /**
+   * In a static preview, for a target that renders on the server: each entry's render made at
+   * build time, a {@link StaticRender} at this URL relative to the frame page. The frame reads it
+   * in place of {@link RENDER_PATH}, and fails a render with other props.
+   */
+  staticRenders?: Record<string, string>;
 }

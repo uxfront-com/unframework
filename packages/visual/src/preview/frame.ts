@@ -1,9 +1,10 @@
 // The preview's frame (ADR-0088): the page each target's server serves in the shell's iframe. It
 // mounts the entry the shell selects with the target's own mount adapter, rerenders it in place
 // when only the props change, and answers each render. It takes messages only from its parent
-// window, at the origin the shell gave in its URL, since every frame has an origin of its own.
-import { PREVIEW_MESSAGE, RENDER_PATH } from "./protocol.ts";
-import type { FrameMessage, FrameOptions, RenderMessage } from "./protocol.ts";
+// window, at the origin the shell gave in its URL: in development every frame has an origin of its
+// own, and in a static preview every frame shares the shell's (ADR-0111).
+import { PREVIEW_MESSAGE, RENDER_PATH, STATIC_RENDER_MESSAGE } from "./protocol.ts";
+import type { FrameMessage, FrameOptions, RenderMessage, StaticRender } from "./protocol.ts";
 
 type Mounted = Awaited<ReturnType<FrameOptions["mount"]>>;
 
@@ -45,9 +46,14 @@ export function startFrame(options: FrameOptions): void {
         if (component === undefined) {
           throw new Error(`${message.entry} has no default export to mount.`);
         }
+        const renderCommand = options.staticRenders
+          ? staticRender(options.staticRenders[message.entry])
+          : options.serverRender
+            ? serverRender
+            : undefined;
         const mounted = await options.mount(component, container, {
           props: message.props,
-          ...(options.serverRender ? { renderCommand: serverRender } : {}),
+          ...(renderCommand ? { renderCommand } : {}),
         });
         current = { entry: message.entry, mounted };
       }
@@ -86,4 +92,41 @@ async function serverRender(request: {
   });
   if (!response.ok) throw new Error(await response.text());
   return (await response.json()) as Awaited<ReturnType<typeof serverRender>>;
+}
+
+/**
+ * The render transport of a static preview (ADR-0111): the render the build made for the entry,
+ * read beside the frame page. It answers only the props the build rendered with: a static site
+ * runs no server, so any other props fail with a message that says so.
+ */
+function staticRender(
+  file: string | undefined,
+): (request: { props: Record<string, unknown> }) => Promise<{ html: string; console: [] }> {
+  let read: Promise<StaticRender> | undefined;
+  return async ({ props }) => {
+    if (file === undefined) throw new Error(STATIC_RENDER_MESSAGE);
+    read ??= fetch(file).then(async (response) => {
+      if (!response.ok) throw new Error(`${file}: ${response.status} ${response.statusText}`);
+      return (await response.json()) as StaticRender;
+    });
+    const rendered = await read.catch((error: unknown) => {
+      read = undefined;
+      throw error;
+    });
+    if (!sameProps(rendered.props, props)) throw new Error(STATIC_RENDER_MESSAGE);
+    if ("error" in rendered) throw new Error(rendered.error);
+    return { html: rendered.html, console: [] };
+  };
+}
+
+/** Whether two sets of props hold the same keys with the same values, as JSON gives them. */
+export function sameProps(
+  a: Readonly<Record<string, unknown>>,
+  b: Readonly<Record<string, unknown>>,
+): boolean {
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every(
+    (key) => Object.hasOwn(b, key) && JSON.stringify(a[key]) === JSON.stringify(b[key]),
+  );
 }
