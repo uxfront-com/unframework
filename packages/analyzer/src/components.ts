@@ -733,11 +733,7 @@ function lowerSlotObject(
       variables.push(...read.variables);
     }
     for (const variable of variables) render.loopVariables.set(variable.declaration, variable);
-    // A scoped fill's variables may differ at each call, which a directive's value can't read
-    // (ADR-0099).
-    for (const variable of variables) render.fillVariables.add(variable.id);
     const children = lowerContent(value.body, FILL, render);
-    for (const variable of variables) render.fillVariables.delete(variable.id);
     fills.push(createSlotFill(slot, children, at, parameter ? { parameter } : {}));
   }
   if (!valid) return undefined;

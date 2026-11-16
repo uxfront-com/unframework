@@ -1,0 +1,7 @@
+{
+  "main": "Menu.uf.tsx",
+  "description": "A directive on each row a list renders and on each element a scoped fill renders, whose value reads the row's item or the fill's props: each element gets its own hooks with its own value. One row applies two such directives, one listens beside its directive, and one's value reads the component's state too.",
+  "ssr": {
+    "initial": {}
+  }
+}

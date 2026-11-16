@@ -2135,7 +2135,6 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     passThrough: module.passThrough,
     shared: module.shared,
     directives: module.directives,
-    fillVariables: new Set(),
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {
