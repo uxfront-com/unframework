@@ -1,0 +1,287 @@
+{
+  "irVersion": 1,
+  "file": "transitions/directive/Banner.uf.tsx",
+  "components": [
+    {
+      "name": "Banner",
+      "span": {
+        "start": 203,
+        "end": 611
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "shown@246",
+          "name": "shown",
+          "kind": "state",
+          "span": {
+            "start": 246,
+            "end": 251
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "shown@246",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 258,
+              "end": 262
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 240,
+            "end": 264
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "News",
+            "span": {
+              "start": 290,
+              "end": 307
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 323,
+                  "end": 336
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(shown.value = false)",
+                      "span": {
+                        "start": 352,
+                        "end": 373
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "shown@246",
+                          "operator": "=",
+                          "span": {
+                            "start": 352,
+                            "end": 373
+                          },
+                          "target": {
+                            "start": 353,
+                            "end": 364
+                          },
+                          "value": {
+                            "start": 367,
+                            "end": 372
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 346,
+                      "end": 373
+                    }
+                  },
+                  "span": {
+                    "start": 346,
+                    "end": 373
+                  }
+                },
+                "span": {
+                  "start": 337,
+                  "end": 374
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Dismiss",
+                "span": {
+                  "start": 375,
+                  "end": 398
+                }
+              }
+            ],
+            "span": {
+              "start": 315,
+              "end": 407
+            }
+          },
+          {
+            "kind": "Transition",
+            "name": "fade",
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "shown.value",
+                      "span": {
+                        "start": 448,
+                        "end": 459
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "shown@246",
+                          "span": {
+                            "start": 448,
+                            "end": 459
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "banner",
+                            "span": {
+                              "start": 478,
+                              "end": 492
+                            }
+                          },
+                          {
+                            "kind": "Directive",
+                            "name": "vMark",
+                            "value": {
+                              "code": "\"banner\"",
+                              "span": {
+                                "start": 500,
+                                "end": 508
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 493,
+                              "end": 508
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "New releases are out.",
+                            "span": {
+                              "start": 509,
+                              "end": 554
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 475,
+                          "end": 558
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 448,
+                      "end": 568
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 448,
+                  "end": 568
+                }
+              }
+            ],
+            "span": {
+              "start": 414,
+              "end": 589
+            }
+          }
+        ],
+        "span": {
+          "start": 281,
+          "end": 604
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Banner.css",
+          "source": ".banner {\n  margin: 8px 0 0;\n}\n\n.fade-leave-active {\n  transition: opacity 80ms ease;\n}\n\n.fade-leave-to {\n  opacity: 0;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 22
+          }
+        }
+      ],
+      "scopeId": "53025c4a"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Banner",
+      "span": {
+        "start": 203,
+        "end": 611
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./mark.uf.ts",
+      "file": "mark.uf.ts",
+      "api": {
+        "file": "mark.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vMark"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vMark",
+          "local": "vMark",
+          "span": {
+            "start": 89,
+            "end": 94
+          }
+        }
+      ],
+      "span": {
+        "start": 80,
+        "end": 117
+      }
+    }
+  ]
+}

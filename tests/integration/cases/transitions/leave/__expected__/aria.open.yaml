@@ -1,0 +1,5 @@
+- navigation "Account":
+  - button "Account" [expanded]
+  - list:
+    - listitem: Profile
+    - listitem: Sign out

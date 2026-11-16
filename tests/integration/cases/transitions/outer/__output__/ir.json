@@ -1,0 +1,394 @@
+{
+  "irVersion": 1,
+  "file": "transitions/outer/Drawer.uf.tsx",
+  "components": [
+    {
+      "name": "Drawer",
+      "span": {
+        "start": 172,
+        "end": 661
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "shown@215",
+          "name": "shown",
+          "kind": "state",
+          "span": {
+            "start": 215,
+            "end": 220
+          }
+        },
+        {
+          "id": "open@242",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 242,
+            "end": 246
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "shown@215",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 227,
+              "end": 231
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 209,
+            "end": 233
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "open@242",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 253,
+              "end": 257
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 236,
+            "end": 259
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Filters",
+            "span": {
+              "start": 285,
+              "end": 305
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 321,
+                  "end": 334
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(shown.value = !shown.value)",
+                      "span": {
+                        "start": 350,
+                        "end": 378
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "shown@215",
+                          "operator": "=",
+                          "span": {
+                            "start": 350,
+                            "end": 378
+                          },
+                          "target": {
+                            "start": 351,
+                            "end": 362
+                          },
+                          "value": {
+                            "start": 365,
+                            "end": 377
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "shown@215",
+                          "span": {
+                            "start": 366,
+                            "end": 377
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 344,
+                      "end": 378
+                    }
+                  },
+                  "span": {
+                    "start": 344,
+                    "end": 378
+                  }
+                },
+                "span": {
+                  "start": 335,
+                  "end": 379
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Drawer",
+                "span": {
+                  "start": 380,
+                  "end": 402
+                }
+              }
+            ],
+            "span": {
+              "start": 313,
+              "end": 411
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 426,
+                  "end": 439
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = !open.value)",
+                      "span": {
+                        "start": 455,
+                        "end": 481
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@242",
+                          "operator": "=",
+                          "span": {
+                            "start": 455,
+                            "end": 481
+                          },
+                          "target": {
+                            "start": 456,
+                            "end": 466
+                          },
+                          "value": {
+                            "start": 469,
+                            "end": 480
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "open@242",
+                          "span": {
+                            "start": 470,
+                            "end": 480
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 449,
+                      "end": 481
+                    }
+                  },
+                  "span": {
+                    "start": 449,
+                    "end": 481
+                  }
+                },
+                "span": {
+                  "start": 440,
+                  "end": 482
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Body",
+                "span": {
+                  "start": 483,
+                  "end": 503
+                }
+              }
+            ],
+            "span": {
+              "start": 418,
+              "end": 512
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "shown.value",
+                  "span": {
+                    "start": 520,
+                    "end": 531
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shown@215",
+                      "span": {
+                        "start": 520,
+                        "end": 531
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Transition",
+                    "name": "fade",
+                    "children": [
+                      {
+                        "kind": "If",
+                        "branches": [
+                          {
+                            "condition": {
+                              "code": "open.value",
+                              "span": {
+                                "start": 570,
+                                "end": 580
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "open@242",
+                                  "span": {
+                                    "start": 570,
+                                    "end": 580
+                                  }
+                                }
+                              ]
+                            },
+                            "children": [
+                              {
+                                "kind": "Element",
+                                "tag": "p",
+                                "attributes": [
+                                  {
+                                    "kind": "Static",
+                                    "name": "class",
+                                    "value": "body",
+                                    "span": {
+                                      "start": 587,
+                                      "end": 599
+                                    }
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "kind": "Text",
+                                    "value": "Colour, size",
+                                    "span": {
+                                      "start": 600,
+                                      "end": 612
+                                    }
+                                  }
+                                ],
+                                "span": {
+                                  "start": 584,
+                                  "end": 616
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 570,
+                              "end": 616
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 570,
+                          "end": 616
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 545,
+                      "end": 630
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 520,
+                  "end": 638
+                }
+              }
+            ],
+            "span": {
+              "start": 520,
+              "end": 638
+            }
+          }
+        ],
+        "span": {
+          "start": 276,
+          "end": 654
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Drawer.css",
+          "source": ".body {\n  margin: 8px 0 0;\n}\n\n.fade-enter-active,\n.fade-leave-active {\n  transition: opacity 80ms ease;\n}\n\n.fade-enter-from,\n.fade-leave-to {\n  opacity: 0;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 22
+          }
+        }
+      ],
+      "scopeId": "54e3e959"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Drawer",
+      "span": {
+        "start": 172,
+        "end": 661
+      }
+    }
+  ],
+  "types": []
+}

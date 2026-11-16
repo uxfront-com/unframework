@@ -1,0 +1,26 @@
+error[UF3058]: `name` is bound: each target writes the transition's class names when the component compiles, so it is a string literal.
+  --> diagnostics/transition-prop/Disclosure.uf.tsx:11:19
+   |
+11 |       <Transition name={effect.value}>
+   |                   ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Write the name as a string: `name="fade"`.
+   = see: https://unframework.dev/diagnostics/UF3058
+
+error[UF3058]: `name` is empty: it is the prefix of the transition's class names, one name with no whitespace.
+  --> diagnostics/transition-prop/Disclosure.uf.tsx:14:19
+   |
+14 |       <Transition name="">
+   |                   ^^^^^^^
+   |
+   = help: Write the name as a string: `name="fade"`.
+   = see: https://unframework.dev/diagnostics/UF3058
+
+error[UF3058]: `appear` is bound: each target decides when the component compiles whether the first element enters, so it is the bare attribute, `{true}` or `{false}`.
+  --> diagnostics/transition-prop/Disclosure.uf.tsx:17:19
+   |
+17 |       <Transition appear={open.value}>
+   |                   ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Write `appear` alone, or leave it out.
+   = see: https://unframework.dev/diagnostics/UF3058

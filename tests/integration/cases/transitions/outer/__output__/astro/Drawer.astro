@@ -1,0 +1,38 @@
+---
+import "./Drawer.uf.tsx.css";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const shown = true as boolean;
+const open = true as boolean;
+---
+
+<section
+  aria-label="Filters"
+  class:list={[className]}
+  style={style}
+  data-uf-54e3e959=""
+  {...scopeAttributes(Astro.props)}
+>
+  <button type="button" data-uf-54e3e959="">Drawer</button>
+  <button type="button" data-uf-54e3e959="">Body</button>
+  {shown ? (
+    <>
+      {open ? (
+        <p class="body" data-uf-54e3e959="">Colour, size</p>
+      ) : null}
+    </>
+  ) : null}
+</section>

@@ -1,0 +1,9 @@
+{
+  "description": "`<Transition name=\"pop\" appear>` around a toast: the server renders it settled, with no class of the transition and no wrapper, and when the toast mounts on the client its enter runs, as it would without `appear` only when its element changed.",
+  "main": "Inbox.uf.tsx",
+  "ssr": {
+    "default": {
+      "props": {}
+    }
+  }
+}

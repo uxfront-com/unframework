@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Dismiss' })",
+      "dom": [
+        "<section aria-label=\"News\" data-uf-53025c4a=\"\">",
+        "  <button data-uf-53025c4a=\"\" type=\"button\" uf:focused=\"\">",
+        "    \"Dismiss\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"News\":",
+        "  - button \"Dismiss\""
+      ],
+      "events": {}
+    }
+  ]
+}

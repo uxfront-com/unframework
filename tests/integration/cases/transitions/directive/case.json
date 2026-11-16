@@ -1,0 +1,8 @@
+{
+  "description": "A `.uf.ts` module's directive on the element of a `<Transition>` that leaves: once the leave has ended, the element is gone and the directive's `unmounted` has run exactly once. Whether it ran when the leave started or when it ended is the target's (ADR-0100).",
+  "ssr": {
+    "default": {
+      "props": {}
+    }
+  }
+}

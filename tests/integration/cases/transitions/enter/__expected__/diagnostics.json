@@ -1,0 +1,70 @@
+[
+  {
+    "code": "UF4002",
+    "severity": "info",
+    "message": "The angular target does not support sheet-order: Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
+    "file": "transitions/enter/Panel.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 22,
+      "offset": 21
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF4002",
+    "severity": "info",
+    "message": "The qwik target does not support sheet-order: Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.",
+    "file": "transitions/enter/Panel.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 22,
+      "offset": 21
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "transitions/enter/Panel.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 56,
+      "offset": 327
+    },
+    "end": {
+      "line": 10,
+      "column": 98,
+      "offset": 369
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support transition: A `<Transition>`'s classes never run: its child renders settled on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "transitions/enter/Panel.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 7,
+      "offset": 409
+    },
+    "end": {
+      "line": 13,
+      "column": 89,
+      "offset": 491
+    },
+    "target": "astro"
+  }
+]

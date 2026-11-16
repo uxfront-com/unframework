@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF3058",
+    "severity": "error",
+    "message": "`name` is bound: each target writes the transition's class names when the component compiles, so it is a string literal.",
+    "file": "diagnostics/transition-prop/Disclosure.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 19,
+      "offset": 367
+    },
+    "end": {
+      "line": 11,
+      "column": 38,
+      "offset": 386
+    },
+    "help": "Write the name as a string: `name=\"fade\"`."
+  },
+  {
+    "code": "UF3058",
+    "severity": "error",
+    "message": "`name` is empty: it is the prefix of the transition's class names, one name with no whitespace.",
+    "file": "diagnostics/transition-prop/Disclosure.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 19,
+      "offset": 447
+    },
+    "end": {
+      "line": 14,
+      "column": 26,
+      "offset": 454
+    },
+    "help": "Write the name as a string: `name=\"fade\"`."
+  },
+  {
+    "code": "UF3058",
+    "severity": "error",
+    "message": "`appear` is bound: each target decides when the component compiles whether the first element enters, so it is the bare attribute, `{true}` or `{false}`.",
+    "file": "diagnostics/transition-prop/Disclosure.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 19,
+      "offset": 515
+    },
+    "end": {
+      "line": 17,
+      "column": 38,
+      "offset": 534
+    },
+    "help": "Write `appear` alone, or leave it out."
+  }
+]

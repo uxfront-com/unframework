@@ -1,0 +1,266 @@
+{
+  "irVersion": 1,
+  "file": "transitions/appear/Inbox.uf.tsx",
+  "components": [
+    {
+      "name": "Inbox",
+      "span": {
+        "start": 168,
+        "end": 458
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "shown@210",
+          "name": "shown",
+          "kind": "state",
+          "span": {
+            "start": 210,
+            "end": 215
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "shown@210",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 222,
+              "end": 226
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 204,
+            "end": 228
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Inbox",
+            "span": {
+              "start": 254,
+              "end": 272
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 288,
+                  "end": 301
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(shown.value = !shown.value)",
+                      "span": {
+                        "start": 317,
+                        "end": 345
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "shown@210",
+                          "operator": "=",
+                          "span": {
+                            "start": 317,
+                            "end": 345
+                          },
+                          "target": {
+                            "start": 318,
+                            "end": 329
+                          },
+                          "value": {
+                            "start": 332,
+                            "end": 344
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "shown@210",
+                          "span": {
+                            "start": 333,
+                            "end": 344
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 311,
+                      "end": 345
+                    }
+                  },
+                  "span": {
+                    "start": 311,
+                    "end": 345
+                  }
+                },
+                "span": {
+                  "start": 302,
+                  "end": 346
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "shown.value ? \"Hide\" : \"Show\"",
+                  "span": {
+                    "start": 357,
+                    "end": 386
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shown@210",
+                      "span": {
+                        "start": 357,
+                        "end": 368
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 356,
+                  "end": 387
+                }
+              }
+            ],
+            "span": {
+              "start": 280,
+              "end": 403
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "shown.value",
+                  "span": {
+                    "start": 411,
+                    "end": 422
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shown@210",
+                      "span": {
+                        "start": 411,
+                        "end": 422
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Toast",
+                    "attributes": [],
+                    "fills": [],
+                    "span": {
+                      "start": 426,
+                      "end": 435
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 411,
+                  "end": 435
+                }
+              }
+            ],
+            "span": {
+              "start": 411,
+              "end": 435
+            }
+          }
+        ],
+        "span": {
+          "start": 245,
+          "end": 451
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Inbox",
+      "span": {
+        "start": 168,
+        "end": 458
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Toast.uf.tsx",
+      "file": "Toast.uf.tsx",
+      "api": {
+        "file": "Toast.uf.tsx",
+        "components": [
+          {
+            "name": "Toast",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "other",
+            "styles": {
+              "scopeId": "acfe4ebf",
+              "slotted": false
+            }
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Toast",
+          "span": {
+            "start": 52,
+            "end": 57
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 80
+      }
+    }
+  ]
+}
