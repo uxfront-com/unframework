@@ -3,7 +3,15 @@
 // and the shell is written as `<out>/index.html`, framing each by a relative URL, so the site
 // serves at any path with no server. A target with no client runtime (Astro) is rendered at build
 // time with each entry's initial props, and its frame reads those renders.
-import { existsSync, mkdirSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
 import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
@@ -133,6 +141,11 @@ export function checkPreviewOut(root: string, out: string): void {
     );
   }
   if (!existsSync(out)) return;
+  if (!statSync(out).isDirectory()) {
+    throw new VisualUsageError(
+      `--out ${out} is a file: name a directory, such as ${DEFAULT_PREVIEW_OUT}.`,
+    );
+  }
   const entries = readdirSync(out);
   if (entries.length && !entries.includes(PREVIEW_MARKER)) {
     throw new VisualUsageError(

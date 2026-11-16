@@ -301,6 +301,9 @@ describe("buildPreview", () => {
     mkdirSync(join(root, "empty"));
     expect(() => checkPreviewOut(root, join(root, "empty"))).not.toThrow();
     expect(() => checkPreviewOut(root, join(root, "missing"))).not.toThrow();
+    // A file is no directory to write into.
+    expect(() => checkPreviewOut(root, join(root, "keep/file.txt"))).toThrow(VisualUsageError);
+    expect(() => checkPreviewOut(root, join(root, "keep/file.txt"))).toThrow("is a file");
   });
 
   it("refuses a target the project lacks and nothing to show, and writes nothing", async () => {

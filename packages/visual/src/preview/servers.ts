@@ -1,10 +1,10 @@
-import { existsSync } from "node:fs";
 // One Vite dev server per target (ADR-0088), built as a browser test project is: the target's
 // `/toolchain` `vite("browser")` fragment after the unframework plugin. Each listens on a port of
 // its own, so each frame has an origin of its own, and serves the frame page, the frame's module
 // (the target's mount adapter, the frame runtime and a loader per entry) and, for a target with no
 // client runtime, its render command. A static preview (ADR-0111) builds the same configuration
 // with Vite's `build`, the frame page as its input, into a directory of its own per target.
+import { existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
