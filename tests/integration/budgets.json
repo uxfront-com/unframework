@@ -1680,7 +1680,7 @@
       }
     },
     "directives/click-outside": {
-      "time": 11.12,
+      "time": 11.52,
       "sizes": {
         "react": {
           "raw": 3989,
@@ -1699,12 +1699,12 @@
           "gzip": 1336
         },
         "angular": {
-          "raw": 4954,
-          "gzip": 2314
+          "raw": 5043,
+          "gzip": 2352
         },
         "qwik": {
-          "raw": 4417,
-          "gzip": 2505
+          "raw": 4506,
+          "gzip": 2540
         },
         "astro": {
           "raw": 644,
@@ -1713,7 +1713,7 @@
       }
     },
     "directives/focus-trap": {
-      "time": 13.88,
+      "time": 14.53,
       "sizes": {
         "react": {
           "raw": 4062,
@@ -1732,12 +1732,12 @@
           "gzip": 1451
         },
         "angular": {
-          "raw": 5620,
-          "gzip": 2556
+          "raw": 5709,
+          "gzip": 2597
         },
         "qwik": {
-          "raw": 4969,
-          "gzip": 2845
+          "raw": 5058,
+          "gzip": 2877
         },
         "astro": {
           "raw": 564,
@@ -1746,7 +1746,7 @@
       }
     },
     "directives/order": {
-      "time": 12.02,
+      "time": 12.24,
       "sizes": {
         "react": {
           "raw": 6522,
@@ -1765,12 +1765,12 @@
           "gzip": 2143
         },
         "angular": {
-          "raw": 8876,
-          "gzip": 3997
+          "raw": 9054,
+          "gzip": 4082
         },
         "qwik": {
-          "raw": 9736,
-          "gzip": 5489
+          "raw": 9914,
+          "gzip": 5563
         },
         "astro": {
           "raw": 1269,
@@ -1779,7 +1779,7 @@
       }
     },
     "directives/repeated": {
-      "time": 31.86,
+      "time": 31.93,
       "sizes": {
         "react": {
           "raw": 8595,
@@ -1798,12 +1798,12 @@
           "gzip": 3399
         },
         "angular": {
-          "raw": 16460,
-          "gzip": 7083
+          "raw": 16549,
+          "gzip": 7122
         },
         "qwik": {
-          "raw": 10328,
-          "gzip": 6692
+          "raw": 10417,
+          "gzip": 6728
         },
         "astro": {
           "raw": 3477,
@@ -1812,7 +1812,7 @@
       }
     },
     "directives/shapes": {
-      "time": 19.08,
+      "time": 19.57,
       "sizes": {
         "react": {
           "raw": 4891,
@@ -1831,12 +1831,12 @@
           "gzip": 1932
         },
         "angular": {
-          "raw": 9022,
-          "gzip": 3568
+          "raw": 9200,
+          "gzip": 3654
         },
         "qwik": {
-          "raw": 7932,
-          "gzip": 4453
+          "raw": 8021,
+          "gzip": 4490
         },
         "astro": {
           "raw": 794,
@@ -1845,7 +1845,7 @@
       }
     },
     "directives/shared": {
-      "time": 8.15,
+      "time": 8.52,
       "sizes": {
         "react": {
           "raw": 6218,
@@ -1864,12 +1864,12 @@
           "gzip": 1639
         },
         "angular": {
-          "raw": 6775,
-          "gzip": 3494
+          "raw": 6864,
+          "gzip": 3536
         },
         "qwik": {
-          "raw": 7022,
-          "gzip": 4186
+          "raw": 7200,
+          "gzip": 4253
         },
         "astro": {
           "raw": 1639,
@@ -1878,40 +1878,40 @@
       }
     },
     "directives/slotted": {
-      "time": 10.76,
+      "time": 12.46,
       "sizes": {
         "react": {
-          "raw": 4443,
-          "gzip": 2261
+          "raw": 4635,
+          "gzip": 2358
         },
         "vue": {
-          "raw": 1398,
-          "gzip": 854
+          "raw": 1502,
+          "gzip": 900
         },
         "svelte": {
-          "raw": 2171,
-          "gzip": 1239
+          "raw": 2325,
+          "gzip": 1308
         },
         "solid": {
-          "raw": 2831,
-          "gzip": 1516
+          "raw": 2943,
+          "gzip": 1580
         },
         "angular": {
-          "raw": 6162,
-          "gzip": 2802
+          "raw": 6453,
+          "gzip": 2912
         },
         "qwik": {
-          "raw": 5316,
-          "gzip": 3104
+          "raw": 5630,
+          "gzip": 3293
         },
         "astro": {
-          "raw": 1258,
-          "gzip": 842
+          "raw": 1295,
+          "gzip": 861
         }
       }
     },
     "directives/updated-value": {
-      "time": 7.2,
+      "time": 7.3,
       "sizes": {
         "react": {
           "raw": 3517,
@@ -1930,12 +1930,12 @@
           "gzip": 1201
         },
         "angular": {
-          "raw": 4669,
-          "gzip": 2185
+          "raw": 4758,
+          "gzip": 2226
         },
         "qwik": {
-          "raw": 4011,
-          "gzip": 2258
+          "raw": 4100,
+          "gzip": 2294
         },
         "astro": {
           "raw": 665,

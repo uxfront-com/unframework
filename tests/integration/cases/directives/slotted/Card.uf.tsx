@@ -29,6 +29,9 @@ export default function Card() {
           </p>
         ) : null}
       </Disclosure>
+      <button type="button" onClick={() => (note.value = { name: "renamed" })}>
+        Rename
+      </button>
     </section>
   );
 }

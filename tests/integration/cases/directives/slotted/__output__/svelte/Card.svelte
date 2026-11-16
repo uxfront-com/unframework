@@ -44,5 +44,6 @@
       data-name="note"
       {@attach vTrace(() => traceValue)}
     >Note</p>{/if}
-  </Disclosure>
+  </Disclosure
+  ><button type="button" onclick={() => (note = { name: "renamed" })}>Rename</button>
 </section>

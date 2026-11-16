@@ -6,7 +6,7 @@
       "name": "Card",
       "span": {
         "start": 581,
-        "end": 997
+        "end": 1108
       },
       "props": [],
       "types": [],
@@ -231,11 +231,90 @@
               "start": 740,
               "end": 975
             }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 990,
+                  "end": 1003
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(note.value = { name: \"renamed\" })",
+                      "span": {
+                        "start": 1019,
+                        "end": 1053
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "note@622",
+                          "operator": "=",
+                          "span": {
+                            "start": 1019,
+                            "end": 1053
+                          },
+                          "target": {
+                            "start": 1020,
+                            "end": 1030
+                          },
+                          "value": {
+                            "start": 1033,
+                            "end": 1052
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1013,
+                      "end": 1053
+                    }
+                  },
+                  "span": {
+                    "start": 1013,
+                    "end": 1053
+                  }
+                },
+                "span": {
+                  "start": 1004,
+                  "end": 1054
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Rename",
+                "span": {
+                  "start": 1055,
+                  "end": 1077
+                }
+              }
+            ],
+            "span": {
+              "start": 982,
+              "end": 1086
+            }
           }
         ],
         "span": {
           "start": 693,
-          "end": 990
+          "end": 1101
         }
       }
     }
@@ -247,7 +326,7 @@
       "local": "Card",
       "span": {
         "start": 581,
-        "end": 997
+        "end": 1108
       }
     }
   ],

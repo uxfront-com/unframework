@@ -28,7 +28,7 @@ function vTrace(getValue: () => string): (element: HTMLElement) => void {
 }
 
 export default function Card(props: { class?: string; style?: JSX.CSSProperties }) {
-  const [note] = createSignal<{ name: string } | null>({ name: "note" });
+  const [note, setNote] = createSignal<{ name: string } | null>({ name: "note" });
 
   return (
     <section
@@ -49,6 +49,9 @@ export default function Card(props: { class?: string; style?: JSX.CSSProperties 
           )}
         </Show>
       </Disclosure>
+      <button type="button" onClick={() => setNote({ name: "renamed" })}>
+        Rename
+      </button>
     </section>
   );
 }

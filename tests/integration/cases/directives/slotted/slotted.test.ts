@@ -1,7 +1,8 @@
 // directives/slotted: a directive on an element of a child's slot content (ADR-0099). The child
 // shows and hides the content by its own state, so the component that applies the directive
 // doesn't render again: `mounted` still runs once the element is in the DOM, and `unmounted` once
-// it leaves. One element's value is narrowed by a conditional around it.
+// it leaves. One element's value is narrowed by a conditional around it, and changes while the
+// content is hidden, so the content shown again mounts with the value of then.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import type { View } from "@unframework.dev/testing";
 import { expect } from "vitest";
@@ -75,10 +76,14 @@ describeTargets("directives/slotted", () => {
           "unmounted body",
           "unmounted note",
         ]);
-        // Shown again, the content mounts again.
+        // Its value changes while it is hidden, which runs no hook.
+        await view.user.click(view.getByRole("button", { name: "Rename" }));
+        await view.expectParity("renamed");
+        expect(trace.calls(view)).toHaveLength(4);
+        // Shown again, the content mounts again, with the value of then.
         await view.user.click(view.getByRole("button", { name: "Details" }));
         await view.expectParity("reopened");
-        expect(trace.calls(view).slice(4)).toEqual(["mounted body", "mounted note"]);
+        expect(trace.calls(view).slice(4)).toEqual(["mounted body", "mounted renamed"]);
         // `mounted` ran only on an element in the document.
         expect(trace.detached()).toEqual([]);
       } finally {

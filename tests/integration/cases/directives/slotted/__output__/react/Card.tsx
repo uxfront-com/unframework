@@ -18,7 +18,8 @@ const vTrace = {
 };
 
 export default function Card({ className, style, ...attributes }: CardAttributes) {
-  const [note] = useState<{ name: string } | null>({ name: "note" });
+  const [note, setNote] = useState<{ name: string } | null>({ name: "note" });
+  const noteRef = useRef(note);
   const traceRef = useDirective(vTrace, () => "body");
   const traceRef_1 = useDirective(vTrace, () => note!.name);
 
@@ -39,6 +40,15 @@ export default function Card({ className, style, ...attributes }: CardAttributes
           </p>
         ) : null}
       </Disclosure>
+      <button
+        type="button"
+        onClick={() => {
+          noteRef.current = { name: "renamed" };
+          setNote(noteRef.current);
+        }}
+      >
+        Rename
+      </button>
     </section>
   );
 }

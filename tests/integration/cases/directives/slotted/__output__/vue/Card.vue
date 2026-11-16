@@ -22,5 +22,6 @@ const note = shallowRef<{ name: string } | null>({ name: "note" });
       <p v-trace="'body'" data-name="body">Body</p>
       <p v-if="note" v-trace="note.name" data-name="note">Note</p>
     </Disclosure>
+    <button type="button" @click="note = { name: 'renamed' }">Rename</button>
   </section>
 </template>

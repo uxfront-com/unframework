@@ -10,11 +10,15 @@
         "      \"Details\"",
         "    </button>",
         "  </div>",
+        "  <button type=\"button\">",
+        "    \"Rename\"",
+        "  </button>",
         "</section>"
       ],
       "aria": [
         "- region \"Card\":",
-        "  - button \"Details\""
+        "  - button \"Details\"",
+        "  - button \"Rename\""
       ],
       "events": {}
     }

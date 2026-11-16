@@ -18,13 +18,17 @@
         "      </p>",
         "    </div>",
         "  </div>",
+        "  <button type=\"button\">",
+        "    \"Rename\"",
+        "  </button>",
         "</section>"
       ],
       "aria": [
         "- region \"Card\":",
         "  - button \"Details\" [expanded]",
         "  - paragraph: Body",
-        "  - paragraph: Note"
+        "  - paragraph: Note",
+        "  - button \"Rename\""
       ],
       "events": {}
     }
