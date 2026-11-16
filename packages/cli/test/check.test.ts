@@ -121,3 +121,47 @@ describe("check", () => {
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 });
+
+describe("check --type-oracle tsgo", () => {
+  // A directive's value checked against its type (UF6007, ADR-0109), with the authoring package's
+  // types installed in the project, where the checker resolves them.
+  const MISMATCH = {
+    "unframework.config.mjs": 'export default { targets: ["vue"] };\n',
+    "node_modules/@uxfront/unframework/package.json": JSON.stringify({
+      name: "@uxfront/unframework",
+      types: "index.d.ts",
+    }),
+    "node_modules/@uxfront/unframework/index.d.ts": [
+      "declare const brand: unique symbol;",
+      "export interface Directive<T> { readonly [brand]: T }",
+      "export declare function defineDirective<T = never>(hooks: {",
+      "  mounted?(el: HTMLElement, value: T): void;",
+      "}): Directive<T>;",
+      "",
+    ].join("\n"),
+    "src/Panel.uf.tsx": [
+      'import { defineDirective } from "@uxfront/unframework";',
+      "",
+      "const vFlag = defineDirective<boolean>({",
+      "  mounted(el, on) {",
+      "    el.hidden = !on;",
+      "  },",
+      "});",
+      "",
+      "export default function Panel() {",
+      "  return <p v-flag={1}>Text</p>;",
+      "}",
+      "",
+    ].join("\n"),
+  };
+
+  it("reports a directive's value of another type, which the default oracle doesn't check", async () => {
+    const root = project(MISMATCH);
+    const checked = await run(root, "check", "--type-oracle", "tsgo");
+    expect(checked.code).toBe(1);
+    expect(checked.stdout).toContain(
+      "error[UF6007]: `v-flag`'s value is `1`, and `vFlag` takes `boolean`.",
+    );
+    expect(await run(root, "check")).toEqual({ code: 0, stdout: "", stderr: "" });
+  });
+});
