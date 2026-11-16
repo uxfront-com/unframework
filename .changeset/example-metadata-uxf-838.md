@@ -1,4 +1,5 @@
 ---
+"@unframework.dev/diagnostics": minor
 "@unframework.dev/visual": minor
 ---
 

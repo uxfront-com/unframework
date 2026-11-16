@@ -208,6 +208,13 @@ describe("readExampleMetadata", () => {
     },
   );
 
+  it("reads a comment with CRLF line endings, and points UF7012 at its tag", async () => {
+    const source = "/**\r\n * Text.\r\n * @title Crlf\r\n * @order two\r\n */\r\n" + EXAMPLE;
+    const { example, diagnostics } = await read(source);
+    expect(example).toMatchObject({ title: "Crlf", description: "Text." });
+    expect(diagnostics.map((each) => at(source, each.span))).toEqual(["@order two"]);
+  });
+
   it("reports UF7012 for an empty @title or @category, or an empty group", async () => {
     for (const tag of ["@title", "@category", "@category Components//Button", "@category /A"]) {
       const source = `/**\n * ${tag}\n */\n${EXAMPLE}`;
