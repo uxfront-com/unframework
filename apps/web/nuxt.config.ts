@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const SITE_URL = "https://unframework.dev";
+import { SITE_URL } from "./app/data/site";
 
 // The crawlers that build AI search answers and models, which robots.txt names
 // one by one so the policy is stated, not left to `User-agent: *` (audit
@@ -83,6 +83,11 @@ export default defineNuxtConfig({
         },
       },
     },
+  },
+
+  // Docs pages' Open Graph images, at the size social cards expect (nuxt-og-image draws 1200 × 600).
+  ogImage: {
+    defaults: { width: 1200, height: 630 },
   },
 
   // Docus allows every crawler (`User-agent: *`). These add a group per AI crawler.
