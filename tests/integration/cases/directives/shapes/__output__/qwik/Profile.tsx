@@ -44,7 +44,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         if (track_1(markElements).some((element_1) => element_1.isConnected)) {
           const value = track_1(() => user.value!.name);
           for (const element_1 of track_1(markElements)) {
-            cleanup_1(runDirective(vMark, element_1, value));
+            cleanup_1(
+              runDirective(vMark, element_1, value, {
+                leave: (left) => forgetElement(markElements, left),
+                back: (kept) => collectElement(markElements, kept),
+              }),
+            );
           }
         } else {
           for (const element_1 of markElements.value) {
@@ -62,7 +67,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         if (track_1(markElements_1).some((element_1) => element_1.isConnected)) {
           const value = track_1(() => label.value);
           for (const element_1 of track_1(markElements_1)) {
-            cleanup_1(runDirective(vMark, element_1, value));
+            cleanup_1(
+              runDirective(vMark, element_1, value, {
+                leave: (left) => forgetElement(markElements_1, left),
+                back: (kept) => collectElement(markElements_1, kept),
+              }),
+            );
           }
         } else {
           for (const element_1 of markElements_1.value) {
@@ -80,7 +90,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         if (track_1(markElements_2).some((element_1) => element_1.isConnected)) {
           const value = track_1(() => nick.value);
           for (const element_1 of track_1(markElements_2)) {
-            cleanup_1(runDirective(vMark, element_1, value));
+            cleanup_1(
+              runDirective(vMark, element_1, value, {
+                leave: (left) => forgetElement(markElements_2, left),
+                back: (kept) => collectElement(markElements_2, kept),
+              }),
+            );
           }
         } else {
           for (const element_1 of markElements_2.value) {
@@ -98,7 +113,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         if (track_1(markElements_3).some((element_1) => element_1.isConnected)) {
           const value = track_1(() => cleanup.value! + track.value);
           for (const element_1 of track_1(markElements_3)) {
-            cleanup_1(runDirective(vMark, element_1, value));
+            cleanup_1(
+              runDirective(vMark, element_1, value, {
+                leave: (left) => forgetElement(markElements_3, left),
+                back: (kept) => collectElement(markElements_3, kept),
+              }),
+            );
           }
         } else {
           for (const element_1 of markElements_3.value) {
@@ -115,7 +135,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track: track_1, cleanup: cleanup_1 }) => {
         const value = track_1(() => note.value);
         for (const element_1 of track_1(markElements_4)) {
-          cleanup_1(runDirective(vMark, element_1, value));
+          cleanup_1(
+            runDirective(vMark, element_1, value, {
+              leave: (left) => forgetElement(markElements_4, left),
+              back: (kept) => collectElement(markElements_4, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -125,7 +150,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track: track_1, cleanup: cleanup_1 }) => {
         const value = true;
         for (const element_1 of track_1(markElements_4)) {
-          cleanup_1(runDirective(vSelectable, element_1, value));
+          cleanup_1(
+            runDirective(vSelectable, element_1, value, {
+              leave: (left) => forgetElement(markElements_4, left),
+              back: (kept) => collectElement(markElements_4, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -224,24 +254,31 @@ function watchDocument(check: () => void): () => void {
 }
 
 /**
- * Each directive's elements: the value each last received, whether `mounted` ran, how many runs
- * took it up, and the end of its watch on the document.
+ * Each directive's elements: the value each last received, whether `mounted` ran, whether it
+ * left its caller's list, how many runs took it up, and the end of its watch on the document.
  */
 const directiveStates = new WeakMap<
   object,
-  WeakMap<Element, { value: unknown; mounted: boolean; runs: number; unwatch: () => void }>
+  WeakMap<
+    Element,
+    { value: unknown; mounted: boolean; left: boolean; runs: number; unwatch: () => void }
+  >
 >();
 
 /**
  * Runs a directive's hooks on its element: `mounted` once the element is in the document,
  * `updated` for a value that changed while it is, and `unmounted` once it leaves, which
- * projected content may do and come back. The stop it returns, called when the element's owner
- * goes, unmounts the element a microtask later, unless a later run took it up.
+ * projected content may do and come back. A caller that lists its elements passes `follow`,
+ * which takes an element out of the list as it leaves and back in if it returns: meanwhile the
+ * watch holds it weakly, so an element that is gone for good is collected, and its watch ends at
+ * the next change of the document. The stop it returns, called when the element's owner goes,
+ * unmounts the element a microtask later, unless a later run took it up.
  */
 function runDirective<E extends Element, T>(
   directive: DirectiveHooks<E, T>,
   element: E,
   value: T,
+  follow?: { leave(element: E): void; back(element: E): void },
 ): () => void {
   let own = directiveStates.get(directive);
   if (!own) {
@@ -249,16 +286,32 @@ function runDirective<E extends Element, T>(
     directiveStates.set(directive, own);
   }
   const elements = own;
-  const sync = () => {
-    const current = elements.get(element);
-    if (!current || current.mounted === element.isConnected) return;
-    current.mounted = element.isConnected;
+  const check = (target: E): void => {
+    const current = elements.get(target);
+    if (!current || current.mounted === target.isConnected) return;
+    current.mounted = target.isConnected;
     if (current.mounted) {
       const mounted = current.value as T;
-      queueHook(element, () => directive.mounted?.(element, mounted), "mounted");
-    } else {
-      queueHook(element, () => directive.unmounted?.(element), "unmounted");
+      queueHook(target, () => directive.mounted?.(target, mounted), "mounted");
+      if (!follow || !current.left) return;
+      current.left = false;
+      current.unwatch();
+      current.unwatch = watchDocument(() => check(target));
+      follow.back(target);
+      return;
     }
+    queueHook(target, () => directive.unmounted?.(target), "unmounted");
+    if (!follow) return;
+    current.left = true;
+    current.unwatch();
+    const left = new WeakRef(target);
+    const unwatch = watchDocument(() => {
+      const kept = left.deref();
+      if (kept) check(kept);
+      else unwatch();
+    });
+    current.unwatch = unwatch;
+    follow.leave(target);
   };
   let state = elements.get(element);
   if (state) {
@@ -271,10 +324,16 @@ function runDirective<E extends Element, T>(
       }
     }
   } else {
-    state = { value, mounted: false, runs: 0, unwatch: watchDocument(sync) };
+    state = {
+      value,
+      mounted: false,
+      left: false,
+      runs: 0,
+      unwatch: watchDocument(() => check(element)),
+    };
     elements.set(element, state);
   }
-  sync();
+  check(element);
   const taken = state;
   const runs = taken.runs;
   return () => {
@@ -304,6 +363,15 @@ function waitForDocument(element: Element, ready: () => void): () => void {
 function collectElement<E extends Element>(elements: Signal<E[]>, element: E): void {
   if (elements.untrackedValue.includes(element)) return;
   elements.value = [...elements.untrackedValue, element];
+}
+
+/**
+ * Drops an element that left the document from its directive's elements, once `unmounted` ran,
+ * so the list holds only the elements in it; one Qwik projects again comes back through the
+ * runner's weak watch.
+ */
+function forgetElement<E extends Element>(elements: Signal<E[]>, element: E): void {
+  elements.untrackedValue = elements.untrackedValue.filter((each) => each !== element);
 }
 
 /** The element a directive's hooks take. */

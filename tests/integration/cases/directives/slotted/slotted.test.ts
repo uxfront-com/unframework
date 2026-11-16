@@ -75,6 +75,10 @@ describeTargets("directives/slotted", () => {
           "unmounted body",
           "unmounted note",
         ]);
+        // Shown again, the content mounts again.
+        await view.user.click(view.getByRole("button", { name: "Details" }));
+        await view.expectParity("reopened");
+        expect(trace.calls(view).slice(4)).toEqual(["mounted body", "mounted note"]);
         // `mounted` ran only on an element in the document.
         expect(trace.detached()).toEqual([]);
       } finally {

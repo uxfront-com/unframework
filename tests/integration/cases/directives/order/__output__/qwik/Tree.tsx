@@ -30,7 +30,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track, cleanup }) => {
         const value = "outer";
         for (const element of track(traceElements)) {
-          cleanup(runDirective(vTrace, element, value));
+          cleanup(
+            runDirective(vTrace, element, value, {
+              leave: (left) => forgetElement(traceElements, left),
+              back: (kept) => collectElement(traceElements, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -42,7 +47,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track, cleanup }) => {
         const value = "first";
         for (const element of track(traceElements_1)) {
-          cleanup(runDirective(vTrace, element, value));
+          cleanup(
+            runDirective(vTrace, element, value, {
+              leave: (left) => forgetElement(traceElements_1, left),
+              back: (kept) => collectElement(traceElements_1, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -54,7 +64,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track, cleanup }) => {
         const value = "branch";
         for (const element of track(traceElements_2)) {
-          cleanup(runDirective(vTrace, element, value));
+          cleanup(
+            runDirective(vTrace, element, value, {
+              leave: (left) => forgetElement(traceElements_2, left),
+              back: (kept) => collectElement(traceElements_2, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -66,7 +81,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track, cleanup }) => {
         const value = "leaf";
         for (const element of track(traceElements_3)) {
-          cleanup(runDirective(vTrace, element, value));
+          cleanup(
+            runDirective(vTrace, element, value, {
+              leave: (left) => forgetElement(traceElements_3, left),
+              back: (kept) => collectElement(traceElements_3, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -78,7 +98,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track, cleanup }) => {
         const value = "placeholder";
         for (const element of track(traceElements_4)) {
-          cleanup(runDirective(vTrace, element, value));
+          cleanup(
+            runDirective(vTrace, element, value, {
+              leave: (left) => forgetElement(traceElements_4, left),
+              back: (kept) => collectElement(traceElements_4, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -90,7 +115,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
       ({ track, cleanup }) => {
         const value = "last";
         for (const element of track(traceElements_5)) {
-          cleanup(runDirective(vTrace, element, value));
+          cleanup(
+            runDirective(vTrace, element, value, {
+              leave: (left) => forgetElement(traceElements_5, left),
+              back: (kept) => collectElement(traceElements_5, kept),
+            }),
+          );
         }
       },
       { strategy: "document-ready" },
@@ -181,24 +211,31 @@ function watchDocument(check: () => void): () => void {
 }
 
 /**
- * Each directive's elements: the value each last received, whether `mounted` ran, how many runs
- * took it up, and the end of its watch on the document.
+ * Each directive's elements: the value each last received, whether `mounted` ran, whether it
+ * left its caller's list, how many runs took it up, and the end of its watch on the document.
  */
 const directiveStates = new WeakMap<
   object,
-  WeakMap<Element, { value: unknown; mounted: boolean; runs: number; unwatch: () => void }>
+  WeakMap<
+    Element,
+    { value: unknown; mounted: boolean; left: boolean; runs: number; unwatch: () => void }
+  >
 >();
 
 /**
  * Runs a directive's hooks on its element: `mounted` once the element is in the document,
  * `updated` for a value that changed while it is, and `unmounted` once it leaves, which
- * projected content may do and come back. The stop it returns, called when the element's owner
- * goes, unmounts the element a microtask later, unless a later run took it up.
+ * projected content may do and come back. A caller that lists its elements passes `follow`,
+ * which takes an element out of the list as it leaves and back in if it returns: meanwhile the
+ * watch holds it weakly, so an element that is gone for good is collected, and its watch ends at
+ * the next change of the document. The stop it returns, called when the element's owner goes,
+ * unmounts the element a microtask later, unless a later run took it up.
  */
 function runDirective<E extends Element, T>(
   directive: DirectiveHooks<E, T>,
   element: E,
   value: T,
+  follow?: { leave(element: E): void; back(element: E): void },
 ): () => void {
   let own = directiveStates.get(directive);
   if (!own) {
@@ -206,16 +243,32 @@ function runDirective<E extends Element, T>(
     directiveStates.set(directive, own);
   }
   const elements = own;
-  const sync = () => {
-    const current = elements.get(element);
-    if (!current || current.mounted === element.isConnected) return;
-    current.mounted = element.isConnected;
+  const check = (target: E): void => {
+    const current = elements.get(target);
+    if (!current || current.mounted === target.isConnected) return;
+    current.mounted = target.isConnected;
     if (current.mounted) {
       const mounted = current.value as T;
-      queueHook(element, () => directive.mounted?.(element, mounted), "mounted");
-    } else {
-      queueHook(element, () => directive.unmounted?.(element), "unmounted");
+      queueHook(target, () => directive.mounted?.(target, mounted), "mounted");
+      if (!follow || !current.left) return;
+      current.left = false;
+      current.unwatch();
+      current.unwatch = watchDocument(() => check(target));
+      follow.back(target);
+      return;
     }
+    queueHook(target, () => directive.unmounted?.(target), "unmounted");
+    if (!follow) return;
+    current.left = true;
+    current.unwatch();
+    const left = new WeakRef(target);
+    const unwatch = watchDocument(() => {
+      const kept = left.deref();
+      if (kept) check(kept);
+      else unwatch();
+    });
+    current.unwatch = unwatch;
+    follow.leave(target);
   };
   let state = elements.get(element);
   if (state) {
@@ -228,10 +281,16 @@ function runDirective<E extends Element, T>(
       }
     }
   } else {
-    state = { value, mounted: false, runs: 0, unwatch: watchDocument(sync) };
+    state = {
+      value,
+      mounted: false,
+      left: false,
+      runs: 0,
+      unwatch: watchDocument(() => check(element)),
+    };
     elements.set(element, state);
   }
-  sync();
+  check(element);
   const taken = state;
   const runs = taken.runs;
   return () => {
@@ -251,6 +310,15 @@ function runDirective<E extends Element, T>(
 function collectElement<E extends Element>(elements: Signal<E[]>, element: E): void {
   if (elements.untrackedValue.includes(element)) return;
   elements.value = [...elements.untrackedValue, element];
+}
+
+/**
+ * Drops an element that left the document from its directive's elements, once `unmounted` ran,
+ * so the list holds only the elements in it; one Qwik projects again comes back through the
+ * runner's weak watch.
+ */
+function forgetElement<E extends Element>(elements: Signal<E[]>, element: E): void {
+  elements.untrackedValue = elements.untrackedValue.filter((each) => each !== element);
 }
 
 /** The element a directive's hooks take. */
