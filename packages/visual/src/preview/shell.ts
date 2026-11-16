@@ -14,7 +14,15 @@ import { PREVIEW_HOST } from "./servers.ts";
 /** What the shell page is given: the frames' origins and the catalogue, without file paths. */
 export interface ShellData {
   frames: { target: string; origin: string }[];
-  examples: { key: string; id: string }[];
+  /** In the catalogue's order, with the metadata of ADR-0110. */
+  examples: {
+    key: string;
+    id: string;
+    category: string[];
+    title: string;
+    description?: string;
+    order?: number;
+  }[];
   components: {
     key: string;
     id: string;
@@ -31,7 +39,14 @@ export function shellData(
 ): ShellData {
   return {
     frames: frames.map(({ target, origin }) => ({ target, origin })),
-    examples: catalogue.examples.map(({ key, id }) => ({ key, id })),
+    examples: catalogue.examples.map(({ key, id, category, title, description, order }) => ({
+      key,
+      id,
+      category,
+      title,
+      ...(description === undefined ? {} : { description }),
+      ...(order === undefined ? {} : { order }),
+    })),
     components: catalogue.components.map(({ key, id, name, controls, uncontrolled }) => ({
       key,
       id,
@@ -243,24 +258,33 @@ function shellScript(constants: { frame: string; message: string }): void {
     sendAll();
   };
 
-  const section = (title: string, entries: { key: string; id: string }[]) => {
+  const section = (title: string, entries: { key: string; label: string }[]) => {
     const label = document.createElement("h2");
     label.textContent = title;
     const list = document.createElement("ul");
-    for (const { key, id } of entries) {
+    for (const { key, label } of entries) {
       const item = document.createElement("li");
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.entry = key;
-      button.textContent = id;
+      button.textContent = label;
       button.addEventListener("click", () => select(key));
       item.append(button);
       list.append(item);
     }
     nav.append(label, list);
   };
-  section("Examples", data.examples);
-  section("Components", data.components);
+  // The examples under one heading per category, in the catalogue's order (ADR-0110).
+  const categories = new Map<string, { key: string; label: string }[]>();
+  for (const { key, category, title } of data.examples) {
+    const name = category.join(" / ");
+    categories.set(name, [...(categories.get(name) ?? []), { key, label: title }]);
+  }
+  for (const [name, entries] of categories) section(name, entries);
+  section(
+    "Components",
+    data.components.map(({ key, id }) => ({ key, label: id })),
+  );
   const first = decodeURIComponent(location.hash.slice(1));
   select(first || data.examples[0]?.key || data.components[0]?.key || "");
   // A link to another entry on this page, or the browser's back and forward, changes the hash.

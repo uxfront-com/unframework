@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { describe, expect, it } from "vitest";
 
+import { preview } from "../src/preview/command.ts";
 import { startPreview } from "../src/preview/index.ts";
 import { FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
 import { PREVIEW_HOST } from "../src/preview/servers.ts";
@@ -263,6 +264,31 @@ describe("unframework preview", () => {
       } finally {
         if (child.exitCode === null) child.kill("SIGKILL");
       }
+    },
+  );
+
+  it(
+    "prints UF7012 to stderr for a malformed tag in an example's doc comment, and runs",
+    { timeout: 120_000 },
+    async () => {
+      const root = fileURLToPath(new URL("fixtures/metadata", import.meta.url));
+      let stdout = "";
+      let stderr = "";
+      const code = await preview(
+        ["--target", "vue"],
+        {
+          cwd: root,
+          stdout: (text) => void (stdout += text),
+          stderr: (text) => void (stderr += text),
+        },
+        Promise.resolve(),
+      );
+      expect(code).toBe(0);
+      expect(stderr).toMatch(
+        /^examples\/Badge\.example\.uf\.tsx:5:4 warning UF7012: The example Badge's @order "two" is not a number/,
+      );
+      expect(stderr.trimEnd().split("\n")).toHaveLength(1);
+      expect(stdout).toContain("unframework preview: stopped.");
     },
   );
 });

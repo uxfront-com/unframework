@@ -1,11 +1,17 @@
-// Discovery and UF7011 on throwaway projects.
+// Discovery, UF7011 and the metadata the preview reads (ADR-0110, UF7012) on throwaway projects.
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { checkExamples, discoverExamples, exampleBaselines } from "../src/examples.ts";
+import {
+  checkExamples,
+  derivedMetadata,
+  discoverExamples,
+  exampleBaselines,
+  readExampleMetadata,
+} from "../src/examples.ts";
 
 /** A throwaway project holding these files, by path relative to its root. */
 function project(files: Record<string, string>): string {
@@ -39,13 +45,23 @@ describe("discoverExamples", () => {
         id: "examples/Buttons",
         file: join(root, "examples/Buttons.example.uf.tsx"),
         name: "Buttons",
+        category: ["Examples"],
+        title: "Buttons",
       },
       {
         id: "examples/forms/deep/Field",
         file: join(root, "examples/forms/deep/Field.example.uf.tsx"),
         name: "Field",
+        category: ["Deep"],
+        title: "Field",
       },
-      { id: "src/Card", file: join(root, "src/Card.example.uf.tsx"), name: "Card" },
+      {
+        id: "src/Card",
+        file: join(root, "src/Card.example.uf.tsx"),
+        name: "Card",
+        category: ["Src"],
+        title: "Card",
+      },
     ]);
   });
 
@@ -63,6 +79,182 @@ describe("discoverExamples", () => {
 
   it("finds none in a project without examples", () => {
     expect(discoverExamples({ root: project({ "src/Card.uf.tsx": EXAMPLE }) })).toEqual([]);
+  });
+});
+
+describe("derivedMetadata", () => {
+  it.each([
+    ["examples/Buttons", "Buttons", ["Examples"], "Buttons"],
+    ["Buttons", "Buttons", ["Examples"], "Buttons"],
+    ["src/components/button/examples/ButtonColors", "ButtonColors", ["Button"], "Colors"],
+    [
+      "src/components/field-group/examples/FieldGroupDefault",
+      "FieldGroupDefault",
+      ["Field Group"],
+      "Default",
+    ],
+    ["src/forms/field_group/FieldGroupDefault", "FieldGroupDefault", ["Field Group"], "Default"],
+    ["src/hamburgerMenu/HamburgerMenuOpen", "HamburgerMenuOpen", ["HamburgerMenu"], "Open"],
+    ["src/button/examples/Button", "Button", ["Button"], "Button"],
+    ["src/button/examples/HTMLButtonGroup2", "HTMLButtonGroup2", ["Button"], "HTML Button Group 2"],
+    ["src/card/card-stack", "card-stack", ["Card"], "Stack"],
+    ["src/_/$", "$", ["_"], "$"],
+  ])("derives %s as %j / %j", (id, name, category, title) => {
+    expect(derivedMetadata(id, name)).toEqual({ category, title });
+  });
+});
+
+describe("readExampleMetadata", () => {
+  const read = async (source: string, path = "src/components/button/examples/ButtonColors") => {
+    const root = project({ [`${path}.example.uf.tsx`]: source });
+    const { examples, diagnostics } = await readExampleMetadata(root, discoverExamples({ root }));
+    return { example: examples[0]!, diagnostics };
+  };
+  const at = (source: string, span: { start: number; end: number }) =>
+    source.slice(span.start, span.end);
+
+  it("keeps the derived values of an example with no doc comment", async () => {
+    const { example, diagnostics } = await read(EXAMPLE);
+    expect(example).toMatchObject({ category: ["Button"], title: "Colors" });
+    expect(example).not.toHaveProperty("description");
+    expect(example).not.toHaveProperty("order");
+    expect(diagnostics).toEqual([]);
+  });
+
+  it("reads the description, @category, @title and @order, and ignores other tags", async () => {
+    const source = [
+      'import { ref } from "@uxfront/unframework";',
+      "",
+      "/**",
+      " * Every colour the theme defines,",
+      " * on the solid variant.",
+      " *",
+      " * @category Components/Forms/Input",
+      " * @title Input colours",
+      " * @see https://unframework.dev",
+      " * @order 2",
+      " */",
+      "export default function ButtonColors() {",
+      "  return <p>Hi</p>;",
+      "}",
+      "",
+    ].join("\n");
+    const { example, diagnostics } = await read(source);
+    expect(example).toMatchObject({
+      id: "src/components/button/examples/ButtonColors",
+      name: "ButtonColors",
+      category: ["Components", "Forms", "Input"],
+      title: "Input colours",
+      description: "Every colour the theme defines,\non the solid variant.",
+      order: 2,
+    });
+    expect(diagnostics).toEqual([]);
+  });
+
+  it("reads a one-line comment, a negative or decimal order, and a value that wraps", async () => {
+    const one = await read("/** @order -1.5 */\n" + EXAMPLE);
+    expect(one.example.order).toBe(-1.5);
+    expect(one.example).not.toHaveProperty("description");
+    const wrapped = await read(
+      "/**\n * @category Components /\n *   Actions / Button\n * @title A long\n *   title\n */\n" +
+        EXAMPLE,
+    );
+    expect(wrapped.example).toMatchObject({
+      category: ["Components", "Actions", "Button"],
+      title: "A long title",
+    });
+  });
+
+  it("reads only a doc comment directly on the default export", async () => {
+    const cases = [
+      "/* @title Plain */\n" + EXAMPLE,
+      "// @title Line\n" + EXAMPLE,
+      "/** @title Detached */\nconst x = 1;\n" + EXAMPLE,
+      "/** @title Named */\nexport function Other() {\n  return <p />;\n}\n" + EXAMPLE,
+      "/** @title No default */\nexport function Only() {\n  return <p />;\n}\n",
+    ];
+    for (const source of cases) {
+      const { example, diagnostics } = await read(source);
+      expect(example.title, source).toBe("Colors");
+      expect(diagnostics, source).toEqual([]);
+    }
+    const nearest = await read("/** @title First */\n/** @title Second */\n" + EXAMPLE);
+    expect(nearest.example.title).toBe("Second");
+  });
+
+  it("reports UF7012 at an @order that isn't a number, and keeps the derived order", async () => {
+    const source = "/**\n * Text.\n * @order two\n */\n" + EXAMPLE;
+    const { example, diagnostics } = await read(source);
+    expect(example).not.toHaveProperty("order");
+    expect(example).toMatchObject({ category: ["Button"], title: "Colors", description: "Text." });
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      code: "UF7012",
+      severity: "warning",
+      file: "src/components/button/examples/ButtonColors.example.uf.tsx",
+    });
+    expect(diagnostics[0]!.message).toContain('"two" is not a number');
+    expect(at(source, diagnostics[0]!.span)).toBe("@order two");
+  });
+
+  it.each(["", "0x10", "Infinity", "1e400", "2 3", "NaN", "1_000"])(
+    "reports UF7012 for @order %j",
+    async (value) => {
+      const source = `/** @order ${value} */\n${EXAMPLE}`;
+      const { example, diagnostics } = await read(source);
+      expect(example).not.toHaveProperty("order");
+      expect(diagnostics.map((each) => each.code)).toEqual(["UF7012"]);
+      expect(at(source, diagnostics[0]!.span)).toBe(`@order ${value}`.trim());
+    },
+  );
+
+  it("reports UF7012 for an empty @title or @category, or an empty group", async () => {
+    for (const tag of ["@title", "@category", "@category Components//Button", "@category /A"]) {
+      const source = `/**\n * ${tag}\n */\n${EXAMPLE}`;
+      const { example, diagnostics } = await read(source);
+      expect(example, tag).toMatchObject({ category: ["Button"], title: "Colors" });
+      expect(
+        diagnostics.map((each) => each.code),
+        tag,
+      ).toEqual(["UF7012"]);
+      expect(at(source, diagnostics[0]!.span), tag).toBe(tag);
+    }
+  });
+
+  it("reports UF7012 at each repeat of a tag, and uses the derived value", async () => {
+    const source =
+      "/**\n * @title One\n * @order 1\n * @title Two\n * @title Three\n */\n" + EXAMPLE;
+    const { example, diagnostics } = await read(source);
+    expect(example).toMatchObject({ title: "Colors", order: 1 });
+    expect(diagnostics.map((each) => at(source, each.span))).toEqual([
+      "@title Two",
+      "@title Three",
+    ]);
+    expect(diagnostics[0]!.message).toContain("@title 3 times");
+  });
+
+  it("keeps the derived values of an example that doesn't parse or can't be read", async () => {
+    const broken = await read("/** @title Broken */\nexport default function {\n");
+    expect(broken.example.title).toBe("Colors");
+    const root = project({ "examples/Gone.example.uf.tsx": EXAMPLE });
+    const found = discoverExamples({ root });
+    const gone = await readExampleMetadata(root, [{ ...found[0]!, file: join(root, "missing") }]);
+    expect(gone.examples[0]).toMatchObject({ category: ["Examples"], title: "Gone" });
+    expect(gone.diagnostics).toEqual([]);
+  });
+
+  it("keeps the order of the examples and their tags", async () => {
+    const root = project({
+      "examples/A.example.uf.tsx": `/** @order x */\n${EXAMPLE}`,
+      "examples/B.example.uf.tsx": `/**\n * @title\n * @order y\n */\n${EXAMPLE}`,
+    });
+    const { examples, diagnostics } = await readExampleMetadata(root, discoverExamples({ root }));
+    expect(examples.map((each) => each.id)).toEqual(["examples/A", "examples/B"]);
+    expect(diagnostics.map((each) => [each.file, each.message.split(" ").slice(3, 4)[0]])).toEqual([
+      ["examples/A.example.uf.tsx", "@order"],
+      ["examples/B.example.uf.tsx", "@title"],
+      ["examples/B.example.uf.tsx", "@order"],
+    ]);
   });
 });
 

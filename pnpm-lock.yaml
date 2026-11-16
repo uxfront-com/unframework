@@ -1224,6 +1224,9 @@ importers:
       '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
+      '@unframework.dev/parser':
+        specifier: workspace:*
+        version: link:../parser
       '@unframework.dev/testing':
         specifier: workspace:*
         version: link:../testing
