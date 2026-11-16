@@ -1,0 +1,488 @@
+{
+  "irVersion": 1,
+  "file": "directives/rows/Picker.uf.tsx",
+  "components": [
+    {
+      "name": "Picker",
+      "span": {
+        "start": 284,
+        "end": 1296
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@327",
+        "type": {
+          "code": "{ option?(props: { option: { id: string; label: string } }): Element }",
+          "span": {
+            "start": 347,
+            "end": 417
+          }
+        },
+        "slots": [
+          {
+            "name": "option",
+            "optional": true,
+            "props": {
+              "code": "{ option: { id: string; label: string } }",
+              "span": {
+                "start": 364,
+                "end": 405
+              }
+            },
+            "span": {
+              "start": 349,
+              "end": 415
+            }
+          }
+        ],
+        "span": {
+          "start": 321,
+          "end": 421
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@327",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 327,
+            "end": 332
+          }
+        },
+        {
+          "id": "options@430",
+          "name": "options",
+          "kind": "state",
+          "span": {
+            "start": 430,
+            "end": 437
+          }
+        },
+        {
+          "id": "option@615",
+          "name": "option",
+          "kind": "loopVar",
+          "span": {
+            "start": 615,
+            "end": 621
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "options@430",
+          "initial": {
+            "code": "[\n    { id: \"x\", label: \"Xray\" },\n    { id: \"y\", label: \"Yankee\" },\n  ]",
+            "span": {
+              "start": 444,
+              "end": 515
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 424,
+            "end": 517
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "picker",
+            "span": {
+              "start": 539,
+              "end": 553
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Options",
+                "span": {
+                  "start": 565,
+                  "end": 585
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "options.value",
+                  "span": {
+                    "start": 596,
+                    "end": 609
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "options@430",
+                      "span": {
+                        "start": 596,
+                        "end": 609
+                      }
+                    }
+                  ]
+                },
+                "item": "option@615",
+                "key": {
+                  "code": "option.id",
+                  "span": {
+                    "start": 647,
+                    "end": 656
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "option@615",
+                      "span": {
+                        "start": 647,
+                        "end": 653
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "SlotOutlet",
+                      "slot": "option",
+                      "props": {
+                        "code": "{ option }",
+                        "span": {
+                          "start": 674,
+                          "end": 684
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "option@615",
+                            "span": {
+                              "start": 676,
+                              "end": 682
+                            },
+                            "shorthand": true
+                          }
+                        ]
+                      },
+                      "fallback": [],
+                      "span": {
+                        "start": 658,
+                        "end": 686
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 638,
+                    "end": 691
+                  }
+                },
+                "span": {
+                  "start": 596,
+                  "end": 702
+                }
+              }
+            ],
+            "span": {
+              "start": 561,
+              "end": 715
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 738,
+                  "end": 751
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(options.value = options.value.map((option) =>\n            option.id === \"x\" ? { id: \"x\", label: \"Xenon\" } : option,\n          ))",
+                      "span": {
+                        "start": 785,
+                        "end": 914
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "options@430",
+                          "operator": "=",
+                          "span": {
+                            "start": 785,
+                            "end": 914
+                          },
+                          "target": {
+                            "start": 786,
+                            "end": 799
+                          },
+                          "value": {
+                            "start": 802,
+                            "end": 913
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "options@430",
+                          "span": {
+                            "start": 802,
+                            "end": 815
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 769,
+                      "end": 914
+                    }
+                  },
+                  "span": {
+                    "start": 769,
+                    "end": 914
+                  }
+                },
+                "span": {
+                  "start": 760,
+                  "end": 924
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Rename option",
+                "span": {
+                  "start": 932,
+                  "end": 961
+                }
+              }
+            ],
+            "span": {
+              "start": 722,
+              "end": 970
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 985,
+                  "end": 998
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(options.value = [...options.value].reverse())",
+                      "span": {
+                        "start": 1014,
+                        "end": 1060
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "options@430",
+                          "operator": "=",
+                          "span": {
+                            "start": 1014,
+                            "end": 1060
+                          },
+                          "target": {
+                            "start": 1015,
+                            "end": 1028
+                          },
+                          "value": {
+                            "start": 1031,
+                            "end": 1059
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "options@430",
+                          "span": {
+                            "start": 1035,
+                            "end": 1048
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1008,
+                      "end": 1060
+                    }
+                  },
+                  "span": {
+                    "start": 1008,
+                    "end": 1060
+                  }
+                },
+                "span": {
+                  "start": 999,
+                  "end": 1061
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reverse options",
+                "span": {
+                  "start": 1062,
+                  "end": 1093
+                }
+              }
+            ],
+            "span": {
+              "start": 977,
+              "end": 1102
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1125,
+                  "end": 1138
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(options.value = options.value.filter((option) => option.id !== \"y\"))",
+                      "span": {
+                        "start": 1162,
+                        "end": 1231
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "options@430",
+                          "operator": "=",
+                          "span": {
+                            "start": 1162,
+                            "end": 1231
+                          },
+                          "target": {
+                            "start": 1163,
+                            "end": 1176
+                          },
+                          "value": {
+                            "start": 1179,
+                            "end": 1230
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "options@430",
+                          "span": {
+                            "start": 1179,
+                            "end": 1192
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1156,
+                      "end": 1231
+                    }
+                  },
+                  "span": {
+                    "start": 1156,
+                    "end": 1231
+                  }
+                },
+                "span": {
+                  "start": 1147,
+                  "end": 1232
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Remove option",
+                "span": {
+                  "start": 1240,
+                  "end": 1269
+                }
+              }
+            ],
+            "span": {
+              "start": 1109,
+              "end": 1278
+            }
+          }
+        ],
+        "span": {
+          "start": 534,
+          "end": 1289
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Picker",
+      "span": {
+        "start": 284,
+        "end": 1296
+      }
+    }
+  ],
+  "types": []
+}

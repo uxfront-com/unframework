@@ -10,7 +10,11 @@
 // microtask covers an element a child renders in the slot content, whose callback runs without a
 // render of this component. Each hook goes through the inline `queueHook`, which runs them in
 // Vue's order with every other output's. Refs and effects never run on the server. A `.uf.ts`
-// module's directive is the plain hooks object, which the hook reads.
+// module's directive is the plain hooks object, which the hook reads. A use whose value reads a
+// list's row or a scoped fill's props has a value for each element, which one getter can't give,
+// so it calls `useElementDirective` instead (ADR-0108): the element's ref callback, written in
+// place, passes its value, `ref={(element) => tooltipRef(element, item.label)}`, and the hook
+// records it beside the element at each render.
 import {
   dependencyImports,
   directiveDependencies,
@@ -59,21 +63,36 @@ export function directiveRefBase(name: string): string {
   return `${name[1]!.toLowerCase()}${name.slice(2)}Ref`;
 }
 
-/** The inline hook a component that applies a directive calls, the hooks' type and the queue. */
+/**
+ * The inline hooks a component that applies a directive calls, and the hooks' type: `hook` for a
+ * use whose value the component reads, `each` for one whose elements pass their own (ADR-0108).
+ */
 export function useDirectiveHelper(
-  names: { hook: string; hooks: string; queue: string },
+  names: { hook?: string; each?: string; hooks: string; queue: string },
   imports: ImportSet,
 ): string {
   const react = (name: string) => imports.add("react", name);
-  const { hook, hooks, queue } = names;
-  return `/** The hooks of a directive, which \`${hook}\` runs on its elements. */
+  const { hook, each, hooks, queue } = names;
+  return [
+    `/** The hooks of a directive, which \`${hook ?? each}\` runs on its elements. */
 interface ${hooks}<E extends Element, T> {
   mounted?(el: E, value: T): unknown;
   updated?(el: E, value: T, oldValue: T): unknown;
   unmounted?(el: E): unknown;
+}`,
+    ...(hook ? [useDirectiveCode(hook, hooks, queue, react)] : []),
+    ...(each ? [useElementDirectiveCode(each, hooks, queue, react)] : []),
+  ].join("\n\n");
 }
 
-/**
+/** `useDirective`: one use's hooks, with the value the component's getter reads. */
+function useDirectiveCode(
+  hook: string,
+  hooks: string,
+  queue: string,
+  react: (name: string) => string,
+): string {
+  return `/**
  * Runs a directive's hooks on each element its ref callback receives, apart: \`mounted\` once
  * the element is rendered, \`updated\` after a render that changes the value, and \`unmounted\`
  * once that element is gone, whichever component renders or removes it. One use may render
@@ -118,6 +137,68 @@ function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>, getValue: () =
   });
   ${react("useLayoutEffect")}(() => {
     state.current.getValue = getValue;
+    sync();
+  });
+  ${react("useLayoutEffect")}(
+    () => () => {
+      state.current.attached.clear();
+      sync();
+    },
+    [sync],
+  );
+  return ref;
+}`;
+}
+
+/** `useElementDirective`: one use's hooks, with the value each element passes beside it. */
+function useElementDirectiveCode(
+  hook: string,
+  hooks: string,
+  queue: string,
+  react: (name: string) => string,
+): string {
+  return `/**
+ * Runs a directive's hooks on each element its ref callback receives, apart, with the value the
+ * element passes beside it: a list's rows, or a scoped slot a child calls with other props each
+ * time, give each element its own. The element's callback is written in place, so it records
+ * the element with its value at each render, and its cleanup forgets the element. \`mounted\`
+ * runs once the element is rendered, \`updated\` after a render that changes its value, and
+ * \`unmounted\` once that element is gone, whichever component renders or removes it.
+ */
+function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>) {
+  const state = ${react("useRef")}<{ attached: Map<E, T>; mounted: Map<E, T> }>({
+    attached: new Map(),
+    mounted: new Map(),
+  });
+  const [sync] = ${react("useState")}(() => () => {
+    const { attached, mounted } = state.current;
+    for (const element of [...mounted.keys()]) {
+      if (attached.has(element)) continue;
+      mounted.delete(element);
+      ${queue}(element, () => directive.unmounted?.(element), "unmounted");
+    }
+    for (const [element, value] of attached) {
+      if (!mounted.has(element)) {
+        mounted.set(element, value);
+        ${queue}(element, () => directive.mounted?.(element, value), "mounted");
+        continue;
+      }
+      const previous = mounted.get(element) as T;
+      if (Object.is(value, previous)) continue;
+      mounted.set(element, value);
+      ${queue}(element, () => directive.updated?.(element, value, previous), "updated");
+    }
+  });
+  const [ref] = ${react("useState")}(() => (element: E | null, value: T) => {
+    if (!element) return () => {};
+    state.current.attached.set(element, value);
+    queueMicrotask(sync);
+    return () => {
+      state.current.attached.delete(element);
+      queueMicrotask(sync);
+    };
+  });
+  ${react("useLayoutEffect")}(() => {
     sync();
   });
   ${react("useLayoutEffect")}(

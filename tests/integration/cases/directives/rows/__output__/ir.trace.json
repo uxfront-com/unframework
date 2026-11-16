@@ -1,0 +1,263 @@
+{
+  "irVersion": 1,
+  "file": "directives/rows/trace.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "directives": [
+    {
+      "name": "vTrace",
+      "exported": true,
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 284,
+          "end": 290
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    const call = `trace mounted ${value}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 315,
+              "end": 453
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 364,
+                  "end": 372
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 391,
+                  "end": 402
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 296,
+            "end": 453
+          }
+        },
+        {
+          "name": "updated",
+          "parameters": [
+            "el",
+            "value",
+            "oldValue"
+          ],
+          "body": {
+            "code": "{\n    const call = `trace updated ${value} ${oldValue}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 486,
+              "end": 636
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 547,
+                  "end": 555
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 574,
+                  "end": 585
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 457,
+            "end": 636
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const call = \"trace unmounted\";\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 654,
+              "end": 785
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 696,
+                  "end": 704
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 723,
+                  "end": 734
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 640,
+            "end": 785
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 246,
+        "end": 790
+      }
+    },
+    {
+      "name": "vMark",
+      "exported": true,
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 829,
+          "end": 835
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    const call = `mark mounted ${value}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 860,
+              "end": 997
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 908,
+                  "end": 916
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 935,
+                  "end": 946
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 841,
+            "end": 997
+          }
+        },
+        {
+          "name": "updated",
+          "parameters": [
+            "el",
+            "value",
+            "oldValue"
+          ],
+          "body": {
+            "code": "{\n    const call = `mark updated ${value} ${oldValue}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 1030,
+              "end": 1179
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 1090,
+                  "end": 1098
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 1117,
+                  "end": 1128
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 1001,
+            "end": 1179
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const call = \"mark unmounted\";\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 1197,
+              "end": 1327
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 1238,
+                  "end": 1246
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 1265,
+                  "end": 1276
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 1183,
+            "end": 1327
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 792,
+        "end": 1332
+      }
+    }
+  ]
+}

@@ -234,6 +234,7 @@ export {
   ownDirectives,
   appliedDirectives,
   moduleDirectives,
+  readsElementScope,
 } from "./directives.ts";
 export type { DirectiveDependencies } from "./directives.ts";
 export { directiveRunnerCode, waitCode } from "./directive-runner.ts";

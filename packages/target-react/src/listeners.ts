@@ -9,8 +9,16 @@
 // clears a template ref on the same element. The callback is declared once for the instance's
 // life (`useState`), so React never adds the listeners again as it renders: a listener added
 // again while an event is dispatched would miss it. Only one whose listener reads a list's row,
-// or a value its branch narrows, is written in place.
-import { handlerText, js, parameterText, parseStatementsSource } from "@unframework.dev/codegen";
+// or a value its branch narrows, is written in place, and one whose directive takes its value
+// from the element, which reads the row or a scoped fill's props (ADR-0108).
+import {
+  assertedValue,
+  expressionCode,
+  handlerText,
+  js,
+  parameterText,
+  parseStatementsSource,
+} from "@unframework.dev/codegen";
 import type { JsxContext } from "@unframework.dev/codegen";
 import type {
   Attribute,
@@ -44,8 +52,8 @@ interface ElementListeners {
   callback?: string;
   /** Whether the callback puts a `<textarea>`'s caret after its text (`Caret`, ADR-0060). */
   caret?: boolean;
-  /** The ref callbacks of the directives it applies, in attribute order (ADR-0099). */
-  directives: string[];
+  /** The directives it applies, in attribute order (ADR-0099), each by its ref callback. */
+  directives: { attribute: DirectiveAttribute; ref: string }[];
 }
 
 /** Prints the listeners and template refs of a planned component's elements. */
@@ -128,7 +136,7 @@ export class ReactListeners {
     // Each directive's ref callback, which the element's own callback calls where it has one.
     for (const attribute of element.attributes) {
       if (attribute.kind !== "Directive") continue;
-      found.directives.push(this.#plan.directiveRefs.get(attribute)!);
+      found.directives.push({ attribute, ref: this.#plan.directiveRefs.get(attribute)! });
       found.refAt ??= attribute;
     }
     this.#elements.set(element, found);
@@ -137,7 +145,9 @@ export class ReactListeners {
 
   /**
    * A directive's attribute (ADR-0099): `ref={focusTrapRef}`, the ref callback its call returns,
-   * or the element's own callback, which calls each directive's, where it has one.
+   * or the element's own callback, which calls each directive's, where it has one. A directive
+   * whose value reads the row or a fill's props passes it from the callback, written in place
+   * (ADR-0108).
    */
   directive(
     attribute: DirectiveAttribute,
@@ -147,8 +157,14 @@ export class ReactListeners {
     const listeners = this.#of(element);
     if (listeners.refAt !== attribute) return [];
     const [only, ...others] = listeners.directives;
-    if (!listeners.native.length && !listeners.caret && !listeners.ref && !others.length) {
-      return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(only!)))];
+    if (
+      !listeners.native.length &&
+      !listeners.caret &&
+      !listeners.ref &&
+      !others.length &&
+      !this.#plan.elementDirectives.has(only!.attribute)
+    ) {
+      return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(only!.ref)))];
     }
     return [this.#refAttribute(listeners, context)];
   }
@@ -237,7 +253,7 @@ export class ReactListeners {
   #refAttribute(listeners: ElementListeners, context: JsxContext): JsxAttributeItem {
     const value = listeners.callback
       ? js.identifier(listeners.callback)
-      : context.placeholders.expression(this.#callback(listeners));
+      : context.placeholders.expression(this.#callback(listeners, undefined, context));
     return js.jsxAttribute("ref", js.jsxExpressionContainer(value));
   }
 
@@ -354,16 +370,28 @@ export class ReactListeners {
 
   /**
    * The ref callback that adds an element's native listeners, one `listen` call for each event
-   * and phase, and sets its template ref; `type` types its parameter where no prop does.
+   * and phase, and sets its template ref; `type` types its parameter where no prop does. One
+   * written in place passes each directive that reads the row its value, in the render's
+   * spelling (`context`), as the getter at the component's top level reads a use's (ADR-0108).
    */
-  #callback(listeners: ElementListeners, type?: string): string {
+  #callback(listeners: ElementListeners, type?: string, context?: JsxContext): string {
     // A `<textarea>`'s caret alone needs no `listen`: the helper is claimed where it is called.
     const listen = listeners.native.length ? this.#listen : "";
     const handlers = listeners.native.map((group) => this.#nativeHandler(group));
     const ref = listeners.ref && this.#plan.bindings.get(listeners.ref.binding)!.name;
+    const values = listeners.directives.map(({ attribute }) =>
+      this.#plan.elementDirectives.has(attribute)
+        ? expressionCode(assertedValue(attribute.value), context!)
+        : undefined,
+    );
     const local = locals(
-      [...handlers, listen, ref ?? ""],
+      [...handlers, listen, ref ?? "", ...values.map((value) => value ?? "")],
       ["element", "stop", "cleanups", "cleanup", "text", "detaches", "detach"],
+    );
+    const directiveCalls = listeners.directives.map(({ ref: call }, index) =>
+      values[index] === undefined
+        ? `${call}(${local.element})`
+        : `${call}(${local.element}, ${values[index]})`,
     );
     const calls = listeners.native.map(([first], index) => {
       const options = first!.capture
@@ -377,6 +405,10 @@ export class ReactListeners {
     if (!ref && !listeners.caret && !listeners.directives.length && calls.length === 1) {
       return `${parameter} => ${calls[0]!}`;
     }
+    // A directive alone returns its own callback's cleanup.
+    if (!ref && !listeners.caret && !calls.length && directiveCalls.length === 1) {
+      return `${parameter} => ${directiveCalls[0]!}`;
+    }
     const lines = ref ? [`${ref}.current = ${local.element};`] : [];
     if (listeners.caret) {
       // Set as Vue's `vModelText` sets it, on a field that holds no text: the caret ends after the
@@ -388,12 +420,11 @@ export class ReactListeners {
     }
     // Each directive's callback records the element, and forgets that element once the
     // element's own callback is cleaned up, through the cleanup it returns (ADR-0099).
-    const [onlyDirective, ...otherDirectives] = listeners.directives;
+    const [onlyDirective, ...otherDirectives] = directiveCalls;
     if (onlyDirective !== undefined && !otherDirectives.length) {
-      lines.push(`const ${local.detach} = ${onlyDirective}(${local.element});`);
+      lines.push(`const ${local.detach} = ${onlyDirective};`);
     } else if (onlyDirective !== undefined) {
-      const calls = listeners.directives.map((directive) => `${directive}(${local.element})`);
-      lines.push(`const ${local.detaches} = [${calls.join(", ")}];`);
+      lines.push(`const ${local.detaches} = [${directiveCalls.join(", ")}];`);
     }
     const stops = [
       ref ? `${ref}.current = null;` : undefined,

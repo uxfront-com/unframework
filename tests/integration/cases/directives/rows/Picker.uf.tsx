@@ -4,7 +4,9 @@ import type { Element } from "@uxfront/unframework";
 // A child that renders its scoped `option` slot once per option of its own state, keyed by id,
 // and renames, reverses and removes options without a render of its parent.
 export default function Picker() {
-  const slots = defineSlots<{ option?(props: { option: { id: string; label: string } }): Element }>();
+  const slots = defineSlots<{
+    option?(props: { option: { id: string; label: string } }): Element;
+  }>();
   const options = ref([
     { id: "x", label: "Xray" },
     { id: "y", label: "Yankee" },

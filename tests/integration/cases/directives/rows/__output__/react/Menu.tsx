@@ -1,0 +1,306 @@
+import Picker from "./Picker";
+import { vMark } from "./vMark";
+import { vTrace } from "./vTrace";
+import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+
+export interface MenuAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Menu({ className, style, ...attributes }: MenuAttributes) {
+  const [items, setItems] = useState([
+    { id: "a", label: "Alpha" },
+    { id: "b", label: "Beta" },
+    { id: "c", label: "Gamma" },
+  ]);
+  const itemsRef = useRef(items);
+  const [prefix, setPrefix] = useState("Open");
+  const prefixRef = useRef(prefix);
+  const [focused, setFocused] = useState(0);
+  const focusedRef = useRef(focused);
+  const traceRef = useElementDirective(vTrace);
+  const traceRef_1 = useElementDirective(vTrace);
+  const markRef = useElementDirective(vMark);
+  const traceRef_2 = useElementDirective(vTrace);
+  const traceRef_3 = useElementDirective(vTrace);
+  const traceRef_4 = useElementDirective(vTrace);
+
+  return (
+    <section
+      className={cx("menu", className)}
+      aria-label="Menu"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
+      <ul aria-label="Items">
+        {items.map((item) => (
+          <li key={item.id} data-name={item.id} ref={(element) => traceRef(element, item.label)}>
+            {item.label}
+          </li>
+        ))}
+      </ul>
+      <ul aria-label="Marked">
+        {items.map((item) => (
+          <li
+            key={item.id}
+            data-name={`both-${item.id}`}
+            ref={(element) => {
+              const detaches = [traceRef_1(element, item.label), markRef(element, item.id)];
+              return () => {
+                for (const detach of detaches) detach();
+              };
+            }}
+          >
+            {item.label}
+          </li>
+        ))}
+      </ul>
+      <div className="focus">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            data-name={`focus-${item.id}`}
+            ref={(element) => {
+              const detach = traceRef_2(element, item.label);
+              const stop = listen(element, "focusin", () => {
+                focusedRef.current++;
+                setFocused(focusedRef.current);
+              });
+              return () => {
+                detach();
+                stop();
+              };
+            }}
+          >
+            Focus {item.label}
+          </button>
+        ))}
+      </div>
+      <output>{focused}</output>
+      <ul aria-label="Prefixed">
+        {items.map((item) => (
+          <li
+            key={item.id}
+            data-name={`prefixed-${item.id}`}
+            ref={(element) => traceRef_3(element, `${prefix} ${item.label}`)}
+          >
+            {item.label}
+          </li>
+        ))}
+      </ul>
+      <Picker
+        renderOption={({ option }) => (
+          <span
+            data-name={`option-${option.id}`}
+            ref={(element) => traceRef_4(element, option.label)}
+          >
+            {option.label}
+          </span>
+        )}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          itemsRef.current = itemsRef.current.map((item) =>
+            item.id === "a" ? { id: "a", label: "Alpha 2" } : item,
+          );
+          setItems(itemsRef.current);
+        }}
+      >
+        Rename first
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          itemsRef.current = [...itemsRef.current].reverse();
+          setItems(itemsRef.current);
+        }}
+      >
+        Reverse
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          itemsRef.current = itemsRef.current.filter((item) => item.id !== "b");
+          setItems(itemsRef.current);
+        }}
+      >
+        Remove second
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          itemsRef.current = [...itemsRef.current, { id: "d", label: "Delta" }];
+          setItems(itemsRef.current);
+        }}
+      >
+        Add item
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          prefixRef.current = "Close";
+          setPrefix(prefixRef.current);
+        }}
+      >
+        Change prefix
+      </button>
+    </section>
+  );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
+}
+
+/**
+ * Listens to a DOM event natively, where React's synthetic event would not keep the DOM's
+ * semantics, and gives back what stops it: the cleanup a ref callback returns.
+ */
+function listen<K extends keyof HTMLElementEventMap>(
+  element: EventTarget | null,
+  type: K,
+  listener: (event: HTMLElementEventMap[K]) => void,
+  options?: AddEventListenerOptions,
+): () => void {
+  element?.addEventListener(type, listener as EventListener, options);
+  return () => element?.removeEventListener(type, listener as EventListener, options);
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}
+
+/** The hooks of a directive, which `useElementDirective` runs on its elements. */
+interface DirectiveHooks<E extends Element, T> {
+  mounted?(el: E, value: T): unknown;
+  updated?(el: E, value: T, oldValue: T): unknown;
+  unmounted?(el: E): unknown;
+}
+
+/**
+ * Runs a directive's hooks on each element its ref callback receives, apart, with the value the
+ * element passes beside it: a list's rows, or a scoped slot a child calls with other props each
+ * time, give each element its own. The element's callback is written in place, so it records
+ * the element with its value at each render, and its cleanup forgets the element. `mounted`
+ * runs once the element is rendered, `updated` after a render that changes its value, and
+ * `unmounted` once that element is gone, whichever component renders or removes it.
+ */
+function useElementDirective<E extends Element, T>(directive: DirectiveHooks<E, T>) {
+  const state = useRef<{ attached: Map<E, T>; mounted: Map<E, T> }>({
+    attached: new Map(),
+    mounted: new Map(),
+  });
+  const [sync] = useState(() => () => {
+    const { attached, mounted } = state.current;
+    for (const element of [...mounted.keys()]) {
+      if (attached.has(element)) continue;
+      mounted.delete(element);
+      queueHook(element, () => directive.unmounted?.(element), "unmounted");
+    }
+    for (const [element, value] of attached) {
+      if (!mounted.has(element)) {
+        mounted.set(element, value);
+        queueHook(element, () => directive.mounted?.(element, value), "mounted");
+        continue;
+      }
+      const previous = mounted.get(element) as T;
+      if (Object.is(value, previous)) continue;
+      mounted.set(element, value);
+      queueHook(element, () => directive.updated?.(element, value, previous), "updated");
+    }
+  });
+  const [ref] = useState(() => (element: E | null, value: T) => {
+    if (!element) return () => {};
+    state.current.attached.set(element, value);
+    queueMicrotask(sync);
+    return () => {
+      state.current.attached.delete(element);
+      queueMicrotask(sync);
+    };
+  });
+  useLayoutEffect(() => {
+    sync();
+  });
+  useLayoutEffect(
+    () => () => {
+      state.current.attached.clear();
+      sync();
+    },
+    [sync],
+  );
+  return ref;
+}
+
+/**
+ * Runs a directive's hook once the turn ends, as Vue runs them: every `unmounted` first, then
+ * a descendant's before its ancestor's and siblings' in document order, one element's in the
+ * order they came, with the hooks every other output queued.
+ */
+function queueHook(
+  element: Element,
+  run: () => void,
+  hook: "mounted" | "updated" | "unmounted",
+): void {
+  const key: unique symbol = Symbol.for("unframework.directive-hooks@2");
+  const scope = globalThis as typeof globalThis & {
+    [key]?: { element: Element; run: () => void; hook: "mounted" | "updated" | "unmounted" }[];
+  };
+  const queued = scope[key];
+  if (queued) {
+    queued.push({ element, run, hook });
+    return;
+  }
+  scope[key] = [{ element, run, hook }];
+  queueMicrotask(() => {
+    const hooks = scope[key] ?? [];
+    scope[key] = undefined;
+    // Every `unmounted` runs first, but one after its own element's `mounted` this turn, as
+    // StrictMode's, which keeps its place among the rest. A leaving one moves up together
+    // with the element's hooks before it, which keep their order.
+    const first = new Set<(typeof hooks)[number]>();
+    const entered = new Set<Element>();
+    for (const each of hooks) {
+      if (each.hook === "mounted") entered.add(each.element);
+      if (each.hook !== "unmounted" || entered.has(each.element)) continue;
+      for (const earlier of hooks) {
+        if (earlier.element === each.element) first.add(earlier);
+        if (earlier === each) break;
+      }
+    }
+    hooks.sort((a, b) => {
+      if (first.has(a) !== first.has(b)) return first.has(a) ? -1 : 1;
+      if (a.element === b.element) return 0;
+      if (a.element.contains(b.element)) return 1;
+      if (b.element.contains(a.element)) return -1;
+      return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1;
+    });
+    for (const each of hooks) {
+      try {
+        each.run();
+      } catch (error) {
+        reportError(error);
+      }
+    }
+  });
+}

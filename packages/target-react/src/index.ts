@@ -242,8 +242,11 @@ export const react: Target = defineTarget({
     // A setup function is passed as client code passes one, its stable variant where it has one,
     // so its identity changes no more than on Vue. Any other value is read in a getter outside
     // the branches around its element, so what they narrow is asserted.
+    // A value that reads a list's row or a fill's props is passed by each element (ADR-0108).
     const directives = [...plan.directiveRefs].map(([attribute, ref]) => ({
-      text: `const ${ref} = ${plan.helpers.directive!.hook}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
+      text: plan.elementDirectives.has(attribute)
+        ? `const ${ref} = ${plan.helpers.directive!.each!}(${attribute.name});`
+        : `const ${ref} = ${plan.helpers.directive!.hook!}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
       group: -150,
       compact: true,
     }));

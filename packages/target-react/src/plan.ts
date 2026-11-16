@@ -14,6 +14,7 @@ import {
   ImportSet,
   parseCodeSource,
   pascalCase,
+  readsElementScope,
   sourceNames,
   typeNames,
 } from "@unframework.dev/codegen";
@@ -208,8 +209,12 @@ export interface ReactPlan {
     teleport?: TeleportNames;
     /** The inline components a `<Transition>` runs through, where the template holds one (ADR-0100). */
     transition?: TransitionNames;
-    /** The inline hook a directive's element calls, and the hooks' type (ADR-0099). */
-    directive?: { hook: string; hooks: string; queue: string };
+    /**
+     * The inline hooks a directive's element calls, and the hooks' type (ADR-0099): `hook` for
+     * a use whose value the component reads once, `each` for one whose value each element passes
+     * its ref callback (ADR-0108).
+     */
+    directive?: { hook?: string; each?: string; hooks: string; queue: string };
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
@@ -218,6 +223,11 @@ export interface ReactPlan {
    * the order the calls are declared in.
    */
   readonly directiveRefs: Map<DirectiveAttribute, string>;
+  /**
+   * The directives whose value reads a list's row or a scoped fill's props (ADR-0108): each
+   * element passes its own value to the ref callback, which its element writes in place.
+   */
+  readonly elementDirectives: Set<DirectiveAttribute>;
 }
 
 /**
@@ -673,8 +683,17 @@ export function planComponent(
   }
   const helpers: ReactPlan["helpers"] = {};
   if (onceGuards.size) helpers.once = names.claim("useOnce");
+  // A directive whose value reads a list's row or a fill's props takes it from its element's ref
+  // callback, which is then written in place, as for a listener that reads the row (ADR-0108).
+  const elementDirectives = new Set(
+    directivesInPostOrder(component).filter((attribute) => readsElementScope(attribute, component)),
+  );
+  const passesValues = (element: ElementNode) =>
+    element.attributes.some(
+      (attribute) => attribute.kind === "Directive" && elementDirectives.has(attribute),
+    );
   for (const [element, native] of nativeElements) {
-    if (stable(native.groups)) {
+    if (stable(native.groups) && !passesValues(element)) {
       native.callback = names.claim(`${callbackBase(element, bindings)}Listeners`);
     }
   }
@@ -686,7 +705,7 @@ export function planComponent(
       if (model?.kind !== "Model") return;
       const native = nativeElements.get(node);
       // A callback written in place runs at every render, which would move the caret each time.
-      if (native && !native.callback) return;
+      if ((native && !native.callback) || passesValues(node)) return;
       carets.set(
         model,
         native
@@ -747,10 +766,15 @@ export function planComponent(
     ),
   );
   if (directiveRefs.size) {
+    const perUse = [...directiveRefs.keys()].some((attribute) => !elementDirectives.has(attribute));
+    const hook = perUse ? names.claim("useDirective") : undefined;
+    const hooks = names.claim("DirectiveHooks");
+    const queue = names.claim("queueHook");
     helpers.directive = {
-      hook: names.claim("useDirective"),
-      hooks: names.claim("DirectiveHooks"),
-      queue: names.claim("queueHook"),
+      ...(hook ? { hook } : {}),
+      ...(elementDirectives.size ? { each: names.claim("useElementDirective") } : {}),
+      hooks,
+      queue,
     };
   }
 
@@ -782,6 +806,7 @@ export function planComponent(
     helpers,
     composition,
     directiveRefs,
+    elementDirectives,
   };
 }
 
@@ -893,6 +918,7 @@ const HELPER_NAMES = [
   "useDirective",
   "DirectiveHooks",
   "queueHook",
+  "useElementDirective",
 ];
 
 /**

@@ -1,0 +1,32 @@
+---
+interface Props {
+  option?: (props: { option: { id: string; label: string } }) => unknown;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { option: option_1, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const options = [
+  { id: "x", label: "Xray" },
+  { id: "y", label: "Yankee" },
+];
+---
+
+<div class:list={["picker", className]} style={style} {...scopeAttributes(Astro.props)}>
+  <ul aria-label="Options">
+    {options.map((option) => (
+      <li>{option_1?.({ option })}</li>
+    ))}
+  </ul>
+  <button type="button">Rename option</button>
+  <button type="button">Reverse options</button>
+  <button type="button">Remove option</button>
+</div>
