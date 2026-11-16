@@ -17,7 +17,7 @@
     "@amplitude/session-replay-browser": "^1.51.0",
     "@nuxt/content": "^3.16.1",
     "@nuxtjs/partytown": "^2.0.0",
-    "@uxfront/layer-docs": "^0.8.0",
+    "@uxfront/layer-docs": "^0.8.4",
     "@uxfront/layer-ui": "^0.1.7",
     "@uxfront/scene": "^0.5.0",
     "@uxfront/ui": "^0.6.0",
