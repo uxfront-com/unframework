@@ -158,7 +158,11 @@ export class QwikDirectives {
         inBranch &&
         node.kind === "Element" &&
         node.attributes.some(
-          (attribute) => attribute.kind === "Directive" && attribute.value.refs.length > 0,
+          (attribute) =>
+            attribute.kind === "Directive" &&
+            attribute.value.refs.length > 0 &&
+            // A value the element passes is read as it renders, so it never waits (ADR-0108).
+            !readsElementScope(attribute, component),
         )
       ) {
         this.#branched.add(node);
