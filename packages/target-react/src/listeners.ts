@@ -436,7 +436,9 @@ export class ReactListeners {
     if (onlyDirective !== undefined && !otherDirectives.length) {
       lines.push(`const ${local.detach} = ${onlyDirective.ref}(${local.element});`);
     } else if (onlyDirective !== undefined) {
-      const calls = listeners.directives.map(({ ref }) => `${ref}(${local.element})`);
+      const calls = listeners.directives.map(
+        ({ ref: directive }) => `${directive}(${local.element})`,
+      );
       lines.push(`const ${local.detaches} = [${calls.join(", ")}];`);
     }
     const stops = [
