@@ -37,6 +37,8 @@ export function runnerNames(claim: (base: string) => string): DirectiveRunnerNam
     states: claim("directiveStates"),
     watch: claim("watchDocument"),
     watches: claim("documentWatches"),
+    checker: claim("directiveCheck"),
+    leftWatch: claim("watchLeft"),
     queue: claim("queueHook"),
   };
 }

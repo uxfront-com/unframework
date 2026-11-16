@@ -81,6 +81,8 @@ export class QwikDirectives {
         values: string;
         watch: string;
         watches: string;
+        checker: string;
+        leftWatch: string;
         collect: string;
         forget: string;
         /** `waitForDocument`, where a value in a branch waits for its element (ADR-0099). */
@@ -145,6 +147,8 @@ export class QwikDirectives {
           values: names.fresh("directiveStates"),
           watch: names.fresh("watchDocument"),
           watches: names.fresh("documentWatches"),
+          checker: names.fresh("directiveCheck"),
+          leftWatch: names.fresh("watchLeft"),
           collect: names.fresh("collectElement"),
           forget: names.fresh("forgetElement"),
           ...(waits ? { wait: names.fresh("waitForDocument") } : {}),
@@ -253,7 +257,16 @@ export class QwikDirectives {
     const { run, hooks, element, queue, values, watch, watches, wait, collect, forget } = helper;
     const signal = names.core("Signal", { type: true });
     return [
-      ...directiveRunnerCode({ run, hooks, states: values, watch, watches, queue }),
+      ...directiveRunnerCode({
+        run,
+        hooks,
+        states: values,
+        watch,
+        watches,
+        checker: helper.checker,
+        leftWatch: helper.leftWatch,
+        queue,
+      }),
       ...(wait ? [waitCode(wait, watch)] : []),
       `/**
  * Adds an element a directive's \`ref\` receives to the directive's elements, once: on the server

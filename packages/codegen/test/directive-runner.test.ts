@@ -53,6 +53,8 @@ function runner() {
       states: "directiveStates",
       watch: "watchDocument",
       watches: "documentWatches",
+      checker: "directiveCheck",
+      leftWatch: "watchLeft",
       queue: "queueHook",
     }).join("\n\n"),
   );
@@ -92,8 +94,38 @@ describe("the directive runner", () => {
     mutate();
     row.isConnected = true;
     mutate();
+    // Back in the list, it waits for its caller's next run, which mounts it with its value.
+    expect(calls).toEqual(["mounted row", "unmounted row"]);
+    runDirective(hooks, row, "b", follow);
     expect(calls).toEqual(["mounted row", "unmounted row", "mounted row"]);
     expect(listed).toEqual(["leave row", "back row"]);
+  });
+
+  it("mounts a left element that comes back after its owner's task ran again without it", async () => {
+    const { runDirective, calls, mutate } = runner();
+    let listed: FakeElement[] = [];
+    const follow: Follow = {
+      leave: (element) => (listed = listed.filter((each) => each !== element)),
+      back: (element) => void listed.push(element),
+    };
+    const body = { name: "body", isConnected: true };
+    listed.push(body);
+    let stops = listed.map((element) => runDirective(hooks, element, "a", follow));
+    // The child projects it out, then a value change runs the task again: Qwik stops the last
+    // run's elements, and runs the list, which no longer holds it.
+    body.isConnected = false;
+    mutate();
+    for (const stop of stops) stop();
+    stops = listed.map((element) => runDirective(hooks, element, "b", follow));
+    await Promise.resolve();
+    body.isConnected = true;
+    mutate();
+    expect(listed).toEqual([body]);
+    // The list changed, so Qwik runs the task again, which mounts it.
+    for (const stop of stops) stop();
+    stops = listed.map((element) => runDirective(hooks, element, "b", follow));
+    await Promise.resolve();
+    expect(calls).toEqual(["mounted body", "unmounted body", "mounted body"]);
   });
 
   it("ends a left element's watch once it is collected, and the observer with the last watch", () => {

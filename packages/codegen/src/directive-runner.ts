@@ -20,6 +20,10 @@ export interface DirectiveRunnerNames {
   watch: string;
   /** `documentWatches`, the checks it calls and its observer. */
   watches: string;
+  /** `directiveCheck`, which makes the check of a directive's elements. */
+  checker: string;
+  /** `watchLeft`, the weak watch of an element that left its caller's list. */
+  leftWatch: string;
   /** `queueHook`, which the output declares beside it. */
   queue: string;
 }
@@ -30,7 +34,7 @@ export interface DirectiveRunnerNames {
  * may have changed, and whose returned stop it calls when the element's owner goes.
  */
 export function directiveRunnerCode(names: DirectiveRunnerNames): string[] {
-  const { run, hooks, states, watch, watches, queue } = names;
+  const { run, hooks, states, watch, watches, checker, leftWatch, queue } = names;
   return [
     `/** The hooks of a directive, which \`${run}\` runs on its element. */
 interface ${hooks}<E extends Element, T> {
@@ -51,13 +55,63 @@ const ${states} = new WeakMap<
   >
 >();`,
     `/**
+ * The check of a directive's elements: \`mounted\` once an element is in the document, and
+ * \`unmounted\` once it leaves. A caller that lists its elements passes \`follow\`, which takes an
+ * element out of the list as it leaves and back in if it returns, for the caller's next run to
+ * mount it with the value of then; meanwhile the element belongs to a weak watch alone
+ * (\`${leftWatch}\`). Declared apart from \`${run}\`, whose scope holds
+ * the element, so nothing it makes keeps a left element alive.
+ */
+function ${checker}<E extends Element, T>(
+  directive: ${hooks}<E, T>,
+  elements: WeakMap<Element, { value: unknown; mounted: boolean; left: boolean; runs: number; unwatch: () => void }>,
+  follow: { leave(element: E): void; back(element: E): void } | undefined,
+): (target: E) => void {
+  const check = (target: E): void => {
+    const current = elements.get(target);
+    if (!current || current.mounted === target.isConnected) return;
+    if (current.left) {
+      // Back in the document, it rejoins the list, and the caller's next run mounts it with the
+      // value of then.
+      if (target.isConnected) follow?.back(target);
+      return;
+    }
+    current.mounted = target.isConnected;
+    if (current.mounted) {
+      const mounted = current.value as T;
+      ${queue}(target, () => directive.mounted?.(target, mounted), "mounted");
+      return;
+    }
+    ${queue}(target, () => directive.unmounted?.(target), "unmounted");
+    if (!follow) return;
+    current.left = true;
+    current.unwatch();
+    current.unwatch = ${leftWatch}(target, check);
+    follow.leave(target);
+  };
+  return check;
+}`,
+    `/**
+ * Watches an element that left its caller's list through a \`WeakRef\`: \`check\` runs on it
+ * after each change of the document while it lives, and the watch ends once it is collected.
+ */
+function ${leftWatch}<E extends Element>(element: E, check: (target: E) => void): () => void {
+  const left = new WeakRef(element);
+  const unwatch = ${watch}(() => {
+    const kept = left.deref();
+    if (kept) check(kept);
+    else unwatch();
+  });
+  return unwatch;
+}`,
+    `/**
  * Runs a directive's hooks on its element: \`mounted\` once the element is in the document,
  * \`updated\` for a value that changed while it is, and \`unmounted\` once it leaves, which
- * projected content may do and come back. A caller that lists its elements passes \`follow\`,
- * which takes an element out of the list as it leaves and back in if it returns: meanwhile the
- * watch holds it weakly, so an element that is gone for good is collected, and its watch ends at
- * the next change of the document. The stop it returns, called when the element's owner goes,
- * unmounts the element a microtask later, unless a later run took it up.
+ * projected content may do and come back. A caller that lists its elements passes \`follow\`
+ * (\`${checker}\`): an element that left the list stays with its weak watch, and one that is gone
+ * for good is collected, which ends its watch at the next change of the document. The stop it
+ * returns, called when the element's owner goes, unmounts the element a microtask later, unless a
+ * later run took it up or it left a list.
  */
 function ${run}<E extends Element, T>(
   directive: ${hooks}<E, T>,
@@ -71,34 +125,14 @@ function ${run}<E extends Element, T>(
     ${states}.set(directive, own);
   }
   const elements = own;
-  const check = (target: E): void => {
-    const current = elements.get(target);
-    if (!current || current.mounted === target.isConnected) return;
-    current.mounted = target.isConnected;
-    if (current.mounted) {
-      const mounted = current.value as T;
-      ${queue}(target, () => directive.mounted?.(target, mounted), "mounted");
-      if (!follow || !current.left) return;
-      current.left = false;
-      current.unwatch();
-      current.unwatch = ${watch}(() => check(target));
-      follow.back(target);
-      return;
-    }
-    ${queue}(target, () => directive.unmounted?.(target), "unmounted");
-    if (!follow) return;
-    current.left = true;
-    current.unwatch();
-    const left = new WeakRef(target);
-    const unwatch = ${watch}(() => {
-      const kept = left.deref();
-      if (kept) check(kept);
-      else unwatch();
-    });
-    current.unwatch = unwatch;
-    follow.leave(target);
-  };
+  const check = ${checker}(directive, elements, follow);
   let state = elements.get(element);
+  if (state?.left) {
+    // A left element its caller lists again: it is followed as any other.
+    state.left = false;
+    state.unwatch();
+    state.unwatch = ${watch}(() => check(element));
+  }
   if (state) {
     state.runs += 1;
     if (!Object.is(value, state.value)) {
@@ -123,7 +157,7 @@ function ${run}<E extends Element, T>(
   const runs = taken.runs;
   return () => {
     queueMicrotask(() => {
-      if (elements.get(element) !== taken || taken.runs !== runs) return;
+      if (elements.get(element) !== taken || taken.runs !== runs || taken.left) return;
       taken.unwatch();
       elements.delete(element);
       if (taken.mounted) ${queue}(element, () => directive.unmounted?.(element), "unmounted");
