@@ -82,6 +82,7 @@ export class QwikDirectives {
         watch: string;
         watches: string;
         collect: string;
+        forget: string;
         /** `waitForDocument`, where a value in a branch waits for its element (ADR-0099). */
         wait?: string;
       }
@@ -145,6 +146,7 @@ export class QwikDirectives {
           watch: names.fresh("watchDocument"),
           watches: names.fresh("documentWatches"),
           collect: names.fresh("collectElement"),
+          forget: names.fresh("forgetElement"),
           ...(waits ? { wait: names.fresh("waitForDocument") } : {}),
         }
       : undefined;
@@ -206,7 +208,12 @@ export class QwikDirectives {
         const run = [
           `const ${valueName} = ${value};`,
           `for (const ${local} of ${elements}) {`,
-          `  ${cleanup}(${helper.run}(${attribute.name}, ${local}, ${valueName}));`,
+          `  ${cleanup}(`,
+          `    ${helper.run}(${attribute.name}, ${local}, ${valueName}, {`,
+          `      leave: (left) => ${helper.forget}(${list.name}, left),`,
+          `      back: (kept) => ${helper.collect}(${list.name}, kept),`,
+          "    }),",
+          "  );",
           "}",
         ];
         // An element Qwik removed stays in its list, with what its branch narrows gone, so a
@@ -243,7 +250,7 @@ export class QwikDirectives {
   helpers(names: OutputNames): string[] {
     const helper = this.#helper;
     if (!helper) return [];
-    const { run, hooks, element, queue, values, watch, watches, wait, collect } = helper;
+    const { run, hooks, element, queue, values, watch, watches, wait, collect, forget } = helper;
     const signal = names.core("Signal", { type: true });
     return [
       ...directiveRunnerCode({ run, hooks, states: values, watch, watches, queue }),
@@ -255,6 +262,14 @@ export class QwikDirectives {
 function ${collect}<E extends Element>(elements: ${signal}<E[]>, element: E): void {
   if (elements.untrackedValue.includes(element)) return;
   elements.value = [...elements.untrackedValue, element];
+}`,
+      `/**
+ * Drops an element that left the document from its directive's elements, once \`unmounted\` ran,
+ * so the list holds only the elements in it; one Qwik projects again comes back through the
+ * runner's weak watch.
+ */
+function ${forget}<E extends Element>(elements: ${signal}<E[]>, element: E): void {
+  elements.untrackedValue = elements.untrackedValue.filter((each) => each !== element);
 }`,
       `/** The element a directive's hooks take. */
 type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : never;`,
