@@ -1,0 +1,8 @@
+{
+  "description": "Directives in the shapes that test each output's wrapper: hooks that read module constants named like the wrappers' own names, an `updated` with a local named `oldValue`, a hook that returns a value and one with a parameter it never reads, values conditionals narrow, two of them reassigned by a handler, two directives beside a `v-model` on one element, and an imported directive whose element type is an alias.",
+  "main": "Profile.uf.tsx",
+  "requires": "Every render of the case holds what the directives' `mounted` writes, which a static target never runs: the server render checks the static targets, without it.",
+  "ssr": {
+    "initial": {}
+  }
+}

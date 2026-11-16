@@ -746,7 +746,10 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     if (verdict === undefined) {
       failed.delete(id);
     } else {
-      const names = (result.ir?.composables ?? []).map(({ name }) => name);
+      const names = [
+        ...(result.ir?.composables ?? []),
+        ...(result.ir?.directives ?? []).filter((directive) => directive.exported),
+      ].map(({ name }) => name);
       failed.set(id, { message: verdict, exports: names });
     }
     return assembly;

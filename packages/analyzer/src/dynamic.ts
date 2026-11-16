@@ -25,6 +25,7 @@ import type { AST } from "@unframework.dev/parser";
 import { lowerAttributes } from "./attributes.ts";
 import { componentOf, lowerComponentAs } from "./components.ts";
 import { Reporter } from "./context.ts";
+import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, span } from "./expressions.ts";
 import { hasContent, lowerChildren } from "./lower.ts";
@@ -342,10 +343,25 @@ function lowerTags(
       },
     );
   }
+  // Vue writes a `<component is>` as a component, which moves a directive to its root, and
+  // Angular writes each tag in an `@case` of its own (ADR-0099).
+  const directives = node.openingElement.attributes.filter(
+    (item): item is AST.JSXAttribute =>
+      item.type === "JSXAttribute" &&
+      item.name.type === "JSXIdentifier" &&
+      isDirectiveAttribute(item.name.name),
+  );
+  for (const directive of directives) {
+    directiveOnNonElement(directive.name as AST.JSXIdentifier, "`<component is>`", render.reporter);
+  }
   const opening = {
     ...node.openingElement,
     attributes: node.openingElement.attributes.filter(
-      (item) => item !== isAttribute && item !== model && item !== rawHtml,
+      (item) =>
+        item !== isAttribute &&
+        item !== model &&
+        item !== rawHtml &&
+        !directives.includes(item as AST.JSXAttribute),
     ),
   };
   const content = hasContent(node.children);

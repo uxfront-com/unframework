@@ -26,6 +26,7 @@ import type {
   ModelBindingAttribute,
   PropAttribute,
   RawHtmlAttribute,
+  DirectiveAttribute,
   RefAttribute,
   RenderNode,
   SlotFill,
@@ -121,6 +122,17 @@ export interface JsxDialect {
    */
   rawHtmlAttribute?(
     attribute: RawHtmlAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * A directive (ADR-0099): its hooks run in the browser once the element is in the DOM, after a
+   * render that changes the value, and once it leaves. Each JSX target composes it with the
+   * element's ref its own way (Solid's `ref={vFocusTrap(() => open())}`, React's helper's ref
+   * callback, Qwik's signal ref).
+   */
+  directiveAttribute?(
+    attribute: DirectiveAttribute,
     element: ElementNode,
     context: JsxContext,
   ): AST.JSXAttributeItem[];
@@ -627,7 +639,14 @@ export function jsxSlotProps(
 
 /** A composition hook a dialect that meets its construct must have (ADR-0055). */
 function hook<
-  K extends "slotValue" | "slotOutlet" | "modelAttribute" | "modelBinding" | "dynamic" | "teleport",
+  K extends
+    | "slotValue"
+    | "slotOutlet"
+    | "modelAttribute"
+    | "modelBinding"
+    | "dynamic"
+    | "teleport"
+    | "directiveAttribute",
 >(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
   if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
@@ -681,6 +700,8 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
                 js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
               ),
             ];
+      case "Directive":
+        return hook(context, "directiveAttribute")(attribute, node, context);
       default:
         return unreachable(attribute);
     }

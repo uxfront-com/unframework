@@ -4,7 +4,10 @@ import {
   codeNames,
   codeKind,
   defineTarget,
+  directiveSpecifier,
   exportDeclaration,
+  importedDirectives,
+  ownDirectives,
   exportsOf,
   componentTypes,
   js,
@@ -40,6 +43,15 @@ import {
   tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
+import {
+  directiveClassCode,
+  directiveClassName,
+  directiveFile,
+  emitDirective,
+  RUNNER_HELPER,
+  runnerCode,
+  runnerNames,
+} from "./directive.ts";
 import {
   directiveCode,
   scopeDirectiveCode,
@@ -239,6 +251,12 @@ export const angular: Target = defineTarget({
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
     // Angular's CDK portal is no framework import (P7), so an inline directive moves the view.
+    // An attribute directive whose hooks run through an inline runner and queue (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: RUNNER_HELPER,
+      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+    },
     teleport: {
       support: "emulated",
       helper: "Teleport",
@@ -249,6 +267,7 @@ export const angular: Target = defineTarget({
     return [emitComponent(component, context)];
   },
   emitComposable,
+  emitDirective,
 });
 
 export default angular;
@@ -340,6 +359,21 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
   // A teleport mounts its view through an inline directive (ADR-0098).
   const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
+  // The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
+  // and its module's own as classes of this file, with the runner and queue their hooks run through.
+  const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>
+    imports.add(
+      directiveSpecifier(specifier, directiveFile(imported)),
+      directiveClassName(imported),
+      { exact: true },
+    ),
+  );
+  const ownApplied = ownDirectives(component, module);
+  const runner = ownApplied.length ? runnerNames((base) => imports.claim(base)) : undefined;
+  const ownClasses = ownApplied.map((directive) => ({
+    directive,
+    className: imports.claim(directiveClassName(directive.name)),
+  }));
   // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
   // attributes the component's styled parents put on its host.
   const roots = scopedRoots(component);
@@ -385,7 +419,9 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     scope ||
     models.textCaret ||
     trustedHtml ||
-    teleport
+    teleport ||
+    appliedImports.length ||
+    ownClasses.length
       ? [
           [
             "imports",
@@ -397,6 +433,8 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...(models.textCaret === undefined ? [] : [models.textCaret]),
                 ...(trustedHtml === undefined ? [] : [trustedHtml]),
                 ...(teleport === undefined ? [] : [teleport]),
+                ...appliedImports,
+                ...ownClasses.map(({ className: name }) => name),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -508,6 +546,10 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
     ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
     ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
+    ...(runner === undefined ? [] : runnerCode(runner)),
+    ...ownClasses.map(({ directive, className: name }) =>
+      directiveClassCode(directive, name, runner?.run ?? RUNNER_HELPER, imports),
+    ),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });

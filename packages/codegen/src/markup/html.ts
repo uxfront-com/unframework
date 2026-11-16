@@ -31,4 +31,5 @@ export const htmlDialect: MarkupDialect = {
   list: () => noExpressions("a list"),
   eventAttribute: ({ attribute }) => noExpressions(`a \`${attribute.event}\` listener`),
   refAttribute: () => noExpressions("a template ref"),
+  directiveAttribute: () => noExpressions("a directive"),
 };

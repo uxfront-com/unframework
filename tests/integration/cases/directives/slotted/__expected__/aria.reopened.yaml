@@ -1,0 +1,5 @@
+- region "Card":
+  - button "Details" [expanded]
+  - paragraph: Body
+  - paragraph: Note
+  - button "Rename"

@@ -1,0 +1,279 @@
+{
+  "irVersion": 1,
+  "file": "directives/repeated/Choice.uf.tsx",
+  "components": [
+    {
+      "name": "Choice",
+      "span": {
+        "start": 199,
+        "end": 545
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@242",
+        "type": {
+          "code": "{ body?(): Element }",
+          "span": {
+            "start": 262,
+            "end": 282
+          }
+        },
+        "slots": [
+          {
+            "name": "body",
+            "optional": true,
+            "span": {
+              "start": 264,
+              "end": 280
+            }
+          }
+        ],
+        "span": {
+          "start": 236,
+          "end": 286
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@242",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 242,
+            "end": 247
+          }
+        },
+        {
+          "id": "first@295",
+          "name": "first",
+          "kind": "state",
+          "span": {
+            "start": 295,
+            "end": 300
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "first@295",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 307,
+              "end": 311
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 289,
+            "end": 313
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "choice",
+            "span": {
+              "start": 335,
+              "end": 349
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "first.value",
+                  "span": {
+                    "start": 358,
+                    "end": 369
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "first@295",
+                      "span": {
+                        "start": 358,
+                        "end": 369
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "b",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "body",
+                        "fallback": [],
+                        "span": {
+                          "start": 375,
+                          "end": 391
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 372,
+                      "end": 395
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 358,
+                  "end": 395
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "i",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "body",
+                        "fallback": [],
+                        "span": {
+                          "start": 401,
+                          "end": 417
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 398,
+                      "end": 421
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 398,
+                  "end": 421
+                }
+              }
+            ],
+            "span": {
+              "start": 358,
+              "end": 421
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 437,
+                  "end": 450
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(first.value = !first.value)",
+                      "span": {
+                        "start": 466,
+                        "end": 494
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "first@295",
+                          "operator": "=",
+                          "span": {
+                            "start": 466,
+                            "end": 494
+                          },
+                          "target": {
+                            "start": 467,
+                            "end": 478
+                          },
+                          "value": {
+                            "start": 481,
+                            "end": 493
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "first@295",
+                          "span": {
+                            "start": 482,
+                            "end": 493
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 460,
+                      "end": 494
+                    }
+                  },
+                  "span": {
+                    "start": 460,
+                    "end": 494
+                  }
+                },
+                "span": {
+                  "start": 451,
+                  "end": 495
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Switch",
+                "span": {
+                  "start": 496,
+                  "end": 518
+                }
+              }
+            ],
+            "span": {
+              "start": 429,
+              "end": 527
+            }
+          }
+        ],
+        "span": {
+          "start": 330,
+          "end": 538
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Choice",
+      "span": {
+        "start": 199,
+        "end": 545
+      }
+    }
+  ],
+  "types": []
+}

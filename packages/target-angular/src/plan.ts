@@ -688,6 +688,15 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
         unreachable(item);
     }
   }
+  // A directive's value that is a function by its name, which its hooks call (ADR-0099).
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Directive") visit(attribute.value as Code);
+      }
+    },
+  });
   return escaping;
 }
 

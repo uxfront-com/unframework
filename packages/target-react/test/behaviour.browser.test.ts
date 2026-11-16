@@ -424,6 +424,95 @@ describe("react output in the browser", () => {
     expect(logged).toEqual([]);
   });
 
+  describe("a directive", () => {
+    /** The calls `Marked`'s directive reports, in order. */
+    const calls: string[] = [];
+    const record = (event: Event) => void calls.push(String((event as CustomEvent).detail));
+    beforeEach(() => {
+      calls.length = 0;
+      document.addEventListener("uf-directive", record);
+    });
+    afterEach(() => document.removeEventListener("uf-directive", record));
+
+    it("mounts once, updates on a new value only, and unmounts when its element goes", async () => {
+      await start(await component("Marked"), []);
+      expect(calls).toEqual(["mounted 0"]);
+      await act(() => userEvent.click(button("Render")));
+      expect(calls).toEqual(["mounted 0"]);
+      await act(() => userEvent.click(button("Raise")));
+      expect(calls).toEqual(["mounted 0", "updated 1 0"]);
+      await act(() => userEvent.click(button("Toggle")));
+      expect(calls.at(-1)).toBe("unmounted");
+      await act(() => userEvent.click(button("Toggle")));
+      expect(calls.at(-1)).toBe("mounted 1");
+      await mounted!.unmount();
+      mounted = undefined;
+      expect(calls.at(-1)).toBe("unmounted");
+      expect(logged).toEqual([]);
+    });
+
+    it("under StrictMode, mounts, unmounts and mounts again, and ends unmounted", async () => {
+      await startStrict(await component("Marked"), []);
+      // StrictMode attaches the ref and runs the layout effects twice, as onMounted's (ADR-0048).
+      expect(calls).toEqual(["mounted 0", "unmounted", "mounted 0"]);
+      await act(() => userEvent.click(button("Raise")));
+      expect(calls.at(-1)).toBe("updated 1 0");
+      await mounted!.unmount();
+      mounted = undefined;
+      const count = (prefix: string) => calls.filter((call) => call.startsWith(prefix)).length;
+      expect(count("mounted")).toBe(count("unmounted"));
+      expect(logged).toEqual([]);
+    });
+  });
+
+  describe("a directive on every element one use renders", () => {
+    /** The calls each element got, by element, in the order of their first call. */
+    const calls = new Map<Element, string[]>();
+    const record = (event: Event) => {
+      const { call, el } = (event as CustomEvent<{ call: string; el: Element }>).detail;
+      calls.set(el, [...(calls.get(el) ?? []), call]);
+    };
+    beforeEach(() => {
+      calls.clear();
+      document.addEventListener("uf-rows", record);
+    });
+    afterEach(() => document.removeEventListener("uf-rows", record));
+    /** Each element's calls since `mark`, the calls each had then. */
+    const since = (mark: Map<Element, number>) =>
+      [...calls].flatMap(([el, list]) => {
+        const added = list.slice(mark.get(el) ?? 0);
+        return added.length ? [added] : [];
+      });
+    const mark = () => new Map([...calls].map(([el, list]) => [el, list.length]));
+
+    it("under StrictMode, follows each row's element apart as a child adds and removes rows", async () => {
+      await startStrict(await component("Repeat"), []);
+      // Two rows, each mounted once for good, as StrictMode mounts, unmounts and mounts again.
+      expect(calls.size).toBe(2);
+      for (const list of calls.values()) {
+        expect(list.at(-1)).toBe("mounted 0");
+        expect(list.filter((call) => call === "mounted 0").length).toBe(
+          list.filter((call) => call === "unmounted").length + 1,
+        );
+      }
+      let before = mark();
+      await act(() => userEvent.click(button("Remove")));
+      expect(since(before)).toEqual([["unmounted"]]);
+      before = mark();
+      await act(() => userEvent.click(button("Add")));
+      expect(since(before)).toEqual([["mounted 0"]]);
+      expect(calls.size).toBe(3);
+      before = mark();
+      await act(() => userEvent.click(button("Raise")));
+      expect(since(before)).toEqual([["updated 1 0"], ["updated 1 0"]]);
+      before = mark();
+      await mounted!.unmount();
+      mounted = undefined;
+      expect(since(before)).toEqual([["unmounted"], ["unmounted"]]);
+      expect(logged).toEqual([]);
+    });
+  });
+
   describe("under StrictMode", () => {
     it("keeps an onMounted timer running, and stops it at unmount", async () => {
       await startStrict(await component("Ticker"), ["mounted", "tick", "unmounted"]);

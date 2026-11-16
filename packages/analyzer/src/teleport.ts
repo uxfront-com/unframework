@@ -12,6 +12,7 @@ import { misplacedKey } from "./attributes.ts";
 import { reportDivergence, reportHtmlOnlyReference } from "./context.ts";
 import type { RawSpan, Reporter } from "./context.ts";
 import { closest } from "./cross-component.ts";
+import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
 import { span } from "./expressions.ts";
 import { htmlOnlyReferences, readJsxAttribute, readJsxText } from "./jsx/text.ts";
 import { isStaticString, valueOf } from "./literals.ts";
@@ -199,6 +200,10 @@ function selectorOf(
         `<${name.name}> exposes nothing, so a ref on it holds nothing to call.`,
         { help: "Put the ref on the element inside the <Teleport>." },
       );
+      continue;
+    }
+    if (item.name.type === "JSXIdentifier" && isDirectiveAttribute(written)) {
+      directiveOnNonElement(item.name, `<${name.name}>`, reporter);
       continue;
     }
     if (written !== "to") {

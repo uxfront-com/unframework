@@ -1,0 +1,7 @@
+{
+  "description": "A focus trap from a `.uf.ts` module of directives on a dialog a condition renders: it focuses the first control once mounted, keeps Tab and Shift+Tab among the dialog's controls, and returns the focus to Open once the dialog is removed.",
+  "main": "Settings.uf.tsx",
+  "ssr": {
+    "closed": {}
+  }
+}

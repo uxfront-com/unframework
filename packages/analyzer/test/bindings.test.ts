@@ -88,6 +88,8 @@ function describeAttribute(attribute: Attribute): string {
       return `v-model:${attribute.control}={${attribute.value.code}}`;
     case "RawHtml":
       return `innerHTML={${attribute.value.code}}`;
+    case "Directive":
+      return `${attribute.name}={${attribute.value.code}}`;
   }
 }
 

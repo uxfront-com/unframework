@@ -155,7 +155,13 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   control's `v-model`), `modelBinding` (a component's `v-model:<name>`), `dynamic`
   (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it) and
   `teleport` (`<Teleport to>`, ADR-0098, whose one element the markup printer prints as a root's,
-  outside every element around it). Text
+  outside every element around it) and `directiveAttribute` (`v-name={value}`, ADR-0099, which each
+  JSX target composes with the element's ref its own way; a markup dialect writes Vue's
+  `v-focus-trap`, Svelte's `{@attach}` or Angular's `[vFocusTrap]`). `directives.ts` prints a
+  directive's hooks and the module text its own module copies, `directive-runner.ts` the inline
+  `runDirective` that runs them as their element comes into the document and leaves it, for
+  Angular and Qwik, and `hook-queue.ts` the inline `queueHook` that runs the hooks in Vue's
+  order on the targets whose own order differs. Text
   goes through `jsxText`, the JSX escaping contract (ADR-0030): raw only when every JSX
   transform and formatter keeps it as written, and never where a formatter could start a line
   with `//` or `/*`.

@@ -17,6 +17,7 @@ import {
   ImportSet,
   isPrimitiveState,
   js,
+  ownDirectives,
   printProgram,
   referencedBindings,
   rewriteCode,
@@ -49,6 +50,7 @@ import {
   moduleBindings,
 } from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
+import { addDirectiveImports, directiveCode } from "./directive.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
 import { moduleReach, unreachable, VUE_RESERVED, VueNames } from "./names.ts";
@@ -165,6 +167,8 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // Each composable it calls, from the composable's own output, `./useToggle` beside
   // `useToggle.uf.ts` (ADR-0069).
   addComposableImports(component, module, imports);
+  // Each directive it applies from a `.uf.ts` module, from the directive's own output (ADR-0099).
+  addDirectiveImports(component, module, imports);
   // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
   const reads = moduleBindings(component, module, imports, names);
   const constants = reads.constants;
@@ -267,6 +271,10 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
   const types = keys ? [] : moduleTypes(component, module, reads, names);
+  // The module's own directives it applies, which `<script setup>` resolves by name (ADR-0099).
+  const own = ownDirectives(component, module);
+  const directiveType = own.length ? imports.add("vue", "ObjectDirective", { type: true }) : "";
+  const directives = own.map((directive) => directiveCode(directive, directiveType));
   if (
     statements.length === 0 &&
     imports.size === 0 &&
@@ -280,6 +288,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     ...(head ? [head] : []),
     ...types,
     ...(constants.length ? [constants.join("\n")] : []),
+    ...directives,
     ...(statements.length ? [laidOut(statements)] : []),
   ].join("\n\n");
   return {

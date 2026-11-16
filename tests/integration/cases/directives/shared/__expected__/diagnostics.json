@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support directive: A directive's hooks never run on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "directives/shared/Badge.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 25,
+      "offset": 179
+    },
+    "end": {
+      "line": 9,
+      "column": 39,
+      "offset": 193
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support directive: A directive's hooks never run on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "directives/shared/Tag.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 21,
+      "offset": 167
+    },
+    "end": {
+      "line": 9,
+      "column": 43,
+      "offset": 189
+    },
+    "target": "astro"
+  }
+]

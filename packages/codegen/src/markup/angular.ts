@@ -575,6 +575,14 @@ export const angularDialect: MarkupDialect = {
     return [{ name, text: `${name}="${angularCode(statement, "event")}"` }];
   },
   refAttribute: ({ name }) => [{ name: `#${name}`, text: `#${name}` }],
+  // An attribute directive's input, always bound (ADR-0099): a static `vFocusTrap="x"` would
+  // render a DOM attribute too.
+  directiveAttribute: ({ attribute, value }) => [
+    {
+      name: `[${attribute.name}]`,
+      text: `[${attribute.name}]="${angularCode(value, "attribute")}"`,
+    },
+  ],
   // Angular sanitises a bound `innerHTML`: the target's pure pipe marks the markup trusted, so it
   // renders as written (ADR-0097).
   rawHtmlAttribute: (code) => [

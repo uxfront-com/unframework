@@ -1679,6 +1679,270 @@
         }
       }
     },
+    "directives/click-outside": {
+      "time": 11.52,
+      "sizes": {
+        "react": {
+          "raw": 3989,
+          "gzip": 1964
+        },
+        "vue": {
+          "raw": 1285,
+          "gzip": 774
+        },
+        "svelte": {
+          "raw": 1759,
+          "gzip": 1021
+        },
+        "solid": {
+          "raw": 2470,
+          "gzip": 1336
+        },
+        "angular": {
+          "raw": 5043,
+          "gzip": 2352
+        },
+        "qwik": {
+          "raw": 4506,
+          "gzip": 2540
+        },
+        "astro": {
+          "raw": 644,
+          "gzip": 436
+        }
+      }
+    },
+    "directives/focus-trap": {
+      "time": 14.53,
+      "sizes": {
+        "react": {
+          "raw": 4062,
+          "gzip": 2046
+        },
+        "vue": {
+          "raw": 1496,
+          "gzip": 885
+        },
+        "svelte": {
+          "raw": 1998,
+          "gzip": 1128
+        },
+        "solid": {
+          "raw": 2709,
+          "gzip": 1451
+        },
+        "angular": {
+          "raw": 5709,
+          "gzip": 2597
+        },
+        "qwik": {
+          "raw": 5058,
+          "gzip": 2877
+        },
+        "astro": {
+          "raw": 564,
+          "gzip": 385
+        }
+      }
+    },
+    "directives/order": {
+      "time": 12.24,
+      "sizes": {
+        "react": {
+          "raw": 6522,
+          "gzip": 3179
+        },
+        "vue": {
+          "raw": 1807,
+          "gzip": 1044
+        },
+        "svelte": {
+          "raw": 2611,
+          "gzip": 1453
+        },
+        "solid": {
+          "raw": 4132,
+          "gzip": 2143
+        },
+        "angular": {
+          "raw": 9054,
+          "gzip": 4082
+        },
+        "qwik": {
+          "raw": 9914,
+          "gzip": 5563
+        },
+        "astro": {
+          "raw": 1269,
+          "gzip": 832
+        }
+      }
+    },
+    "directives/repeated": {
+      "time": 31.93,
+      "sizes": {
+        "react": {
+          "raw": 8595,
+          "gzip": 4561
+        },
+        "vue": {
+          "raw": 3407,
+          "gzip": 2100
+        },
+        "svelte": {
+          "raw": 5388,
+          "gzip": 3050
+        },
+        "solid": {
+          "raw": 6229,
+          "gzip": 3399
+        },
+        "angular": {
+          "raw": 16549,
+          "gzip": 7122
+        },
+        "qwik": {
+          "raw": 10417,
+          "gzip": 6728
+        },
+        "astro": {
+          "raw": 3477,
+          "gzip": 2219
+        }
+      }
+    },
+    "directives/shapes": {
+      "time": 19.57,
+      "sizes": {
+        "react": {
+          "raw": 4891,
+          "gzip": 2406
+        },
+        "vue": {
+          "raw": 1682,
+          "gzip": 888
+        },
+        "svelte": {
+          "raw": 2691,
+          "gzip": 1210
+        },
+        "solid": {
+          "raw": 4066,
+          "gzip": 1932
+        },
+        "angular": {
+          "raw": 9200,
+          "gzip": 3654
+        },
+        "qwik": {
+          "raw": 8021,
+          "gzip": 4490
+        },
+        "astro": {
+          "raw": 794,
+          "gzip": 487
+        }
+      }
+    },
+    "directives/shared": {
+      "time": 8.52,
+      "sizes": {
+        "react": {
+          "raw": 6218,
+          "gzip": 3299
+        },
+        "vue": {
+          "raw": 1167,
+          "gzip": 924
+        },
+        "svelte": {
+          "raw": 2051,
+          "gzip": 1431
+        },
+        "solid": {
+          "raw": 2538,
+          "gzip": 1639
+        },
+        "angular": {
+          "raw": 6864,
+          "gzip": 3536
+        },
+        "qwik": {
+          "raw": 7200,
+          "gzip": 4253
+        },
+        "astro": {
+          "raw": 1639,
+          "gzip": 1124
+        }
+      }
+    },
+    "directives/slotted": {
+      "time": 12.46,
+      "sizes": {
+        "react": {
+          "raw": 4635,
+          "gzip": 2358
+        },
+        "vue": {
+          "raw": 1502,
+          "gzip": 900
+        },
+        "svelte": {
+          "raw": 2325,
+          "gzip": 1308
+        },
+        "solid": {
+          "raw": 2943,
+          "gzip": 1580
+        },
+        "angular": {
+          "raw": 6453,
+          "gzip": 2912
+        },
+        "qwik": {
+          "raw": 5630,
+          "gzip": 3293
+        },
+        "astro": {
+          "raw": 1295,
+          "gzip": 861
+        }
+      }
+    },
+    "directives/updated-value": {
+      "time": 7.3,
+      "sizes": {
+        "react": {
+          "raw": 3517,
+          "gzip": 1746
+        },
+        "vue": {
+          "raw": 1004,
+          "gzip": 587
+        },
+        "svelte": {
+          "raw": 1571,
+          "gzip": 882
+        },
+        "solid": {
+          "raw": 2202,
+          "gzip": 1201
+        },
+        "angular": {
+          "raw": 4758,
+          "gzip": 2226
+        },
+        "qwik": {
+          "raw": 4100,
+          "gzip": 2294
+        },
+        "astro": {
+          "raw": 665,
+          "gzip": 430
+        }
+      }
+    },
     "dynamic/components": {
       "time": 7.16,
       "sizes": {

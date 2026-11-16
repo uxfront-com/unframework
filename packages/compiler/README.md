@@ -107,6 +107,10 @@ reports UF1205 at the import that closes a cycle, which withholds the module fro
 an analyser error does. An injection key, a type or a shared module imported back closes no cycle
 (UF2033's context pattern), and a component that imports itself is UF1203's.
 
+**Directives** (ADR-0099). A `.uf.ts` module may export directives beside its composables, and
+its API lists them by name. `compile()` emits each exported directive with its target's
+`emitDirective`, as it emits a composable, and reports UF1002 for a target without one.
+
 **Composables** (ADR-0069). The resolver gives a `.uf.ts` module's API too: its `composables`,
 each with its parameters' kinds and its members' kinds and flags, which a caller's `Use` item is
 lowered by, so a caller's output never depends on a composable's body. `compile()` also takes a

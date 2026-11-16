@@ -47,6 +47,7 @@ import { lowerClass } from "./class.ts";
 import type { LoweredClass } from "./class.ts";
 import { reportCharacter, reportDivergence, reportHtmlOnlyReference } from "./context.ts";
 import type { RawSpan, Reporter } from "./context.ts";
+import { isDirectiveAttribute, lowerDirectiveAttribute } from "./directives.ts";
 import { emptyValue, enumeratedProblem, enumeratedStaticProblem } from "./enumerated.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";
@@ -138,7 +139,7 @@ interface Read {
  * once the element's `type` is known (`./models.ts`), or `innerHTML` (`./raw-html.ts`).
  */
 interface OwnRead {
-  own: "listener" | "ref" | "model" | "html";
+  own: "listener" | "ref" | "model" | "html" | "directive";
   node: AST.JSXAttribute;
   nameNode: AST.JSXIdentifier;
   attribute: Attribute | undefined;
@@ -195,6 +196,14 @@ export function lowerAttributes(
       );
       continue;
     }
+    if (nameNode.type === "JSXNamespacedName" && /^v-/i.test(nameNode.namespace.name)) {
+      reporter.unsupported(
+        nameNode,
+        `\`${authored}\` passes the directive an argument, and a directive's arguments and modifiers are not supported yet (ADR-0099).`,
+        { help: "Pass what the directive needs as its value: `v-name={value}`." },
+      );
+      continue;
+    }
     if (nameNode.type === "JSXNamespacedName" && !/^(xlink|xml|xmlns):/.test(authored)) {
       reporter.unsupported(nameNode, "Namespaced attributes are not supported yet.");
       continue;
@@ -231,6 +240,24 @@ export function lowerAttributes(
           attribute,
           key: RAW_HTML,
           canonical: RAW_HTML,
+        });
+        continue;
+      }
+      // A directive (ADR-0099), lowered on its own as a listener is: it renders no attribute.
+      if (isDirectiveAttribute(authored)) {
+        const attribute = lowerDirectiveAttribute(
+          item,
+          nameNode,
+          element,
+          element.render.directives,
+        );
+        entries.push({
+          own: "directive",
+          node: item,
+          nameNode,
+          attribute,
+          key: `v:${authored}`,
+          canonical: authored,
         });
         continue;
       }
@@ -931,12 +958,15 @@ function checkAgainstElement(
         reporter.report(
           "UF3007",
           entry.nameNode,
-          entry.own === "ref" || entry.own === "model" || entry.own === "html"
+          entry.own === "ref" ||
+            entry.own === "model" ||
+            entry.own === "html" ||
+            entry.own === "directive"
             ? `\`${entry.canonical}\` is set twice on this <${tag}>.`
             : `\`${entry.canonical}\` is set twice on this <${tag}>: an element listens to an event with one handler for each option.`,
           {
             help:
-              entry.own === "html"
+              entry.own === "html" || entry.own === "directive"
                 ? "Keep one."
                 : "Keep one: call both functions from one handler.",
             related: [{ span: first, message: "First set here" }],

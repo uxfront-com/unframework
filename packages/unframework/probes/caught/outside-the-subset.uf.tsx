@@ -1,7 +1,7 @@
 // Constructs plan §4.6 rejects that the types reject too (the compiler reports them as well). The
 // rejected constructs the types cannot see are pinned in ../allowed/blind-spots.uf.tsx.
 import {
-  // @ts-expect-error TS2305 `reactive()` is outside the subset: `ref`, replaced whole (ADR-0008)
+  // @ts-expect-error TS2724 `reactive()` is outside the subset: `ref`, replaced whole (ADR-0008)
   reactive,
   // @ts-expect-error TS2305 `toRefs()` is outside the subset
   toRefs,

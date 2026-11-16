@@ -55,6 +55,7 @@ describe("solid target", () => {
       "contextual-root",
       "default-slot",
       "default-slot-presence",
+      "directive",
       "dynamic-component",
       "element",
       "event-capture",
@@ -97,7 +98,7 @@ describe("solid target", () => {
     ]);
   });
 
-  it("emulates watchers, nextTick, class and style bindings, the child-root rule and keyed lists with the helpers it prints, declares a composable's effect order, the rest natively", () => {
+  it("emulates watchers, nextTick, class and style bindings, the child-root rule, keyed lists and directives with the helpers it prints, declares a composable's effect order, the rest natively", () => {
     // Only a composable's effect order is unsupported: the watchers' scheduler coalesces every
     // shape of a synchronous run of client code in one module (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
@@ -116,6 +117,8 @@ describe("solid target", () => {
       ["composable-effect-order", expect.objectContaining({ code: "UF4005", severity: "info" })],
       // `<For>` follows the items themselves (ADR-0096).
       ["keyed-identity", expect.objectContaining({ helper: "KeyedFor" })],
+      // A ref factory, whose hooks run through a queue in Vue's order (ADR-0099).
+      ["directive", expect.objectContaining({ helper: "queueHook" })],
       // `<Portal>` wraps its content in a `<div>` (ADR-0098).
       ["teleport", expect.objectContaining({ helper: "Teleport" })],
     ]);

@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF3056",
+    "severity": "error",
+    "message": "`v-hint` applies a directive to <Item>, a component, which has no element of its own there: a directive's hooks run on the element it is written on.",
+    "file": "diagnostics/invalid-directive-use/Toolbar.uf.tsx",
+    "start": {
+      "line": 19,
+      "column": 13,
+      "offset": 501
+    },
+    "end": {
+      "line": 19,
+      "column": 19,
+      "offset": 507
+    },
+    "help": "Apply the directive to an element inside it."
+  },
+  {
+    "code": "UF3056",
+    "severity": "error",
+    "message": "`v-hint`'s value is an object literal built in place: it is a new value at every render on React and Vue, which runs `updated` each time, and the same one on Svelte, which never does.",
+    "file": "diagnostics/invalid-directive-use/Toolbar.uf.tsx",
+    "start": {
+      "line": 20,
+      "column": 21,
+      "offset": 550
+    },
+    "end": {
+      "line": 20,
+      "column": 40,
+      "offset": 569
+    },
+    "help": "Pass a value that changes only when it should: a state, a derived value (`computed(() => ({ … }))`), a prop, a setup function or a primitive."
+  },
+  {
+    "code": "UF3056",
+    "severity": "error",
+    "message": "`v-hint` is written without a value: a directive's hooks receive one.",
+    "file": "diagnostics/invalid-directive-use/Toolbar.uf.tsx",
+    "start": {
+      "line": 21,
+      "column": 13,
+      "offset": 598
+    },
+    "end": {
+      "line": 21,
+      "column": 19,
+      "offset": 604
+    },
+    "help": "Write `v-hint={value}`, or `v-hint={true}` for a directive that needs none."
+  }
+]

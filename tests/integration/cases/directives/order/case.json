@@ -1,0 +1,7 @@
+{
+  "main": "Tree.uf.tsx",
+  "description": "A directive of the module itself on nested and sibling elements, part of them behind a condition: its hooks run in Vue's order, `mounted` after the element's descendants' and after its earlier siblings', and `unmounted` after the element's descendants', and before what replaces the element mounts. A child's root applies a `.uf.ts` module's directive, whose hooks sort with the parent's.",
+  "ssr": {
+    "initial": {}
+  }
+}

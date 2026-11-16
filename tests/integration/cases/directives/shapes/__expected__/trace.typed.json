@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Note' }) \"Hi\"",
+      "dom": [
+        "<section aria-label=\"Profile\" class=\"profile\">",
+        "  <p data-element=\"mounted\" data-hooks=\"Ada\">",
+        "    \"Ada\"",
+        "  </p>",
+        "  <b data-element=\"mounted\" data-hooks=\"Lovelace\">",
+        "    \"Lovelace\"",
+        "  </b>",
+        "  <i data-element=\"mounted\" data-hooks=\"Al\">",
+        "    \"Al\"",
+        "  </i>",
+        "  <s data-element=\"mounted\" data-hooks=\"TidyTrail\">",
+        "    \"Tidy\"",
+        "  </s>",
+        "  <textarea aria-label=\"Note\" data-element=\"mounted\" data-hooks=\"updated Hi\" data-queue=\"queued\" data-selectable=\"true\" data-untrack=\"mounted\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
+        "  <button type=\"button\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Count\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Forget\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Profile\":",
+        "  - paragraph: Ada",
+        "  - text: LovelaceAlTidy",
+        "  - textbox \"Note\": Hi",
+        "  - button \"Toggle\"",
+        "  - button \"Count\"",
+        "  - button \"Forget\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -233,6 +233,8 @@ export function solidJsx(
     },
     eventAttribute: (attribute, element, context) =>
       listeners.eventAttribute(attribute, element, context),
+    directiveAttribute: (attribute, element, context) =>
+      listeners.directiveAttribute(attribute, element, context),
     refAttribute: (attribute, element, context) =>
       isComponentTag(element.tag)
         ? listeners.componentRef(attribute)
@@ -743,12 +745,13 @@ function hasTypedProps(element: ElementNode): boolean {
       case "Spread":
         return attribute.keys.some((key) => !isUntyped(element.tag, key.name));
       // `class`, `style`, a listener, `ref` and `innerHTML` are props every element's type
-      // declares.
+      // declares, and a directive is a `ref` (ADR-0099).
       case "Class":
       case "Style":
       case "Event":
       case "Ref":
       case "RawHtml":
+      case "Directive":
         return true;
       case "Model":
         return false;

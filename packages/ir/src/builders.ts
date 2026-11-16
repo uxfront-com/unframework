@@ -85,6 +85,9 @@ import type {
   PropsParameter,
   ProvideItem,
   RawHtmlAttribute,
+  DirectiveAttribute,
+  DirectiveHook,
+  UfDirective,
   RefAttribute,
   RefType,
   Reference,
@@ -138,6 +141,7 @@ export interface ModuleOptions {
   moduleImports?: SharedModuleImport[];
   constants?: ModuleConstant[];
   composables?: UfComposable[];
+  directives?: UfDirective[];
 }
 
 /** Builds a module: without imports, injection keys or pass-through imports unless given. */
@@ -151,7 +155,7 @@ export function createModule(
   passThroughImports: PassThroughImport[] = [],
   options: ModuleOptions = {},
 ): UfModule {
-  const { typeImports, typeExports, moduleImports, constants, composables } = options;
+  const { typeImports, typeExports, moduleImports, constants, composables, directives } = options;
   return {
     irVersion: IR_VERSION,
     file,
@@ -166,6 +170,7 @@ export function createModule(
     ...(moduleImports?.length ? { moduleImports } : {}),
     ...(constants?.length ? { constants } : {}),
     ...(composables?.length ? { composables } : {}),
+    ...(directives?.length ? { directives } : {}),
   };
 }
 
@@ -217,6 +222,45 @@ export function createModuleConstant(
   type?: TypeText,
 ): ModuleConstant {
   return { name, binding, ...(type ? { type } : {}), value, span: at };
+}
+
+/** What a directive declares besides its name, value type and hooks: each set only when given. */
+export interface DirectiveOptions {
+  exported?: boolean;
+  element?: TypeText;
+  bindings?: Binding[];
+  types?: string[];
+}
+
+/** Builds a directive (ADR-0099): not exported, on an `HTMLElement`, reading nothing of its module unless given. */
+export function createDirective(
+  name: string,
+  value: TypeText,
+  hooks: DirectiveHook[],
+  at: Span,
+  options: DirectiveOptions = {},
+): UfDirective {
+  return {
+    name,
+    ...(options.exported ? { exported: true as const } : {}),
+    value,
+    ...(options.element ? { element: options.element } : {}),
+    hooks,
+    bindings: options.bindings ?? [],
+    types: options.types ?? [],
+    span: at,
+  };
+}
+
+/** Builds a directive's hook (ADR-0099). */
+export function createDirectiveHook(
+  name: DirectiveHook["name"],
+  parameters: string[],
+  body: Code,
+  at: Span,
+  isAsync = false,
+): DirectiveHook {
+  return { name, ...(isAsync ? { async: true as const } : {}), parameters, body, span: at };
 }
 
 /** What a composable declares besides its name and parameters: each set only when given. */
@@ -1058,6 +1102,15 @@ export function createStaticAttribute(
 /** Builds a bound attribute. */
 export function createBoundAttribute(name: string, value: Expression, at: Span): BoundAttribute {
   return { kind: "Bound", name, value, span: at };
+}
+
+/** Builds `v-focus-trap={open.value}` (ADR-0099). */
+export function createDirectiveAttribute(
+  name: string,
+  value: Expression,
+  at: Span,
+): DirectiveAttribute {
+  return { kind: "Directive", name, value, span: at };
 }
 
 /** Builds `innerHTML={markup}` (ADR-0097). */

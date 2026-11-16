@@ -133,6 +133,8 @@ export const astro: Target = defineTarget({
     },
     // A teleport mounts once its component has, in the browser (ADR-0098).
     teleport: inert("A `<Teleport>` renders nothing"),
+    // A directive's hooks run in the browser (ADR-0099): the element renders without them.
+    directive: inert("A directive's hooks never run"),
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
@@ -144,7 +146,7 @@ export const astro: Target = defineTarget({
    */
   emit(source: UfComponent, context): OutputFile[] {
     const { module } = context;
-    // A teleport prints nothing (ADR-0098).
+    // A teleport prints nothing (ADR-0098), and neither does a directive (ADR-0099).
     const component = withoutTeleports(source);
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);
@@ -196,6 +198,8 @@ export const astro: Target = defineTarget({
   },
   // A composable is a static `.ts` module, which returns initial values (ADR-0069).
   emitComposable,
+  // A static page runs no hook, so a directive's module has no file (ADR-0099).
+  emitDirective: () => [],
 });
 
 export default astro;

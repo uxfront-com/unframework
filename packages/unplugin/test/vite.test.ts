@@ -1561,6 +1561,7 @@ function htmlTarget() {
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
     teleport: { support: "native" },
+    directive: { support: "native" },
   };
   return defineTarget({
     name: "html",

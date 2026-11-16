@@ -227,10 +227,11 @@ class Evaluator {
           }
           break;
         }
-        // A listener and a template ref render nothing: they act in the browser (ADR-0047,
-        // ADR-0049), which the corpus's behaviour layers check.
+        // A listener, a template ref and a directive render nothing: they act in the browser
+        // (ADR-0047, ADR-0049, ADR-0099), which the corpus's behaviour layers check.
         case "Event":
         case "Ref":
+        case "Directive":
           break;
         case "Model":
           throw new Error("a v-model is not rendered yet (ADR-0055)");

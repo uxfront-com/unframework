@@ -1,0 +1,421 @@
+{
+  "irVersion": 1,
+  "file": "directives/updated-value/Meter.uf.tsx",
+  "components": [
+    {
+      "name": "Meter",
+      "span": {
+        "start": 88,
+        "end": 585
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "level@130",
+          "name": "level",
+          "kind": "state",
+          "span": {
+            "start": 130,
+            "end": 135
+          }
+        },
+        {
+          "id": "renders@154",
+          "name": "renders",
+          "kind": "state",
+          "span": {
+            "start": 154,
+            "end": 161
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "level@130",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 142,
+              "end": 143
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 124,
+            "end": 145
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "renders@154",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 168,
+              "end": 169
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 148,
+            "end": 171
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "meter",
+            "span": {
+              "start": 197,
+              "end": 210
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Meter",
+            "span": {
+              "start": 211,
+              "end": 229
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "level",
+                "span": {
+                  "start": 245,
+                  "end": 258
+                }
+              },
+              {
+                "kind": "Directive",
+                "name": "vRecord",
+                "value": {
+                  "code": "level.value",
+                  "span": {
+                    "start": 269,
+                    "end": 280
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "level@130",
+                      "span": {
+                        "start": 269,
+                        "end": 280
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 259,
+                  "end": 281
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Level ",
+                "span": {
+                  "start": 282,
+                  "end": 297
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "level.value",
+                  "span": {
+                    "start": 298,
+                    "end": 309
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "level@130",
+                      "span": {
+                        "start": 298,
+                        "end": 309
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 297,
+                  "end": 310
+                }
+              }
+            ],
+            "span": {
+              "start": 237,
+              "end": 326
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Rendered again ",
+                "span": {
+                  "start": 336,
+                  "end": 351
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "renders.value",
+                  "span": {
+                    "start": 352,
+                    "end": 365
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "renders@154",
+                      "span": {
+                        "start": 352,
+                        "end": 365
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 351,
+                  "end": 366
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " times",
+                "span": {
+                  "start": 366,
+                  "end": 372
+                }
+              }
+            ],
+            "span": {
+              "start": 333,
+              "end": 376
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 391,
+                  "end": 404
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "level.value++",
+                      "span": {
+                        "start": 420,
+                        "end": 433
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "level@130",
+                          "operator": "++",
+                          "span": {
+                            "start": 420,
+                            "end": 433
+                          },
+                          "target": {
+                            "start": 420,
+                            "end": 431
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 414,
+                      "end": 433
+                    }
+                  },
+                  "span": {
+                    "start": 414,
+                    "end": 433
+                  }
+                },
+                "span": {
+                  "start": 405,
+                  "end": 434
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Raise",
+                "span": {
+                  "start": 435,
+                  "end": 456
+                }
+              }
+            ],
+            "span": {
+              "start": 383,
+              "end": 465
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 480,
+                  "end": 493
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "renders.value++",
+                      "span": {
+                        "start": 509,
+                        "end": 524
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "renders@154",
+                          "operator": "++",
+                          "span": {
+                            "start": 509,
+                            "end": 524
+                          },
+                          "target": {
+                            "start": 509,
+                            "end": 522
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 503,
+                      "end": 524
+                    }
+                  },
+                  "span": {
+                    "start": 503,
+                    "end": 524
+                  }
+                },
+                "span": {
+                  "start": 494,
+                  "end": 525
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Render again",
+                "span": {
+                  "start": 526,
+                  "end": 554
+                }
+              }
+            ],
+            "span": {
+              "start": 472,
+              "end": 563
+            }
+          }
+        ],
+        "span": {
+          "start": 188,
+          "end": 578
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Meter",
+      "span": {
+        "start": 88,
+        "end": 585
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./record.uf.ts",
+      "file": "record.uf.ts",
+      "api": {
+        "file": "record.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vRecord"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vRecord",
+          "local": "vRecord",
+          "span": {
+            "start": 54,
+            "end": 61
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 86
+      }
+    }
+  ]
+}

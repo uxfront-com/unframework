@@ -1,0 +1,659 @@
+{
+  "irVersion": 1,
+  "file": "directives/order/Tree.uf.tsx",
+  "components": [
+    {
+      "name": "Tree",
+      "span": {
+        "start": 644,
+        "end": 1372
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "TRACE@185",
+          "name": "TRACE",
+          "kind": "moduleConst",
+          "span": {
+            "start": 185,
+            "end": 190
+          }
+        },
+        {
+          "id": "shown@685",
+          "name": "shown",
+          "kind": "state",
+          "span": {
+            "start": 685,
+            "end": 690
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "shown@685",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 697,
+              "end": 701
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 679,
+            "end": 703
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tree",
+            "span": {
+              "start": 729,
+              "end": 741
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Tree",
+            "span": {
+              "start": 742,
+              "end": 759
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "data-name",
+            "value": "outer",
+            "span": {
+              "start": 760,
+              "end": 777
+            }
+          },
+          {
+            "kind": "Directive",
+            "name": "vTrace",
+            "value": {
+              "code": "\"outer\"",
+              "span": {
+                "start": 786,
+                "end": 793
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 778,
+              "end": 793
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "data-name",
+                "value": "first",
+                "span": {
+                  "start": 804,
+                  "end": 821
+                }
+              },
+              {
+                "kind": "Directive",
+                "name": "vTrace",
+                "value": {
+                  "code": "\"first\"",
+                  "span": {
+                    "start": 830,
+                    "end": 837
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 822,
+                  "end": 837
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "First",
+                "span": {
+                  "start": 838,
+                  "end": 859
+                }
+              }
+            ],
+            "span": {
+              "start": 801,
+              "end": 863
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Note",
+            "attributes": [],
+            "fills": [],
+            "span": {
+              "start": 870,
+              "end": 878
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "shown.value",
+                  "span": {
+                    "start": 886,
+                    "end": 897
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shown@685",
+                      "span": {
+                        "start": 886,
+                        "end": 897
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "branch",
+                        "span": {
+                          "start": 915,
+                          "end": 929
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "data-name",
+                        "value": "branch",
+                        "span": {
+                          "start": 930,
+                          "end": 948
+                        }
+                      },
+                      {
+                        "kind": "Directive",
+                        "name": "vTrace",
+                        "value": {
+                          "code": "\"branch\"",
+                          "span": {
+                            "start": 957,
+                            "end": 965
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 949,
+                          "end": 965
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "span",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "data-name",
+                            "value": "leaf",
+                            "span": {
+                              "start": 983,
+                              "end": 999
+                            }
+                          },
+                          {
+                            "kind": "Directive",
+                            "name": "vTrace",
+                            "value": {
+                              "code": "\"leaf\"",
+                              "span": {
+                                "start": 1008,
+                                "end": 1014
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 1000,
+                              "end": 1014
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Leaf",
+                            "span": {
+                              "start": 1015,
+                              "end": 1043
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 977,
+                          "end": 1050
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 910,
+                      "end": 1065
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 886,
+                  "end": 1065
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "data-name",
+                        "value": "placeholder",
+                        "span": {
+                          "start": 1089,
+                          "end": 1112
+                        }
+                      },
+                      {
+                        "kind": "Directive",
+                        "name": "vTrace",
+                        "value": {
+                          "code": "\"placeholder\"",
+                          "span": {
+                            "start": 1121,
+                            "end": 1134
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 1113,
+                          "end": 1134
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Placeholder",
+                        "span": {
+                          "start": 1135,
+                          "end": 1166
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1086,
+                      "end": 1170
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1086,
+                  "end": 1170
+                }
+              }
+            ],
+            "span": {
+              "start": 886,
+              "end": 1178
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "data-name",
+                "value": "last",
+                "span": {
+                  "start": 1189,
+                  "end": 1205
+                }
+              },
+              {
+                "kind": "Directive",
+                "name": "vTrace",
+                "value": {
+                  "code": "\"last\"",
+                  "span": {
+                    "start": 1214,
+                    "end": 1220
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1206,
+                  "end": 1220
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Last",
+                "span": {
+                  "start": 1221,
+                  "end": 1241
+                }
+              }
+            ],
+            "span": {
+              "start": 1186,
+              "end": 1245
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1260,
+                  "end": 1273
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(shown.value = !shown.value)",
+                      "span": {
+                        "start": 1289,
+                        "end": 1317
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "shown@685",
+                          "operator": "=",
+                          "span": {
+                            "start": 1289,
+                            "end": 1317
+                          },
+                          "target": {
+                            "start": 1290,
+                            "end": 1301
+                          },
+                          "value": {
+                            "start": 1304,
+                            "end": 1316
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "shown@685",
+                          "span": {
+                            "start": 1305,
+                            "end": 1316
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1283,
+                      "end": 1317
+                    }
+                  },
+                  "span": {
+                    "start": 1283,
+                    "end": 1317
+                  }
+                },
+                "span": {
+                  "start": 1274,
+                  "end": 1318
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle",
+                "span": {
+                  "start": 1319,
+                  "end": 1341
+                }
+              }
+            ],
+            "span": {
+              "start": 1252,
+              "end": 1350
+            }
+          }
+        ],
+        "span": {
+          "start": 720,
+          "end": 1365
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tree",
+      "span": {
+        "start": 644,
+        "end": 1372
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Note.uf.tsx",
+      "file": "Note.uf.tsx",
+      "api": {
+        "file": "Note.uf.tsx",
+        "components": [
+          {
+            "name": "Note",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "em"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Note",
+          "span": {
+            "start": 69,
+            "end": 73
+          }
+        }
+      ],
+      "span": {
+        "start": 62,
+        "end": 95
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "TRACE",
+      "binding": "TRACE@185",
+      "value": {
+        "code": "\"directive-trace\"",
+        "span": {
+          "start": 193,
+          "end": 210
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 179,
+        "end": 211
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vTrace",
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 340,
+          "end": 346
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    document.dispatchEvent(new CustomEvent(TRACE, { detail: { call: `mounted ${value}`, el } }));\n  }",
+            "span": {
+              "start": 371,
+              "end": 474
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 377,
+                  "end": 385
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 404,
+                  "end": 415
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "TRACE@185",
+                "span": {
+                  "start": 416,
+                  "end": 421
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 352,
+            "end": 474
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const call = `unmounted ${el.getAttribute(\"data-name\")}`;\n    document.dispatchEvent(new CustomEvent(TRACE, { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 492,
+              "end": 637
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 560,
+                  "end": 568
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 587,
+                  "end": 598
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "TRACE@185",
+                "span": {
+                  "start": 599,
+                  "end": 604
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 478,
+            "end": 637
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "id": "TRACE@185",
+          "name": "TRACE",
+          "kind": "moduleConst",
+          "span": {
+            "start": 185,
+            "end": 190
+          }
+        }
+      ],
+      "types": [],
+      "span": {
+        "start": 309,
+        "end": 642
+      }
+    }
+  ]
+}

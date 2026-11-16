@@ -36,6 +36,7 @@ import {
   ALLOWED_GLOBALS,
   BROWSER_GLOBALS,
   CLIENT_GLOBALS,
+  isDirectiveName,
   isComponentName,
   isExportName,
   isIdentifier,
@@ -89,6 +90,7 @@ import type {
   ComposableApi,
   ComposableMemberApi,
   ComposableParameterKind,
+  DirectiveHook,
   DynamicNode,
   TeleportNode,
   ElementNode,
@@ -413,6 +415,15 @@ function componentApis(
     for (const [position, imported] of entry.names.entries()) {
       const at = `/imports/${index}/names/${position}`;
       if (imported.kind === "Composable") continue;
+      if (imported.kind === "Directive") {
+        if (!entry.api.directives?.some(({ name }) => name === imported.imported)) {
+          errors.push({
+            path: `${at}/imported`,
+            message: `must name a directive "${entry.specifier}" exports, and "${imported.imported}" is not one`,
+          });
+        }
+        continue;
+      }
       if (imported.kind === "Key") {
         if (!entry.api.keys.some(({ name }) => name === imported.imported)) {
           errors.push({
@@ -504,6 +515,11 @@ interface Shared {
   readonly imports: ReadonlyMap<string, Span>;
   /** The binding id of each top-level `const`: a `moduleConst` binding's id. */
   readonly constants: ReadonlySet<BindingId>;
+  /**
+   * The directives an element may apply, by local name (ADR-0099): the module's own, and those
+   * it imports from `.uf.ts` modules.
+   */
+  readonly directives: ReadonlySet<string>;
 }
 
 /**
@@ -602,7 +618,138 @@ function checkSharedNames(module: UfModule, errors: IrValidationError[]): Shared
       }
     }
   }
-  return { imports, constants };
+  return {
+    imports,
+    constants,
+    directives: checkDirectives(module, locals, imports, constants, errors),
+  };
+}
+
+/** The hooks a directive may declare, with how many parameters each takes at most (ADR-0099). */
+const DIRECTIVE_HOOKS: Readonly<Record<DirectiveHook["name"], number>> = {
+  mounted: 2,
+  updated: 3,
+  unmounted: 1,
+};
+
+/**
+ * Checks the module's directives (ADR-0099), and returns the names an element may apply: each a
+ * `v[A-Z]…` name the module binds once, with at least one hook, each named once and taking no
+ * more parameters than it is given, whose code reads only its own names, the globals client
+ * code may read, and the module's constants and value imports its `bindings` list. The names of
+ * the directives the module imports join them.
+ */
+function checkDirectives(
+  module: UfModule,
+  locals: Set<string>,
+  imports: ReadonlyMap<string, Span>,
+  constants: ReadonlySet<BindingId>,
+  errors: IrValidationError[],
+): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const [index, directive] of (module.directives ?? []).entries()) {
+    const path = `/directives/${index}`;
+    if (!isDirectiveName(directive.name)) {
+      errors.push({
+        path: `${path}/name`,
+        message: `must be \`v\` and an upper-case letter, in ASCII letters and digits, and "${directive.name}" is not`,
+      });
+    } else if (locals.has(directive.name)) {
+      errors.push({
+        path: `${path}/name`,
+        message: `must bind "${directive.name}" once in the module`,
+      });
+    }
+    locals.add(directive.name);
+    names.add(directive.name);
+    checkSourceText(directive.value, `${path}/value`, errors);
+    if (directive.element) checkSourceText(directive.element, `${path}/element`, errors);
+    if (!directive.hooks.length) {
+      errors.push({ path: `${path}/hooks`, message: "must declare at least one hook" });
+    }
+    const bound = new Set<BindingId>();
+    for (const [position, binding] of directive.bindings.entries()) {
+      const at = `${path}/bindings/${position}`;
+      const known =
+        binding.kind === "moduleConst"
+          ? constants.has(binding.id)
+          : binding.kind === "import" && importsBinding(binding.id, imports);
+      if (!known) {
+        errors.push({
+          path: at,
+          message: `must be a top-level \`const\` or a value import of the module, and "${binding.id}" is not one (ADR-0070)`,
+        });
+      }
+      bound.add(binding.id);
+    }
+    const hooks = new Set<string>();
+    for (const [position, hook] of directive.hooks.entries()) {
+      const at = `${path}/hooks/${position}`;
+      const most = DIRECTIVE_HOOKS[hook.name];
+      if (most === undefined) {
+        errors.push({
+          path: `${at}/name`,
+          message: `must be mounted, updated or unmounted, and "${hook.name}" is not`,
+        });
+        continue;
+      }
+      if (hooks.has(hook.name)) {
+        errors.push({ path: `${at}/name`, message: `must declare "${hook.name}" once` });
+      }
+      hooks.add(hook.name);
+      if (hook.parameters.length > most) {
+        errors.push({
+          path: `${at}/parameters`,
+          message: `must take at most ${most} parameter${most === 1 ? "" : "s"}`,
+        });
+      }
+      for (const [parameter, name] of hook.parameters.entries()) {
+        if (!isIdentifier(name)) {
+          errors.push({
+            path: `${at}/parameters/${parameter}`,
+            message: `must be an identifier, and "${name}" is not`,
+          });
+        }
+      }
+      checkSourceText(hook.body, `${at}/body`, errors);
+      let end = hook.body.span.start;
+      for (const [index, ref] of hook.body.refs.entries()) {
+        const pointer = `${at}/body/refs/${index}`;
+        if (ref.span.start < end || !inside(ref.span, hook.body.span)) {
+          errors.push({
+            path: `${pointer}/span`,
+            message: "must lie in the code, after the reference before it",
+          });
+          continue;
+        }
+        end = ref.span.end;
+        if (ref.kind === "Global") {
+          if (!CLIENT_GLOBALS.has(ref.name)) {
+            errors.push({
+              path: `${pointer}/name`,
+              message: `must be a global client code may read, and "${ref.name}" is not one`,
+            });
+          }
+        } else if (ref.kind !== "Binding") {
+          errors.push({
+            path: `${pointer}/kind`,
+            message: `must be a read: a directive's hook reads what its module declares (ADR-0099), and holds no ${ref.kind} reference`,
+          });
+        } else if (!bound.has(ref.binding)) {
+          errors.push({
+            path: `${pointer}/binding`,
+            message: `must name one of the directive's bindings, and "${ref.binding}" is not one`,
+          });
+        }
+      }
+    }
+  }
+  for (const entry of module.imports ?? []) {
+    for (const name of entry.names) {
+      if (name.kind === "Directive") names.add(name.local);
+    }
+  }
+  return names;
 }
 
 /** Whether a binding id is a value import's: its name a local the import binds, in its span. */
@@ -1548,6 +1695,7 @@ function checkComponentAttributes(
       case "Event":
       case "Model":
       case "RawHtml":
+      case "Directive":
         break;
       default:
         unreachable(attribute);
@@ -1889,7 +2037,8 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
       attribute.kind === "Spread" ||
       attribute.kind === "Event" ||
       attribute.kind === "Model" ||
-      attribute.kind === "RawHtml"
+      attribute.kind === "RawHtml" ||
+      attribute.kind === "Directive"
     ) {
       errors.push({
         path: `${place.path}/attributes/${index}`,
@@ -2327,10 +2476,44 @@ function checkAttributes(
         checkExpression(attribute.value, `${at}/value`, place.scope, walk);
         break;
       }
+      case "Directive":
+        // An element of the component's own template applies a directive the module declares
+        // or imports, once, and outside a list's body (ADR-0099).
+        if (!walk.shared.directives.has(attribute.name)) {
+          errors.push({
+            path: `${at}/name`,
+            message: `must name a directive the module declares or imports, and "${attribute.name}" is not one`,
+          });
+        }
+        if (place.inList) {
+          errors.push({ path: at, message: "must not be in a list's body (ADR-0099)" });
+        }
+        claim(`v:${attribute.name}`, at, false);
+        // A setup function by its name, which the hooks call, as a listener's names one.
+        if (!isFunctionValue(attribute.value, walk)) {
+          checkExpression(attribute.value, `${at}/value`, place.scope, walk, true);
+        }
+        break;
       default:
         unreachable(attribute);
     }
   }
+}
+
+/**
+ * Whether a directive's value is a local function by its name alone (ADR-0099), whose hooks
+ * call it: `v-click-outside={close}`.
+ */
+function isFunctionValue(value: Expression, walk: Walk): boolean {
+  const [ref, other] = value.refs;
+  return (
+    ref?.kind === "Binding" &&
+    other === undefined &&
+    !ref.call &&
+    ref.span.start === value.span.start &&
+    ref.span.end === value.span.end &&
+    walk.bindings.get(ref.binding)?.kind === "localFn"
+  );
 }
 
 /** Why an element cannot take `innerHTML` (ADR-0097), or `undefined`. */
@@ -2624,6 +2807,7 @@ function checkExpression(
   path: string,
   scope: ReadonlySet<BindingId>,
   walk: Walk,
+  directive = false,
 ): void {
   const { errors } = walk;
   const { code, span, refs } = expression;
@@ -2648,7 +2832,7 @@ function checkExpression(
       checkImportReference(ref, text, at, walk);
     } else {
       checkBindingReference(ref, text, at, scope, "render", walk);
-      if (ref.narrowed) checkNarrowed(ref, expression, at, "render", walk);
+      if (ref.narrowed) checkNarrowed(ref, expression, at, "render", walk, directive);
     }
   }
 }
@@ -2800,6 +2984,7 @@ function checkNarrowed(
   path: string,
   context: Context,
   walk: Walk,
+  directive = false,
 ): void {
   const { errors } = walk;
   const at = `${path}/narrowed`;
@@ -2854,7 +3039,8 @@ function checkNarrowed(
           "must end at the read or at a member path off it, written with `.` and literal keys",
       });
     }
-    if (narrowing.scope === "template" && context !== "client") {
+    // A directive's value is read outside its element's branches too (ADR-0099).
+    if (narrowing.scope === "template" && context !== "client" && !directive) {
       errors.push({
         path: `${where}/scope`,
         message:

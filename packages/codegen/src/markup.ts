@@ -3,6 +3,7 @@
 export {
   classArrayItems,
   conjoin,
+  directiveAttributeName,
   member,
   negate,
   operand,
@@ -25,6 +26,7 @@ export type {
   MarkupOptions,
   MarkupPiece,
   PrintedAttribute,
+  PrintedDirective,
   PrintedEvent,
   PrintedRef,
   PrintedTeleport,

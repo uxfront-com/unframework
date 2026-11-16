@@ -217,6 +217,8 @@ export const astroDialect: MarkupDialect = {
   ],
   eventAttribute: () => [],
   refAttribute: () => [],
+  // A directive's hooks run in the browser, which a static page never does (ADR-0099).
+  directiveAttribute: () => [],
   rawHtmlAttribute: (code) => [{ name: "set:html", text: `set:html={${code}}` }],
   inert: true,
   // A component's props are attributes (ADR-0053); no listener runs (`component-event`).

@@ -1,0 +1,7 @@
+{
+  "main": "Page.uf.tsx",
+  "description": "One directive use whose element a child renders any number of times: once per row of a list in another file, which a wrapper forwards the slot to, in either branch of a ternary, and once per item of a scoped slot whose fill reads only the page's state, beside a template ref. Each element gets its own hooks.",
+  "ssr": {
+    "initial": {}
+  }
+}

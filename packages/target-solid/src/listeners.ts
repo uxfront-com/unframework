@@ -21,9 +21,10 @@
 // - A template ref is a `let` the element's `ref` callback sets, and clears when the element is
 //   removed (`onCleanup` in the callback runs when its branch is disposed): empty again, as the
 //   other targets' refs are (ADR-0049).
-import { js } from "@unframework.dev/codegen";
+import { jsxExpression, js, rewriteCode } from "@unframework.dev/codegen";
 import type { ImportSet, JsxContext, Placeholders } from "@unframework.dev/codegen";
 import type {
+  DirectiveAttribute,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -181,8 +182,14 @@ export const DELEGATED_EVENTS: ReadonlySet<string> = new Set([
 interface ElementPlan {
   /** The listeners its `ref` callback adds, in attribute order: all of an event's but its prop. */
   added: readonly EventAttribute[];
-  /** The attribute the `ref` callback prints at: the template ref, or the first added listener. */
-  carrier: RefAttribute | EventAttribute | undefined;
+  /**
+   * The attribute the `ref` callback prints at: the template ref, the first added listener, or
+   * its first directive, whose callback calls each directive and a `v-model`'s helper (ADR-0099).
+   * An element with one directive and nothing else for a callback prints `ref={vX(() => value)}`.
+   */
+  carrier: RefAttribute | EventAttribute | DirectiveAttribute | undefined;
+  /** The directives it applies, in attribute order (ADR-0099). */
+  directives: readonly DirectiveAttribute[];
 }
 
 /** The dialect hooks that print listeners and template refs, for one output file. */
@@ -194,6 +201,12 @@ export interface SolidListeners {
   ): JsxAttributeItem[];
   refAttribute(
     attribute: RefAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): JsxAttributeItem[];
+  /** A directive (ADR-0099): `ref={vFocusTrap(() => open())}`, or a call in the `ref` callback. */
+  directiveAttribute(
+    attribute: DirectiveAttribute,
     element: ElementNode,
     context: JsxContext,
   ): JsxAttributeItem[];
@@ -272,6 +285,11 @@ export function solidListeners(
     // A `v-model`'s helper that needs the element (src/models.ts), in the same callback.
     const model = modelRef(element, context);
     if (model) statements.push(model(parameter));
+    // Each directive's factory, called while the element renders, as its own `ref` would be.
+    for (const directive of planOf(element).directives) {
+      const value = rewriteCode(directive.value, code.component, code.rules, "pure");
+      statements.push(`${directive.name}(() => ${value})(${parameter});`);
+    }
     const [only] = statements;
     const body =
       statements.length === 1 && !ref ? only!.slice(0, -1) : `{\n${statements.join("\n")}\n}`;
@@ -297,6 +315,24 @@ export function solidListeners(
       return [js.jsxAttribute(name, expression(handler(attribute)))];
     },
     refAttribute(_attribute, element, context) {
+      return [refCallback(element, context)];
+    },
+    directiveAttribute(attribute, element, context) {
+      const plan = planOf(element);
+      if (plan.carrier !== attribute) return [];
+      // The element's one ref is the factory's callback itself, unless a `v-model`'s helper or
+      // another directive needs the element too: then one callback calls each.
+      if (plan.directives.length === 1 && !modelRef(element, context)) {
+        const value = jsxExpression(attribute.value, context);
+        return [
+          js.jsxAttribute(
+            "ref",
+            js.jsxExpressionContainer(
+              js.callExpression(js.identifier(attribute.name), [js.arrowFunction([], value)]),
+            ),
+          ),
+        ];
+      }
       return [refCallback(element, context)];
     },
     carries: (element) => planOf(element).carrier !== undefined,
@@ -396,7 +432,14 @@ function elementPlan(element: ElementNode, component: UfComponent): ElementPlan 
   const ref = element.attributes.find(
     (attribute): attribute is RefAttribute => attribute.kind === "Ref",
   );
-  return { added, carrier: ref ?? added[0] };
+  const directives = element.attributes.filter(
+    (attribute): attribute is DirectiveAttribute => attribute.kind === "Directive",
+  );
+  return {
+    added,
+    carrier: ref ?? added[0] ?? directives[0],
+    directives,
+  };
 }
 
 /** The elements whose type in Solid's JSX takes `encrypted` (`MediaHTMLAttributes`). */

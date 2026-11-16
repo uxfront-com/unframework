@@ -3,6 +3,7 @@ import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type { UfComponent } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
+import { emitDirective } from "./directive.ts";
 import { scriptSetup } from "./script.ts";
 
 /**
@@ -86,6 +87,8 @@ export const vue: Target = defineTarget({
     // Vue's own `<Teleport>`, behind a ref set once mounted, so the server renders none of it
     // (ADR-0098).
     teleport: { support: "native" },
+    // Vue's own custom directive, whose `updated` returns early on the same value (ADR-0099).
+    directive: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { block, rewrite, listeners, components, keys, textCaret, mounted } = scriptSetup(
@@ -145,6 +148,7 @@ export const vue: Target = defineTarget({
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];
   },
   emitComposable,
+  emitDirective,
 });
 
 export default vue;

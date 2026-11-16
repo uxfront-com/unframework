@@ -1,0 +1,7 @@
+- region "Profile":
+  - paragraph: Ada
+  - text: LovelaceAlTidy
+  - textbox "Note": Hello
+  - button "Toggle"
+  - button "Count"
+  - button "Forget"

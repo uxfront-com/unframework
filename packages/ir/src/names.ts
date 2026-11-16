@@ -11,6 +11,14 @@ export function isComponentName(name: string): boolean {
 }
 
 /**
+ * Whether a name is a directive's (ADR-0099): `v` and an upper-case letter, in ASCII letters and
+ * digits. An element applies `vFocusTrap` as `v-focus-trap`.
+ */
+export function isDirectiveName(name: string): boolean {
+  return /^v[A-Z][A-Za-z0-9]*$/.test(name);
+}
+
+/**
  * Whether a name can be exported: `default`, or an ECMAScript IdentifierName, which a consumer
  * can import and use as a tag.
  */

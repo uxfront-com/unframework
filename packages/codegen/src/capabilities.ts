@@ -57,6 +57,7 @@ const ATTRIBUTE_CAPABILITIES: Readonly<Record<Attribute["kind"], CapabilityName>
   Ref: "interactivity",
   Model: "two-way-binding",
   RawHtml: "raw-html",
+  Directive: "directive",
 };
 /**
  * What each kind of a component's attribute needs (ADR-0055): a prop only the component, a
@@ -81,6 +82,7 @@ const INTERACTIVE_ATTRIBUTES: ReadonlySet<(Attribute | ComponentAttribute)["kind
   "ModelBinding",
   "Listener",
   "Ref",
+  "Directive",
 ]);
 /**
  * What each kind of setup item needs (ADR-0047): watchers, effects and hooks run only in the
@@ -443,6 +445,7 @@ function componentAttribute(
     case "Bound":
     case "Spread":
     case "RawHtml":
+    case "Directive":
       use(ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
       break;
     case "Event":

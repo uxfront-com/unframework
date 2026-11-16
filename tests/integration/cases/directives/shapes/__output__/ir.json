@@ -1,0 +1,1200 @@
+{
+  "irVersion": 1,
+  "file": "directives/shapes/Profile.uf.tsx",
+  "components": [
+    {
+      "name": "Profile",
+      "span": {
+        "start": 596,
+        "end": 1781
+      },
+      "props": [],
+      "types": [
+        "User"
+      ],
+      "bindings": [
+        {
+          "id": "hooks@208",
+          "name": "hooks",
+          "kind": "moduleConst",
+          "span": {
+            "start": 208,
+            "end": 213
+          }
+        },
+        {
+          "id": "element@236",
+          "name": "element",
+          "kind": "moduleConst",
+          "span": {
+            "start": 236,
+            "end": 243
+          }
+        },
+        {
+          "id": "user@640",
+          "name": "user",
+          "kind": "state",
+          "span": {
+            "start": 640,
+            "end": 644
+          }
+        },
+        {
+          "id": "note@690",
+          "name": "note",
+          "kind": "state",
+          "span": {
+            "start": 690,
+            "end": 694
+          }
+        },
+        {
+          "id": "label@719",
+          "name": "label",
+          "kind": "state",
+          "span": {
+            "start": 719,
+            "end": 724
+          }
+        },
+        {
+          "id": "nick@769",
+          "name": "nick",
+          "kind": "state",
+          "span": {
+            "start": 769,
+            "end": 773
+          }
+        },
+        {
+          "id": "track@880",
+          "name": "track",
+          "kind": "state",
+          "span": {
+            "start": 880,
+            "end": 885
+          }
+        },
+        {
+          "id": "cleanup@910",
+          "name": "cleanup",
+          "kind": "state",
+          "span": {
+            "start": 910,
+            "end": 917
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "user@640",
+          "type": {
+            "code": "User | null",
+            "span": {
+              "start": 651,
+              "end": 662
+            }
+          },
+          "initial": {
+            "code": "{ name: \"Ada\" }",
+            "span": {
+              "start": 664,
+              "end": 679
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 634,
+            "end": 681
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "note@690",
+          "initial": {
+            "code": "\"Hello\"",
+            "span": {
+              "start": 701,
+              "end": 708
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 684,
+            "end": 710
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "label@719",
+          "type": {
+            "code": "string | number",
+            "span": {
+              "start": 731,
+              "end": 746
+            }
+          },
+          "initial": {
+            "code": "\"Lovelace\"",
+            "span": {
+              "start": 748,
+              "end": 758
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 713,
+            "end": 760
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "nick@769",
+          "type": {
+            "code": "string | undefined",
+            "span": {
+              "start": 780,
+              "end": 798
+            }
+          },
+          "initial": {
+            "code": "\"Al\"",
+            "span": {
+              "start": 800,
+              "end": 804
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 763,
+            "end": 806
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "track@880",
+          "initial": {
+            "code": "\"Trail\"",
+            "span": {
+              "start": 892,
+              "end": 899
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 874,
+            "end": 901
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "cleanup@910",
+          "type": {
+            "code": "string | null",
+            "span": {
+              "start": 924,
+              "end": 937
+            }
+          },
+          "initial": {
+            "code": "\"Tidy\"",
+            "span": {
+              "start": 939,
+              "end": 945
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 904,
+            "end": 947
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "profile",
+            "span": {
+              "start": 973,
+              "end": 988
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Profile",
+            "span": {
+              "start": 989,
+              "end": 1009
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "user.value",
+                  "span": {
+                    "start": 1018,
+                    "end": 1028
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "user@640",
+                      "span": {
+                        "start": 1018,
+                        "end": 1028
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Directive",
+                        "name": "vMark",
+                        "value": {
+                          "code": "user.value.name",
+                          "span": {
+                            "start": 1042,
+                            "end": 1057
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "user@640",
+                              "span": {
+                                "start": 1042,
+                                "end": 1052
+                              },
+                              "narrowed": [
+                                {
+                                  "span": {
+                                    "start": 1042,
+                                    "end": 1052
+                                  },
+                                  "scope": "template"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1034,
+                          "end": 1058
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "user.value.name",
+                          "span": {
+                            "start": 1060,
+                            "end": 1075
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "user@640",
+                              "span": {
+                                "start": 1060,
+                                "end": 1070
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1059,
+                          "end": 1076
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1031,
+                      "end": 1080
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1018,
+                  "end": 1080
+                }
+              }
+            ],
+            "span": {
+              "start": 1018,
+              "end": 1087
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "typeof label.value === \"string\"",
+                  "span": {
+                    "start": 1096,
+                    "end": 1127
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@719",
+                      "span": {
+                        "start": 1103,
+                        "end": 1114
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "b",
+                    "attributes": [
+                      {
+                        "kind": "Directive",
+                        "name": "vMark",
+                        "value": {
+                          "code": "label.value",
+                          "span": {
+                            "start": 1141,
+                            "end": 1152
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "label@719",
+                              "span": {
+                                "start": 1141,
+                                "end": 1152
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1133,
+                          "end": 1153
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "label.value",
+                          "span": {
+                            "start": 1155,
+                            "end": 1166
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "label@719",
+                              "span": {
+                                "start": 1155,
+                                "end": 1166
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1154,
+                          "end": 1167
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1130,
+                      "end": 1171
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1096,
+                  "end": 1171
+                }
+              }
+            ],
+            "span": {
+              "start": 1096,
+              "end": 1178
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "nick.value",
+                  "span": {
+                    "start": 1187,
+                    "end": 1197
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "nick@769",
+                      "span": {
+                        "start": 1187,
+                        "end": 1197
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "i",
+                    "attributes": [
+                      {
+                        "kind": "Directive",
+                        "name": "vMark",
+                        "value": {
+                          "code": "nick.value",
+                          "span": {
+                            "start": 1211,
+                            "end": 1221
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "nick@769",
+                              "span": {
+                                "start": 1211,
+                                "end": 1221
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1203,
+                          "end": 1222
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "nick.value",
+                          "span": {
+                            "start": 1224,
+                            "end": 1234
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "nick@769",
+                              "span": {
+                                "start": 1224,
+                                "end": 1234
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1223,
+                          "end": 1235
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1200,
+                      "end": 1239
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1187,
+                  "end": 1239
+                }
+              }
+            ],
+            "span": {
+              "start": 1187,
+              "end": 1246
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "cleanup.value",
+                  "span": {
+                    "start": 1255,
+                    "end": 1268
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "cleanup@910",
+                      "span": {
+                        "start": 1255,
+                        "end": 1268
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "s",
+                    "attributes": [
+                      {
+                        "kind": "Directive",
+                        "name": "vMark",
+                        "value": {
+                          "code": "cleanup.value + track.value",
+                          "span": {
+                            "start": 1282,
+                            "end": 1309
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "cleanup@910",
+                              "span": {
+                                "start": 1282,
+                                "end": 1295
+                              },
+                              "narrowed": [
+                                {
+                                  "span": {
+                                    "start": 1282,
+                                    "end": 1295
+                                  },
+                                  "scope": "template"
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "track@880",
+                              "span": {
+                                "start": 1298,
+                                "end": 1309
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1274,
+                          "end": 1310
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "cleanup.value",
+                          "span": {
+                            "start": 1312,
+                            "end": 1325
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "cleanup@910",
+                              "span": {
+                                "start": 1312,
+                                "end": 1325
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1311,
+                          "end": 1326
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1271,
+                      "end": 1330
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1255,
+                  "end": 1330
+                }
+              }
+            ],
+            "span": {
+              "start": 1255,
+              "end": 1337
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "textarea",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Note",
+                "span": {
+                  "start": 1355,
+                  "end": 1372
+                }
+              },
+              {
+                "kind": "Model",
+                "value": {
+                  "code": "note.value",
+                  "span": {
+                    "start": 1382,
+                    "end": 1392
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@690",
+                      "span": {
+                        "start": 1382,
+                        "end": 1392
+                      }
+                    }
+                  ]
+                },
+                "control": "textarea",
+                "span": {
+                  "start": 1373,
+                  "end": 1393
+                }
+              },
+              {
+                "kind": "Directive",
+                "name": "vMark",
+                "value": {
+                  "code": "note.value",
+                  "span": {
+                    "start": 1402,
+                    "end": 1412
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@690",
+                      "span": {
+                        "start": 1402,
+                        "end": 1412
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1394,
+                  "end": 1413
+                }
+              },
+              {
+                "kind": "Directive",
+                "name": "vSelectable",
+                "value": {
+                  "code": "true",
+                  "span": {
+                    "start": 1428,
+                    "end": 1432
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1414,
+                  "end": 1433
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 1345,
+              "end": 1436
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1451,
+                  "end": 1464
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(user.value = user.value ? null : { name: \"Grace\" })",
+                      "span": {
+                        "start": 1480,
+                        "end": 1532
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "user@640",
+                          "operator": "=",
+                          "span": {
+                            "start": 1480,
+                            "end": 1532
+                          },
+                          "target": {
+                            "start": 1481,
+                            "end": 1491
+                          },
+                          "value": {
+                            "start": 1494,
+                            "end": 1531
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "user@640",
+                          "span": {
+                            "start": 1494,
+                            "end": 1504
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1474,
+                      "end": 1532
+                    }
+                  },
+                  "span": {
+                    "start": 1474,
+                    "end": 1532
+                  }
+                },
+                "span": {
+                  "start": 1465,
+                  "end": 1533
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle",
+                "span": {
+                  "start": 1534,
+                  "end": 1556
+                }
+              }
+            ],
+            "span": {
+              "start": 1443,
+              "end": 1565
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1580,
+                  "end": 1593
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(label.value = 1)",
+                      "span": {
+                        "start": 1609,
+                        "end": 1626
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "label@719",
+                          "operator": "=",
+                          "span": {
+                            "start": 1609,
+                            "end": 1626
+                          },
+                          "target": {
+                            "start": 1610,
+                            "end": 1621
+                          },
+                          "value": {
+                            "start": 1624,
+                            "end": 1625
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1603,
+                      "end": 1626
+                    }
+                  },
+                  "span": {
+                    "start": 1603,
+                    "end": 1626
+                  }
+                },
+                "span": {
+                  "start": 1594,
+                  "end": 1627
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Count",
+                "span": {
+                  "start": 1628,
+                  "end": 1649
+                }
+              }
+            ],
+            "span": {
+              "start": 1572,
+              "end": 1658
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1673,
+                  "end": 1686
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(nick.value = undefined)",
+                      "span": {
+                        "start": 1702,
+                        "end": 1726
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "nick@769",
+                          "operator": "=",
+                          "span": {
+                            "start": 1702,
+                            "end": 1726
+                          },
+                          "target": {
+                            "start": 1703,
+                            "end": 1713
+                          },
+                          "value": {
+                            "start": 1716,
+                            "end": 1725
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Global",
+                          "name": "undefined",
+                          "span": {
+                            "start": 1716,
+                            "end": 1725
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1696,
+                      "end": 1726
+                    }
+                  },
+                  "span": {
+                    "start": 1696,
+                    "end": 1726
+                  }
+                },
+                "span": {
+                  "start": 1687,
+                  "end": 1727
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Forget",
+                "span": {
+                  "start": 1728,
+                  "end": 1750
+                }
+              }
+            ],
+            "span": {
+              "start": 1665,
+              "end": 1759
+            }
+          }
+        ],
+        "span": {
+          "start": 964,
+          "end": 1774
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Profile",
+      "span": {
+        "start": 596,
+        "end": 1781
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "User",
+      "exported": false,
+      "code": "interface User {\n  name: string;\n}",
+      "span": {
+        "start": 560,
+        "end": 594
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./select.uf.ts",
+      "file": "select.uf.ts",
+      "api": {
+        "file": "select.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vSelectable"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vSelectable",
+          "local": "vSelectable",
+          "span": {
+            "start": 71,
+            "end": 82
+          }
+        }
+      ],
+      "span": {
+        "start": 62,
+        "end": 107
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "hooks",
+      "binding": "hooks@208",
+      "value": {
+        "code": "\"data-hooks\"",
+        "span": {
+          "start": 216,
+          "end": 228
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 202,
+        "end": 229
+      }
+    },
+    {
+      "name": "element",
+      "binding": "element@236",
+      "value": {
+        "code": "\"data-element\"",
+        "span": {
+          "start": 246,
+          "end": 260
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 230,
+        "end": 261
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vMark",
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 293,
+          "end": 299
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    el.setAttribute(hooks, value);\n    el.setAttribute(element, \"mounted\");\n    return el;\n  }",
+            "span": {
+              "start": 324,
+              "end": 420
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "hooks@208",
+                "span": {
+                  "start": 346,
+                  "end": 351
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "element@236",
+                "span": {
+                  "start": 381,
+                  "end": 388
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 305,
+            "end": 420
+          }
+        },
+        {
+          "name": "updated",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    const oldValue = \"updated\";\n    el.setAttribute(hooks, `${oldValue} ${value}`);\n  }",
+            "span": {
+              "start": 443,
+              "end": 532
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "hooks@208",
+                "span": {
+                  "start": 497,
+                  "end": 502
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 424,
+            "end": 532
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "_el"
+          ],
+          "body": {
+            "code": "{}",
+            "span": {
+              "start": 551,
+              "end": 553
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 536,
+            "end": 553
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "id": "hooks@208",
+          "name": "hooks",
+          "kind": "moduleConst",
+          "span": {
+            "start": 208,
+            "end": 213
+          }
+        },
+        {
+          "id": "element@236",
+          "name": "element",
+          "kind": "moduleConst",
+          "span": {
+            "start": 236,
+            "end": 243
+          }
+        }
+      ],
+      "types": [],
+      "span": {
+        "start": 263,
+        "end": 558
+      }
+    }
+  ]
+}

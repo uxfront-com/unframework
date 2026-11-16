@@ -51,6 +51,7 @@ const attributeKinds = {
   Listener: true,
   ModelBinding: true,
   RawHtml: true,
+  Directive: true,
 } satisfies Record<AnyAttribute["kind"], true>;
 const bindingKinds = {
   prop: true,
@@ -236,6 +237,12 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
     }
   };
   for (const composable of module.composables ?? []) setup(composable);
+  for (const directive of module.directives ?? []) {
+    for (const binding of directive.bindings) features.bindingKinds.add(binding.kind);
+    for (const hook of directive.hooks) {
+      for (const ref of hook.body.refs) features.codeReferenceKinds.add(ref.kind);
+    }
+  }
   for (const component of module.components) {
     setup(component);
     walk(component.render, {
@@ -388,6 +395,7 @@ function attributeExpressions(
     case "Prop":
     case "ModelBinding":
     case "RawHtml":
+    case "Directive":
       add(attribute.value, `${path}/value`);
       return;
     case "Class":
@@ -766,6 +774,19 @@ export function spansOf(module: UfModule): LocatedSpan[] {
     codeSpans(constant.value, `${path}/value`, at);
     add(constant.span, path);
   }
+  for (const [index, directive] of (module.directives ?? []).entries()) {
+    const path = `/directives/${index}`;
+    add(directive.value.span, `${path}/value`);
+    if (directive.element) add(directive.element.span, `${path}/element`);
+    for (const [hook, { body, span }] of directive.hooks.entries()) {
+      codeSpans(body, `${path}/hooks/${hook}/body`, at);
+      add(span, `${path}/hooks/${hook}`);
+    }
+    for (const [binding, { span }] of directive.bindings.entries()) {
+      add(span, `${path}/bindings/${binding}`);
+    }
+    add(directive.span, path);
+  }
   return found;
 }
 
@@ -884,6 +905,7 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
     case "Prop":
     case "ModelBinding":
     case "RawHtml":
+    case "Directive":
       return;
     case "Class":
       for (const [item, { span }] of attribute.items.entries()) {

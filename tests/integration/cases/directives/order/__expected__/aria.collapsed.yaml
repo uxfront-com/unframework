@@ -1,0 +1,6 @@
+- region "Tree":
+  - paragraph: First
+  - emphasis: Note
+  - paragraph: Placeholder
+  - paragraph: Last
+  - button "Toggle"

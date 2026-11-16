@@ -1,0 +1,469 @@
+{
+  "irVersion": 1,
+  "file": "directives/slotted/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 581,
+        "end": 1108
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "note@622",
+          "name": "note",
+          "kind": "state",
+          "span": {
+            "start": 622,
+            "end": 626
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "note@622",
+          "type": {
+            "code": "{ name: string } | null",
+            "span": {
+              "start": 633,
+              "end": 656
+            }
+          },
+          "initial": {
+            "code": "{ name: \"note\" }",
+            "span": {
+              "start": 658,
+              "end": 674
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 616,
+            "end": 676
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 702,
+              "end": 714
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Card",
+            "span": {
+              "start": 715,
+              "end": 732
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Disclosure",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "data-name",
+                        "value": "body",
+                        "span": {
+                          "start": 764,
+                          "end": 780
+                        }
+                      },
+                      {
+                        "kind": "Directive",
+                        "name": "vTrace",
+                        "value": {
+                          "code": "\"body\"",
+                          "span": {
+                            "start": 789,
+                            "end": 795
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 781,
+                          "end": 795
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Body",
+                        "span": {
+                          "start": 796,
+                          "end": 820
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 761,
+                      "end": 824
+                    }
+                  },
+                  {
+                    "kind": "If",
+                    "branches": [
+                      {
+                        "condition": {
+                          "code": "note.value",
+                          "span": {
+                            "start": 834,
+                            "end": 844
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "note@622",
+                              "span": {
+                                "start": 834,
+                                "end": 844
+                              }
+                            }
+                          ]
+                        },
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "p",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "data-name",
+                                "value": "note",
+                                "span": {
+                                  "start": 862,
+                                  "end": 878
+                                }
+                              },
+                              {
+                                "kind": "Directive",
+                                "name": "vTrace",
+                                "value": {
+                                  "code": "note.value.name",
+                                  "span": {
+                                    "start": 888,
+                                    "end": 903
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "note@622",
+                                      "span": {
+                                        "start": 888,
+                                        "end": 898
+                                      },
+                                      "narrowed": [
+                                        {
+                                          "span": {
+                                            "start": 888,
+                                            "end": 898
+                                          },
+                                          "scope": "template"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "span": {
+                                  "start": 879,
+                                  "end": 904
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Note",
+                                "span": {
+                                  "start": 905,
+                                  "end": 933
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 859,
+                              "end": 937
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 834,
+                          "end": 937
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 834,
+                      "end": 954
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 761,
+                  "end": 955
+                }
+              }
+            ],
+            "span": {
+              "start": 740,
+              "end": 975
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 990,
+                  "end": 1003
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(note.value = { name: \"renamed\" })",
+                      "span": {
+                        "start": 1019,
+                        "end": 1053
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "note@622",
+                          "operator": "=",
+                          "span": {
+                            "start": 1019,
+                            "end": 1053
+                          },
+                          "target": {
+                            "start": 1020,
+                            "end": 1030
+                          },
+                          "value": {
+                            "start": 1033,
+                            "end": 1052
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1013,
+                      "end": 1053
+                    }
+                  },
+                  "span": {
+                    "start": 1013,
+                    "end": 1053
+                  }
+                },
+                "span": {
+                  "start": 1004,
+                  "end": 1054
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Rename",
+                "span": {
+                  "start": 1055,
+                  "end": 1077
+                }
+              }
+            ],
+            "span": {
+              "start": 982,
+              "end": 1086
+            }
+          }
+        ],
+        "span": {
+          "start": 693,
+          "end": 1101
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 581,
+        "end": 1108
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Disclosure.uf.tsx",
+      "file": "Disclosure.uf.tsx",
+      "api": {
+        "file": "Disclosure.uf.tsx",
+        "components": [
+          {
+            "name": "Disclosure",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Disclosure",
+          "span": {
+            "start": 69,
+            "end": 79
+          }
+        }
+      ],
+      "span": {
+        "start": 62,
+        "end": 107
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vTrace",
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 236,
+          "end": 242
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    const call = `mounted ${value}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 267,
+              "end": 399
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 310,
+                  "end": 318
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 337,
+                  "end": 348
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 248,
+            "end": 399
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const call = `unmounted ${el.getAttribute(\"data-name\")}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 417,
+              "end": 574
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 485,
+                  "end": 493
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 512,
+                  "end": 523
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 403,
+            "end": 574
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 205,
+        "end": 579
+      }
+    }
+  ]
+}

@@ -16,7 +16,9 @@ import type { BindingId, CodeReference, ModuleConstant, Span } from "@unframewor
 import { visitorKeys } from "@unframework.dev/parser";
 import type { AST, ParsedModule } from "@unframework.dev/parser";
 
+import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
+import { isDirectiveCall, misplacedDirective } from "./directives.ts";
 import {
   COLLECTION_METHODS,
   LOCALE_METHODS,
@@ -195,6 +197,8 @@ export interface ConstantContext {
   readonly scopes: Scopes;
   readonly reporter: Reporter;
   readonly shared: SharedValues;
+  /** The module's authoring imports, so a `defineDirective` in a value is UF2037 (ADR-0099). */
+  readonly authoring?: ReadonlyMap<object, AuthoringApi | undefined>;
 }
 
 /**
@@ -620,6 +624,15 @@ export function lowerConstants(
           break;
         case "CallExpression": {
           const callee = unwrapped(typed.callee);
+          if (
+            callee.type === "Identifier" &&
+            context.authoring &&
+            isDirectiveCall(typed, scopes, context.authoring)
+          ) {
+            // A directive is a top-level `const`'s whole value, never part of one (ADR-0099).
+            misplacedDirective(callee as AST.IdentifierReference, reporter);
+            return;
+          }
           if (callee.type === "MemberExpression") {
             const name = memberName(callee);
             if (name === undefined) {

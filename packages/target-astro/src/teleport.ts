@@ -11,7 +11,7 @@ import type {
   UfComponent,
 } from "@unframework.dev/ir";
 
-/** The component without its teleports. */
+/** The component without its teleports, and its elements without their directives. */
 export function withoutTeleports(component: UfComponent): UfComponent {
   return { ...component, render: root(component.render) };
 }
@@ -22,8 +22,14 @@ function root(render: ElementNode | FragmentNode): ElementNode | FragmentNode {
     : { ...render, children: nodes(render.children) };
 }
 
+// A directive's hooks run in the browser (ADR-0099), so the element renders without it, and what
+// only its value reads is not live.
 function element(node: ElementNode): ElementNode {
-  return { ...node, children: nodes(node.children) };
+  return {
+    ...node,
+    attributes: node.attributes.filter((attribute) => attribute.kind !== "Directive"),
+    children: nodes(node.children),
+  };
 }
 
 function fills(list: readonly SlotFill[]): SlotFill[] {

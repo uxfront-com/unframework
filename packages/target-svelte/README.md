@@ -123,6 +123,7 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   Of composition's cells, `fallthrough` (`mergeStyle`), `model-modifiers` (`modelText`) and
   `reactive-context` (`refObject`) are emulated, and the others native; of styling's,
   `child-root-scope` (`scopeAttributes`) is emulated.
+- `directive` is native (ADR-0099): an attachment, `{@attach vFocusTrap(() => open)}`, whose factory, `vFocusTrap.svelte.ts` for a `.uf.ts` module's, runs `mounted` untracked, an `$effect` for `updated` and its teardown for `unmounted`. In a branch, the value is a `{@const}` the branch declares, which the getter reads, so it keeps the branch's narrowing.
 - `teleport` is emulated (ADR-0098): the element renders once the component has mounted, in an `{#if}` of its own, and an attachment, `teleport`, moves it into `to`, gives back the focus the move took, and removes it on teardown.
 - **Composition** (ADR-0053 to ADR-0055), with what it imports beside `svelte`:
 

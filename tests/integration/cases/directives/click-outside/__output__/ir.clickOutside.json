@@ -1,0 +1,184 @@
+{
+  "irVersion": 1,
+  "file": "directives/click-outside/clickOutside.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [
+    {
+      "name": "Outside",
+      "exported": false,
+      "code": "interface Outside {\n  callback: () => void;\n  onClick: (event: MouseEvent) => void;\n}",
+      "span": {
+        "start": 321,
+        "end": 406
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "outsides",
+      "binding": "outsides@414",
+      "value": {
+        "code": "new WeakMap<HTMLElement, Outside>()",
+        "span": {
+          "start": 425,
+          "end": 460
+        },
+        "refs": [
+          {
+            "kind": "Global",
+            "name": "WeakMap",
+            "span": {
+              "start": 429,
+              "end": 436
+            }
+          }
+        ]
+      },
+      "span": {
+        "start": 408,
+        "end": 461
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vClickOutside",
+      "exported": true,
+      "value": {
+        "code": "() => void",
+        "span": {
+          "start": 508,
+          "end": 518
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "callback"
+          ],
+          "body": {
+            "code": "{\n    const outside: Outside = {\n      callback,\n      onClick: (event) => {\n        if (!el.contains(event.target as Node)) outside.callback();\n      },\n    };\n    outsides.set(el, outside);\n    document.addEventListener(\"click\", outside.onClick);\n  }",
+            "span": {
+              "start": 546,
+              "end": 798
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "outsides@414",
+                "span": {
+                  "start": 711,
+                  "end": 719
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 742,
+                  "end": 750
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 524,
+            "end": 798
+          }
+        },
+        {
+          "name": "updated",
+          "parameters": [
+            "el",
+            "callback"
+          ],
+          "body": {
+            "code": "{\n    const outside = outsides.get(el);\n    if (outside) outside.callback = callback;\n  }",
+            "span": {
+              "start": 824,
+              "end": 913
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "outsides@414",
+                "span": {
+                  "start": 846,
+                  "end": 854
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 802,
+            "end": 913
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const outside = outsides.get(el);\n    if (outside) document.removeEventListener(\"click\", outside.onClick);\n    outsides.delete(el);\n  }",
+            "span": {
+              "start": 931,
+              "end": 1072
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "outsides@414",
+                "span": {
+                  "start": 953,
+                  "end": 961
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 988,
+                  "end": 996
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "outsides@414",
+                "span": {
+                  "start": 1048,
+                  "end": 1056
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 917,
+            "end": 1072
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "id": "outsides@414",
+          "name": "outsides",
+          "kind": "moduleConst",
+          "span": {
+            "start": 414,
+            "end": 422
+          }
+        }
+      ],
+      "types": [
+        "Outside"
+      ],
+      "span": {
+        "start": 463,
+        "end": 1077
+      }
+    }
+  ]
+}

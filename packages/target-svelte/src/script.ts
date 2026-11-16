@@ -33,6 +33,9 @@ import {
   typeExportsCode,
   typeNames,
   typeSpecifier,
+  directiveSpecifier,
+  importedDirectives,
+  ownDirectives,
 } from "@unframework.dev/codegen";
 import type { MarkupOptions, RewriteRules } from "@unframework.dev/codegen";
 import { codeOf, expressionsOf, functionsOf, walk } from "@unframework.dev/ir";
@@ -79,6 +82,7 @@ import {
   takesFallthrough,
 } from "./composition.ts";
 import type { Fallthrough } from "./composition.ts";
+import { attachmentCode, narrowedDirectiveValues } from "./directive.ts";
 import { isAttached } from "./events.ts";
 import { handlerTypes } from "./handlers.ts";
 import {
@@ -108,7 +112,13 @@ export interface InstanceScript {
    */
   markup: Pick<
     MarkupOptions,
-    "rewrite" | "attribute" | "handler" | "componentTag" | "scopeRootAttributes" | "candidates"
+    | "rewrite"
+    | "attribute"
+    | "handler"
+    | "componentTag"
+    | "scopeRootAttributes"
+    | "candidates"
+    | "narrowedDirectiveValues"
   >;
   /** The render tree the markup prints (`composition.ts`). */
   render: ElementNode | FragmentNode;
@@ -123,7 +133,7 @@ export interface InstanceScript {
 }
 
 /** The modules a script imports from, in the order it prints them. */
-type Module = "svelte" | "svelte/elements" | "svelte/events";
+type Module = "svelte" | "svelte/attachments" | "svelte/elements" | "svelte/events";
 
 /**
  * An import of a sibling output: a child component (its default export) or injection keys; or of
@@ -269,7 +279,9 @@ class Names {
       ];
       return [`import ${clause.join(", ")} from ${JSON.stringify(entry.specifier)};`];
     });
-    const modules = (["svelte", "svelte/elements", "svelte/events"] as const).flatMap((source) => {
+    const modules = (
+      ["svelte", "svelte/attachments", "svelte/elements", "svelte/events"] as const
+    ).flatMap((source) => {
       const names = this.#imports.get(source);
       if (!names?.size) return [];
       const types = [...names.values()].every(({ type }) => type);
@@ -591,6 +603,14 @@ class ScriptWriter {
       ? { mounted: this.#names.claim("mounted"), helper: this.#names.claim("teleport") }
       : undefined;
     const onMount = teleport ? this.#names.import("svelte", "onMount") : undefined;
+    // The module's own directives it applies, as attachment factories (ADR-0099).
+    const directives = ownDirectives(component, this.#module);
+    const attachments = directives.length
+      ? {
+          untrack: this.#names.import("svelte", "untrack"),
+          attachment: this.#names.import("svelte/attachments", "Attachment", { type: true }),
+        }
+      : undefined;
 
     const props = this.#props();
     const setup = this.#setup();
@@ -650,6 +670,7 @@ class ScriptWriter {
       ...(styleText ? [styleTextHelper(styleText)] : []),
       ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
       ...(teleport ? [teleportHelper(teleport.helper)] : []),
+      ...(attachments ? directives.map((directive) => attachmentCode(directive, attachments)) : []),
     ];
     // A teleport's content waits for the component to mount, so the server and the hydrating
     // client render none of it (ADR-0098).
@@ -699,6 +720,7 @@ class ScriptWriter {
       (parameter) => this.#fillParameter(parameter),
       (expression) => rewriteExpression(expression, component, this.rules, "render"),
     );
+    const narrowed = narrowedDirectiveValues(composed.render, (base) => this.#names.claim(base));
     const markup: InstanceScript["markup"] = {
       rewrite: this.rules,
       handler: (attribute) => this.#inlineHandler(attribute),
@@ -731,6 +753,8 @@ class ScriptWriter {
       ...(composed.candidates.size
         ? { candidates: (child: ComponentNode) => composed.candidates.get(child) }
         : {}),
+      // A narrowed directive value's constant, which its branch declares (ADR-0099).
+      ...(narrowed.size ? { narrowedDirectiveValues: narrowed } : {}),
     };
     const moduleBlock = moduleScript
       ? this.#moduleScript(types, constants, Boolean(owner))
@@ -856,6 +880,11 @@ class ScriptWriter {
         if (name.kind !== "Composable" || !called.has(name.local)) continue;
         this.#names.importNamed(`${directory}${name.imported}.svelte`, name.imported, name.local);
       }
+    }
+    // Each directive it applies from a `.uf.ts` module, from the directive's own module beside
+    // it, `vFocusTrap.svelte.ts`, without its `.ts` as a composable's (ADR-0099).
+    for (const { specifier, imported, local } of importedDirectives(component, this.#module)) {
+      this.#names.importNamed(directiveSpecifier(specifier, `${imported}.svelte`), imported, local);
     }
     // The values it reads of its `.ts` modules, from the output tree's copies, as the source
     // imports them (ADR-0070).

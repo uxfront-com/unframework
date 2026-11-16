@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF2037",
+    "severity": "error",
+    "message": "`defineDirective` takes the value's type as its type argument: the hooks' parameters take their types from it.",
+    "file": "diagnostics/invalid-directive/Panel.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 18,
+      "offset": 335
+    },
+    "end": {
+      "line": 6,
+      "column": 33,
+      "offset": 350
+    },
+    "help": "Write `defineDirective<boolean>({ … })`, or `defineDirective<boolean, HTMLDialogElement>({ … })`."
+  },
+  {
+    "code": "UF2037",
+    "severity": "error",
+    "message": "`ref` is the authoring API's, which a directive's hook never calls: it runs in the browser, apart from any component's setup.",
+    "file": "diagnostics/invalid-directive/Panel.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 19,
+      "offset": 480
+    },
+    "end": {
+      "line": 14,
+      "column": 22,
+      "offset": 483
+    },
+    "help": "Keep a component's state in the component, and pass what the hook needs as the directive's value."
+  },
+  {
+    "code": "UF2037",
+    "severity": "error",
+    "message": "`defineDirective` declares a directive as the value of a `const` at the module's top level, where every output that applies it can declare it once.",
+    "file": "diagnostics/invalid-directive/Panel.uf.tsx",
+    "start": {
+      "line": 20,
+      "column": 18,
+      "offset": 583
+    },
+    "end": {
+      "line": 20,
+      "column": 33,
+      "offset": 598
+    },
+    "help": "Declare it at the module's top level: `export const vFocusTrap = defineDirective<boolean>({ mounted(el, value) { … } });`."
+  }
+]

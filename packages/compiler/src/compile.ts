@@ -14,7 +14,7 @@ import {
   remapFormatted,
   scopeStylesheet,
 } from "@unframework.dev/codegen";
-import type { FormatOutcome, OutputFile, Target } from "@unframework.dev/codegen";
+import type { EmitContext, FormatOutcome, OutputFile, Target } from "@unframework.dev/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { checkInvariants, validateModule } from "@unframework.dev/ir";
@@ -547,7 +547,14 @@ async function emitTarget(
 
     // Only this component's code: another's identical text must not claim its place.
     if (options.sourceMap) {
-      const own = { ...module, components: [component], composables: [] };
+      // An exported directive's code is its own module's (ADR-0099); an in-file one's is printed
+      // in the components that apply it.
+      const own = {
+        ...module,
+        components: [component],
+        composables: [],
+        directives: (module.directives ?? []).filter((directive) => !directive.exported),
+      };
       files = files.map((output) => anchorOutput(output, own, source));
     }
     if (options.format !== false) {
@@ -580,15 +587,41 @@ async function emitTarget(
       written.push(output);
     }
   }
-  // A `.uf.ts` module's composables, each one module (ADR-0069). The `output` hooks are a
-  // component's, so they see none of it.
-  for (const composable of module.composables ?? []) {
-    if (!target.emitComposable) {
+  // A `.uf.ts` module's composables and exported directives, each one module (ADR-0069,
+  // ADR-0099). The `output` hooks are a component's, so they see none of it.
+  const emitComposable = target.emitComposable?.bind(target);
+  const emitDirective = target.emitDirective?.bind(target);
+  const modules: {
+    name: string;
+    span: Span;
+    what: string;
+    emit: ((context: EmitContext) => OutputFile[]) | undefined;
+    own: Pick<UfModule, "composables" | "directives">;
+  }[] = [
+    ...(module.composables ?? []).map((composable) => ({
+      name: composable.name,
+      span: composable.span,
+      what: "composables: it has no `emitComposable`",
+      emit: emitComposable && ((context: EmitContext) => emitComposable(composable, context)),
+      own: { composables: [composable] },
+    })),
+    ...(module.directives ?? [])
+      .filter((directive) => directive.exported)
+      .map((directive) => ({
+        name: directive.name,
+        span: directive.span,
+        what: "directives: it has no `emitDirective`",
+        emit: emitDirective && ((context: EmitContext) => emitDirective(directive, context)),
+        own: { composables: [], directives: [directive] },
+      })),
+  ].toSorted((a, b) => a.span.start - b.span.start);
+  for (const each of modules) {
+    if (!each.emit) {
       diagnostics.push(
         createDiagnostic("UF1002", {
           file,
-          span: composable.span,
-          message: `The ${target.name} target does not emit composables: it has no \`emitComposable\`.`,
+          span: each.span,
+          message: `The ${target.name} target does not emit ${each.what}.`,
           target: target.name,
         }),
       );
@@ -597,21 +630,22 @@ async function emitTarget(
     let files: OutputFile[];
     try {
       const emitted = readFiles(
-        target.emitComposable(composable, {
+        each.emit({
           module,
           options: options.targetOptions?.[target.name],
           report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
         }),
       );
-      if ("problem" in emitted) throw new TypeError(`emitComposable returned ${emitted.problem}`);
+      if ("problem" in emitted)
+        throw new TypeError(`emitting ${each.name} returned ${emitted.problem}`);
       files = emitted.files;
     } catch (error) {
-      const what = `The ${target.name} target failed on ${composable.name}`;
+      const what = `The ${target.name} target failed on ${each.name}`;
       diagnostics.push(internal(file, error, what, target.name));
       continue;
     }
     if (options.sourceMap) {
-      const own = { ...module, components: [], composables: [composable] };
+      const own = { ...module, components: [], ...each.own };
       files = files.map((output) => anchorOutput(output, own, source));
     }
     if (options.format !== false) {
@@ -632,14 +666,14 @@ async function emitTarget(
         diagnostics.push(
           internal(
             file,
-            `${owner.path} (${owner.component}) and ${output.path} (${composable.name}) are one file on a case-insensitive file system`,
+            `${owner.path} (${owner.component}) and ${output.path} (${each.name}) are one file on a case-insensitive file system`,
             `The ${target.name} target wrote two files at one path`,
             target.name,
           ),
         );
         continue;
       }
-      owners.set(key, { path: output.path, component: composable.name });
+      owners.set(key, { path: output.path, component: each.name });
       written.push(output);
     }
   }

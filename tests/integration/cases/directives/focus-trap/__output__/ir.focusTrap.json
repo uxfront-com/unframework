@@ -1,0 +1,219 @@
+{
+  "irVersion": 1,
+  "file": "directives/focus-trap/focusTrap.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [
+    {
+      "name": "Trap",
+      "exported": false,
+      "code": "interface Trap {\n  previous: HTMLElement | null;\n  onKeydown: (event: KeyboardEvent) => void;\n}",
+      "span": {
+        "start": 325,
+        "end": 420
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "FOCUSABLE",
+      "binding": "FOCUSABLE@428",
+      "value": {
+        "code": "\"button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex='-1'])\"",
+        "span": {
+          "start": 442,
+          "end": 530
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 422,
+        "end": 531
+      }
+    },
+    {
+      "name": "traps",
+      "binding": "traps@538",
+      "value": {
+        "code": "new WeakMap<HTMLElement, Trap>()",
+        "span": {
+          "start": 546,
+          "end": 578
+        },
+        "refs": [
+          {
+            "kind": "Global",
+            "name": "WeakMap",
+            "span": {
+              "start": 550,
+              "end": 557
+            }
+          }
+        ]
+      },
+      "span": {
+        "start": 532,
+        "end": 579
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vFocusTrap",
+      "exported": true,
+      "value": {
+        "code": "boolean",
+        "span": {
+          "start": 623,
+          "end": 630
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "active"
+          ],
+          "body": {
+            "code": "{\n    const onKeydown = (event: KeyboardEvent) => {\n      if (event.key !== \"Tab\") return;\n      const controls = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)];\n      const first = controls[0];\n      const last = controls.at(-1);\n      if (!first || !last) return;\n      if (event.shiftKey && document.activeElement === first) {\n        event.preventDefault();\n        last.focus();\n      } else if (!event.shiftKey && document.activeElement === last) {\n        event.preventDefault();\n        first.focus();\n      }\n    };\n    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;\n    traps.set(el, { previous, onKeydown });\n    el.addEventListener(\"keydown\", onKeydown);\n    if (active) el.querySelector<HTMLElement>(FOCUSABLE)?.focus();\n  }",
+            "span": {
+              "start": 656,
+              "end": 1444
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "FOCUSABLE@428",
+                "span": {
+                  "start": 807,
+                  "end": 816
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 952,
+                  "end": 960
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 1078,
+                  "end": 1086
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 1204,
+                  "end": 1212
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "HTMLElement",
+                "span": {
+                  "start": 1238,
+                  "end": 1249
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 1252,
+                  "end": 1260
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "traps@538",
+                "span": {
+                  "start": 1287,
+                  "end": 1292
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "FOCUSABLE@428",
+                "span": {
+                  "start": 1420,
+                  "end": 1429
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 636,
+            "end": 1444
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const trap = traps.get(el);\n    if (!trap) return;\n    el.removeEventListener(\"keydown\", trap.onKeydown);\n    traps.delete(el);\n    trap.previous?.focus();\n  }",
+            "span": {
+              "start": 1462,
+              "end": 1627
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "traps@538",
+                "span": {
+                  "start": 1481,
+                  "end": 1486
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "traps@538",
+                "span": {
+                  "start": 1578,
+                  "end": 1583
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 1448,
+            "end": 1627
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "id": "FOCUSABLE@428",
+          "name": "FOCUSABLE",
+          "kind": "moduleConst",
+          "span": {
+            "start": 428,
+            "end": 437
+          }
+        },
+        {
+          "id": "traps@538",
+          "name": "traps",
+          "kind": "moduleConst",
+          "span": {
+            "start": 538,
+            "end": 543
+          }
+        }
+      ],
+      "types": [],
+      "span": {
+        "start": 581,
+        "end": 1632
+      }
+    }
+  ]
+}

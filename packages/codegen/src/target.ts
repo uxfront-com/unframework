@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
-import type { UfComponent, UfComposable, UfModule } from "@unframework.dev/ir";
+import type { UfComponent, UfComposable, UfDirective, UfModule } from "@unframework.dev/ir";
 
 /**
  * The features a target declares support for. Each name maps to IR features (node and
@@ -138,6 +138,12 @@ export type CapabilityName =
    */
   | "teleport"
   /**
+   * `v-name={value}` on an element (`DirectiveAttribute`, ADR-0099): a directive's hooks run in
+   * the browser once the element is in the DOM, after a render that changes the value, and once
+   * it leaves, descendants' before their ancestors'. Refines `interactivity`.
+   */
+  | "directive"
+  /**
    * A component that imports a stylesheet (`UfComponent.styles`), which the compiler scopes
    * once and the target attaches its own way (ADR-0063).
    */
@@ -236,6 +242,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "reactive-context",
   "dynamic-component",
   "teleport",
+  "directive",
   "scoped-styles",
   "child-root-scope",
   "slotted-styles",
@@ -279,6 +286,9 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   // No target renders a teleport's content on the server, so a static render's markup is the
   // same without it (ADR-0098): only a mounted component shows it, in `to`.
   "teleport",
+  // A directive's hooks run in the browser only (ADR-0099), so the server's markup is the same
+  // without them.
+  "directive",
 ]);
 
 /**
@@ -302,6 +312,7 @@ export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, C
   "model-modifiers": "interactivity",
   "reactive-context": "context",
   "composable-effect-order": "interactivity",
+  directive: "interactivity",
 };
 
 /** How a target supports a capability (plan §5.7). */
@@ -370,6 +381,13 @@ export interface Target {
    * third-party target: `compile()` reports UF1002 for a composable of a target without it.
    */
   emitComposable?(composable: UfComposable, context: EmitContext): OutputFile[];
+  /**
+   * Emits one directive a `.uf.ts` module exports as its module, in the target's idiom
+   * (ADR-0099), or no file where the target runs no hook. Never throws: report problems instead.
+   * Every built-in target has it. It is optional for a third-party target: `compile()` reports
+   * UF1002 for a directive of a target without it.
+   */
+  emitDirective?(directive: UfDirective, context: EmitContext): OutputFile[];
 }
 
 /** Declares a target, checking its shape at compile time. */

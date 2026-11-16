@@ -1,0 +1,38 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/invalid-directive-use/Toolbar.uf.tsx",
+  "components": [
+    {
+      "name": "Item",
+      "span": {
+        "start": 367,
+        "end": 414
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Item",
+            "span": {
+              "start": 400,
+              "end": 404
+            }
+          }
+        ],
+        "span": {
+          "start": 394,
+          "end": 411
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

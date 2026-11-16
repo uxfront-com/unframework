@@ -71,6 +71,7 @@ import {
   widened,
 } from "./code.ts";
 import type { Reporter } from "./context.ts";
+import { misplacedDirective } from "./directives.ts";
 import { readLiteral } from "./literals.ts";
 import {
   ancestorsOf,
@@ -1262,6 +1263,10 @@ class Walk {
       teleportNotTag(node, this.#context.reporter);
       return UNKNOWN;
     }
+    if (api === "defineDirective") {
+      misplacedDirective(node, this.#context.reporter);
+      return UNKNOWN;
+    }
     if (api === "nextTick" && this.#mode === "client") {
       // Only a call reaches the targets (`#call` reads one, wrapped or not): each writes its
       // own call in place of `nextTick()`, which it cannot do for a function passed or stored.
@@ -1699,10 +1704,13 @@ class Walk {
       // (Solid's accessor callbacks, Angular's `@if`).
       const render = this.#mode === "render";
       const prop = path.names.length === 0 && this.#context.propsByDeclaration.has(path.root);
-      const scope = facts.find(
-        (fact) => fact.present && !(render && fact.child) && (fact.scope !== "closure" || prop),
-      )?.scope;
-      if (scope) return scope;
+      // A directive's value is read outside its element's branches on React and Qwik (ADR-0099).
+      const outside = render && this.#context.directiveValue === true;
+      const found = facts.find(
+        (fact) =>
+          fact.present && !(render && fact.child && !outside) && (fact.scope !== "closure" || prop),
+      );
+      if (found) return outside && found.child ? "template" : found.scope;
     }
     // A handler's read that relies on the template's conditional around it narrowing a union of
     // kinds (`{typeof value === "string" && <input onInput={() => use(value)} />}`), which a
@@ -2666,6 +2674,7 @@ class Walk {
         // A call the import reports, or a macro in the wrong place, whose arguments would say
         // nothing more.
         if (api === "Teleport") teleportNotTag(callee, context.reporter);
+        else if (api === "defineDirective") misplacedDirective(callee, context.reporter);
         else if (api !== undefined) this.#misplaced(callee, api, true);
         this.#skip(node.arguments);
         return UNKNOWN;

@@ -17,6 +17,7 @@ import {
 } from "./escape.ts";
 import {
   classArrayItems,
+  directiveAttributeName,
   isRoot,
   keepsWhitespace,
   staticClassValue,
@@ -289,6 +290,11 @@ export const vueDialect: MarkupDialect = {
   // The name `useTemplateRef("…")` reads the element by, which the Vue target keys by the
   // binding's name.
   refAttribute: ({ name }) => [{ name: "ref", text: quotedAttribute("ref", name) }],
+  // A custom directive (ADR-0099), which `<script setup>` resolves by its `vFocusTrap` name.
+  directiveAttribute: ({ attribute, value }) => {
+    const name = `v-${directiveAttributeName(attribute.name)}`;
+    return [{ name, text: `${name}="${vueAttributeCode(value)}"` }];
+  },
   rawHtmlAttribute: (code) => [{ name: "v-html", text: `v-html="${vueAttributeCode(code)}"` }],
   orderAttributes: (attributes) =>
     attributes

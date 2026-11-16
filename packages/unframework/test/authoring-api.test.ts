@@ -8,6 +8,7 @@ import * as runtime from "../src/jsx-runtime.ts";
 const AUTHORING_API = [
   "Teleport",
   "computed",
+  "defineDirective",
   "defineEmits",
   "defineExpose",
   "defineModel",

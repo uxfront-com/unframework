@@ -1,0 +1,105 @@
+{
+  "irVersion": 1,
+  "file": "directives/order/Note.uf.tsx",
+  "components": [
+    {
+      "name": "Note",
+      "span": {
+        "start": 126,
+        "end": 237
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "em",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "data-name",
+            "value": "note",
+            "span": {
+              "start": 178,
+              "end": 194
+            }
+          },
+          {
+            "kind": "Directive",
+            "name": "vNote",
+            "value": {
+              "code": "\"note\"",
+              "span": {
+                "start": 202,
+                "end": 208
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 195,
+              "end": 208
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Note",
+            "span": {
+              "start": 209,
+              "end": 225
+            }
+          }
+        ],
+        "span": {
+          "start": 174,
+          "end": 230
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Note",
+      "span": {
+        "start": 126,
+        "end": 237
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./trace.uf.ts",
+      "file": "trace.uf.ts",
+      "api": {
+        "file": "trace.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vNote"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vNote",
+          "local": "vNote",
+          "span": {
+            "start": 9,
+            "end": 14
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 38
+      }
+    }
+  ]
+}

@@ -171,6 +171,7 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
             case "Bound":
             case "Spread":
             case "RawHtml":
+            case "Directive":
               found.push(attribute.value);
               break;
             case "Class":

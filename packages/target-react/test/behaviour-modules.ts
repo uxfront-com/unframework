@@ -3,6 +3,7 @@
 // module under `/__uf_behaviour__/`, which `@vitejs/plugin-react` then transforms as it would the
 // unplugin's output. A test-only path to the analyser, as test/fixtures.ts takes.
 import { formatOutput } from "@unframework.dev/codegen";
+import type { ModuleApi } from "@unframework.dev/ir";
 import type { Plugin } from "vite";
 
 import { analyze } from "../../analyzer/src/index.ts";
@@ -17,7 +18,9 @@ export const BEHAVIOUR_DIRECTORY = "/__uf_behaviour__/";
 export async function behaviourModule(name: string): Promise<string> {
   const source = BEHAVIOUR_SOURCES[name];
   if (source === undefined) throw new Error(`No behaviour source is named ${name}.`);
-  const { module, diagnostics } = analyze(parseModule(`${name}.uf.tsx`, source));
+  const { module, diagnostics } = analyze(parseModule(`${name}.uf.tsx`, source), {
+    imports: childApis(source),
+  });
   if (!module || diagnostics.length) {
     const messages = diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`);
     throw new Error(`The analyser rejected ${name}:\n${messages.join("\n")}`);
@@ -33,6 +36,21 @@ export async function behaviourModule(name: string): Promise<string> {
   const outcome = await formatOutput(file);
   if (outcome.error) throw new Error(`oxfmt failed on ${name}: ${outcome.error}`);
   return outcome.file.contents;
+}
+
+/**
+ * The APIs of the behaviour sources a source imports, `./Rows.uf.tsx`, by specifier: what
+ * `compile()`'s resolver would give it, for a child's output this plugin serves too.
+ */
+function childApis(source: string): Map<string, ModuleApi> {
+  const apis = new Map<string, ModuleApi>();
+  for (const [, child] of source.matchAll(/from "\.\/(\w+)\.uf\.tsx"/g)) {
+    const text = BEHAVIOUR_SOURCES[child!];
+    if (text === undefined) continue;
+    const { api } = analyze(parseModule(`${child}.uf.tsx`, text), { imports: childApis(text) });
+    if (api) apis.set(`./${child}.uf.tsx`, api);
+  }
+  return apis;
 }
 
 /** The behaviour component an id or a URL names, or `undefined` when it names none. */
@@ -52,8 +70,13 @@ export function behaviourModules(): Plugin {
     configResolved(config) {
       root = config.root;
     },
-    resolveId(source) {
-      const found = name(source);
+    resolveId(source, importer) {
+      // A behaviour component's import of another, `./Rows`, which its output writes.
+      const child =
+        importer && name(importer) !== undefined && source.startsWith("./")
+          ? source.slice(2)
+          : undefined;
+      const found = child !== undefined && child in BEHAVIOUR_SOURCES ? child : name(source);
       return found === undefined ? null : `${root}${BEHAVIOUR_DIRECTORY}${found}.tsx`;
     },
     load(id) {

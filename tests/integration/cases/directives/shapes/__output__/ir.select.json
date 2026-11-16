@@ -1,0 +1,210 @@
+{
+  "irVersion": 1,
+  "file": "directives/shapes/select.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [
+    {
+      "name": "Field",
+      "exported": false,
+      "code": "type Field = HTMLInputElement | HTMLTextAreaElement;",
+      "span": {
+        "start": 343,
+        "end": 395
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "untrack",
+      "binding": "untrack@403",
+      "value": {
+        "code": "\"data-untrack\"",
+        "span": {
+          "start": 413,
+          "end": 427
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 397,
+        "end": 428
+      }
+    },
+    {
+      "name": "onMount",
+      "binding": "onMount@435",
+      "value": {
+        "code": "\"mounted\"",
+        "span": {
+          "start": 445,
+          "end": 454
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 429,
+        "end": 455
+      }
+    },
+    {
+      "name": "queueHook",
+      "binding": "queueHook@462",
+      "value": {
+        "code": "\"data-queue\"",
+        "span": {
+          "start": 474,
+          "end": 486
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 456,
+        "end": 487
+      }
+    },
+    {
+      "name": "ObjectDirective",
+      "binding": "ObjectDirective@494",
+      "value": {
+        "code": "\"queued\"",
+        "span": {
+          "start": 512,
+          "end": 520
+        },
+        "refs": []
+      },
+      "span": {
+        "start": 488,
+        "end": 521
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "vSelectable",
+      "exported": true,
+      "value": {
+        "code": "boolean",
+        "span": {
+          "start": 566,
+          "end": 573
+        }
+      },
+      "element": {
+        "code": "Field",
+        "span": {
+          "start": 575,
+          "end": 580
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    el.setAttribute(\"data-selectable\", String(value));\n    el.setAttribute(untrack, onMount);\n    el.setAttribute(queueHook, ObjectDirective);\n  }",
+            "span": {
+              "start": 605,
+              "end": 753
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "String",
+                "span": {
+                  "start": 646,
+                  "end": 652
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "untrack@403",
+                "span": {
+                  "start": 682,
+                  "end": 689
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "onMount@435",
+                "span": {
+                  "start": 691,
+                  "end": 698
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "queueHook@462",
+                "span": {
+                  "start": 721,
+                  "end": 730
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "ObjectDirective@494",
+                "span": {
+                  "start": 732,
+                  "end": 747
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 586,
+            "end": 753
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "id": "untrack@403",
+          "name": "untrack",
+          "kind": "moduleConst",
+          "span": {
+            "start": 403,
+            "end": 410
+          }
+        },
+        {
+          "id": "onMount@435",
+          "name": "onMount",
+          "kind": "moduleConst",
+          "span": {
+            "start": 435,
+            "end": 442
+          }
+        },
+        {
+          "id": "queueHook@462",
+          "name": "queueHook",
+          "kind": "moduleConst",
+          "span": {
+            "start": 462,
+            "end": 471
+          }
+        },
+        {
+          "id": "ObjectDirective@494",
+          "name": "ObjectDirective",
+          "kind": "moduleConst",
+          "span": {
+            "start": 494,
+            "end": 509
+          }
+        }
+      ],
+      "types": [
+        "Field"
+      ],
+      "span": {
+        "start": 523,
+        "end": 758
+      }
+    }
+  ]
+}
