@@ -4,6 +4,15 @@ import { join } from "node:path";
 
 const SITE_URL = "https://unframework.dev";
 
+// Hosts that serve the site but must stay out of the index (audit findings C1
+// and C3): only the apex is the production host. `www` waits for a 301 at the
+// zone, and the Worker's production and preview hosts on workers.dev keep
+// working, for previews. _headers rules match a host only in this absolute form.
+const NOINDEX_HOSTS = [
+  "https://www.unframework.dev/*",
+  "https://:version.:subdomain.workers.dev/*",
+];
+
 // Docus reads the site URL from the environment: for canonical URLs, robots.txt
 // and llms.txt at build time, and for the sitemap when it's prerendered.
 process.env.NUXT_SITE_URL ||= SITE_URL;
@@ -96,15 +105,22 @@ export default defineNuxtConfig({
 
   routeRules: {
     // The docs open on the introduction. /raw/docs.md, the markdown copy of /docs,
-    // redirects the same way, since agents may guess it.
-    "/docs": { redirect: "/docs/getting-started/introduction" },
-    "/raw/docs.md": { redirect: "/raw/docs/getting-started/introduction.md" },
+    // redirects the same way, since agents may guess it. All three redirects are
+    // permanent, so crawlers index their targets (audit finding C9).
+    "/docs": { redirect: { to: "/docs/getting-started/introduction", statusCode: 301 } },
+    "/raw/docs.md": {
+      redirect: { to: "/raw/docs/getting-started/introduction.md", statusCode: 301 },
+    },
     // Every diagnostic links its code (`docsUrl()` in @unframework.dev/diagnostics), which opens
     // the code's section of the reference. The page's path is lower case, as Nuxt Content
     // writes every path, and each section carries an anchor in the code's own case
     // (`[UF1001]{#UF1001}`). The Cloudflare preset writes this rule to _redirects, which
     // fills in the placeholder; `nuxt dev` redirects to the page's top.
-    "/diagnostics/:code": { redirect: "/docs/reference/diagnostics#:code" },
+    "/diagnostics/:code": {
+      redirect: { to: "/docs/reference/diagnostics#:code", statusCode: 301 },
+    },
+    // Nitro's SPA fallback, empty and unlinked, which Cloudflare serves at /200 (audit finding C11).
+    "/200": { headers: { "X-Robots-Tag": "noindex" } },
     // Hashed build assets never change, so cache them forever.
     "/_nuxt/**": {
       headers: { "cache-control": "public, max-age=31536000, immutable" },
@@ -141,11 +157,12 @@ export default defineNuxtConfig({
   },
 
   hooks: {
-    // Workers rejects the `/* /404.html 404` fallback the preset writes to _redirects
-    // (404 isn't a valid redirect status), failing the deploy. not_found_handling in
-    // wrangler.jsonc serves 404.html instead. Registered here, not in nitro.hooks,
-    // so it runs after the preset's compiled hook instead of replacing it.
+    // Registered here, not in nitro.hooks, so these run after the preset's
+    // compiled hook, which writes _headers and _redirects, instead of replacing it.
     "nitro:init"(nitro) {
+      // Workers rejects the `/* /404.html 404` fallback the preset writes to _redirects
+      // (404 isn't a valid redirect status), failing the deploy. not_found_handling in
+      // wrangler.jsonc serves 404.html instead.
       nitro.hooks.hook("compiled", async () => {
         const file = join(nitro.options.output.dir, "_redirects");
         if (!existsSync(file)) return;
@@ -153,6 +170,13 @@ export default defineNuxtConfig({
           .split("\n")
           .filter((line) => line && !/\s404$/.test(line));
         await (rules.length ? writeFile(file, rules.join("\n")) : rm(file));
+      });
+      // routeRules match paths only, so the host rules are appended by hand.
+      nitro.hooks.hook("compiled", async () => {
+        const file = join(nitro.options.output.dir, "_headers");
+        const rules = existsSync(file) ? await readFile(file, "utf8") : "";
+        const hosts = NOINDEX_HOSTS.map((host) => `${host}\n  X-Robots-Tag: noindex`);
+        await writeFile(file, [rules.trimEnd(), ...hosts].filter(Boolean).join("\n") + "\n");
       });
     },
   },
