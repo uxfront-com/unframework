@@ -2,9 +2,11 @@
 // async setup's mounted hook may (ADR-0101), so its client render takes it too.
 import type { StubComponent } from "../../../dom-target.ts";
 
-export default {
+const Note: StubComponent = {
   html: '<label>Note <input type="text"></label>',
-  setup(container) {
+  setup(container: HTMLElement): void {
     container.querySelector("input")?.focus();
   },
-} satisfies StubComponent;
+};
+
+export default Note;
