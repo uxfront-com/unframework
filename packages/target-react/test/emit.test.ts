@@ -103,6 +103,7 @@ const titlesHtml = (first: string, ...titles: string[]): string =>
 describe("react target", () => {
   it("declares every capability", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
+      "async-setup",
       "attribute-spread",
       "bound-attribute",
       "child-root-scope",
@@ -774,6 +775,221 @@ function renderMarkup(element: Parameters<typeof renderToStaticMarkup>[0]) {
     spy.mockRestore();
   }
 }
+
+/** `SetupPending` as every output of a setup that awaits prints it, under its name (ADR-0101). */
+const setupPending = (name = "SetupPending") =>
+  [
+    "/**",
+    " * Renders nothing while a setup runs, and tells the component once it settles, so React shows the",
+    " * content at once rather than after its fallback throttle. Only a fallback React commits runs it:",
+    " * never on the server, and never while the client hydrates.",
+    " */",
+    `function ${name}({`,
+    "  setup,",
+    "  onSettled,",
+    "}: {",
+    "  setup: Promise<unknown>;",
+    "  onSettled: (settled: boolean) => void;",
+    "}): null {",
+    "  useEffect(() => {",
+    "    let live = true;",
+    "    const settle = () => {",
+    "      if (live) onSettled(true);",
+    "    };",
+    "    setup.then(settle, settle);",
+    "    return () => {",
+    "      live = false;",
+    "    };",
+    "  }, [setup, onSettled]);",
+    "  return null;",
+    "}",
+    "",
+  ].join("\n");
+
+/** Two awaits, a prop's default, an annotation, and a value only the later await reads. */
+const CARD = `const load = async (id: string) => ({ name: id, team: "t" });
+export default async function Card({ id, prefix = "u-" }: { id: string; prefix?: string }) {
+  const user = await load(prefix + id);
+  const team: { name: string } = await load(user.team);
+  const label = computed(() => team.name + id);
+  return <p>{label.value}</p>;
+}`;
+
+/** The object form, whose resolved component reads the promise off the props. */
+const TAG = `const load = async (id: string) => ({ name: id });
+export interface TagProps { id: string; label: string }
+export async function Tag(props: TagProps) {
+  const user = await load(props.id);
+  return <span>{props.label}: {user.name}</span>;
+}`;
+
+/** An await that reads no prop and whose value nothing reads. */
+const PING = `const load = async () => "pong";
+export default async function Ping() {
+  const pong = await load();
+  return <p>Ping</p>;
+}`;
+
+/** Source names that the output's own would take: `setup`, `settled` and `SetupPending`. */
+const TAKEN = `const load = async (id: string) => ({ name: id });
+export default async function Taken({ setup }: { setup: string }) {
+  const settled = await load(setup);
+  function SetupPending() { return settled.name; }
+  return <p>{SetupPending()}</p>;
+}`;
+
+describe("react async setup (ADR-0101)", () => {
+  it("runs the awaits in a setup function the exported component starts, and renders the resolved component in a <Suspense>", async () => {
+    expect(await output(`import { computed } from "@uxfront/unframework";\n${CARD}`)).toBe(
+      [
+        'import { type CSSProperties, Suspense, use, useEffect, useMemo, useState } from "react";',
+        "",
+        "export interface CardAttributes {",
+        "  className?: string;",
+        "  style?: CSSProperties;",
+        "}",
+        "",
+        'const load = async (id: string) => ({ name: id, team: "t" });',
+        "",
+        'async function cardSetup({ id, prefix = "u-" }: { id: string; prefix?: string }) {',
+        "  const user = await load(prefix + id);",
+        "  const team: { name: string } = await load(user.team);",
+        "  return { team };",
+        "}",
+        "",
+        "export default function Card(props: { id: string; prefix?: string } & CardAttributes) {",
+        "  const [setup] = useState(() => cardSetup(props));",
+        "  const [settled, setSettled] = useState(false);",
+        "",
+        "  return (",
+        "    <Suspense fallback={<SetupPending setup={setup} onSettled={setSettled} />}>",
+        "      <CardResolved {...props} setup={setup} settled={settled} />",
+        "    </Suspense>",
+        "  );",
+        "}",
+        "",
+        "function CardResolved({",
+        "  id,",
+        "  className,",
+        "  style,",
+        "  setup,",
+        "  settled: _settled,",
+        "  ...attributes",
+        "}: { id: string; prefix?: string } & CardAttributes & {",
+        "    setup: ReturnType<typeof cardSetup>;",
+        "    settled: boolean;",
+        "  }) {",
+        "  const { team } = use(setup);",
+        "",
+        "  const label = useMemo(() => team.name + id, [team, id]);",
+        "",
+        "  return (",
+        "    <p className={className} style={style} {...scopeAttributes(attributes)}>",
+        "      {label}",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+        scopeHelper(),
+        setupPending(),
+      ].join("\n"),
+    );
+  });
+
+  it("keeps the props object, which the resolved component reads the promise off", async () => {
+    const printed = await output(TAG);
+    expect(printed).toContain(
+      [
+        "async function tagSetup(props: TagProps) {",
+        "  const user = await load(props.id);",
+        "  return { user };",
+        "}",
+        "",
+        "export function Tag(props: TagProps & TagAttributes) {",
+        "  const [setup] = useState(() => tagSetup(props));",
+      ].join("\n"),
+    );
+    expect(printed).toContain(
+      [
+        "function TagResolved(",
+        "  props: TagProps & TagAttributes & { setup: ReturnType<typeof tagSetup>; settled: boolean },",
+        ") {",
+        "  const { user } = use(props.setup);",
+      ].join("\n"),
+    );
+  });
+
+  it("awaits a value nothing reads without a name, and starts a setup that reads no prop without them", async () => {
+    const printed = await output(PING);
+    expect(printed).toContain("async function pingSetup() {\n  await load();\n}");
+    expect(printed).toContain("const [setup] = useState(() => pingSetup());");
+    expect(printed).toContain(
+      "}: PingAttributes & { setup: ReturnType<typeof pingSetup>; settled: boolean }) {\n  use(setup);\n",
+    );
+  });
+
+  it("passes nothing on from a component that takes no props", async () => {
+    const printed = await output(`const load = async () => "x";
+export default async function Frag() {
+  const value = await load();
+  return <><p>{value}</p><p>two</p></>;
+}`);
+    expect(printed).toContain("export default function Frag() {");
+    expect(printed).toContain("<FragResolved setup={setup} settled={settled} />");
+    expect(printed).toContain(
+      "function FragResolved({ setup }: { setup: ReturnType<typeof fragSetup>; settled: boolean }) {",
+    );
+  });
+
+  it("claims its names around the source's", async () => {
+    const printed = await output(TAKEN);
+    expect(printed).toContain("const [setup_1] = useState(() => takenSetup(props));");
+    expect(printed).toContain("const [settled_1, setSettled] = useState(false);");
+    expect(printed).toContain(
+      "<Suspense fallback={<SetupPending_1 setup={setup_1} onSettled={setSettled} />}>",
+    );
+    expect(printed).toContain(
+      "<TakenResolved {...props} setup_1={setup_1} settled_1={settled_1} />",
+    );
+    expect(printed).toContain("const { settled } = use(setup_1);");
+    expect(printed).toContain(setupPending("SetupPending_1"));
+  });
+
+  it("passes React Compiler, the checker and the linter with no message (L3, L4, L5)", async () => {
+    const scratch = join(packageDir, ".uf-tmp", `async-${randomUUID()}`);
+    mkdirSync(scratch, { recursive: true });
+    try {
+      const sources = {
+        Card: `import { computed } from "@uxfront/unframework";\n${CARD}`,
+        Tag: TAG,
+        Ping: PING,
+        Taken: TAKEN,
+      };
+      const files = await Promise.all(
+        Object.entries(sources).map(async ([name, source]) => {
+          const path = join(scratch, `${name}.tsx`);
+          const contents = await output(source);
+          writeFileSync(path, contents);
+          return { path, contents };
+        }),
+      );
+      const context = { toolchainDir, root: packageDir };
+      const compiled = await toolchain.frameworkCompile(files, context);
+      for (const { path } of files) {
+        expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
+      }
+      const paths = files.map(({ path }) => path);
+      for (const [path, messages] of await toolchain.typecheck(paths, context)) {
+        expect(messages, path).toEqual([]);
+      }
+      for (const [path, messages] of await toolchain.lint(paths, context)) {
+        expect(messages, path).toEqual([]);
+      }
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("react output, rendered by React", () => {
   const scratch = join(packageDir, ".uf-tmp", `emit-${randomUUID()}`);
