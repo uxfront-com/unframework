@@ -158,14 +158,20 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
   `runDirective` for each, which keeps its state per element. An element that leaves the document
   leaves the list too, once its `unmounted` is queued (`forgetElement`), so the list and the
   task's work follow what is on the page. Qwik projects a slot's element again without calling
-  `ref` again, so the runner keeps watching a left element through a `WeakRef`: one that comes
-  back mounts again and returns to the list (`collectElement`), and one that is gone for good is
-  collected, which ends its watch at the next change of the document, and the observer with the
-  last watch. Angular's projected content comes back the same way, and Angular passes no list, so
-  its watch stays until its directive is destroyed. So how often a child renders the content
-  doesn't matter, and the compiler predicts none of it. The `directives/repeated` case checks each
-  count element by element, `directives/slotted` an element that leaves and comes back, and the
-  codegen's `directive-runner` test that a left element's watch ends once it is collected.
+  `ref` again, so the runner keeps watching a left element through a `WeakRef`, and the element
+  belongs to that watch alone: a task run that no longer lists it leaves it be. One that comes
+  back returns to the list (`collectElement`), whose change runs the task again, which mounts it
+  with the value of then, as Vue mounts the element it renders again. One that is gone for good
+  is collected, which ends its watch at the next change of the document, and the observer with
+  the last watch. The weak watch and the check it calls are declared apart from `runDirective`
+  (`directiveCheck`, `watchLeft`), whose scope holds the element, so no closure V8 keeps for that
+  scope keeps a left element alive. Angular's projected content comes back the same way, and
+  Angular passes no list, so its watch stays until its directive is destroyed. So how often a
+  child renders the content doesn't matter, and the compiler predicts none of it. The
+  `directives/repeated` case checks each count element by element, `directives/slotted` an
+  element that leaves, whose value changes while it is out, and that comes back, and the
+  codegen's `directive-runner` test that a left element's watch ends once it is collected and
+  survives a task run that no longer lists it.
 - **A narrowed value is asserted where it is read outside its branch.** React's getter, Qwik's
   task and Svelte's attachment read the value after the conditional that narrowed it, so a read
   the condition narrows takes `!`, as Solid's and Angular's do (`assertedValue`). Qwik's task
