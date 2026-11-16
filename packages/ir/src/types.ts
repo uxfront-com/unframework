@@ -1503,10 +1503,7 @@ export interface TeleportNode {
  */
 export interface TransitionNode {
   kind: "Transition";
-  /**
-   * The prefix of the transition's classes, a static string: `"v"` when the source leaves it out.
-   * @minLength 1
-   */
+  /** The prefix of the transition's classes, a static string: `"v"` when the source leaves it out. */
   name: string;
   /** Set when the first element enters on a client mount too (`appear`). */
   appear?: true;

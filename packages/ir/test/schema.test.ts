@@ -19,6 +19,7 @@ import {
   createModule,
   createStaticAttribute,
   createText,
+  createTransitionNode,
   irSchema,
   RENDER_NODE_KINDS,
   span,
@@ -234,6 +235,40 @@ describe("validateModule", () => {
     const module = structuredClone(valid()) as unknown as Record<string, unknown>;
     render(module).tag = "h1";
     (render(module).attributes as { name: unknown }[])[0]!.name = "data-é.x_1";
+    expect(validateModule(module)).toEqual([]);
+  });
+
+  // Every keyword the schema uses is one validateModule implements: a `@minLength` on a field
+  // once made it throw on a module with a transition (ADR-0100).
+  it("accepts a transition around a conditional", () => {
+    const module = createModule(
+      "Menu.uf.tsx",
+      [
+        createComponent(
+          "Menu",
+          createElement(
+            "nav",
+            [],
+            [
+              createTransitionNode(
+                "fade",
+                true,
+                [
+                  createIf(
+                    [createBranch(expression("open", 0), [createElement("ul", [], [], at)], at)],
+                    at,
+                  ),
+                ],
+                at,
+              ),
+            ],
+            at,
+          ),
+          at,
+        ),
+      ],
+      [createExport("default", "Menu", at)],
+    );
     expect(validateModule(module)).toEqual([]);
   });
 
