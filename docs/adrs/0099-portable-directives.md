@@ -130,9 +130,9 @@ element removed with its descendants still sorts after them. Solid runs an eleme
 its children's, Angular mixes the two orders, Qwik's is its own, and React's helper runs from
 effects and microtasks, so each queues its hooks. Every output declares the helper, since none
 imports another's (P7), but they share one queue, an array on `globalThis` under
-`Symbol.for("unframework.directive-hooks@1")`, whose version changes with the entries' shape: a
-directive module's hooks and a component's own sort
-together, which the `directives/order` case checks with a child's root that applies a `.uf.ts`
+`Symbol.for("unframework.directive-hooks@2")`, whose version changes with the entries' shape, so
+outputs of two compiler versions with different shapes keep two queues, with no order between them:
+a directive module's hooks and a component's own sort together, which the `directives/order` case checks with a child's root that applies a `.uf.ts`
 module's directive. A hook that throws goes to `reportError`, and the rest of its turn still runs.
 Svelte runs its attachments in Vue's order with no queue.
 
@@ -155,9 +155,17 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
   keeps the use's elements in a set, and Qwik's `ref` function adds each element to a signal of
   them, `collectElement`. On the server Qwik calls it with a `DomRef`, which the signal
   serialises, so a resumed page reads every element the server rendered. The visible task runs
-  `runDirective` for each, which keeps its state per element. So how often a child renders the
-  content doesn't matter, and the compiler predicts none of it. The `directives/repeated` case
-  checks each count element by element.
+  `runDirective` for each, which keeps its state per element. An element that leaves the document
+  leaves the list too, once its `unmounted` is queued (`forgetElement`), so the list and the
+  task's work follow what is on the page. Qwik projects a slot's element again without calling
+  `ref` again, so the runner keeps watching a left element through a `WeakRef`: one that comes
+  back mounts again and returns to the list (`collectElement`), and one that is gone for good is
+  collected, which ends its watch at the next change of the document, and the observer with the
+  last watch. Angular's projected content comes back the same way, and Angular passes no list, so
+  its watch stays until its directive is destroyed. So how often a child renders the content
+  doesn't matter, and the compiler predicts none of it. The `directives/repeated` case checks each
+  count element by element, `directives/slotted` an element that leaves and comes back, and the
+  codegen's `directive-runner` test that a left element's watch ends once it is collected.
 - **A narrowed value is asserted where it is read outside its branch.** React's getter, Qwik's
   task and Svelte's attachment read the value after the conditional that narrowed it, so a read
   the condition narrows takes `!`, as Solid's and Angular's do (`assertedValue`). Qwik's task
