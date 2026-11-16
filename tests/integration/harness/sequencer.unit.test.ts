@@ -176,8 +176,8 @@ describe("the areas that change a target's page (ADR-0101)", () => {
       .filter((info) => info.id.startsWith("async-setup/") && info.spec)
       .map((info) => info.spec!);
     expect(specs.length).toBeGreaterThanOrEqual(5);
-    expect(last.get("browser:svelte")).toEqual([...specs].sort());
-    expect(last.get("hydrate:svelte")).toEqual([...specs].sort());
+    expect(last.get("browser:svelte")).toEqual(specs.toSorted());
+    expect(last.get("hydrate:svelte")).toEqual(specs.toSorted());
     expect(last.get("hydrate:vue")).toEqual([LEAKING]);
     expect(() => lastSpecs(listCases(), {}, { svelte: { area: "no-such-area" } })).toThrow(
       /no-such-area for svelte, which holds no case with a spec/,

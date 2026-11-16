@@ -37,7 +37,7 @@ export function lastSpecs(
     const specs = cases
       .filter((info) => info.id.startsWith(`${entry.area}/`) && info.spec)
       .map((info) => resolve(info.spec!))
-      .sort();
+      .toSorted();
     if (!specs.length) {
       throw new Error(
         `[uf] CHANGES_PAGE names the area ${entry.area} for ${target}, which holds no case with a spec.`,
@@ -86,7 +86,7 @@ export function runLast<T extends SequencedSpec>(
       sorted.push(spec);
     }
     if (index === projectEnd) {
-      sorted.push(...(held.get(project) ?? []).sort((a, b) => rank(a) - rank(b)));
+      sorted.push(...(held.get(project) ?? []).toSorted((a, b) => rank(a) - rank(b)));
     }
   });
   return sorted;
