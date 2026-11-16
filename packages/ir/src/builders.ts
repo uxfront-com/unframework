@@ -98,6 +98,7 @@ import type {
   SlotFill,
   SlotOutletNode,
   TeleportNode,
+  TransitionNode,
   SlotReference,
   Slots,
   Span,
@@ -1040,6 +1041,16 @@ export function createDynamicNode(
 /** Builds `<Teleport to>` (ADR-0098). */
 export function createTeleportNode(to: string, children: RenderNode[], at: Span): TeleportNode {
   return { kind: "Teleport", to, children, span: at };
+}
+
+/** Builds `<Transition name appear>` (ADR-0100): `appear` is set only when true. */
+export function createTransitionNode(
+  name: string,
+  appear: boolean,
+  children: RenderNode[],
+  at: Span,
+): TransitionNode {
+  return { kind: "Transition", name, ...(appear && { appear: true as const }), children, span: at };
 }
 
 /** What a fill is besides its slot and children: each set only when given. */

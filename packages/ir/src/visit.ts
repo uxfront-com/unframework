@@ -37,6 +37,7 @@ const renderNodeKinds = {
   SlotOutlet: true,
   Dynamic: true,
   Teleport: true,
+  Transition: true,
 } satisfies Record<RenderNode["kind"], true>;
 const attributeKinds = {
   Static: true,
@@ -165,13 +166,14 @@ export interface Visitor {
  * The child nodes of a node, in document order: an element's or a fragment's children, every
  * branch's children of an `If` in order, a `For`'s body, every fill's children of a component in
  * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', a `Teleport`'s
- * content, and nothing for text.
+ * or a `Transition`'s content, and nothing for text.
  */
 export function childrenOf(node: VisitedNode): readonly RenderNode[] {
   switch (node.kind) {
     case "Element":
     case "Fragment":
     case "Teleport":
+    case "Transition":
       return node.children;
     case "If":
       return node.branches.flatMap((branch) => branch.children);
@@ -273,6 +275,7 @@ function attributesOf(node: VisitedNode): readonly AnyAttribute[] {
       return node.attributes;
     case "Fragment":
     case "Teleport":
+    case "Transition":
     case "Text":
     case "Interpolation":
     case "If":
@@ -350,6 +353,7 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
         return;
       case "Fragment":
       case "Teleport":
+      case "Transition":
         for (const [index, child] of node.children.entries()) {
           visit(child, `${path}/children/${index}`);
         }
@@ -595,6 +599,7 @@ function walkHandlers(
       return;
     case "Fragment":
     case "Teleport":
+    case "Transition":
       for (const [index, child] of node.children.entries()) {
         walkHandlers(child, `${path}/children/${index}`, visit);
       }
@@ -983,6 +988,7 @@ function walkSpans(node: VisitedNode, path: string, add: AddSpan) {
       return;
     case "Fragment":
     case "Teleport":
+    case "Transition":
       for (const [index, child] of node.children.entries()) {
         walkSpans(child, `${path}/children/${index}`, add);
       }
