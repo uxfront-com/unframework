@@ -3911,6 +3911,39 @@
         }
       }
     },
+    "models/radio-bound-value": {
+      "time": 5.26,
+      "sizes": {
+        "react": {
+          "raw": 2012,
+          "gzip": 987
+        },
+        "vue": {
+          "raw": 1061,
+          "gzip": 563
+        },
+        "svelte": {
+          "raw": 1604,
+          "gzip": 765
+        },
+        "solid": {
+          "raw": 1395,
+          "gzip": 686
+        },
+        "angular": {
+          "raw": 3226,
+          "gzip": 1264
+        },
+        "qwik": {
+          "raw": 1795,
+          "gzip": 1126
+        },
+        "astro": {
+          "raw": 917,
+          "gzip": 539
+        }
+      }
+    },
     "models/select": {
       "time": 4.45,
       "sizes": {

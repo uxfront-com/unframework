@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('checkbox', { name: 'gift-wrap' })",
+      "dom": [
+        "<section aria-label=\"Delivery\">",
+        "  <fieldset>",
+        "    <legend>",
+        "      \"Speed\"",
+        "    </legend>",
+        "    <label>",
+        "      <input name=\"speed\" type=\"radio\" uf:checked=\"true\" value=\"standard\">",
+        "      \" standard\"",
+        "    </label>",
+        "    <label>",
+        "      <input name=\"speed\" type=\"radio\" uf:checked=\"false\" value=\"express\">",
+        "      \" express\"",
+        "    </label>",
+        "  </fieldset>",
+        "  <fieldset>",
+        "    <legend>",
+        "      \"Extras\"",
+        "    </legend>",
+        "    <label>",
+        "      <input type=\"checkbox\" uf:checked=\"true\" uf:indeterminate=\"false\" value=\"insurance\">",
+        "      \" insurance\"",
+        "    </label>",
+        "    <label>",
+        "      <input type=\"checkbox\" uf:checked=\"true\" uf:focused=\"\" uf:indeterminate=\"false\" value=\"gift-wrap\">",
+        "      \" gift-wrap\"",
+        "    </label>",
+        "  </fieldset>",
+        "  <output>",
+        "    \"Speed: standard, extras: insurance, gift-wrap\"",
+        "  </output>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Delivery\":",
+        "  - group \"Speed\":",
+        "    - text: Speed",
+        "    - radio \"standard\" [checked]",
+        "    - text: standard",
+        "    - radio \"express\"",
+        "    - text: express",
+        "  - group \"Extras\":",
+        "    - text: Extras",
+        "    - checkbox \"insurance\" [checked]",
+        "    - text: insurance",
+        "    - checkbox \"gift-wrap\" [checked]",
+        "    - text: gift-wrap",
+        "  - status: \"Speed: standard, extras: insurance, gift-wrap\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "description": "Radios and checkboxes whose `v-model` binds one value, with each `value` bound to a prop's item: the server checks the input whose value the model holds.",
+  "ssr": {
+    "options": {
+      "props": { "speeds": ["standard", "express"], "extras": ["insurance", "gift-wrap"] }
+    }
+  }
+}

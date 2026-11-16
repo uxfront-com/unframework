@@ -1,0 +1,44 @@
+---
+export interface DeliveryProps {
+  speeds: string[];
+  extras: string[];
+}
+
+interface Props extends DeliveryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { speeds, extras, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const speed = "express" as string;
+const chosen = ["insurance"] as string[];
+---
+
+<section
+  aria-label="Delivery"
+  class:list={[className]}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <fieldset>
+    <legend>Speed</legend>
+    {speeds.map((value) => (
+      <label><input type="radio" name="speed" value={value} checked={speed === value} /> {value}</label>
+    ))}
+  </fieldset>
+  <fieldset>
+    <legend>Extras</legend>
+    {extras.map((extra) => (
+      <label><input type="checkbox" value={extra} checked={chosen.includes(extra)} /> {extra}</label>
+    ))}
+  </fieldset>
+  <output>Speed: {speed}, extras: {chosen.join(", ") || "none"}</output>
+</section>

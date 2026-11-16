@@ -1,9 +1,9 @@
 // The browser's globals `@unframework.dev/ir` holds as data (ADR-0045), against what they stand for:
-// every name lib.dom declares, in TypeScript 7's lib (the React, Solid and Qwik outputs' checker)
-// and in TypeScript 6's (the Vue, Svelte, Astro and Angular toolchains'). Client code may read
-// each of them, or reads it through `window`, and every target prints it as written, so a name
-// the lib does not declare would fail an output's type-check, and one it declares that the IR
-// leaves out would be rejected for no reason (UF3020). The IR package cannot reach those files,
+// every name lib.dom declares both in TypeScript 7's lib (the React, Solid and Qwik outputs'
+// checker) and in TypeScript 6's (the Vue, Svelte, Astro and Angular toolchains'). Client code
+// may read each of them, or reads it through `window`, and every target prints it as written, so
+// a name a lib does not declare would fail an output's type-check, and one both declare that the
+// IR leaves out would be rejected for no reason (UF3020). The IR package cannot reach those files,
 // so the analyser, which reads globals by these sets, pins them. `tsc --listFilesOnly` finds
 // each lib: the check never loads TypeScript's API.
 import { spawnSync } from "node:child_process";
@@ -66,15 +66,21 @@ function typescriptOf(workspace: string): string {
 }
 
 describe("the browser's globals", () => {
-  it.each([
-    ["TypeScript 7 (the repo's)", "packages/analyzer"],
-    ["TypeScript 6 (the Vue, Svelte, Astro and Angular toolchains')", "tests/toolchains/vue"],
-  ])("are every name lib.dom declares, in %s", { timeout: 60_000 }, (_, workspace) => {
-    const declared = libDomGlobals(typescriptOf(workspace));
-    expect(declared.size).toBeGreaterThan(900);
-    expect([...LIB_DOM_GLOBALS].filter((name) => !declared.has(name))).toEqual([]);
-    expect([...declared].filter((name) => !LIB_DOM_GLOBALS.has(name))).toEqual([]);
-  });
+  // Every target prints a global as written, so the set holds the names both libs declare.
+  // TypeScript 7.1's lib.dom declares newer APIs that TypeScript 6's does not, and a Vue, Svelte,
+  // Astro or Angular output that read one would fail its check.
+  it(
+    "are every name lib.dom declares in both TypeScript 7 and TypeScript 6",
+    { timeout: 60_000 },
+    () => {
+      const seven = libDomGlobals(typescriptOf("packages/analyzer"));
+      const six = libDomGlobals(typescriptOf("tests/toolchains/vue"));
+      expect(six.size).toBeGreaterThan(900);
+      expect([...six].filter((name) => !seven.has(name))).toEqual([]);
+      expect([...LIB_DOM_GLOBALS].filter((name) => !six.has(name))).toEqual([]);
+      expect([...six].filter((name) => !LIB_DOM_GLOBALS.has(name))).toEqual([]);
+    },
+  );
 
   it("split lib.dom between what client code reads by name and through `window`", () => {
     const runtime = ["console", "performance", "crypto", "structuredClone"];

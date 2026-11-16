@@ -1,0 +1,658 @@
+{
+  "irVersion": 1,
+  "file": "models/radio-bound-value/Delivery.uf.tsx",
+  "components": [
+    {
+      "name": "Delivery",
+      "span": {
+        "start": 121,
+        "end": 939
+      },
+      "props": [
+        {
+          "name": "speeds",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 88,
+              "end": 96
+            }
+          },
+          "binding": "speeds@156",
+          "span": {
+            "start": 80,
+            "end": 97
+          }
+        },
+        {
+          "name": "extras",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 108,
+              "end": 116
+            }
+          },
+          "binding": "extras@164",
+          "span": {
+            "start": 100,
+            "end": 117
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "DeliveryProps",
+          "span": {
+            "start": 174,
+            "end": 187
+          }
+        },
+        "span": {
+          "start": 154,
+          "end": 187
+        }
+      },
+      "types": [
+        "DeliveryProps"
+      ],
+      "bindings": [
+        {
+          "id": "speeds@156",
+          "name": "speeds",
+          "kind": "prop",
+          "span": {
+            "start": 156,
+            "end": 162
+          }
+        },
+        {
+          "id": "extras@164",
+          "name": "extras",
+          "kind": "prop",
+          "span": {
+            "start": 164,
+            "end": 170
+          }
+        },
+        {
+          "id": "speed@199",
+          "name": "speed",
+          "kind": "state",
+          "span": {
+            "start": 199,
+            "end": 204
+          }
+        },
+        {
+          "id": "chosen@231",
+          "name": "chosen",
+          "kind": "state",
+          "span": {
+            "start": 231,
+            "end": 237
+          }
+        },
+        {
+          "id": "value@386",
+          "name": "value",
+          "kind": "loopVar",
+          "span": {
+            "start": 386,
+            "end": 391
+          }
+        },
+        {
+          "id": "extra@639",
+          "name": "extra",
+          "kind": "loopVar",
+          "span": {
+            "start": 639,
+            "end": 644
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "speed@199",
+          "initial": {
+            "code": "\"express\"",
+            "span": {
+              "start": 211,
+              "end": 220
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 193,
+            "end": 222
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "chosen@231",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 244,
+              "end": 252
+            }
+          },
+          "initial": {
+            "code": "[\"insurance\"]",
+            "span": {
+              "start": 254,
+              "end": 267
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 225,
+            "end": 269
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Delivery",
+            "span": {
+              "start": 294,
+              "end": 315
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "fieldset",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "legend",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Speed",
+                    "span": {
+                      "start": 350,
+                      "end": 355
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 342,
+                  "end": 364
+                }
+              },
+              {
+                "kind": "For",
+                "source": {
+                  "code": "speeds",
+                  "span": {
+                    "start": 374,
+                    "end": 380
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "speeds@156",
+                      "span": {
+                        "start": 374,
+                        "end": 380
+                      }
+                    }
+                  ]
+                },
+                "item": "value@386",
+                "key": {
+                  "code": "value",
+                  "span": {
+                    "start": 420,
+                    "end": 425
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "value@386",
+                      "span": {
+                        "start": 420,
+                        "end": 425
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "label",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "input",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "radio",
+                          "span": {
+                            "start": 447,
+                            "end": 459
+                          }
+                        },
+                        {
+                          "kind": "Static",
+                          "name": "name",
+                          "value": "speed",
+                          "span": {
+                            "start": 460,
+                            "end": 472
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "value",
+                          "value": {
+                            "code": "value",
+                            "span": {
+                              "start": 480,
+                              "end": 485
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "value@386",
+                                "span": {
+                                  "start": 480,
+                                  "end": 485
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 473,
+                            "end": 486
+                          }
+                        },
+                        {
+                          "kind": "Model",
+                          "value": {
+                            "code": "speed.value",
+                            "span": {
+                              "start": 496,
+                              "end": 507
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "speed@199",
+                                "span": {
+                                  "start": 496,
+                                  "end": 507
+                                }
+                              }
+                            ]
+                          },
+                          "control": "radio",
+                          "span": {
+                            "start": 487,
+                            "end": 508
+                          }
+                        }
+                      ],
+                      "children": [],
+                      "span": {
+                        "start": 440,
+                        "end": 511
+                      }
+                    },
+                    {
+                      "kind": "Text",
+                      "value": " ",
+                      "span": {
+                        "start": 511,
+                        "end": 512
+                      }
+                    },
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "value",
+                        "span": {
+                          "start": 513,
+                          "end": 518
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "value@386",
+                            "span": {
+                              "start": 513,
+                              "end": 518
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 512,
+                        "end": 519
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 408,
+                    "end": 538
+                  }
+                },
+                "span": {
+                  "start": 374,
+                  "end": 549
+                }
+              }
+            ],
+            "span": {
+              "start": 323,
+              "end": 568
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "fieldset",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "legend",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Extras",
+                    "span": {
+                      "start": 602,
+                      "end": 608
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 594,
+                  "end": 617
+                }
+              },
+              {
+                "kind": "For",
+                "source": {
+                  "code": "extras",
+                  "span": {
+                    "start": 627,
+                    "end": 633
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "extras@164",
+                      "span": {
+                        "start": 627,
+                        "end": 633
+                      }
+                    }
+                  ]
+                },
+                "item": "extra@639",
+                "key": {
+                  "code": "extra",
+                  "span": {
+                    "start": 673,
+                    "end": 678
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "extra@639",
+                      "span": {
+                        "start": 673,
+                        "end": 678
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "label",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "input",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "checkbox",
+                          "span": {
+                            "start": 700,
+                            "end": 715
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "value",
+                          "value": {
+                            "code": "extra",
+                            "span": {
+                              "start": 723,
+                              "end": 728
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "extra@639",
+                                "span": {
+                                  "start": 723,
+                                  "end": 728
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 716,
+                            "end": 729
+                          }
+                        },
+                        {
+                          "kind": "Model",
+                          "value": {
+                            "code": "chosen.value",
+                            "span": {
+                              "start": 739,
+                              "end": 751
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "chosen@231",
+                                "span": {
+                                  "start": 739,
+                                  "end": 751
+                                }
+                              }
+                            ]
+                          },
+                          "control": "checkbox-group",
+                          "span": {
+                            "start": 730,
+                            "end": 752
+                          }
+                        }
+                      ],
+                      "children": [],
+                      "span": {
+                        "start": 693,
+                        "end": 755
+                      }
+                    },
+                    {
+                      "kind": "Text",
+                      "value": " ",
+                      "span": {
+                        "start": 755,
+                        "end": 756
+                      }
+                    },
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "extra",
+                        "span": {
+                          "start": 757,
+                          "end": 762
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "extra@639",
+                            "span": {
+                              "start": 757,
+                              "end": 762
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 756,
+                        "end": 763
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 661,
+                    "end": 782
+                  }
+                },
+                "span": {
+                  "start": 627,
+                  "end": 793
+                }
+              }
+            ],
+            "span": {
+              "start": 575,
+              "end": 812
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Speed: ",
+                "span": {
+                  "start": 827,
+                  "end": 843
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "speed.value",
+                  "span": {
+                    "start": 844,
+                    "end": 855
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "speed@199",
+                      "span": {
+                        "start": 844,
+                        "end": 855
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 843,
+                  "end": 856
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", extras: ",
+                "span": {
+                  "start": 856,
+                  "end": 866
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "chosen.value.join(\", \") || \"none\"",
+                  "span": {
+                    "start": 867,
+                    "end": 900
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "chosen@231",
+                      "span": {
+                        "start": 867,
+                        "end": 879
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 866,
+                  "end": 901
+                }
+              }
+            ],
+            "span": {
+              "start": 819,
+              "end": 917
+            }
+          }
+        ],
+        "span": {
+          "start": 285,
+          "end": 932
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Delivery",
+      "span": {
+        "start": 121,
+        "end": 939
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "DeliveryProps",
+      "exported": true,
+      "code": "interface DeliveryProps {\n  speeds: string[];\n  extras: string[];\n}",
+      "span": {
+        "start": 52,
+        "end": 119
+      }
+    }
+  ]
+}

@@ -159,9 +159,10 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   svelte-check does not reject. So is a bound `value` on an `<li>`, a `<meter>`, a `<data>`, a
   `<button>` or an `<input>` (`{...{ value: score }}`): Svelte's `set_value` writes
   nothing while the element's own `value` holds the bound one (0, "", "on"), where the spread
-  assigns it on every render. Svelte writes "0" for one that becomes nullish on a rerender
-  (test/assigned-values.browser.test.ts pins it), so the analyser reports a value that may be
-  nullish there (UF1002). A class is one `class={…}` (clsx): a lone value, the toggles'
+  assigns it on every render. Beside `bind:group` it stays `value={…}`: Svelte's client
+  assigns it there on every render, and its server checks the input only through it. Svelte
+  writes "0" for one that becomes nullish on a rerender (test/assigned-values.browser.test.ts
+  pins it), so the analyser reports a value that may be nullish there (UF1002). A class is one `class={…}` (clsx): a lone value, the toggles'
   object, or an array of static names, toggles and values; never `class:` directives, which
   remove a token a value produces (ADR-0038). A style is a static `style="…"` when every
   declaration is static, otherwise one `style:` directive per declaration in source order:

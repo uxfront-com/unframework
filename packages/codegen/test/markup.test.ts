@@ -14,6 +14,7 @@ import {
   createFunctionHandler,
   createImportedName,
   createInlineHandler,
+  createModelAttribute,
   createModule,
   createModuleImport,
   createParameter,
@@ -990,6 +991,66 @@ describe("bindings", () => {
       ),
     );
     expect(vue).toContain('<li :value="c0N">a</li>');
+  });
+
+  // Svelte's server checks an input of a group only through a `value={…}` beside `bind:group`,
+  // and its client assigns that value on every render, so there the bound value is no spread.
+  // A lone checkbox (`bind:checked`) and a radio without a `v-model` keep the spread.
+  it("writes a bound value beside bind:group as an attribute on Svelte", () => {
+    const s = { type: "string", value: "" };
+    const list = { type: "string[]", value: [] };
+    const cases = suite(
+      [
+        {
+          name: "group",
+          props: { s, value: s, list, on },
+          render: (b) =>
+            b.el(
+              "form",
+              [],
+              b.el("input", [
+                b.attr("type", "radio"),
+                b.bind("value", "value"),
+                b.attr("title", "a & b"),
+                createModelAttribute(b.e("s"), "radio", at),
+              ]),
+              b.el("input", [
+                b.attr("type", "radio"),
+                b.bind("value", "s"),
+                createModelAttribute(b.e("s"), "radio", at),
+              ]),
+              b.el("input", [
+                b.attr("type", "checkbox"),
+                b.bind("value", "s"),
+                createModelAttribute(b.e("list"), "checkbox-group", at),
+              ]),
+              b.el("input", [
+                b.attr("type", "checkbox"),
+                b.bind("value", "s"),
+                createModelAttribute(b.e("on"), "checkbox", at),
+              ]),
+              b.el("input", [b.attr("type", "radio"), b.bind("value", "s")]),
+            ),
+          expected: "",
+        },
+      ],
+      "self",
+    );
+    const svelte = printMarkup(cases.component.render, svelteDialect, {
+      component: cases.component,
+      rewrite: cases.rules(false),
+    });
+    expect(svelte).toBe(
+      lines(
+        "<form>",
+        '  <input type="radio" value={c0Value} title="a &amp; b" bind:group={c0S}',
+        '  /><input type="radio" value={c0S} bind:group={c0S}',
+        '  /><input type="checkbox" value={c0S} bind:group={c0List}',
+        '  /><input type="checkbox" {...{ value: c0S }} bind:checked={c0On}',
+        '  /><input type="radio" {...{ value: c0S }} />',
+        "</form>",
+      ),
+    );
   });
 });
 

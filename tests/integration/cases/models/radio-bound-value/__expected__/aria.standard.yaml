@@ -1,0 +1,14 @@
+- region "Delivery":
+  - group "Speed":
+    - text: Speed
+    - radio "standard" [checked]
+    - text: standard
+    - radio "express"
+    - text: express
+  - group "Extras":
+    - text: Extras
+    - checkbox "insurance" [checked]
+    - text: insurance
+    - checkbox "gift-wrap"
+    - text: gift-wrap
+  - status: "Speed: standard, extras: insurance"

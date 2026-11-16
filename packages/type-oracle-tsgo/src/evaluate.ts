@@ -14,8 +14,8 @@ import type {
   TypeParameterNode,
   TypeShape,
 } from "@unframework.dev/type-oracle";
-import { ModifierFlags, SyntaxKind } from "typescript/unstable/ast";
-import type { Node, SourceFile } from "typescript/unstable/ast";
+import { ModifierFlags, SyntaxKind } from "typescript/ast";
+import type { Node, SourceFile } from "typescript/ast";
 import {
   isExpressionWithTypeArguments,
   isIdentifier,
@@ -30,16 +30,17 @@ import {
   isTypeQueryNode,
   isTypeAliasDeclaration,
   isTypeReferenceNode,
-} from "typescript/unstable/ast/is";
+} from "typescript/ast/is";
 import {
+  CheckFlags,
   ElementFlags,
   NodeBuilderFlags,
   ObjectFlags,
   SignatureKind,
   SymbolFlags,
   TypeFlags,
-} from "typescript/unstable/sync";
-import type { Checker, Signature, Symbol, Type, TypeReference } from "typescript/unstable/sync";
+} from "typescript/sync";
+import type { Checker, Signature, Symbol, TupleTypeReference, Type } from "typescript/sync";
 
 export interface EvaluateContext {
   checker: Checker;
@@ -52,11 +53,6 @@ export interface EvaluateContext {
   /** Whether a source file is one of TypeScript's lib files. */
   isDefaultLibrary(source: SourceFile): boolean;
 }
-
-/** The checker's `CheckFlags`, which `typescript/unstable/sync` does not export. */
-const CHECK_SYNTHETIC = 1 << 1;
-const CHECK_READONLY = 1 << 3;
-const CHECK_MAPPED = 1 << 18;
 
 /**
  * How deep a conversion nests before it gives up: a type that takes new arguments inside itself
@@ -280,7 +276,7 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       node.element = build(element!);
       return id;
     }
-    if (type.isTypeReference() && checker.isTupleType(type)) return tuple(type);
+    if (type.isTupleType()) return tuple(type);
     if (type.isObjectType()) {
       const calls = checker.getSignaturesOfType(type, SignatureKind.Call);
       if (calls.length) {
@@ -297,9 +293,8 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     throw new Unrepresentable();
   };
 
-  const tuple = (type: TypeReference): number => {
+  const tuple = (type: TupleTypeReference): number => {
     const target = type.getTarget();
-    if (!target.isTupleType()) throw new Unrepresentable();
     const flags = target.elementFlags;
     if (flags.some((flag) => flag & ElementFlags.Variadic)) throw new Unrepresentable();
     const id = push({ kind: "tuple", elements: [], readonly: target.readonly });
@@ -415,9 +410,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     // A mapped type's member takes its modifiers (`readonly`, `-readonly`) and its type from
     // the mapping, and an intersection's from all its parts (readonly only when each part makes
     // it so): its first declaration's are not its own.
-    const mapped = (property.checkFlags & (CHECK_MAPPED | CHECK_SYNTHETIC)) !== 0;
+    const mapped = (property.checkFlags & (CheckFlags.Mapped | CheckFlags.SyntheticProperty)) !== 0;
     const readonly =
-      (property.checkFlags & CHECK_READONLY) !== 0 ||
+      (property.checkFlags & CheckFlags.Readonly) !== 0 ||
       (!mapped && ((written?.modifierFlags ?? 0) & ModifierFlags.Readonly) !== 0);
     const typeNode = mapped ? undefined : written?.type;
     const type = build(propertyType, optional);
