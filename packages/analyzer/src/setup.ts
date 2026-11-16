@@ -9,6 +9,7 @@
 import type { Fix } from "@unframework.dev/diagnostics";
 import {
   createBinding,
+  createAwaitItem,
   createBindingReference,
   createCallbackArgument,
   createCode,
@@ -171,7 +172,7 @@ type Declared =
       binding: SetupBinding;
     }
   | {
-      kind: "const" | "let";
+      kind: "const" | "let" | "await";
       statement: AST.VariableDeclaration;
       declarator: AST.VariableDeclarator;
       binding: SetupBinding;
@@ -362,6 +363,11 @@ export function declareSetup(context: SetupContext): Setup {
       checkDirective(statement, reporter);
       continue;
     }
+    const awaits = awaitsIn(statement);
+    if (awaits.length) {
+      awaitStatement(statement, awaits);
+      continue;
+    }
     switch (statement.type) {
       case "ExpressionStatement": {
         const { expression } = statement;
@@ -419,6 +425,69 @@ export function declareSetup(context: SetupContext): Setup {
       default:
         other(statement);
     }
+  }
+
+  /**
+   * A statement of the setup that awaits (ADR-0101): `const user = await loadUser(props.id)`
+   * declares an `awaited` binding, and any other `await` at the top level of the setup is UF2038.
+   * The awaits open the setup: one after another item is UF2039.
+   */
+  function awaitStatement(
+    statement: AST.Statement,
+    awaits: readonly (AST.AwaitExpression | AST.ForOfStatement)[],
+  ): void {
+    const declarator =
+      statement.type === "VariableDeclaration" &&
+      statement.kind === "const" &&
+      statement.declarations.length === 1
+        ? statement.declarations[0]!
+        : undefined;
+    const declaration =
+      declarator?.id.type === "Identifier" && declarator.init?.type === "AwaitExpression"
+        ? declarator.init
+        : undefined;
+    let valid = true;
+    for (const node of awaits) {
+      if (node === declaration) continue;
+      valid = false;
+      const at = node.type === "ForOfStatement" ? { start: node.start, end: node.start + 9 } : node;
+      reporter.report(
+        "UF2038",
+        at,
+        node.type === "ForOfStatement"
+          ? "`for await` waits in a loop, and an async setup awaits only as the whole value of a `const`, which every target lowers its own way."
+          : node === declarator?.init
+            ? "An awaited value is bound whole, by a `const` that declares one name: every target declares the awaited value as one binding."
+            : "`await` here is inside other code, and an async setup awaits only as the whole value of a top-level `const`, which every target lowers its own way.",
+        {
+          help: "Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it.",
+        },
+      );
+    }
+    if (!valid || !declaration) return;
+    const id = declarator!.id as AST.BindingIdentifier;
+    const before = declared.find((item) => item.kind !== "await");
+    if (before) {
+      reporter.report(
+        "UF2039",
+        declaration,
+        "This `await` follows another setup item: the awaits open the setup, since React and Solid run them outside the component's render, and Qwik runs the body again up to each one.",
+        {
+          help: "Move the `const … = await …` declarations above the setup's other items.",
+        },
+      );
+    }
+    const written = id.typeAnnotation
+      ? context.writtenType(id.typeAnnotation.typeAnnotation)
+      : undefined;
+    const binding = declare(id, "awaited", written?.kinds ?? UNKNOWN);
+    if (written) binding.typed = { complete: written.complete };
+    declared.push({
+      kind: "await",
+      statement: statement as AST.VariableDeclaration,
+      declarator: declarator!,
+      binding,
+    });
   }
 
   /**
@@ -1959,6 +2028,14 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       if (!annotation) item.binding.kinds = checked.literal;
       return createConstItem(item.binding.id, checked.code, at, typeText(annotation));
     }
+    case "await": {
+      const { declarator } = item;
+      const value = (declarator.init as AST.AwaitExpression).argument;
+      if (lateRead(value, item.binding, render)) return undefined;
+      const checked = checkCode(value, render);
+      const annotation = (declarator.id as AST.BindingIdentifier).typeAnnotation?.typeAnnotation;
+      return createAwaitItem(item.binding.id, checked.code, at, typeText(annotation));
+    }
     case "let": {
       const { declarator } = item;
       const checked = declarator.init ? checkCode(declarator.init, render) : undefined;
@@ -2071,6 +2148,81 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * Reports each setup binding an awaited expression reads, but the values awaited before it
+ * (UF2039, ADR-0101): it reads only props, module values, globals and earlier awaits, since React
+ * and Solid run the awaits in a function outside the component's render, which sees nothing else.
+ * Returns whether it reported.
+ */
+function lateRead(value: AST.Expression, awaited: SetupBinding, render: RenderContext): boolean {
+  let reported = false;
+  visit(value, (node) => {
+    if (node.type !== "Identifier") return;
+    const binding = setupBindingOf(node as AST.IdentifierReference, render);
+    if (!binding) return;
+    if (binding.kind === "awaited" && binding.declaration.start < awaited.declaration.start) return;
+    reported = true;
+    render.reporter.report(
+      "UF2039",
+      node,
+      `An awaited expression reads \`${binding.name}\`, ${WHAT_IT_IS[binding.kind] ?? "a binding of the setup"}: it reads only props, the module's values, globals and the values awaited before it, since React and Solid run the awaits outside the component's render.`,
+      {
+        help: "Compute what the awaited call needs from the props, or await it before what reads it.",
+      },
+    );
+  });
+  return reported;
+}
+
+/** What a setup binding an awaited expression may not read is, for UF2039's message. */
+const WHAT_IT_IS: Readonly<Partial<Record<SetupBinding["kind"], string>>> = {
+  awaited: "a value awaited after it",
+  state: "a ref",
+  derived: "a computed value",
+  localConst: "a constant the setup declares",
+  localFn: "a local function",
+  context: "an injected value",
+  emit: "the component's `emit`",
+  slots: "the component's slots",
+  model: "a model",
+};
+
+/**
+ * The `await`s at the top level of a setup statement, outside the functions it declares, and the
+ * `for await` loops, in source order (ADR-0101).
+ */
+function awaitsIn(
+  statement: AST.Directive | AST.Statement,
+): (AST.AwaitExpression | AST.ForOfStatement)[] {
+  const found: (AST.AwaitExpression | AST.ForOfStatement)[] = [];
+  const walk = (value: unknown): void => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item);
+      return;
+    }
+    const node = value as AST.Node;
+    if (typeof node.type !== "string") return;
+    if (
+      node.type === "ArrowFunctionExpression" ||
+      node.type === "FunctionExpression" ||
+      node.type === "FunctionDeclaration" ||
+      node.type === "ClassDeclaration" ||
+      node.type === "ClassExpression"
+    ) {
+      return;
+    }
+    if (node.type === "AwaitExpression" || (node.type === "ForOfStatement" && node.await)) {
+      found.push(node);
+    }
+    for (const key of visitorKeys[node.type] ?? []) {
+      walk((node as unknown as Record<string, unknown>)[key]);
+    }
+  };
+  walk(statement);
+  return found;
 }
 
 /**

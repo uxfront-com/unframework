@@ -408,6 +408,14 @@ class Kinds {
           if (item?.kind !== "Const") return false;
           return item.type ? this.type(item.type.code) : this.code(item.value);
         }
+        // An awaited value's type is its annotation's, or what the promise resolves to, which
+        // only TypeScript knows (ADR-0101).
+        case "awaited": {
+          const item = this.#component.setup.find(
+            (each) => each.kind === "Await" && each.binding === binding.id,
+          );
+          return item?.kind === "Await" && item.type ? this.type(item.type.code) : false;
+        }
         case "derived": {
           const item = this.#component.setup.find(
             (each): each is DerivedItem => each.kind === "Derived" && each.binding === binding.id,

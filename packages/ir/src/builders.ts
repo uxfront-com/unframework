@@ -36,6 +36,7 @@ import type {
   CodeReference,
   ComponentAttribute,
   ComponentNode,
+  AwaitItem,
   ConstItem,
   DerivedItem,
   DynamicCandidate,
@@ -727,6 +728,16 @@ export function createTemplateRefItem(
 /** Builds `const id = useId()`. */
 export function createIdItem(binding: BindingId, at: Span): IdItem {
   return { kind: "Id", binding, span: at };
+}
+
+/** Builds `const user = await loadUser(props.id)` (ADR-0101). */
+export function createAwaitItem(
+  binding: BindingId,
+  value: Code,
+  at: Span,
+  type?: TypeText,
+): AwaitItem {
+  return { kind: "Await", binding, ...(type ? { type } : {}), value, span: at };
 }
 
 /** Builds a setup `const` holding a value. */

@@ -92,6 +92,7 @@ const INTERACTIVE_ATTRIBUTES: ReadonlySet<(Attribute | ComponentAttribute)["kind
  * effect or a hook.
  */
 const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly CapabilityName[]>> = {
+  Await: ["async-setup"],
   State: [],
   Derived: [],
   TemplateRef: [],
@@ -522,6 +523,7 @@ function trackedCode(item: SetupItem): Code[] {
       return [item.effect.body];
     // A composable's getter argument is the composable's to track (ADR-0069): its lane decides.
     case "Use":
+    case "Await":
     case "State":
     case "Variable":
     case "Const":
@@ -562,6 +564,7 @@ function itemCode(item: SetupItem): Code[] {
     case "State":
     case "Variable":
       return item.initial ? [item.initial] : [];
+    case "Await":
     case "Const":
       return [item.value];
     case "Derived":

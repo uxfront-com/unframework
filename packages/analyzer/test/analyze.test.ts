@@ -234,21 +234,21 @@ describe("diagnostics", () => {
     expect(codes(run("export {};").diagnostics)).toEqual(["UF1101"]);
   });
 
-  it("reports statements the setup would run and async functions as not supported yet", () => {
+  it("reports statements the setup would run as not supported yet, and accepts an async component (ADR-0101)", () => {
     const source = [
       "export function Setup() { console.log(1); return <p />; }",
       "export async function Async() { return <p />; }",
       "export function Ok() { const a = 1; return <p>{a}</p>; }",
     ].join("\n");
     const { module, diagnostics } = run(source);
-    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002"]);
-    expect(slices(source, diagnostics)).toEqual(["console.log(1);", "Async"]);
+    expect(codes(diagnostics)).toEqual(["UF1002"]);
+    expect(slices(source, diagnostics)).toEqual(["console.log(1);"]);
     expect(diagnostics[0]!.message).toBe(
       "Statements other than declarations are not supported in the setup: the setup runs once, and declares what the component holds.",
     );
     // An error in one component never stops its siblings.
-    expect(module!.components.map((component) => component.name)).toEqual(["Ok"]);
-    expect(module!.exports.map((entry) => entry.local)).toEqual(["Ok"]);
+    expect(module!.components.map((component) => component.name)).toEqual(["Async", "Ok"]);
+    expect(module!.exports.map((entry) => entry.local)).toEqual(["Async", "Ok"]);
   });
 
   it("lowers a local component, which its siblings render and the exports leave out", () => {
