@@ -72,6 +72,13 @@ const AFTER_ANALYSIS: ReadonlySet<string> = new Set([
   "composable-effect-order",
 ]);
 
+/**
+ * The diagnostics cases whose code only a type-checker's answer reports (ADR-0109): this suite's
+ * syntactic oracle checks no directive's value, so the analyser finds nothing, and the harness's
+ * compile project, on the tsgo oracle the case names, finds the code.
+ */
+const CHECKER_ONLY: ReadonlySet<string> = new Set(["directive-value-type"]);
+
 /** The warnings the corpus's feature cases hold on purpose. */
 const WARNINGS: Readonly<Record<string, readonly string[]>> = {
   "jsx/escaping/TemplateTip.uf.tsx": ["UF3011"],
@@ -236,7 +243,7 @@ describe.each([
     const diagnostics = (await Promise.all(files.map((file) => analyzeCase(file, root)))).flatMap(
       (result) => result.diagnostics,
     );
-    if (AFTER_ANALYSIS.has(name)) {
+    if (AFTER_ANALYSIS.has(name) || CHECKER_ONLY.has(name)) {
       expect(diagnostics).toEqual([]);
       return;
     }

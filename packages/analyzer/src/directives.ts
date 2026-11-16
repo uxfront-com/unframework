@@ -27,7 +27,8 @@ import type {
   UfDirective,
 } from "@unframework.dev/ir";
 import { visitorKeys } from "@unframework.dev/parser";
-import type { AST } from "@unframework.dev/parser";
+import type { AST, ParsedModule } from "@unframework.dev/parser";
+import type { DirectiveValueCheck, DirectiveValueQuery } from "@unframework.dev/type-oracle";
 
 import type { ElementContext } from "./attributes.ts";
 import type { AuthoringApi } from "./authoring.ts";
@@ -37,6 +38,7 @@ import type { ModuleTypes } from "./declarations.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { SetupBinding } from "./render.ts";
 import type { Scopes } from "./scope.ts";
+import { visit as walk } from "./shapes.ts";
 import type { SharedValues } from "./shared.ts";
 
 /** The hooks a directive may declare, with how many parameters each takes at most. */
@@ -523,6 +525,90 @@ function hookReferences(
   return refs.toSorted((a, b) => a.span.start - b.span.start);
 }
 
+/**
+ * The type oracle's answer for a directive's value, by the value's span (ADR-0109): `undefined`
+ * for a value it was not asked about or could not type.
+ */
+export type DirectiveValues = (value: {
+  start: number;
+  end: number;
+}) => DirectiveValueCheck | undefined;
+
+/**
+ * Each directive's value a module writes that the type oracle can check against the directive's
+ * `T` (ADR-0109), in source order, read from the syntax only: every `v-<kebab>` attribute with a
+ * value, a non-empty container or a string, whose directive is a top-level `const` of the module
+ * or a name it imports. What `compile()` asks the oracle for before the module is analysed.
+ */
+export function directiveValueQueries(parsed: ParsedModule): DirectiveValueQuery[] {
+  const names = new Map<string, { start: number; end: number }>();
+  for (const statement of parsed.program.body) {
+    if (statement.type === "ImportDeclaration") {
+      if (statement.importKind === "type") continue;
+      for (const specifier of statement.specifiers) {
+        if (specifier.type === "ImportSpecifier" && specifier.importKind !== "type") {
+          names.set(specifier.local.name, span(specifier.local));
+        }
+      }
+      continue;
+    }
+    const declaration =
+      statement.type === "ExportNamedDeclaration" ? statement.declaration : statement;
+    if (declaration?.type !== "VariableDeclaration" || declaration.kind !== "const") continue;
+    for (const declarator of declaration.declarations) {
+      if (declarator.id.type === "Identifier") names.set(declarator.id.name, span(declarator.id));
+    }
+  }
+  const queries: DirectiveValueQuery[] = [];
+  if (!names.size) return queries;
+  walk(parsed.program, (node) => {
+    if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") return true;
+    const authored = node.name.name;
+    const name = isDirectiveAttribute(authored) ? directiveNameOf(authored) : undefined;
+    const directive = name === undefined ? undefined : names.get(name);
+    if (!directive) return true;
+    const value =
+      node.value?.type === "Literal"
+        ? node.value
+        : node.value?.type === "JSXExpressionContainer" &&
+            node.value.expression.type !== "JSXEmptyExpression"
+          ? node.value.expression
+          : undefined;
+    if (value) {
+      queries.push({
+        value: span(value),
+        text: parsed.source.slice(value.start, value.end),
+        directive,
+      });
+    }
+    return true;
+  });
+  return queries.toSorted((a, b) => a.value.start - b.value.start);
+}
+
+/**
+ * Reports a lowered directive's value whose type the type oracle found is not the directive's
+ * `T` (UF6007, ADR-0109), and gives whether it did.
+ */
+function reportsValueType(
+  value: AST.Node,
+  authored: string,
+  name: string,
+  render: ElementContext["render"],
+): boolean {
+  const check = render.directiveValues?.(span(value));
+  if (!check || check.assignable) return false;
+  render.reporter.report(
+    "UF6007",
+    value,
+    `\`${authored}\`'s value is \`${check.value}\`, and \`${name}\` takes \`${check.expected}\`.`,
+    {
+      help: `Pass a value of type \`${check.expected}\`, or change the type argument of \`${name}\`'s \`defineDirective\`.`,
+    },
+  );
+  return true;
+}
+
 /** The name a `v-` attribute applies, `vFocusTrap` for `v-focus-trap`, or `undefined` for one not in kebab case. */
 export function directiveNameOf(attribute: string): string | undefined {
   if (!/^v(?:-[a-z][a-z0-9]*)+$/.test(attribute)) return undefined;
@@ -623,6 +709,7 @@ export function lowerDirectiveAttribute(
       );
       return undefined;
     }
+    if (reportsValueType(value, authored, name, render)) return undefined;
     declareReads(info, render);
     return createDirectiveAttribute(name, createExpression(raw, span(value)), span(item));
   }
@@ -665,6 +752,7 @@ export function lowerDirectiveAttribute(
   // listener names it, never called in the template.
   const fn = setupFunction(inner, render);
   if (fn) {
+    if (reportsValueType(value.expression, authored, name, render)) return undefined;
     declareReads(info, render);
     return createDirectiveAttribute(
       name,
@@ -696,6 +784,7 @@ export function lowerDirectiveAttribute(
     );
     return undefined;
   }
+  if (reportsValueType(value.expression, authored, name, render)) return undefined;
   declareReads(info, render);
   return createDirectiveAttribute(name, checked.expression, span(item));
 }

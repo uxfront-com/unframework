@@ -82,7 +82,7 @@ import {
   lowerDirectives,
   misplacedDirective,
 } from "./directives.ts";
-import type { DirectiveCandidate, DirectiveInfo } from "./directives.ts";
+import type { DirectiveCandidate, DirectiveInfo, DirectiveValues } from "./directives.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
 import {
@@ -154,6 +154,12 @@ export interface AnalyzeOptions {
    * module's own declarations only (`localShapes`), and an imported type is unresolved.
    */
   shapes?: Shapes;
+  /**
+   * The type oracle's check of each directive's value `directiveValueQueries` names, by the
+   * value's span (ADR-0109). A value it says is not assignable to its directive's `T` is UF6007.
+   * Without it, no value is checked.
+   */
+  directiveValues?: DirectiveValues;
 }
 
 /** A relative or absolute specifier: a file of the project, never a module a plugin registers. */
@@ -468,6 +474,7 @@ export function analyzeModule(
     shared: context.shared,
     composables: context.composables,
     directives: directiveInfos,
+    ...(options.directiveValues ? { directiveValues: options.directiveValues } : {}),
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -2043,6 +2050,8 @@ interface ComponentModule {
   composables: ReadonlyMap<object, ComposableApi | undefined>;
   /** The directives an element may apply, by local name (ADR-0099). */
   directives: ReadonlyMap<string, DirectiveInfo>;
+  /** The type oracle's checks of the directives' values (ADR-0109). */
+  directiveValues?: DirectiveValues;
   observe?: SetupObserver;
 }
 
@@ -2135,6 +2144,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     passThrough: module.passThrough,
     shared: module.shared,
     directives: module.directives,
+    ...(module.directiveValues ? { directiveValues: module.directiveValues } : {}),
     fillVariables: new Set(),
   };
   setup.lower(render);
