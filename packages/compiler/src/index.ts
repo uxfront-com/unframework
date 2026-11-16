@@ -19,7 +19,15 @@ export type {
 } from "./compile.ts";
 export { loadConfig, resolveConfig } from "./config.ts";
 export type { ConfigOrigin, LoadedConfig, ResolveConfigResult, ResolvedConfig } from "./config.ts";
-export type { PackageConfig, UnframeworkConfig } from "./config-types.ts";
+export type {
+  PackageConfig,
+  ProjectViteConfig,
+  UnframeworkConfig,
+  ViteContext,
+  ViteMode,
+  VitePluginOption,
+} from "./config-types.ts";
+export { DEFAULT_PASS_THROUGH } from "@unframework.dev/analyzer";
 export { builtinTargets, resolveTarget, TARGET_NAMES } from "./targets.ts";
 export type { TargetName } from "./targets.ts";
 export { checkCapabilities } from "./capabilities.ts";

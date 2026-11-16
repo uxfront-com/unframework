@@ -3,9 +3,15 @@
  * one import is type-only, so importing this loads no compiler, and it names the compiler's leaf of
  * config types, so that type-checking it reads none either (ADR-0076).
  */
-import type { UnframeworkConfig } from "@unframework.dev/compiler/config-types";
+import type {
+  ProjectViteConfig,
+  UnframeworkConfig,
+  ViteContext,
+  ViteMode,
+  VitePluginOption,
+} from "@unframework.dev/compiler/config-types";
 
-export type { UnframeworkConfig };
+export type { ProjectViteConfig, UnframeworkConfig, ViteContext, ViteMode, VitePluginOption };
 
 /** Types a configuration, and returns it as it is. */
 export function defineConfig(config: UnframeworkConfig): UnframeworkConfig {

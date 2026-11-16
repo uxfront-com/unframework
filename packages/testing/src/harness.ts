@@ -91,6 +91,11 @@ export interface HarnessContext {
    */
   updateCommand?: string;
   pixels: PixelMode;
+  /**
+   * The font families that may draw text in a live capture besides the bundled Inter: the
+   * project's `liveFonts` (ADR-0105). A comparison with committed baselines ignores them.
+   */
+  liveFonts?: readonly string[];
   /** The canary installed in this run (`UF_CANARY`), or `null`. */
   canary: string | null;
   /**

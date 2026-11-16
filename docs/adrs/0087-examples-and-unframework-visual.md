@@ -1,6 +1,6 @@
 # ADR-0087: Examples run on every target through `@unframework.dev/visual`
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0105
 - **Date:** 2026-11-12
 - **Plan:** §7.2 (L10), §7.6, §8.3, §8.6, §9 M7; ADR-0013, ADR-0019, ADR-0029, ADR-0057,
   ADR-0083, ADR-0086, ADR-0091

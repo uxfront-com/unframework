@@ -1,6 +1,6 @@
 {
   "name": "@unframework.dev/visual",
-  "version": "0.0.0",
+  "version": "0.2.1",
   "description": "Visual parity and the preview for a project's examples: discovers *.example.uf.tsx files, renders each on every target and compares geometry and pixels, live or against committed baselines, writes the run's report, and shows every example and component side by side on every target. Private until its first release.",
   "keywords": [
     "unframework"
@@ -61,12 +61,20 @@
     "@unframework.dev/unplugin": "workspace:*"
   },
   "devDependencies": {
+    "@angular/common": "catalog:",
+    "@angular/core": "catalog:",
+    "@babel/core": "catalog:",
+    "@qwik.dev/core": "catalog:",
     "@types/node": "catalog:",
     "@uxfront/typescript-config": "catalog:",
     "@vitest/browser-playwright": "catalog:",
+    "astro": "catalog:",
+    "babel-preset-solid": "catalog:",
     "playwright": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "solid-js": "catalog:",
+    "svelte": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

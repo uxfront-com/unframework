@@ -38,16 +38,17 @@ const KEEP_IMPORTS = {
 };
 
 /**
- * What tsdown's declarations would report, as an error. On TypeScript 7.0, rolldown-plugin-dts runs tsgo
- * with inherited output and rejects with only its exit code, so the cause would reach standard output
- * past `main`'s `io`, naming a scratch path. Its other generators throw what they find.
+ * What tsdown's declarations would report, as an error. On TypeScript 7, rolldown-plugin-dts runs tsgo
+ * and does not carry its errors: on 7.0 it rejects with only its exit code, so the cause would reach
+ * standard output past `main`'s `io`, naming a scratch path, and on 7.1 it writes the declarations
+ * without failing. Its other generators throw what they find.
  */
 async function checkDeclarations(tsdown: string, work: string): Promise<void> {
   const manifest = createRequire(tsdown).resolve("typescript/package.json");
   const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
     await readFile(manifest, "utf8"),
   );
-  if (!version.startsWith("7.0")) return;
+  if (!version.startsWith("7.")) return;
   await runScript(join(dirname(manifest), bin.tsc), ["--declaration", "--noCheck"], work);
 }
 
@@ -112,7 +113,7 @@ export async function buildWithTsdown(
   await tsdown.build({
     ...common,
     dts: { emitDtsOnly: true },
-    outExtensions: () => ({ dts: ".d.ts" }),
+    outExtensions: () => ({ js: ".js", dts: ".ts" }),
     plugins: [
       KEEP_IMPORTS,
       { name: "unframework:declarations", renderChunk: dropSideEffectImports },

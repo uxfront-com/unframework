@@ -260,6 +260,8 @@ export interface HarnessRunOptions {
   cases: Record<string, CaseConfig>;
   /** The command a failure names to write the artefacts (`HarnessContext.updateCommand`). */
   updateCommand?: string;
+  /** The font families a live capture may take (`HarnessContext.liveFonts`, ADR-0105). */
+  liveFonts?: readonly string[];
 }
 
 const RUN = Symbol.for("unframework.harness.run");
@@ -279,6 +281,8 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
     // A re-evaluated config (watch mode) may have new cases or quarantine entries.
     existing.cases = options.cases;
     existing.quarantine = quarantine;
+    if (options.liveFonts === undefined) delete existing.liveFonts;
+    else existing.liveFonts = options.liveFonts;
     return existing;
   }
   const runId = `${Date.now().toString(36)}-${process.pid}`;
@@ -303,6 +307,7 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
     quarantine,
     cases: options.cases,
     ...(options.updateCommand === undefined ? {} : { updateCommand: options.updateCommand }),
+    ...(options.liveFonts === undefined ? {} : { liveFonts: options.liveFonts }),
   };
   store[RUN] = run;
   return run;

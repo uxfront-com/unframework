@@ -76,6 +76,22 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
 | `toolchainDirs` | `package.resolveFrom`, then the root                  | Where each target's compiler stack resolves from (Angular's)                           |
 | `root`          | the working directory                                 | Where `unframework.config.ts` is: case ids are relative to it                          |
 
+- **A project's Vite config** (ADR-0104), `vite` in `unframework.config.ts`: each `browser:` and
+  `ssr:` project calls it with `{ target, mode }` and merges what it gives with
+  `withProjectVite(config, vite, context)`: the project's plugins, flattened, before the
+  unplugin, and every other key through Vite's `mergeConfig` after the toolchain's fragment. It
+  refuses the keys a server owns (`OWNED_KEYS`, `OWNED_SERVER_KEYS`) and throws, naming the field
+  and the reason, on a function that throws, a promise that rejects, a value that is no config or
+  a plugin with no `name`. `projectPlugins(vite, context)` gives `ToolchainContext.plugins`, so
+  Astro's render server loads the plugins too. The preview builds its servers with both.
+- **Pass-through declarations** (ADR-0104): `passThroughDeclarations(root)` writes
+  `node_modules/.cache/unframework/pass-through.d.ts`, with `declare module "virtual:*";` for each
+  default prefix, and every toolchain gets it as `ToolchainContext.declarations`, so Angular's
+  ngtsc takes any pass-through module with no type file from the project.
+- **A project's live fonts** (ADR-0105): `liveFonts` reaches the run's `HarnessContext`, and in
+  a live comparison `captureAt`'s font audit lets a glyph in a listed family pass, as CDP names
+  it. A comparison with baselines takes Inter alone, whatever the list says.
+
 - **A case** is a directory with one test file. Its id is its path from the root, and its main
   source is `case.json`'s `main`, relative to the case and maybe outside it, or else its only
   `.uf.tsx` (`discoverCases`, `src/config/cases.ts`). Two test files in one directory, no main
@@ -523,3 +539,12 @@ adapter, whose rerender needs the toolchain's render command (`vitest.config.ts`
 `UF_UPDATE=1 pnpm exec vitest run --config test/parity/vitest.config.ts` rewrites the artefacts.
 
 The `stub/matchers` case proves each matcher passes and fails with its message, and that Vitest's own `toMatchAriaInlineSnapshot` still behaves as Vitest's once the setup has run.
+
+`test/project-plugins.test.ts` runs the fixture projects under `test/fixtures/` with their own
+Vitest, as `unframework test` does: `project-plugins`, whose component imports
+`virtual:uf-fixture`, which only the plugin its config's `vite` names serves, passes on all seven
+targets with no declaration file, and `no-project-plugins`, the same component with no plugin,
+fails to resolve the import. `test/project-vite.test.ts` covers the calls, the merge, the refused
+keys, the failures and the declaration file, on throwaway projects, one of them on seven targets
+under `test/fixtures/.config-*`. Their
+expectations come from `unframework test --update`, run in the fixture's directory.

@@ -25,8 +25,19 @@ import { ufMapStack } from "../node/thrown.ts";
 import { noErrorBroadcast } from "./broadcast.ts";
 import { discoverCases, EXCLUDED } from "./cases.ts";
 import type { ProjectCase } from "./cases.ts";
+import { passThroughDeclarations, projectPlugins, withProjectVite } from "./project-vite.ts";
+import type { ProjectVite } from "./project-vite.ts";
 
 export { discoverCases } from "./cases.ts";
+export {
+  OWNED_KEYS,
+  OWNED_SERVER_KEYS,
+  PASS_THROUGH_DECLARATIONS,
+  passThroughDeclarations,
+  projectPlugins,
+  withProjectVite,
+} from "./project-vite.ts";
+export type { ProjectPlugins, ProjectVite } from "./project-vite.ts";
 export type { DiscoverOptions, ProjectCase } from "./cases.ts";
 
 /** The options of {@link defineTestConfig}. */
@@ -120,6 +131,7 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     quarantine: [],
     cases: Object.fromEntries(cases.map((info) => [info.id, info.config])),
     updateCommand: "unframework test --update",
+    liveFonts: config.liveFonts,
   });
   const named = caseReferences(harness);
   checkTargets("a case's reference", named, targets);
@@ -135,6 +147,8 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     targets: run,
     toolchainDir: (target) =>
       toolchainDirOf(target, root, options.toolchainDirs, config.package?.resolveFrom),
+    vite: config.vite,
+    declarations: passThroughDeclarations(root),
   };
   const projects = await Promise.all(
     run.flatMap((target) => [browserProject(setup, target), ssrProject(setup, target)]),
@@ -230,6 +244,10 @@ interface ProjectSetup {
   cases: readonly ProjectCase[];
   targets: readonly TargetName[];
   toolchainDir(target: TargetName): string;
+  /** The project's `vite` function (ADR-0104). */
+  vite: ProjectVite;
+  /** The declarations of the pass-through modules, which Angular's compile reads (ADR-0104). */
+  declarations: readonly string[];
 }
 
 function group(setup: ProjectSetup, kind: ProjectKind, target: TargetName): number {
@@ -287,8 +305,22 @@ async function unpluginOf(target: TargetName): Promise<Plugin[]> {
   return unframework(options);
 }
 
-function toolchainContext(setup: ProjectSetup, target: TargetName): ToolchainContext {
-  return { toolchainDir: setup.toolchainDir(target), root: setup.root };
+/**
+ * Where a target's toolchain runs the project's tests: Angular's ngtsc compiles with the
+ * pass-through declarations, and a server of the toolchain's own (Astro's render server) loads
+ * the project's plugins for the same target and kind of server (ADR-0104).
+ */
+function toolchainContext(
+  setup: ProjectSetup,
+  target: TargetName,
+  mode: "browser" | "ssr",
+): ToolchainContext {
+  return {
+    toolchainDir: setup.toolchainDir(target),
+    root: setup.root,
+    declarations: setup.declarations,
+    plugins: projectPlugins(setup.vite, { target, mode }),
+  };
 }
 
 type ProjectTest = NonNullable<UserWorkspaceConfig["test"]>;
@@ -334,23 +366,29 @@ async function browserProject(
 ): Promise<UserWorkspaceConfig> {
   const name = `browser:${target}`;
   const toolchain = await loadToolchain(target);
-  const context = toolchainContext(setup, target);
+  const context = toolchainContext(setup, target, "browser");
   const fragment = await toolchain.vite("browser", context);
-  const config = mergeConfig(
-    {
-      root: setup.root,
-      plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
-      // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
-      // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
-      // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
-      // Nor is Qwik's target: its mount adapter holds a `component$` and a `$()` that Qwik's
-      // plugin must compile, which it never does in a pre-bundled dependency.
-      optimizeDeps: {
-        include: ["@unframework.dev/testing > axe-core", "@unframework.dev/testing > parse5"],
-        exclude: ["@unframework.dev/testing", "@unframework.dev/target-qwik"],
+  // The project's config goes in last: its plugins before the unplugin, the rest merged after
+  // the toolchain's fragment (ADR-0064, ADR-0104).
+  const config = await withProjectVite(
+    mergeConfig(
+      {
+        root: setup.root,
+        plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
+        // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
+        // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
+        // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
+        // Nor is Qwik's target: its mount adapter holds a `component$` and a `$()` that Qwik's
+        // plugin must compile, which it never does in a pre-bundled dependency.
+        optimizeDeps: {
+          include: ["@unframework.dev/testing > axe-core", "@unframework.dev/testing > parse5"],
+          exclude: ["@unframework.dev/testing", "@unframework.dev/target-qwik"],
+        },
       },
-    },
-    fragment,
+      fragment,
+    ),
+    setup.vite,
+    { target, mode: "browser" },
   );
   return {
     ...config,
@@ -394,8 +432,12 @@ async function browserProject(
 
 async function ssrProject(setup: ProjectSetup, target: TargetName): Promise<UserWorkspaceConfig> {
   const toolchain = await loadToolchain(target);
-  const fragment = await toolchain.vite("ssr", toolchainContext(setup, target));
-  const config = mergeConfig({ root: setup.root, plugins: await unpluginOf(target) }, fragment);
+  const fragment = await toolchain.vite("ssr", toolchainContext(setup, target, "ssr"));
+  const config = await withProjectVite(
+    mergeConfig({ root: setup.root, plugins: await unpluginOf(target) }, fragment),
+    setup.vite,
+    { target, mode: "ssr" },
+  );
   const cases = setup.cases.map((info): SsrCase => ({
     id: info.id,
     dir: info.dir,

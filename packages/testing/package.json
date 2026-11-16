@@ -1,6 +1,6 @@
 {
   "name": "@unframework.dev/testing",
-  "version": "0.0.0",
+  "version": "0.2.1",
   "description": "The cross-target test API: describeTargets, it, mount, mountScenario, the View with its parity checks, and the axe and ARIA matchers. The harness's machinery, the mount adapters, the SSR renderers and normalisation are internal subpaths. Private until its first release.",
   "keywords": [
     "testing",
@@ -141,14 +141,25 @@
     "pngjs": "catalog:"
   },
   "devDependencies": {
+    "@angular/common": "catalog:",
+    "@angular/core": "catalog:",
+    "@babel/core": "catalog:",
+    "@qwik.dev/core": "catalog:",
     "@types/node": "catalog:",
     "@types/pngjs": "catalog:",
     "@uxfront/typescript-config": "catalog:",
     "@vitest/browser-playwright": "catalog:",
+    "astro": "catalog:",
+    "babel-preset-solid": "catalog:",
     "playwright": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "solid-js": "catalog:",
+    "svelte": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
     "@vitest/browser-playwright": "catalog:",

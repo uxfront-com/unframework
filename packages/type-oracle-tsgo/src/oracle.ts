@@ -4,10 +4,11 @@ import { relative } from "node:path";
 
 import { createSyntacticOracle, printShape } from "@unframework.dev/type-oracle";
 import type { ShapeQuery, Span, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
-import type { Node, SourceFile, TypeNode } from "typescript/unstable/ast";
-import { isTypeNode } from "typescript/unstable/ast/is";
-import { API } from "typescript/unstable/sync";
-import type { Program, Project, Snapshot } from "typescript/unstable/sync";
+import type { Node, SourceFile, TypeNode } from "typescript/ast";
+import { isTypeNode } from "typescript/ast/is";
+import { serverFS } from "typescript/fs";
+import { API } from "typescript/sync";
+import type { Program, Project, Snapshot } from "typescript/sync";
 
 import { evaluate } from "./evaluate.ts";
 
@@ -36,7 +37,7 @@ const COMPILER_OPTIONS = {
 /**
  * The tsgo adapter (plan §5.5, ADR-0067): the syntactic adapter's shapes, with what only a
  * type-checker evaluates (conditional and mapped types, `infer`, `keyof`, `typeof`, template
- * literals with holes) evaluated by tsgo 7.0 through `typescript/unstable/sync`. Where a
+ * literals with holes) evaluated by tsgo 7.1 through `typescript/sync` (ADR-0107). Where a
  * construct comes from, what a shape depends on and which packages it may read stay the
  * syntactic adapter's, so both adapters answer every other query alike.
  *
@@ -68,17 +69,24 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   const project = (): Project => {
     api ??= new API({
       cwd: root,
+      // Only the tsconfig is served from memory: every other path, and every other operation,
+      // reads the real disk.
       fs: {
-        // `undefined` reads the real disk.
         readFile: (path) =>
           path === config
             ? JSON.stringify({ compilerOptions: COMPILER_OPTIONS, include: ["**/*"] })
-            : undefined,
-        fileExists: (path) => (path === config ? true : undefined),
+            : serverFS.useOS,
+        fileExists: (path) => (path === config ? true : serverFS.useOS),
+        directoryExists: serverFS.useOS,
+        getAccessibleEntries: serverFS.useOS,
+        realpath: serverFS.useOS,
+        stat: serverFS.useOS,
+        writeFile: serverFS.useOS,
+        removeFile: serverFS.useOS,
       },
     });
-    snapshot ??= api.updateSnapshot({ openProjects: [config] });
-    return snapshot.getProject(config)!;
+    snapshot ??= api.createSnapshot({ openProjects: [config] });
+    return snapshot.getConfiguredProject(config)!;
   };
 
   /**
@@ -175,7 +183,7 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
       // A package installed, removed or changed can change how any import resolves: the next
       // query that needs the checker starts a new one.
       if (changes.files.some((file) => file.startsWith("pkg:"))) return stop();
-      const { program } = snapshot.getProject(config)!;
+      const { id, program } = snapshot.getConfiguredProject(config)!;
       const changed: string[] = [];
       const created: string[] = [];
       const deleted: string[] = [];
@@ -185,7 +193,13 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
         else if (program.getSourceFile(path)) changed.push(path);
         else created.push(path);
       }
-      const next = api.updateSnapshot({ fileChanges: { changed, created, deleted } });
+      // A notified file only marks the project dirty: `ensurePrograms` builds its program again.
+      const next = snapshot.update({
+        fileNotifications: { changed, created, deleted },
+        ensurePrograms: [id],
+      });
+      // A change that changes nothing gives back the same snapshot, which stays live.
+      if (next === snapshot) return;
       snapshot.dispose();
       snapshot = next;
     },

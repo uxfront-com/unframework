@@ -103,7 +103,6 @@ const QWIK_NAME_GAPS: Readonly<Record<string, Elements>> = {
   crossorigin: { on: ["input"] },
   dirname: { on: ["textarea"] },
   exportparts: { except: [] },
-  hreflang: { on: ["area"] },
   httpequiv: { on: ["meta"] },
   manifest: { on: ["html"] },
   media: { on: ["a", "area"] },

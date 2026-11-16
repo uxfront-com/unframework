@@ -122,8 +122,12 @@ won't load. The docs page is `apps/web/content/docs/4.tooling/7.preview.md`.
 every server listens (ADR-0088):
 
 - **One Vite dev server per target** (`src/preview/servers.ts`), on `127.0.0.1` and a port the
-  system picks: the unframework plugin, the target's `vite("browser")` fragment (`loadToolchain`
-  from the testing package's `./config`) and the preview's plugin. That plugin serves the frame
+  system picks: the preview's plugin, the unframework plugin and the target's `vite("browser")`
+  fragment (`loadToolchain` from the testing package's `./config`), then the project's `vite`
+  config for `mode: "preview"`, merged in with the testing package's `withProjectVite`, its
+  plugins first (ADR-0104). The toolchain gets the pass-through declarations and the project's
+  plugins. `targetServerOptions` reads the config, and `targetServerConfig` builds a server's
+  configuration without starting it. That plugin serves the frame
   page at `/__uf/frame`, its module, which mounts the selection with the target's adapter
   (`toolchainClientFile`) and loads each entry lazily, and an empty `vitest/browser`. A target
   that renders on the server (`renderCommandName`, Astro's) gets `POST /__uf/render`, which runs
@@ -141,7 +145,7 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
   union of string literals, as written or resolved from an alias (`ApiMember.literals`), with
   `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
 - **`close()`** stops the shell and every target's server, then what a toolchain's commands
-  started (`toolchain.close`, Astro's render servers). A start that fails closes what it started.
+  started (`toolchain.close`, Astro's render servers). A start that fails closes what it started, and its error names each reason with the targets it stopped (`startFailure`), once for the targets that failed alike.
 
 ## Tests
 
@@ -156,6 +160,13 @@ renders the fixture runs under `test/fixtures/report-failed` (one failed cell on
 and `test/fixtures/report-missing` (cells that left fewer files) to `.output/<fixture>/report.html`,
 which stays on disk, and checks the grid, the overlay by keyboard, the delta table, the tab order
 and axe-core, through the testing package's `toHaveNoAxeViolations`.
+
+`project-config.test.ts` runs the fixture projects under `test/fixtures/project-plugins` and
+`test/fixtures/live-fonts*`: an example that imports a module only the project's own plugin serves
+passes on seven targets, a preview server's resolved plugins hold that plugin and its config
+refuses the keys the server owns, and an example in the system's font fails `font-fallback`
+without `liveFonts`, passes on seven targets once the list names the families that run reported,
+and still fails with another family listed or against baselines.
 
 `preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
 frames from seven origins, a control that reaches all of them, and that no port listens after

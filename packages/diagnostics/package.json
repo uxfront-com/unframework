@@ -1,6 +1,6 @@
 {
   "name": "@unframework.dev/diagnostics",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Unframework diagnostics: the diagnostic type, the catalogue of stable UF codes, code frames, JSON and SARIF output, and machine-applicable fixes.",
   "keywords": [
     "compiler",

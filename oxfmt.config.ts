@@ -13,6 +13,8 @@ export default defineConfig({
     // the whitespace and the spellings they report.
     "tests/integration/cases/diagnostics/**",
     "packages/testing/test/parity/cases/**/__expected__/**",
+    // The fixture projects' expectations, which `unframework test --update` writes.
+    "packages/testing/test/fixtures/**/__expected__/**",
     // The sample design system's expectations, which `unframework test --update` writes.
     "tests/e2e/design-system/**/__expected__/**",
     // A visual run's generated specs and report (`unframework visual`, ADR-0087).

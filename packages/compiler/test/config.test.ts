@@ -279,6 +279,7 @@ describe("resolveConfig", () => {
       targetOptions: {},
       typeOracle: "syntactic",
       strict: false,
+      liveFonts: [],
     });
   });
 
@@ -308,7 +309,23 @@ describe("resolveConfig", () => {
       targetOptions: {},
       typeOracle: "tsgo",
       strict: true,
+      liveFonts: [],
     });
+  });
+
+  it("keeps the project's Vite config as the function that makes it", async () => {
+    const vite = () => ({ plugins: [{ name: "engine" }] });
+    const { config, diagnostics } = await resolveConfig({ vite });
+    expect(diagnostics).toEqual([]);
+    expect(config?.vite).toBe(vite);
+  });
+
+  it("keeps the font families a live capture may take, in their order", async () => {
+    const { config, diagnostics } = await resolveConfig({
+      liveFonts: ["Inkline Sans", "Inkline Mono"],
+    });
+    expect(diagnostics).toEqual([]);
+    expect(config?.liveFonts).toEqual(["Inkline Sans", "Inkline Mono"]);
   });
 
   it("resolves package.resolveFrom against the config's directory", async () => {
@@ -363,6 +380,19 @@ describe("resolveConfig", () => {
       [{ package: { resolveFrom: [] } }, "/package/resolveFrom"],
       [{ package: { resolveFrom: { vue: 1 } } }, "/package/resolveFrom/vue"],
       [{ package: { extra: 1 } }, "/package/extra"],
+      [{ vite: {} }, "/vite"],
+      [{ vite: [{ name: "engine" }] }, "/vite"],
+      [{ vite: null }, "/vite"],
+      // The fields ADR-0104 and ADR-0105 replaced before the first release.
+      [{ vitePlugins: () => [] }, "/vitePlugins"],
+      [{ declarations: [] }, "/declarations"],
+      [{ liveFonts: "any" }, "/liveFonts"],
+      [{ liveFonts: true }, "/liveFonts"],
+      [{ liveFonts: [""] }, "/liveFonts/0"],
+      [{ liveFonts: ["Inkline Sans", 1] }, "/liveFonts/1"],
+      [{ liveFonts: ["  "] }, "/liveFonts/0"],
+      [{ liveFonts: [" Inkline Sans"] }, "/liveFonts/0"],
+      [{ liveFonts: ["Inkline Sans", "Inkline Mono "] }, "/liveFonts/1"],
     ])("reports %j at its JSON pointer", async (raw, pointer) => {
       const reported = await problems(raw);
       expect(reported).toHaveLength(1);

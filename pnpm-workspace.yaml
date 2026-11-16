@@ -62,14 +62,15 @@ peerDependencyRules:
     # eslint-plugin-solid and eslint-plugin-qwik depend on @typescript-eslint/utils, which peers
     # TypeScript <6.1. The Solid and Qwik toolchains run them as oxlint JS plugins with their
     # type-aware rules off, so nothing calls TypeScript's API there (ADR-0042); Qwik's type-aware
-    # rules run from tests/toolchains/qwik-eslint, on TypeScript 6.
-    "eslint-plugin-qwik>typescript": "7"
-    "@typescript-eslint/utils>typescript": "7"
-    "@typescript-eslint/typescript-estree>typescript": "7"
-    "@typescript-eslint/project-service>typescript": "7"
-    "@typescript-eslint/tsconfig-utils>typescript": "7"
-    "@typescript-eslint/type-utils>typescript": "7"
-    "ts-api-utils>typescript": "7"
+    # rules run from tests/toolchains/qwik-eslint, on TypeScript 6. The entries name the catalog's
+    # TypeScript 7 exactly, because a range such as "7" does not match a prerelease.
+    "eslint-plugin-qwik>typescript": "7.1.0-beta"
+    "@typescript-eslint/utils>typescript": "7.1.0-beta"
+    "@typescript-eslint/typescript-estree>typescript": "7.1.0-beta"
+    "@typescript-eslint/project-service>typescript": "7.1.0-beta"
+    "@typescript-eslint/tsconfig-utils>typescript": "7.1.0-beta"
+    "@typescript-eslint/type-utils>typescript": "7.1.0-beta"
+    "ts-api-utils>typescript": "7.1.0-beta"
 minimumReleaseAgeExclude:
   - "@uxfront/layer-docs@0.8.0"
   - "@uxfront/layer-ui@0.1.7"
@@ -170,9 +171,9 @@ catalog:
   svelte: 5.57.1
   svelte-check: 4.7.6
   tinybench: ^6.2.3
-  tsdown: ^0.23.0
+  tsdown: ^0.23.7
   tslib: ^2.8.1
-  typescript: 7.0.2
+  typescript: 7.1.0-beta
   typescript-eslint: 8.71.0
   unplugin: ^3.4.0
   vite: 8.3.1
@@ -181,3 +182,8 @@ catalog:
   vue: 3.5.43
   vue-eslint-parser: 10.4.1
   vue-tsc: 3.3.11
+patchedDependencies:
+  # TypeScript 7.1 reports its self-referencing `Selector` type as infinitely circular
+  # (TS5115, microsoft/TypeScript#64605), so codegen's scoper fails check-types. The patch writes
+  # out the same nodes as a union. Drop it once TypeScript or the package fixes the type.
+  postcss-selector-parser@7.1.6: patches/postcss-selector-parser@7.1.6.patch

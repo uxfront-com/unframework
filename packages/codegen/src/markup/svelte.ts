@@ -90,7 +90,8 @@ const spreadOne = (name: string, code: string) =>
  * the value (5.57), so a first render with it wrote no attribute where every other target
  * writes one. There the binding is an object spread, whose runtime assigns the property on
  * every render, and these elements reflect it to the attribute. `set_value` does write a
- * `<progress>`'s 0, and Svelte assigns an `<option>`'s value every time.
+ * `<progress>`'s 0, and Svelte assigns an `<option>`'s value every time, and an input's beside
+ * `bind:group` (`bindsGroup`), which keeps `value={…}`.
  *
  * Neither form removes the attribute when the value becomes nullish: Svelte clears it as an
  * input's value, which these elements reflect as "0", "" or "null" (and a `<meter>` throws on a
@@ -100,8 +101,24 @@ const spreadOne = (name: string, code: string) =>
  */
 const ASSIGNED_VALUE: ReadonlySet<string> = new Set(["li", "meter", "data", "button", "input"]);
 
+/**
+ * Whether an element binds a group (`bind:group`): a radio's `v-model`, or a checkbox's into an
+ * array (ADR-0054). Svelte's server checks such an input only through a `value={…}` attribute
+ * beside the binding, `checked` when the group holds it (5.57), and writes nothing for a value
+ * in a spread. Its client assigns that value to the property on every render (`input.value =
+ * input.__value = …`), never through `set_value`, so the first render writes the attribute
+ * without the spread `ASSIGNED_VALUE` needs.
+ */
+const bindsGroup = (element: ElementNode) =>
+  element.attributes.some(
+    (attribute) =>
+      attribute.kind === "Model" &&
+      (attribute.control === "radio" || attribute.control === "checkbox-group"),
+  );
+
 /** Whether a bound attribute of an element is a `value` Svelte must assign (`ASSIGNED_VALUE`). */
-const assignedValue = (name: string, tag: string) => name === "value" && ASSIGNED_VALUE.has(tag);
+const assignedValue = (name: string, element: ElementNode) =>
+  name === "value" && ASSIGNED_VALUE.has(element.tag) && !bindsGroup(element);
 
 /** Whether the dialect writes one of an element's attributes as an object spread. */
 const hasSpread = (element: ElementNode) =>
@@ -109,10 +126,10 @@ const hasSpread = (element: ElementNode) =>
     switch (attribute.kind) {
       case "Spread":
         return attribute.keys.some(
-          (key) => untyped(key.name, element.tag) || assignedValue(key.name, element.tag),
+          (key) => untyped(key.name, element.tag) || assignedValue(key.name, element),
         );
       case "Bound":
-        return untyped(attribute.name, element.tag) || assignedValue(attribute.name, element.tag);
+        return untyped(attribute.name, element.tag) || assignedValue(attribute.name, element);
       case "Static":
         return untyped(attribute.name, element.tag);
       case "Class":
@@ -188,7 +205,7 @@ const styleDirective = (property: string, value: string) =>
  * A binding whose value is the variable named like the attribute takes Svelte's shorthand
  * (`{href}`, `style:color`), as Svelte code is written. An attribute Svelte's element types lack
  * on its element is written as an object spread (`DECLARED_ONLY_ON`), and so is a bound `value`
- * that Svelte would skip writing (`ASSIGNED_VALUE`).
+ * that Svelte would skip writing (`ASSIGNED_VALUE`), but beside `bind:group` (`bindsGroup`).
  *
  * A class is one `class={[…]}`, never `class:` directives, which remove a token a dynamic part
  * produces (ADR-0038). A style is a static `style="…"` when every declaration is static, and
@@ -232,7 +249,7 @@ export const svelteDialect: MarkupDialect = {
   // `{/` closes a block, so code that starts with a regular expression is parenthesised.
   interpolation: (code) => (code.startsWith("/") ? `{(${code})}` : `{${code}}`),
   boundAttribute: (name, code, { element }) =>
-    untyped(name, element.tag) || assignedValue(name, element.tag)
+    untyped(name, element.tag) || assignedValue(name, element)
       ? spreadOne(name, code)
       : shorthand(name, code)
         ? `{${name}}`

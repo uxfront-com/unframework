@@ -123,6 +123,19 @@ describe("tsgo adapter", () => {
       expect(canonical(await oracle.resolveShape(query))).toBe("{ a: string; b: string }");
     });
 
+    it("keeps answering after an update that changes nothing", async () => {
+      const oracle = open();
+      await put("types.ts", 'export type Keys = "a";\n');
+      const prelude = 'import type { Keys } from "./types.ts";';
+      const query = await component("{ [K in Keys]: string }", prelude);
+      expect(canonical(await oracle.resolveShape(query))).toBe("{ a: string }");
+
+      await oracle.update({ files: [] });
+      expect(canonical(await oracle.resolveShape(query))).toBe("{ a: string }");
+      await oracle.update({ files: ["types.ts"] });
+      expect(canonical(await oracle.resolveShape(query))).toBe("{ a: string }");
+    });
+
     it("reads a created file", async () => {
       const oracle = open();
       await oracle.resolveShape(await component('{ [K in "a"]: 1 }'));

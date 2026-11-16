@@ -1,0 +1,17 @@
+diff --git a/postcss-selector-parser.d.ts b/postcss-selector-parser.d.ts
+index 9f0a233cd1cd975fd41762b99d6c31b8e2638925..a196e7a56be8162694a0050219c64813d464cfb5 100644
+--- a/postcss-selector-parser.d.ts
++++ b/postcss-selector-parser.d.ts
+@@ -350,7 +350,11 @@ declare namespace parser {
+     interface _Selector<S> extends Container<string, Diff<Node, S>> {
+         type: "selector";
+     }
+-    type Selector = _Selector<Selector>;
++    // Written out as the nodes `Diff<Node, Selector>` keeps: TypeScript 7.1 finds that
++    // self-referencing instantiation infinitely circular (TS5115, microsoft/TypeScript#64605).
++    interface Selector extends Container<string, Tag | String | Root | Pseudo | Nesting | Identifier | Comment | Combinator | ClassName | Attribute | Universal> {
++        type: "selector";
++    }
+     function selector(opts: ContainerOptions): Selector;
+     function isSelector(node: any): node is Selector;
+ 

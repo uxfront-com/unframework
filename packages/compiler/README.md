@@ -180,6 +180,8 @@ and `unframework.config.ts`.
 | `strict`              | `false`     | a boolean                                                        |
 | `package.targets`     | left out    | as `targets`, and each name also in `targets`                    |
 | `package.resolveFrom` | left out    | a path, or a path per built-in name, each made absolute          |
+| `vite`                | left out    | a function, kept as it is (ADR-0104)                             |
+| `liveFonts`           | `[]`        | a list of font family names that aren't empty (ADR-0105)         |
 
 A field of the wrong shape, or one the config doesn't have, is UF7002. A name that isn't a built-in
 target is UF7003, with a did-you-mean where one is close. Options a target's schema rejects are
@@ -188,6 +190,11 @@ UF7004, and options a schema returns replace the ones written.
 A target without a schema takes no options, so any key under it is UF7004 too. No built-in target
 declares a schema yet, so `react: { compiler: true }` reports "`react` declares no options" until
 React declares that option.
+
+`vite` and `liveFonts` are for `unframework test`, `visual` and `preview`, which
+`@unframework.dev/testing` and `@unframework.dev/visual` read. `compile()`, `build` and `check`
+ignore them. `DEFAULT_PASS_THROUGH`, the analyser's default prefixes, is exported for the harness,
+which declares the modules under them for Angular's compile.
 
 Each message gives the field's JSON pointer, and `config` is `undefined` when there is any
 diagnostic. A known field set to `undefined` counts as left out.

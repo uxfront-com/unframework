@@ -8,7 +8,7 @@ import { closest } from "@unframework.dev/analyzer";
 import { createDiagnostic } from "@unframework.dev/diagnostics";
 import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 
-import type { PackageConfig, TargetName } from "./config-types.ts";
+import type { PackageConfig, TargetName, UnframeworkConfig } from "./config-types.ts";
 import { builtinTargets, TARGET_NAMES } from "./targets.ts";
 
 /** The configuration with its defaults applied, and its paths absolute. */
@@ -20,6 +20,10 @@ export interface ResolvedConfig {
   typeOracle: "syntactic" | "tsgo";
   strict: boolean;
   package?: PackageConfig;
+  /** The project's Vite config, as a function each server calls (ADR-0104). */
+  vite?: UnframeworkConfig["vite"];
+  /** The font families that may draw text when pixels compare live, besides Inter (ADR-0105). */
+  liveFonts: readonly string[];
 }
 
 /** Where a configuration came from: what {@link loadConfig} gives {@link resolveConfig}. */
@@ -56,7 +60,17 @@ const CONFIG_FILES = [
   "unframework.config.mjs",
 ];
 
-const FIELDS = ["targets", "srcDir", "outDir", "targetOptions", "typeOracle", "strict", "package"];
+const FIELDS = [
+  "targets",
+  "srcDir",
+  "outDir",
+  "targetOptions",
+  "typeOracle",
+  "strict",
+  "package",
+  "vite",
+  "liveFonts",
+];
 const PACKAGE_FIELDS = ["targets", "resolveFrom"];
 const TYPE_ORACLES = ["syntactic", "tsgo"];
 
@@ -165,6 +179,15 @@ async function checkConfig(
   }
   const packaging =
     raw.package === undefined ? undefined : resolvePackage(raw.package, targets, directory, report);
+  // A config object would be one set of plugins that every server shares (ADR-0104).
+  if (raw.vite !== undefined && typeof raw.vite !== "function") {
+    report(
+      "UF7002",
+      "/vite",
+      "must be a function that returns a Vite config, such as `() => ({ plugins: [engine()] })`: each Vite server calls it for a fresh set of plugins.",
+    );
+  }
+  const liveFonts = fontList(raw.liveFonts, report);
 
   return {
     targets: targets!,
@@ -174,7 +197,34 @@ async function checkConfig(
     typeOracle: (raw.typeOracle as ResolvedConfig["typeOracle"] | undefined) ?? "syntactic",
     strict: (raw.strict as boolean | undefined) ?? false,
     ...(packaging ? { package: packaging } : {}),
+    ...(raw.vite === undefined ? {} : { vite: raw.vite as NonNullable<ResolvedConfig["vite"]> }),
+    liveFonts,
   };
+}
+
+/** The font families a live capture may take, each a name that isn't empty (ADR-0105). */
+function fontList(value: unknown, report: Report): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    report(
+      "UF7002",
+      "/liveFonts",
+      "must be a list of font family names, as the `font-fallback` message names them.",
+    );
+    return [];
+  }
+  const names: string[] = [];
+  for (const [index, item] of (value as unknown[]).entries()) {
+    // A space at either end would never match the name CDP reports, so it is reported here.
+    if (typeof item !== "string" || !item || item.trim() !== item) {
+      report(
+        "UF7002",
+        `/liveFonts/${index}`,
+        "must be a font family's name, as a string that isn't empty and has no space at either end.",
+      );
+    } else names.push(item);
+  }
+  return names;
 }
 
 /** Reports a problem with the field at a JSON pointer; `problem` finishes the sentence. */

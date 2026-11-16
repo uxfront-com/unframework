@@ -419,7 +419,7 @@ Each package follows the `@uxfront/scene` model:
 | `@unframework.dev/ir`               | IR types, builders, visitors, JSON schema, versioning and migrations. Pure data.                                                                                                   | none                                                |
 | `@unframework.dev/diagnostics`      | The diagnostic type, the catalogue, code frames, JSON/SARIF output, fixes.                                                                                                         | none                                                |
 | `@unframework.dev/type-oracle`      | The `TypeOracle` interface, the syntactic resolver, and the adapter contract test suite.                                                                                           | `oxc-parser`, `oxc-resolver`                        |
-| `@unframework.dev/type-oracle-tsgo` | The tsgo adapter: `typescript/unstable/sync` now, the TS 7.1 API later. The only package that imports `typescript`.                                                                | `typescript` (exact pin)                            |
+| `@unframework.dev/type-oracle-tsgo` | The tsgo adapter, on the TS 7.1 API (`typescript/sync`, ADR-0107). The only package that imports `typescript`.                                                                     | `typescript` (exact pin)                            |
 | `@unframework.dev/analyzer`         | P2 and P3: bindings, macros, reactivity, cross-component checks, lowering into IR.                                                                                                 | `parser`, `ir`, `type-oracle`, `diagnostics`        |
 | `@unframework.dev/codegen`          | The target kit: JS, JSX and markup builders, the rewrite engine, CSS scoper, import manager, source maps, `defineTarget`.                                                          | `ir`, `magic-string`, `oxc-codegen`, `lightningcss` |
 | `@unframework.dev/target-<name>` ×7 | One framework each: `emit()`, capabilities, options, and a `/toolchain` entry for tests.                                                                                           | `ir`, `codegen`                                     |
@@ -559,7 +559,7 @@ IPC-backed checker needs.
 
    That covers almost every design-system props type.
 
-2. **`tsgo` (opt-in).** Built on `typescript/unstable/sync`, pinned to an exact version and isolated in
+2. **`tsgo` (opt-in).** Built on `typescript/sync` (ADR-0107), pinned to an exact version and isolated in
    its own package. It handles anything the syntactic resolver reports as unresolvable, such as
    conditional types and complex generics.
 
@@ -569,7 +569,7 @@ better. No other package changes.
 
 **The repo's own toolchain:**
 
-- TypeScript 7.0.2 (tsgo) for `check-types`.
+- TypeScript 7.1.0-beta (tsgo) for `check-types`.
 - tsdown with oxc isolated declarations for `.d.ts` files.
 - `isolatedDeclarations`, `erasableSyntaxOnly` and `verbatimModuleSyntax` are on.
 - Scripts run directly under Node 24's type stripping.
@@ -1284,8 +1284,8 @@ a report that gates no pull request.
   (TS18066), so `@unframework.dev/language-tools` waits for the extension to be settled (ADR-0072,
   Proposed). The compiler catches consumer misuse of events, models and slots, and probes pin
   that stock tsgo reports no false errors, but tsgo itself doesn't check them yet.
-- The `tsgo` adapter runs on `typescript/unstable/sync`. Its port to the stable 7.1 API waits for
-  7.1 (ADR-0067).
+- The `tsgo` adapter runs on the 7.1 API, `typescript/sync`, pinned at `7.1.0-beta` until 7.1.0
+  ships (ADR-0107).
 
 ### M6. Build integration and distribution (L)
 
@@ -1722,7 +1722,7 @@ These are npm `latest` versions on 2026-10-01. Each target pins its tested range
 
 | Package                                   | Version           | Notes                                                                      |
 | ----------------------------------------- | ----------------- | -------------------------------------------------------------------------- |
-| typescript                                | 7.0.2             | 7.1 stable planned for Nov 24, 2026, with the API and content mappers      |
+| typescript                                | 7.1.0-beta        | 7.1 stable planned for Nov 24, 2026, with the API and content mappers      |
 | @typescript/typescript6                   | 6.0.2             | for vue-tsc, svelte-check, `astro check` and Angular until they move       |
 | react / react-dom                         | 19.3.0            | React Compiler 1.0                                                         |
 | vue / @vue/runtime-dom                    | 3.5.43            | 3.6.0-rc.10 has Vapor; the JSX types are vendored from runtime-dom         |
