@@ -400,6 +400,14 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   and marks each element it teleports `data-teleported`, which no server HTML holds.
 - **A test leaves nothing in `<body>`** (ADR-0098). Once its views are unmounted, an element the
   test added fails L8, naming it: a component removes what it appends to `<body>`.
+- **A capture never samples a transition mid-way** (ADR-0100). The determinism reset gives every
+  transition and animation no duration, and each settle also waits until no CSS transition, CSS
+  animation or Web Animation in the page runs, for at most 2 seconds: one still running then fails
+  the settle, never a retry. A spec that tests a `<Transition>`'s timing gives its case's `-active`
+  classes a duration of its own, in a `<style>` it appends to `<head>` inside its own test, with
+  `!important`, and removes in a `finally`. It reads the classes once a frame, or with a
+  `MutationObserver` attached before the action, since `view.user` returns once the page has
+  settled. Each case's sheet declares durations of 100 ms or less, which the reset turns off.
 - **Check mode never writes.** A missing artefact fails with the command that creates it. CI is
   always in check mode, and `pnpm test:update` refuses to run there.
 - **One expectation, written once.** In update mode only the reference target writes the shared
