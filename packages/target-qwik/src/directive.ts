@@ -275,8 +275,6 @@ export class QwikDirectives {
           );
         }
         const elements = `${track}(${list.name})`;
-        const field = (name: string, local: string) =>
-          local === name ? name : `${name}: ${local}`;
         const each = passed
           ? `{ ${field("element", local)}, ${field("values", valuesName!)} }`
           : local;
@@ -433,4 +431,9 @@ function ${forget}<E extends Element, V>(
     `/** The value a directive's hooks take. */
 type ${type}<D> = D extends ${hooks}<never, infer T> ? T : never;`,
   ];
+}
+
+/** A destructured field: `element`, or `element: element_1` where its local is renamed. */
+function field(name: string, renamed: string): string {
+  return renamed === name ? name : `${name}: ${renamed}`;
 }
