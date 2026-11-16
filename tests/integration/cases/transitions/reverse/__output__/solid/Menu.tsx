@@ -13,8 +13,10 @@ import "./Menu.uf.tsx.css";
 
 export default function Menu(props: { class?: string; style?: JSX.CSSProperties }) {
   const [open, setOpen] = createSignal(true);
+  const [refreshes, setRefreshes] = createSignal(0);
 
   function refresh() {
+    setRefreshes(refreshes() + 1);
     setOpen(false);
     setTimeout(() => {
       setOpen(true);
@@ -32,6 +34,9 @@ export default function Menu(props: { class?: string; style?: JSX.CSSProperties 
       <button type="button" aria-expanded={open()} onClick={refresh} data-uf-e688a71a="">
         Refresh
       </button>
+      <p role="status" data-uf-e688a71a="">
+        Refreshes: {refreshes()}
+      </p>
       <Transition name="fade">
         <Show when={open()}>
           <ul class="items" data-uf-e688a71a="">

@@ -16,8 +16,10 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     useStyles$(styles);
 
     const open = useSignal(true);
+    const refreshes = useSignal(0);
 
     const refresh = $(() => {
+      refreshes.value++;
       open.value = false;
       setTimeout(() => {
         open.value = true;
@@ -76,6 +78,9 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         <button type="button" aria-expanded={open.value} onClick$={refresh} data-uf-e688a71a="">
           Refresh
         </button>
+        <p role="status" data-uf-e688a71a="">
+          Refreshes: {refreshes.value}
+        </p>
         <>
           {fadeShown.value.includes(0) && (
             <ul class="items" data-uf-e688a71a="" ref={transition(fadeState, "fade", 0, false)}>

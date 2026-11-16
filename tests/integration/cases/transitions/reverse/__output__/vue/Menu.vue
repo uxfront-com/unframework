@@ -2,8 +2,10 @@
 import { ref } from "vue";
 
 const open = ref(true);
+const refreshes = ref(0);
 
 function refresh() {
+  refreshes.value++;
   open.value = false;
   setTimeout(() => {
     open.value = true;
@@ -19,6 +21,7 @@ function refresh() {
       data-uf-e688a71a=""
       @click="refresh"
     >Refresh</button>
+    <p role="status" data-uf-e688a71a="">Refreshes: {{ refreshes }}</p>
     <Transition name="fade">
       <ul v-if="open" class="items" data-uf-e688a71a="">
         <li data-uf-e688a71a="">Profile</li>

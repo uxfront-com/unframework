@@ -8,6 +8,9 @@
         "  <button aria-expanded=\"true\" data-uf-e688a71a=\"\" type=\"button\" uf:focused=\"\">",
         "    \"Refresh\"",
         "  </button>",
+        "  <p data-uf-e688a71a=\"\" role=\"status\">",
+        "    \"Refreshes: 1\"",
+        "  </p>",
         "  <ul class=\"items\" data-uf-e688a71a=\"\">",
         "    <li data-uf-e688a71a=\"\">",
         "      \"Profile\"",
@@ -18,6 +21,7 @@
       "aria": [
         "- navigation \"Account\":",
         "  - button \"Refresh\" [expanded]",
+        "  - status: \"Refreshes: 1\"",
         "  - list:",
         "    - listitem: Profile"
       ],

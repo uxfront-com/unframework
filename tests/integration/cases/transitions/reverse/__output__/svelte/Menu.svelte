@@ -10,8 +10,10 @@
   let { class: className, style, ...attributes }: Props = $props();
 
   let open = $state(true);
+  let refreshes = $state(0);
 
   function refresh() {
+    refreshes++;
     open = false;
     setTimeout(() => {
       open = true;
@@ -97,6 +99,7 @@
   {...scopeAttributes(attributes)}
 >
   <button type="button" aria-expanded={open} onclick={refresh} data-uf-e688a71a="">Refresh</button
+  ><p role="status" data-uf-e688a71a="">Refreshes: {refreshes}</p
   >{#if open}
     <ul in:enter={"fade"} out:leave={"fade"} class="items" data-uf-e688a71a="">
       <li data-uf-e688a71a="">Profile</li>

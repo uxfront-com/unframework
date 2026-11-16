@@ -152,6 +152,7 @@ export class Transition implements OnInit {
   preserveWhitespaces: false,
   template: `
     @let open = this.open();
+    @let refreshes = this.refreshes();
     <nav
       class="menu"
       aria-label="Account"
@@ -166,6 +167,7 @@ export class Transition implements OnInit {
         (click)="refresh()"
         data-uf-e688a71a=""
       >Refresh</button>
+      <p role="status" data-uf-e688a71a="">Refreshes: {{ refreshes }}</p>
       <ng-container [ufTransitionRegion]="(open) ? 0 : -1">
         @if (open) {
           <ul
@@ -189,8 +191,10 @@ export default class Menu {
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
   protected readonly open = signal(true);
+  protected readonly refreshes = signal(0);
 
   protected refresh() {
+    this.refreshes.update((refreshes) => refreshes + 1);
     this.open.set(false);
     setTimeout(() => {
       this.open.set(true);

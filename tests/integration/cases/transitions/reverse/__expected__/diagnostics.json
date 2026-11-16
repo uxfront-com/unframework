@@ -39,14 +39,14 @@
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "transitions/reverse/Menu.uf.tsx",
     "start": {
-      "line": 17,
+      "line": 20,
       "column": 56,
-      "offset": 439
+      "offset": 565
     },
     "end": {
-      "line": 17,
+      "line": 20,
       "column": 73,
-      "offset": 456
+      "offset": 582
     },
     "target": "astro"
   },
@@ -56,14 +56,14 @@
     "message": "The astro target does not support transition: A `<Transition>`'s classes never run: its child renders settled on Astro: components render on the server only, and nothing runs in the browser.",
     "file": "transitions/reverse/Menu.uf.tsx",
     "start": {
-      "line": 20,
+      "line": 24,
       "column": 7,
-      "offset": 496
+      "offset": 678
     },
     "end": {
-      "line": 26,
+      "line": 30,
       "column": 20,
-      "offset": 650
+      "offset": 832
     },
     "target": "astro"
   }

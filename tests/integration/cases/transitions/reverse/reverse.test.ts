@@ -15,6 +15,7 @@ describeTargets("transitions/reverse", () => {
     const view = await mountScenario(Menu, "open");
     await view.expectParity("open");
     await expect.element(view.getByText("Profile")).toBeVisible();
+    await expect.element(view.getByRole("status")).toHaveTextContent("Refreshes: 0");
   });
 
   it(
@@ -33,6 +34,7 @@ describeTargets("transitions/reverse", () => {
         await expect
           .element(view.getByRole("button", { name: "Refresh" }))
           .toHaveAttribute("aria-expanded", "true");
+        await expect.element(view.getByRole("status")).toHaveTextContent("Refreshes: 1");
         const menus = [...view.container.querySelectorAll(".items")];
         expect(menus.map((menu) => menu.className)).toEqual(["items"]);
       } finally {

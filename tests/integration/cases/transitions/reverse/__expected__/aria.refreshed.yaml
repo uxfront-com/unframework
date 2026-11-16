@@ -1,4 +1,5 @@
 - navigation "Account":
   - button "Refresh" [expanded]
+  - status: "Refreshes: 1"
   - list:
     - listitem: Profile
