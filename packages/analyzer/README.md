@@ -372,7 +372,7 @@ required })` declares a `model` binding, read and written as `value.value`, as s
 - **Transition** (`transition.ts`, ADR-0100): `<Transition name appear>`, the authoring API written
   only as a tag, recognised by its import's binding, lowered to a `Transition` node around its one
   element or one conditional of elements. `name` is a string literal with no whitespace, `"v"` by
-  default, and `appear` a literal (UF3058); the child is one element, or one conditional whose
+  default, and `appear` a literal (UF3058). The child is one element, or one conditional whose
   every branch is one element or nothing (UF3057). Another attribute is UF3035, `key` UF3014, `ref`
   UF3046, a directive UF3056, and a spread, a transition anywhere in a list's body and `Transition`
   used as anything but a tag UF1002. A component whose whole render is a transition is a root of

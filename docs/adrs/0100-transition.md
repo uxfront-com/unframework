@@ -31,7 +31,7 @@ timing has to opt into a real duration, and a capture has to wait for it to end.
 
 `Transition` is an authoring API, written only as a tag: `<Transition name="fade" appear>`. The
 compiler recognises it by the binding its import declares. Any other use, a call or a read as a
-value, is UF1002 at the identifier.
+value, is UF1002 at the identifier. The compiler checks how it is written:
 
 - `name` is a string literal with no whitespace, `"v"` when it is left out, as in Vue. `appear` is
   the bare attribute, or `{true}` or `{false}` written as literals. Anything else is **UF3058**
@@ -94,7 +94,9 @@ Vue's CSS-class contract:
 ADR-0099 said P7's leave transitions delay `unmounted` until the element leaves the DOM. That isn't
 what Vue, the reference target, does: Vue queues a directive's `unmounted` when the element's
 vnode unmounts, as its leave starts, and only the DOM removal waits for the leave. Solid and
-Angular do the same, while Svelte, React and Qwik run it after the leave. So this record amends
+Angular do the same, while Svelte, React and Qwik run it after the leave.
+
+So this record amends
 ADR-0099: `unmounted` runs once, at the start or at the end of the leave, and once the leave has
 ended it has run on every target. `transitions/directive` checks that half.
 

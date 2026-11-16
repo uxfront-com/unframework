@@ -156,7 +156,7 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it) and
   `teleport` (`<Teleport to>`, ADR-0098, whose one element the markup printer prints as a root's,
   outside every element around it), `transition` (`<Transition>`, ADR-0100, which React, Solid and
-  Qwik print through an inline helper; a markup dialect wraps the child in a `transition` piece,
+  Qwik print through an inline helper, and a markup dialect wraps the child in a `transition` piece,
   Vue's `<Transition>`, and marks its element, or each branch's, with `transitionAttributes`,
   Svelte's `in:` and `out:` or Angular's directive, given the branch's index and the code of the
   branch shown) and `directiveAttribute` (`v-name={value}`, ADR-0099, which each

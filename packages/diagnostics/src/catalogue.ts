@@ -2415,7 +2415,7 @@ const entries: CatalogueEntry[] = [
     description: [
       "`<Transition>` runs its classes on the element it holds when that element enters or leaves",
       "(ADR-0100). So its child is exactly one element, or one conditional whose every branch is",
-      "one element or nothing: `cond && <p />`, `cond ? <p /> : <div />`, or an else-if chain.",
+      "one element or nothing: `cond && <p />`, `cond ? <p /> : <div />` or an else-if chain.",
       "Text, two nodes, a component, a slot, `<component is>`, a fragment or a list can't be that",
       "child, and neither can nothing at all. The element itself may hold anything.",
       "",
