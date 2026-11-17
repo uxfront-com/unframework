@@ -74,7 +74,7 @@ export const solid2: Target = defineTarget({
     interactivity: {
       support: "emulated",
       helper: WATCHER_HELPER,
-      note: "Solid 2 lets a read see a write only once it flushes, so state goes through an inline helper, createState, a signal whose read returns the last value written; derived values are functions, listeners event props and hooks onSettled. A watcher and a watchEffect go through inline helpers over createReaction, whose scheduler is queued at the write and calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
+      note: "Solid 2 lets a read see a write only once it flushes, so state goes through an inline helper, createState, a signal whose read returns the last value written; derived values are functions, listeners event props and hooks onSettled, and a template ref is emptied with its element through clearedRef, as Solid 2 refuses onCleanup in a ref callback. A watcher and a watchEffect go through inline helpers over createReaction, whose scheduler is queued at the write and calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
     },
     // A listener with an option is a native listener with its options (`on:click={{ … }}`).
     "event-capture": { support: "native" },
@@ -103,7 +103,13 @@ export const solid2: Target = defineTarget({
     conditional: { support: "native" },
     list: { support: "native" },
     fragment: { support: "native" },
-    "bound-attribute": { support: "native" },
+    // Solid 2 writes a boolean as the attribute's presence; Vue writes an enumerated attribute's
+    // boolean as its name, `aria-expanded="false"` (ADR-0102).
+    "bound-attribute": {
+      support: "emulated",
+      helper: ENUMERATED_HELPER,
+      note: 'Solid 2 writes a boolean as an attribute\'s presence, where Vue writes the boolean of an ARIA attribute and of contenteditable, draggable and spellcheck as its name. So such a value goes through an inline helper, enumeratedValue, that writes "true" or "false" and passes any other value as it is.',
+    },
     // Static names and toggles print as Solid 2's own `class` array, and an inline helper joins
     // dynamic parts into one string, as a component's `class` prop takes it (ADR-0038).
     "class-binding": {
@@ -116,7 +122,11 @@ export const solid2: Target = defineTarget({
       helper: STYLE_HELPER,
       note: "Solid's style takes kebab-case keys, so a style bound to a value goes through an inline helper that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
     },
-    "attribute-spread": { support: "native" },
+    "attribute-spread": {
+      support: "emulated",
+      helper: ENUMERATED_HELPER,
+      note: "A spread is written out per key, and an ARIA or enumerated key goes through enumeratedValue, as a bound one does, so a boolean is written as its name.",
+    },
     "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },

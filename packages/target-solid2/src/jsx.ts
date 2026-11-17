@@ -94,6 +94,11 @@ export const ENUMERATED_HELPER = "enumeratedValue";
 /** Vue's enumerated attributes (`isEnumeratedAttr`), besides ARIA's, which take a boolean's name. */
 const ENUMERATED: ReadonlySet<string> = new Set(["contenteditable", "draggable", "spellcheck"]);
 
+/** Whether an attribute takes a boolean's name on Vue: ARIA's, and Vue's enumerated ones. */
+function isEnumerated(name: string): boolean {
+  return name.startsWith("aria-") || ENUMERATED.has(name.toLowerCase());
+}
+
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
@@ -129,6 +134,11 @@ export function solidJsx(
   let scopeHelper: string | undefined;
   let styleHelper: string | undefined;
   let enumeratedHelper: string | undefined;
+  /** A value through the enumerated-attribute helper (`enumeratedValue`). */
+  const enumerated = (value: AstExpression) =>
+    js.callExpression(js.identifier((enumeratedHelper ??= imports.claim(ENUMERATED_HELPER))), [
+      value,
+    ]);
   let keyedHelper: string | undefined;
   let teleportHelper: string | undefined;
   let transitionHelper: string | undefined;
@@ -210,13 +220,8 @@ export function solidJsx(
       }
       // An enumerated attribute: Vue writes a boolean as its name, and Solid 2 as the attribute's
       // presence.
-      const enumerated =
-        attribute.name.startsWith("aria-") || ENUMERATED.has(attribute.name.toLowerCase());
-      if (enumerated && !isString(attribute.value, context.component)) {
-        enumeratedHelper ??= imports.claim(ENUMERATED_HELPER);
-        const value = js.callExpression(js.identifier(enumeratedHelper), [
-          jsxExpression(attribute.value, context),
-        ]);
+      if (isEnumerated(attribute.name) && !isString(attribute.value, context.component)) {
+        const value = enumerated(jsxExpression(attribute.value, context));
         return [js.jsxAttribute(attribute.name, js.jsxExpressionContainer(value))];
       }
       return boundJsxAttribute(attribute, element, context);
@@ -243,9 +248,11 @@ export function solidJsx(
             printed.style = true;
             return [mergedStyle(styleValue(value), passed("style", context))];
           }
-          return isUntyped(element.tag, key.name)
-            ? untypedJsxAttribute(element, key.name, value)
-            : [js.jsxAttribute(key.name, js.jsxExpressionContainer(value))];
+          if (isUntyped(element.tag, key.name))
+            return untypedJsxAttribute(element, key.name, value);
+          // A spread's enumerated key, as a bound one: its value's type is the spread's.
+          const written = isEnumerated(key.name) ? enumerated(value) : value;
+          return [js.jsxAttribute(key.name, js.jsxExpressionContainer(written))];
         });
     },
     classAttribute(attribute, element, context) {

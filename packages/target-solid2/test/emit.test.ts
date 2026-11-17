@@ -100,7 +100,7 @@ describe("solid2 target", () => {
     ]);
   });
 
-  it("emulates watchers, nextTick, class and style bindings, the child-root rule, keyed lists, directives, transitions and teleports with the helpers it prints, declares a composable's effect order, the rest natively", () => {
+  it("emulates watchers, nextTick, enumerated attributes, class and style bindings, the child-root rule, keyed lists, directives, transitions and teleports with the helpers it prints, declares a composable's effect order, the rest natively", () => {
     // Only a composable's effect order is unsupported: the watchers' scheduler coalesces every
     // shape of a synchronous run of client code in one module (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
@@ -109,8 +109,11 @@ describe("solid2 target", () => {
     expect(cells).toEqual([
       ["interactivity", expect.objectContaining({ helper: "createWatcher" })],
       ["next-tick", expect.objectContaining({ helper: "nextTick" })],
+      // Solid 2 drops a `false` an `aria-*` or enumerated attribute takes (src/helpers.ts).
+      ["bound-attribute", expect.objectContaining({ helper: "enumeratedValue" })],
       ["class-binding", expect.objectContaining({ helper: "cx" })],
       ["style-binding", expect.objectContaining({ helper: "styleProperties" })],
+      ["attribute-spread", expect.objectContaining({ helper: "enumeratedValue" })],
       ["model-array", expect.objectContaining({ helper: "toggle" })],
       ["model-modifiers", expect.objectContaining({ helper: "modelText" })],
       ["reactive-context", expect.objectContaining({ helper: "refObject" })],
@@ -1232,10 +1235,10 @@ describe("solid2 attributes", () => {
       ),
     );
     expect(component(output)).toContain(
-      '<p id={props.attrs.id} aria-label={props.attrs["aria-label"]}>',
+      '<p id={props.attrs.id} aria-label={enumeratedValue(props.attrs["aria-label"])}>',
     );
     expect(component(output)).toContain(
-      '<p id={props.more?.id} aria-label={props.more?.["aria-label"]}>',
+      '<p id={props.more?.id} aria-label={enumeratedValue(props.more?.["aria-label"])}>',
     );
   });
 
