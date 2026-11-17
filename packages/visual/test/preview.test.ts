@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { describe, expect, it } from "vitest";
 
+import { preview } from "../src/preview/command.ts";
 import { startPreview } from "../src/preview/index.ts";
 import { FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
 import { PREVIEW_HOST } from "../src/preview/servers.ts";
@@ -91,7 +92,7 @@ describe("startPreview", () => {
             .toBe("rendered");
         }
 
-        await page.getByRole("button", { name: "src/Button", exact: true }).click();
+        await page.getByRole("treeitem", { name: "src/Button", exact: true }).click();
         const variant = page.getByLabel("variant");
         await variant.selectOption("primary");
         for (const target of TARGETS) {
@@ -158,7 +159,7 @@ describe("startPreview", () => {
         await page.goto(preview.url);
         await expect.poll(() => page.evaluate(() => location.hash)).toBe("#example:src/Card");
         const nav = page.getByRole("navigation");
-        const current = nav.locator('button[aria-current="true"]');
+        const current = nav.locator('[role="treeitem"][aria-selected="true"]');
         await expect.poll(() => current.count()).toBe(1);
         expect(await current.getAttribute("data-entry")).toBe("example:src/Card");
         for (const { target } of preview.frames) {
@@ -166,7 +167,10 @@ describe("startPreview", () => {
           await frame.getByText("Release notes").waitFor({ timeout: 120_000 });
         }
         // The component under the same id renders with no content.
-        await nav.getByRole("listitem").nth(1).getByRole("button", { name: "src/Card" }).click();
+        await nav
+          .getByRole("tree", { name: "Components" })
+          .getByRole("treeitem", { name: "src/Card" })
+          .click();
         await expect.poll(() => current.count()).toBe(1);
         expect(await current.getAttribute("data-entry")).toBe("component:src/Card");
         for (const { target } of preview.frames) {
@@ -263,6 +267,31 @@ describe("unframework preview", () => {
       } finally {
         if (child.exitCode === null) child.kill("SIGKILL");
       }
+    },
+  );
+
+  it(
+    "prints UF7012 to stderr for a malformed tag in an example's doc comment, and runs",
+    { timeout: 120_000 },
+    async () => {
+      const root = fileURLToPath(new URL("fixtures/metadata", import.meta.url));
+      let stdout = "";
+      let stderr = "";
+      const code = await preview(
+        ["--target", "vue"],
+        {
+          cwd: root,
+          stdout: (text) => void (stdout += text),
+          stderr: (text) => void (stderr += text),
+        },
+        Promise.resolve(),
+      );
+      expect(code).toBe(0);
+      expect(stderr).toMatch(
+        /^examples\/Badge\.example\.uf\.tsx:5:4 warning UF7012: The example Badge's @order "two" is not a number/,
+      );
+      expect(stderr.trimEnd().split("\n")).toHaveLength(1);
+      expect(stdout).toContain("unframework preview: stopped.");
     },
   );
 });

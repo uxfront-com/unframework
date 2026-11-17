@@ -1,5 +1,12 @@
 # @unframework.dev/codegen
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [58736dd]
+  - @unframework.dev/diagnostics@0.2.0
+
 ## 0.1.2
 
 ### Patch Changes

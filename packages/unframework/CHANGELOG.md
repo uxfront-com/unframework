@@ -1,5 +1,21 @@
 # @uxfront/unframework
 
+## 0.3.0
+
+### Minor Changes
+
+- 58736dd: Add `unframework preview build`, which writes the preview as a static site that any static host serves at any path, and `buildPreview` in `@unframework.dev/visual`, which the command runs. Each target's frame is built with Vite on its dev server's configuration, and Astro is rendered at build time with each entry's initial props.
+
+### Patch Changes
+
+- Updated dependencies [58736dd]
+- Updated dependencies [58736dd]
+- Updated dependencies [58736dd]
+  - @unframework.dev/visual@0.3.0
+  - @unframework.dev/cli@0.1.5
+  - @unframework.dev/compiler@0.2.3
+  - @unframework.dev/testing@0.2.3
+
 ## 0.2.3
 
 ### Patch Changes

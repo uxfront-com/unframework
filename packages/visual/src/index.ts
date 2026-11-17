@@ -2,7 +2,7 @@
 // geometry first and pixels second, live or against baselines beside each example, with the run's
 // data in `report.json`. `unframework visual` runs it; `./browser` is what each generated spec
 // imports. `startPreview` shows every example and component side by side on every target, for
-// development (ADR-0088).
+// development (ADR-0088), and `buildPreview` writes the same as a static site (ADR-0111).
 export { BASELINE_COMMAND, exampleLocation, takeCaptures, ufExampleCapture } from "./command.ts";
 export type { ExampleCaptureRequest, VisualContext } from "./command.ts";
 export {
@@ -37,3 +37,5 @@ export {
 export type { VisualRunOptions, VisualRunResult } from "./run.ts";
 export { startPreview } from "./preview/index.ts";
 export type { Preview, PreviewOptions } from "./preview/index.ts";
+export { buildPreview, DEFAULT_PREVIEW_OUT, PREVIEW_MARKER } from "./preview/build.ts";
+export type { BuildPreviewOptions, BuiltPreview } from "./preview/build.ts";

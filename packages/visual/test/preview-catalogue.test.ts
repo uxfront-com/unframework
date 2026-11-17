@@ -1,18 +1,19 @@
 // What the preview lists and the controls it gives (ADR-0088, A4): the catalogue of the sample
 // design system, the prop types that get a control, and the command's arguments.
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { readCatalogue } from "../src/preview/catalogue.ts";
+import { compareExamples, readCatalogue } from "../src/preview/catalogue.ts";
 import { parsePreviewArguments } from "../src/preview/command.ts";
 import { controlOf, propControls, stringLiteral, unionMembers } from "../src/preview/controls.ts";
 import { VisualUsageError } from "../src/run.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
+const METADATA = fileURLToPath(new URL("fixtures/metadata", import.meta.url));
 
 function project(files: Record<string, string>): string {
   const root = mkdtempSync(join(tmpdir(), "uf-preview-"));
@@ -152,6 +153,66 @@ describe("readCatalogue", () => {
     }
   });
 
+  it("gives the design system's examples the category and title their paths give", async () => {
+    const catalogue = await readCatalogue(DESIGN_SYSTEM, join(DESIGN_SYSTEM, "src"));
+    expect(catalogue.examples.map(({ category, title }) => [category, title])).toEqual([
+      [["Examples"], "Buttons"],
+      [["Examples"], "Card"],
+      [["Examples"], "Text Field"],
+    ]);
+    expect(catalogue.diagnostics).toEqual([]);
+  });
+
+  it("reads an example's doc comment, and reports UF7012 at a malformed tag", async () => {
+    const catalogue = await readCatalogue(METADATA, join(METADATA, "src"));
+    expect(catalogue.examples).toEqual([
+      {
+        kind: "example",
+        key: "example:examples/Badge",
+        id: "examples/Badge",
+        file: join(METADATA, "examples/Badge.example.uf.tsx"),
+        category: ["Components", "Feedback"],
+        title: "New badge",
+        description: "A badge on every target.",
+      },
+    ]);
+    expect(catalogue.diagnostics).toHaveLength(1);
+    const [diagnostic] = catalogue.diagnostics;
+    expect(diagnostic).toMatchObject({
+      code: "UF7012",
+      severity: "warning",
+      file: "examples/Badge.example.uf.tsx",
+    });
+    const source = readFileSync(join(METADATA, "examples/Badge.example.uf.tsx"), "utf8");
+    expect(source.slice(diagnostic!.span.start, diagnostic!.span.end)).toBe("@order two");
+  });
+
+  it("sorts the examples by order, those without one last, then by title, then by id", async () => {
+    const example = (comment: string) =>
+      `${comment}\nexport default function Ex() {\n  return <p>Ex</p>;\n}\n`;
+    const root = project({
+      "examples/A.example.uf.tsx": example("/** @title Zed */"),
+      "examples/B.example.uf.tsx": example("/** @order 10 */"),
+      "examples/C.example.uf.tsx": example("/** @order -1 */"),
+      "examples/D.example.uf.tsx": example("/** @order 2 */"),
+      "examples/E.example.uf.tsx": example("/** @title Same */"),
+      "other/E.example.uf.tsx": example("/** @title Same */"),
+      "examples/F.example.uf.tsx": example("/** @order two */"),
+      "examples/G.example.uf.tsx": example("/** @order 2\n * @title Alpha */"),
+    });
+    const catalogue = await readCatalogue(root, join(root, "src"));
+    expect(catalogue.examples.map((each) => each.id)).toEqual([
+      "examples/C",
+      "examples/G",
+      "examples/D",
+      "examples/B",
+      "examples/F",
+      "examples/E",
+      "other/E",
+      "examples/A",
+    ]);
+    expect(catalogue.diagnostics.map((each) => each.file)).toEqual(["examples/F.example.uf.tsx"]);
+  });
   it("leaves out an example, a file with no default export and one that does not compile", async () => {
     const root = project({
       "src/Shown.uf.tsx": "export default function Shown() {\n  return <p>Shown</p>;\n}\n",
@@ -174,6 +235,18 @@ describe("readCatalogue", () => {
   });
 });
 
+describe("compareExamples", () => {
+  it("compares by code unit, the same on every machine", () => {
+    const sorted = [
+      { id: "b", title: "a" },
+      { id: "a", title: "B" },
+      { id: "c", title: "Ä" },
+      { id: "d", title: "a", order: 0 },
+    ].toSorted(compareExamples);
+    expect(sorted.map((each) => each.id)).toEqual(["d", "a", "b", "c"]);
+  });
+});
+
 describe("parsePreviewArguments", () => {
   it("reads targets and the port", () => {
     expect(parsePreviewArguments([])).toEqual({ targets: [] });
@@ -189,6 +262,26 @@ describe("parsePreviewArguments", () => {
     });
   });
 
+  it("reads build, its targets and --out", () => {
+    expect(parsePreviewArguments(["build"])).toEqual({ build: true, targets: [] });
+    expect(
+      parsePreviewArguments([
+        "build",
+        "--target",
+        "astro",
+        "--target=vue",
+        "--out",
+        "dist/preview",
+      ]),
+    ).toEqual({ build: true, targets: ["astro", "vue"], out: "dist/preview" });
+    expect(parsePreviewArguments(["build", "--out=site"])).toEqual({
+      build: true,
+      targets: [],
+      out: "site",
+    });
+    expect(parsePreviewArguments([]).build).toBeUndefined();
+  });
+
   it.each([
     [["--target", "preact"], "unknown target preact"],
     [["--target"], "--target needs a value"],
@@ -198,6 +291,16 @@ describe("parsePreviewArguments", () => {
     [["--port", "65536"], "--port takes a whole number"],
     [["--port", "1", "--port", "2"], "--port is given twice"],
     [["--watch"], 'unknown argument "--watch"'],
+    [["--out", "site"], "--out is preview build's"],
+    [["--target", "vue", "build"], "build comes first"],
+    [["build", "build"], "build comes first"],
+    [["build", "--port", "5173"], "--port is the served preview's"],
+    [["build", "--out"], "--out needs a value"],
+    [["build", "--out="], "--out needs a value"],
+    [["build", "--out", "--target", "vue"], "--out needs a value"],
+    [["build", "--out", "a", "--out", "b"], "--out is given twice"],
+    [["build", "--target", "preact"], "unknown target preact"],
+    [["build", "site"], 'unknown argument "site"'],
   ])("refuses %j", (args, message) => {
     expect(() => parsePreviewArguments(args)).toThrow(VisualUsageError);
     expect(() => parsePreviewArguments(args)).toThrow(message);

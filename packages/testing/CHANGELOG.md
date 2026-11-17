@@ -1,5 +1,20 @@
 # @unframework.dev/testing
 
+## 0.2.3
+
+### Patch Changes
+
+- @unframework.dev/codegen@0.1.3
+  - @unframework.dev/compiler@0.2.3
+  - @unframework.dev/unplugin@0.1.4
+  - @unframework.dev/target-angular@0.1.3
+  - @unframework.dev/target-astro@0.1.3
+  - @unframework.dev/target-qwik@0.1.3
+  - @unframework.dev/target-react@0.1.3
+  - @unframework.dev/target-solid@0.1.3
+  - @unframework.dev/target-svelte@0.1.3
+  - @unframework.dev/target-vue@0.1.3
+
 ## 0.2.2
 
 ### Patch Changes

@@ -1,5 +1,5 @@
 // The `unframework` command line of the umbrella (ADR-0016, ADR-0076, ADR-0086, ADR-0087,
-// ADR-0088): the commands of `@unframework.dev/cli`, and the ones that need packages above it.
+// ADR-0088, ADR-0111): the commands of `@unframework.dev/cli`, and the ones that need packages above it.
 // `test` runs Vitest through `@unframework.dev/testing`, and `visual` and `preview` the examples
 // through `@unframework.dev/visual`, both optional peer dependencies, so each loads when it runs,
 // and says what to install when it can't (D3 of the M7 plan: `cli` sits below `testing` and
@@ -83,18 +83,19 @@ export function visualCommand(load: TestLoader = loadVisual): Command {
 
 /**
  * What `unframework preview` needs besides the umbrella: what `visual` needs, since it loads from
- * the same entry, and Vite, whose dev servers it runs.
+ * the same entry, and Vite, whose dev servers it runs and whose `build` writes its static site.
  */
 export const PREVIEW_PACKAGES: readonly string[] = [...VISUAL_PACKAGES, "vite"];
 
 /**
  * The `preview` command (ADR-0088), which loads and fails as `test` does. It runs until it is
- * interrupted.
+ * interrupted, or, as `preview build`, writes the preview as a static site (ADR-0111).
  */
 export function previewCommand(load: TestLoader = loadPreview): Command {
   return {
-    usage: "preview [--target <t>]... [--port <n>]",
-    summary: "Show every example and component side by side on every target, until interrupted.",
+    usage: "preview [build] [--target <t>]... [--port <n> | --out <dir>]",
+    summary:
+      "Show every example and component side by side on every target, until interrupted, or build it as a static site.",
     load: () => loadOrExplain("preview", PREVIEW_PACKAGES, load),
   };
 }

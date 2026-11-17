@@ -2957,6 +2957,23 @@ const entries: CatalogueEntry[] = [
     ].join("\n"),
   },
   {
+    code: "UF7012",
+    name: "malformed-example-metadata",
+    severity: "warning",
+    title: "An example's metadata tag is malformed",
+    description: [
+      "`unframework preview` reads the doc comment on an example's default export for its",
+      "category, title and order (ADR-0110). One of these tags is malformed: `@category` or",
+      "`@title` is empty, `@category` has an empty group, `@order` isn't a finite number, or a tag",
+      "is given twice. The preview uses the value it derives instead: the category from the",
+      "example's directory, the title from its file name, and no order.",
+      "",
+      "Write a value after the tag, such as `@category Components/Actions/Button`, `@title Colors`",
+      "or `@order 2`, give each tag once, or remove the tag. `unframework visual` doesn't read the",
+      "comment, so its run is the same either way.",
+    ].join("\n"),
+  },
+  {
     code: "UF8001",
     name: "plugin-failed",
     severity: "error",

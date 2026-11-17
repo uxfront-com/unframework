@@ -7,7 +7,7 @@ example. Each run writes `report.json`, an image of every capture and `report.ht
 them.
 
 `unframework preview` shows every example and component side by side on every target while you
-work (below).
+work, and `unframework preview build` writes the same as a static site (below).
 
 ```sh
 unframework visual [--target <t>]... [--baseline | --live] [--update] [--out <dir>]
@@ -32,6 +32,20 @@ finds them under the root at any depth, sorted by id, the path from the root wit
 `checkExamples` compiles each one with no target and reports UF7011 at the props parameter of a
 default export that declares props. It leaves an example that doesn't compile to the run, which
 fails it on every target with the error, and throws for one with no default export.
+
+Each example also has a `category` and a `title`, which `discoverExamples` derives from its path
+(ADR-0110): the directory's name in title case, or its parent's when the directory is `examples`,
+and the file name in words without the category's own words in front, so
+`src/components/button/examples/ButtonColors` is `Colors` in `Button`. An example at the root, or
+in a root `examples/`, is in `Examples`.
+
+The preview's catalogue reads the doc comment on each example's default export
+(`readExampleMetadata` in `src/examples.ts`): its text is the `description`, and `@category` (groups
+split on `/`), `@title` and `@order` (a finite number) override the derived values. It reports
+UF7012, a warning, at each tag that's empty, not a number or given twice, for which the example
+keeps the derived value. The preview sorts the examples by `order`, those without one last, then by
+title, then by id. `unframework visual` never reads the comment, so it changes no capture and no
+report.
 
 `exampleBaselines(example)` gives the baselines beside it:
 `__screenshots__/<name>-chromium-linux.png` and `__expected__/geometry.<name>.json`, in the example's
@@ -118,8 +132,9 @@ prints the shell's URL and each target's origin, and runs until SIGINT or SIGTER
 every server and exits 0. It exits 2 on a usage error, nothing to show or a configuration that
 won't load. The docs page is `apps/web/content/docs/4.tooling/7.preview.md`.
 
-`startPreview({ root, targets?, port?, toolchainDirs? })` resolves to `{ url, frames, close }` once
-every server listens (ADR-0088):
+`startPreview({ root, targets?, port?, toolchainDirs? })` resolves to `{ url, frames, diagnostics, close }`
+once every server listens (ADR-0088), where `diagnostics` holds UF7012 for each malformed tag in an
+example's doc comment, which the command prints to stderr:
 
 - **One Vite dev server per target** (`src/preview/servers.ts`), on `127.0.0.1` and a port the
   system picks: the preview's plugin, the unframework plugin and the target's `vite("browser")`
@@ -135,9 +150,11 @@ every server listens (ADR-0088):
   `oxc` transform is set so Analog's Angular plugin leaves it on, and each server's cache is
   `node_modules/.vite/uf-preview-<target>`. The package is kept out of pre-bundling.
 - **The shell** (`src/preview/shell.ts`) is a static page served at `/` on `port`, any free one
-  by default. It lists the examples and the components (`readCatalogue`: the default export of
-  each `.uf.tsx` under `srcDir`), shows one labelled iframe per target, and keeps the selection in
-  the URL's hash.
+  by default, with no build and no dependency. Its sidebar holds two ARIA trees with a filter: the
+  examples by category and the components (`readCatalogue`: the default export of each `.uf.tsx`
+  under `srcDir`). Its canvas shows one labelled iframe per target, all or one at a time, and a
+  docked panel holds the controls. It keeps the selection in the URL's hash, follows
+  `prefers-color-scheme`, and keeps a theme the reader picks in `localStorage`.
 - **The protocol** (`src/preview/protocol.ts`): the shell sends `render` messages, `{ seq, entry,
 props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on load and
   `rendered` or `failed` with the `seq`. Each side checks the other's origin and window.
@@ -146,6 +163,39 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
   `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
 - **`close()`** stops the shell and every target's server, then what a toolchain's commands
   started (`toolchain.close`, Astro's render servers). A start that fails closes what it started, and its error names each reason with the targets it stopped (`startFailure`), once for the targets that failed alike.
+
+## The static build
+
+`unframework preview build [--target <t>]... [--out <dir>]` runs `buildPreview`, prints its
+`diagnostics` (UF7012) to stderr as the dev path does, then the site's path and its targets, and
+exits 0. It exits 2 on a usage error, an `--out` it refuses, nothing to
+show, a configuration that won't load or a build that fails. The docs page's "Build a static
+preview" and "Deploy" sections cover it.
+
+`buildPreview({ root, targets?, out?, toolchainDirs? })` resolves to `{ out, targets, diagnostics }` once every
+target is built and every render server closed (ADR-0111):
+
+- **One Vite build per target** (`buildTarget` in `src/preview/servers.ts`), on the config
+  `targetServerConfig` gives the dev server, into `<out>/<target>/`: the frame page as the input,
+  written as `frame.html`, and its files under `assets/`. Its `base` is `/`, since Qwik's plugin
+  refuses a relative one, and `experimental.renderBuiltUrl` makes every URL among the files
+  relative. The preview's plugin makes the frame page's tags relative too. The builds are
+  development builds (`mode: "development"`, with `NODE_ENV` set while they run), since React's
+  adapter needs `act`, and the plugin makes every path under the root, or its repository, relative.
+- **The shell** is `shellPage` written as `<out>/index.html`, framing `./<target>/frame.html`.
+  `ShellData.frames` is `{ target, src }`: each frame page's URL, from which the shell takes the
+  frame's origin. In the static site every frame shares the shell's origin, and a frame refuses a
+  shell at any other origin (`FrameOptions.staticPreview`): it sends and takes no message.
+- **Astro** (a target with a `renderCommandName`) is rendered at build time by
+  `renderTargetEntries`, through a server in middleware mode, with each entry's initial props
+  (`initialProps`: none for an example, a component's required props at their controls' initial
+  values). Each render is `<out>/astro/renders/<n>.json`, a `StaticRender` (`{ props, html }`, or
+  `{ props, error }` for a render that failed). The frame module mounts each entry's recorded
+  reference, and the frame's `staticRenders` transport reads its file. Other props fail with
+  `STATIC_RENDER_MESSAGE`.
+- **`--out`** is `.unframework/preview` by default (`DEFAULT_PREVIEW_OUT`). The build empties it,
+  so `checkPreviewOut` refuses the root, a directory above it, and one that isn't empty and has no
+  `.unframework-preview` marker (`PREVIEW_MARKER`).
 
 ## Tests
 
@@ -172,3 +222,11 @@ and still fails with another family listed or against baselines.
 frames from seven origins, a control that reaches all of them, and that no port listens after
 `close()` or after the command's SIGINT. `preview-catalogue.test.ts` covers the catalogue, the
 controls and the command's arguments.
+
+`preview-build.test.ts` runs `unframework preview build` on `tests/e2e/design-system` once, into a
+temporary directory, serves the site under `/sub/` with a server that only maps URLs to files, and
+checks, in Chromium, seven frames from the shell's origin, every example rendered on every target,
+Astro's frame equal to the dev preview's, and a changed prop failing Astro's frame with the static
+message. It also checks the site holds no path of the machine, the command's exit 2 on a bad
+argument and on each `--out` it refuses, and, on `test/fixtures/astro-throws`, a render that fails
+at build time, and, on `test/fixtures/metadata`, that the command prints UF7012 and still exits 0.

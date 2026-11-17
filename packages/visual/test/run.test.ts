@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { discoverExamples, exampleBaselines } from "../src/examples.ts";
 import { renderReport } from "../src/report-page.ts";
 import type { VisualReport } from "../src/report.ts";
 import { runVisual } from "../src/run.ts";
@@ -93,6 +94,32 @@ describe("runVisual", () => {
       expect(printed).toContain(
         "✗ examples/Noisy: failed on react (test-failed), vue (test-failed)",
       );
+    },
+  );
+
+  it(
+    "runs an example with a metadata comment as it runs one without, and reads none of it",
+    { timeout: 240_000 },
+    async () => {
+      const run = async (name: string) => {
+        const root = fixture(name);
+        const result = await runVisual({ root, env: {}, stdout: () => undefined });
+        const report = JSON.parse(readFileSync(result.reportPath!, "utf8")) as VisualReport;
+        const baselines = discoverExamples({ root }).map((example) =>
+          Object.values(exampleBaselines(example)).map((path) => relative(root, path)),
+        );
+        return { result, report, baselines };
+      };
+      // `metadata`'s example has a description, `@category`, `@title` and `@order two`.
+      const commented = await run("metadata");
+      const plain = await run("metadata-plain");
+      expect(commented.result.exitCode).toBe(0);
+      expect(plain.result.exitCode).toBe(0);
+      expect(commented.report.examples.map((each) => each.id)).toEqual(["examples/Badge"]);
+      expect(commented.report).toEqual(plain.report);
+      expect(commented.baselines).toEqual(plain.baselines);
+      // `visual` never reads the comment, so the malformed `@order` is no UF7012 here.
+      expect(commented.result.diagnostics).toEqual([]);
     },
   );
 });
