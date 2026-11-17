@@ -1,8 +1,8 @@
+import { render } from "@solidjs/web";
 // The Solid 2 mount adapter (browser). Solid 2 batches writes and applies them on a microtask, or
 // at once with `flush()`, so the adapter flushes after it mounts and after each rerender.
 import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
 import { $PROXY, createComponent, createSignal, flush, resetErrorHalt } from "solid-js";
-import { render } from "@solidjs/web";
 
 import { asComponent } from "./component.ts";
 import { assertSolid2 } from "./guard.ts";

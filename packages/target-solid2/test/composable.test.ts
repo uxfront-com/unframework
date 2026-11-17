@@ -1,6 +1,6 @@
-// The composable and shared-module cases on Solid (ADR-0069, ADR-0070): each compiles through
+// The composable and shared-module cases on Solid 2 (ADR-0069, ADR-0070): each compiles through
 // `compile()` with no error, and its outputs, the composables' modules and the copied `.ts`
-// modules among them, pass babel-preset-solid (L3), tsgo (L4) and the lint rules, eslint-plugin-
+// modules among them, pass @solidjs/compiler (L3), tsgo (L4) and the lint rules, eslint-plugin-
 // solid included (L5), as the corpus's toolchain project runs them. The cases wait in
 // `tests/integration/pending/` until every target's lane has landed
 // (../../codegen/test/composable-cases.ts).
@@ -15,14 +15,14 @@ import { toolchain } from "../src/toolchain/index.ts";
 import { packageDir, toolchainDir } from "./fixtures.ts";
 
 const context: ToolchainContext = { toolchainDir, root: packageDir };
-const cases = await compileComposableCases("solid");
+const cases = await compileComposableCases("solid2");
 
 // In the package, so the outputs' `solid-js` imports resolve from its node_modules.
 mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
 const scratch = mkdtempSync(join(packageDir, ".uf-tmp", "composable-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-describe("solid composable cases", () => {
+describe("solid2 composable cases", () => {
   it.each(cases)("compiles $id and passes L3 to L5", { timeout: 60_000 }, async (each) => {
     const errors = each.sources.flatMap(({ diagnostics }) =>
       diagnostics.filter(({ severity }) => severity === "error"),

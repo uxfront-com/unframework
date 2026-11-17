@@ -1,11 +1,15 @@
-// Solid's client render of composition's forms the corpus does not reach (src/composition.ts,
+// Solid 2's client render of composition's forms the corpus does not reach (src/composition.ts,
 // src/models.ts): the fixtures are the emitter's own output (test/output.test.ts pins them). Each
 // is rendered as a parent's compiled JSX passes its props, a slot's prop a getter that creates its
-// content on every read, so a test counts how many times the output creates it.
-import { createSignal } from "solid-js";
-import type { Component, JSX } from "solid-js";
-import { createComponent, render } from "solid-js/web";
+// content on every read, so a test counts how many times the output creates it. Solid 2 applies
+// writes when it flushes, so a test settles as the mount adapter does before it reads the DOM.
+import { render } from "@solidjs/web";
+import type { JSX } from "@solidjs/web";
+import { createComponent, createSignal } from "solid-js";
+import type { Component } from "solid-js";
 import { afterEach, expect, it } from "vitest";
+
+import { settle } from "../src/toolchain/client.ts";
 
 /** A fixture's component, loaded by URL: its Solid TSX is not this package's to type-check. */
 async function fixture(name: string): Promise<Component<Record<string, unknown>>> {
@@ -39,7 +43,7 @@ async function mount(name: string, props: Record<string, unknown>): Promise<void
   document.body.append(container);
   const component = await fixture(name);
   dispose = render(() => createComponent(component, props), container);
-  await Promise.resolve();
+  await settle();
 }
 
 it("renders a slot a list's row tests in every row, once each", async () => {
@@ -51,7 +55,9 @@ it("renders a slot a list's row tests in every row, once each", async () => {
       return badge();
     },
   });
-  expect([...container.querySelectorAll("li")].map((row) => row.innerHTML)).toEqual([
+  // Solid 2 marks where it inserts a branch with comments, which are no content.
+  const rows = [...container.querySelectorAll("li")];
+  expect(rows.map((row) => row.innerHTML.replace(/<!--[^>]*-->/g, ""))).toEqual([
     "a<b><span>badge</span></b>",
     "b<b><span>badge</span></b>",
     "c<b><span>badge</span></b>",
@@ -118,8 +124,10 @@ it("selects no option where the state holds none of the marked ones, as Vue's vM
   const [m, xs] = container.querySelectorAll("button");
   expect(select.selectedIndex).toBe(-1);
   m!.click();
+  await settle();
   expect(select.selectedIndex).toBe(1);
   xs!.click();
+  await settle();
   expect(select.selectedIndex).toBe(-1);
 });
 
@@ -133,6 +141,7 @@ it("selects no option once the selected one leaves the list, as Vue's vModelSele
   const select = container.querySelector("select")!;
   expect(select.selectedIndex).toBe(1);
   container.querySelector("button")!.click();
+  await settle();
   // The browser reports removed options in a microtask (MutationObserver).
   await new Promise((resolve) => setTimeout(resolve));
   expect([select.value, select.selectedIndex, select.options.length]).toEqual(["", -1, 2]);

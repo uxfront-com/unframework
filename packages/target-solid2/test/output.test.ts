@@ -1,12 +1,10 @@
-// What the emitter writes, through Solid's compiler (L3), its types (L4) and its lint (L5),
-// with nothing reported: the output reads as Solid code (G2), whatever the corpus holds. The
+// What the emitter writes, through Solid 2's compiler (L3), its types (L4) and its lint (L5),
+// with nothing reported: the output reads as Solid 2 code (G2), whatever the corpus holds. The
 // corpus checks its own outputs the same way (harness/toolchain.test.ts); this pins the
 // emitter's shapes in the package, so a change to one shows here first.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 
-import { transformSync } from "@babel/core";
 import type { ToolchainContext } from "@unframework.dev/codegen";
 import { format } from "oxfmt";
 import type { FormatConfig } from "oxfmt";
@@ -14,11 +12,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
-import { emitSource, packageDir, toolchainDir } from "./fixtures.ts";
+import { compileForServer, emitSource, packageDir, toolchainDir } from "./fixtures.ts";
 import { SOURCES } from "./sources.ts";
 
 const context: ToolchainContext = { toolchainDir, root: packageDir };
-const require = createRequire(import.meta.url);
 let scratch: string;
 const files: { path: string; contents: string }[] = [];
 
@@ -35,7 +32,7 @@ beforeAll(async () => {
 });
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () => {
+describe("solid2 output, checked by Solid 2's own tools", { timeout: 60_000 }, () => {
   it("compiles in dom and ssr modes with no error or warning (L3)", async () => {
     const results = await toolchain.frameworkCompile(files, context);
     expect(Object.fromEntries(results)).toEqual(
@@ -43,7 +40,7 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
     );
   });
 
-  it("type-checks against Solid's JSX types (L4)", async () => {
+  it("type-checks against Solid 2's JSX types (L4)", async () => {
     const results = await toolchain.typecheck(
       files.map((file) => file.path),
       context,
@@ -66,8 +63,9 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
   it("covers every shape the emitter prints", () => {
     const all = files.map((file) => file.contents).join("\n");
     for (const shape of [
-      "mergeProps(",
-      "satisfies Partial<",
+      // Defaults are getters `merge` reads, which apply a default where the prop is `undefined`.
+      "const props = merge(rawProps, {",
+      'return rawProps.empty === undefined ? "Nothing to do." : rawProps.empty;',
       "(props: LinkCardProps & { class?: string; style?: JSX.CSSProperties })",
       "(_props: { note?: string })",
       "<Show when={!props.busy}>",
@@ -78,7 +76,8 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       "<KeyedFor each=",
       "<For each={[...items().keys()]}>",
       "{todo.index + 1}",
-      "classList={{",
+      // Solid 2 toggles class names through `class`'s object form; it has no `classList`.
+      "class={{ done: Boolean(todo.value.done) }}",
       "Boolean(",
       "class={cx(",
       'class={props.active ? "on" : "off"}',
@@ -116,35 +115,38 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       "<Show keyed when={props.user || undefined}>",
       'title={user.nick ? user.nick.trim() : "none"}',
       'const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };',
-      "const props = mergeProps(defaults, rawProps);",
+      "return rawProps.attrs === undefined ? defaults.attrs : rawProps.attrs;",
       "<p title={props.attrs.title} id={props.attrs.id}>",
       // M2: the setup (src/setup.ts), listeners and template refs (src/listeners.ts), and the
       // helpers (src/helpers.ts).
       "export interface WatchersEvents {",
       "onLabelled?: (value: string, previous?: string) => void;",
       "(\n  props: WatchersProps & WatchersEvents & { class?: string; style?: JSX.CSSProperties },\n)",
-      'const [query, setQuery] = createSignal("");',
-      "const [fixed] = createSignal(format(1));",
+      'const [query, setQuery] = createState("");',
+      "const [fixed] = createState(format(1));",
       "createWatcher(query, (value, previous, onCleanup) => {",
       "createWatcher([low, high], ([minimum, maximum]: [number, number], [lastMinimum, lastMaximum]) => {",
       "{ immediate: true },",
       "props.onQueryRun?.(value, previous);",
       "type WatchedValues<S>",
-      'on:click={{ handleEvent: () => record("once"), once: true }}',
-      "on:wheel={{ handleEvent: scroll, passive: true }}",
+      // Solid 2 has no `on:`: a listener with options, or a native one, is added in the `ref`.
+      'element.addEventListener("click", () => record("once"), { once: true })',
+      'element.addEventListener("wheel", scroll, { passive: true })',
       'element.addEventListener("click", () => record("capture"), { capture: true })',
       'element.addEventListener("keydown", () => record("key capture"), { capture: true });',
-      'on:click={() => record("inside")}',
+      'ref={(element) => element.addEventListener("click", () => record("inside"))}',
       'onFocus={() => record("focus")}',
       "onKeyDown={(event) =>",
       "field = element;",
-      "onCleanup(() => {\n              field = null;",
+      "ref={clearedRef(\n            (element) => {\n              field = element;",
+      "() => {\n              field = null;\n            },",
       "let headingElement: HTMLHeadingElement | null = null;",
       "headingElement = heading;",
       "const id = `uf-id-${createUniqueId()}`;",
       "let timer: ReturnType<typeof setInterval> | undefined;",
       'const units = ["s", "ms"];\n\nfunction format(value: number): string {',
-      "onMount(() =>\n    onCleanup(() => {",
+      "onSettled(() => {\n    props.onReady?.(",
+      "onSettled(() => () => {\n    clearInterval(timer);",
       "await nextTick();\n    props.onToggled?.(details?.childElementCount ?? 0);",
       "function nextTick(): Promise<void> {",
       // The watchers' scheduler, pre watchers before post ones; `watchEffect` over what it reads,
@@ -153,7 +155,7 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       // state; a handler reading its branch's accessor.
       "const queuedWatchers = { pre: new Set<() => void>(), post: new Set<() => void>() };",
       "queueMicrotask(() => {",
-      "const track = createReaction(() => queueWatcher(queue, run));",
+      "createRoot((stop) => [createReaction(() => queueWatcher(queue, run)), stop] as const),",
       '{ flush: "post" },',
       "createWatchEffect([() => props.label, query], async () => {",
       "    void Promise.resolve(5).then((step) =>\n      untrack(() => {",
@@ -165,40 +167,32 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       "onClick={() => pick(member().name)}",
       'ref={(element) => element.addEventListener("click", hit)}',
       'element.addEventListener("encrypted", () => setLast("keys"))',
-      '<video on:encrypted={() => setLast("video")} />',
+      '<video ref={(element) => element.addEventListener("encrypted", () => setLast("video"))} />',
     ]) {
       expect(all, shape).toContain(shape);
     }
   });
 });
 
-/** A fixture compiled for the server as vite-plugin-solid compiles it, then rendered. */
+/** A fixture compiled for the server as @solidjs/vite-plugin compiles it, then rendered. */
 async function serverRender(name: string, props: Record<string, unknown>): Promise<string> {
   const fixture = new URL(`./fixtures/${name}.tsx`, import.meta.url);
-  const { code } = transformSync(readFileSync(fixture, "utf8"), {
-    filename: join(scratch, `${name}.tsx`),
-    babelrc: false,
-    configFile: false,
-    presets: [
-      [require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
-      [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
-    ],
-  })!;
+  const code = await compileForServer(readFileSync(fixture, "utf8"), join(scratch, `${name}.tsx`));
   const path = join(scratch, `${name}.js`);
-  writeFileSync(path, code!);
+  writeFileSync(path, code);
   const { default: component }: { default: unknown } = await import(path);
   return renderToString(component, { props });
 }
 
-/** The Narrowing fixture's server HTML, without Solid's hydration markers. */
+/** The Narrowing fixture's server HTML, without Solid's hydration markers and keys. */
 async function narrowingHtml(props: Record<string, unknown>): Promise<string> {
   const html = await serverRender("Narrowing", props);
-  return html.replace(/<!--[^>]*-->/g, "").replace(/ data-hk="[^"]*"/g, "");
+  return html.replace(/<!--[^>]*-->/g, "").replace(/ _hk=[^ >]*/g, "");
 }
 
 // test/rewrites.browser.test.ts mounts these fixtures in Chromium; here, they are the
 // emitter's output, and the server renders them as the client does.
-describe("solid output where Solid needs a rewrite (src/render.ts, src/attributes.ts, src/narrowing.ts)", () => {
+describe("solid2 output where Solid needs a rewrite (src/render.ts, src/attributes.ts, src/narrowing.ts)", () => {
   it.each([
     "Address",
     "Swatch",
@@ -253,10 +247,10 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       label: "",
       format: { separator: null },
     };
-    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
-    // which writes \`class\` where the key holds nothing, and a space after a class.
+    // A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
+    // which, on Solid 2, writes no `class` or `style` the props leave out.
     expect(await narrowingHtml(absent)).toBe(
-      '<div class="" style=""><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
+      '<div><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
     );
     const user = {
       name: "Ada",
@@ -282,7 +276,7 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       attrs: { title: "T", id: "I" },
     });
     expect(html).toContain(
-      '<div class="" style=""><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
+      '<div><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
     );
     expect(html).toContain('>30<b>Ada</b></p><p>C</p><a href="#a" data-json="{&quot;user&quot;');
     expect(html).toContain(
@@ -298,10 +292,7 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       order: 2,
     });
     const tag = (name: string, nth = 0) =>
-      [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, "g"))][nth]![0].replace(
-        / data-hk="[^"]*"/,
-        "",
-      );
+      [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, "g"))][nth]![0].replace(/ _hk=[^ >]*/, "");
     expect(tag("linearGradient")).toBe(
       '<linearGradient id="swatch-fill" opacity="0.5" transform="rotate(45)">',
     );

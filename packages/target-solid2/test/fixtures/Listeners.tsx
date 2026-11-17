@@ -1,4 +1,5 @@
-import { type JSX, createSignal, onCleanup } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { createSignal, getObserver, onCleanup } from "solid-js";
 
 export interface ListenersEvents {
   onLogged?: (entries: string[]) => void;
@@ -7,8 +8,8 @@ export interface ListenersEvents {
 export default function Listeners(
   props: ListenersEvents & { class?: string; style?: JSX.CSSProperties },
 ) {
-  const [log, setLog] = createSignal<string[]>([]);
-  const [volume, setVolume] = createSignal(0);
+  const [log, setLog] = createState<string[]>([]);
+  const [volume, setVolume] = createState(0);
   let field: HTMLInputElement | null = null;
 
   function record(line: string) {
@@ -33,33 +34,41 @@ export default function Listeners(
     >
       <div
         role="presentation"
-        ref={(element) =>
-          element.addEventListener("click", () => record("capture"), { capture: true })
-        }
-        on:click={() => record("bubble")}
+        ref={(element) => {
+          element.addEventListener("click", () => record("capture"), { capture: true });
+          element.addEventListener("click", () => record("bubble"));
+        }}
       >
-        <button type="button" on:click={() => record("inside")}>
+        <button
+          type="button"
+          ref={(element) => element.addEventListener("click", () => record("inside"))}
+        >
           Inside
         </button>
         <button
           type="button"
-          on:click={(event) => {
-            event.stopPropagation();
-            record("stopped");
-          }}
+          ref={(element) =>
+            element.addEventListener("click", (event) => {
+              event.stopPropagation();
+              record("stopped");
+            })
+          }
         >
           Stop
         </button>
-        <button type="button" on:click={{ handleEvent: () => record("once"), once: true }}>
+        <button
+          type="button"
+          ref={(element) => element.addEventListener("click", () => record("once"), { once: true })}
+        >
           Once
         </button>
       </div>
       <button
         type="button"
-        ref={(element) =>
-          element.addEventListener("click", () => record("own capture"), { capture: true })
-        }
-        on:click={report}
+        ref={(element) => {
+          element.addEventListener("click", () => record("own capture"), { capture: true });
+          element.addEventListener("click", report);
+        }}
       >
         Report
       </button>
@@ -81,20 +90,26 @@ export default function Listeners(
       >
         Swap
       </button>
-      <div role="group" aria-label="Volume" on:wheel={{ handleEvent: scroll, passive: true }}>
+      <div
+        role="group"
+        aria-label="Volume"
+        ref={(element) => element.addEventListener("wheel", scroll, { passive: true })}
+      >
         <output>{volume()}</output>
       </div>
       <label>
         Name
         <input
           name="name"
-          ref={(element) => {
-            field = element;
-            onCleanup(() => {
+          ref={clearedRef(
+            (element) => {
+              field = element;
+              element.addEventListener("keydown", () => record("key capture"), { capture: true });
+            },
+            () => {
               field = null;
-            });
-            element.addEventListener("keydown", () => record("key capture"), { capture: true });
-          }}
+            },
+          )}
           onFocus={() => record("focus")}
           onBlur={() => record("blur")}
           onChange={() => record(`change ${field?.value ?? ""}`)}
@@ -111,4 +126,32 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
+function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
+  onCleanup(clear);
+  return callback;
+}
+
+/**
+ * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
 }

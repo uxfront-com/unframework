@@ -133,7 +133,7 @@ export function solidProps(
   // `merge` takes the last source's key, so each default is a getter over the prop that applies
   // the default where the prop is `undefined`, absent or passed as such.
   const merge = imports.add("solid-js", "merge");
-  const getters = (value: (prop: Prop) => string) =>
+  const getters = (value: (prop: (typeof defaults)[number]) => string) =>
     defaults
       .map(
         (prop) =>
@@ -159,9 +159,7 @@ export function solidProps(
   const named = imports.claim("defaults");
   const keys = defaults.map((prop) => JSON.stringify(prop.name)).join(" | ");
   const annotation = `Required<Pick<${parameter.type.code}, ${keys}>>`;
-  const values = defaults
-    .map((prop) => `${prop.name}: ${`(${prop.default.code})`}`)
-    .join(",\n");
+  const values = defaults.map((prop) => `${prop.name}: ${`(${prop.default.code})`}`).join(",\n");
   return {
     parameters: [js.bindingIdentifier(raw, type())],
     statements: [

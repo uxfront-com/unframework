@@ -1,4 +1,5 @@
-import { type JSX, Show, createSignal } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver } from "solid-js";
 
 interface User {
   name: string;
@@ -15,8 +16,8 @@ export interface NarrowedStateEvents {
 export default function NarrowedState(
   props: NarrowedStateProps & NarrowedStateEvents & { class?: string; style?: JSX.CSSProperties },
 ) {
-  const [user, setUser] = createSignal<User | null>(null);
-  const [draft, setDraft] = createSignal<string | null>(null);
+  const [user, setUser] = createState<User | null>(null);
+  const [draft, setDraft] = createState<string | null>(null);
 
   function pick(name: string) {
     setUser({ name });
@@ -53,4 +54,26 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/**
+ * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
 }

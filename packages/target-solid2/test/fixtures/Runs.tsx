@@ -1,11 +1,15 @@
+import type { JSX } from "@solidjs/web";
 import {
   For,
-  type JSX,
   createMemo,
   createReaction,
+  createRoot,
   createSignal,
+  flush,
+  getObserver,
   onCleanup,
-  onMount,
+  onSettled,
+  runWithOwner,
   untrack,
 } from "solid-js";
 
@@ -22,11 +26,11 @@ export interface RunsEvents {
 export default function Runs(
   props: RunsProps & RunsEvents & { class?: string; style?: JSX.CSSProperties },
 ) {
-  const [low, setLow] = createSignal(0);
-  const [high, setHigh] = createSignal(10);
-  const [query, setQuery] = createSignal("");
-  const [results, setResults] = createSignal<string[]>([]);
-  const [notes, setNotes] = createSignal<string[]>([]);
+  const [low, setLow] = createState(0);
+  const [high, setHigh] = createState(10);
+  const [query, setQuery] = createState("");
+  const [results, setResults] = createState<string[]>([]);
+  const [notes, setNotes] = createState<string[]>([]);
   let list: HTMLUListElement | null = null;
 
   createWatcher([low, high], ([a, b]) => {
@@ -51,7 +55,7 @@ export default function Runs(
     props.onSaved?.(text);
   });
 
-  onMount(() => {
+  onSettled(() => {
     void start();
   });
 
@@ -102,12 +106,14 @@ export default function Runs(
         {low()}-{high()}
       </p>
       <ul
-        ref={(element) => {
-          list = element;
-          onCleanup(() => {
+        ref={clearedRef(
+          (element) => {
+            list = element;
+          },
+          () => {
             list = null;
-          });
-        }}
+          },
+        )}
       >
         <KeyedFor each={results()} by={(item) => item}>
           {(item) => <li>{item.value}</li>}
@@ -182,23 +188,30 @@ let flushQueued = false;
 /**
  * Vue's scheduler: queues a watcher whose sources have changed and, once the synchronous code that
  * changed them has finished, runs each queued watcher once, those that run before the DOM updates
- * first, until none is queued. Solid updates the DOM as each write is made, so a watcher that runs
- * after the DOM updates sees what the others wrote.
+ * first, until none is queued.
  */
 function queueWatcher(queue: Set<() => void>, run: () => void): void {
   queue.add(run);
+  requestWatcherFlush();
+}
+
+/** Queues the flush of the watchers, once, in a microtask. */
+function requestWatcherFlush(): void {
   if (flushQueued) return;
   flushQueued = true;
   queueMicrotask(() => {
     try {
+      flush();
       do {
         for (const watcher of queuedWatchers.pre) {
           queuedWatchers.pre.delete(watcher);
           watcher();
         }
+        flush();
         for (const watcher of queuedWatchers.post) {
           queuedWatchers.post.delete(watcher);
           watcher();
+          flush();
           if (queuedWatchers.pre.size) break;
         }
       } while (queuedWatchers.pre.size || queuedWatchers.post.size);
@@ -237,14 +250,15 @@ function createWatcher(
   const sources = typeof source === "function" ? [source] : source;
   const cleanups: (() => void)[] = [];
   const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;
-  const track = createReaction(() => queueWatcher(queue, run));
-  let last = read();
-  onMount(() =>
-    onCleanup(() => {
-      queue.delete(run);
-      for (const cleanup of cleanups.splice(0)) cleanup();
-    }),
+  const [track, dispose] = runWithOwner(null, () =>
+    createRoot((stop) => [createReaction(() => queueWatcher(queue, run)), stop] as const),
   );
+  let last = read();
+  onSettled(() => () => {
+    queue.delete(run);
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    dispose();
+  });
 
   function read(): unknown[] {
     let values: unknown[] = [];
@@ -282,24 +296,58 @@ function createWatchEffect(
   sources: readonly (() => unknown)[],
   effect: (onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  onMount(() => {
-    const cleanups: (() => void)[] = [];
-    const track = createReaction(() => queueWatcher(queuedWatchers.post, run));
+  const cleanups: (() => void)[] = [];
+  const [track, dispose] = runWithOwner(null, () =>
+    createRoot(
+      (stop) => [createReaction(() => queueWatcher(queuedWatchers.post, run)), stop] as const,
+    ),
+  );
+  onSettled(() => {
     run();
-    onCleanup(() => {
+    return () => {
       queuedWatchers.post.delete(run);
       for (const cleanup of cleanups.splice(0)) cleanup();
-    });
-
-    function run(): void {
-      track(() => {
-        for (const source of sources) source();
-      });
-      for (const cleanup of cleanups.splice(0)) cleanup();
-      effect((cleanup) => cleanups.push(cleanup));
-    }
+      dispose();
+    };
   });
+
+  function run(): void {
+    track(() => {
+      for (const source of sources) source();
+    });
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    effect((cleanup) => cleanups.push(cleanup));
+  }
 }
 
 /** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
 type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };
+
+/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
+function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
+  onCleanup(clear);
+  return callback;
+}
+
+/**
+ * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+    requestWatcherFlush();
+  }
+  return [read, write];
+}

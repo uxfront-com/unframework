@@ -19,7 +19,7 @@ function component(output: string): string {
   return output.slice(start, output.indexOf("\n}\n", start) + 3);
 }
 
-describe("solid setup items (src/setup.ts)", () => {
+describe("solid2 setup items (src/setup.ts)", () => {
   it("spells state, derived values, template refs, ids, constants and lets", async () => {
     const output = await emitSource(
       probe(
@@ -45,14 +45,17 @@ describe("solid setup items (src/setup.ts)", () => {
       ),
     );
     for (const form of [
-      // The setup reads a prop once: `untrack` says so (`solid/reactivity`).
-      "const [count, setCount] = createSignal(untrack(() => props.initial));",
+      // The setup reads a prop once: `untrack` says so (`solid/reactivity`). State is the
+      // `createState` helper, whose read returns the value last written, as Vue's does.
+      "const [count, setCount] = createState(untrack(() => props.initial));",
       // State no code writes takes no setter.
-      "const [fixed] = createSignal(2);",
-      "const [items, setItems] = createSignal<string[]>([]);",
-      "const doubled = createMemo(() => count() * 2);",
-      // Empty is `null`, as the source's template ref is (ADR-0049).
+      "const [fixed] = createState(2);",
+      "const [items, setItems] = createState<string[]>([]);",
+      // A derived value is a derived function: Solid 2's memo would see a write only once flushed.
+      "const doubled = () => count() * 2;",
+      // Empty is `null`, as the source's template ref is (ADR-0049), and `clearedRef` empties it.
       "let field: HTMLInputElement | null = null;",
+      "ref={clearedRef(\n          (element) => {\n            field = element;\n          },\n          () => {\n            field = null;\n          },\n        )}",
       "const id = `uf-id-${createUniqueId()}`;",
       "const label = untrack(() => `Count ${props.initial}`);",
       "let clicks = 0;",
@@ -221,7 +224,7 @@ describe("solid setup items (src/setup.ts)", () => {
     expect(component(output)).toContain("  function show() {\n    return format(count());\n  }");
   });
 
-  it("lowers watchEffect over what it reads, and the lifecycle hooks to onMount and onCleanup", async () => {
+  it("lowers watchEffect over what it reads, and the lifecycle hooks to onSettled and its cleanup", async () => {
     const output = component(
       await emitSource(
         probe(
@@ -267,17 +270,18 @@ describe("solid setup items (src/setup.ts)", () => {
       "  createWatchEffect([label, count], (cleanup) => {\n    const value = describe();",
       // A prop is a getter; an async effect is the helper's callback as it is.
       "  createWatchEffect([() => props.prefix, count], async () => {\n    const text = `${props.prefix} ${count()}`;\n    await Promise.resolve();",
-      '  onMount(() => {\n    props.onTitle?.("mounted");\n  });',
-      // Never on the server (ADR-0048).
-      '  onMount(() =>\n    onCleanup(() => {\n      props.onTitle?.("gone");\n    }),\n  );',
+      '  onSettled(() => {\n    props.onTitle?.("mounted");\n  });',
+      // The cleanup `onSettled` returns, never on the server (ADR-0048).
+      '  onSettled(() => () => {\n    props.onTitle?.("gone");\n  });',
     ]) {
       expect(output, form).toContain(form);
     }
     expect(output).not.toContain("createEffect");
+    expect(output).not.toContain("onMount");
   });
 });
 
-describe("solid narrowed reads (src/asserted.ts, ADR-0046)", () => {
+describe("solid2 narrowed reads (src/asserted.ts, ADR-0046)", () => {
   it("asserts a read a condition narrows where Solid's spelling loses it, and only there", async () => {
     const output = component(
       await emitSource(SOURCES.NarrowedReads!.replace("NarrowedReads(", "Probe(")),
@@ -289,20 +293,22 @@ describe("solid narrowed reads (src/asserted.ts, ADR-0046)", () => {
       "    props.onSubmitted?.(draft().email!);",
       '      setDraft({ ...draft(), tags: [...draft().tags!, "team"] });',
       "    if (draft().tags) props.onTagged?.(draft().tags!.length);",
-      '  const chosen = createMemo(() => (selected() ? selected()!.name : "none"));',
+      '  const chosen = () => (selected() ? selected()!.name : "none");',
       "    if (selected() !== null) props.onSelect?.(selected()!);",
       // A destructured prop narrowed in the function around a closure: a property there.
       "      props.onOwned?.(props.owner!.name);",
       // A template's expressions.
       '<p>{draft().email ? draft().email!.trim() : "no email"}</p>',
-      "aria-pressed={selected() !== null && selected()!.id === member.value.id}",
+      // An ARIA value goes through `enumeratedValue`, which writes a boolean as Vue does.
+      "aria-pressed={enumeratedValue(",
+      "selected() !== null && selected()!.id === member.value.id,",
     ]) {
       expect(output, form).toContain(form);
     }
     // A prop narrowed in its own function is a property TypeScript narrows; a `when`'s arrow
     // takes the signal as a parameter, which it narrows; a branch reads its accessor.
     expect(output).toContain(
-      'const greeting = createMemo(() => (props.owner ? `Hello ${props.owner.name}` : "Hello"));',
+      'const greeting = () => (props.owner ? `Hello ${props.owner.name}` : "Hello");',
     );
     expect(output).toContain(
       "when={((selected) => (selected !== null ? { selected } : undefined))(selected())}",
@@ -332,7 +338,7 @@ describe("solid narrowed reads (src/asserted.ts, ADR-0046)", () => {
 /** The lines of `source`, joined: a function's expected output. */
 const lines = (...source: string[]) => source.join("\n");
 
-describe("solid untrack (src/untracked.ts)", () => {
+describe("solid2 untrack (src/untracked.ts)", () => {
   it("says untracked an arrow a setup function hands to a function, never one a handler or a callback does", async () => {
     // `solid/reactivity` reads an arrow passed to a function as tracked only where the function
     // around it is a tracked scope or a handler (eslint-plugin-solid 0.18).
@@ -486,7 +492,7 @@ function watching(watchers: string): string {
   );
 }
 
-describe("solid watchers (src/helpers.ts)", () => {
+describe("solid2 watchers (src/helpers.ts)", () => {
   it("prints one source watched lazily with a helper of its own, over the scheduler", async () => {
     const output = await emitSource(
       watching('  watch(count, (value, previous) => emit("seen", value + previous));'),
@@ -497,18 +503,28 @@ describe("solid watchers (src/helpers.ts)", () => {
     expect(output).toContain(
       lines("const queuedWatchers = new Set<() => void>();", "let flushQueued = false;"),
     );
-    // One microtask runs every watcher a synchronous run of client code queued, once.
+    // One microtask runs every watcher a synchronous run of client code queued, once, applying
+    // Solid's pending writes first and after each watcher, so a watcher sees the DOM they changed.
     expect(output).toContain(
       lines(
         "function queueWatcher(run: () => void): void {",
         "  queuedWatchers.add(run);",
+        "  requestWatcherFlush();",
+        "}",
+      ),
+    );
+    expect(output).toContain(
+      lines(
+        "function requestWatcherFlush(): void {",
         "  if (flushQueued) return;",
         "  flushQueued = true;",
         "  queueMicrotask(() => {",
         "    try {",
+        "      flush();",
         "      for (const watcher of queuedWatchers) {",
         "        queuedWatchers.delete(watcher);",
         "        watcher();",
+        "        flush();",
         "      }",
         "    } finally {",
         "      flushQueued = false;",
@@ -517,6 +533,9 @@ describe("solid watchers (src/helpers.ts)", () => {
         "}",
       ),
     );
+    // A write of state asks for the flush at once, as Vue queues it at the write.
+    expect(output).toContain("    notify((version) => version + 1);\n    requestWatcherFlush();\n");
+    // The reaction lives in a detached root, which the component's cleanup disposes.
     expect(output).toContain(
       lines(
         "function createWatcher<T>(",
@@ -524,14 +543,15 @@ describe("solid watchers (src/helpers.ts)", () => {
         "  callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,",
         "): void {",
         "  const cleanups: (() => void)[] = [];",
-        "  const track = createReaction(() => queueWatcher(run));",
-        "  let last = read();",
-        "  onMount(() =>",
-        "    onCleanup(() => {",
-        "      queuedWatchers.delete(run);",
-        "      for (const cleanup of cleanups.splice(0)) cleanup();",
-        "    }),",
+        "  const [track, dispose] = runWithOwner(null, () =>",
+        "    createRoot((stop) => [createReaction(() => queueWatcher(run)), stop] as const),",
         "  );",
+        "  let last = read();",
+        "  onSettled(() => () => {",
+        "    queuedWatchers.delete(run);",
+        "    for (const cleanup of cleanups.splice(0)) cleanup();",
+        "    dispose();",
+        "  });",
         "",
         "  function read(): T {",
         "    let value!: T;",
@@ -574,14 +594,18 @@ describe("solid watchers (src/helpers.ts)", () => {
     );
     expect(output).toContain(
       lines(
+        "      flush();",
         "      do {",
         "        for (const watcher of queuedWatchers.pre) {",
         "          queuedWatchers.pre.delete(watcher);",
         "          watcher();",
         "        }",
+        // Solid applies what the pre watchers wrote before the post ones run.
+        "        flush();",
         "        for (const watcher of queuedWatchers.post) {",
         "          queuedWatchers.post.delete(watcher);",
         "          watcher();",
+        "          flush();",
         "          if (queuedWatchers.pre.size) break;",
         "        }",
         "      } while (queuedWatchers.pre.size || queuedWatchers.post.size);",
@@ -596,7 +620,9 @@ describe("solid watchers (src/helpers.ts)", () => {
         "): void {",
         "  const cleanups: (() => void)[] = [];",
         '  const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;',
-        "  const track = createReaction(() => queueWatcher(queue, run));",
+        "  const [track, dispose] = runWithOwner(null, () =>",
+        "    createRoot((stop) => [createReaction(() => queueWatcher(queue, run)), stop] as const),",
+        "  );",
       ),
     );
   });
@@ -638,8 +664,11 @@ describe("solid watchers (src/helpers.ts)", () => {
         '  const sources = typeof source === "function" ? [source] : source;',
       ),
     );
-    // An immediate watcher calls back at once, during the setup, as Vue's does.
-    expect(output).toContain("  let last = read();\n  if (options) call(last, undefined);");
+    // An immediate watcher calls back at once, during the setup, as Vue's does, its reads
+    // untracked there, as Solid 2 asks of the setup's.
+    expect(output).toContain(
+      "  let last = read();\n  if (options) untrack(() => call(last, undefined));",
+    );
     // A mutable tuple, which a callback may annotate as Vue's types pass it (`[number, string]`).
     expect(output).toContain(
       "type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };",
@@ -668,23 +697,29 @@ describe("solid watchers (src/helpers.ts)", () => {
         "  sources: readonly (() => unknown)[],",
         "  effect: (onCleanup: (cleanup: () => void) => void) => unknown,",
         "): void {",
-        "  onMount(() => {",
-        "    const cleanups: (() => void)[] = [];",
-        "    const track = createReaction(() => queueWatcher(queuedWatchers.post, run));",
+        "  const cleanups: (() => void)[] = [];",
+        // Created with the component: Solid 2 creates no computation in `onSettled`.
+        "  const [track, dispose] = runWithOwner(null, () =>",
+        "    createRoot(",
+        "      (stop) => [createReaction(() => queueWatcher(queuedWatchers.post, run)), stop] as const,",
+        "    ),",
+        "  );",
+        "  onSettled(() => {",
         "    run();",
-        "    onCleanup(() => {",
+        "    return () => {",
         "      queuedWatchers.post.delete(run);",
         "      for (const cleanup of cleanups.splice(0)) cleanup();",
-        "    });",
-        "",
-        "    function run(): void {",
-        "      track(() => {",
-        "        for (const source of sources) source();",
-        "      });",
-        "      for (const cleanup of cleanups.splice(0)) cleanup();",
-        "      effect((cleanup) => cleanups.push(cleanup));",
-        "    }",
+        "      dispose();",
+        "    };",
         "  });",
+        "",
+        "  function run(): void {",
+        "    track(() => {",
+        "      for (const source of sources) source();",
+        "    });",
+        "    for (const cleanup of cleanups.splice(0)) cleanup();",
+        "    effect((cleanup) => cleanups.push(cleanup));",
+        "  }",
         "}",
       ),
     );
@@ -701,11 +736,13 @@ describe("solid watchers (src/helpers.ts)", () => {
       ),
     );
     expect(alone).not.toContain("createWatcher");
-    expect(alone).toContain("const track = createReaction(() => queueWatcher(run));");
+    expect(alone).toContain(
+      "createRoot((stop) => [createReaction(() => queueWatcher(run)), stop] as const),",
+    );
   });
 });
 
-describe("solid teardown (src/setup.ts, ADR-0048)", () => {
+describe("solid2 teardown (src/setup.ts, ADR-0048)", () => {
   it("registers the onUnmounted hooks before the first watcher, in reverse, so they run last and in order", async () => {
     const output = component(
       await emitSource(
@@ -743,7 +780,7 @@ describe("solid teardown (src/setup.ts, ADR-0048)", () => {
   });
 });
 
-describe("solid nextTick and names the output takes", () => {
+describe("solid2 nextTick and names the output takes", () => {
   it("prints the nextTick helper under the API's own name", async () => {
     const plain = await emitSource(
       probe(

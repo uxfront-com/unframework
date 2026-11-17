@@ -1,10 +1,11 @@
-// The mount adapter's listeners in Chromium (ADR-0050): a hand-written Solid component, as the
+import { insert } from "@solidjs/web";
+import type { JSX } from "@solidjs/web";
+// The mount adapter's listeners in Chromium (ADR-0050): a hand-written Solid 2 component, as the
 // target emits one, calls the `onChange` prop the adapter passes for the test's `change`
-// listener; a rerender, which replaces the props, keeps it. Written with Solid's tagged
-// templates, as the rerender test is.
+// listener; a rerender, which replaces the props, keeps it. Written with Solid 2's runtime, as the
+// rerender test is: Solid 2 has no tagged templates in this toolchain.
 import type { MountedComponent } from "@unframework.dev/codegen";
-import { createSignal, mergeProps } from "solid-js";
-import html from "solid-js/html";
+import { createSignal, merge } from "solid-js";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 
@@ -15,18 +16,32 @@ interface CounterProps {
   onChange?: (value: number) => void;
 }
 
-/** A counter as the target emits one: a signal, and a handler that writes it and emits. */
-function Counter(rawProps: CounterProps) {
-  const props = mergeProps({ step: 1 }, rawProps);
+/**
+ * A counter as the target emits one: state, and a handler that writes it and emits the value it
+ * wrote, which Solid 2's signal reads back only once it flushes.
+ */
+function Counter(rawProps: CounterProps): JSX.Element {
+  const props = merge(rawProps, {
+    get step() {
+      return rawProps.step === undefined ? 1 : rawProps.step;
+    },
+  });
   const [count, setCount] = createSignal(0);
   const add = () => {
-    setCount(count() + props.step);
-    props.onChange?.(count());
+    const next = count() + props.step;
+    setCount(next);
+    props.onChange?.(next);
   };
-  return html`<div>
-    <p role="status">${count}</p>
-    <button type="button" onClick=${add}>Add</button>
-  </div>`;
+  const root = document.createElement("div");
+  const status = document.createElement("p");
+  status.setAttribute("role", "status");
+  insert(status, count);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Add";
+  button.addEventListener("click", add);
+  root.append(status, button);
+  return root;
 }
 
 const logged: unknown[][] = [];

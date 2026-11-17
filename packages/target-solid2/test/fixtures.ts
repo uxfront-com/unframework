@@ -13,17 +13,19 @@ import {
   createText,
 } from "@unframework.dev/ir";
 import type { ElementNode, RenderNode, UfModule } from "@unframework.dev/ir";
+import { transformWithOxc } from "vite";
 
 // The analyser, by path: the target's tests lower real sources as the compiler would, while the
 // package itself depends only on ir and codegen (layering).
 import { analyze } from "../../analyzer/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
+import { loadCompiler } from "../src/toolchain/compile.ts";
 
 export const packageDir: string = fileURLToPath(new URL("..", import.meta.url));
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
-/** The toolchain directory the harness passes for Solid. */
-export const toolchainDir: string = join(repo, "tests", "toolchains", "solid");
+/** The toolchain directory the harness passes for Solid 2, the only one that holds it (ADR-0102). */
+export const toolchainDir: string = join(repo, "tests", "toolchains", "solid2");
 const cases = join(repo, "tests", "integration", "cases");
 
 let offset = 0;
@@ -72,7 +74,7 @@ export const profileCard = (): ElementNode =>
 export const AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E";
 
-/** Emits one component through the Solid target and collects what it reports. */
+/** Emits one component through the Solid 2 target and collects what it reports. */
 export function emit(
   render: ElementNode,
   { name = "Fixture", kind = "default" }: { name?: string; kind?: "default" | "named" } = {},
@@ -121,7 +123,7 @@ export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
 }
 
 /**
- * The formatted Solid output of a source's first component, or of the one `name` names, as
+ * The formatted Solid 2 output of a source's first component, or of the one `name` names, as
  * `compile()` would write it.
  * Throws when the target reports anything: it never reports (ADR-0033).
  */
@@ -138,9 +140,20 @@ export async function emitSource(source: string, name?: string): Promise<string>
   };
   const files = target.emit(component, context);
   if (reported.length || files.length !== 1) {
-    throw new Error(`The Solid target reported ${JSON.stringify(reported)}.`);
+    throw new Error(`The Solid 2 target reported ${JSON.stringify(reported)}.`);
   }
   const outcome = await formatOutput(files[0]!);
   if (outcome.error) throw new Error(`oxfmt rejects the output: ${outcome.error}`);
   return outcome.file.contents;
+}
+
+/**
+ * A TSX module as the `ssr` project serves it: @solidjs/compiler, the toolchain's own, compiles it
+ * hydratable for the server (`ssr: true`), then Vite's transform strips the types, so Node can
+ * import it.
+ */
+export async function compileForServer(contents: string, filename: string): Promise<string> {
+  const compiler = await loadCompiler({ toolchainDir, root: packageDir });
+  const { code } = compiler.transform(contents, { filename, generate: "ssr", hydratable: true });
+  return (await transformWithOxc(code, filename, { lang: "ts" })).code;
 }

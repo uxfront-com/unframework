@@ -1,4 +1,5 @@
-import { For, type JSX, Show, children, createMemo, untrack } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { For, Show, children, createMemo, untrack } from "solid-js";
 
 export interface RowSlotsSlots {
   badge?: JSX.Element;

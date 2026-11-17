@@ -1,0 +1,57 @@
+import type { JSX } from "@solidjs/web";
+
+interface FieldAttributes {
+  name: string;
+  placeholder?: string;
+  autocomplete?: "email" | "username";
+  maxlength?: number;
+  required?: boolean;
+  title?: string;
+}
+
+interface HintAttributes {
+  id: string;
+  title?: string;
+}
+
+export interface TextFieldProps {
+  label: string;
+  inputId: string;
+  hintText: string;
+  field: FieldAttributes;
+  hint?: HintAttributes;
+}
+
+export default function TextField(
+  props: TextFieldProps & { class?: string; style?: JSX.CSSProperties },
+) {
+  return (
+    <div
+      class={props.class ? `text-field ${props.class}` : "text-field"}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
+      <label for={props.inputId}>{props.label}</label>
+      <input
+        id={props.inputId}
+        type="text"
+        name={props.field.name}
+        placeholder={props.field.placeholder}
+        autocomplete={props.field.autocomplete}
+        maxlength={props.field.maxlength}
+        required={props.field.required}
+        title={props.field.title}
+      />
+      <p class="text-field-hint" id={props.hint?.id} title={props.hint?.title}>
+        {props.hintText}
+      </p>
+    </div>
+  );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}

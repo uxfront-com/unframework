@@ -1,4 +1,13 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import {
+  createReaction,
+  createRoot,
+  createSignal,
+  flush,
+  getObserver,
+  onSettled,
+  runWithOwner,
+} from "solid-js";
 
 export interface CoalescedEvents {
   onState?: (step: string, count: number, busy: boolean) => void;
@@ -14,12 +23,12 @@ function parse(text: string): number {
 export default function Coalesced(
   props: CoalescedEvents & { class?: string; style?: JSX.CSSProperties },
 ) {
-  const [step, setStep] = createSignal("idle");
-  const [count, setCount] = createSignal(0);
-  const [busy, setBusy] = createSignal(false);
-  const [name, setName] = createSignal("");
-  const [input, setInput] = createSignal("x");
-  const [cached, setCached] = createSignal<number[] | null>(null);
+  const [step, setStep] = createState("idle");
+  const [count, setCount] = createState(0);
+  const [busy, setBusy] = createState(false);
+  const [name, setName] = createState("");
+  const [input, setInput] = createState("x");
+  const [cached, setCached] = createState<number[] | null>(null);
 
   createWatcher([step, count, busy], ([nextStep, nextCount, nextBusy]) => {
     props.onState?.(nextStep, nextCount, nextBusy);
@@ -209,13 +218,20 @@ let flushQueued = false;
  */
 function queueWatcher(run: () => void): void {
   queuedWatchers.add(run);
+  requestWatcherFlush();
+}
+
+/** Queues the flush of the watchers, once, in a microtask. */
+function requestWatcherFlush(): void {
   if (flushQueued) return;
   flushQueued = true;
   queueMicrotask(() => {
     try {
+      flush();
       for (const watcher of queuedWatchers) {
         queuedWatchers.delete(watcher);
         watcher();
+        flush();
       }
     } finally {
       flushQueued = false;
@@ -242,14 +258,15 @@ function createWatcher(
   callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
   const cleanups: (() => void)[] = [];
-  const track = createReaction(() => queueWatcher(run));
-  let last = read();
-  onMount(() =>
-    onCleanup(() => {
-      queuedWatchers.delete(run);
-      for (const cleanup of cleanups.splice(0)) cleanup();
-    }),
+  const [track, dispose] = runWithOwner(null, () =>
+    createRoot((stop) => [createReaction(() => queueWatcher(run)), stop] as const),
   );
+  let last = read();
+  onSettled(() => () => {
+    queuedWatchers.delete(run);
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    dispose();
+  });
 
   function read(): unknown[] {
     let values: unknown[] = [];
@@ -276,3 +293,26 @@ function createWatcher(
 
 /** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
 type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };
+
+/**
+ * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+    requestWatcherFlush();
+  }
+  return [read, write];
+}

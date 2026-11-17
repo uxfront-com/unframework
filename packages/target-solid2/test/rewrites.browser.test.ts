@@ -1,4 +1,4 @@
-// Solid's client render of what the target rewrites for Solid (src/render.ts,
+// Solid 2's client render of what the target rewrites for Solid 2 (src/render.ts,
 // src/attributes.ts, src/narrowing.ts): the fixtures are the emitter's own output
 // (test/output.test.ts pins them, and renders them on the server).
 import { afterEach, expect, it, vi } from "vitest";

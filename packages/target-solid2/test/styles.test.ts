@@ -1,24 +1,21 @@
-// Scoped styles on Solid (ADR-0063): the sheet's import, the child-root rule through the inline
+// Scoped styles on Solid 2 (ADR-0063): the sheet's import, the child-root rule through the inline
 // `scopeAttributes` helper, and a slotted child's `-s` on the content a parent fills in, children
 // and render functions alike. Each source is lowered as `compile()` lowers it, with the sheets and
-// the child APIs its resolver would read, and the child-root rule is rendered by Solid's server.
+// the child APIs its resolver would read, and the child-root rule is rendered by Solid 2's server.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 
-import { transformSync } from "@babel/core";
+import { renderToStream } from "@solidjs/web";
 import { formatOutput } from "@unframework.dev/codegen";
 import type { ModuleApi, UfModule } from "@unframework.dev/ir";
+import { createComponent } from "solid-js";
 import type { Component } from "solid-js";
-import { createComponent, renderToStringAsync } from "solid-js/web";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
-import { packageDir } from "./fixtures.ts";
-
-const require = createRequire(import.meta.url);
+import { compileForServer, packageDir } from "./fixtures.ts";
 
 /** A child whose sheet uses `:slotted()`, with a default slot and a scoped one. */
 const LIST = `import "./List.css";
@@ -72,7 +69,7 @@ function lowered(
   return { module: module!, api: api! };
 }
 
-/** The formatted Solid output of a module's component, its first by default. */
+/** The formatted Solid 2 output of a module's component, its first by default. */
 async function output(module: UfModule, index = 0): Promise<string> {
   const reported: unknown[] = [];
   const [file] = target.emit(module.components[index]!, {
@@ -86,7 +83,7 @@ async function output(module: UfModule, index = 0): Promise<string> {
   return outcome.file.contents;
 }
 
-describe("solid scoped styles", () => {
+describe("solid2 scoped styles", () => {
   const list = lowered("List.uf.tsx", LIST, {
     "./List.css": ":slotted(.item) { color: green; }\n",
   });
@@ -104,7 +101,7 @@ describe("solid scoped styles", () => {
     expect(code.split("\n\n")[0]).toBe(
       [
         'import List from "./List";',
-        'import type { JSX } from "solid-js";',
+        'import type { JSX } from "@solidjs/web";',
         'import "./Ranking.uf.tsx.css";',
       ].join("\n"),
     );
@@ -197,7 +194,7 @@ export default function B() { return <i>B</i>; }`,
   });
 });
 
-describe("solid child-root rule, rendered by Solid's server", () => {
+describe("solid2 child-root rule, rendered by Solid 2's server", () => {
   let scratch: string;
   beforeAll(() => {
     mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
@@ -214,17 +211,9 @@ describe("solid child-root rule, rendered by Solid's server", () => {
       const { module, api } = lowered(file, source, {}, apis);
       apis[`./${file}`] = { ...api, file };
       const name = module.components[0]!.name;
-      const { code } = transformSync(await output(module), {
-        filename: join(scratch, `${name}.tsx`),
-        babelrc: false,
-        configFile: false,
-        presets: [
-          [require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
-          [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
-        ],
-      })!;
+      const code = await compileForServer(await output(module), join(scratch, `${name}.tsx`));
       path = join(scratch, `${name}.js`);
-      writeFileSync(path, code!.replace(/from "\.\/(\w+)"/g, 'from "./$1.js"'));
+      writeFileSync(path, code.replace(/from "\.\/(\w+)"/g, 'from "./$1.js"'));
     }
     return ((await import(path)) as { default: Component<Record<string, unknown>> }).default;
   }
@@ -234,16 +223,21 @@ describe("solid child-root rule, rendered by Solid's server", () => {
     component: Component<Record<string, unknown>>,
     props: Record<string, unknown>,
   ) {
-    const html = await renderToStringAsync(() => createComponent(component, props));
-    return html.replace(/<!--[^>]*-->/g, "").replace(/ data-hk="[^"]*"/g, "");
+    const html: unknown = await renderToStream(() => createComponent(component, props), {
+      noScripts: true,
+    });
+    return String(html)
+      .replace(/<!--[^>]*-->/g, "")
+      .replace(/ _hk=[^ >]*/g, "");
   }
 
   const BUTTON = `export default function Button({ text, note }: { text: string; note?: string }) {
   return <button type="button" class="button">{text}</button>;
 }`;
 
-  // A root that spreads its scope attributes renders through Solid's `ssrElement`, which writes a
-  // space after a class and `style` for a key that holds nothing (ADR-0063).
+  // A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
+  // which, on Solid 2, writes an empty attribute by its name alone, and no `style` the props leave
+  // out.
   it("puts the parents' scope attributes on its root, and no prop it leaves unread", async () => {
     const Button = await load(["Button.uf.tsx", BUTTON]);
     expect(
@@ -253,9 +247,7 @@ describe("solid child-root rule, rendered by Solid's server", () => {
         "data-uf-0a1b2c3d": "",
         "data-uf-1a2b3c4d": "",
       }),
-    ).toBe(
-      '<button type="button" class="button " style="" data-uf-0a1b2c3d="" data-uf-1a2b3c4d="">Save</button>',
-    );
+    ).toBe('<button type="button" class="button" data-uf-0a1b2c3d data-uf-1a2b3c4d>Save</button>');
   });
 
   it("puts them on each branch of a root conditional, and on a root <component is>", async () => {
@@ -277,10 +269,9 @@ describe("solid child-root rule, rendered by Solid's server", () => {
       await render(Status, { busy: false, ...scope }),
       await render(Heading, { big: false, ...scope }),
     ]).toEqual([
-      '<span class="badge " data-uf-0a1b2c3d="">Saving</span>',
-      '<button type="button" data-uf-0a1b2c3d="">Save</button>',
-      // `<Dynamic>` passes its `component` key to `ssrElement`, which skips it after a space.
-      '<h3 class="heading " data-uf-0a1b2c3d="" >Notes</h3>',
+      '<span class="badge" data-uf-0a1b2c3d>Saving</span>',
+      '<button type="button" data-uf-0a1b2c3d>Save</button>',
+      '<h3 class="heading" data-uf-0a1b2c3d>Notes</h3>',
     ]);
   });
 
@@ -298,8 +289,8 @@ describe("solid child-root rule, rendered by Solid's server", () => {
 }`,
     ]);
     expect([await render(Sum, {}), await render(Title, { big: true })]).toEqual([
-      '<p class="" style="">a &lt; b &amp;&amp; c > d</p>',
-      "<h2 >a &lt; b</h2>",
+      "<p>a &lt; b &amp;&amp; c > d</p>",
+      "<h2>a &lt; b</h2>",
     ]);
   });
 
@@ -315,7 +306,7 @@ export default function Save() {
       ],
     );
     expect(await render(Save, { "data-uf-0a1b2c3d": "" })).toBe(
-      '<button type="button" class="button " style="" data-uf-0a1b2c3d="">Save</button>',
+      '<button type="button" class="button" data-uf-0a1b2c3d>Save</button>',
     );
   });
 

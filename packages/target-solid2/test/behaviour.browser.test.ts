@@ -1,10 +1,10 @@
 // What the setup's lowering does in Chromium (ADR-0045 to ADR-0049, the semantics contract v1):
 // the fixtures are the emitter's own output for test/sources.ts (test/output.test.ts pins them),
 // mounted by the toolchain's adapter with listeners for every event they declare. The corpus
-// checks the same contract against Vue's traces; these pin the shapes that give it on Solid: the
+// checks the same contract against Vue's traces; these pin the shapes that give it on Solid 2: the
 // watchers' scheduler (one callback per synchronous run of client code, whatever its shape), the
-// watcher helper's previous value and cleanups, `createWatchEffect`, `onMount` and its cleanup,
-// template refs emptied with their element, options as native listeners.
+// watcher helper's previous value and cleanups, `createWatchEffect`, `onSettled` and the cleanup it
+// returns, template refs emptied with their element, options as native listeners.
 import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";

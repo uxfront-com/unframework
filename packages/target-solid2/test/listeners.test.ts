@@ -1,6 +1,6 @@
-// Listeners and template refs as Solid writes them (src/listeners.ts, ADR-0047, ADR-0049): the
-// event table and the delegated events against Solid's own types and compiler, and how each
-// listener prints.
+// Listeners and template refs as Solid 2 writes them (src/listeners.ts, ADR-0047, ADR-0049,
+// ADR-0102): the event table and the delegated events against Solid 2's own types and compiler,
+// and how each listener prints.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
@@ -8,14 +8,18 @@ import { DOM_EVENTS } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { DELEGATED_EVENTS, SOLID_EVENT_PROPS } from "../src/listeners.ts";
-import { emitSource } from "./fixtures.ts";
+import { loadCompiler } from "../src/toolchain/compile.ts";
+import { emitSource, packageDir, toolchainDir } from "./fixtures.ts";
 
 const require = createRequire(import.meta.url);
-/** solid-js 1.9's JSX types, as the output's L4 reads them. */
-const jsxTypes = readFileSync(require.resolve("solid-js/types/jsx.d.ts"), "utf8");
+/** @solidjs/web's JSX types, as the output's L4 reads them. */
+const jsxTypes = readFileSync(
+  require.resolve("@solidjs/web/types/jsx.d.ts", { paths: [toolchainDir] }),
+  "utf8",
+);
 /** The members of one of the JSX types' interfaces. */
 function members(name: string): string[] {
-  const start = jsxTypes.indexOf(`interface ${name}<T> {`);
+  const start = jsxTypes.indexOf(`interface ${name}<T>`);
   const end = jsxTypes.indexOf("\n  }\n", start);
   return [...jsxTypes.slice(start, end).matchAll(/^\s+"?([\w:]+)"?\?:/gm)].map(
     (match) => match[1]!,
@@ -28,9 +32,9 @@ function component(output: string): string {
   return output.slice(start, output.indexOf("\n}\n", start) + 3);
 }
 
-describe("solid's event table", () => {
-  it("names every DOM event as Solid's types do, but one they spell only natively", () => {
-    const camel = members("CustomEventHandlersCamelCase");
+describe("solid2's event table", () => {
+  it("names every DOM event as Solid 2's types do, but one they type only on media elements", () => {
+    const camel = members("EventHandlersElement");
     const missing = [...DOM_EVENTS.keys()].filter((event) => !SOLID_EVENT_PROPS.has(event));
     expect(missing).toEqual(["encrypted"]);
     for (const [event, prop] of SOLID_EVENT_PROPS) {
@@ -41,22 +45,26 @@ describe("solid's event table", () => {
     expect([...SOLID_EVENT_PROPS.keys()]).toEqual(
       expect.arrayContaining([...DOM_EVENTS.keys()].filter((event) => event !== "encrypted")),
     );
+    expect(camel).not.toContain("onEncrypted");
+    expect(members("MediaHTMLAttributes")).toContain("onEncrypted");
   });
 
-  it("has a native listener's type for every DOM event, `encrypted` on media elements", () => {
-    const namespaced = members("CustomEventHandlersNamespaced");
-    for (const event of DOM_EVENTS.keys()) {
-      if (event === "encrypted") expect(jsxTypes).toContain('"on:encrypted"?:');
-      else expect(namespaced, event).toContain(`on:${event}`);
-    }
+  // Solid 1 typed `on:click` for every event; Solid 2 has no `on:` namespace, so a native
+  // listener is added in a `ref` callback, which lib.dom types for every event.
+  it("types no namespaced listener, which the output never writes", () => {
+    expect(jsxTypes).not.toMatch(/"on:\w+"\?:/);
   });
 
-  it("delegates the events Solid's compiler delegates", () => {
-    // babel-plugin-jsx-dom-expressions, as babel-preset-solid (and vite-plugin-solid) load it.
-    const preset = require.resolve("babel-preset-solid");
-    const plugin = createRequire(preset).resolve("babel-plugin-jsx-dom-expressions");
-    const source = readFileSync(plugin, "utf8");
-    const list = /const DelegatedEvents = [^[]*\[([^\]]*)\]/.exec(source)![1]!;
+  it("delegates the events Solid 2's compiler delegates", async () => {
+    // @solidjs/compiler, as @solidjs/vite-plugin loads it: one prop of each event the table names.
+    const compiler = await loadCompiler({ toolchainDir, root: packageDir });
+    const props = [...SOLID_EVENT_PROPS.values()].map((prop) => `${prop}={() => 0}`).join(" ");
+    const { code } = compiler.transform(`export const all = <div ${props} />;\n`, {
+      filename: "Events.tsx",
+      generate: "dom",
+      hydratable: false,
+    });
+    const list = /delegateEvents\(\[([^\]]*)\]\)/.exec(code)![1]!;
     const delegated = [...list.matchAll(/"(\w+)"/g)].map((match) => match[1]!);
     expect([...DELEGATED_EVENTS].toSorted()).toEqual(delegated.toSorted());
   });
@@ -67,7 +75,7 @@ function probe(setup: string, jsx: string): string {
   return `import { ref, useTemplateRef } from "@uxfront/unframework";\n\nexport default function Probe() {\n  const log = ref<string[]>([]);\n${setup}\n  function record(line: string) {\n    log.value = [...log.value, line];\n  }\n\n  return (\n    ${jsx}\n  );\n}\n`;
 }
 
-describe("solid listeners (src/listeners.ts)", () => {
+describe("solid2 listeners (src/listeners.ts)", () => {
   it("writes Solid's event props, by its own spelling", async () => {
     const output = component(
       await emitSource(
@@ -97,9 +105,16 @@ describe("solid listeners (src/listeners.ts)", () => {
         ),
       ),
     );
-    expect(output).toContain('on:click={{ handleEvent: () => record("a"), capture: true }}');
-    expect(output).toContain('on:wheel={{ handleEvent: () => record("b"), passive: true }}');
-    expect(output).toContain('on:keydown={{ handleEvent: () => record("c"), once: true }}');
+    // Solid 2 has no `on:`: the listener is added in the element's `ref` callback.
+    expect(output).toContain(
+      'ref={(element) => element.addEventListener("click", () => record("a"), { capture: true })}',
+    );
+    expect(output).toContain(
+      'ref={(element) => element.addEventListener("wheel", () => record("b"), { passive: true })}',
+    );
+    expect(output).toContain(
+      'ref={(element) => element.addEventListener("keydown", () => record("c"), { once: true })}',
+    );
   });
 
   it("listens natively to a delegated event the component also listens to once", async () => {
@@ -113,8 +128,13 @@ describe("solid listeners (src/listeners.ts)", () => {
         ),
       ),
     );
-    expect(output).toContain('on:click={() => record("a")}');
-    expect(output).toContain('on:click={{ handleEvent: () => record("b"), once: true }}');
+    expect(output).toContain(
+      'ref={(element) => element.addEventListener("click", () => record("a"))}',
+    );
+    expect(output).toContain(
+      'ref={(element) => element.addEventListener("click", () => record("b"), { once: true })}',
+    );
+    expect(output).not.toContain("onClick=");
     // Another event keeps Solid's delegation.
     expect(output).toContain('onKeyDown={() => record("c")}');
   });
@@ -133,15 +153,20 @@ describe("solid listeners (src/listeners.ts)", () => {
       'ref={(element) => element.addEventListener("click", () => record("a"), { capture: true })}',
     );
     expect(output).toContain('onClick={() => record("b")}');
+    // The template ref's callback adds the listener, and `clearedRef` empties the ref.
     expect(output).toContain(
       [
-        "ref={(element) => {",
-        "          field = element;",
-        "          onCleanup(() => {",
+        "ref={clearedRef(",
+        "          (element) => {",
+        "            field = element;",
+        '            element.addEventListener("keydown", () => record(field?.value ?? ""), {',
+        "              capture: true,",
+        "            });",
+        "          },",
+        "          () => {",
         "            field = null;",
-        "          });",
-        '          element.addEventListener("keydown", () => record(field?.value ?? ""), { capture: true });',
-        "        }}",
+        "          },",
+        "        )}",
       ].join("\n"),
     );
     expect(output).toContain('onKeyDown={() => record("c")}');
@@ -158,12 +183,19 @@ describe("solid listeners (src/listeners.ts)", () => {
         ),
       ),
     );
+    // The component's other click listeners are native too, so they all run in the DOM's order:
+    // one `ref` callback adds an element's listeners in attribute order.
     expect(output).toContain(
-      'ref={(element) => element.addEventListener("encrypted", () => record("b"))}',
+      [
+        "ref={(element) => {",
+        '        element.addEventListener("click", () => record("a"));',
+        '        element.addEventListener("encrypted", () => record("b"));',
+        "      }}",
+      ].join("\n"),
     );
-    // The component's other click listeners are native too, so they all run in the DOM's order.
-    expect(output).toContain('on:click={() => record("a")}');
     expect(output).toContain('ref={(element) => element.addEventListener("click", hit)}');
-    expect(output).toContain('<video on:encrypted={() => record("c")} />');
+    expect(output).toContain(
+      '<video ref={(element) => element.addEventListener("encrypted", () => record("c"))} />',
+    );
   });
 });

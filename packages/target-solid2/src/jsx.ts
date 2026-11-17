@@ -85,10 +85,14 @@ export const TELEPORT_HELPER = "Teleport";
 export const TRANSITION_HELPER = "Transition";
 
 /**
- * The inline helper that writes a boolean of an ARIA attribute as its name, `"true"` or `"false"`
- * (ADR-0102): Solid 2 removes an attribute bound to `false`, where Vue writes "false".
+ * The inline helper that writes a boolean of an enumerated attribute as its name, `"true"` or
+ * `"false"` (ADR-0102): Solid 2 writes a boolean as the attribute's presence, where Vue writes the
+ * name for ARIA's attributes and for its own enumerated ones.
  */
-export const ARIA_HELPER = "ariaValue";
+export const ENUMERATED_HELPER = "enumeratedValue";
+
+/** Vue's enumerated attributes (`isEnumeratedAttr`), besides ARIA's, which take a boolean's name. */
+const ENUMERATED: ReadonlySet<string> = new Set(["contenteditable", "draggable", "spellcheck"]);
 
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
@@ -124,7 +128,7 @@ export function solidJsx(
   let collections = false;
   let scopeHelper: string | undefined;
   let styleHelper: string | undefined;
-  let ariaHelper: string | undefined;
+  let enumeratedHelper: string | undefined;
   let keyedHelper: string | undefined;
   let teleportHelper: string | undefined;
   let transitionHelper: string | undefined;
@@ -198,13 +202,19 @@ export function solidJsx(
     },
     boundAttribute(attribute, element, context) {
       if (isUntyped(element.tag, attribute.name)) {
-        return untypedJsxAttribute(element, attribute.name, jsxExpression(attribute.value, context));
+        return untypedJsxAttribute(
+          element,
+          attribute.name,
+          jsxExpression(attribute.value, context),
+        );
       }
-      // An ARIA attribute is enumerated: Vue writes a boolean as its name, and Solid 2 would
-      // remove the attribute for `false`.
-      if (attribute.name.startsWith("aria-") && !isString(attribute.value, context.component)) {
-        ariaHelper ??= imports.claim(ARIA_HELPER);
-        const value = js.callExpression(js.identifier(ariaHelper), [
+      // An enumerated attribute: Vue writes a boolean as its name, and Solid 2 as the attribute's
+      // presence.
+      const enumerated =
+        attribute.name.startsWith("aria-") || ENUMERATED.has(attribute.name.toLowerCase());
+      if (enumerated && !isString(attribute.value, context.component)) {
+        enumeratedHelper ??= imports.claim(ENUMERATED_HELPER);
+        const value = js.callExpression(js.identifier(enumeratedHelper), [
           jsxExpression(attribute.value, context),
         ]);
         return [js.jsxAttribute(attribute.name, js.jsxExpressionContainer(value))];
@@ -337,7 +347,7 @@ export function solidJsx(
     helpers: () => [
       ...(helper ? [classHelperCode(helper, collections)] : []),
       ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
-      ...(ariaHelper ? [ariaHelperCode(ariaHelper)] : []),
+      ...(enumeratedHelper ? [enumeratedHelperCode(enumeratedHelper)] : []),
       ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
       ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
       ...(teleportHelper ? [teleportHelperCode(teleportHelper, imports)] : []),
@@ -1287,11 +1297,12 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
 }
 
 /**
- * The inline ARIA helper (ADR-0102), printed after the component: a boolean as its name, as Vue
- * writes it, and anything else as it is, `null` and `undefined` removing the attribute.
+ * The inline enumerated-attribute helper (ADR-0102), printed after the component: a boolean as its
+ * name, as Vue writes it, and anything else as it is, `null` and `undefined` removing the
+ * attribute.
  */
-function ariaHelperCode(name: string): string {
-  return `/** An ARIA attribute's value: a boolean as \`"true"\` or \`"false"\`, as Vue writes it. */
+function enumeratedHelperCode(name: string): string {
+  return `/** An enumerated attribute's value: a boolean as \`"true"\` or \`"false"\`, as Vue writes it. */
 function ${name}<T>(value: T): T extends boolean ? \`\${T}\` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? \`\${T}\` : T;
 }`;

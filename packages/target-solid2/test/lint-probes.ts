@@ -1,16 +1,17 @@
-// M1's constructs in this target's shapes, written by hand: `mergeProps` over `rawProps` and
-// `props.x`, `<Switch>`/`<Match>` and `<Show>`, keyed where a branch reads what its test narrows
-// (as M1 wrote it: M2 writes a non-keyed callback there, ADR-0046), `<For>` with `index()`, a
-// class helper and `classList`, kebab-case style objects (number literals as strings). The same
-// three components on every target: a badge (props with defaults, a conditional chain, class and
-// style bindings, bound attributes, SVG), a list (nested keyed lists, conditionals inside and
-// around them, a root fragment) and a card (the `props` form, a typed spread written out key by
-// key, a static style). lint.test.ts pins the L5 configuration against them (ADR-0042): a rule that
-// rejects one of them would force an emitter change.
+// M1's constructs in this target's shapes, written by hand: `merge` over `rawProps` with a getter
+// per default and `props.x`, `<Switch>`/`<Match>` and `<Show>`, keyed where a branch reads what its
+// test narrows (as M1 wrote it: M2 writes a non-keyed callback there, ADR-0046), `<For>` with
+// `index()`, a class helper and `class`'s object form, kebab-case style objects (number literals as
+// strings), an ARIA value through `enumeratedValue`. The same three components on every target: a badge
+// (props with defaults, a conditional chain, class and style bindings, bound attributes, SVG), a
+// list (nested keyed lists, conditionals inside and around them, a root fragment) and a card (the
+// `props` form, a typed spread written out key by key, a static style). lint.test.ts pins the L5
+// configuration against them (ADR-0042, ADR-0102): a rule that rejects one of them would force an
+// emitter change.
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.tsx": `import { Match, mergeProps, Switch } from "solid-js";
+  "Badge.tsx": `import { Match, merge, Switch } from "solid-js";
 
 export interface BadgeProps {
   label: string;
@@ -22,13 +23,20 @@ export interface BadgeProps {
 }
 
 export default function Badge(rawProps: BadgeProps) {
-  const props = mergeProps({ tone: "info", pill: false } satisfies Partial<BadgeProps>, rawProps);
+  const props = merge(rawProps, {
+    get tone() {
+      return rawProps.tone === undefined ? "info" : rawProps.tone;
+    },
+    get pill() {
+      return rawProps.pill === undefined ? false : rawProps.pill;
+    },
+  });
   return (
     <span
       id="badge"
       class={cx("badge", { pill: props.pill }, \`tone-\${props.tone}\`)}
       style={{ color: "red", "line-height": "1.5", "margin-top": props.gap, "--gap": props.gap }}
-      aria-hidden={props.quiet}
+      aria-hidden={enumeratedValue(props.quiet)}
       data-tone={props.tone}
       title={props.label}
     >
@@ -60,6 +68,11 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** An enumerated attribute's value: a boolean as \`"true"\` or \`"false"\`, as Vue writes it. */
+function enumeratedValue<T>(value: T): T extends boolean ? \`\${T}\` : T {
+  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? \`\${T}\` : T;
 }
 `,
   "LinkCard.tsx": `interface LinkAttrs {
@@ -125,7 +138,7 @@ export default function TodoList(props: TodoListProps) {
         <ol class="todos">
           <For each={props.todos}>
             {(todo, index) => (
-              <li classList={{ done: Boolean(todo.done) }}>
+              <li class={{ done: Boolean(todo.done) }}>
                 {index() + 1}. {todo.title}
                 <Show keyed when={todo.owner}>
                   {(owner) => <i>{owner.name}</i>}
@@ -146,17 +159,18 @@ export default function TodoList(props: TodoListProps) {
 `,
 };
 
-// What this target emits for M2's constructs (ADR-0045 to ADR-0049), in the shapes src/setup.ts,
-// src/listeners.ts and src/helpers.ts print: signals with their setters, `createMemo`, client code
-// with no `batch`, `untrack` for what the setup reads once, the events' interface beside the
-// props', `props.onChange?.(…)`, the watchers' scheduler and the watcher helper in each of its
-// signatures, `createWatchEffect` over what it reads, `onMount` and a cleanup registered from it,
-// template refs as a `let` a `ref` callback sets and empties, listeners as event props and, with
-// an option, native listeners (`on:click={{ … }}`), a second listener of an event added from the
-// `ref` callback, `createUniqueId`, the `nextTick` helper, and what captures nothing hoisted to
-// module scope. lint.test.ts pins the L5 configuration against them.
+// What this target emits for M2's constructs (ADR-0045 to ADR-0049, ADR-0102), in the shapes
+// src/setup.ts, src/listeners.ts and src/helpers.ts print: state through the `createState` helper
+// with its setters, a derived value as a derived function, client code with no `batch`, `untrack`
+// for what the setup reads once, the events' interface beside the props', `props.onChange?.(…)`, the
+// watchers' scheduler and the watcher helper in each of its signatures, over `createReaction` in a
+// detached root, `createWatchEffect` over what it reads, `onSettled` and the cleanup it returns,
+// template refs as a `let` a `clearedRef` callback sets and empties, listeners as event props and,
+// with an option or beside one, native listeners added from the `ref` callback, `createUniqueId`,
+// the `nextTick` helper, and what captures nothing hoisted to module scope. lint.test.ts pins the
+// L5 configuration against them.
 export const M2_SHAPES: Readonly<Record<string, string>> = {
-  "Counter.tsx": `import { createMemo, createSignal, mergeProps, Show, untrack } from "solid-js";
+  "Counter.tsx": `import { createSignal, getObserver, merge, Show, untrack } from "solid-js";
 
 export interface CounterProps {
   initial?: number;
@@ -175,10 +189,17 @@ function clamp(value: number): number {
 }
 
 export default function Counter(rawProps: CounterProps & CounterEvents) {
-  const props = mergeProps({ initial: 0, step: 1 } satisfies Partial<CounterProps>, rawProps);
-  const [count, setCount] = createSignal(untrack(() => props.initial));
-  const [label] = createSignal("Count");
-  const doubled = createMemo(() => count() * 2);
+  const props = merge(rawProps, {
+    get initial() {
+      return rawProps.initial === undefined ? 0 : rawProps.initial;
+    },
+    get step() {
+      return rawProps.step === undefined ? 1 : rawProps.step;
+    },
+  });
+  const [count, setCount] = createState(untrack(() => props.initial));
+  const [label] = createState("Count");
+  const doubled = () => count() * 2;
   const start = untrack(() => props.initial + 1);
 
   function increment() {
@@ -203,8 +224,39 @@ export default function Counter(rawProps: CounterProps & CounterEvents) {
     </div>
   );
 }
+
+/**
+ * Vue's \`ref\`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: \`createSignal\` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
+}
 `,
-  "Watchers.tsx": `import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+  "Watchers.tsx": `import {
+  createReaction,
+  createRoot,
+  createSignal,
+  flush,
+  getObserver,
+  onSettled,
+  runWithOwner,
+  untrack,
+} from "solid-js";
 
 export interface WatchersProps {
   label: string;
@@ -217,9 +269,9 @@ export interface WatchersEvents {
 }
 
 export default function Watchers(props: WatchersProps & WatchersEvents) {
-  const [query, setQuery] = createSignal("");
-  const [low, setLow] = createSignal(10);
-  const [high, setHigh] = createSignal(50);
+  const [query, setQuery] = createState("");
+  const [low, setLow] = createState(10);
+  const [high, setHigh] = createState(50);
 
   createWatcher(query, (value, previous, onCleanup) => {
     props.onQueryRun?.(value, previous);
@@ -254,10 +306,7 @@ export default function Watchers(props: WatchersProps & WatchersEvents) {
 
   return (
     <section aria-label="Watchers">
-      <input
-        name="query"
-        onInput={(event) => setQuery((event.currentTarget as HTMLInputElement).value)}
-      />
+      <input name="query" onInput={(event) => setQuery(event.currentTarget.value)} />
       <button type="button" onClick={shift}>
         Shift
       </button>
@@ -275,23 +324,30 @@ let flushQueued = false;
 /**
  * Vue's scheduler: queues a watcher whose sources have changed and, once the synchronous code that
  * changed them has finished, runs each queued watcher once, those that run before the DOM updates
- * first, until none is queued. Solid updates the DOM as each write is made, so a watcher that runs
- * after the DOM updates sees what the others wrote.
+ * first, until none is queued.
  */
 function queueWatcher(queue: Set<() => void>, run: () => void): void {
   queue.add(run);
+  requestWatcherFlush();
+}
+
+/** Queues the flush of the watchers, once, in a microtask. */
+function requestWatcherFlush(): void {
   if (flushQueued) return;
   flushQueued = true;
   queueMicrotask(() => {
     try {
+      flush();
       do {
         for (const watcher of queuedWatchers.pre) {
           queuedWatchers.pre.delete(watcher);
           watcher();
         }
+        flush();
         for (const watcher of queuedWatchers.post) {
           queuedWatchers.post.delete(watcher);
           watcher();
+          flush();
           if (queuedWatchers.pre.size) break;
         }
       } while (queuedWatchers.pre.size || queuedWatchers.post.size);
@@ -310,12 +366,16 @@ function queueWatcher(queue: Set<() => void>, run: () => void): void {
  */
 function createWatcher<T>(
   source: () => T,
-  callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => void,
+  callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
   options?: { flush: "post" },
 ): void;
 function createWatcher<T>(
   source: () => T,
-  callback: (value: T, previous: T | undefined, onCleanup: (cleanup: () => void) => void) => void,
+  callback: (
+    value: T,
+    previous: T | undefined,
+    onCleanup: (cleanup: () => void) => void,
+  ) => unknown,
   options: { immediate: true; flush?: "post" },
 ): void;
 function createWatcher<const S extends readonly (() => unknown)[]>(
@@ -324,36 +384,28 @@ function createWatcher<const S extends readonly (() => unknown)[]>(
     values: WatchedValues<S>,
     previous: WatchedValues<S>,
     onCleanup: (cleanup: () => void) => void,
-  ) => void,
+  ) => unknown,
   options?: { flush: "post" },
-): void;
-function createWatcher<const S extends readonly (() => unknown)[]>(
-  sources: S,
-  callback: (
-    values: WatchedValues<S>,
-    previous: Partial<WatchedValues<S>>,
-    onCleanup: (cleanup: () => void) => void,
-  ) => void,
-  options: { immediate: true; flush?: "post" },
 ): void;
 function createWatcher(
   source: (() => unknown) | readonly (() => unknown)[],
-  callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => void,
+  callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
   options?: { immediate?: true; flush?: "post" },
 ): void {
   // An array of sources changes when one of its values does: one source is an array of one.
   const sources = typeof source === "function" ? [source] : source;
   const cleanups: (() => void)[] = [];
   const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;
-  const track = createReaction(() => queueWatcher(queue, run));
-  let last = read();
-  if (options?.immediate) call(last, undefined);
-  onMount(() =>
-    onCleanup(() => {
-      queue.delete(run);
-      for (const cleanup of cleanups.splice(0)) cleanup();
-    }),
+  const [track, dispose] = runWithOwner(null, () =>
+    createRoot((stop) => [createReaction(() => queueWatcher(queue, run)), stop] as const),
   );
+  let last = read();
+  if (options?.immediate) untrack(() => call(last, undefined));
+  onSettled(() => () => {
+    queue.delete(run);
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    dispose();
+  });
 
   function read(): unknown[] {
     let values: unknown[] = [];
@@ -384,25 +436,72 @@ function createWatcher(
 
 /**
  * Vue's \`watchEffect\` over the values it reads (\`sources\`): runs \`effect\` once the component has
- * mounted, then after the DOM updates once one of them has changed, with a cleanup registrar, whose
- * cleanups run before its next run and when the component is removed.
+ * mounted, then again after the DOM updates once one of them has been written, with a cleanup
+ * registrar, whose cleanups run before its next run and when the component is removed.
  */
 function createWatchEffect(
   sources: readonly (() => unknown)[],
-  effect: (onCleanup: (cleanup: () => void) => void) => void,
+  effect: (onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  onMount(() =>
-    createWatcher(sources, (_values, _previous, register) => effect(register), {
-      immediate: true,
-      flush: "post",
-    }),
+  const cleanups: (() => void)[] = [];
+  const [track, dispose] = runWithOwner(null, () =>
+    createRoot(
+      (stop) => [createReaction(() => queueWatcher(queuedWatchers.post, run)), stop] as const,
+    ),
   );
+  onSettled(() => {
+    run();
+    return () => {
+      queuedWatchers.post.delete(run);
+      for (const cleanup of cleanups.splice(0)) cleanup();
+      dispose();
+    };
+  });
+
+  function run(): void {
+    track(() => {
+      for (const source of sources) source();
+    });
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    effect((cleanup) => cleanups.push(cleanup));
+  }
 }
 
 /** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
 type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };
+
+/**
+ * Vue's \`ref\`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: \`createSignal\` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+    requestWatcherFlush();
+  }
+  return [read, write];
+}
 `,
-  "Panel.tsx": `import { createSignal, createUniqueId, For, onCleanup, onMount, Show } from "solid-js";
+  "Panel.tsx": `import {
+  createSignal,
+  createUniqueId,
+  For,
+  getObserver,
+  onCleanup,
+  onSettled,
+  Show,
+} from "solid-js";
 
 export interface PanelEvents {
   onReady?: (length: number) => void;
@@ -411,8 +510,8 @@ export interface PanelEvents {
 
 export default function Panel(props: PanelEvents) {
   const id = \`uf-id-\${createUniqueId()}\`;
-  const [open, setOpen] = createSignal(false);
-  const [log, setLog] = createSignal<string[]>([]);
+  const [open, setOpen] = createState(false);
+  const [log, setLog] = createState<string[]>([]);
   let heading: HTMLHeadingElement | null = null;
   let details: HTMLUListElement | null = null;
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -427,55 +526,64 @@ export default function Panel(props: PanelEvents) {
     props.onToggled?.(details?.childElementCount ?? 0);
   }
 
-  onMount(() => {
+  onSettled(() => {
     props.onReady?.(heading?.textContent?.length ?? 0);
     timer = setInterval(() => record("tick"), 1000);
   });
 
-  onMount(() =>
-    onCleanup(() => {
-      clearInterval(timer);
-    }),
-  );
+  onSettled(() => () => {
+    clearInterval(timer);
+  });
 
   return (
     <section aria-labelledby={id}>
       <h2
         id={id}
-        ref={(element) => {
-          heading = element;
-          onCleanup(() => {
+        ref={clearedRef(
+          (element) => {
+            heading = element;
+          },
+          () => {
             heading = null;
-          });
-        }}
+          },
+        )}
       >
         Panel
       </h2>
       <div
         role="presentation"
-        ref={(element) =>
-          element.addEventListener("click", () => record("capture"), { capture: true })
-        }
-        on:click={() => record("bubble")}
+        ref={(element) => {
+          element.addEventListener("click", () => record("capture"), { capture: true });
+          element.addEventListener("click", () => record("bubble"));
+        }}
       >
-        <button type="button" on:click={{ handleEvent: () => record("once"), once: true }}>
+        <button
+          type="button"
+          ref={(element) => element.addEventListener("click", () => record("once"), { once: true })}
+        >
           Once
         </button>
-        <button type="button" on:click={toggle}>
+        <button type="button" ref={(element) => element.addEventListener("click", toggle)}>
           Details
         </button>
       </div>
-      <div role="group" aria-label="Volume" on:wheel={{ handleEvent: () => record("wheel"), passive: true }}>
+      <div
+        role="group"
+        aria-label="Volume"
+        ref={(element) => element.addEventListener("wheel", () => record("wheel"), { passive: true })}
+      >
         <input name="note" onKeyDown={(event) => event.key === "Enter" && record("enter")} />
       </div>
       <Show when={open()}>
         <ul
-          ref={(element) => {
-            details = element;
-            onCleanup(() => {
+          ref={clearedRef(
+            (element) => {
+              details = element;
+            },
+            () => {
               details = null;
-            });
-          }}
+            },
+          )}
         >
           <For each={log()}>{(entry) => <li>{entry}</li>}</For>
         </ul>
@@ -490,6 +598,34 @@ export default function Panel(props: PanelEvents) {
  */
 function nextTick(): Promise<void> {
   return Promise.resolve();
+}
+
+/** A \`ref\` that calls \`callback\` with its element, and \`clear\` once the element is removed. */
+function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
+  onCleanup(clear);
+  return callback;
+}
+
+/**
+ * Vue's \`ref\`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: \`createSignal\` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
 }
 `,
 };

@@ -1,4 +1,5 @@
-import { For, type JSX, createMemo, untrack } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { For, createMemo, untrack } from "solid-js";
 
 export interface Row {
   id: number;

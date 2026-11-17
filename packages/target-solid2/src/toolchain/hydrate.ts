@@ -1,8 +1,8 @@
+import { hydrate as hydrateRoot } from "@solidjs/web";
 // The Solid 2 hydrate adapter (browser, L12, ADR-0095): hydrates the server's HTML with
 // `hydrate`, then behaves as the mount adapter does.
 import type { HydrateAdapter } from "@unframework.dev/codegen";
 import { createComponent, flush } from "solid-js";
-import { hydrate as hydrateRoot } from "@solidjs/web";
 
 import { listenerProps, reactiveProps, reviveReactivity, settle } from "./client.ts";
 import { asComponent } from "./component.ts";

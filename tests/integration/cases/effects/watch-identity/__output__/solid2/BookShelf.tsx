@@ -1,0 +1,329 @@
+import type { JSX } from "@solidjs/web";
+import {
+  For,
+  createMemo,
+  createReaction,
+  createRoot,
+  createSignal,
+  flush,
+  getObserver,
+  onSettled,
+  runWithOwner,
+  untrack,
+} from "solid-js";
+
+export interface Book {
+  id: number;
+  title: string;
+}
+
+export interface BookShelfProps {
+  books: Book[];
+}
+
+export interface BookShelfEvents {
+  onMoved?: (title: string, previous: string) => void;
+  onCounted?: (summary: string) => void;
+  onToggled?: (open: boolean) => void;
+  onBusy?: (label: string, loading: boolean) => void;
+  onSummed?: (total: number) => void;
+}
+
+function sum(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0);
+}
+
+export default function BookShelf(
+  props: BookShelfProps & BookShelfEvents & { class?: string; style?: JSX.CSSProperties },
+) {
+  const [focused, setFocused] = createState<Book | null>(null);
+  const [reads, setReads] = createState(new Map<number, number>());
+  const [open, setOpen] = createState(false);
+  const [label, setLabel] = createState("Idle");
+  const [loading, setLoading] = createState(false);
+  const [low] = createState(1);
+  const [high, setHigh] = createState(5);
+
+  createWatcher(focused, (book, previous) => {
+    props.onMoved?.(book?.title ?? "none", previous?.title ?? "none");
+  });
+
+  createWatcher(reads, (next) => {
+    props.onCounted?.([...next.entries()].map(([id, times]) => `${id}=${times}`).join(","));
+  });
+
+  createWatcher(
+    open,
+    (value) => {
+      props.onToggled?.(value);
+    },
+    { immediate: true },
+  );
+
+  createWatcher([label, loading], ([nextLabel, nextLoading]) => {
+    props.onBusy?.(nextLabel, nextLoading);
+  });
+
+  createWatcher([low, high], (values) => {
+    props.onSummed?.(sum(values));
+  });
+
+  function focus(book: Book) {
+    setFocused(book);
+  }
+
+  function peek(book: Book) {
+    const before = focused();
+    setFocused(book);
+    setFocused(before);
+  }
+
+  function read(book: Book) {
+    const next = new Map(reads());
+    next.set(book.id, (next.get(book.id) ?? 0) + 1);
+    setReads(next);
+  }
+
+  function reread() {
+    const before = reads();
+    setReads(new Map());
+    setReads(before);
+  }
+
+  function start() {
+    setLabel("Loading");
+    setLoading(true);
+  }
+
+  return (
+    <section
+      class={props.class ? `book-shelf ${props.class}` : "book-shelf"}
+      aria-label="Books"
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
+      <ul aria-label="Shelf">
+        <KeyedFor each={props.books} by={(book) => book.id}>
+          {(book) => (
+            <li>
+              <span>{book.value.title}</span>
+              <button
+                type="button"
+                onClick={() => focus(book.value)}
+              >{`Focus ${book.value.title}`}</button>
+              <button
+                type="button"
+                onClick={() => peek(book.value)}
+              >{`Peek ${book.value.title}`}</button>
+              <button
+                type="button"
+                onClick={() => read(book.value)}
+              >{`Read ${book.value.title}`}</button>
+            </li>
+          )}
+        </KeyedFor>
+      </ul>
+      <p>Focused: {focused()?.title ?? "none"}</p>
+      <p>Books read: {reads().size}</p>
+      <button type="button" onClick={reread}>
+        Count again
+      </button>
+      <button
+        type="button"
+        aria-expanded={enumeratedValue(open())}
+        onClick={() => setOpen(!open())}
+      >
+        Details
+      </button>
+      <button type="button" onClick={start}>
+        Start
+      </button>
+      <p role="status">
+        {label()}: {loading() ? "busy" : "idle"}
+      </p>
+      <button type="button" onClick={() => setHigh(high() + 1)}>
+        Raise the limit
+      </button>
+      <p>
+        Range: {low()} to {high()}
+      </p>
+    </section>
+  );
+}
+
+/** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
+function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
+  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
+      }}
+    </For>
+  );
+}
+
+/** The watchers whose sources have changed since the last flush, in the order they changed. */
+const queuedWatchers = new Set<() => void>();
+let flushQueued = false;
+
+/**
+ * Vue's scheduler: queues a watcher whose sources have changed and, once the synchronous code that
+ * changed them has finished, runs each queued watcher once, until none is queued: a Set's iteration
+ * visits what a watcher's writes queue while it runs.
+ */
+function queueWatcher(run: () => void): void {
+  queuedWatchers.add(run);
+  requestWatcherFlush();
+}
+
+/** Queues the flush of the watchers, once, in a microtask. */
+function requestWatcherFlush(): void {
+  if (flushQueued) return;
+  flushQueued = true;
+  queueMicrotask(() => {
+    try {
+      flush();
+      for (const watcher of queuedWatchers) {
+        queuedWatchers.delete(watcher);
+        watcher();
+        flush();
+      }
+    } finally {
+      flushQueued = false;
+    }
+  });
+}
+
+/**
+ * Vue's `watch`: once the value `source` reads has changed (by `Object.is`), calls `callback` back
+ * when the code that changed it has finished, before the DOM updates, with the value at its last
+ * callback and a cleanup registrar, whose cleanups run before the next callback and when the
+ * component is removed. With `immediate`, it also calls back at once, during the setup, without a
+ * previous value.
+ */
+function createWatcher<T>(
+  source: () => T,
+  callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
+): void;
+function createWatcher<T>(
+  source: () => T,
+  callback: (
+    value: T,
+    previous: T | undefined,
+    onCleanup: (cleanup: () => void) => void,
+  ) => unknown,
+  options: { immediate: true },
+): void;
+function createWatcher<const S extends readonly (() => unknown)[]>(
+  sources: S,
+  callback: (
+    values: WatchedValues<S>,
+    previous: WatchedValues<S>,
+    onCleanup: (cleanup: () => void) => void,
+  ) => unknown,
+): void;
+function createWatcher(
+  source: (() => unknown) | readonly (() => unknown)[],
+  callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
+  options?: { immediate: true },
+): void {
+  // An array of sources changes when one of its values does: one source is an array of one.
+  const sources = typeof source === "function" ? [source] : source;
+  const cleanups: (() => void)[] = [];
+  const [track, dispose] = runWithOwner(null, () =>
+    createRoot((stop) => [createReaction(() => queueWatcher(run)), stop] as const),
+  );
+  let last = read();
+  if (options) untrack(() => call(last, undefined));
+  onSettled(() => () => {
+    queuedWatchers.delete(run);
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    dispose();
+  });
+
+  function read(): unknown[] {
+    let values: unknown[] = [];
+    track(() => {
+      values = sources.map((each) => each());
+    });
+    return values;
+  }
+
+  function run(): void {
+    const values = read();
+    if (values.every((value, index) => Object.is(value, last[index]))) return;
+    const previous = last;
+    last = values;
+    call(values, previous);
+  }
+
+  function call(values: unknown[], previous: unknown[] | undefined): void {
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    const register = (cleanup: () => void) => cleanups.push(cleanup);
+    if (typeof source === "function") {
+      callback(values[0] as never, previous?.[0] as never, register);
+    } else {
+      callback(values as never, (previous ?? []) as never, register);
+    }
+  }
+}
+
+/** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
+type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };
+
+/**
+ * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+    requestWatcherFlush();
+  }
+  return [read, write];
+}

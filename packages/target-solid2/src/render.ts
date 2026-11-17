@@ -403,8 +403,9 @@ type Parsed = ReturnType<typeof parseExpression>;
  * An expression whose string literals Solid's server compiler would write into the HTML
  * unescaped, with each such literal that holds a character HTML reads in `position` wrapped
  * in `String(…)`: a call, which the compiler escapes at run time. The value is the same, on
- * the server and in the browser. It follows babel-plugin-jsx-dom-expressions' own walk
- * (`escapeExpression`, 0.40): into a conditional's branches, both sides of a binary operator,
+ * the server and in the browser. It follows the walk of Solid 1's compiler
+ * (babel-plugin-jsx-dom-expressions' `escapeExpression`, 0.40), whose server output Solid 2's
+ * compiler matches across the corpus (L6): into a conditional's branches, both sides of a binary operator,
  * the right of `&&`, and a template literal's expressions, whose text it escapes in an
  * attribute but not in a child, where the whole template is wrapped instead. Anything else it
  * escapes whole.

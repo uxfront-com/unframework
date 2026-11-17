@@ -34,8 +34,8 @@ import { emitDirective, factoryCode, QUEUE_HELPER } from "./directive.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, REF_HELPER, STATE_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import {
-  ARIA_HELPER,
   CLASS_HELPER,
+  ENUMERATED_HELPER,
   KEYED_HELPER,
   SCOPE_HELPER,
   solidJsx,
@@ -223,7 +223,7 @@ export const solid2: Target = defineTarget({
     });
     const bases = [
       CLASS_HELPER,
-      ARIA_HELPER,
+      ENUMERATED_HELPER,
       SCOPE_HELPER,
       STYLE_HELPER,
       KEYED_HELPER,

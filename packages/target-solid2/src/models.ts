@@ -164,10 +164,7 @@ export function modelAttribute(
     if (carried) return [];
     if (attribute.control !== "select" && !unmarkedOptions(element.children)) return [];
     return [
-      prop(
-        "ref",
-        context.placeholders.expression(`${helpers.selectOptions()}(${binding.name})`),
-      ),
+      prop("ref", context.placeholders.expression(`${helpers.selectOptions()}(${binding.name})`)),
     ];
   };
   switch (attribute.control) {

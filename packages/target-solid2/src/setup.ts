@@ -512,9 +512,7 @@ export class SolidCode {
           onSettled: this.solid("onSettled"),
           // Only an immediate watcher's first call reads it.
           untrack:
-            this.#uses.single.immediate || this.#uses.array.immediate
-              ? this.solid("untrack")
-              : "",
+            this.#uses.single.immediate || this.#uses.array.immediate ? this.solid("untrack") : "",
           ...(this.#watcher ? { watcher: this.#watcher } : {}),
           ...(this.#watchEffect ? { watchEffect: this.#watchEffect } : {}),
           ...(arrays ? { values: this.#imports.claim("WatchedValues") } : {}),

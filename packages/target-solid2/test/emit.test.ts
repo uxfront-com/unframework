@@ -38,7 +38,7 @@ const SCOPE_ATTRIBUTES = [
   "}",
 ];
 
-describe("solid target", () => {
+describe("solid2 target", () => {
   it("declares every capability", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
       "async-setup",
@@ -132,7 +132,7 @@ describe("solid target", () => {
     expect(await formatted(hello(), { name: "Hello" })).toEqual({
       path: "Hello.tsx",
       contents: [
-        'import type { JSX } from "solid-js";',
+        'import type { JSX } from "@solidjs/web";',
         "",
         "export default function Hello(props: { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
@@ -156,7 +156,7 @@ describe("solid target", () => {
     expect(await formatted(profileCard(), { name: "ProfileCard" })).toEqual({
       path: "ProfileCard.tsx",
       contents: [
-        'import type { JSX } from "solid-js";',
+        'import type { JSX } from "@solidjs/web";',
         "",
         "export default function ProfileCard(props: { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
@@ -196,7 +196,7 @@ describe("solid target", () => {
   it("keeps a named export named", async () => {
     const file = await formatted(hello(), { name: "Hello", kind: "named" });
     expect(file.contents).toMatch(
-      /^import type \{ JSX \} from "solid-js";\n\nexport function Hello\(props: \{ class\?: string; style\?: JSX\.CSSProperties \}\) \{/,
+      /^import type \{ JSX \} from "@solidjs\/web";\n\nexport function Hello\(props: \{ class\?: string; style\?: JSX\.CSSProperties \}\) \{/,
     );
   });
 
@@ -208,7 +208,15 @@ describe("solid target", () => {
   });
 });
 
-describe("solid props", () => {
+/** The inline helper that writes an enumerated attribute's boolean as Vue does. */
+const ARIA_VALUE = [
+  '/** An enumerated attribute\'s value: a boolean as `"true"` or `"false"`, as Vue writes it. */',
+  "function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {",
+  '  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;',
+  "}",
+];
+
+describe("solid2 props", () => {
   it("merges defaults into the props it never destructures, with the copied types above", async () => {
     const output = await emitSource(
       probe(
@@ -219,7 +227,8 @@ describe("solid props", () => {
     );
     expect(output).toBe(
       [
-        'import { type JSX, mergeProps } from "solid-js";',
+        'import type { JSX } from "@solidjs/web";',
+        'import { merge } from "solid-js";',
         "",
         "export interface ProbeProps {",
         "  label: string;",
@@ -231,12 +240,21 @@ describe("solid props", () => {
         "export default function Probe(",
         "  rawProps: ProbeProps & { class?: string; style?: JSX.CSSProperties },",
         ") {",
-        '  const props = mergeProps({ pill: false, tone: "info" } satisfies Partial<ProbeProps>, rawProps);',
+        // `merge` takes a prop passed as `undefined` for a value: each default is a getter that
+        // applies it there, as destructuring does.
+        "  const props = merge(rawProps, {",
+        "    get pill() {",
+        "      return rawProps.pill === undefined ? false : rawProps.pill;",
+        "    },",
+        "    get tone() {",
+        '      return rawProps.tone === undefined ? "info" : rawProps.tone;',
+        "    },",
+        "  });",
         "  return (",
         "    <span",
         "      data-tone={props.tone}",
         "      data-count={props.count}",
-        "      aria-pressed={props.pill}",
+        "      aria-pressed={enumeratedValue(props.pill)}",
         "      class={props.class}",
         "      style={props.style}",
         "      {...scopeAttributes(props)}",
@@ -246,6 +264,8 @@ describe("solid props", () => {
         "  );",
         "}",
         "",
+        ...ARIA_VALUE,
+        "",
         ...SCOPE_ATTRIBUTES,
         "",
       ].join("\n"),
@@ -253,7 +273,7 @@ describe("solid props", () => {
   });
 
   it("types object defaults by the props' own types, which keep their optional members", async () => {
-    // `satisfies` would keep `{ title: string }`, and `mergeProps` type `props.attrs` without `id`.
+    // `satisfies` would keep `{ title: string }`, and type `props.attrs` without `id`.
     const output = await emitSource(
       probe(
         'attrs?: Attrs;\n  tone?: "info" | "warn";',
@@ -271,15 +291,22 @@ describe("solid props", () => {
         '    attrs: { title: "t" },',
         '    tone: "info",',
         "  };",
-        "  const props = mergeProps(defaults, rawProps);",
+        "  const props = merge(rawProps, {",
+        "    get attrs() {",
+        "      return rawProps.attrs === undefined ? defaults.attrs : rawProps.attrs;",
+        "    },",
+        "    get tone() {",
+        "      return rawProps.tone === undefined ? defaults.tone : rawProps.tone;",
+        "    },",
+        "  });",
       ].join("\n"),
     );
     expect(component(output)).toContain("id={props.attrs.id}");
   });
 
   it("types array defaults by the props' own types, not the literals they list", async () => {
-    // `satisfies` would keep `"info"[]`, and `mergeProps` type `props.tones` as `Tone[] | "info"[]`,
-    // whose `includes` takes only `"info"`.
+    // `satisfies` would keep `"info"[]`, and type `props.tones` as `"info"[]`, whose `includes`
+    // takes only `"info"`.
     const output = await emitSource(
       probe(
         "tones?: Tone[];\n  tone: Tone;",
@@ -291,7 +318,9 @@ describe("solid props", () => {
     expect(component(output)).toContain(
       'const defaults: Required<Pick<ProbeProps, "tones">> = { tones: ["info"] };',
     );
-    expect(component(output)).toContain("const props = mergeProps(defaults, rawProps);");
+    expect(component(output)).toContain(
+      "return rawProps.tones === undefined ? defaults.tones : rawProps.tones;",
+    );
   });
 
   it("reads destructured props through `props` when none it reads has a default", async () => {
@@ -310,7 +339,7 @@ describe("solid props", () => {
         "",
       ].join("\n"),
     );
-    expect(output).not.toContain("mergeProps");
+    expect(output).not.toContain("merge");
   });
 
   it("keeps the object form's own name", async () => {
@@ -319,7 +348,7 @@ describe("solid props", () => {
     );
     expect(output).toBe(
       [
-        'import type { JSX } from "solid-js";',
+        'import type { JSX } from "@solidjs/web";',
         "",
         "export default function Probe(",
         "  card: { title: string; note?: string } & { class?: string; style?: JSX.CSSProperties },",
@@ -346,7 +375,11 @@ describe("solid props", () => {
         "export default function Probe(",
         "  rawProps: { size?: number } & { class?: string; style?: JSX.CSSProperties },",
         ") {",
-        "  const props = mergeProps({ size: 2 } satisfies Partial<{ size?: number }>, rawProps);",
+        "  const props = merge(rawProps, {",
+        "    get size() {",
+        "      return rawProps.size === undefined ? 2 : rawProps.size;",
+        "    },",
+        "  });",
         "  return (",
         "    <p class={props.class} style={props.style} {...scopeAttributes(props)}>",
         "      {props.size}",
@@ -431,7 +464,7 @@ describe("solid props", () => {
     );
     expect(output).toBe(
       [
-        'import type { JSX } from "solid-js";',
+        'import type { JSX } from "@solidjs/web";',
         "",
         "export default function Probe(props: { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
@@ -465,19 +498,17 @@ describe("solid props", () => {
         "interface For {\n  id: string;\n}\n\n",
       ),
     );
-    expect(output).toContain(
-      'import { For as For_1, type JSX, Show, createMemo, untrack } from "solid-js";',
-    );
+    expect(output).toContain('import { For as For_1, Show, createMemo, untrack } from "solid-js";');
     expect(output).toContain("<For_1 each={[...items().keys()]}>");
   });
 });
 
-describe("solid control flow", () => {
+describe("solid2 control flow", () => {
   it("shows a branch under its condition with <Show>, by truthiness", async () => {
     const output = await emitSource(
       probe("count: number;", "{ count }", "<p>{count && <b>New</b>}</p>"),
     );
-    expect(output).toContain('import { type JSX, Show } from "solid-js";');
+    expect(output).toContain('import { Show } from "solid-js";');
     expect(component(output)).toContain(
       "<p class={props.class} style={props.style} {...scopeAttributes(props)}>\n      <Show when={props.count}>\n        <b>New</b>\n      </Show>\n    </p>",
     );
@@ -516,7 +547,7 @@ describe("solid control flow", () => {
         '<p>{n > 2 ? <b>Many</b> : n > 1 ? null : n > 0 ? "One" : <i>None</i>}</p>',
       ),
     );
-    expect(output).toContain('import { type JSX, Match, Switch } from "solid-js";');
+    expect(output).toContain('import { Match, Switch } from "solid-js";');
     expect(component(output)).toContain(
       [
         "      <Switch fallback={<i>None</i>}>",
@@ -564,7 +595,7 @@ describe("solid control flow", () => {
         "<ol>{steps.map((step, index) => <li key={index} data-step={index + 1}>{step}</li>)}</ol>",
       ),
     );
-    expect(output).toContain('import { For, type JSX, createMemo, untrack } from "solid-js";');
+    expect(output).toContain('import { For, createMemo, untrack } from "solid-js";');
     expect(component(output)).toContain(
       "<KeyedFor each={props.steps} by={(step, index) => index}>\n        {(step) => <li data-step={step.index + 1}>{step.value}</li>}\n      </KeyedFor>",
     );
@@ -609,7 +640,7 @@ describe("solid control flow", () => {
 // the value changes (ADR-0036 as M2 amends it); one whose expressions narrow it further takes the
 // values themselves, keyed (src/narrowing.ts). test/output.test.ts type-checks these shapes, and
 // test/rewrites.browser.test.ts updates them.
-describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
+describe("solid2 narrowing (TypeScript narrows what a condition tests)", () => {
   const USER = "interface User {\n  name: string;\n  nick?: string;\n  age?: number;\n}\n\n";
 
   it("gives a branch the value its one test holds, through the callback's accessor", async () => {
@@ -998,7 +1029,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
   });
 });
 
-describe("solid output for its server compiler", () => {
+describe("solid2 output for its server compiler", () => {
   it("wraps the literals the server would write unescaped in String(…)", async () => {
     const output = await emitSource(
       probe(
@@ -1025,8 +1056,10 @@ describe("solid output for its server compiler", () => {
   });
 });
 
-describe("solid attributes", () => {
-  it("toggles names with classList beside the static ones, as booleans", async () => {
+describe("solid2 attributes", () => {
+  // Solid 2 has no `classList`: `class`'s array form holds the static names, and an object the
+  // toggled ones.
+  it("toggles names in class's object form beside the static ones, as booleans", async () => {
     const output = await emitSource(
       probe(
         "active: boolean;\n  count: number;",
@@ -1038,15 +1071,14 @@ describe("solid attributes", () => {
     expect(component(output)).toContain(
       [
         "      <p",
-        '        class="item"',
-        "        classList={{",
-        "          active: props.active,",
-        '          "has-count": Boolean(props.count),',
-        "          empty: props.count === 0,",
-        "        }}",
+        "        class={[",
+        '          "item",',
+        '          { active: props.active, "has-count": Boolean(props.count), empty: props.count === 0 },',
+        "        ]}",
         "      >",
       ].join("\n"),
     );
+    expect(output).not.toContain("classList");
     expect(output).not.toContain("function cx");
   });
 
@@ -1207,6 +1239,8 @@ describe("solid attributes", () => {
     );
   });
 
+  // An ARIA attribute is enumerated: its boolean goes through `enumeratedValue`, which writes `"true"` or
+  // `"false"` as Vue does, where Solid 2 would write presence.
   it("binds attributes by their HTML names, booleans included", async () => {
     const output = await emitSource(
       probe(
@@ -1216,8 +1250,15 @@ describe("solid attributes", () => {
       ),
     );
     expect(component(output)).toContain(
-      "<textarea readonly={props.locked} maxlength={props.limit} aria-disabled={props.locked} />",
+      [
+        "      <textarea",
+        "        readonly={props.locked}",
+        "        maxlength={props.limit}",
+        "        aria-disabled={enumeratedValue(props.locked)}",
+        "      />",
+      ].join("\n"),
     );
+    expect(output).toContain(ARIA_VALUE.join("\n"));
     expect(component(output)).toContain(
       "<label for={props.label} class={props.class} style={props.style} {...scopeAttributes(props)}>",
     );
@@ -1361,8 +1402,10 @@ describe("solid attributes", () => {
   });
 });
 
-describe("solid async setup (ADR-0101)", () => {
-  it("runs the awaits in one resource, and the rest of the setup and the template in a <Show> callback inside <Suspense>", async () => {
+describe("solid2 async setup (ADR-0101)", () => {
+  // Solid 2 has no `createResource`: an async memo runs the awaits once, untracked as Vue's setup
+  // is, and `<Loading>` holds its subtree until the memo has resolved.
+  it("runs the awaits in one async memo, and the rest of the setup and the template in a keyed <Show> callback inside <Loading>", async () => {
     const output = await emitSource(
       [
         'import { ref } from "@uxfront/unframework";',
@@ -1382,17 +1425,17 @@ describe("solid async setup (ADR-0101)", () => {
         "export default function Probe(",
         "  props: { id: string } & { class?: string; style?: JSX.CSSProperties },",
         ") {",
-        "  const [awaited] = createResource(async () => {",
-        "    const user = await loadUser(props.id);",
+        "  const awaited = createMemo(async () => {",
+        "    const user = await untrack(() => loadUser(props.id));",
         "    return { user };",
         "  });",
         "",
         "  return (",
-        "    <Suspense>",
-        "      <Show when={awaited()}>",
+        "    <Loading>",
+        "      <Show when={awaited()} keyed>",
         "        {(resolved) => {",
-        "          const { user } = resolved();",
-        "          const [visits, setVisits] = createSignal(user.visits);",
+        "          const { user } = resolved;",
+        "          const [visits, setVisits] = createState(user.visits);",
         "",
         "          return (",
         "            <button",
@@ -1406,18 +1449,18 @@ describe("solid async setup (ADR-0101)", () => {
         "          );",
         "        }}",
         "      </Show>",
-        "    </Suspense>",
+        "    </Loading>",
         "  );",
         "}",
         "",
       ].join("\n"),
     );
     expect(output).toContain(
-      'import { type JSX, Show, Suspense, createResource, createSignal } from "solid-js";',
+      'import { Loading, Show, createMemo, createSignal, getObserver, untrack } from "solid-js";',
     );
   });
 
-  it("chains typed awaits in the fetcher, creates ids above it, and keeps hooks, expose and constants that read an awaited value in the callback", async () => {
+  it("chains typed awaits in the async memo, creates ids above it, and keeps hooks, expose and constants that read an awaited value in the callback", async () => {
     const output = await emitSource(
       [
         'import { computed, defineExpose, onMounted, ref, useId } from "@uxfront/unframework";',
@@ -1462,22 +1505,22 @@ describe("solid async setup (ADR-0101)", () => {
     expect(body).toContain(
       [
         "  const label = `uf-id-${createUniqueId()}`;",
-        "  const [awaited] = createResource(async () => {",
-        "    const user: User = await loadUser(props.id);",
+        "  const awaited = createMemo(async () => {",
+        "    const user: User = await untrack(() => loadUser(props.id));",
         "    const team = await loadTeam(user.teamId);",
         "    return { user, team };",
         "  });",
         "",
         "  return (",
-        "    <Suspense>",
-        "      <Show when={awaited()}>",
+        "    <Loading>",
+        "      <Show when={awaited()} keyed>",
         "        {(resolved) => {",
-        "          const { user, team } = resolved();",
+        "          const { user, team } = resolved;",
         "          const greeting = `Hello, ${user.name}`;",
-        "          const [count, setCount] = createSignal(0);",
-        "          const summary = createMemo(() => `${user.name} is in ${team.name}`);",
+        "          const [count, setCount] = createState(0);",
+        "          const summary = () => `${user.name} is in ${team.name}`;",
         "",
-        "          onMount(() => {",
+        "          onSettled(() => {",
         "            setCount(1);",
         "          });",
         "",
@@ -1495,7 +1538,7 @@ describe("solid async setup (ADR-0101)", () => {
     expect(body).not.toContain("unit =");
   });
 
-  it("names the resource and the callback's parameter past the source's own names", async () => {
+  it("names the async memo and the callback's parameter past the source's own names", async () => {
     const output = await emitSource(
       [
         "const load = async (id: string) => id;",
@@ -1508,19 +1551,19 @@ describe("solid async setup (ADR-0101)", () => {
         "",
       ].join("\n"),
     );
-    expect(output).toContain("const [awaited_1] = createResource(async () => {");
+    expect(output).toContain("const awaited_1 = createMemo(async () => {");
     expect(output).toContain("    return { awaited, resolved };");
-    expect(output).toContain("<Show when={awaited_1()}>");
+    expect(output).toContain("<Show when={awaited_1()} keyed>");
     expect(output).toContain("{(resolved_1) => {");
-    expect(output).toContain("const { awaited, resolved } = resolved_1();");
+    expect(output).toContain("const { awaited, resolved } = resolved_1;");
   });
 
   it("lowers an async component with no await as a plain one", async () => {
     const output = await emitSource(
       "export default async function Probe({ id }: { id: string }) {\n  return <p>{id}</p>;\n}\n",
     );
-    expect(output).not.toContain("createResource");
-    expect(output).not.toContain("Suspense");
+    expect(output).not.toContain("createMemo");
+    expect(output).not.toContain("Loading");
     expect(component(output)).toContain("  return (\n    <p");
   });
 });

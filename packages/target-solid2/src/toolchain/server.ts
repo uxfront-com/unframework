@@ -1,7 +1,7 @@
+import { renderToStream } from "@solidjs/web";
 // The Solid 2 SSR renderer (Node, inside the `ssr:solid2` project).
 import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
 import { createComponent } from "solid-js";
-import { renderToStream } from "@solidjs/web";
 
 import { asComponent } from "./component.ts";
 import { assertSolid2 } from "./guard.ts";
@@ -27,10 +27,9 @@ async function render(
   noScripts: boolean,
 ): Promise<string> {
   const solidComponent = asComponent(component);
-  const html: unknown = await renderToStream(
-    () => createComponent(solidComponent, { ...props }),
-    { noScripts },
-  );
+  const html: unknown = await renderToStream(() => createComponent(solidComponent, { ...props }), {
+    noScripts,
+  });
   if (typeof html !== "string") {
     throw new Error(
       `Solid's server render returned ${typeof html}, not HTML: @solidjs/web resolved to its browser build. Compile with @solidjs/vite-plugin({ ssr: true }).`,

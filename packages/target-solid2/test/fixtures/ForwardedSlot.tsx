@@ -1,4 +1,5 @@
-import { type JSX, Show, children } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Show, children } from "solid-js";
 
 export interface ForwardedSlotSlots {
   children?: JSX.Element;

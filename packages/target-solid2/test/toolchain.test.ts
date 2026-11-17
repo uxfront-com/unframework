@@ -3,15 +3,14 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
-import { transformSync } from "@babel/core";
+import type * as SolidWeb from "@solidjs/web";
 import type { ToolchainContext, ToolchainFile } from "@unframework.dev/codegen";
-import type * as SolidWeb from "solid-js/web";
-import type { Plugin } from "vite";
+import { createServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
-import { goldens, packageDir, toolchainDir } from "./fixtures.ts";
+import { compileForServer, goldens, packageDir, toolchainDir } from "./fixtures.ts";
 
 const context: ToolchainContext = { toolchainDir, root: packageDir };
 /** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
@@ -24,9 +23,9 @@ const scratch = join(packageDir, ".uf-tmp", `toolchain-${randomUUID()}`);
 beforeAll(() => mkdirSync(scratch, { recursive: true }));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-/** Every committed Solid golden; the corpus has at least the two `basics` cases. */
+/** Every Solid 2 golden; the corpus has at least the two `basics` cases. */
 function solidGoldens(): ToolchainFile[] {
-  const files = goldens("solid");
+  const files = goldens("solid2");
   expect(files.map((file) => file.path.split("/").at(-1))).toEqual(
     expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),
   );
@@ -35,7 +34,7 @@ function solidGoldens(): ToolchainFile[] {
 
 function golden(name: string): ToolchainFile {
   const file = solidGoldens().find((entry) => entry.path.endsWith(`/${name}`));
-  if (!file) throw new Error(`No Solid golden named ${name}`);
+  if (!file) throw new Error(`No Solid 2 golden named ${name}`);
   return file;
 }
 
@@ -46,59 +45,81 @@ function scratchFile(name: string, contents: string): string {
   return path;
 }
 
-/** Runs the toolchain's own vite-plugin-solid over a golden, as a dev server would. */
-async function transformed(mode: "browser" | "ssr", consumer: "client" | "server") {
-  const config = await toolchain.vite(mode, context);
-  const plugin = (config.plugins as Plugin[]).find((entry) => entry.name === "solid")!;
-  const configResolved = plugin.configResolved as (config: object) => void;
-  configResolved({ command: "serve", mode: "test" });
-  const transform = plugin.transform as (
-    this: object,
-    code: string,
-    id: string,
-  ) => Promise<{ code: string }>;
-  const { path, contents } = golden("Hello.tsx");
-  return (await transform.call({ environment: { config: { consumer } } }, contents, path)).code;
+/**
+ * A golden as the toolchain's own Vite configuration serves it, @solidjs/vite-plugin included, on
+ * a plain dev server: the browser's client environment, or the server's.
+ */
+async function transformed(mode: "browser" | "ssr"): Promise<string> {
+  const root = join(scratch, `vite-${mode}`);
+  mkdirSync(root, { recursive: true });
+  writeFileSync(join(root, "Hello.tsx"), golden("Hello.tsx").contents);
+  const server = await createServer({
+    ...(await toolchain.vite(mode, { toolchainDir, root })),
+    root,
+    configFile: false,
+    logLevel: "silent",
+    appType: "custom",
+    server: { middlewareMode: true, hmr: false, ws: false },
+  });
+  try {
+    const environment = mode === "ssr" ? server.environments.ssr : server.environments.client;
+    const result = await environment!.transformRequest("/Hello.tsx");
+    return result!.code;
+  } finally {
+    await server.close();
+  }
 }
 
-describe("solid toolchain", () => {
+describe("solid2 toolchain", () => {
   it("names its runtime entries", () => {
-    expect(toolchain.name).toBe("solid");
-    expect(toolchain.client).toBe("@unframework.dev/target-solid/toolchain/client");
-    expect(toolchain.server).toBe("@unframework.dev/target-solid/toolchain/server");
+    expect(toolchain.name).toBe("solid2");
+    expect(toolchain.client).toBe("@unframework.dev/target-solid2/toolchain/client");
+    expect(toolchain.server).toBe("@unframework.dev/target-solid2/toolchain/server");
+    expect(toolchain.hydrate).toBe("@unframework.dev/target-solid2/toolchain/hydrate");
   });
 
-  it("configures Vite with Solid's plugin and the runtime the output imports", async () => {
+  it("configures Vite with Solid 2's plugin, resolving Solid from the toolchain directory", async () => {
+    const solid = ["solid-js", "@solidjs/web", "@solidjs/signals"];
     const browser = await toolchain.vite("browser", context);
-    expect(browser.resolve?.dedupe).toEqual(["solid-js"]);
-    expect(browser.optimizeDeps?.include).toEqual(["solid-js", "solid-js/web"]);
+    // @solidjs/vite-plugin is an array of plugins, `solid` the one that compiles.
+    const names = (browser.plugins ?? [])
+      .flat(2)
+      .map((plugin) => (plugin && "name" in plugin ? plugin.name : undefined));
+    expect(names).toContain("solid");
+    expect(names).toEqual(
+      expect.arrayContaining(["unframework:solid2-resolve", "unframework:solid2-undedupe"]),
+    );
+    expect(browser.resolve?.noExternal).toEqual(solid);
+    // Served as it is, never pre-bundled from the project root, which holds Solid 1 here.
+    expect(browser.optimizeDeps?.exclude).toEqual([...solid, "seroval", "seroval-plugins"]);
     const ssr = await toolchain.vite("ssr", context);
-    expect(ssr.resolve?.dedupe).toEqual(["solid-js"]);
+    expect(ssr.resolve?.noExternal).toEqual(solid);
     expect(ssr.optimizeDeps).toBeUndefined();
   });
 
-  it("compiles DOM code without Solid's HMR wrapper in the browser", async () => {
-    const code = await transformed("browser", "client");
+  it("compiles DOM code without Solid's HMR wrapper in the browser, importing Solid 2", async () => {
+    const code = await transformed("browser");
     expect(code).toContain("template(");
-    expect(code).not.toMatch(/solid-refresh|\$\$registry/);
+    expect(code).not.toMatch(/solid-refresh|\$\$registry|import\.meta\.hot/);
+    expect(code).toMatch(/@solidjs\+web@2\.[^/]*\/node_modules\/@solidjs\/web\//);
   });
 
   it("compiles hydratable server code for SSR", async () => {
-    const code = await transformed("ssr", "server");
+    const code = await transformed("ssr");
     // The root takes a spread, so Solid writes it with `ssrElement`, whose last argument
     // (`needsId`) prints the hydration key.
-    expect(code).toMatch(/_\$ssrElement\("p", [\s\S]*, true\);/);
+    expect(code).toMatch(/\.ssrElement\)\("p", [\s\S]*, true\);/);
     expect(code).not.toContain("template(");
   });
 });
 
-/** One file through Solid's compiler. */
+/** One file through Solid 2's compiler. */
 async function check(contents: string) {
   const path = join(packageDir, "Fixture.tsx");
   return (await toolchain.frameworkCompile([{ path, contents }], context)).get(path);
 }
 
-describe("solid frameworkCompile (L3)", () => {
+describe("solid2 frameworkCompile (L3)", () => {
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no warning", async () => {
     const files = solidGoldens();
@@ -110,20 +131,16 @@ describe("solid frameworkCompile (L3)", () => {
 
   it("rejects a mismatched closing tag", async () => {
     const broken = golden("Hello.tsx").contents.replace("</p>", "</span>");
+    // @solidjs/compiler reports a parse error without its position.
     expect(await check(broken)).toEqual({
       errors: [
-        {
-          message: "Expected corresponding JSX closing tag for <p>.",
-          line: 11,
-          column: 5,
-          code: "MissingClosingTagElement",
-        },
+        { message: "Expected corresponding JSX closing tag for 'p'.", code: "solid/compile" },
       ],
       warnings: [],
     });
   });
 
-  it("reports HTML a browser would parse differently, once per template", async () => {
+  it("rejects HTML a browser would parse differently, at its template", async () => {
     const result = await check(
       [
         "export default function Card() {",
@@ -136,22 +153,25 @@ describe("solid frameworkCompile (L3)", () => {
         "",
       ].join("\n"),
     );
+    // Solid 2's compiler refuses the template, where Solid 1's only warned.
     expect(result).toEqual({
-      errors: [],
-      warnings: [
+      errors: [
         {
           message: [
             "The HTML provided is malformed and will yield unexpected output when evaluated by a browser.",
             "User HTML:",
-            "<p><div>#text</div></p>",
+            " <p><div>#text</div></p>",
             "Browser HTML:",
-            "<p></p><div>#text</div><p></p>",
+            " <p></p><div>#text</div><p></p>",
             "Original HTML:",
-            "<p><div>Hello, world!</div></p>",
+            " <p><div>Hello, world!</div></p>",
           ].join("\n"),
+          line: 3,
+          column: 5,
           code: "solid/malformed-html",
         },
       ],
+      warnings: [],
     });
   });
 
@@ -167,7 +187,7 @@ describe("solid frameworkCompile (L3)", () => {
   });
 });
 
-describe("solid typecheck (L4)", () => {
+describe("solid2 typecheck (L4)", () => {
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output in one run", async () => {
     const files = [...solidGoldens().map((file) => file.path), SHEETS, STYLEFRAME, FIXTURE_ENGINE];
@@ -220,29 +240,21 @@ describe("solid typecheck (L4)", () => {
 });
 
 /** Compiles a golden the way the `ssr` project does, and imports it. */
-async function compiled(file: ToolchainFile, generate: "ssr" | "dom"): Promise<unknown> {
-  const { code } = transformSync(file.contents, {
-    filename: file.path,
-    babelrc: false,
-    configFile: false,
-    presets: [
-      [require.resolve("babel-preset-solid"), { generate, hydratable: generate === "ssr" }],
-      [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
-    ],
-  })!;
-  const path = scratchFile(`${generate}-${randomUUID()}.js`, code!);
+async function compiled(file: ToolchainFile): Promise<unknown> {
+  const code = await compileForServer(file.contents, file.path);
+  const path = scratchFile(`ssr-${randomUUID()}.js`, code);
   return ((await import(path)) as { default: unknown }).default;
 }
 
-describe("solid renderToString (SSR)", () => {
+describe("solid2 renderToString (SSR)", () => {
   it("returns the component's HTML, with Solid's hydration keys", async () => {
-    const ProfileCard = await compiled(golden("ProfileCard.tsx"), "ssr");
+    const ProfileCard = await compiled(golden("ProfileCard.tsx"));
     const html = await renderToString(ProfileCard, {});
-    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
-    // which writes \`class\` where the key holds nothing, and a space after a class.
-    expect(html.replace(/ data-hk="[^"]*"/g, "")).toBe(
+    // A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
+    // which, on Solid 2, writes no `style` the key leaves out, and no space after a class.
+    expect(html.replace(/ _hk=[^ >]*/g, "")).toBe(
       [
-        '<article class="profile " aria-labelledby="profile-name" style="">',
+        '<article class="profile" aria-labelledby="profile-name">',
         '<header class="profile-header">',
         `<img src="${golden("ProfileCard.tsx").contents.match(/src="([^"]+)"/)![1]}" alt="Ada's avatar" width="48" height="48">`,
         '<h2 id="profile-name">Ada Lovelace</h2>',
@@ -254,7 +266,8 @@ describe("solid renderToString (SSR)", () => {
         "</article>",
       ].join(""),
     );
-    expect(html).toMatch(/^<article data-hk="[^"]+" /);
+    // Solid 2's hydration key is `_hk`, unquoted where it can be.
+    expect(html).toMatch(/^<article _hk=[^ >]+ /);
   });
 
   it("rejects what is not a component, naming what it received", async () => {
@@ -264,21 +277,21 @@ describe("solid renderToString (SSR)", () => {
   });
 
   it("rejects the undefined that Solid's browser build renders, instead of passing", async () => {
-    // What the `ssr` project gets when vite-plugin-solid runs without `ssr: true`: the browser
-    // build of solid-js/web, whose renderToStringAsync logs an error and returns undefined.
-    const browserBuild = join(dirname(require.resolve("solid-js/package.json")), "web/dist/web.js");
-    const { renderToStringAsync } = (await import(browserBuild)) as typeof SolidWeb;
-    vi.doMock("solid-js/web", async (original) => ({
+    // What the `ssr` project gets when @solidjs/vite-plugin runs without `ssr: true`: the browser
+    // build of @solidjs/web, whose renderToStream logs an error and returns undefined.
+    const browserBuild = join(dirname(require.resolve("@solidjs/web")), "web.js");
+    const { renderToStream } = (await import(browserBuild)) as typeof SolidWeb;
+    vi.doMock("@solidjs/web", async (original) => ({
       ...(await original<typeof SolidWeb>()),
-      renderToStringAsync,
+      renderToStream,
     }));
     vi.resetModules();
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const server = await import("../src/toolchain/server.ts");
-      const ProfileCard = await compiled(golden("ProfileCard.tsx"), "ssr");
+      const ProfileCard = await compiled(golden("ProfileCard.tsx"));
       await expect(server.renderToString(ProfileCard, {})).rejects.toThrow(
-        "Solid's server render returned undefined, not HTML: solid-js/web resolved to its browser build.",
+        "Solid's server render returned undefined, not HTML: @solidjs/web resolved to its browser build.",
       );
       expect(errors).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -287,7 +300,7 @@ describe("solid renderToString (SSR)", () => {
       );
     } finally {
       errors.mockRestore();
-      vi.doUnmock("solid-js/web");
+      vi.doUnmock("@solidjs/web");
       vi.resetModules();
     }
   });

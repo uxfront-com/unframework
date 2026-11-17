@@ -1,4 +1,5 @@
-import { For, type JSX, Match, Show, Switch, createMemo, mergeProps, untrack } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { For, Match, Show, Switch, createMemo, merge, untrack } from "solid-js";
 
 interface Account {
   name: string;
@@ -59,7 +60,11 @@ export default function Narrowing(
   rawProps: NarrowingProps & { class?: string; style?: JSX.CSSProperties },
 ) {
   const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };
-  const props = mergeProps(defaults, rawProps);
+  const props = merge(rawProps, {
+    get attrs() {
+      return rawProps.attrs === undefined ? defaults.attrs : rawProps.attrs;
+    },
+  });
   return (
     <div class={props.class} style={props.style} {...scopeAttributes(props)}>
       <Show when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Show>
@@ -116,7 +121,7 @@ export default function Narrowing(
         {(user) => (
           <p
             title={user.nick ? user.nick.trim() : "none"}
-            classList={{ grown: user.age !== undefined && user.age > 17 }}
+            class={{ grown: user.age !== undefined && user.age > 17 }}
             style={{ color: user.colour }}
           >
             {user.age !== undefined ? user.age.toFixed() : "-"}

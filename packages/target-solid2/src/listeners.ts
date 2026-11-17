@@ -42,10 +42,10 @@ import type { SolidCode } from "./setup.ts";
 type JsxAttributeItem = ReturnType<typeof js.jsxAttribute>;
 
 /**
- * Solid's event prop for each DOM event the IR's vocabulary holds (`DOM_EVENTS`), as solid-js
- * 1.9.15's types spell it (`CustomEventHandlersCamelCase` in `solid-js/types/jsx.d.ts`): Solid
- * reads the event's name in lower case, so only the types care how it is spelled. `encrypted`
- * has none: its listener is `on:encrypted`. Pinned by test/listeners.test.ts.
+ * Solid's event prop for each DOM event the IR's vocabulary holds (`DOM_EVENTS`), as @solidjs/web
+ * 2.0's types spell it (`EventHandlersElement`): Solid reads the event's name in lower case, so
+ * only the types care how it is spelled. `encrypted` has a prop only on media elements; elsewhere
+ * its listener is added from the `ref`. Pinned by test/listeners.test.ts.
  */
 export const SOLID_EVENT_PROPS: ReadonlyMap<string, string> = new Map(
   Object.entries({
@@ -148,9 +148,9 @@ export const SOLID_EVENT_PROPS: ReadonlyMap<string, string> = new Map(
 );
 
 /**
- * The events Solid's compiler delegates to the document (babel-plugin-jsx-dom-expressions
- * 0.40's `DelegatedEvents`): a listener of one runs when the event reaches the document. Pinned
- * by test/listeners.test.ts.
+ * The events Solid's compiler delegates to the document (@solidjs/web 2.0's `DelegatedEvents`,
+ * which @solidjs/compiler delegates): a listener of one runs when the event reaches the document.
+ * Pinned by test/listeners.test.ts.
  */
 export const DELEGATED_EVENTS: ReadonlySet<string> = new Set([
   "beforeinput",
@@ -288,9 +288,7 @@ export function solidListeners(
       const callback = `(${parameter}) => ${body}`;
       // A template ref is emptied once its element is removed, from the `ref`'s own branch.
       entries.push(
-        refName
-          ? `${code.clearedRef()}(${callback}, () => {\n${refName} = null;\n})`
-          : callback,
+        refName ? `${code.clearedRef()}(${callback}, () => {\n${refName} = null;\n})` : callback,
       );
     }
     // A `v-model`'s helpers that need the element (src/models.ts).
@@ -313,7 +311,9 @@ export function solidListeners(
         return plan.carrier === attribute ? [refCallback(element, context)] : [];
       }
       // The plan adds every listener but those Solid's own props carry.
-      return [js.jsxAttribute(SOLID_EVENT_PROPS.get(attribute.event)!, expression(handler(attribute)))];
+      return [
+        js.jsxAttribute(SOLID_EVENT_PROPS.get(attribute.event)!, expression(handler(attribute))),
+      ];
     },
     refAttribute(_attribute, element, context) {
       return [refCallback(element, context)];

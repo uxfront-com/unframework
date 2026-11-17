@@ -1,5 +1,5 @@
-// L5 for Solid (ADR-0042): oxlint with the shared baseline and eslint-plugin-solid as a JS
-// plugin (tests/toolchains/solid/output.oxlintrc.json). It accepts every committed golden and
+// L5 for Solid 2 (ADR-0042, ADR-0102): oxlint with the shared baseline and eslint-plugin-solid's
+// v2 rules as a JS plugin (tests/toolchains/solid2/output.oxlintrc.json). It accepts every committed golden and
 // the shapes M1 emits, rejects what its rules exist for (several of which fix how the emitter
 // writes Solid), and refuses a run it cannot trust.
 import { globSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -15,12 +15,12 @@ import { M1_SHAPES, M2_SHAPES } from "./lint-probes.ts";
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
 const context: ToolchainContext = {
-  toolchainDir: join(repo, "tests/toolchains/solid"),
+  toolchainDir: join(repo, "tests/toolchains/solid2"),
   root: packageDir,
 };
 
-/** Every committed Solid golden output of the corpus. */
-const goldens = globSync("tests/integration/cases/**/__output__/solid/**/*.tsx", { cwd: repo })
+/** Every Solid 2 golden output of the corpus. */
+const goldens = globSync("tests/integration/cases/**/__output__/solid2/**/*.tsx", { cwd: repo })
   .toSorted()
   .map((file) => join(repo, file));
 
@@ -47,11 +47,29 @@ async function lintCodes(contents: string): Promise<string[]> {
   return messages.map((message) => message.code ?? message.message).toSorted();
 }
 
+/** The emitter's state helper, as src/helpers.ts prints it without watchers. */
+const STATE = `
+function createState<T>(initial: T): [() => T, (value: T) => void] {
+  let current = initial;
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
+}
+`;
+
 /** A component of `props` that returns `jsx`, with `head` above it. */
 const component = (jsx: string, head = "") =>
   `${head}export default function Probe(props: { items: string[]; label: string }) {\n  return ${jsx};\n}\n`;
 
-describe("solid lint (L5)", { timeout: 60_000 }, () => {
+describe("solid2 lint (L5)", { timeout: 60_000 }, () => {
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
@@ -136,19 +154,20 @@ describe("solid lint (L5)", { timeout: 60_000 }, () => {
     {
       what: "a prop the setup reads once outside `untrack`",
       contents:
-        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { count: number }) {\n  const [count] = createSignal(props.count);\n  return <p>{count()}</p>;\n}\n',
+        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { count: number }) {\n  const [count, setCount] = createSignal(props.count);\n  return <button type="button" onClick={() => setCount(count() + 1)}>{count()}</button>;\n}\n',
       rule: "solid/reactivity",
     },
     {
       what: "a getter passed to a helper not named as a primitive (`create…`)",
       contents:
-        'import { createEffect } from "solid-js";\n\nexport default function Probe(props: { label: string }) {\n  watch(() => props.label);\n  return <p>{props.label}</p>;\n}\n\nfunction watch(source: () => string): void {\n  createEffect(source);\n}\n',
+        'import { createEffect } from "solid-js";\n\nexport default function Probe(props: { label: string }) {\n  watch(() => props.label);\n  return <p>{props.label}</p>;\n}\n\nfunction watch(source: () => string): void {\n  createEffect(source, (value) => {\n    console.log(value);\n  });\n}\n',
       rule: "solid/reactivity",
     },
     {
+      // Solid 2 has no `on:`, so the second listener could only be a second prop.
       what: "two listeners of one event on one element as props",
       contents: component(
-        '<button type="button" on:click={{ handleEvent: () => props.items.length, capture: true }} onClick={() => props.label}>x</button>',
+        '<button type="button" onClick={() => props.items.length} onClick={() => props.label}>x</button>',
       ),
       rule: "solid/jsx-no-duplicate-props",
     },
@@ -159,38 +178,30 @@ describe("solid lint (L5)", { timeout: 60_000 }, () => {
       rule: "no-unassigned-vars",
     },
     {
+      // The emitter's state is `createState`, which `solid/no-unused-signal` does not read.
       what: "a setter no code calls",
-      contents:
-        'import { createSignal } from "solid-js";\n\nexport default function Probe() {\n  const [count, setCount] = createSignal(0);\n  return <p>{count()}</p>;\n}\n',
+      contents: `import { createSignal, getObserver } from "solid-js";\n\nexport default function Probe() {\n  const [count, setCount] = createState(0);\n  return <p>{count()}</p>;\n}\n${STATE}`,
       rule: "no-unused-vars",
     },
     {
       // Why an async `watchEffect` is no `createEffect`: the effect runs as a `create…` helper's
       // callback, which the rule reads as a function called later, async or not.
-      what: "an async tracked scope (an async `watchEffect` as `createEffect(async …)`)",
+      what: "an async tracked scope (an async `watchEffect` as `createEffect(async …, …)`)",
       contents:
-        'import { createEffect, createSignal } from "solid-js";\n\nexport default function Probe(props: { onSeen?: (value: number) => void }) {\n  const [count] = createSignal(0);\n  createEffect(async () => {\n    const value = count();\n    await Promise.resolve();\n    props.onSeen?.(value);\n  });\n  return <p>{count()}</p>;\n}\n',
-      rule: "solid/reactivity",
-    },
-    {
-      // A timer's callback is a called function to the rule; a promise continuation is not, so
-      // the output says its reads are untracked (`.then(() => untrack(() => …))`).
-      what: "a promise continuation that reads a signal outside `untrack`",
-      contents:
-        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { onSaved?: (value: number) => void }) {\n  const [count] = createSignal(0);\n  function save() {\n    void Promise.resolve().then(() => props.onSaved?.(count()));\n  }\n  return <button type="button" onClick={save}>{count()}</button>;\n}\n',
+        'import { createEffect, createSignal } from "solid-js";\n\nexport default function Probe(props: { onSeen?: (value: number) => void }) {\n  const [count, setCount] = createSignal(0);\n  createEffect(\n    async () => {\n      const value = count();\n      await Promise.resolve();\n      props.onSeen?.(value);\n    },\n    () => undefined,\n  );\n  return <button type="button" onClick={() => setCount(count() + 1)}>{count()}</button>;\n}\n',
       rule: "solid/reactivity",
     },
     {
       what: "a microtask that reads a signal outside `untrack`",
       contents:
-        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { onSaved?: (value: number) => void }) {\n  const [count] = createSignal(0);\n  function save() {\n    queueMicrotask(() => props.onSaved?.(count()));\n  }\n  return <button type="button" onClick={save}>{count()}</button>;\n}\n',
+        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { onSaved?: (value: number) => void }) {\n  const [count, setCount] = createSignal(0);\n  function save() {\n    setCount(count() + 1);\n    queueMicrotask(() => props.onSaved?.(count()));\n  }\n  return <button type="button" onClick={save}>{count()}</button>;\n}\n',
       rule: "solid/reactivity",
     },
     {
       // So an arrow a setup function hands to a function says `untrack` (src/untracked.ts).
       what: "an arrow a setup function hands to a function, reading a signal outside `untrack`",
       contents:
-        'import { createSignal } from "solid-js";\n\nexport default function Probe() {\n  const [items, setItems] = createSignal<number[]>([]);\n  const [draft] = createSignal(1);\n  function update(change: (list: number[]) => number[]) {\n    setItems(change(items()));\n  }\n  function add() {\n    update((list) => [...list, draft()]);\n  }\n  return <button type="button" onClick={add}>{items().length}</button>;\n}\n',
+        'import { createSignal } from "solid-js";\n\nexport default function Probe() {\n  const [items, setItems] = createSignal<number[]>([]);\n  const [draft, setDraft] = createSignal(1);\n  function update(change: (list: number[]) => number[]) {\n    setItems(change(items()));\n  }\n  function add() {\n    update((list) => [...list, draft()]);\n    setDraft(draft() + 1);\n  }\n  return <button type="button" onClick={add}>{items().length}</button>;\n}\n',
       rule: "solid/reactivity",
     },
     {

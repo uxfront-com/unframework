@@ -1,11 +1,11 @@
-// A component's module bindings on Solid (src/composable.ts, ADR-0070): the module's constants it
+// A component's module bindings on Solid 2 (src/composable.ts, ADR-0070): the module's constants it
 // reaches are declared at module scope as written, before what the setup hoists, and a setup
 // function that reads only them moves to module scope beside them.
 import { describe, expect, it } from "vitest";
 
 import { emitSource } from "./fixtures.ts";
 
-describe("solid module bindings (src/composable.ts)", () => {
+describe("solid2 module bindings (src/composable.ts)", () => {
   it("declares the constants a component reaches, and hoists a function that reads only them", async () => {
     const output = await emitSource(
       [

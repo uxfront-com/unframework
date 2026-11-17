@@ -1,0 +1,104 @@
+import { DEFAULT_SIZE, SIZES, SIZE_ORDER, type Size } from "./tokens";
+import type { JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, untrack } from "solid-js";
+
+export default function SizePicker(props: { class?: string; style?: JSX.CSSProperties }) {
+  const [size, setSize] = createState<Size>(DEFAULT_SIZE);
+
+  function pick(next: Size) {
+    setSize(next);
+  }
+
+  return (
+    <fieldset
+      class={props.class ? `size-picker ${props.class}` : "size-picker"}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
+      <legend>Size</legend>
+      <p role="status">Picked: {SIZES[size()]}</p>
+      <ul>
+        <KeyedFor each={SIZE_ORDER} by={(each) => each}>
+          {(each) => (
+            <li>
+              <button
+                type="button"
+                aria-pressed={enumeratedValue(size() === each.value)}
+                onClick={() => pick(each.value)}
+              >
+                {SIZES[each.value]}
+              </button>
+            </li>
+          )}
+        </KeyedFor>
+      </ul>
+    </fieldset>
+  );
+}
+
+/** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
+function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
+  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
+      }}
+    </For>
+  );
+}
+
+/**
+ * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
+}

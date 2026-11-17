@@ -1,12 +1,10 @@
-// Sources beyond the listed composable cases, compiled through `compile()` for Solid
+// Sources beyond the listed composable cases, compiled through `compile()` for Solid 2
 // (src/composable.ts, src/setup.ts; ADR-0068 to ADR-0070): each compiles with no error, every
-// output passes babel-preset-solid (L3), tsgo (L4) and the lint rules (L5), and a source's
+// output passes @solidjs/compiler (L3), tsgo (L4) and the lint rules (L5), and a source's
 // outputs join into one module as the unplugin loads them (ADR-0053).
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
-import { transformSync } from "@babel/core";
 import type { ToolchainContext } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -15,10 +13,9 @@ import { compileComposableCases } from "../../codegen/test/composable-cases.ts";
 import { joinModules } from "../../unplugin/src/assemble.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
-import { packageDir, toolchainDir } from "./fixtures.ts";
+import { compileForServer, packageDir, toolchainDir } from "./fixtures.ts";
 
 const context: ToolchainContext = { toolchainDir, root: packageDir };
-const require = createRequire(import.meta.url);
 
 // In the package, so the outputs' `solid-js` imports resolve from its node_modules.
 mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
@@ -209,9 +206,9 @@ for (const [id, files] of Object.entries(CASES)) {
     writeFileSync(path, contents);
   }
 }
-const cases = await compileComposableCases("solid", { ids: Object.keys(CASES), integrationDir });
+const cases = await compileComposableCases("solid2", { ids: Object.keys(CASES), integrationDir });
 
-describe("solid sources beyond the composable cases", () => {
+describe("solid2 sources beyond the composable cases", () => {
   it.each(cases)("compiles $id and passes L3 to L5", { timeout: 60_000 }, async (each) => {
     expect(each.sources.flatMap(({ diagnostics }) => diagnostics)).toEqual([]);
     const written = each.sources.flatMap(({ outputs }) =>
@@ -241,11 +238,15 @@ describe("solid sources beyond the composable cases", () => {
     expect(step).toContain('import type { Options } from "./types";');
   });
 
-  it("writes a state inferred as a type parameter through an updater", () => {
-    expect(outputOf("generics/inferred-state", "useLatest.ts")).toContain("setLatest(() => next);");
-    expect(outputOf("generics/inferred-state", "Pick.tsx")).toContain(
-      "setChosen(() => props.second);",
-    );
+  // `createState`'s setter takes the value itself, never an updater, so a value that may be a
+  // function is written as it is, where Solid's own setter would call it.
+  it("writes a state inferred as a type parameter as its value", () => {
+    const latest = outputOf("generics/inferred-state", "useLatest.ts");
+    expect(latest).toContain("const [latest, setLatest] = createState(initial);");
+    expect(latest).toContain("setLatest(next);");
+    const pick = outputOf("generics/inferred-state", "Pick.tsx");
+    expect(pick).toContain("setChosen(props.second);");
+    expect(pick).not.toContain("setChosen(() =>");
   });
 
   it("declares a value two components of a source read once, in the main one's output", () => {
@@ -277,8 +278,10 @@ describe("solid sources beyond the composable cases", () => {
     );
   });
 
-  it("writes a state an object literal initialises through an updater in a generic owner", () => {
-    expect(outputOf("generics/spread-state", "useCopy.ts")).toContain("setCopy(() => next);");
+  it("writes a state an object literal initialises as its value in a generic owner", () => {
+    const copy = outputOf("generics/spread-state", "useCopy.ts");
+    expect(copy).toContain("const [copy, setCopy] = createState({ ...initial });");
+    expect(copy).toContain("setCopy(next);");
   });
 
   it("loads a source's joined module, a sibling's constants reading the main one's", async () => {
@@ -320,27 +323,16 @@ async function renderJoined(id: string, main: string): Promise<string> {
     files.map(({ path }) => path),
   );
   if ("error" in joined) throw new Error(joined.error);
-  const { code } = transformSync(joined.code, {
-    filename: `${main}.tsx`,
-    babelrc: false,
-    configFile: false,
-    presets: [
-      [require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
-      [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
-    ],
-  })!;
+  const code = await compileForServer(joined.code, `${main}.tsx`);
   const directory = join(scratch, "joined", id);
   mkdirSync(directory, { recursive: true });
   for (const [name, contents] of Object.entries(CASES[id]!)) {
     if (name.endsWith(".ts") && !name.endsWith(".uf.ts"))
       writeFileSync(join(directory, name), contents);
   }
-  writeFileSync(join(directory, `${main}.js`), code!);
+  writeFileSync(join(directory, `${main}.js`), code);
   const loaded = (await import(join(directory, `${main}.js`))) as { default: unknown };
-  return (await renderToString(loaded.default, {})).replaceAll(
-    / data-hk="[^"]*"|<!--\/?\$?-->/g,
-    "",
-  );
+  return (await renderToString(loaded.default, {})).replaceAll(/ _hk=[^ >]*|<!--\/?\$?-->/g, "");
 }
 
 /** One output of a case, by its path. */

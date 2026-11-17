@@ -1,0 +1,155 @@
+import type { JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, onCleanup, untrack } from "solid-js";
+
+export interface CommandMenuProps {
+  commands: string[];
+}
+
+export interface CommandMenuEvents {
+  onRun?: (command: string) => void;
+  onDismiss?: () => void;
+}
+
+export default function CommandMenu(
+  props: CommandMenuProps & CommandMenuEvents & { class?: string; style?: JSX.CSSProperties },
+) {
+  const [active, setActive] = createState(0);
+  const [query, setQuery] = createState("");
+  let shortcutField: HTMLInputElement | null = null;
+
+  function handleKey(event: KeyboardEvent) {
+    if (event.key === "Enter") event.preventDefault();
+    if (event.key === "ArrowDown") {
+      setActive((active() + 1) % props.commands.length);
+    } else if (event.key === "ArrowUp") {
+      setActive((active() + props.commands.length - 1) % props.commands.length);
+    } else if (event.key === "Enter") {
+      props.onRun?.(props.commands[active()] ?? query());
+    } else if (event.key === "Escape") {
+      setActive(0);
+      props.onDismiss?.();
+    }
+  }
+
+  function clearShortcut() {
+    const input = shortcutField;
+    if (input) input.value = "";
+  }
+
+  return (
+    <section
+      class={props.class ? `command-menu ${props.class}` : "command-menu"}
+      aria-label="Command menu"
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
+      <form role="search" aria-label="Commands">
+        <label>
+          Command
+          <input
+            name="command"
+            onInput={(event) => setQuery((event.currentTarget as HTMLInputElement).value)}
+            onKeyDown={handleKey}
+          />
+        </label>
+      </form>
+      <ul aria-label="Suggestions">
+        <KeyedFor each={props.commands} by={(command) => command}>
+          {(command) => (
+            <li aria-current={enumeratedValue(command.index === active() ? "true" : undefined)}>
+              {command.value}
+            </li>
+          )}
+        </KeyedFor>
+      </ul>
+      <label>
+        Shortcut name
+        <input
+          name="shortcut"
+          ref={clearedRef(
+            (element) => {
+              shortcutField = element;
+            },
+            () => {
+              shortcutField = null;
+            },
+          )}
+          onKeyDown={(event) => event.key === "Escape" && clearShortcut()}
+        />
+      </label>
+    </section>
+  );
+}
+
+/** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
+function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
+  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
+      }}
+    </For>
+  );
+}
+
+/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
+function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
+  onCleanup(clear);
+  return callback;
+}
+
+/**
+ * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
+function createState<T>(initial: T): [() => T, (value: T) => void];
+function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
+}

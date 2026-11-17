@@ -1,13 +1,11 @@
-// Solid against the attributes the analyser lets a binding take (ADR-0037): how its
-// compiler sets each bindable boolean, and which bindings its JSX types reject although the
-// authoring types and the analyser accept them (L4 would fail on Solid alone).
+// Solid 2 against the attributes the analyser lets a binding take (ADR-0037): how its
+// compiler and runtime set each bindable boolean, and which bindings its JSX types reject although
+// the authoring types and the analyser accept them (L4 would fail on Solid 2 alone).
 import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { transformSync } from "@babel/core";
 import { typecheckWithTsgo } from "@unframework.dev/codegen/toolchain-node";
 import {
   ARIA_ATTRIBUTES,
@@ -35,12 +33,13 @@ import { enumeratedValues } from "../../analyzer/src/enumerated.ts";
 import { kinds } from "../../analyzer/src/types/kinds.ts";
 import type { Kinds } from "../../analyzer/src/types/kinds.ts";
 import { isUntyped, untypedAttribute } from "../src/attributes.ts";
-import { packageDir, toolchainDir } from "./fixtures.ts";
+import { loadCompiler } from "../src/toolchain/compile.ts";
+import { renderToString } from "../src/toolchain/server.ts";
+import { compileForServer, packageDir, toolchainDir } from "./fixtures.ts";
 
-const require = createRequire(import.meta.url);
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
 const scratch = join(packageDir, ".uf-tmp", `attributes-${randomUUID()}`);
-// The authoring types' checker needs TypeScript 7 installed above it: the Solid toolchain's.
+// The authoring types' checker needs TypeScript 7 installed above it: the Solid 2 toolchain's.
 const authoringDir = join(toolchainDir, ".uf-tmp", `authoring-${randomUUID()}`);
 mkdirSync(scratch, { recursive: true });
 afterAll(() => {
@@ -48,24 +47,12 @@ afterAll(() => {
   rmSync(authoringDir, { recursive: true, force: true });
 });
 
-/** A source through babel-preset-solid, for the DOM or the server. */
-function compiled(source: string, generate: "dom" | "ssr"): string {
-  return transformSync(source, {
-    filename: join(scratch, "Booleans.tsx"),
-    babelrc: false,
-    configFile: false,
-    presets: [
-      [require.resolve("babel-preset-solid"), { generate, hydratable: generate === "ssr" }],
-      [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
-    ],
-  })!.code!;
-}
-
-describe("solid bindable boolean attributes", () => {
-  // A bindable boolean Solid's compiler does not know as one would need `bool:name={x}`, or it
-  // would set `name="false"`. It knows every one the analyser accepts, so the output writes them
-  // as HTML does; this fails when either list changes.
-  it("are booleans to Solid's compiler, as a property or presence, in the DOM and on the server", () => {
+describe("solid2 bindable boolean attributes", () => {
+  // Solid 2's compiler knows no boolean attribute: it passes every bound value to the runtime as
+  // it is, which writes `true` as presence and `false` as absence, for every attribute alike. The
+  // output writes every bindable boolean the analyser accepts as HTML does; this fails when either
+  // list changes, or when Solid stops writing a boolean as presence.
+  it("are presence to Solid 2, in the DOM and on the server", async () => {
     const pairs = [...BINDABLE_BOOLEAN_ATTRIBUTES].flatMap((name) => {
       const tag = [...HTML_ELEMENTS].find(
         (candidate) =>
@@ -81,14 +68,26 @@ describe("solid bindable boolean attributes", () => {
     expect(
       [...BINDABLE_BOOLEAN_ATTRIBUTES].filter((name) => !pairs.some((pair) => pair.name === name)),
     ).toEqual(["allowfullscreen", "autofocus", "checked", "ismap", "muted", "selected"]);
-    const source = `export function Booleans(props: { on: boolean }) {\n  return (\n    <div>\n${pairs
+    const source = `export default function Booleans(props: { on: boolean }) {\n  return (\n    <div>\n${pairs
       .map(({ tag, name }) => `      <${tag} ${name}={props.on} />`)
       .join("\n")}\n    </div>\n  );\n}\n`;
-    const dom = compiled(source, "dom");
-    const ssr = compiled(source, "ssr");
+    const filename = join(scratch, "Booleans.tsx");
+    const compiler = await loadCompiler({ toolchainDir, root: packageDir });
+    const dom = compiler.transform(source, { filename, generate: "dom", hydratable: false }).code;
     for (const { tag, name } of pairs) {
-      expect(dom, `<${tag} ${name}>`).not.toMatch(new RegExp(`setAttribute\\([^,]+, "${name}"`));
-      expect(ssr, `<${tag} ${name}>`).toContain(`ssrAttribute("${name}", props.on, true)`);
+      // The value as it is, which the runtime's `setAttribute` writes as presence.
+      expect(dom, `<${tag} ${name}>`).toMatch(
+        new RegExp(`setAttribute\\(_el\\$\\d+, "${name}", \\w+\\)`),
+      );
+    }
+    const path = join(scratch, `Booleans-${randomUUID()}.js`);
+    writeFileSync(path, await compileForServer(source, filename));
+    const { default: Booleans } = (await import(path)) as { default: unknown };
+    const on = await renderToString(Booleans, { props: { on: true } });
+    const off = await renderToString(Booleans, { props: { on: false } });
+    for (const { tag, name } of pairs) {
+      expect(on, `<${tag} ${name}>`).toMatch(new RegExp(`<${tag}[^>]* ${name}[ >]`));
+      expect(off, `<${tag} ${name}>`).not.toMatch(new RegExp(`<${tag}[^>]* ${name}[ >=]`));
     }
   });
 });
@@ -162,8 +161,24 @@ function binding(name: string, value: string, form: "spread" | "untyped" | undef
   return form === "spread" ? `{...${object}}` : `{...(${object} as Record<string, unknown>)}`;
 }
 
-/** A file of one element per line, from line 4. */
-function sweepSource(lines: readonly string[]): string {
+/**
+ * A binding as the output writes it on an element that takes it: an enumerated attribute's value that
+ * may not be a string goes through the `enumeratedValue` helper (src/jsx.ts), which writes a boolean as
+ * `"true"` or `"false"`, as Solid 2's types ask.
+ */
+function outputBinding(name: string, value: string): string {
+  const enumerated =
+    name.startsWith("aria-") || ["contenteditable", "draggable", "spellcheck"].includes(name);
+  return enumerated && value !== "v.string" && !value.startsWith("(v.string as")
+    ? `${name}={enumeratedValue(${value})}`
+    : `${name}={${value}}`;
+}
+
+/** The `enumeratedValue` helper's signature, as the output declares it. */
+const ARIA_VALUE = "declare function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T;";
+
+/** A file of one element per line, from line 4, with `tail` after them. */
+function sweepSource(lines: readonly string[], tail: readonly string[] = []): string {
   return [
     "declare const v: { string: string; number: number; boolean: boolean };",
     "export const all = (",
@@ -171,11 +186,12 @@ function sweepSource(lines: readonly string[]): string {
     ...lines.map((line) => `    ${line}`),
     "  </>",
     ");",
+    ...tail,
     "",
   ].join("\n");
 }
 
-describe("solid JSX types against every binding the analyser accepts (L4)", () => {
+describe("solid2 JSX types against every binding the analyser accepts (L4)", () => {
   // A binding the authoring types (`@uxfront/unframework`'s, vendored from Vue) and the analyser accept
   // is valid source, which the Solid output must type-check too. Where Solid's types lack the
   // attribute on that element (`fill` on <linearGradient>, `href` on <mpath>) or forbid it
@@ -185,15 +201,20 @@ describe("solid JSX types against every binding the analyser accepts (L4)", () =
     const found = bindings();
     const solidFile = join(scratch, "Sweep.tsx");
     // Three lines per binding: as written, as the output writes it alone on its element, and
-    // as it writes it beside children.
+    // as it writes it beside children, an enumerated value through `enumeratedValue`.
     writeFileSync(
       solidFile,
       sweepSource(
-        found.flatMap(([tag, name, value]) => [
-          `<${tag} ${binding(name, value, undefined)} />`,
-          `<${tag} ${binding(name, value, untypedAttribute(tag, name, false))} />`,
-          `<${tag} ${binding(name, value, untypedAttribute(tag, name, true))}>{null}</${tag}>`,
-        ]),
+        found.flatMap(([tag, name, value]) => {
+          const alone = untypedAttribute(tag, name, false);
+          const beside = untypedAttribute(tag, name, true);
+          return [
+            `<${tag} ${binding(name, value, undefined)} />`,
+            `<${tag} ${alone ? binding(name, value, alone) : outputBinding(name, value)} />`,
+            `<${tag} ${beside ? binding(name, value, beside) : outputBinding(name, value)}>{null}</${tag}>`,
+          ];
+        }),
+        [ARIA_VALUE],
       ),
     );
     mkdirSync(authoringDir, { recursive: true });
