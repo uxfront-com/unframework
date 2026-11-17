@@ -92,7 +92,28 @@ in a real browser.
   `cli` sits below them in `LAYERS`. CI's `Design system` job runs the sample design system's
   tests and visual suite from packed tarballs on all seven targets (ADR-0089). Both packages
   are public from the first release, and property-based fuzzing is left for later. Documented on unframework.dev (`4.tooling/5.testing.md`, `6.visual.md`,
-  `7.preview.md`). **M8, advanced features and versioned targets, is next** (plan §9).
+  `7.preview.md`).
+- **M8, advanced features and versioned targets, is done:** L12 (hydration) is live. A
+  `hydrate:<target>` project puts each case's server render in a page and hydrates it, on React,
+  Vue, Svelte, Solid, Solid 2 and Angular (ADR-0095, ADR-0106). Qwik resumes a server render instead
+  of hydrating it, so its `hydration` cell is unsupported (UF4001, info) and its resumption isn't
+  checked yet. Astro is static. M8's review of D7 moved Qwik to its 2.0 release candidate, still
+  experimental (ADR-0094). A keyed item keeps its element and typed text while its list reorders,
+  and its focus where it keeps its place (`keyed-identity`, ADR-0096). `innerHTML` sets an element's
+  markup, with a warning (UF3051, ADR-0097). `<Teleport to>` mounts content elsewhere on the page,
+  like a dialog (ADR-0098). `defineDirective` declares a portable directive that `v-name={value}`
+  applies, and the tsgo oracle checks its value (ADR-0099, ADR-0109). `<Transition>` runs Vue's
+  enter and leave classes as a condition shows or hides an element (ADR-0100). An `async` component
+  awaits its data at the top of its setup, and an `await` after other setup items is UF2039. A
+  parent's Vue output wraps it in `<Suspense>`, as a hand-written Vue parent must, and a Svelte app
+  sets `experimental.async` (ADR-0101). Astro renders once on the server, so its `keyed-identity`,
+  `teleport`, `directive` and `transition` cells are unsupported (UF4001, info). `solid@2` is an
+  eighth built-in target, on Solid 2.0.0, and opt-in: the default targets stay the seven (ADR-0102).
+  The eighth framework drill took 2 hours 29 minutes from the fork to the corpus green on eight
+  targets. Vue 3.6's Vapor mode is deferred until Vue 3.6 is npm's `latest`. The corpus holds 376
+  cases. Documented on unframework.dev (`2.components/22.raw-html.md` to `26.async-setup.md`, and
+  the Keyed lists and Hydration sections of `3.reference/3.semantics.md`). **M9, agent tooling, is
+  next** (plan §9).
 - Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
   milestone lands. The authoring types already accept the whole language (plan §4).
 - The plan describes the target state. The code is the truth for what is built:
@@ -103,13 +124,13 @@ in a real browser.
 
 ## Read first
 
-| Document                            | Read it                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                                                                                                                                                |
-| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled, ADR-0067 to ADR-0071 what M5 settled, ADR-0074 to ADR-0080 what M6 settled, ADR-0085 to ADR-0089 what M7 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
-| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                                                                                                                                            |
-| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Document                            | Read it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                                                                                                                                                                                                             |
+| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled, ADR-0067 to ADR-0071 what M5 settled, ADR-0074 to ADR-0080 what M6 settled, ADR-0085 to ADR-0089 what M7 settled, ADR-0094 to ADR-0102, ADR-0106 and ADR-0109 what M8 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
+| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                                                                                                                                                                                                         |
+| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## Layout
 
