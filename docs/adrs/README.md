@@ -139,7 +139,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0084](./0084-docs-only-pull-requests-skip-the-tests.md)           | Docs-only pull requests skip the tests, and pushes run no canary                | Accepted                                                               | §7.7, §7.9              |
 | [0085](./0085-the-public-api-of-unframework-testing.md)            | The public API of `@unframework.dev/testing` is its root entry and the case     | Accepted                                                               | §7.3, §8.5, §9 M7       |
 | [0086](./0086-a-projects-tests-with-define-test-config.md)         | A project's tests run through `defineTestConfig` and `unframework test`         | Accepted, amended by ADR-0104                                          | §7.3, §8.5, §9 M7       |
-| [0087](./0087-examples-and-unframework-visual.md)                  | Examples run on every target through `@unframework.dev/visual`                  | Accepted, amended by ADR-0105                                          | §8.6, §9 M7             |
+| [0087](./0087-examples-and-unframework-visual.md)                  | Examples run on every target through `@unframework.dev/visual`                  | Accepted, amended by ADR-0105 and ADR-0110                             | §8.6, §9 M7             |
 | [0088](./0088-unframework-preview.md)                              | `unframework preview` shows every example on every target, one Vite server each | Accepted, amended by ADR-0104                                          | §8.6, §9 M7             |
 | [0089](./0089-the-design-system-runs-from-tarballs.md)             | The sample design system's tests run from tarballs, outside the workspace       | Accepted                                                               | §7.9, §8.5, §9 M7       |
 | [0090](./0090-npm-package-names.md)                                | `@uxfront/unframework` plus `@unframework.dev/*`                                | Accepted                                                               | §11 D2, D12             |
@@ -149,6 +149,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0104](./0104-a-projects-vite-config.md)                           | A project's `vite` config reaches `test`, `visual` and `preview`                | Accepted                                                               | §8.5, §8.6, P7          |
 | [0105](./0105-live-captures-may-take-a-projects-fonts.md)          | Live captures may take a project's own fonts                                    | Accepted                                                               | §7.2, §8.6, R10         |
 | [0107](./0107-the-tsgo-oracle-on-typescript-7-1.md)                | The tsgo oracle on TypeScript 7.1                                               | Accepted                                                               | §5.5, §9 M5             |
+| [0110](./0110-examples-carry-metadata-in-a-doc-comment.md)         | Examples carry metadata in a doc comment                                        | Accepted                                                               | §8.6, §9 M7             |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

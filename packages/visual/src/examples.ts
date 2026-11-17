@@ -1,6 +1,8 @@
 // A project's examples (plan §8.6, ADR-0087): `*.example.uf.tsx` files, each a component with no
 // props, so every target renders it the same way with nothing to pass. Discovery skips installed
 // packages, build output and the run's own directory, and UF7011 refuses an example with props.
+// The preview alone reads an example's doc comment for its category, title, description and order
+// (ADR-0110): discovery derives them from the path, and `visual` never reads the comment.
 import { globSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -8,6 +10,7 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { compile, createFileResolver } from "@unframework.dev/compiler";
 import type { Diagnostic } from "@unframework.dev/compiler";
 import { createDiagnostic } from "@unframework.dev/diagnostics";
+import { parseModule } from "@unframework.dev/parser";
 import { baselineFileName } from "@unframework.dev/testing/node";
 
 /** An example's file suffix. */
@@ -27,6 +30,17 @@ export interface Example {
   file: string;
   /** The file's name without the suffix, `Buttons`: its baselines are named after it. */
   name: string;
+  /**
+   * The groups the preview files it under, outermost first, as `@category Components/Actions/Button`
+   * gives `["Components", "Actions", "Button"]`. Derived from its directory by default (ADR-0110).
+   */
+  category: string[];
+  /** Its name in the preview: `@title`, or its file name in words without its category's. */
+  title: string;
+  /** The text of its doc comment, when it has one. */
+  description?: string;
+  /** Where the preview sorts it among the others, `@order`: unset sorts after every number. */
+  order?: number;
 }
 
 /** What {@link discoverExamples} reads. */
@@ -58,7 +72,8 @@ export function discoverExamples(options: DiscoverExamplesOptions): Example[] {
     .map((entry): Example => {
       const absolute = resolve(entry.parentPath, entry.name);
       const id = relative(root, absolute).split(sep).join("/").slice(0, -EXAMPLE_SUFFIX.length);
-      return { id, file: absolute, name: basename(absolute).slice(0, -EXAMPLE_SUFFIX.length) };
+      const name = basename(absolute).slice(0, -EXAMPLE_SUFFIX.length);
+      return { id, file: absolute, name, ...derivedMetadata(id, name) };
     })
     .toSorted((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
@@ -126,4 +141,197 @@ export async function checkExamples(
     }
   }
   return diagnostics;
+}
+
+/** The category directory a root `examples/` stands for, and the category of an example in it. */
+const ROOT_CATEGORY = "Examples";
+
+/**
+ * The words of a name: `ButtonColors` gives `Button` and `Colors`, `HTMLButton` gives `HTML` and
+ * `Button`, `field-group` gives `field` and `group`.
+ */
+function wordsOf(text: string): string[] {
+  return text.match(/\p{Lu}+(?!\p{Ll})|\p{Lu}?\p{Ll}+|\p{L}+|\p{N}+/gu) ?? [];
+}
+
+const capitalised = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
+
+/**
+ * The category and title an example takes from its path alone (ADR-0110). The category is its
+ * directory's name, or its parent's when the directory is `examples`, in title case with `-` and
+ * `_` as spaces; an example at the root, or in a root `examples/`, is in `Examples`. The title is
+ * its file name in words, without a leading run of words equal to the category's.
+ */
+export function derivedMetadata(id: string, name: string): { category: string[]; title: string } {
+  const directories = id.split("/").slice(0, -1);
+  const directory = directories.at(-1) === "examples" ? directories.at(-2) : directories.at(-1);
+  const titled = directory?.split(/[-_]+/).filter(Boolean).map(capitalised).join(" ");
+  const category = directory === undefined ? ROOT_CATEGORY : titled || directory;
+  const words = wordsOf(name).map(capitalised);
+  const prefix = wordsOf(category).map((word) => word.toLowerCase());
+  const repeats =
+    words.length > prefix.length &&
+    prefix.every((word, index) => words[index]!.toLowerCase() === word);
+  const title = (repeats ? words.slice(prefix.length) : words).join(" ");
+  return { category: [category], title: title || name };
+}
+
+/** What {@link readExampleMetadata} gives. */
+export interface ExampleMetadataResult {
+  /** The examples, in the order given, each with what its doc comment sets. */
+  examples: Example[];
+  /** UF7012 at each malformed tag, in the order of the examples and their tags. */
+  diagnostics: Diagnostic[];
+}
+
+/**
+ * Reads the doc comment on each example's default export (ADR-0110): its text is the description,
+ * and `@category` (split on `/`), `@title` and `@order` (a finite number) set the others. Other tags
+ * are ignored. A known tag that is empty, not a number where one is due, or given twice is UF7012
+ * (a warning) at the tag, and the example keeps the derived value. An example whose file can't be
+ * read or parsed keeps what discovery derived, and the compile reports why.
+ */
+export async function readExampleMetadata(
+  root: string,
+  examples: readonly Example[],
+): Promise<ExampleMetadataResult> {
+  const read: Example[] = [];
+  const diagnostics: Diagnostic[] = [];
+  for (const example of examples) {
+    const source = await readFile(example.file, "utf8").catch(() => undefined);
+    if (source === undefined) {
+      read.push(example);
+      continue;
+    }
+    const filename = relative(root, example.file).split(sep).join("/");
+    const result = exampleMetadata(example, source, filename);
+    read.push(result.example);
+    diagnostics.push(...result.diagnostics);
+  }
+  return { examples: read, diagnostics };
+}
+
+/** One tag of a doc comment, with its value and the span of its line. */
+interface DocTag {
+  name: string;
+  value: string;
+  span: { start: number; end: number };
+}
+
+/** The tags {@link readExampleMetadata} reads. */
+const KNOWN_TAGS = ["category", "title", "order"] as const;
+type KnownTag = (typeof KNOWN_TAGS)[number];
+
+/** A decimal number, as `@order` takes it: no hex, no `Infinity`, nothing after it. */
+const DECIMAL = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
+
+/** One example's metadata, from its source. */
+function exampleMetadata(
+  example: Example,
+  source: string,
+  filename: string,
+): { example: Example; diagnostics: Diagnostic[] } {
+  const comment = docComment(source, filename);
+  if (!comment) return { example, diagnostics: [] };
+  const { description, tags } = comment;
+  const derived = derivedMetadata(example.id, example.name);
+  const diagnostics: Diagnostic[] = [];
+  const warn = (tag: DocTag, message: string, help: string) =>
+    diagnostics.push(createDiagnostic("UF7012", { file: filename, span: tag.span, message, help }));
+  const values: { [Tag in KnownTag]?: string } = {};
+  for (const name of KNOWN_TAGS) {
+    const given = tags.filter((tag) => tag.name === name);
+    for (const repeat of given.slice(1)) {
+      warn(
+        repeat,
+        `The example ${example.name} gives @${name} ${given.length} times, so the preview uses neither and derives it.`,
+        `Keep one @${name}.`,
+      );
+    }
+    if (given.length === 1) values[name] = given[0]!.value;
+  }
+  const tagOf = (name: KnownTag) => tags.find((tag) => tag.name === name)!;
+  const result: Example = { ...example, ...derived };
+  if (values.category !== undefined) {
+    const segments = values.category.split("/").map((segment) => segment.trim());
+    if (segments.some((segment) => segment === "")) {
+      warn(
+        tagOf("category"),
+        `The example ${example.name}'s @category ${values.category ? `"${values.category}" has an empty group` : "is empty"}, so the preview files it under ${derived.category.join("/")}.`,
+        "Name each group, outermost first, separated by `/`: @category Components/Actions/Button.",
+      );
+    } else {
+      result.category = segments;
+    }
+  }
+  if (values.title !== undefined) {
+    if (values.title === "") {
+      warn(
+        tagOf("title"),
+        `The example ${example.name}'s @title is empty, so the preview names it ${derived.title}.`,
+        "Write the title after the tag, or remove the tag: @title Colors.",
+      );
+    } else {
+      result.title = values.title;
+    }
+  }
+  if (values.order !== undefined) {
+    const order = Number(values.order);
+    if (!DECIMAL.test(values.order) || !Number.isFinite(order)) {
+      warn(
+        tagOf("order"),
+        `The example ${example.name}'s @order ${values.order ? `"${values.order}" is not a number` : "is empty"}, so the preview sorts it after the examples that have one.`,
+        "Write a number after the tag, such as @order 2.",
+      );
+    } else {
+      result.order = order;
+    }
+  }
+  if (description) result.description = description;
+  return { example: result, diagnostics };
+}
+
+/**
+ * The doc comment directly before the module's `export default`, read into its text and its tags,
+ * each with the span of its line in the source. `undefined` when there is none: no default export,
+ * a plain block or line comment, or code between the comment and the export.
+ */
+function docComment(
+  source: string,
+  filename: string,
+): { description: string; tags: DocTag[] } | undefined {
+  const { program, comments } = parseModule(filename, source);
+  const statement = program.body.find((node) => node.type === "ExportDefaultDeclaration");
+  if (!statement) return undefined;
+  const comment = comments.findLast((each) => each.end <= statement.start);
+  if (
+    !comment ||
+    comment.type !== "Block" ||
+    !comment.value.startsWith("*") ||
+    source.slice(comment.end, statement.start).trim() !== ""
+  ) {
+    return undefined;
+  }
+  // After `/**`; each line drops its indentation and its leading `*`.
+  let offset = comment.start + 3;
+  const text: string[] = [];
+  const tags: DocTag[] = [];
+  for (const [index, raw] of comment.value.slice(1).split("\n").entries()) {
+    const lead = (index === 0 ? /^[ \t]*/ : /^[ \t]*\*?[ \t]*/).exec(raw)![0].length;
+    const line = raw.slice(lead).trimEnd();
+    const start = offset + lead;
+    offset += raw.length + 1;
+    const tag = /^@([A-Za-z][\w-]*)(?:\s+(.*))?$/s.exec(line);
+    if (tag) {
+      const span = { start, end: start + line.length };
+      tags.push({ name: tag[1]!, value: (tag[2] ?? "").trim(), span });
+    } else if (tags.length) {
+      // A tag's value goes on until the next tag.
+      const last = tags.at(-1)!;
+      if (line) last.value = last.value ? `${last.value} ${line}` : line;
+    } else {
+      text.push(line);
+    }
+  }
+  return { description: text.join("\n").trim(), tags };
 }

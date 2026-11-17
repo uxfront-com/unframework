@@ -1,8 +1,11 @@
 // `unframework preview [--target <t>]… [--port <n>]` (ADR-0088): starts the preview, prints its
 // URL and runs until it is interrupted, then closes every server and exits 0. The umbrella
 // registers it, as it does `visual`, so `@unframework.dev/cli` never imports it.
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { TARGET_NAMES } from "@unframework.dev/compiler";
-import type { TargetName } from "@unframework.dev/compiler";
+import type { Diagnostic, TargetName } from "@unframework.dev/compiler";
 
 import { VisualUsageError } from "../run.ts";
 import { startPreview } from "./index.ts";
@@ -52,6 +55,23 @@ export function parsePreviewArguments(args: readonly string[]): PreviewArguments
 }
 
 /**
+ * A diagnostic as `unframework visual` prints it: `<file>:<line>:<column> <severity> <code>:
+ * <message>`, the position from 1, or the file alone when it can no longer be read.
+ */
+export function diagnosticLine(diagnostic: Diagnostic, root: string): string {
+  let position = "";
+  try {
+    const before = readFileSync(resolve(root, diagnostic.file), "utf8")
+      .slice(0, diagnostic.span.start)
+      .split("\n");
+    position = `:${before.length}:${before.at(-1)!.length + 1}`;
+  } catch {
+    // Deleted since the catalogue read it: the file still says where to look.
+  }
+  return `${diagnostic.file}${position} ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}\n`;
+}
+
+/**
  * Resolves on the process's first SIGINT or SIGTERM. A second one while the servers close exits at
  * once with 130, for a close that hangs.
  */
@@ -93,6 +113,7 @@ export async function preview(
       ...(parsed.targets.length ? { targets: parsed.targets } : {}),
       ...(parsed.port === undefined ? {} : { port: parsed.port }),
     });
+    for (const diagnostic of running.diagnostics) io.stderr(diagnosticLine(diagnostic, io.cwd));
     io.stdout(
       [
         `unframework preview: ${running.url}`,
