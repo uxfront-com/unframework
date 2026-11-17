@@ -92,4 +92,9 @@ export interface FrameOptions {
    * in place of {@link RENDER_PATH}, and fails a render with other props.
    */
   staticRenders?: Record<string, string>;
+  /**
+   * Whether the frame is part of a static preview, where every frame shares the shell's origin
+   * (ADR-0111). Such a frame takes messages from, and sends them to, a shell at its own origin only.
+   */
+  staticPreview?: boolean;
 }

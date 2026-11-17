@@ -13,7 +13,7 @@ examples, like Inkline's 53, needs them grouped and named the way Storybook titl
 
 The metadata has to sit with the example, change nothing any target emits and nothing `visual`
 captures, and need no change to the language. A `.uf.tsx` file may export only components and
-injection keys (UF2033), so an `export const meta` would be a language change for seven targets.
+injection keys, so an `export const meta` would be a language change for seven targets.
 A comment is not: `@unframework.dev/parser` already returns a module's comments, and comments
 don't render.
 
@@ -78,7 +78,7 @@ alone.
 
 ## Alternatives considered
 
-- **`export const meta = { … }`.** A language change for seven targets (UF2033), and each target
+- **`export const meta = { … }`.** A language change for seven targets, and each target
   would have to emit or drop it.
 - **A sidecar JSON file.** Two files per example, which drift apart.
 - **A map in `unframework.config.ts`.** Far from the example it describes, and it breaks when a

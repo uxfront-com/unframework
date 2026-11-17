@@ -116,6 +116,25 @@ describe("the layout", () => {
     (page.getByRole("radio", { name: "All" }).element() as HTMLElement).click();
     expect(shown()).toHaveLength(7);
   });
+
+  it("gives each selection its own message in the controls region", async () => {
+    await open("design-system");
+    const controls = page.getByRole("region", { name: "Controls" });
+    const example = "An example takes no props. Select a component to set its props.";
+    const component = "This component has no props.";
+    await expect.element(controls.getByText(example)).toBeVisible();
+    // A component with no props, then an example: the example's message comes back.
+    (item("src/Card").element() as HTMLElement).click();
+    await expect.element(controls.getByText(component)).toBeVisible();
+    (item("Buttons").element() as HTMLElement).click();
+    await expect.element(controls.getByText(example)).toBeVisible();
+    expect(controls.getByText(component).query()).toBeNull();
+    // A component with props shows its form and no message.
+    (item("src/Button").element() as HTMLElement).click();
+    await expect.element(controls.getByLabelText("variant")).toBeVisible();
+    expect(controls.getByText(example).query()?.checkVisibility() ?? false).toBe(false);
+    expect(controls.getByText(component).query()).toBeNull();
+  });
 });
 
 describe("the keyboard", () => {

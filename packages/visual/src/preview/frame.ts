@@ -2,7 +2,8 @@
 // mounts the entry the shell selects with the target's own mount adapter, rerenders it in place
 // when only the props change, and answers each render. It takes messages only from its parent
 // window, at the origin the shell gave in its URL: in development every frame has an origin of its
-// own, and in a static preview every frame shares the shell's (ADR-0111).
+// own, and in a static preview every frame shares the shell's (ADR-0111), so a static frame
+// answers only a shell at its own origin: no other page can drive it on the site's origin.
 import { PREVIEW_MESSAGE, RENDER_PATH, STATIC_RENDER_MESSAGE } from "./protocol.ts";
 import type { FrameMessage, FrameOptions, RenderMessage, StaticRender } from "./protocol.ts";
 
@@ -12,7 +13,7 @@ type Mounted = Awaited<ReturnType<FrameOptions["mount"]>>;
 export function startFrame(options: FrameOptions): void {
   const shell = new URLSearchParams(location.search).get("shell");
   const root = document.querySelector<HTMLElement>("[data-uf-preview-root]");
-  if (!shell || !root) {
+  if (!shell || !root || (options.staticPreview && shell !== location.origin)) {
     document.body.textContent =
       "This page is a frame of unframework preview: open the preview's URL.";
     return;

@@ -184,7 +184,8 @@ target is built and every render server closed (ADR-0111):
   adapter needs `act`, and the plugin makes every path under the root, or its repository, relative.
 - **The shell** is `shellPage` written as `<out>/index.html`, framing `./<target>/frame.html`.
   `ShellData.frames` is `{ target, src }`: each frame page's URL, from which the shell takes the
-  frame's origin. In the static site every frame shares the shell's origin.
+  frame's origin. In the static site every frame shares the shell's origin, and a frame refuses a
+  shell at any other origin (`FrameOptions.staticPreview`): it sends and takes no message.
 - **Astro** (a target with a `renderCommandName`) is rendered at build time by
   `renderTargetEntries`, through a server in middleware mode, with each entry's initial props
   (`initialProps`: none for an example, a component's required props at their controls' initial

@@ -36,7 +36,7 @@ import {
 import { sameProps } from "../src/preview/frame.ts";
 import { startPreview } from "../src/preview/index.ts";
 import type { Preview } from "../src/preview/index.ts";
-import { STATIC_RENDER_MESSAGE } from "../src/preview/protocol.ts";
+import { PREVIEW_MESSAGE, STATIC_RENDER_MESSAGE } from "../src/preview/protocol.ts";
 import { VisualUsageError } from "../src/run.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
@@ -263,6 +263,50 @@ describe("unframework preview build", () => {
       await frame(page, "astro").locator('button[data-variant="primary"]').waitFor();
     },
   );
+
+  it("answers no page of another origin that frames it and names itself the shell", async () => {
+    // A page on a second origin frames the site's Vue frame, names its own origin as the shell,
+    // and asks for a render: every static frame shares the shell's origin, so the frame refuses.
+    const frameUrl = new URL("vue/frame.html", site.url);
+    const other = createServer((_request, response) => {
+      const origin = `http://127.0.0.1:${(other.address() as AddressInfo).port}`;
+      frameUrl.searchParams.set("shell", origin);
+      response.writeHead(200, { "content-type": "text/html" });
+      response.end(
+        [
+          "<!doctype html>",
+          `<iframe src="${frameUrl.href}"></iframe>`,
+          "<script>",
+          "  window.received = [];",
+          "  addEventListener('message', (event) => window.received.push(event.data));",
+          "</script>",
+        ].join("\n"),
+      );
+    });
+    await new Promise<void>((done) => other.listen(0, "127.0.0.1", done));
+    const page = await browser.newPage();
+    try {
+      await page.goto(`http://127.0.0.1:${(other.address() as AddressInfo).port}/`);
+      const framed = page.frameLocator("iframe");
+      await expect
+        .poll(() => framed.locator("body").textContent())
+        .toBe("This page is a frame of unframework preview: open the preview's URL.");
+      await page.evaluate(
+        ([type, entry]) =>
+          document
+            .querySelector("iframe")!
+            .contentWindow!.postMessage({ type, kind: "render", seq: 1, entry, props: {} }, "*"),
+        [PREVIEW_MESSAGE, "example:examples/Buttons"],
+      );
+      // Nothing listens in a refused frame, so a render would have answered by now.
+      await page.waitForTimeout(1000);
+      expect(await framed.locator("[data-uf-preview-root], button").count()).toBe(0);
+      expect(await page.evaluate(() => (window as { received?: unknown[] }).received)).toEqual([]);
+    } finally {
+      await page.close();
+      await new Promise((done) => other.close(done));
+    }
+  });
 
   it("exits 2 on a bad argument, and on --out at the root, above it or in a directory of others", async () => {
     const root = project({
