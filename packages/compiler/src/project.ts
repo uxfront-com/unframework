@@ -15,7 +15,13 @@ import type { StylesheetSource } from "@unframework.dev/analyzer";
 import type { OutputFile } from "@unframework.dev/codegen";
 import type { ModuleApi } from "@unframework.dev/ir";
 import { parseModule } from "@unframework.dev/parser";
-import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
+import type {
+  DirectiveValueChecks,
+  DirectiveValueQuery,
+  ShapeQuery,
+  TypeOracle,
+  TypeShape,
+} from "@unframework.dev/type-oracle";
 
 import { compile } from "./compile.ts";
 import type { CompileOptions, CompileResult } from "./compile.ts";
@@ -88,7 +94,8 @@ export interface Project {
 /** One question a compile asked the project, kept so an update asks it again. */
 type Call =
   | { kind: "api" | "stylesheet" | "module" | "cycle"; request: ResolveRequest }
-  | { kind: "shape"; query: ShapeQuery };
+  | { kind: "shape"; query: ShapeQuery }
+  | { kind: "directive-values"; file: string; source: string; queries: DirectiveValueQuery[] };
 
 /** A compiled module's node: its result, the key it was compiled under, and its edges. */
 interface Compiled {
@@ -303,6 +310,10 @@ export function createProject(options: ProjectOptions): Project {
       const shape = await typeOracle!.resolveShape(call.query);
       return { value: shape, held: shape, edges: shape.dependencies };
     }
+    if (call.kind === "directive-values") {
+      const answer = await typeOracle!.checkDirectiveValues!(call.file, call.source, call.queries);
+      return { value: answer, held: answer, edges: answer.dependencies };
+    }
     const { request } = call;
     const path = joinPath(directoryOf(request.importer), request.specifier);
     if (call.kind === "api") {
@@ -393,6 +404,18 @@ export function createProject(options: ProjectOptions): Project {
     );
     const oracle: TypeOracle | undefined = typeOracle && {
       resolveShape: (query) => record({ kind: "shape", query }) as Promise<TypeShape>,
+      // Only an oracle that checks values is asked to: a project on the syntactic one asks nothing.
+      ...(typeOracle.checkDirectiveValues
+        ? {
+            checkDirectiveValues: (file: string, source: string, queries: DirectiveValueQuery[]) =>
+              record({
+                kind: "directive-values",
+                file,
+                source,
+                queries,
+              }) as Promise<DirectiveValueChecks>,
+          }
+        : {}),
       printType: (query) => typeOracle.printType(query),
       update: (changes) => typeOracle.update(changes),
       dispose: () => typeOracle.dispose(),
@@ -515,10 +538,10 @@ export function createFileResolver(options: FileResolverOptions): Resolver {
 /**
  * The file a question named, so a question that threw is still an edge: a fix to that file
  * recompiles the module, whose UF9001 would otherwise stay until its own source changed. A shape
- * query names the module's own file, which is no edge.
+ * query, or a check of the directives' values, names the module's own file, which is no edge.
  */
 function namedFile(call: Call): string | undefined {
-  if (call.kind === "shape") return undefined;
+  if (call.kind === "shape" || call.kind === "directive-values") return undefined;
   return call.kind === "module"
     ? modulePath(call.request)
     : joinPath(directoryOf(call.request.importer), call.request.specifier);

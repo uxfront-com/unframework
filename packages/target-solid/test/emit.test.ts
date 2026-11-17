@@ -41,6 +41,7 @@ const SCOPE_ATTRIBUTES = [
 describe("solid target", () => {
   it("declares every capability", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
+      "async-setup",
       "attribute-spread",
       "bound-attribute",
       "child-root-scope",
@@ -1357,5 +1358,169 @@ describe("solid attributes", () => {
     expect(start).toBeGreaterThan(output.indexOf("function shout(text: string): string {"));
     expect(output.indexOf("function label(item: T): string {")).toBeGreaterThan(start);
     expect(output.indexOf("const none: T[] = [];")).toBeGreaterThan(start);
+  });
+});
+
+describe("solid async setup (ADR-0101)", () => {
+  it("runs the awaits in one resource, and the rest of the setup and the template in a <Show> callback inside <Suspense>", async () => {
+    const output = await emitSource(
+      [
+        'import { ref } from "@uxfront/unframework";',
+        "",
+        "const loadUser = async (id: string) => ({ name: id, visits: id.length });",
+        "",
+        "export default async function Probe({ id }: { id: string }) {",
+        "  const user = await loadUser(id);",
+        "  const visits = ref(user.visits);",
+        "  return <button onClick={() => visits.value++}>{user.name} {visits.value}</button>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(component(output)).toBe(
+      [
+        "export default function Probe(",
+        "  props: { id: string } & { class?: string; style?: JSX.CSSProperties },",
+        ") {",
+        "  const [awaited] = createResource(async () => {",
+        "    const user = await loadUser(props.id);",
+        "    return { user };",
+        "  });",
+        "",
+        "  return (",
+        "    <Suspense>",
+        "      <Show when={awaited()}>",
+        "        {(resolved) => {",
+        "          const { user } = resolved();",
+        "          const [visits, setVisits] = createSignal(user.visits);",
+        "",
+        "          return (",
+        "            <button",
+        "              onClick={() => setVisits(visits() + 1)}",
+        "              class={props.class}",
+        "              style={props.style}",
+        "              {...scopeAttributes(props)}",
+        "            >",
+        "              {user.name} {visits()}",
+        "            </button>",
+        "          );",
+        "        }}",
+        "      </Show>",
+        "    </Suspense>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain(
+      'import { type JSX, Show, Suspense, createResource, createSignal } from "solid-js";',
+    );
+  });
+
+  it("chains typed awaits in the fetcher, creates ids above it, and keeps hooks, expose and constants that read an awaited value in the callback", async () => {
+    const output = await emitSource(
+      [
+        'import { computed, defineExpose, onMounted, ref, useId } from "@uxfront/unframework";',
+        "",
+        "interface User {",
+        "  name: string;",
+        "  teamId: string;",
+        "}",
+        "",
+        'const loadUser = async (id: string): Promise<User> => ({ name: id, teamId: "t" });',
+        "const loadTeam = async (id: string) => ({ name: id });",
+        "",
+        "export default async function Probe({ id }: { id: string }) {",
+        "  const user: User = await loadUser(id);",
+        "  const team = await loadTeam(user.teamId);",
+        "  const label = useId();",
+        "  const greeting = `Hello, ${user.name}`;",
+        '  const unit = "visits";',
+        "  const count = ref(0);",
+        "  const summary = computed(() => `${user.name} is in ${team.name}`);",
+        "",
+        "  onMounted(() => {",
+        "    count.value = 1;",
+        "  });",
+        "",
+        "  function reset() {",
+        "    count.value = 0;",
+        "  }",
+        "",
+        "  defineExpose({ reset });",
+        "",
+        "  return (",
+        "    <p id={label}>",
+        "      {greeting} {summary.value} {count.value} {unit}",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const body = component(output);
+    expect(body).toContain(
+      [
+        "  const label = `uf-id-${createUniqueId()}`;",
+        "  const [awaited] = createResource(async () => {",
+        "    const user: User = await loadUser(props.id);",
+        "    const team = await loadTeam(user.teamId);",
+        "    return { user, team };",
+        "  });",
+        "",
+        "  return (",
+        "    <Suspense>",
+        "      <Show when={awaited()}>",
+        "        {(resolved) => {",
+        "          const { user, team } = resolved();",
+        "          const greeting = `Hello, ${user.name}`;",
+        "          const [count, setCount] = createSignal(0);",
+        "          const summary = createMemo(() => `${user.name} is in ${team.name}`);",
+        "",
+        "          onMount(() => {",
+        "            setCount(1);",
+        "          });",
+        "",
+        "          function reset() {",
+        "            setCount(0);",
+        "          }",
+        "",
+        "          untrack(() => props.ref?.({ reset }));",
+        "",
+        "          return (",
+      ].join("\n"),
+    );
+    // A constant that captures nothing stays at module scope (ADR-0045).
+    expect(output).toContain('const unit = "visits";');
+    expect(body).not.toContain("unit =");
+  });
+
+  it("names the resource and the callback's parameter past the source's own names", async () => {
+    const output = await emitSource(
+      [
+        "const load = async (id: string) => id;",
+        "",
+        "export default async function Probe({ id }: { id: string }) {",
+        "  const awaited = await load(id);",
+        "  const resolved = await load(awaited);",
+        "  return <p>{resolved}</p>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain("const [awaited_1] = createResource(async () => {");
+    expect(output).toContain("    return { awaited, resolved };");
+    expect(output).toContain("<Show when={awaited_1()}>");
+    expect(output).toContain("{(resolved_1) => {");
+    expect(output).toContain("const { awaited, resolved } = resolved_1();");
+  });
+
+  it("lowers an async component with no await as a plain one", async () => {
+    const output = await emitSource(
+      "export default async function Probe({ id }: { id: string }) {\n  return <p>{id}</p>;\n}\n",
+    );
+    expect(output).not.toContain("createResource");
+    expect(output).not.toContain("Suspense");
+    expect(component(output)).toContain("  return (\n    <p");
   });
 });

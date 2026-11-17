@@ -47,9 +47,11 @@ import { BindingTypes, Narrowings } from "./narrowing.ts";
 import { solidProps } from "./props.ts";
 import { forSolid } from "./render.ts";
 import { SolidCode, solidSetup } from "./setup.ts";
+import type { SolidResource } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
+type Statement = Parameters<typeof js.blockStatement>[0][number];
 
 /** The Solid 1.9 target. Solid's JSX takes HTML attribute names as they are. */
 export const solid: Target = defineTarget({
@@ -165,6 +167,13 @@ export const solid: Target = defineTarget({
         "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
     },
     hydration: { support: "native" },
+    // One `createResource` runs the awaits, and the rest of the setup and the template wait for
+    // it in a `<Show>` callback inside `<Suspense>` (ADR-0101). Declared there and on the targets
+    // page: after hydration Solid creates that subtree again once the setup resolves, so focus
+    // and selection inside it reset; with the data its server render serializes by default, the
+    // client hydrates in place and doesn't run the setup again; a rejected setup throws from the
+    // resource's read.
+    "async-setup": { support: "native" },
     // `<For>` follows the items themselves, so a list goes through an inline helper whose rows
     // follow the source's key (ADR-0096).
     "keyed-identity": {
@@ -270,12 +279,18 @@ export const solid: Target = defineTarget({
     });
     const object = props.object ?? "";
     const exposed = composition.expose(object);
-    const fn = js.functionDeclaration(component.name, props.parameters, [
-      ...props.statements,
+    const body = [
       ...composition.statements(object).map((text) => placeholders.statements(text)),
       ...setup.statements,
       ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
       js.returnStatement(rendered(component, code, narrowings.types, jsx)),
+    ];
+    const { resource } = setup;
+    const fn = js.functionDeclaration(component.name, props.parameters, [
+      ...props.statements,
+      ...(resource
+        ? [...resource.statements, js.returnStatement(pending(resource, body, code))]
+        : body),
     ]);
     // A generic component is a generic function, `function List<T>(…)` (ADR-0068).
     fn.typeParameters = typeParameterDeclaration(component, placeholders);
@@ -368,6 +383,31 @@ function rendered(
     );
   }
   return wrapped;
+}
+
+/**
+ * An async setup's template (ADR-0101): the rest of the setup and the template in the function
+ * child of `<Show>`, which runs once the resource resolves, inside a `<Suspense>` with no
+ * fallback, so the server render waits for it and a client mount shows nothing until then. A
+ * `<Show>` callback, not an inner component: the rest of the setup closes over `props`, which an
+ * inner component would read through props of its own, and `solid/reactivity` (L5) reports.
+ */
+function pending(resource: SolidResource, body: Statement[], code: SolidCode): JsxExpression {
+  const show = js.jsxElement(
+    code.solid("Show"),
+    [
+      js.jsxAttribute(
+        "when",
+        js.jsxExpressionContainer(js.callExpression(js.identifier(resource.accessor), [])),
+      ),
+    ],
+    [
+      js.jsxExpressionContainer(
+        js.arrowFunction([js.bindingIdentifier(resource.parameter)], [resource.bindings, ...body]),
+      ),
+    ],
+  );
+  return js.jsxElement(code.solid("Suspense"), [], [show]);
 }
 
 /**

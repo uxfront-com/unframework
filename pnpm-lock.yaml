@@ -1447,6 +1447,9 @@ importers:
       '@unframework.dev/testing':
         specifier: workspace:*
         version: link:../../packages/testing
+      '@unframework.dev/type-oracle-tsgo':
+        specifier: workspace:*
+        version: link:../../packages/type-oracle-tsgo
       '@unframework.dev/unplugin':
         specifier: workspace:*
         version: link:../../packages/unplugin

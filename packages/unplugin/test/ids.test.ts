@@ -73,6 +73,7 @@ const html = defineTarget({
     teleport: { support: "native" },
     transition: { support: "native" },
     directive: { support: "native" },
+    "async-setup": { support: "native" },
   },
   emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>\n" }],
 });

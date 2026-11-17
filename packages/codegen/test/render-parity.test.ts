@@ -489,6 +489,7 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       "composable-effect-order": cell("composable-effect-order"),
       hydration: cell("hydration"),
       "keyed-identity": cell("keyed-identity"),
+      "async-setup": cell("async-setup"),
     },
     emit,
   });

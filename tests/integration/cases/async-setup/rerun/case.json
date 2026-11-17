@@ -1,0 +1,12 @@
+{
+  "description": "After its await, a setup holds a template ref and a mounted hook that focuses it and emits: on a hydrated page the hook runs again once the client's setup resolves.",
+  "main": "Note.uf.tsx",
+  "ssr": {
+    "ada": {
+      "props": {
+        "id": "ada"
+      }
+    }
+  },
+  "requires": "The mounted hook focuses the input once the setup resolves, so every browser capture depends on client code; the server render (ssr.ada.html) checks the resolved data on every target."
+}

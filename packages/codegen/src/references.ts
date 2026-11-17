@@ -173,6 +173,8 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
         case "Lifecycle":
           readFunction(item.callback);
           break;
+        // The setup always awaits, whatever reads the binding (ADR-0101).
+        case "Await":
         case "Provide":
           read(item.value);
           break;
@@ -202,6 +204,7 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       case "Variable":
         read(item.initial);
         break;
+      case "Await":
       case "Const":
         read(item.value);
         break;
@@ -319,6 +322,7 @@ function reachTypes(
       case "Variable":
         if (item.initial) code(item.initial);
         break;
+      case "Await":
       case "Const":
         code(item.value);
         break;
@@ -417,6 +421,7 @@ function serverCode(item: SetupItem): Code[] {
     case "State":
     case "Variable":
       return item.initial ? [item.initial] : [];
+    case "Await":
     case "Const":
       return [item.value];
     case "Derived":

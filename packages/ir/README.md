@@ -27,6 +27,10 @@ plain, versioned, schema-validated JSON (plan §5.3).
   (`Model`), the setup items `Model`, `Provide` and `Inject`, the binding kinds `model`, `slots`,
   `slotScope`, `context` and `component`, and a slot's presence (`Slot` references). The analyser
   lowers none of it yet: M3's lanes do.
+- **Async setup (ADR-0101):** the setup item `Await` (`const user = await loadUser(props.id)`),
+  whose `value` is the awaited expression without `await`, its binding kind `awaited`, a read-only
+  constant, and `ComponentApi.async`, set when a component's setup awaits, so a parent in another
+  file knows.
 - **Styles (ADR-0063):** a component's `styles`, the sibling stylesheets it imports, each with its
   specifier, its text and its span, and its `scopeId`; a child's `ComponentApi.styles`, its scope id
   and whether its sheets use `:slotted()`; a module's `passThroughImports`, of any module that is neither
@@ -106,7 +110,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   keeps as an element, or all components; a `Teleport` (ADR-0098) holds exactly one element,
   outside SVG, and its `to` is not empty; a `Transition` (ADR-0100) holds one element, or one `If`
   whose every branch holds one element or nothing, outside a list's body, and its `name` has no
-  whitespace; a `Directive` names a directive the module declares or
+  whitespace; no `Await` follows another setup item, and an `Await`'s value reads only props, module
+  values, globals and earlier `awaited` bindings (ADR-0101); a `Directive` names a directive the module declares or
   imports, once per element, in a list's body too (ADR-0108), and a directive's hooks read their own
   names, client globals and the bindings it lists (ADR-0099); slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or

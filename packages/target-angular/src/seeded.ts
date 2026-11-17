@@ -359,6 +359,9 @@ function bindingType(
       return item.type?.code ?? (item.initial && valueType(item.initial, plan, declarations, next));
     case "Id":
       return "string";
+    // Its annotation, or what the promise resolves to, which only TypeScript knows (ADR-0101).
+    case "Await":
+      return item.type?.code;
     default:
       return undefined;
   }

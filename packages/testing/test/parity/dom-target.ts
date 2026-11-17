@@ -124,17 +124,24 @@ function renderText(container: HTMLElement, text: SplitText, props: Props, nodes
 
 /**
  * The stub's hydrate adapter (L12, ADR-0095): it "hydrates" by putting `hydrated`, or the server's
- * HTML, in the container, and reports no mismatch of its own. A rerender is the client render's.
+ * HTML, in the container, wires the stub's behaviour on it, and reports no mismatch of its own. A
+ * rerender is the client render's.
  */
-registerHydrateAdapter("dom", async (component, container, html) => {
+registerHydrateAdapter("dom", async (component, container, html, options) => {
   const stub = component as StubComponent;
   container.innerHTML = stub.hydrated ?? html;
+  // Its behaviour is wired on the hydrated DOM, as a framework's hydration wires its listeners.
+  const wiring = new AbortController();
+  stub.setup?.(container, (name, ...args) => options.on?.[name]?.(...args), wiring.signal);
   return {
     settle: async () => {},
     async rerender(props) {
       container.innerHTML = typeof stub.html === "function" ? stub.html(props) : (stub.html ?? "");
     },
-    unmount: async () => container.replaceChildren(),
+    unmount: async () => {
+      wiring.abort();
+      container.replaceChildren();
+    },
     takeMismatches: () => [],
   };
 });

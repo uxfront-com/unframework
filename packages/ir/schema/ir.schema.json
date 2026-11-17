@@ -771,6 +771,7 @@
         "localConst",
         "localFn",
         "localVar",
+        "awaited",
         "emit",
         "model",
         "slots",
@@ -785,10 +786,13 @@
         "usedFn",
         "usedConst"
       ],
-      "description": "What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each.\n- `prop`: a prop, destructured or read through the props object;\n- `loopVar`: the item or index parameter of a list's callback;\n- `state`: `const count = ref(…)`, read and written through `count.value`;\n- `derived`: `const total = computed(() => …)`, read through `total.value`;\n- `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through   `input.value` in client code, and attached with `ref={input}`;\n- `localConst`: a setup `const` holding a value, `useId()`'s included;\n- `localFn`: a setup function, `function save() {…}` or `const save = () => …`;\n- `localVar`: a setup `let`, which holds what no template reads (a timer's id);\n- `emit`: the function `defineEmits` returns;\n- `model`: `const open = defineModel<boolean>(\"open\")`, read and written as `open.value`, as   state is (ADR-0054);\n- `slots`: the object `defineSlots` returns;\n- `slotScope`: a scoped fill's parameter, or a name its pattern binds;\n- `context`: `const theme = inject(ThemeKey)`, an injected value, read-only;\n- `component`: a component named in `<component is>`'s set;\n- `moduleConst`: a top-level `const` of the module (`ModuleConstant`), read-only (ADR-0070);\n- `import`: a value imported from a relative `.ts` module (`SharedModuleImport`), read-only;\n- `argument`: a composable's parameter, read by its kind (`ComposableParameter`, ADR-0069);\n- `usedState`, `usedDerived`, `usedFn`, `usedConst`: what a `Use` item destructures from a   composable's result, by the member's kind: a ref of state, read through `.value` and never   written (UF2036), a derived value, a function and a constant (ADR-0069)."
+      "description": "What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each.\n- `prop`: a prop, destructured or read through the props object;\n- `loopVar`: the item or index parameter of a list's callback;\n- `state`: `const count = ref(…)`, read and written through `count.value`;\n- `derived`: `const total = computed(() => …)`, read through `total.value`;\n- `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through   `input.value` in client code, and attached with `ref={input}`;\n- `localConst`: a setup `const` holding a value, `useId()`'s included;\n- `localFn`: a setup function, `function save() {…}` or `const save = () => …`;\n- `localVar`: a setup `let`, which holds what no template reads (a timer's id);\n- `awaited`: `const user = await loadUser(props.id)`, a read-only constant the setup awaits   once each time it runs (ADR-0101);\n- `emit`: the function `defineEmits` returns;\n- `model`: `const open = defineModel<boolean>(\"open\")`, read and written as `open.value`, as   state is (ADR-0054);\n- `slots`: the object `defineSlots` returns;\n- `slotScope`: a scoped fill's parameter, or a name its pattern binds;\n- `context`: `const theme = inject(ThemeKey)`, an injected value, read-only;\n- `component`: a component named in `<component is>`'s set;\n- `moduleConst`: a top-level `const` of the module (`ModuleConstant`), read-only (ADR-0070);\n- `import`: a value imported from a relative `.ts` module (`SharedModuleImport`), read-only;\n- `argument`: a composable's parameter, read by its kind (`ComposableParameter`, ADR-0069);\n- `usedState`, `usedDerived`, `usedFn`, `usedConst`: what a `Use` item destructures from a   composable's result, by the member's kind: a ref of state, read through `.value` and never   written (UF2036), a derived value, a function and a constant (ADR-0069)."
     },
     "SetupItem": {
       "anyOf": [
+        {
+          "$ref": "#/definitions/AwaitItem"
+        },
         {
           "$ref": "#/definitions/StateItem"
         },
@@ -834,35 +838,37 @@
       ],
       "description": "What a component's setup declares or runs, in source order (ADR-0045)."
     },
-    "StateItem": {
+    "AwaitItem": {
       "type": "object",
       "properties": {
         "kind": {
           "type": "string",
-          "const": "State"
+          "const": "Await"
         },
         "binding": {
           "$ref": "#/definitions/BindingId"
         },
         "type": {
           "$ref": "#/definitions/TypeText",
-          "description": "The type argument as written (`ref<Item[]>([])`)."
+          "description": "The type annotation as written."
         },
-        "initial": {
+        "value": {
           "$ref": "#/definitions/Code",
-          "description": "The initial value: an expression the setup evaluates once, which may read props and the values declared before it. Absent for `ref()`, which starts `undefined`."
+          "description": "The awaited expression, without `await`."
         },
         "span": {
-          "$ref": "#/definitions/Span"
+          "$ref": "#/definitions/Span",
+          "description": "The declaration, from `const` to its end."
         }
       },
       "required": [
         "kind",
         "binding",
+        "value",
         "span"
       ],
       "additionalProperties": false,
-      "description": "`const count = ref(initial)`: a `state` binding (ADR-0046)."
+      "description": "`const user = await loadUser(props.id)`: an `awaited` binding (ADR-0101). The awaits open the setup: no `Await` follows another item, and its value reads only props, module values, globals and the `awaited` bindings before it."
     },
     "Code": {
       "type": "object",
@@ -1060,6 +1066,36 @@
       ],
       "additionalProperties": false,
       "description": "A use of a handler's event parameter, `event.key` or `event.preventDefault()` (ADR-0047): a member every target's event object has (`PORTABLE_EVENT_MEMBERS`), read or called. The parameter is the one a  {@link  Parameter }  marks with `event`."
+    },
+    "StateItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "State"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type argument as written (`ref<Item[]>([])`)."
+        },
+        "initial": {
+          "$ref": "#/definitions/Code",
+          "description": "The initial value: an expression the setup evaluates once, which may read props and the values declared before it. Absent for `ref()`, which starts `undefined`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const count = ref(initial)`: a `state` binding (ADR-0046)."
     },
     "DerivedItem": {
       "type": "object",
@@ -3251,6 +3287,11 @@
             "type": "string"
           },
           "description": "The names of the component's type parameters, in order (ADR-0068), so a parent knows the child is generic. Absent when it has none."
+        },
+        "async": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set when the component's setup awaits (ADR-0101), so a parent in another file knows: Vue's parent wraps it in `<Suspense>`. Absent otherwise."
         }
       },
       "required": [

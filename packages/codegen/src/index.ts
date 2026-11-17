@@ -200,6 +200,7 @@ export type { RemapResult } from "./sourcemap.ts";
 export {
   addPassThroughImports,
   childImports,
+  childIsAsync,
   ImportSet,
   keyImports,
   keyOwner,

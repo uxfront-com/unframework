@@ -1,0 +1,27 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/late-await/Profile.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 267,
+            "end": 275
+          }
+        }
+      ],
+      "span": {
+        "start": 258,
+        "end": 291
+      }
+    }
+  ]
+}

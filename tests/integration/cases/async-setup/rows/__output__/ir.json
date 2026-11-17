@@ -1,0 +1,626 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/rows/Roster.uf.tsx",
+  "components": [
+    {
+      "name": "Roster",
+      "span": {
+        "start": 227,
+        "end": 858
+      },
+      "props": [
+        {
+          "name": "ids",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 274,
+              "end": 282
+            }
+          },
+          "binding": "ids@260",
+          "span": {
+            "start": 269,
+            "end": 282
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ ids: string[] }",
+          "span": {
+            "start": 267,
+            "end": 284
+          }
+        },
+        "span": {
+          "start": 258,
+          "end": 284
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "ids@260",
+          "name": "ids",
+          "kind": "prop",
+          "span": {
+            "start": 260,
+            "end": 263
+          }
+        },
+        {
+          "id": "lead@296",
+          "name": "lead",
+          "kind": "state",
+          "span": {
+            "start": 296,
+            "end": 300
+          }
+        },
+        {
+          "id": "guest@322",
+          "name": "guest",
+          "kind": "state",
+          "span": {
+            "start": 322,
+            "end": 327
+          }
+        },
+        {
+          "id": "id@651",
+          "name": "id",
+          "kind": "loopVar",
+          "span": {
+            "start": 651,
+            "end": 653
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "lead@296",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 307,
+              "end": 311
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 290,
+            "end": 313
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "guest@322",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 334,
+              "end": 339
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 316,
+            "end": 341
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "roster",
+            "span": {
+              "start": 367,
+              "end": 381
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Roster",
+            "span": {
+              "start": 382,
+              "end": 401
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 417,
+                  "end": 430
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(lead.value = !lead.value)",
+                      "span": {
+                        "start": 446,
+                        "end": 472
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "lead@296",
+                          "operator": "=",
+                          "span": {
+                            "start": 446,
+                            "end": 472
+                          },
+                          "target": {
+                            "start": 447,
+                            "end": 457
+                          },
+                          "value": {
+                            "start": 460,
+                            "end": 471
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "lead@296",
+                          "span": {
+                            "start": 461,
+                            "end": 471
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 440,
+                      "end": 472
+                    }
+                  },
+                  "span": {
+                    "start": 440,
+                    "end": 472
+                  }
+                },
+                "span": {
+                  "start": 431,
+                  "end": 473
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Switch lead",
+                "span": {
+                  "start": 474,
+                  "end": 501
+                }
+              }
+            ],
+            "span": {
+              "start": 409,
+              "end": 510
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 525,
+                  "end": 538
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(guest.value = !guest.value)",
+                      "span": {
+                        "start": 554,
+                        "end": 582
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "guest@322",
+                          "operator": "=",
+                          "span": {
+                            "start": 554,
+                            "end": 582
+                          },
+                          "target": {
+                            "start": 555,
+                            "end": 566
+                          },
+                          "value": {
+                            "start": 569,
+                            "end": 581
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "guest@322",
+                          "span": {
+                            "start": 570,
+                            "end": 581
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 548,
+                      "end": 582
+                    }
+                  },
+                  "span": {
+                    "start": 548,
+                    "end": 582
+                  }
+                },
+                "span": {
+                  "start": 539,
+                  "end": 583
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle guest",
+                "span": {
+                  "start": 584,
+                  "end": 612
+                }
+              }
+            ],
+            "span": {
+              "start": 517,
+              "end": 621
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "ids",
+                  "span": {
+                    "start": 642,
+                    "end": 645
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "ids@260",
+                      "span": {
+                        "start": 642,
+                        "end": 645
+                      }
+                    }
+                  ]
+                },
+                "item": "id@651",
+                "key": {
+                  "code": "id",
+                  "span": {
+                    "start": 683,
+                    "end": 685
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "id@651",
+                      "span": {
+                        "start": 683,
+                        "end": 685
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Component",
+                  "component": "Member",
+                  "attributes": [
+                    {
+                      "kind": "Prop",
+                      "name": "id",
+                      "value": {
+                        "code": "id",
+                        "span": {
+                          "start": 691,
+                          "end": 693
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "id@651",
+                            "span": {
+                              "start": 691,
+                              "end": 693
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 687,
+                        "end": 694
+                      }
+                    }
+                  ],
+                  "fills": [],
+                  "span": {
+                    "start": 670,
+                    "end": 697
+                  }
+                },
+                "span": {
+                  "start": 642,
+                  "end": 708
+                }
+              },
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "lead.value",
+                      "span": {
+                        "start": 719,
+                        "end": 729
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "lead@296",
+                          "span": {
+                            "start": 719,
+                            "end": 729
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Component",
+                        "component": "Member",
+                        "attributes": [
+                          {
+                            "kind": "Prop",
+                            "name": "id",
+                            "value": {
+                              "code": "\"ada\"",
+                              "span": {
+                                "start": 743,
+                                "end": 748
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 740,
+                              "end": 748
+                            }
+                          }
+                        ],
+                        "fills": [],
+                        "span": {
+                          "start": 732,
+                          "end": 751
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 719,
+                      "end": 751
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "kind": "Component",
+                        "component": "Member",
+                        "attributes": [
+                          {
+                            "kind": "Prop",
+                            "name": "id",
+                            "value": {
+                              "code": "\"linus\"",
+                              "span": {
+                                "start": 765,
+                                "end": 772
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 762,
+                              "end": 772
+                            }
+                          }
+                        ],
+                        "fills": [],
+                        "span": {
+                          "start": 754,
+                          "end": 775
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 754,
+                      "end": 775
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 719,
+                  "end": 775
+                }
+              },
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "guest.value",
+                      "span": {
+                        "start": 786,
+                        "end": 797
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "guest@322",
+                          "span": {
+                            "start": 786,
+                            "end": 797
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Component",
+                        "component": "Member",
+                        "attributes": [
+                          {
+                            "kind": "Prop",
+                            "name": "id",
+                            "value": {
+                              "code": "\"hopper\"",
+                              "span": {
+                                "start": 812,
+                                "end": 820
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 809,
+                              "end": 820
+                            }
+                          }
+                        ],
+                        "fills": [],
+                        "span": {
+                          "start": 801,
+                          "end": 823
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 786,
+                      "end": 823
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 786,
+                  "end": 823
+                }
+              }
+            ],
+            "span": {
+              "start": 628,
+              "end": 836
+            }
+          }
+        ],
+        "span": {
+          "start": 358,
+          "end": 851
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Roster",
+      "span": {
+        "start": 227,
+        "end": 858
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Member.uf.tsx",
+      "file": "Member.uf.tsx",
+      "api": {
+        "file": "Member.uf.tsx",
+        "components": [
+          {
+            "name": "Member",
+            "export": "default",
+            "props": [
+              {
+                "name": "id",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "async": true,
+            "rootTag": "li"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Member",
+          "span": {
+            "start": 52,
+            "end": 58
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 82
+      }
+    }
+  ]
+}

@@ -251,6 +251,10 @@ export const angular: Target = defineTarget({
     "composable-effect-order": { support: "native" },
     // `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
     hydration: { support: "native" },
+    // The setup goes on in `ngOnInit`, once the inputs are set, as a pending task the server's
+    // render and the application's stability wait for, and the template renders behind `@if`
+    // once it resolves, where hydration claims the server's nodes (ADR-0101).
+    "async-setup": { support: "native" },
     "keyed-identity": { support: "native" },
     // Angular's CDK portal is no framework import (P7), so an inline directive moves the view.
     // An attribute directive whose hooks run through an inline runner and queue (ADR-0099).

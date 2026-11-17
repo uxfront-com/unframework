@@ -262,6 +262,10 @@ export const qwik: Target = defineTarget({
       helper: "teleport",
       note: 'Qwik has no portal, so a `<Teleport>`\'s element renders once a visible task says the component has mounted, after the empty text of `{""}` in a fragment, and a ref, `teleport`, moves it into `to` once Qwik has inserted it and removes it once that text leaves the document. Qwik inserts a node before the first DOM node of the one after it, which is that text, never the moved element (ADR-0098).',
     },
+    // Each await is an async `useComputed$` read in the body: reading its `.value` while pending
+    // throws the promise, and Qwik runs the body again once it settles (ADR-0101). A resumed
+    // component runs no setup again, which the `hydration` cell covers.
+    "async-setup": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;

@@ -159,7 +159,8 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   Qwik print through an inline helper, and a markup dialect wraps the child in a `transition` piece,
   Vue's `<Transition>`, and marks its element, or each branch's, with `transitionAttributes`,
   Svelte's `in:` and `out:` or Angular's directive, given the branch's index and the code of the
-  branch shown) and `directiveAttribute` (`v-name={value}`, ADR-0099, which each
+  branch shown), `component` (an optional hook that prints a child component's pieces around it,
+  Vue's `<Suspense>` around an async child, ADR-0101, which `childIsAsync` tells) and `directiveAttribute` (`v-name={value}`, ADR-0099, which each
   JSX target composes with the element's ref its own way; a markup dialect writes Vue's
   `v-focus-trap`, Svelte's `{@attach}` or Angular's `[vFocusTrap]`). `directives.ts` prints a
   directive's hooks and the module text its own module copies, and `readsElementScope` says

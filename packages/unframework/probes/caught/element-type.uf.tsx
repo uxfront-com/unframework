@@ -10,6 +10,15 @@ export function ComponentMustReturnJsx() {
   return <ReturnsAString />;
 }
 
+async function ResolvesToAString() {
+  return "not JSX";
+}
+
+export function AsyncComponentMustResolveToJsx() {
+  // @ts-expect-error TS2786 an async component resolves to JSX.Element (or null), not a string
+  return <ResolvesToAString />;
+}
+
 export function JsxIsNotAValue() {
   // @ts-expect-error TS2741 JSX.Element is opaque: a plain object is not an element
   const element: Element = {};

@@ -1,0 +1,181 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/provide/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Page",
+      "span": {
+        "start": 163,
+        "end": 292
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "main",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Panel",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "id",
+                "value": {
+                  "code": "\"ada\"",
+                  "span": {
+                    "start": 234,
+                    "end": 239
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 231,
+                  "end": 239
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Badge",
+                    "attributes": [],
+                    "fills": [],
+                    "span": {
+                      "start": 249,
+                      "end": 258
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 249,
+                  "end": 258
+                }
+              }
+            ],
+            "span": {
+              "start": 224,
+              "end": 273
+            }
+          }
+        ],
+        "span": {
+          "start": 211,
+          "end": 285
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Page",
+      "span": {
+        "start": 163,
+        "end": 292
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Badge.uf.tsx",
+      "file": "Badge.uf.tsx",
+      "api": {
+        "file": "Badge.uf.tsx",
+        "components": [
+          {
+            "name": "Badge",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": [
+          {
+            "name": "ToneKey",
+            "description": "uf.tone",
+            "type": "string"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Badge",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    },
+    {
+      "specifier": "./Panel.uf.tsx",
+      "file": "Panel.uf.tsx",
+      "api": {
+        "file": "Panel.uf.tsx",
+        "components": [
+          {
+            "name": "Panel",
+            "export": "default",
+            "props": [
+              {
+                "name": "id",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "async": true,
+            "rootTag": "section"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Panel",
+          "span": {
+            "start": 43,
+            "end": 48
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 71
+      }
+    }
+  ]
+}

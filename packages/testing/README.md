@@ -139,6 +139,9 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   mid-way. The reset gives every transition and animation no duration, so only one a test gives a
   duration of its own, in a `<style>` it appends to `<head>`, makes a settle wait. One still running
   after 2 seconds fails the settle.
+- **The focus after `client agreement`** (ADR-0101): a hydrate project's client render of the
+  same props gives the focus back to the element that held it, so a component that focuses as it
+  mounts keeps the focus in the hydrated view.
 - **The after-test check** (ADR-0098): once a test's views are unmounted, `<body>` holds no
   element the test added, or the test fails L8, naming each one. A component removes what it
   appends to `<body>`, a teleport's content or a toast container among it, as it unmounts.

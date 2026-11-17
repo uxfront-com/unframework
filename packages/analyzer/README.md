@@ -377,6 +377,11 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   UF3046, a directive UF3056, and a spread, a transition anywhere in a list's body and `Transition`
   used as anything but a tag UF1002. A component whose whole render is a transition is a root of
   kind `other`, wrapped in a fragment.
+- **Async setup** (`setup.ts`, ADR-0101): an `async` component, whose top-level
+  `const user = await …` lowers to an `Await` item with an `awaited` binding. Any other `await` at
+  the top level of the setup is UF2038. An `await` after another setup item, and an awaited
+  expression that reads a setup binding but an earlier awaited one, is UF2039. `api.ts` sets
+  `ComponentApi.async` when the setup awaits, and an async candidate of `<component is>` is UF1002.
 - **Directives** (`directives.ts`, ADR-0099): a top-level `const vName = defineDirective<T>({ … })`
   of a `.uf.tsx` module, or a `.uf.ts` module's named export, lowered with its method hooks, whose
   code reads its parameters, client globals and the module's constants and value imports, and
@@ -385,8 +390,11 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   that form is UF2037, a name no directive has UF3055, a directive on a component, `<Teleport>`,
   `<Transition>` or `<component is>`, without a value or with a value built in place UF3056, and an argument, a
   modifier and a spread's key UF1002. A directive in a list's body, or in a scoped fill with a
-  value that reads the fill's props, lowers as any other (ADR-0108). A setup name that shadows a directive is
-  UF3024.
+  value that reads the fill's props, lowers as any other (ADR-0108). A setup name that shadows a
+  directive is
+  UF3024. `directiveValueQueries` names each directive's value for the type oracle, from the
+  syntax, and a value the oracle's answer (`AnalyzeOptions.directiveValues`) says is not of the
+  directive's `T` is UF6007, at the value (ADR-0109). Without an answer, no value is checked.
 - **Raw HTML** (`raw-html.ts`, ADR-0097): `innerHTML={markup}` lowered to a `RawHtml` attribute,
   with its warning (UF3051), on an HTML element that holds content and has no children (UF3052),
   from a string only (UF3018). A static string reads alike in JSX and in JavaScript, as a static

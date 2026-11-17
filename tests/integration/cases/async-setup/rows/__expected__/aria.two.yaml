@@ -1,0 +1,7 @@
+- region "Roster":
+  - button "Switch lead"
+  - button "Toggle guest"
+  - list:
+    - listitem: User grace
+    - listitem: User edsger
+    - listitem: User ada

@@ -79,6 +79,7 @@ import {
 import type { Namespace } from "./svg.ts";
 import type {
   Attribute,
+  AwaitItem,
   Binding,
   BindingId,
   BindingKind,
@@ -1133,6 +1134,7 @@ interface Place {
 
 /** The binding kind each setup item declares. */
 const ITEM_BINDINGS: Readonly<Record<SetupItem["kind"], BindingKind | undefined>> = {
+  Await: "awaited",
   State: "state",
   Derived: "derived",
   TemplateRef: "templateRef",
@@ -3337,6 +3339,7 @@ function useProblem(
     case "state":
     case "derived":
     case "localConst":
+    case "awaited":
     case "model":
     case "slotScope":
     case "context":
@@ -3838,6 +3841,13 @@ function checkSetup(
   let end = component.span.start;
   for (const [index, item] of component.setup.entries()) {
     const at = `${path}/setup/${index}`;
+    // The awaits open the setup (ADR-0101): React and Solid run them apart from the component.
+    if (item.kind === "Await" && index && component.setup[index - 1]!.kind !== "Await") {
+      errors.push({
+        path: at,
+        message: "must not follow another setup item: the awaits open the setup (ADR-0101)",
+      });
+    }
     if (item.span.start < end) {
       errors.push({ path: `${at}/span`, message: "must follow the item before it" });
     } else if (!inside(item.span, component.span) || item.span.end > component.render.span.start) {
@@ -3904,6 +3914,10 @@ function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>,
     case "Const":
       checkCode(item.value, `${path}/value`, scope, "initial", walk);
       declaredBefore(summarizeCode(item.value, component), item, `${path}/value`, walk);
+      return;
+    case "Await":
+      checkCode(item.value, `${path}/value`, scope, "initial", walk);
+      checkAwait(item, path, walk);
       return;
     case "TemplateRef":
     case "Id":
@@ -4217,6 +4231,30 @@ function serverProblem(summary: CodeSummary, async: boolean, walk: Walk): string
  * and Solid's outputs evaluate it where the item is, before a later declaration. A `function`
  * declaration is hoisted: only what it reads and reaches counts, which the summary holds.
  */
+/**
+ * Checks what an `Await` reads (ADR-0101): props, module values, globals and the `awaited`
+ * bindings before it, since React and Solid run the awaits outside the component's render.
+ */
+function checkAwait(item: AwaitItem, path: string, walk: Walk): void {
+  for (const ref of item.value.refs) {
+    if (ref.kind === "Global" || ref.kind === "Import") continue;
+    const binding = ref.kind === "Binding" ? walk.bindings.get(ref.binding) : undefined;
+    const allowed =
+      binding &&
+      (binding.kind === "prop" ||
+        binding.kind === "moduleConst" ||
+        binding.kind === "import" ||
+        (binding.kind === "awaited" && binding.span.start < item.span.start));
+    if (!allowed) {
+      walk.errors.push({
+        path: `${path}/value`,
+        message: `must read only props, module values, globals and earlier awaited bindings, and reads ${binding ? `"${binding.id}"` : `a ${ref.kind} reference`} (ADR-0101)`,
+      });
+      return;
+    }
+  }
+}
+
 function declaredBefore(summary: CodeSummary, item: SetupItem, path: string, walk: Walk): void {
   const { emits, setup } = walk.component;
   const hoisted = new Set(

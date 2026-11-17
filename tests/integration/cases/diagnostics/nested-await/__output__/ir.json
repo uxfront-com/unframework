@@ -1,0 +1,27 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/nested-await/Profile.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 249,
+            "end": 257
+          }
+        }
+      ],
+      "span": {
+        "start": 240,
+        "end": 273
+      }
+    }
+  ]
+}

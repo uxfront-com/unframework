@@ -22,7 +22,7 @@ pnpm test:canaries L8 --shard 1/2   # a part of the cases, as CI runs a browser 
 cases/basics/hello/
 ├── Hello.uf.tsx                       the input
 ├── hello.test.ts                      the browser spec, written once and run on every target
-├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, ssrThrows: { props }, axe: [rule ids], requires: why, reference, colorScheme }
+├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, ssrThrows: { props }, axe: [rule ids], requires: why, reference, colorScheme, typeOracle: "tsgo" }
 ├── __output__/
 │   ├── ir.json                        the IR snapshot, validated against @unframework.dev/ir's schema
 │   └── <target>/<files>               the golden outputs: formatted, reviewed, checked in place
@@ -108,6 +108,11 @@ cases/components/form/
   case's own files and the packages they import: a props type or a child's API may come from
   another input or a `.ts` module of the case. The browser and SSR projects compile through the
   unplugin, whose resolver and oracle are rooted at Vite's root, this package.
+- A case whose `case.json` names `"typeOracle": "tsgo"` compiles with the tsgo adapter instead
+  (ADR-0109), for a check only a type-checker makes, like a directive's value (UF6007). Its
+  syntactic layer reads the same files, and its checker builds a project of the case's own
+  directory. The checker types the source each compile is given, a canary's corrupted one or a
+  fix-applied one included. Only `diagnostics/directive-value-type` needs it.
 - `__expected__/diagnostics.json` holds every input's diagnostics, each with its `file`, sorted by
   file, then by span; `__output__/diagnostics.txt` frames them by file.
 - The golden guard judges each module the browser and SSR projects compile on the files that
@@ -351,6 +356,11 @@ spec file that a `-t` run skips stalled the tests it kept. The harness's sequenc
 (`harness/sequencer.ts`) runs `sourcemaps/mounted-throws` after every other spec file of
 `hydrate:vue`, so no file runs after it on its page. `LEAVES_PAGE_UNUSABLE` in
 `harness/projects.ts` names that one case per target, with its reason (ADR-0106).
+
+An async setup's loaders resolve after a microtask (`await Promise.resolve()`), deterministically,
+so the server and the client load the same values, and a mount has resolved before the first
+settle round reads it: settling stops when two rounds read the same DOM, so a slower setup could
+read as settled while it is pending (ADR-0101).
 
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8

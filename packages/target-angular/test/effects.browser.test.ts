@@ -1,3 +1,5 @@
+import { createComponent, provideZonelessChangeDetection } from "@angular/core";
+import { createApplication } from "@angular/platform-browser";
 import MessageListEvents from "virtual:uf-angular-events/effects/flush-post";
 import ChannelPickerEvents from "virtual:uf-angular-events/effects/watch-cleanup";
 import UnreadBadgeEvents from "virtual:uf-angular-events/effects/watch-effect";
@@ -25,6 +27,7 @@ import ArticlePreview from "virtual:uf-angular/lifecycle/mounted-dom";
 import ShippingDetails from "virtual:uf-angular/lifecycle/next-tick";
 import AutoRefresh from "virtual:uf-angular/lifecycle/unmount-timers";
 import AsyncEffects from "virtual:uf-angular/probe/AsyncEffects";
+import AsyncTeardown from "virtual:uf-angular/probe/AsyncTeardown";
 import Elements from "virtual:uf-angular/probe/Elements";
 import InlineEditor from "virtual:uf-angular/probe/InlineEditor";
 import Teardowns from "virtual:uf-angular/probe/Teardowns";
@@ -39,9 +42,10 @@ import SearchPager from "virtual:uf-angular/semantics/watch-timing";
 // never for a write that changes nothing; an immediate one runs at setup; `flush: "post"` and
 // `watchEffect` run after the DOM has updated; `onMounted` runs with the DOM in the document and
 // `onUnmounted` when the component goes; `nextTick()` resolves once the DOM has updated.
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 
+import { angularComponent } from "../src/toolchain/component.ts";
 import { cleanup, render } from "./browser.ts";
 
 afterEach(cleanup);
@@ -286,5 +290,69 @@ describe("callbacks that return", () => {
     expect(view.get("p").textContent).toBe("2");
     await view.unmount();
     expect(view.emitted("stopped")).toEqual([["second"]]);
+  });
+});
+
+/** What `AsyncTeardown`'s watcher and hooks wrote on `<body>`. */
+const marks = () =>
+  Object.fromEntries(
+    ["data-uf-count", "data-uf-mounted", "data-uf-unmounted"].map((name) => [
+      name,
+      document.body.getAttribute(name),
+    ]),
+  );
+
+describe("async setup (ADR-0101)", () => {
+  afterEach(() => {
+    for (const name of Object.keys(marks())) document.body.removeAttribute(name);
+    vi.restoreAllMocks();
+  });
+
+  it("runs the rest of the setup once it resolves, and `onUnmounted` as the component goes", async () => {
+    const view = await render(AsyncTeardown, [], { id: "ada" });
+    expect(view.get("button").textContent).toBe("Label ada: 9");
+    await view.click("button");
+    expect(marks()).toEqual({
+      "data-uf-count": "10",
+      "data-uf-mounted": "Label ada",
+      "data-uf-unmounted": null,
+    });
+    await view.unmount();
+    expect(marks()["data-uf-unmounted"]).toBe("Label ada");
+  });
+
+  it("runs none of the rest, and no `onUnmounted`, when destroyed before the setup resolves", async () => {
+    const errors = vi.spyOn(console, "error");
+    // What the rest of the setup would throw, run against a destroyed injector (NG0205).
+    const thrown: unknown[] = [];
+    const caught = (event: ErrorEvent | PromiseRejectionEvent) =>
+      thrown.push("reason" in event ? event.reason : event.error);
+    window.addEventListener("error", caught);
+    window.addEventListener("unhandledrejection", caught);
+    const app = await createApplication({ providers: [provideZonelessChangeDetection()] });
+    const host = document.createElement("uf-async-teardown");
+    document.body.append(host);
+    const ref = createComponent(angularComponent(AsyncTeardown), {
+      environmentInjector: app.injector,
+      hostElement: host,
+    });
+    ref.setInput("id", "ada");
+    app.attachView(ref.hostView);
+    // `ngOnInit` starts the setup; the application goes before its await resolves.
+    app.tick();
+    app.destroy();
+    host.remove();
+    // The setup's continuation runs in a microtask, and Angular reports what a pending task
+    // throws in a later task: nothing may happen by then.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    window.removeEventListener("error", caught);
+    window.removeEventListener("unhandledrejection", caught);
+    expect(thrown).toEqual([]);
+    expect(marks()).toEqual({
+      "data-uf-count": null,
+      "data-uf-mounted": null,
+      "data-uf-unmounted": null,
+    });
+    expect(errors).not.toHaveBeenCalled();
   });
 });

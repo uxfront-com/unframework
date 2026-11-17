@@ -21,6 +21,7 @@
 import { functionSource, rewriteCode, rewriteExpression } from "@unframework.dev/codegen";
 import type { CodeKind, RewriteSite } from "@unframework.dev/codegen";
 import type {
+  AwaitItem,
   BindingId,
   Code,
   CodeReference,
@@ -48,6 +49,7 @@ import {
   inlinedAt,
   isPredicate,
   isReactiveBinding,
+  readsReactive,
   referencedIds,
   unreachable,
 } from "./plan.ts";
@@ -204,6 +206,7 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
       add(item.initial);
       break;
     case "Const":
+    case "Await":
       add(item.value);
       break;
     case "Derived":
@@ -372,9 +375,34 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
     }
     case "Use":
       return [declaration(useStatement(plan, item))];
+    case "Await":
+      return awaitStatements(plan, item);
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * An await, as an async `useComputed$` the body reads (ADR-0101): reading `.value` while the
+ * promise is pending throws it, and Qwik runs the body again once it settles, so every later
+ * statement sees the value. The computed reads the props once, through `untrack`, as Vue's
+ * setup does. It is two statements: the optimizer renames the binding of
+ * `useComputed$(…).value` to `computed$`, and two such bindings that a later `$` scope
+ * captures make a module that declares `computed$` twice.
+ */
+function awaitStatements(plan: SetupPlan, item: AwaitItem): Statement[] {
+  const { names } = plan;
+  const name = bindingName(plan, item.binding);
+  const load = names.fresh(`${name}Load`);
+  const type = item.type ? `: ${item.type.code}` : "";
+  const value = rewritten(plan, item.value, "expression", undefined, "pure");
+  const computed = readsReactive(item.value, plan.component, plan.arguments)
+    ? `${names.core("untrack")}(() => ${value})`
+    : value;
+  return [
+    declaration(`const ${load} = ${names.core("useComputed$")}(() => ${arrowBody(computed)});`),
+    declaration(`const ${name}${type} = ${load}.value;`),
+  ];
 }
 
 /**
@@ -879,6 +907,7 @@ function tracked(
     case "loopVar":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":

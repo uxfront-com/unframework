@@ -1,0 +1,311 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/provide/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 297,
+        "end": 605
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 347,
+              "end": 353
+            }
+          },
+          "binding": "id@335",
+          "span": {
+            "start": 343,
+            "end": 353
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 341,
+            "end": 355
+          }
+        },
+        "span": {
+          "start": 333,
+          "end": 355
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@367",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 387,
+            "end": 410
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 389,
+              "end": 408
+            }
+          }
+        ],
+        "span": {
+          "start": 361,
+          "end": 414
+        }
+      },
+      "bindings": [
+        {
+          "id": "loadUser@124",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 124,
+            "end": 132
+          }
+        },
+        {
+          "id": "id@335",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 335,
+            "end": 337
+          }
+        },
+        {
+          "id": "slots@367",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 367,
+            "end": 372
+          }
+        },
+        {
+          "id": "user@423",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 423,
+            "end": 427
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@423",
+          "value": {
+            "code": "loadUser(id)",
+            "span": {
+              "start": 436,
+              "end": 448
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@124",
+                "span": {
+                  "start": 436,
+                  "end": 444
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@335",
+                "span": {
+                  "start": 445,
+                  "end": 447
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 417,
+            "end": 449
+          }
+        },
+        {
+          "kind": "Provide",
+          "key": "ToneKey",
+          "value": {
+            "code": "\"calm\"",
+            "span": {
+              "start": 470,
+              "end": 476
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 453,
+            "end": 478
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panel",
+            "span": {
+              "start": 504,
+              "end": 517
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "user.name",
+              "span": {
+                "start": 530,
+                "end": 539
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "user@423",
+                  "span": {
+                    "start": 530,
+                    "end": 534
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 518,
+              "end": 540
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Badge",
+            "attributes": [],
+            "fills": [],
+            "span": {
+              "start": 548,
+              "end": 557
+            }
+          },
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [],
+            "span": {
+              "start": 564,
+              "end": 583
+            }
+          }
+        ],
+        "span": {
+          "start": 495,
+          "end": 598
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 297,
+        "end": 605
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Badge.uf.tsx",
+      "file": "Badge.uf.tsx",
+      "api": {
+        "file": "Badge.uf.tsx",
+        "components": [
+          {
+            "name": "Badge",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": [
+          {
+            "name": "ToneKey",
+            "description": "uf.tone",
+            "type": "string"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Badge",
+          "span": {
+            "start": 156,
+            "end": 161
+          }
+        },
+        {
+          "kind": "Key",
+          "imported": "ToneKey",
+          "local": "ToneKey",
+          "span": {
+            "start": 165,
+            "end": 172
+          }
+        }
+      ],
+      "span": {
+        "start": 149,
+        "end": 197
+      }
+    }
+  ],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 124,
+            "end": 132
+          }
+        }
+      ],
+      "span": {
+        "start": 115,
+        "end": 148
+      }
+    }
+  ]
+}

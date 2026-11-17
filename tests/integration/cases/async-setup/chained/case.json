@@ -1,0 +1,7 @@
+{
+  "description": "Two awaits, the second reading what the first loaded, and a computed value after them: the server renders data from both.",
+  "main": "Membership.uf.tsx",
+  "ssr": {
+    "ada": { "props": { "id": "ada" } }
+  }
+}

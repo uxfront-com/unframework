@@ -1,0 +1,188 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/rows/Member.uf.tsx",
+  "components": [
+    {
+      "name": "Member",
+      "span": {
+        "start": 112,
+        "end": 258
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 163,
+              "end": 169
+            }
+          },
+          "binding": "id@151",
+          "span": {
+            "start": 159,
+            "end": 169
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 157,
+            "end": 171
+          }
+        },
+        "span": {
+          "start": 149,
+          "end": 171
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "loadUser@9",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 9,
+            "end": 17
+          }
+        },
+        {
+          "id": "id@151",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 151,
+            "end": 153
+          }
+        },
+        {
+          "id": "user@183",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 183,
+            "end": 187
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@183",
+          "value": {
+            "code": "loadUser(id)",
+            "span": {
+              "start": 196,
+              "end": 208
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@9",
+                "span": {
+                  "start": 196,
+                  "end": 204
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@151",
+                "span": {
+                  "start": 205,
+                  "end": 207
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 177,
+            "end": 209
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "li",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "member",
+            "span": {
+              "start": 224,
+              "end": 238
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "user.name",
+              "span": {
+                "start": 240,
+                "end": 249
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "user@183",
+                  "span": {
+                    "start": 240,
+                    "end": 244
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 239,
+              "end": 250
+            }
+          }
+        ],
+        "span": {
+          "start": 220,
+          "end": 255
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Member",
+      "span": {
+        "start": 112,
+        "end": 258
+      }
+    }
+  ],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 9,
+            "end": 17
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

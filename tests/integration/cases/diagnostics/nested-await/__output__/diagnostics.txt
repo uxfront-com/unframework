@@ -1,0 +1,35 @@
+error[UF2038]: An awaited value is bound whole, by a `const` that declares one name: every target declares the awaited value as one binding.
+ --> diagnostics/nested-await/Profile.uf.tsx:7:20
+  |
+7 |   const { name } = await loadUser(id);
+  |                    ^^^^^^^^^^^^^^^^^^
+  |
+  = help: Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it.
+  = see: https://unframework.dev/diagnostics/UF2038
+
+error[UF2038]: `await` here is inside other code, and an async setup awaits only as the whole value of a top-level `const`, which every target lowers its own way.
+ --> diagnostics/nested-await/Profile.uf.tsx:8:19
+  |
+8 |   const visits = (await loadUser(id)).visits;
+  |                   ^^^^^^^^^^^^^^^^^^
+  |
+  = help: Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it.
+  = see: https://unframework.dev/diagnostics/UF2038
+
+error[UF2038]: `await` here is inside other code, and an async setup awaits only as the whole value of a top-level `const`, which every target lowers its own way.
+ --> diagnostics/nested-await/Profile.uf.tsx:9:3
+  |
+9 |   await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^
+  |
+  = help: Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it.
+  = see: https://unframework.dev/diagnostics/UF2038
+
+error[UF2038]: `await` here is inside other code, and an async setup awaits only as the whole value of a top-level `const`, which every target lowers its own way.
+  --> diagnostics/nested-await/Profile.uf.tsx:11:5
+   |
+11 |     await loadUser(id);
+   |     ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it.
+   = see: https://unframework.dev/diagnostics/UF2038

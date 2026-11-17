@@ -6,6 +6,7 @@ import {
 } from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
+import { componentOptions } from "./async.ts";
 import { frameworkCompile, frameworkEmit } from "./framework-compile.ts";
 import { typecheck } from "./typecheck.ts";
 
@@ -19,10 +20,17 @@ export const toolchain: Toolchain = {
   async vite(mode): Promise<UserConfig> {
     // Loaded on demand: reading `client` or `server` should not load the Vite plugin.
     const { svelte } = await import("@sveltejs/vite-plugin-svelte");
+    const { parse } = await import("svelte/compiler");
     return {
       // The toolchain is the whole configuration: no svelte.config.js is looked up (or logged
-      // as missing).
-      plugins: svelte({ configFile: false }),
+      // as missing). A component that awaits at the top of its instance script compiles under
+      // `experimental.async`, and only that one, since the runtime flag it turns on is the
+      // page's (ADR-0101).
+      plugins: svelte({
+        configFile: false,
+        dynamicCompileOptions: ({ filename, code }) =>
+          filename.endsWith(".svelte") ? componentOptions(parse, code) : undefined,
+      }),
       resolve: { dedupe: ["svelte"] },
       // The dependency scanner never sees compiled output: list the runtime entries it imports
       // (`svelte/events` for the listeners written as attachments), or the first run discovers

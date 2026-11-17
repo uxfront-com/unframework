@@ -80,7 +80,8 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !TRANSITION_COMPOSITION.test(name) &&
         !TYPE_MODULES.test(name) &&
         !COMPOSABLE_MODULES.test(name) &&
-        !DIRECTIVE_MODULES.test(name),
+        !DIRECTIVE_MODULES.test(name) &&
+        !ASYNC_MODULES.test(name),
     );
 }
 
@@ -150,6 +151,13 @@ const COMPOSABLE_MODULES = /^(?:composables|modules)\/|^semantics\/composable-/;
  */
 const DIRECTIVE_MODULES =
   /^directives\/(?:click-outside|fill-props|focus-trap|order|repeated|rows|shapes|shared|slotted|updated-value)$/;
+
+/**
+ * The async setup cases, whose sources await loaders from a module beside them (ADR-0101), which
+ * `compile()` resolves and `lower` does not. The corpus's toolchain project checks their Angular
+ * outputs, and `emit.test.ts` a source that declares its loader.
+ */
+const ASYNC_MODULES = /^async-setup\//;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

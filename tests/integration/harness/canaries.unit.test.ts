@@ -1336,7 +1336,7 @@ describe("canaries", () => {
     expect(check("react").test("mismatch: Hydration failed")).toBe(true);
     expect(check("react").test("client agreement: differs")).toBe(false);
     expect(check("solid").test("client agreement: differs")).toBe(true);
-    expect(check("solid").test("DOM: differs")).toBe(false);
+    expect(check("solid").test("DOM: differs")).toBe(true);
     expect(check("angular").test("DOM: differs")).toBe(true);
     expect(check("svelte").test("interactions: failed")).toBe(false);
   });
@@ -1521,6 +1521,37 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
       expect(result.outputs[target]![0]!.contents, target).toContain("</script>");
     }
     expect(result.outputs.vue![0]!.contents).toMatch(/<\/span>\n<\/template>\n$/);
+  });
+
+  it("add an attribute to the root element of React's async component, which `<Name>Resolved` renders (ADR-0101)", () => {
+    const contents = [
+      "async function profileSetup({ id }: { id: string }) {",
+      "  const user = await loadUser(id);",
+      "  return { user };",
+      "}",
+      "",
+      "export default function Profile(props: { id: string }) {",
+      "  const [setup] = useState(() => profileSetup(props));",
+      "  return (",
+      "    <Suspense fallback={<SetupPending setup={setup} />}>",
+      "      <ProfileResolved {...props} setup={setup} />",
+      "    </Suspense>",
+      "  );",
+      "}",
+      "",
+      "function ProfileResolved({ setup }: { setup: ReturnType<typeof profileSetup> }) {",
+      "  const { user } = use(setup);",
+      '  return <p className="profile">{user.name}</p>;',
+      "}",
+      "",
+      "function SetupPending({ setup }: { setup: Promise<unknown> }): null {",
+      "  return null;",
+      "}",
+      "",
+    ].join("\n");
+    const written = addRootAttribute({ path: "Profile.tsx", contents }, 'class="uf-canary"');
+    expect(written).toContain('return <p class="uf-canary" className="profile">{user.name}</p>;');
+    expect(written).toContain("<Suspense fallback={<SetupPending setup={setup} />}>");
   });
 
   it("add an attribute to the root element only, after any frontmatter, options or script", () => {
