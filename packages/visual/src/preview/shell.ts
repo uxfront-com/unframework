@@ -2,18 +2,23 @@
 // and the components and shows the selection in one labelled iframe per target, each from that
 // target's own server. It sends each frame the selection and the props over `postMessage`, and
 // takes answers only from those frames, at their origins. The page is static: the catalogue is
-// written into it as JSON, and its script is the function below, so no build serves it.
+// written into it as JSON, and its script is the function below, so no build serves it, and a
+// static preview writes it as its `index.html`, with each frame's page at a relative URL (ADR-0111).
 import { createServer } from "node:http";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import type { PreviewCatalogue } from "./catalogue.ts";
-import { FRAME_PATH, PREVIEW_MESSAGE } from "./protocol.ts";
+import { PREVIEW_MESSAGE } from "./protocol.ts";
 import { PREVIEW_HOST } from "./servers.ts";
 
-/** What the shell page is given: the frames' origins and the catalogue, without file paths. */
+/**
+ * What the shell page is given: each frame page's URL and the catalogue, without file paths. A
+ * frame's URL is absolute in development, on its target's server, and relative to the shell in a
+ * static preview, where every frame shares the shell's origin.
+ */
 export interface ShellData {
-  frames: { target: string; origin: string }[];
+  frames: { target: string; src: string }[];
   /** In the catalogue's order, with the metadata of ADR-0110. */
   examples: {
     key: string;
@@ -32,13 +37,13 @@ export interface ShellData {
   }[];
 }
 
-/** The shell's data, from the catalogue and the target servers. */
+/** The shell's data, from the catalogue and the frame pages' URLs. */
 export function shellData(
   catalogue: PreviewCatalogue,
-  frames: readonly { target: string; origin: string }[],
+  frames: readonly { target: string; src: string }[],
 ): ShellData {
   return {
-    frames: frames.map(({ target, origin }) => ({ target, origin })),
+    frames: frames.map(({ target, src }) => ({ target, src })),
     examples: catalogue.examples.map(({ key, id, category, title, description, order }) => ({
       key,
       id,
@@ -67,7 +72,7 @@ function scriptJson(value: unknown): string {
 
 /** The shell page. */
 export function shellPage(data: ShellData): string {
-  const constants = { frame: FRAME_PATH, message: PREVIEW_MESSAGE };
+  const constants = { message: PREVIEW_MESSAGE };
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -113,7 +118,7 @@ export function shellPage(data: ShellData): string {
  * sends them to every frame on each change and whenever a frame says it is ready (a frame reloads
  * when Vite optimises a dependency it found), and shows each frame's last answer.
  */
-function shellScript(constants: { frame: string; message: string }): void {
+function shellScript(constants: { message: string }): void {
   type Control = ShellData["components"][number]["controls"][number];
   const data = JSON.parse(document.getElementById("uf-preview-data")!.textContent!) as ShellData;
   const nav = document.querySelector("nav")!;
@@ -127,7 +132,10 @@ function shellScript(constants: { frame: string; message: string }): void {
   let props: Record<string, unknown> = {};
   let seq = 0;
 
-  const frames = data.frames.map(({ target, origin }) => {
+  const frames = data.frames.map(({ target, src }) => {
+    // The frame's own origin, to which the shell posts and from which it takes answers.
+    const url = new URL(src, location.href);
+    const origin = url.origin;
     const figure = document.createElement("figure");
     figure.dataset.target = target;
     const caption = document.createElement("figcaption");
@@ -137,7 +145,8 @@ function shellScript(constants: { frame: string; message: string }): void {
     caption.append(label, status);
     const iframe = document.createElement("iframe");
     iframe.title = `${target} preview`;
-    iframe.src = `${origin}${constants.frame}?shell=${encodeURIComponent(location.origin)}`;
+    url.searchParams.set("shell", location.origin);
+    iframe.src = url.href;
     figure.append(caption, iframe);
     grid.append(figure);
     return { target, origin, iframe, status };

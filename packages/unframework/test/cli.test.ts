@@ -47,7 +47,7 @@ describe("the umbrella's command line", () => {
     expect(stdout).toContain(
       "  visual [--target <t>]... [--baseline | --live] [--update] [--out <dir>]",
     );
-    expect(stdout).toContain("  preview [--target <t>]... [--port <n>]");
+    expect(stdout).toContain("  preview [build] [--target <t>]... [--port <n> | --out <dir>]");
   });
 
   it("runs test through the testing package, with its arguments and exit code", async () => {
@@ -146,6 +146,23 @@ describe("the umbrella's command line", () => {
     );
     expect(code).toBe(0);
     expect(seen).toEqual([["--target", "vue", "--port", "5173"]]);
+  });
+
+  it("passes preview build and its arguments through to the visual package's preview", async () => {
+    const seen: string[][] = [];
+    const { code } = await run(
+      ["preview", "build", "--target", "astro", "--out", "site"],
+      undefined,
+      undefined,
+      async () => ({
+        run: async (args) => {
+          seen.push(args);
+          return 0;
+        },
+      }),
+    );
+    expect(code).toBe(0);
+    expect(seen).toEqual([["build", "--target", "astro", "--out", "site"]]);
   });
 
   // The entry loads Vitest's Node API, which takes seconds cold.

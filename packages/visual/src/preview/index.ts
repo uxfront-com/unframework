@@ -11,6 +11,7 @@ import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
 import { readCatalogue } from "./catalogue.ts";
+import { FRAME_PATH } from "./protocol.ts";
 import { startTargetServer } from "./servers.ts";
 import type { TargetServer, TargetServerOptions } from "./servers.ts";
 import { shellData, shellPage, startShellServer } from "./shell.ts";
@@ -94,7 +95,11 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     if (failed.length) throw startFailure(failed);
     // In the project's order of targets, whichever started first.
     const frames = targets.map((target) => started.find((server) => server.target === target)!);
-    const shell = await startShellServer(shellPage(shellData(catalogue, frames)), port);
+    const pages = frames.map((frame) => ({
+      target: frame.target,
+      src: `${frame.origin}${FRAME_PATH}`,
+    }));
+    const shell = await startShellServer(shellPage(shellData(catalogue, pages)), port);
     let closing: Promise<void> | undefined;
     return {
       url: shell.url,
@@ -152,7 +157,7 @@ export function startFailure(failed: readonly { target: TargetName; reason: unkn
 }
 
 /** The targets to show: the project's, or those asked for, which must be among them. */
-function previewTargets(
+export function previewTargets(
   project: readonly TargetName[],
   requested: readonly TargetName[] | undefined,
 ): TargetName[] {
@@ -168,7 +173,7 @@ function previewTargets(
 }
 
 /** The project's `unframework.config.ts`, resolved, or an error that lists its diagnostics. */
-async function projectConfig(root: string): Promise<ResolvedConfig> {
+export async function projectConfig(root: string): Promise<ResolvedConfig> {
   const loaded = await loadConfig(root);
   const resolved =
     loaded.raw === undefined

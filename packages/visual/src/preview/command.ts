@@ -1,6 +1,8 @@
 // `unframework preview [--target <t>]… [--port <n>]` (ADR-0088): starts the preview, prints its
-// URL and runs until it is interrupted, then closes every server and exits 0. The umbrella
-// registers it, as it does `visual`, so `@unframework.dev/cli` never imports it.
+// URL and runs until it is interrupted, then closes every server and exits 0.
+// `unframework preview build [--target <t>]… [--out <dir>]` (ADR-0111) writes it as a static site
+// instead, prints where and exits 0. The umbrella registers it, as it does `visual`, so
+// `@unframework.dev/cli` never imports it.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -8,6 +10,7 @@ import { TARGET_NAMES } from "@unframework.dev/compiler";
 import type { Diagnostic, TargetName } from "@unframework.dev/compiler";
 
 import { VisualUsageError } from "../run.ts";
+import { buildPreview } from "./build.ts";
 import { startPreview } from "./index.ts";
 
 /** Where the command runs and writes: the shape of `@unframework.dev/cli`'s `Io`. */
@@ -19,25 +22,51 @@ export interface PreviewIo {
 
 /** The command's arguments, read. */
 export interface PreviewArguments {
+  /** Set when writing the static site (`preview build`) rather than serving the preview. */
+  build?: true;
   targets: TargetName[];
+  /** The shell's port, when serving. */
   port?: number;
+  /** The site's directory, when building, relative to the project's root. */
+  out?: string;
 }
+
+/** An example value of each option, for a usage error. */
+const EXAMPLE_VALUES: Readonly<Record<string, string>> = {
+  "--target": "react",
+  "--port": "5173",
+  "--out": "dist/preview",
+};
 
 /** Reads the arguments, throwing on a usage error: the CLI exits 2 with the message. */
 export function parsePreviewArguments(args: readonly string[]): PreviewArguments {
-  const parsed: PreviewArguments = { targets: [] };
-  for (let index = 0; index < args.length; index += 1) {
+  const build = args[0] === "build";
+  const parsed: PreviewArguments = { ...(build ? { build } : {}), targets: [] };
+  for (let index = build ? 1 : 0; index < args.length; index += 1) {
     const arg = args[index]!;
-    const option = /^(--target|--port)(?:=(.*))?$/s.exec(arg);
-    if (!option) throw new VisualUsageError(`unknown argument "${arg}".`);
-    const name = option[1]!;
-    const value = option[2] ?? args[(index += 1)];
-    if (value === undefined || value === "" || value.startsWith("-")) {
+    const option = /^(--target|--port|--out)(?:=(.*))?$/s.exec(arg);
+    if (!option) {
       throw new VisualUsageError(
-        `${name} needs a value, such as ${name} ${name === "--target" ? "react" : "5173"}.`,
+        arg === "build"
+          ? "build comes first: preview build [--target <t>]... [--out <dir>]."
+          : `unknown argument "${arg}".`,
       );
     }
-    if (name === "--port") {
+    const name = option[1]!;
+    if (name === "--port" && build) {
+      throw new VisualUsageError("--port is the served preview's: preview build takes --out.");
+    }
+    if (name === "--out" && !build) {
+      throw new VisualUsageError("--out is preview build's: preview serves, and writes nothing.");
+    }
+    const value = option[2] ?? args[(index += 1)];
+    if (value === undefined || value === "" || value.startsWith("-")) {
+      throw new VisualUsageError(`${name} needs a value, such as ${name} ${EXAMPLE_VALUES[name]}.`);
+    }
+    if (name === "--out") {
+      if (parsed.out !== undefined) throw new VisualUsageError("--out is given twice.");
+      parsed.out = value;
+    } else if (name === "--port") {
       if (parsed.port !== undefined) throw new VisualUsageError("--port is given twice.");
       if (!/^\d+$/.test(value) || Number(value) > 65_535) {
         throw new VisualUsageError(`--port takes a whole number from 0 to 65535, not ${value}.`);
@@ -97,8 +126,9 @@ export function untilInterrupted(): { interrupted: Promise<void>; dispose(): voi
 
 /**
  * Runs the preview until `stop` resolves, the process's interrupt by default, and gives the exit
- * code: 0 once every server has closed. A usage error or a preview that cannot start throws, which
- * the CLI reports with exit 2.
+ * code: 0 once every server has closed. With `build` first, writes the static site and gives 0
+ * once it is written. A usage error, or a preview that cannot start or build, throws, which the
+ * CLI reports with exit 2.
  */
 export async function preview(
   args: string[],
@@ -106,6 +136,16 @@ export async function preview(
   stop?: Promise<void>,
 ): Promise<number> {
   const parsed = parsePreviewArguments(args);
+  if (parsed.build) {
+    const built = await buildPreview({
+      root: io.cwd,
+      ...(parsed.targets.length ? { targets: parsed.targets } : {}),
+      ...(parsed.out === undefined ? {} : { out: parsed.out }),
+    });
+    for (const diagnostic of built.diagnostics) io.stderr(diagnosticLine(diagnostic, io.cwd));
+    io.stdout(`unframework preview build: ${built.out} (${built.targets.join(", ")})\n`);
+    return 0;
+  }
   const signals = stop ? undefined : untilInterrupted();
   try {
     const running = await startPreview({
