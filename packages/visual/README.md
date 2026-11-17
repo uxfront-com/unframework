@@ -150,9 +150,11 @@ example's doc comment, which the command prints to stderr:
   `oxc` transform is set so Analog's Angular plugin leaves it on, and each server's cache is
   `node_modules/.vite/uf-preview-<target>`. The package is kept out of pre-bundling.
 - **The shell** (`src/preview/shell.ts`) is a static page served at `/` on `port`, any free one
-  by default. It lists the examples and the components (`readCatalogue`: the default export of
-  each `.uf.tsx` under `srcDir`), shows one labelled iframe per target, and keeps the selection in
-  the URL's hash.
+  by default, with no build and no dependency. Its sidebar holds two ARIA trees with a filter: the
+  examples by category and the components (`readCatalogue`: the default export of each `.uf.tsx`
+  under `srcDir`). Its canvas shows one labelled iframe per target, all or one at a time, and a
+  docked panel holds the controls. It keeps the selection in the URL's hash, follows
+  `prefers-color-scheme`, and keeps a theme the reader picks in `localStorage`.
 - **The protocol** (`src/preview/protocol.ts`): the shell sends `render` messages, `{ seq, entry,
 props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on load and
   `rendered` or `failed` with the `seq`. Each side checks the other's origin and window.

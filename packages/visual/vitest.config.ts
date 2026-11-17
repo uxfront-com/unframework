@@ -3,10 +3,11 @@ import { configDefaults, defineConfig } from "vitest/config";
 import type { ViteUserConfig } from "vitest/config";
 
 import { ufReportFixture } from "./test/report-fixture.ts";
+import { ufShellColorScheme, ufShellFixture } from "./test/shell-fixture.ts";
 
 /**
  * Two projects: `unit` runs `test/**\/*.test.ts` in Node, and `browser` runs
- * `test/**\/*.browser.test.ts` in headless Chromium, for the report's page. The fixture projects
+ * `test/**\/*.browser.test.ts` in headless Chromium, for the report's page and the preview's shell. The fixture projects
  * under `test/fixtures/` are never this package's tests: a visual run on one generates its specs
  * there, for its own browser projects.
  */
@@ -38,7 +39,7 @@ const config: ViteUserConfig = defineConfig({
             screenshotFailures: false,
             // A desktop window, where the grid holds seven cells across: one test narrows it.
             viewport: { width: 1280, height: 800 },
-            commands: { ufReportFixture },
+            commands: { ufReportFixture, ufShellFixture, ufShellColorScheme },
           },
         },
       },

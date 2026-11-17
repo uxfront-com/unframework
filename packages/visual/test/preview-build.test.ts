@@ -202,11 +202,11 @@ describe("unframework preview build", () => {
         new Set([new URL(site.url).origin]),
       );
       const entries = await page
-        .locator("nav button[data-entry^='example:']")
+        .locator("nav [role='treeitem'][data-entry^='example:']")
         .evaluateAll((buttons) => buttons.map((each) => (each as HTMLElement).dataset.entry));
       expect(entries).toEqual(EXAMPLES.map((id) => `example:${id}`));
       for (const id of EXAMPLES) {
-        await page.locator(`nav button[data-entry="example:${id}"]`).click();
+        await page.locator(`nav [role='treeitem'][data-entry="example:${id}"]`).click();
         for (const target of TARGETS) {
           await expect
             .poll(() => status(page, target).textContent(), { timeout: 60_000, message: target })
@@ -240,7 +240,7 @@ describe("unframework preview build", () => {
       }
 
       // A component starts with its initial props, which the build rendered.
-      await page.locator('nav button[data-entry="component:src/Button"]').click();
+      await page.locator(`nav [role='treeitem'][data-entry="component:src/Button"]`).click();
       for (const target of TARGETS) {
         await expect
           .poll(() => status(page, target).textContent(), { message: target })

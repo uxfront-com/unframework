@@ -92,7 +92,7 @@ describe("startPreview", () => {
             .toBe("rendered");
         }
 
-        await page.getByRole("button", { name: "src/Button", exact: true }).click();
+        await page.getByRole("treeitem", { name: "src/Button", exact: true }).click();
         const variant = page.getByLabel("variant");
         await variant.selectOption("primary");
         for (const target of TARGETS) {
@@ -159,7 +159,7 @@ describe("startPreview", () => {
         await page.goto(preview.url);
         await expect.poll(() => page.evaluate(() => location.hash)).toBe("#example:src/Card");
         const nav = page.getByRole("navigation");
-        const current = nav.locator('button[aria-current="true"]');
+        const current = nav.locator('[role="treeitem"][aria-selected="true"]');
         await expect.poll(() => current.count()).toBe(1);
         expect(await current.getAttribute("data-entry")).toBe("example:src/Card");
         for (const { target } of preview.frames) {
@@ -167,7 +167,10 @@ describe("startPreview", () => {
           await frame.getByText("Release notes").waitFor({ timeout: 120_000 });
         }
         // The component under the same id renders with no content.
-        await nav.getByRole("listitem").nth(1).getByRole("button", { name: "src/Card" }).click();
+        await nav
+          .getByRole("tree", { name: "Components" })
+          .getByRole("treeitem", { name: "src/Card" })
+          .click();
         await expect.poll(() => current.count()).toBe(1);
         expect(await current.getAttribute("data-entry")).toBe("component:src/Card");
         for (const { target } of preview.frames) {
