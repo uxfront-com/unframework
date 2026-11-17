@@ -95,7 +95,7 @@ export interface Project {
 type Call =
   | { kind: "api" | "stylesheet" | "module" | "cycle"; request: ResolveRequest }
   | { kind: "shape"; query: ShapeQuery }
-  | { kind: "directive-values"; file: string; queries: DirectiveValueQuery[] };
+  | { kind: "directive-values"; file: string; source: string; queries: DirectiveValueQuery[] };
 
 /** A compiled module's node: its result, the key it was compiled under, and its edges. */
 interface Compiled {
@@ -311,7 +311,7 @@ export function createProject(options: ProjectOptions): Project {
       return { value: shape, held: shape, edges: shape.dependencies };
     }
     if (call.kind === "directive-values") {
-      const answer = await typeOracle!.checkDirectiveValues!(call.file, call.queries);
+      const answer = await typeOracle!.checkDirectiveValues!(call.file, call.source, call.queries);
       return { value: answer, held: answer, edges: answer.dependencies };
     }
     const { request } = call;
@@ -407,8 +407,13 @@ export function createProject(options: ProjectOptions): Project {
       // Only an oracle that checks values is asked to: a project on the syntactic one asks nothing.
       ...(typeOracle.checkDirectiveValues
         ? {
-            checkDirectiveValues: (file: string, queries: DirectiveValueQuery[]) =>
-              record({ kind: "directive-values", file, queries }) as Promise<DirectiveValueChecks>,
+            checkDirectiveValues: (file: string, source: string, queries: DirectiveValueQuery[]) =>
+              record({
+                kind: "directive-values",
+                file,
+                source,
+                queries,
+              }) as Promise<DirectiveValueChecks>,
           }
         : {}),
       printType: (query) => typeOracle.printType(query),

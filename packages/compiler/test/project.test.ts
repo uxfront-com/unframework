@@ -561,15 +561,15 @@ describe("a directive's value checked by the oracle (ADR-0109)", () => {
     const typeOracle: TypeOracle = {
       ...syntactic,
       resolveShape: (query) => syntactic.resolveShape(query),
-      checkDirectiveValues: async (_file, queries) => {
+      checkDirectiveValues: async (_file, source, queries) => {
         calls++;
         const tones = [...(files.get("/project/tone.ts") ?? "").matchAll(/"(\w+)"/g)].map(
           ([, tone]) => tone,
         );
         return {
-          checks: queries.map(({ text }) => ({
-            assignable: tones.includes(text.slice(1, -1)),
-            value: text,
+          checks: queries.map(({ value }) => ({
+            assignable: tones.includes(source.slice(value.start + 1, value.end - 1)),
+            value: source.slice(value.start, value.end),
             expected: tones.map((tone) => `"${tone}"`).join(" | "),
           })),
           dependencies: ["focus.uf.ts", "tone.ts"],

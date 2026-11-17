@@ -575,11 +575,7 @@ export function directiveValueQueries(parsed: ParsedModule): DirectiveValueQuery
           ? node.value.expression
           : undefined;
     if (value) {
-      queries.push({
-        value: span(value),
-        text: parsed.source.slice(value.start, value.end),
-        directive,
-      });
+      queries.push({ value: span(value), directive });
     }
     return true;
   });
@@ -601,12 +597,20 @@ function reportsValueType(
   render.reporter.report(
     "UF6007",
     value,
-    `\`${authored}\`'s value is \`${check.value}\`, and \`${name}\` takes \`${check.expected}\`.`,
+    `\`${authored}\`'s value is ${code(check.value)}, and \`${name}\` takes ${code(check.expected)}.`,
     {
-      help: `Pass a value of type \`${check.expected}\`, or change the type argument of \`${name}\`'s \`defineDirective\`.`,
+      help: `Pass a value of type ${code(check.expected)}, or change the type argument of \`${name}\`'s \`defineDirective\`.`,
     },
   );
   return true;
+}
+
+/**
+ * A printed type as a code span: one that holds a backtick, a template literal type, takes two,
+ * with a space inside each end (CommonMark), so it still reads as one span.
+ */
+function code(text: string): string {
+  return text.includes("`") ? `\`\` ${text} \`\`` : `\`${text}\``;
 }
 
 /** The name a `v-` attribute applies, `vFocusTrap` for `v-focus-trap`, or `undefined` for one not in kebab case. */

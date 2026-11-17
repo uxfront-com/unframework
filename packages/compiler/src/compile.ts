@@ -224,7 +224,7 @@ export async function compile(source: string, options: CompileOptions): Promise<
     const valueQueries = oracle.checkDirectiveValues ? directiveValueQueries(parsed) : [];
     if (valueQueries.length) {
       try {
-        const answer = await oracle.checkDirectiveValues!(file, valueQueries);
+        const answer = await oracle.checkDirectiveValues!(file, source, valueQueries);
         valueQueries.forEach((query, index) => {
           const check = answer.checks[index];
           if (check) directiveValues.set(`${query.value.start}:${query.value.end}`, check);

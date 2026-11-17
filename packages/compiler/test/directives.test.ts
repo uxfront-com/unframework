@@ -252,7 +252,7 @@ export default function Panel() {
       expected: string;
     } | null,
   ) => {
-    const calls: { file: string; queries: DirectiveValueQuery[] }[] = [];
+    const calls: { file: string; source: string; queries: DirectiveValueQuery[] }[] = [];
     const syntactic = createSyntacticOracle({
       root: "/project",
       readFile: (path) =>
@@ -261,8 +261,8 @@ export default function Panel() {
     const oracle: TypeOracle = {
       ...syntactic,
       resolveShape: (query) => syntactic.resolveShape(query),
-      checkDirectiveValues: async (file, queries) => {
-        calls.push({ file, queries });
+      checkDirectiveValues: async (file, source, queries) => {
+        calls.push({ file, source, queries });
         return { checks: queries.map(answer), dependencies: ["types.ts"] };
       },
     };
@@ -290,10 +290,10 @@ export default function Panel() {
     expect(calls).toEqual([
       {
         file: "Panel.uf.tsx",
+        source: MISMATCH,
         queries: [
           {
             value: { start, end: start + 1 },
-            text: "1",
             directive: {
               start: MISMATCH.indexOf("vFocusTrap"),
               end: MISMATCH.indexOf("vFocusTrap") + "vFocusTrap".length,

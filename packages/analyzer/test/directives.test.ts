@@ -426,10 +426,9 @@ describe("the codes it shares", () => {
 });
 
 describe("UF6007 directive-value-type", () => {
-  /** The spans of the values `directiveValueQueries` names, with the directive's text. */
+  /** The text of each value `directiveValueQueries` names, with the directive's text. */
   const queried = (text: string, file = "Test.uf.tsx") =>
     directiveValueQueries(parseModule(file, text)).map((query) => [
-      query.text,
       text.slice(query.value.start, query.value.end),
       text.slice(query.directive.start, query.directive.end),
     ]);
@@ -437,8 +436,8 @@ describe("UF6007 directive-value-type", () => {
   it("names each value of a directive the module declares or imports", () => {
     const text = `${IMPORT}import { vFocusTrap } from "./focusTrap.uf.ts";\n${MARK}export function A() {\n  return <p v-mark="a" v-focus-trap={open} v-other={1} v-empty={} v-bare>a</p>;\n}\n`;
     expect(queried(text)).toEqual([
-      ['"a"', '"a"', "vMark"],
-      ["open", "open", "vFocusTrap"],
+      ['"a"', "vMark"],
+      ["open", "vFocusTrap"],
     ]);
     const [mark, trap] = directiveValueQueries(parseModule("Test.uf.tsx", text));
     // The names that declare each directive: its `const`, and the import's local name.
@@ -489,6 +488,21 @@ describe("UF6007 directive-value-type", () => {
       );
     },
   );
+
+  it("writes a printed type that holds a backtick as one code span", () => {
+    const text = source("<p v-mark={count.value}>a</p>", "const count = ref(1);\n  ");
+    const [diagnostic] = checked(text, "count.value", {
+      assignable: false,
+      value: "`y-${number}`",
+      expected: "`x-${string}`",
+    });
+    expect(diagnostic!.message).toBe(
+      "`v-mark`'s value is `` `y-${number}` ``, and `vMark` takes `` `x-${string}` ``.",
+    );
+    expect(diagnostic!.help).toBe(
+      "Pass a value of type `` `x-${string}` ``, or change the type argument of `vMark`'s `defineDirective`.",
+    );
+  });
 
   it("drops the attribute it reports from the IR", () => {
     const text = source("<p v-mark={count.value}>a</p>", "const count = ref(1);\n  ");
