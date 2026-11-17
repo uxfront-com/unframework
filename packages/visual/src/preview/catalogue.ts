@@ -1,13 +1,20 @@
 // What the preview lists (ADR-0088): the project's examples, as `unframework visual` finds them,
-// and its components, the default export of each `.uf.tsx` file under `srcDir`, with the
+// with the metadata their doc comments give (ADR-0110), and its components, the default export of each `.uf.tsx` file under `srcDir`, with the
 // controls their props get. Read once, when the preview starts.
 import { globSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
 
 import { createFileResolver, createSyntacticOracle } from "@unframework.dev/compiler";
+import type { Diagnostic } from "@unframework.dev/compiler";
 
-import { discoverExamples, EXAMPLE_SUFFIX, SKIPPED_DIRECTORIES } from "../examples.ts";
+import {
+  discoverExamples,
+  EXAMPLE_SUFFIX,
+  readExampleMetadata,
+  SKIPPED_DIRECTORIES,
+} from "../examples.ts";
+import type { Example } from "../examples.ts";
 import { propControls } from "./controls.ts";
 import type { PropControls } from "./controls.ts";
 
@@ -16,7 +23,10 @@ const COMPONENT_SUFFIX = ".uf.tsx";
 
 /** One entry the shell can select: an example, or a component with its controls. */
 export type PreviewEntry =
-  | { kind: "example"; key: string; id: string; file: string }
+  | ({ kind: "example"; key: string; id: string; file: string } & Pick<
+      Example,
+      "category" | "title" | "description" | "order"
+    >)
   | ({ kind: "component"; key: string; id: string; file: string; name: string } & PropControls);
 
 /**
@@ -27,10 +37,31 @@ export function entryKey(kind: PreviewEntry["kind"], id: string): string {
   return `${kind}:${id}`;
 }
 
-/** What the shell lists, in order: the examples, then the components, each sorted by id. */
+/**
+ * What the shell lists, in order: the examples, sorted as {@link compareExamples} says, then the
+ * components, sorted by id.
+ */
 export interface PreviewCatalogue {
   examples: Extract<PreviewEntry, { kind: "example" }>[];
   components: Extract<PreviewEntry, { kind: "component" }>[];
+  /** UF7012 for each malformed tag in an example's doc comment: warnings, which the commands print. */
+  diagnostics: Diagnostic[];
+}
+
+/** Code-unit order, the same on every machine (P8), unlike a locale's. */
+const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * The examples' order (ADR-0110): by `order`, those without one last, then by title, then by id,
+ * which is unique.
+ */
+export function compareExamples(
+  a: Pick<Example, "id" | "title" | "order">,
+  b: Pick<Example, "id" | "title" | "order">,
+): number {
+  const order = (a.order ?? Infinity) - (b.order ?? Infinity);
+  if (order) return order;
+  return byCodeUnit(a.title, b.title) || byCodeUnit(a.id, b.id);
 }
 
 /** Reads a file, or gives `undefined` for one that does not exist, as the resolver asks. */
@@ -64,12 +95,28 @@ export function discoverComponentFiles(srcDir: string): string[] {
  * project's own `unframework check` says why.
  */
 export async function readCatalogue(root: string, srcDir: string): Promise<PreviewCatalogue> {
-  const examples = discoverExamples({ root }).map((example) => ({
-    kind: "example" as const,
-    key: entryKey("example", example.id),
-    id: example.id,
-    file: example.file,
-  }));
+  const metadata = await readExampleMetadata(root, discoverExamples({ root }));
+  const examples = metadata.examples
+    .toSorted(compareExamples)
+    .map(
+      ({
+        id,
+        file,
+        category,
+        title,
+        description,
+        order,
+      }): PreviewCatalogue["examples"][number] => ({
+        kind: "example",
+        key: entryKey("example", id),
+        id,
+        file,
+        category,
+        title,
+        ...(description === undefined ? {} : { description }),
+        ...(order === undefined ? {} : { order }),
+      }),
+    );
   // The syntactic oracle reads the types a prop imports, so an alias resolves to its literals.
   const typeOracle = createSyntacticOracle({ root, readFile: read });
   const resolver = createFileResolver({ root, readFile: read, typeOracle });
@@ -95,5 +142,5 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
   } finally {
     await typeOracle.dispose();
   }
-  return { examples, components };
+  return { examples, components, diagnostics: metadata.diagnostics };
 }

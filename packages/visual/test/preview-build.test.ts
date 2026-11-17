@@ -285,6 +285,20 @@ describe("unframework preview build", () => {
   });
 });
 
+describe("unframework preview build on an example's malformed metadata", () => {
+  it("prints UF7012 on stderr and still builds, exiting 0", { timeout: 180_000 }, async () => {
+    const root = fileURLToPath(new URL("fixtures/metadata", import.meta.url));
+    const out = join(realpathSync(mkdtempSync(join(tmpdir(), "uf-preview-site-"))), "site");
+    const result = await unframework(["preview", "build", "--target", "vue", "--out", out], root);
+    expect(result.code, result.stderr).toBe(0);
+    expect(result.stderr).toMatch(/^examples\/Badge\.example\.uf\.tsx:\d+:\d+ warning UF7012: /m);
+    expect(result.stdout.trimEnd().split("\n").at(-1)).toBe(
+      `unframework preview build: ${out} (vue)`,
+    );
+    expect(existsSync(join(out, "vue", "frame.html"))).toBe(true);
+  });
+});
+
 describe("buildPreview", () => {
   it("refuses an out it must not empty before it reads the project", async () => {
     const root = project({ "keep/file.txt": "x" });
@@ -360,7 +374,16 @@ describe("initialProps", () => {
   it("gives an example none, and a component each required prop at its initial value", () => {
     expect(
       initialProps({
-        examples: [{ kind: "example", key: "example:e", id: "e", file: "/e" }],
+        examples: [
+          {
+            kind: "example",
+            key: "example:e",
+            id: "e",
+            file: "/e",
+            category: ["Examples"],
+            title: "E",
+          },
+        ],
         components: [
           {
             kind: "component",
@@ -378,6 +401,7 @@ describe("initialProps", () => {
             uncontrolled: [],
           },
         ],
+        diagnostics: [],
       }),
     ).toEqual({ "example:e": {}, "component:c": { tone: "a", on: false, n: 0, label: "" } });
   });

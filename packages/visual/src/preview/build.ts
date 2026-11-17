@@ -14,7 +14,7 @@ import {
 } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
-import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
+import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/compiler";
 import { loadToolchain } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
@@ -53,6 +53,8 @@ export interface BuiltPreview {
   out: string;
   /** The targets built, in the order the shell shows them. */
   targets: TargetName[];
+  /** The catalogue's warnings: UF7012 on an example's malformed doc comment (ADR-0110). */
+  diagnostics: Diagnostic[];
 }
 
 /**
@@ -94,7 +96,7 @@ export async function buildPreview(options: BuildPreviewOptions): Promise<BuiltP
   }
   const frames = targets.map((target) => ({ target, src: `./${target}/${STATIC_FRAME_FILE}` }));
   writeFileSync(join(out, "index.html"), shellPage(shellData(catalogue, frames)));
-  return { out, targets };
+  return { out, targets, diagnostics: catalogue.diagnostics };
 }
 
 /** Builds each target's frame into `<out>/<target>/`, one after another. */

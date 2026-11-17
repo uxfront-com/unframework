@@ -33,6 +33,20 @@ finds them under the root at any depth, sorted by id, the path from the root wit
 default export that declares props. It leaves an example that doesn't compile to the run, which
 fails it on every target with the error, and throws for one with no default export.
 
+Each example also has a `category` and a `title`, which `discoverExamples` derives from its path
+(ADR-0110): the directory's name in title case, or its parent's when the directory is `examples`,
+and the file name in words without the category's own words in front, so
+`src/components/button/examples/ButtonColors` is `Colors` in `Button`. An example at the root, or
+in a root `examples/`, is in `Examples`.
+
+The preview's catalogue reads the doc comment on each example's default export
+(`readExampleMetadata` in `src/examples.ts`): its text is the `description`, and `@category` (groups
+split on `/`), `@title` and `@order` (a finite number) override the derived values. It reports
+UF7012, a warning, at each tag that's empty, not a number or given twice, for which the example
+keeps the derived value. The preview sorts the examples by `order`, those without one last, then by
+title, then by id. `unframework visual` never reads the comment, so it changes no capture and no
+report.
+
 `exampleBaselines(example)` gives the baselines beside it:
 `__screenshots__/<name>-chromium-linux.png` and `__expected__/geometry.<name>.json`, in the example's
 directory.
@@ -118,8 +132,9 @@ prints the shell's URL and each target's origin, and runs until SIGINT or SIGTER
 every server and exits 0. It exits 2 on a usage error, nothing to show or a configuration that
 won't load. The docs page is `apps/web/content/docs/4.tooling/7.preview.md`.
 
-`startPreview({ root, targets?, port?, toolchainDirs? })` resolves to `{ url, frames, close }` once
-every server listens (ADR-0088):
+`startPreview({ root, targets?, port?, toolchainDirs? })` resolves to `{ url, frames, diagnostics, close }`
+once every server listens (ADR-0088), where `diagnostics` holds UF7012 for each malformed tag in an
+example's doc comment, which the command prints to stderr:
 
 - **One Vite dev server per target** (`src/preview/servers.ts`), on `127.0.0.1` and a port the
   system picks: the preview's plugin, the unframework plugin and the target's `vite("browser")`
@@ -149,12 +164,13 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
 
 ## The static build
 
-`unframework preview build [--target <t>]... [--out <dir>]` runs `buildPreview`, prints the site's
-path and its targets, and exits 0. It exits 2 on a usage error, an `--out` it refuses, nothing to
+`unframework preview build [--target <t>]... [--out <dir>]` runs `buildPreview`, prints its
+`diagnostics` (UF7012) to stderr as the dev path does, then the site's path and its targets, and
+exits 0. It exits 2 on a usage error, an `--out` it refuses, nothing to
 show, a configuration that won't load or a build that fails. The docs page's "Build a static
 preview" and "Deploy" sections cover it.
 
-`buildPreview({ root, targets?, out?, toolchainDirs? })` resolves to `{ out, targets }` once every
+`buildPreview({ root, targets?, out?, toolchainDirs? })` resolves to `{ out, targets, diagnostics }` once every
 target is built and every render server closed (ADR-0111):
 
 - **One Vite build per target** (`buildTarget` in `src/preview/servers.ts`), on the config
@@ -210,4 +226,4 @@ checks, in Chromium, seven frames from the shell's origin, every example rendere
 Astro's frame equal to the dev preview's, and a changed prop failing Astro's frame with the static
 message. It also checks the site holds no path of the machine, the command's exit 2 on a bad
 argument and on each `--out` it refuses, and, on `test/fixtures/astro-throws`, a render that fails
-at build time.
+at build time, and, on `test/fixtures/metadata`, that the command prints UF7012 and still exits 0.

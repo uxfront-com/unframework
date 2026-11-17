@@ -6,7 +6,7 @@
 import { realpathSync } from "node:fs";
 
 import { loadConfig, resolveConfig, TARGET_NAMES } from "@unframework.dev/compiler";
-import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
+import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/compiler";
 import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
@@ -37,6 +37,8 @@ export interface Preview {
   url: string;
   /** Each target's server origin, in the order the shell shows them. */
   frames: { target: TargetName; origin: string; port: number }[];
+  /** UF7012 for each malformed tag in an example's doc comment (ADR-0110): warnings to print. */
+  diagnostics: Diagnostic[];
   /** Stops every server: the shell and each target's. Calling it again does nothing more. */
   close(): Promise<void>;
 }
@@ -106,6 +108,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
         origin: frame.origin,
         port: frame.port,
       })),
+      diagnostics: catalogue.diagnostics,
       close: () => (closing ??= closeAll(shell)),
     };
   } catch (error) {
