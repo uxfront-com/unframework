@@ -24,10 +24,10 @@ jobs:
   browser:
     name: "Nightly: browser (${{ matrix.browser }})"
     runs-on: ubuntu-latest
-    # One job runs all seven browser projects, because live L10 needs the reference's capture in
+    # One job runs all eight browser projects, because live L10 needs the reference's capture in
     # the same run. ci.yml gives Chromium ten minutes per target; these engines are slower, and
     # run one browser project and one spec file at a time (ADR-0081), so the job gets two hours.
-    # WebKit runs them in three Vitest runs, each with the reference: Vitest keeps every
+    # WebKit runs them in four Vitest runs, each with the reference: Vitest keeps every
     # project's browser alive until its run ends, and five WebKit browsers ran the runner out of
     # memory (exit 137). harness/nightly.unit.test.ts checks the batches.
     timeout-minutes: 120
@@ -39,7 +39,7 @@ jobs:
         browser: [firefox, webkit]
         include:
           - browser: webkit
-            batches: "vue,react,svelte vue,solid,angular vue,qwik,astro"
+            batches: "vue,react,svelte vue,solid,angular vue,qwik,astro vue,solid2"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -71,7 +71,7 @@ jobs:
 
       # Each batch is one run of scripts/run.ts, whose own summary judges that batch alone, so it
       # writes nothing to the job summary. Every batch runs, then the summary merges them,
-      # browser projects only, and in CI requires all seven (ADR-0081).
+      # browser projects only, and in CI requires all eight (ADR-0081).
       - name: Browser projects, in batches
         if: ${{ matrix.batches }}
         env:

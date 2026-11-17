@@ -71,6 +71,7 @@ export { first, Square, width, pick, label };
 const PROBES: Record<string, { file: string; contents: string }> = {
   react: { file: "Probe.tsx", contents: PROBE },
   solid: { file: "Probe.tsx", contents: PROBE },
+  solid2: { file: "Probe.tsx", contents: PROBE },
   qwik: { file: "Probe.tsx", contents: PROBE },
   angular: { file: "probe.ts", contents: PROBE },
   vue: {

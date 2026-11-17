@@ -73,6 +73,7 @@ describe("a case of two sources", () => {
       vue: ["Field.vue", "Form.vue"],
       svelte: ["Field.svelte", "Form.svelte"],
       solid: ["Field.tsx", "Form.tsx"],
+      solid2: ["Field.tsx", "Form.tsx"],
       angular: ["field.ts", "form.ts"],
       qwik: ["Field.tsx", "Form.tsx"],
       astro: ["Field.astro", "Form.astro"],

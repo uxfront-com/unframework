@@ -302,7 +302,7 @@ describe("a run of scripts/run.ts", () => {
     expect(runSummary({ CI: "1" }, run)).toBe(0);
     expect(problems).toBe("");
     expect(readFileSync(join(reportsDir, "parity-matrix.md"), "utf8")).toContain(
-      "Partial run: 23 project(s) did not run",
+      "Partial run: 26 project(s) did not run",
     );
   });
 
@@ -355,6 +355,7 @@ describe("the nightly's WebKit job, merged browser-only (ADR-0081)", () => {
     ["vue", "react", "svelte"],
     ["vue", "solid", "angular"],
     ["vue", "qwik", "astro"],
+    ["vue", "solid2"],
   ];
   /** `semantics/listbox` names React as its reference, so a batch without React adds it there. */
   const LISTBOX = "semantics/listbox";
@@ -417,7 +418,7 @@ describe("the nightly's WebKit job, merged browser-only (ADR-0081)", () => {
     expect(BROWSER_ONLY_LAYERS).toEqual(["L7", "L8", "L9", "L10", "L11", "L13"]);
   });
 
-  it("is green with the three batches, though no browser project records a diagnostics case", () => {
+  it("is green with the four batches, though no browser project records a diagnostics case", () => {
     expect(SPEC_CASES.length).toBeLessThan(CASES.length);
     writeBatches(BATCHES);
     expect(runSummary(ci, { ...job, reportsDir })).toBe(0);

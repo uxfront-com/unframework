@@ -1321,7 +1321,14 @@ describe("canaries", () => {
     for (const canary of [text, unwired]) {
       expect(canary.clientOnly, canary.id).toBe(true);
       expect(Object.keys(canary.evidence), canary.id).toEqual(["hydrate"]);
-      expect(canary.targets, canary.id).toEqual(["react", "vue", "svelte", "solid", "angular"]);
+      expect(canary.targets, canary.id).toEqual([
+        "react",
+        "vue",
+        "svelte",
+        "solid",
+        "solid2",
+        "angular",
+      ]);
     }
     // A diagnostics case has no spec, so no hydrate project mounts it.
     expect(text.appliesTo!({ ...fixture(false), runs: () => false }, "react")).toBe(false);
@@ -1337,6 +1344,8 @@ describe("canaries", () => {
     expect(check("react").test("client agreement: differs")).toBe(false);
     expect(check("solid").test("client agreement: differs")).toBe(true);
     expect(check("solid").test("DOM: differs")).toBe(true);
+    expect(check("solid2").test("client agreement: differs")).toBe(true);
+    expect(check("solid2").test("DOM: differs")).toBe(true);
     expect(check("angular").test("DOM: differs")).toBe(true);
     expect(check("svelte").test("interactions: failed")).toBe(false);
   });
