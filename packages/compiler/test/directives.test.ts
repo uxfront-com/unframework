@@ -1,10 +1,11 @@
+import type { DirectiveValueQuery } from "@unframework.dev/type-oracle";
 // A `.uf.ts` module's directives (ADR-0099): each compiles to one module per target, named and
 // exported in its framework's idiom, and a component that applies one imports it from there.
 // Astro runs no hook, so it writes no file for one, and its component imports none.
 import { describe, expect, it } from "vitest";
 
-import { compile, createFileResolver, TARGET_NAMES } from "../src/index.ts";
-import type { TargetName } from "../src/index.ts";
+import { compile, createFileResolver, createSyntacticOracle, TARGET_NAMES } from "../src/index.ts";
+import type { TargetName, TypeOracle } from "../src/index.ts";
 
 const TRAP = `import { defineDirective } from "@uxfront/unframework";
 
@@ -231,5 +232,126 @@ export default function Use() {
       }),
     });
     expect(result.diagnostics.filter(({ severity }) => severity !== "info")).toEqual([]);
+  });
+});
+
+describe("a directive's value against its type (ADR-0109)", () => {
+  const MISMATCH = `import { vFocusTrap } from "./focusTrap.uf.ts";
+
+export default function Panel() {
+  return <div v-focus-trap={1}>Text</div>;
+}
+`;
+  const FILES: Record<string, string> = { "/project/focusTrap.uf.ts": TRAP };
+  const resolve = createFileResolver({
+    root: "/project",
+    readFile: (path) => Promise.resolve(FILES[path]),
+  });
+
+  /** A syntactic oracle that checks directives' values with `answer`, and records each call. */
+  const checking = (
+    answer: (query: DirectiveValueQuery) => {
+      assignable: boolean;
+      value: string;
+      expected: string;
+    } | null,
+  ) => {
+    const calls: { file: string; source: string; queries: DirectiveValueQuery[] }[] = [];
+    const syntactic = createSyntacticOracle({
+      root: "/project",
+      readFile: (path) =>
+        Promise.resolve(path === "/project/Panel.uf.tsx" ? MISMATCH : FILES[path]),
+    });
+    const oracle: TypeOracle = {
+      ...syntactic,
+      resolveShape: (query) => syntactic.resolveShape(query),
+      checkDirectiveValues: async (file, source, queries) => {
+        calls.push({ file, source, queries });
+        return { checks: queries.map(answer), dependencies: ["types.ts"] };
+      },
+    };
+    return { oracle, calls };
+  };
+
+  it("reports nothing under the default oracle, which checks no value", async () => {
+    const result = await compile(MISMATCH, { filename: "Panel.uf.tsx", targets: ["vue"], resolve });
+    expect(result.diagnostics.filter(({ severity }) => severity !== "info")).toEqual([]);
+  });
+
+  it("asks an oracle that checks values once for the module, and reports its mismatch", async () => {
+    const { oracle, calls } = checking(() => ({
+      assignable: false,
+      value: "1",
+      expected: "boolean",
+    }));
+    const result = await compile(MISMATCH, {
+      filename: "Panel.uf.tsx",
+      targets: ["vue"],
+      resolve,
+      typeOracle: oracle,
+    });
+    const start = MISMATCH.indexOf("{1}") + 1;
+    expect(calls).toEqual([
+      {
+        file: "Panel.uf.tsx",
+        source: MISMATCH,
+        queries: [
+          {
+            value: { start, end: start + 1 },
+            kind: "expression",
+            directive: {
+              start: MISMATCH.indexOf("vFocusTrap"),
+              end: MISMATCH.indexOf("vFocusTrap") + "vFocusTrap".length,
+            },
+          },
+        ],
+      },
+    ]);
+    expect(result.diagnostics.map(({ code, span, message }) => ({ code, span, message }))).toEqual([
+      {
+        code: "UF6007",
+        span: { start, end: start + 1 },
+        message: "`v-focus-trap`'s value is `1`, and `vFocusTrap` takes `boolean`.",
+      },
+    ]);
+    expect(result.dependencies).toContain("types.ts");
+  });
+
+  it("reports nothing where the oracle can't say", async () => {
+    const { oracle } = checking(() => null);
+    const result = await compile(MISMATCH, {
+      filename: "Panel.uf.tsx",
+      targets: ["vue"],
+      resolve,
+      typeOracle: oracle,
+    });
+    expect(result.diagnostics.filter(({ severity }) => severity !== "info")).toEqual([]);
+  });
+
+  it("asks nothing for a module that applies no directive", async () => {
+    const { oracle, calls } = checking(() => null);
+    const text = "export default function Plain() {\n  return <p v-if-not={1}>Text</p>;\n}\n";
+    await compile(text, { filename: "Plain.uf.tsx", targets: ["vue"], typeOracle: oracle });
+    await compile("export default function P() {\n  return <p>a</p>;\n}\n", {
+      filename: "P.uf.tsx",
+      targets: ["vue"],
+      typeOracle: oracle,
+    });
+    expect(calls).toEqual([]);
+  });
+
+  it("reports an oracle that throws as UF9001", async () => {
+    const { oracle } = checking(() => {
+      throw new Error("checker gone");
+    });
+    const result = await compile(MISMATCH, {
+      filename: "Panel.uf.tsx",
+      targets: ["vue"],
+      resolve,
+      typeOracle: oracle,
+    });
+    expect(result.diagnostics.map(({ code, message }) => [code, message])).toEqual([
+      ["UF9001", "The type oracle failed on the directives' values: checker gone"],
+    ]);
   });
 });

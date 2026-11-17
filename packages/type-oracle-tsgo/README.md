@@ -4,9 +4,12 @@ The TypeOracle adapter on tsgo's checker (plan §5.5, ADR-0067, ADR-0107). It is
 that loads TypeScript's API: `typescript/sync`, pinned exactly at `7.1.0-beta` by the catalog.
 Here is how it works:
 
-- **`createTsgoOracle({ root })`** implements `TypeOracle` from `@unframework.dev/type-oracle` over the
-  files under `root`, read from the disk. It is opt-in: the compiler's default stays the
-  syntactic adapter.
+- **`createTsgoOracle({ root, include, readFile })`** implements `TypeOracle` from
+  `@unframework.dev/type-oracle` over the files under `root`, read from the disk. It is opt-in: the
+  compiler's default stays the syntactic adapter. `include` names the files the checker's project
+  holds, as a tsconfig's `include` relative to `root`, every TypeScript file under it by default.
+  `readFile` reads the files its syntactic layer asks for, the disk by default. The checker itself
+  always reads the disk.
 - **What it adds.** Each query is resolved by the syntactic adapter first. A part it leaves
   `unsupported` (a conditional or mapped type, `infer`, `keyof`, `typeof`, an indexed access, a
   template literal with holes) is evaluated by tsgo, and replaced by its result when a
@@ -42,6 +45,21 @@ Here is how it works:
   stops it, and the next query that needs it starts a new one.
 - **`printType`** prints the resolved shape, as the syntactic adapter does, and rejects one with
   unresolved parts.
+- **`checkDirectiveValues(file, source, queries)`** (ADR-0109) checks every directive's value in a
+  module, in one call. It types a shadow of `source`, the text the caller compiles, in which each
+  value is wrapped where it stands, `v-tone={__ufDirectiveValue(vTone, (value))}`, with a helper
+  that takes `Directive<T, any>` and `NoInfer<T>`. So the value has `T` as its contextual type, as
+  in an assignment, and keeps its branch's narrowing: a template literal or a generic call is
+  typed as TypeScript types it there. The shadow, `<file>.uf-directive-values.tsx` beside the
+  file, lives in a layer of the checker's snapshot and is removed before the method returns, in
+  one synchronous stretch, so no other query sees it. A leading byte order mark is dropped.
+- **What it answers.** `T` comes from the directive's type when that is the `Directive` interface
+  of `@uxfront/unframework`, as the first `node_modules/@uxfront/unframework` up from the file
+  resolves it, by its real path. The answer is the checker's assignability, with both types
+  printed, or `null` where the directive isn't that `Directive`, either type is the error type,
+  `T` is `never`, or the shadow is outside the project `include` builds. Its `dependencies` name
+  each directive's declaration file but the queried one. A module with a directive's value starts
+  the checker, even when no type needs it, and one with none never does.
 
 Its tests run the contract suite from `@unframework.dev/type-oracle/contract` with
 `{ checker: true }`, and start and stop their own checker processes.

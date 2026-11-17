@@ -1,0 +1,26 @@
+error[UF6007]: `v-focus-trap`'s value is `1`, and `vFocusTrap` takes `boolean`.
+  --> diagnostics/directive-value-type/Panel.uf.tsx:31:26
+   |
+31 |       <div v-focus-trap={1}>Number</div>
+   |                          ^
+   |
+   = help: Pass a value of type `boolean`, or change the type argument of `vFocusTrap`'s `defineDirective`.
+   = see: https://unframework.dev/diagnostics/UF6007
+
+error[UF6007]: `v-tone`'s value is `"loud"`, and `vTone` takes `"info" | "warn"`.
+  --> diagnostics/directive-value-type/Panel.uf.tsx:32:17
+   |
+32 |       <p v-tone="loud">Loud</p>
+   |                 ^^^^^^
+   |
+   = help: Pass a value of type `"info" | "warn"`, or change the type argument of `vTone`'s `defineDirective`.
+   = see: https://unframework.dev/diagnostics/UF6007
+
+error[UF6007]: `v-box`'s value is `{ name: string; }`, and `vBox` takes `{ id: string; }`.
+  --> diagnostics/directive-value-type/Panel.uf.tsx:33:17
+   |
+33 |       <p v-box={named.value}>Named</p>
+   |                 ^^^^^^^^^^^
+   |
+   = help: Pass a value of type `{ id: string; }`, or change the type argument of `vBox`'s `defineDirective`.
+   = see: https://unframework.dev/diagnostics/UF6007

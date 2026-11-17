@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { compile, createProject, createSyntacticOracle } from "../src/index.ts";
+import type { Project, TypeOracle } from "../src/index.ts";
 
 const PROPS = ["export interface CardProps {", "  label: string;", "}", ""].join("\n");
 
@@ -521,5 +522,113 @@ describe("updates", () => {
       copied: ["first.ts", "second.ts"],
     });
     expect(project.copy("second.ts")).toBeUndefined();
+  });
+});
+
+describe("a directive's value checked by the oracle (ADR-0109)", () => {
+  const FILES: Record<string, string> = {
+    "tone.ts": 'export type Tone = "info" | "warn";\n',
+    "focus.uf.ts": [
+      'import { defineDirective } from "@uxfront/unframework";',
+      'import type { Tone } from "./tone.ts";',
+      "export const vTone = defineDirective<Tone>({",
+      "  mounted(el, value) {",
+      "    el.title = value;",
+      "  },",
+      "});",
+      "",
+    ].join("\n"),
+    "Panel.uf.tsx": [
+      'import { vTone } from "./focus.uf.ts";',
+      "export default function Panel() {",
+      '  return <p v-tone="loud">Text</p>;',
+      "}",
+      "",
+    ].join("\n"),
+  };
+
+  /**
+   * A project whose oracle checks a value by the literal union `tone.ts` declares, read at each
+   * call, and names `tone.ts` as what its answer read.
+   */
+  function checkingProject(initial: Record<string, string> = FILES) {
+    const files = new Map(
+      Object.entries(initial).map(([path, text]) => [`/project/${path}`, text]),
+    );
+    const readFile = (path: string) => Promise.resolve(files.get(path));
+    const syntactic = createSyntacticOracle({ root: "/project", readFile });
+    let calls = 0;
+    const typeOracle: TypeOracle = {
+      ...syntactic,
+      resolveShape: (query) => syntactic.resolveShape(query),
+      checkDirectiveValues: async (_file, source, queries) => {
+        calls++;
+        const tones = [...(files.get("/project/tone.ts") ?? "").matchAll(/"(\w+)"/g)].map(
+          ([, tone]) => tone,
+        );
+        return {
+          checks: queries.map(({ value }) => ({
+            assignable: tones.includes(source.slice(value.start + 1, value.end - 1)),
+            value: source.slice(value.start, value.end),
+            expected: tones.map((tone) => `"${tone}"`).join(" | "),
+          })),
+          dependencies: ["focus.uf.ts", "tone.ts"],
+        };
+      },
+    };
+    const project = createProject({ root: "/project", readFile, typeOracle, targets: ["vue"] });
+    const write = (path: string, text: string) => files.set(`/project/${path}`, text);
+    return { project, write, calls: () => calls };
+  }
+
+  const codes = (result: Awaited<ReturnType<Project["compile"]>>) =>
+    result.diagnostics.map(({ code }) => code);
+
+  it("re-checks an importer when the directive's type changes", async () => {
+    const { project, write, calls } = checkingProject();
+    expect(codes(await project.compile("Panel.uf.tsx"))).toEqual(["UF6007"]);
+    expect(project.dependencies("Panel.uf.tsx")).toContain("tone.ts");
+    write("tone.ts", 'export type Tone = "info" | "warn" | "loud";\n');
+    expect((await project.update(["tone.ts"])).compiled).toContain("Panel.uf.tsx");
+    expect(codes(await project.compile("Panel.uf.tsx"))).toEqual([]);
+    expect(calls()).toBeGreaterThan(1);
+  });
+
+  it("compiles nothing again when the answer is unchanged, and still watches its files", async () => {
+    // Only the oracle's answer reads `tone.ts`: the module neither imports it nor names it.
+    const { project, write } = checkingProject({
+      "tone.ts": FILES["tone.ts"]!,
+      "Panel.uf.tsx": [
+        'import { defineDirective } from "@uxfront/unframework";',
+        "const vTone = defineDirective<string>({",
+        "  mounted(el, value) {",
+        "    el.title = value;",
+        "  },",
+        "});",
+        "export default function Panel() {",
+        '  return <p v-tone="loud">Text</p>;',
+        "}",
+        "",
+      ].join("\n"),
+    });
+    const before = await project.compile("Panel.uf.tsx");
+    expect(codes(before)).toEqual(["UF6007"]);
+    expect(project.dependencies("Panel.uf.tsx")).toEqual(["focus.uf.ts", "tone.ts"]);
+    write("tone.ts", '// A comment.\nexport type Tone = "info" | "warn";\n');
+    expect((await project.update(["tone.ts"])).compiled).not.toContain("Panel.uf.tsx");
+    expect(await project.compile("Panel.uf.tsx")).toBe(before);
+    // The answer's files stay the module's edges after a check that changed nothing.
+    write("tone.ts", 'export type Tone = "info" | "warn" | "loud";\n');
+    expect((await project.update(["tone.ts"])).compiled).toContain("Panel.uf.tsx");
+    expect(codes(await project.compile("Panel.uf.tsx"))).toEqual([]);
+  });
+
+  it("asks a syntactic oracle nothing of values", async () => {
+    const files = new Map(Object.entries(FILES).map(([path, text]) => [`/project/${path}`, text]));
+    const readFile = (path: string) => Promise.resolve(files.get(path));
+    const typeOracle = createSyntacticOracle({ root: "/project", readFile });
+    const project = createProject({ root: "/project", readFile, typeOracle, targets: ["vue"] });
+    expect(codes(await project.compile("Panel.uf.tsx"))).toEqual([]);
+    expect(project.dependencies("Panel.uf.tsx")).not.toContain("tone.ts");
   });
 });

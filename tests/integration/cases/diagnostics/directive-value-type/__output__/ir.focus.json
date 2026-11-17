@@ -1,0 +1,85 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/directive-value-type/focus.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "directives": [
+    {
+      "name": "vFocusTrap",
+      "exported": true,
+      "value": {
+        "code": "boolean",
+        "span": {
+          "start": 192,
+          "end": 199
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "active"
+          ],
+          "body": {
+            "code": "{\n    if (active) el.focus();\n  }",
+            "span": {
+              "start": 225,
+              "end": 258
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 205,
+            "end": 258
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 150,
+        "end": 263
+      }
+    },
+    {
+      "name": "vTone",
+      "exported": true,
+      "value": {
+        "code": "\"info\" | \"warn\"",
+        "span": {
+          "start": 302,
+          "end": 317
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "tone"
+          ],
+          "body": {
+            "code": "{\n    el.setAttribute(\"data-tone\", tone);\n  }",
+            "span": {
+              "start": 341,
+              "end": 386
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 323,
+            "end": 386
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 265,
+        "end": 391
+      }
+    }
+  ]
+}

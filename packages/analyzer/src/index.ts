@@ -1,6 +1,8 @@
 export { analyze, COMPONENT_SPECIFIER, componentImports } from "./analyze.ts";
 export type { AnalyzeOptions, AnalyzeResult } from "./analyze.ts";
 export { shapeQueries } from "./shapes.ts";
+export { directiveValueQueries } from "./directives.ts";
+export type { DirectiveValues } from "./directives.ts";
 export {
   isSharedModuleSpecifier,
   moduleSpecifiers,

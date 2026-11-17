@@ -60,6 +60,11 @@ relative to its root, and packages as `pkg:<name>`, a package that is not instal
 sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, and each `.uf.ts`
 module whose composables the source imports, one that is missing included, named as `filename` is.
 
+An oracle that answers `checkDirectiveValues`, as the tsgo adapter does, is asked once per module
+that applies a directive with a value (`directiveValueQueries`), and a value it says is of another
+type than the directive takes is UF6007 (ADR-0109). The files its answer read join
+`CompileResult.dependencies`, and the project graph keeps the answer in the module's key.
+
 **Source maps** (ADR-0074). With `sourceMap: true`, each output file has a `map`: version 3, whose
 `sources` name the source relative to the file and whose `sourcesContent` holds it. `compile()`
 anchors each file after the `output` hooks, from its own component's code, and carries the map
