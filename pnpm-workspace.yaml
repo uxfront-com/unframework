@@ -74,9 +74,9 @@ peerDependencyRules:
     "ts-api-utils>typescript": "7.1.0-beta"
 minimumReleaseAgeExclude:
   - "@uxfront/layer-docs@0.8.4"
-  - "@uxfront/layer-ui@0.1.7"
-  - "@uxfront/scene@0.5.0 || 0.5.1"
-  - "@uxfront/ui@0.6.0 || 0.9.1"
+  - "@uxfront/layer-ui@0.1.11"
+  - "@uxfront/scene@0.5.1"
+  - "@uxfront/ui@0.9.1"
   - "@vitest/mocker@5.0.3"
   - "@vitest/spy@5.0.3"
   - vitest@5.0.3
