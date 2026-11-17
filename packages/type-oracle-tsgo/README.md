@@ -45,19 +45,21 @@ Here is how it works:
   stops it, and the next query that needs it starts a new one.
 - **`printType`** prints the resolved shape, as the syntactic adapter does, and rejects one with
   unresolved parts.
-- **`checkDirectiveValues`** (ADR-0109) checks every directive's value in a module, in one call.
-  It finds the value and the directive's name at their spans, follows an import to its
-  declaration, and takes `T` from the name's type when that is the `Directive` interface of
-  `@uxfront/unframework`, as the first `node_modules/@uxfront/unframework` up from the file
-  resolves it, by its real path. An expression is typed where it is written, narrowed by its
-  branch, and tested with the checker's assignability. A static string is tested by its text,
-  since the checker gives a JSX attribute's string literal the error type: it matches when
-  `string` is assignable to `T`, or a member of `T` is that literal. The answer is `null` where the
-  file's text differs from the queried text, the name holds no `Directive` of the authoring
-  package, either type is the error type, `T` is `never`, or a string meets a template literal, a
-  string mapping or an intersection. Its `dependencies` name each directive's declaration file
-  but the queried one. A module with a directive's value starts the checker, even when no type
-  needs it, and one with none never does.
+- **`checkDirectiveValues(file, source, queries)`** (ADR-0109) checks every directive's value in a
+  module, in one call. It types a shadow of `source`, the text the caller compiles, in which each
+  value is wrapped where it stands, `v-tone={__ufDirectiveValue(vTone, (value))}`, with a helper
+  that takes `Directive<T, any>` and `NoInfer<T>`. So the value has `T` as its contextual type, as
+  in an assignment, and keeps its branch's narrowing: a template literal or a generic call is
+  typed as TypeScript types it there. The shadow, `<file>.uf-directive-values.tsx` beside the
+  file, lives in a layer of the checker's snapshot and is removed before the method returns, in
+  one synchronous stretch, so no other query sees it. A leading byte order mark is dropped.
+- **What it answers.** `T` comes from the directive's type when that is the `Directive` interface
+  of `@uxfront/unframework`, as the first `node_modules/@uxfront/unframework` up from the file
+  resolves it, by its real path. The answer is the checker's assignability, with both types
+  printed, or `null` where the directive isn't that `Directive`, either type is the error type,
+  `T` is `never`, or the shadow is outside the project `include` builds. Its `dependencies` name
+  each directive's declaration file but the queried one. A module with a directive's value starts
+  the checker, even when no type needs it, and one with none never does.
 
 Its tests run the contract suite from `@unframework.dev/type-oracle/contract` with
 `{ checker: true }`, and start and stop their own checker processes.

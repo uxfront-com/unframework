@@ -13,11 +13,12 @@ import type {
 } from "@unframework.dev/type-oracle";
 import type { Node, SourceFile, TypeNode } from "typescript/ast";
 import { isTypeNode } from "typescript/ast/is";
-import { serverFS } from "typescript/fs";
+import { createFileSystemLayer, serverFS } from "typescript/fs";
+import type { FileNotifications, RequestFileSystem } from "typescript/proto";
 import { API } from "typescript/sync";
 import type { Program, Project, Snapshot } from "typescript/sync";
 
-import { checkDirectiveValues } from "./directive-values.ts";
+import { checkShadow, shadowOf } from "./directive-values.ts";
 import { evaluate } from "./evaluate.ts";
 
 /** Options for {@link createTsgoOracle}. */
@@ -198,26 +199,53 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     return found;
   };
 
+  /** Replaces the snapshot with one that changes the files of a layer, and disposes of the old. */
+  const replace = (fileSystem: RequestFileSystem, notifications: FileNotifications) => {
+    const { id } = snapshot!.getConfiguredProject(config)!;
+    const next = snapshot!.update({
+      fileSystem,
+      fileNotifications: notifications,
+      ensurePrograms: [id],
+    });
+    if (next === snapshot) return;
+    snapshot!.dispose();
+    snapshot = next;
+  };
+
   const directiveValues = async (
     file: string,
+    source: string,
     queries: DirectiveValueQuery[],
   ): Promise<DirectiveValueChecks> => {
     const none = { checks: queries.map(() => null), dependencies: [] };
     // A module that applies no directive needs no checker.
     if (!queries.length) return none;
-    const { checker, program } = project();
-    const source = program.getSourceFile(`${root}/${file}`);
-    if (!source) return none;
     const authoring = authoringOf(dirname(`${root}/${file}`));
     if (authoring === undefined) return none;
-    return checkDirectiveValues(queries, {
-      checker,
-      source,
-      file,
-      fileOf,
-      isAuthoring: (fileName) =>
-        realpathOrUndefined(fileName)?.startsWith(`${authoring}/`) ?? false,
-    });
+    const shadow = shadowOf(source, queries);
+    // Beside the file, so its imports resolve as the file's do, under a name no source has.
+    const shadowFile = `${file}.uf-directive-values.tsx`;
+    const path = `${root}/${shadowFile}`;
+    project();
+    // From here to the shadow's removal, no call yields: nothing else replaces the snapshot or
+    // reads the program with the shadow in it, since every other query reads it synchronously too.
+    replace(createFileSystemLayer([[path, shadow.text]]), { created: [path] });
+    try {
+      const { checker, program } = project();
+      const typed = program.getSourceFile(path);
+      if (!typed) return none;
+      return checkShadow(shadow, {
+        checker,
+        source: typed,
+        file,
+        shadow: shadowFile,
+        fileOf,
+        isAuthoring: (fileName) =>
+          realpathOrUndefined(fileName)?.startsWith(`${authoring}/`) ?? false,
+      });
+    } finally {
+      replace(createFileSystemLayer([], { removedPaths: [path] }), { deleted: [path] });
+    }
   };
 
   return {

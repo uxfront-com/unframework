@@ -5,9 +5,10 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
 - **`TypeOracle`** is the seam between the compiler and a type-checker: `resolveShape`,
   `printType`, `update` and `dispose`, all asynchronous, with serialisable results. A query names
   a type as written: its file, relative to the oracle's root, and the span of its type node there.
-  An adapter with a checker may also answer `checkDirectiveValues(file, queries)` (ADR-0109): for
-  each directive's value in a module, whether its type is assignable to the directive's `T`, with
-  both types printed, or `null` where it can't say, and the files its answers read. The syntactic
+  An adapter with a checker may also answer `checkDirectiveValues(file, source, queries)`
+  (ADR-0109): for each directive's value in the `source` a caller compiles, whether its type is
+  assignable to the directive's `T`, with both types printed, or `null` where it can't say, and the
+  files its answers read. The syntactic
   adapter leaves it out, since only a checker types a value.
 - **`TypeShape`** is a table of nodes, so a recursive type is a cycle of ids. A node is a
   primitive, a literal, a flattened union, an array, a tuple, an object with members, a

@@ -28,8 +28,6 @@ export type TypeQuery = ShapeQuery;
 export interface DirectiveValueQuery {
   /** The value as the parser spans it: a container's expression, or a string attribute's literal. */
   value: Span;
-  /** The source's text at `value`. An adapter that reads other text there answers `null`. */
-  text: string;
   /** An identifier in the same file bound to the directive: its `const`'s name, or its import's local name. */
   directive: Span;
 }
@@ -70,11 +68,14 @@ export interface TypeOracle {
   printType(query: TypeQuery): Promise<string>;
   /**
    * Checks each directive's value in a file against the directive's type argument (ADR-0109):
-   * one call per module, with every use. Only a type-checker can type a value, so an adapter
-   * without one leaves the method out, and nothing is checked.
+   * one call per module, with every use. `source` is the text the caller compiles for `file`,
+   * which the queries' spans index, and which is checked in place of the file's text on the disk.
+   * Only a type-checker can type a value, so an adapter without one leaves the method out, and
+   * nothing is checked.
    */
   checkDirectiveValues?(
     file: string,
+    source: string,
     queries: DirectiveValueQuery[],
   ): Promise<DirectiveValueChecks>;
   /** Tells the oracle which files changed, for incremental builds. */

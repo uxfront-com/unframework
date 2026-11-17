@@ -1,20 +1,73 @@
 // A directive's value checked against its type argument (ADR-0109). TypeScript doesn't type a
-// dashed JSX attribute, so `v-focus-trap={1}` type-checks against `defineDirective<boolean>`:
-// the checker types the value where it is written, narrowed by its branch, and tests it against
-// the `T` of the `Directive<T, E>` the directive's name holds, with its own assignability.
+// dashed JSX attribute, so `v-focus-trap={1}` type-checks against `defineDirective<boolean>`. The
+// adapter types a shadow of the compiled source instead, in which each value is wrapped where it
+// stands, `v-tone={__ufDirectiveValue(vTone, (value))}`: the helper gives the value the
+// directive's `T` as its context, as an assignment would, so a template literal or a generic
+// call is typed as TypeScript types it there, and the value keeps its branch's narrowing.
 
-import type { DirectiveValueCheck, DirectiveValueChecks, Span } from "@unframework.dev/type-oracle";
-import type { Node, SourceFile } from "typescript/ast";
-import { isIdentifier, isJsxAttribute, isStringLiteral } from "typescript/ast/is";
+import type {
+  DirectiveValueCheck,
+  DirectiveValueChecks,
+  DirectiveValueQuery,
+} from "@unframework.dev/type-oracle";
+import type { CallExpression, Node, SourceFile } from "typescript/ast";
+import { isCallExpression, isIdentifier } from "typescript/ast/is";
 import { SymbolFlags, TypeFlags } from "typescript/sync";
-import type { Checker, Symbol, Type, TypeReference } from "typescript/sync";
+import type { Checker, Type, TypeReference } from "typescript/sync";
+
+/** The shadow of a source: its text, and where each query's helper call starts in it. */
+export interface Shadow {
+  text: string;
+  /** The offset of each query's call in `text`, in the queries' order. */
+  calls: number[];
+}
+
+/** The helper's name, when the source's text doesn't already hold it. */
+const HELPER = "__ufDirectiveValue";
+
+/**
+ * The shadow of `source`: each query's value wrapped in a call of the helper, which takes the
+ * directive and the value, and the helper's declaration at the end. A string attribute's value,
+ * `v-tone="warn"`, becomes a container, `v-tone={__ufDirectiveValue(vTone, ("warn"))}`: the
+ * analyser rejects a static value holding `\`, `&` or a line break, so its literal reads alike in
+ * JavaScript. A leading byte order mark is dropped, since the parser's spans count it and the
+ * checker's positions don't.
+ */
+export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]): Shadow {
+  const bom = source.startsWith("﻿") ? 1 : 0;
+  let helper = HELPER;
+  for (let suffix = 1; source.includes(helper); suffix++) helper = `${HELPER}${suffix}`;
+  const order = queries
+    .map((query, index) => ({ query, index }))
+    .toSorted((a, b) => a.query.value.start - b.query.value.start);
+  const calls: number[] = Array.from({ length: queries.length }, () => -1);
+  let text = "";
+  let at = bom;
+  for (const { query, index } of order) {
+    const { value, directive } = query;
+    // Spans that overlap are no two values the parser gave: the later one is left out.
+    if (value.start < at) continue;
+    text += source.slice(at, value.start);
+    const attribute = /=\s*$/.test(source.slice(Math.max(bom, value.start - 16), value.start));
+    const call = `${helper}(${source.slice(directive.start, directive.end)}, (${source.slice(value.start, value.end)}))`;
+    if (attribute) text += "{";
+    calls[index] = text.length;
+    text += call;
+    if (attribute) text += "}";
+    at = value.end;
+  }
+  text += source.slice(at);
+  text += `\ndeclare function ${helper}<T>(directive: import("@uxfront/unframework").Directive<T, any>, value: NoInfer<T>): void;\n`;
+  return { text, calls };
+}
 
 export interface DirectiveValueContext {
   checker: Checker;
-  /** The queried file, as the checker's program holds it. */
+  /** The shadow, as the checker's program holds it. */
   source: SourceFile;
-  /** The query's own file, relative to the root, which `dependencies` leaves out. */
+  /** The queried file and its shadow, relative to the root, which `dependencies` leave out. */
   file: string;
+  shadow: string;
   /** The file of a source file as a shape names it, or `undefined` outside the root (a lib). */
   fileOf(fileName: string): string | undefined;
   /**
@@ -24,71 +77,55 @@ export interface DirectiveValueContext {
   isAuthoring(fileName: string): boolean;
 }
 
-/** A query's nodes: the value and the directive's name, with the value's text. */
-interface Located {
-  value: Node;
-  directive: Node;
-  text: string;
-}
-
 /**
- * Checks each query's value against its directive's `T`. A query is `null` where the checker
- * cannot say: the file's text differs at the value, the name isn't a `Directive` of the
+ * Checks each value of a typed shadow against its directive's `T`. A query is `null` where the
+ * checker cannot say: its call isn't in the shadow, the directive isn't a `Directive` of the
  * authoring package, or a type is the error type or `T` is `never`.
  */
-export function checkDirectiveValues(
-  queries: readonly { value: Span; text: string; directive: Span }[],
-  context: DirectiveValueContext,
-): DirectiveValueChecks {
+export function checkShadow(shadow: Shadow, context: DirectiveValueContext): DirectiveValueChecks {
   const { checker, source } = context;
-  const located: (Located | undefined)[] = queries.map((query) => {
-    // The oracle reads the disk, and the source compiled may differ, as a canary's does.
-    if (source.text.slice(query.value.start, query.value.end) !== query.text) return undefined;
-    const value = nodeAt(source, query.value);
-    // An import specifier spans exactly its name: the name is the identifier inside it.
-    const directive = nodeAt(source, query.directive, isIdentifier);
-    return value && directive ? { value, directive, text: query.text } : undefined;
-  });
-  const found = located.filter((each): each is Located => each !== undefined);
-  // One request each for every use's symbol and every value's type.
-  const symbols = found.length
-    ? checker.getSymbolAtLocation(found.map((each) => each.directive))
+  const located = shadow.calls.map((start) => (start === -1 ? undefined : callAt(source, start)));
+  const found = located.filter((call): call is CallExpression => call !== undefined);
+  // One request each for every directive's symbol, every directive's type and every value's type.
+  const directives = found.map((call) => call.arguments[0]!);
+  const symbols = found.length ? checker.getSymbolAtLocation(directives) : [];
+  const directiveTypes = found.length ? checker.getTypeAtLocation(directives) : [];
+  const valueTypes = found.length
+    ? checker.getTypeAtLocation(found.map((call) => call.arguments[1]!))
     : [];
-  const types = found.length ? checker.getTypeAtLocation(found.map((each) => each.value)) : [];
   const dependencies = new Set<string>();
-  /** Each directive's `T`, by its symbol's id. */
-  const directives = new Map<number, Type | undefined>();
-  let at = 0;
-  const checks = located.map((each): DirectiveValueCheck | null => {
-    if (!each) return null;
-    const index = at++;
-    const named = symbols[index];
-    if (!named) return null;
-    const symbol = named.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(named) : named;
-    if (checker.isUnknownSymbol(symbol)) return null;
-    for (const declaration of symbol.declarations) {
+  let index = 0;
+  const checks = located.map((call): DirectiveValueCheck | null => {
+    if (!call) return null;
+    const at = index++;
+    const named = symbols[at];
+    const symbol =
+      named && named.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(named) : named;
+    for (const declaration of symbol?.declarations ?? []) {
       const file = declaration.resolve()?.getSourceFile().fileName;
       const name = file === undefined ? undefined : context.fileOf(file);
-      if (name !== undefined && name !== context.file) dependencies.add(name);
+      if (name !== undefined && name !== context.file && name !== context.shadow) {
+        dependencies.add(name);
+      }
     }
-    if (!directives.has(symbol.id)) directives.set(symbol.id, directiveType(symbol, context));
-    const expected = directives.get(symbol.id);
-    if (!expected) return null;
-    return isJsxAttribute(each.value.parent) && isStringLiteral(each.value)
-      ? checkText(each.text.slice(1, -1), expected, checker)
-      : checkType(types[index]!, expected, checker);
+    const expected = directiveType(directiveTypes[at]!, context);
+    const value = valueTypes[at]!;
+    if (!expected || value.isErrorType()) return null;
+    return {
+      assignable: checker.isTypeAssignableTo(value, expected),
+      value: checker.typeToString(value),
+      expected: checker.typeToString(expected),
+    };
   });
   return { checks, dependencies: [...dependencies].toSorted() };
 }
 
 /**
- * The `T` of the `Directive<T, E>` a symbol holds, or `undefined` for a symbol that holds no
- * `Directive` of the authoring package, or whose `T` is the error type or `never`, which a
- * `defineDirective` without its type argument gives.
+ * The `T` of a `Directive<T, E>` of the authoring package, or `undefined` for any other type, or
+ * for a `T` that is the error type or `never`, which a `defineDirective` without its type
+ * argument gives.
  */
-function directiveType(symbol: Symbol, context: DirectiveValueContext): Type | undefined {
-  const { checker } = context;
-  const type = checker.getTypeOfSymbol(symbol);
+function directiveType(type: Type, context: DirectiveValueContext): Type | undefined {
   if (type.isErrorType() || !type.isTypeReference()) return undefined;
   const target = type.getSymbol();
   if (!target || target.name !== "Directive" || !(target.flags & SymbolFlags.Interface)) {
@@ -99,63 +136,22 @@ function directiveType(symbol: Symbol, context: DirectiveValueContext): Type | u
   if (!declared.length || !declared.every((file) => file && context.isAuthoring(file))) {
     return undefined;
   }
-  const [expected] = checker.getTypeArguments(type as TypeReference);
+  const [expected] = context.checker.getTypeArguments(type as TypeReference);
   if (!expected || expected.isErrorType() || expected.flags & TypeFlags.Never) return undefined;
   return expected;
 }
 
-/** An expression's value: its type, as the checker gives it where it is written. */
-function checkType(value: Type, expected: Type, checker: Checker): DirectiveValueCheck | null {
-  if (value.isErrorType()) return null;
-  return {
-    assignable: checker.isTypeAssignableTo(value, expected),
-    value: checker.typeToString(value),
-    expected: checker.typeToString(expected),
-  };
-}
-
-/**
- * A string attribute's value (`v-tone="warn"`), tested by its text: the checker gives a JSX
- * attribute's string literal the error type, and has no literal type to build from a text. The
- * analyser rejects a static value holding `\`, `&` or a line break, so the text is the value.
- */
-function checkText(text: string, expected: Type, checker: Checker): DirectiveValueCheck | null {
-  const printed = checker.typeToString(expected);
-  const answer = (assignable: boolean) => ({
-    assignable,
-    value: JSON.stringify(text),
-    expected: printed,
-  });
-  if (checker.isTypeAssignableTo(checker.getStringType(), expected)) return answer(true);
-  const members = expected.isUnionType() ? (expected.getTypes() ?? []) : [expected];
-  if (members.some((member) => member.isStringLiteralType() && member.value === text)) {
-    return answer(true);
-  }
-  // A text may match a template literal, an `Uppercase<…>` or a branded string without the
-  // adapter being able to tell: those are left to the outputs' own checks.
-  if (
-    members.some(
-      (member) =>
-        member.isTemplateLiteralType() ||
-        member.isStringMappingType() ||
-        member.isIntersectionType(),
-    )
-  ) {
-    return null;
-  }
-  return answer(false);
-}
-
-/** The outermost node at exactly `span`, of those `accept` takes. */
-function nodeAt(
-  source: SourceFile,
-  span: Span,
-  accept: (node: Node) => boolean = () => true,
-): Node | undefined {
-  let found: Node | undefined;
+/** The helper's call that starts at `start`, with its two arguments. */
+function callAt(source: SourceFile, start: number): CallExpression | undefined {
+  let found: CallExpression | undefined;
   const visit = (node: Node): void => {
-    if (found || node.pos > span.start || node.end < span.end) return;
-    if (node.getStart(source) === span.start && node.end === span.end && accept(node)) {
+    if (found || node.pos > start || node.end <= start) return;
+    if (
+      isCallExpression(node) &&
+      node.getStart(source) === start &&
+      isIdentifier(node.expression) &&
+      node.arguments.length === 2
+    ) {
       found = node;
       return;
     }
