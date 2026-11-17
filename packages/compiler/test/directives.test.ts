@@ -294,6 +294,7 @@ export default function Panel() {
         queries: [
           {
             value: { start, end: start + 1 },
+            kind: "expression",
             directive: {
               start: MISMATCH.indexOf("vFocusTrap"),
               end: MISMATCH.indexOf("vFocusTrap") + "vFocusTrap".length,

@@ -567,15 +567,17 @@ export function directiveValueQueries(parsed: ParsedModule): DirectiveValueQuery
     const name = isDirectiveAttribute(authored) ? directiveNameOf(authored) : undefined;
     const directive = name === undefined ? undefined : names.get(name);
     if (!directive) return true;
-    const value =
-      node.value?.type === "Literal"
-        ? node.value
-        : node.value?.type === "JSXExpressionContainer" &&
-            node.value.expression.type !== "JSXEmptyExpression"
-          ? node.value.expression
-          : undefined;
-    if (value) {
-      queries.push({ value: span(value), directive });
+    const value = node.value;
+    if (value?.type === "Literal") {
+      // A static value holding `\`, `&` or a line break is UF1002 (`lowerDirectiveAttribute`),
+      // and it reads otherwise in JavaScript, where the oracle types it: it is not asked about.
+      const raw = parsed.source.slice(value.start, value.end);
+      if (!/[\\&\r\n]/.test(raw)) queries.push({ value: span(value), kind: "string", directive });
+    } else if (
+      value?.type === "JSXExpressionContainer" &&
+      value.expression.type !== "JSXEmptyExpression"
+    ) {
+      queries.push({ value: span(value.expression), kind: "expression", directive });
     }
     return true;
   });

@@ -430,19 +430,27 @@ describe("UF6007 directive-value-type", () => {
   const queried = (text: string, file = "Test.uf.tsx") =>
     directiveValueQueries(parseModule(file, text)).map((query) => [
       text.slice(query.value.start, query.value.end),
+      query.kind,
       text.slice(query.directive.start, query.directive.end),
     ]);
 
   it("names each value of a directive the module declares or imports", () => {
     const text = `${IMPORT}import { vFocusTrap } from "./focusTrap.uf.ts";\n${MARK}export function A() {\n  return <p v-mark="a" v-focus-trap={open} v-other={1} v-empty={} v-bare>a</p>;\n}\n`;
     expect(queried(text)).toEqual([
-      ['"a"', "vMark"],
-      ["open", "vFocusTrap"],
+      ['"a"', "string", "vMark"],
+      ["open", "expression", "vFocusTrap"],
     ]);
     const [mark, trap] = directiveValueQueries(parseModule("Test.uf.tsx", text));
     // The names that declare each directive: its `const`, and the import's local name.
     expect(text.slice(mark!.directive.start - 6, mark!.directive.end)).toBe("const vMark");
     expect(text.slice(trap!.directive.start - 9, trap!.directive.end)).toBe("import { vFocusTrap");
+  });
+
+  it("leaves out a static value the analyser rejects, which reads otherwise in JavaScript", () => {
+    const text = source(
+      '<div><p v-mark="a\\" title="b">a</p><p v-mark="a &amp; b">c</p><p v-mark="ok">d</p></div>',
+    );
+    expect(queried(text)).toEqual([['"ok"', "string", "vMark"]]);
   });
 
   it("names nothing in a module without a directive's use", () => {
