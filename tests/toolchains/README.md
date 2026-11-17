@@ -57,4 +57,9 @@ them, and every directive must then go unmet (`pnpm test:canaries L4-consumer`).
 - Nothing resolves React, Solid, Qwik or Vue from this directory, where the fixtures sit. Those
   four tsconfigs map the framework with `paths` to `tests/integration`'s copy, the one the outputs
   resolve. Without it, vue-tsc checks a handler passed by name (`@open="open"`) against nothing.
+- `solid2` holds Solid 2 itself, which `tests/integration` doesn't: it is the only place Solid 2
+  is installed for the corpus, and every solid2 layer resolves Solid from here (ADR-0102). Its
+  tsconfig maps `solid-js` and `@solidjs/web` with `paths` to its own copy, for the outputs and the
+  fixtures alike, and names `@solidjs/web`'s JSX runtime's types, which `paths` would otherwise
+  look for past the package's `exports`.
 - Angular reports a mistyped handler argument as TS2345, not TS2322.

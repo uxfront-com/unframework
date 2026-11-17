@@ -395,8 +395,8 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   frame away. After each test it fails L9 with the steps no `expectParity` compared, and resets
   the input for the next test (`ufResetInput`: the mouse to the frame's corner, the keys
   released, the focus blurred and the frame focused again). It registers the matchers above.
-- **`@unframework.dev/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `angular`, `qwik`,
-  `astro`): registers `@unframework.dev/target-<target>/toolchain/client`'s mount adapter.
+- **`@unframework.dev/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `solid2`, `angular`,
+  `qwik`, `astro`): registers `@unframework.dev/target-<target>/toolchain/client`'s mount adapter.
 
 ## Node (`@unframework.dev/testing/node`)
 
