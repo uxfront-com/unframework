@@ -226,27 +226,43 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     // Beside the file, so its imports resolve as the file's do, under a name no source has.
     const shadowFile = `${file}.uf-directive-values.tsx`;
     const path = `${root}/${shadowFile}`;
+    // A file of that name on the disk would be hidden by the shadow's removal from then on.
+    if (existsSync(path)) return none;
     project();
     // From here to the shadow's removal, no call yields: nothing else replaces the snapshot or
     // reads the program with the shadow in it, since every other query reads it synchronously too.
     replace(createFileSystemLayer([[path, shadow.text]]), { created: [path] });
+    let answer: DirectiveValueChecks;
     try {
       const { checker, program } = project();
       const typed = program.getSourceFile(path);
-      if (!typed) return none;
-      return checkShadow(shadow, {
-        checker,
-        source: typed,
-        file,
-        shadow: shadowFile,
-        fileOf,
-        isAuthoring: (fileName) =>
-          realpathOrUndefined(fileName)?.startsWith(`${authoring}/`) ?? false,
-      });
-    } finally {
-      replace(createFileSystemLayer([], { removedPaths: [path] }), { deleted: [path] });
+      answer = typed
+        ? checkShadow(shadow, {
+            checker,
+            source: typed,
+            file,
+            shadow: shadowFile,
+            fileOf,
+            isAuthoring: (fileName) =>
+              realpathOrUndefined(fileName)?.startsWith(`${authoring}/`) ?? false,
+          })
+        : none;
+    } catch (error) {
+      // The check's own error is the one to report: a removal that fails after it, as when the
+      // checker's process has died, would hide it.
+      try {
+        removeShadow(path);
+      } catch {
+        // Already failing.
+      }
+      throw error;
     }
+    removeShadow(path);
+    return answer;
   };
+
+  const removeShadow = (path: string) =>
+    replace(createFileSystemLayer([], { removedPaths: [path] }), { deleted: [path] });
 
   return {
     resolveShape,

@@ -34,7 +34,7 @@ const HELPER = "__ufDirectiveValue";
  * checker's positions don't.
  */
 export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]): Shadow {
-  const bom = source.startsWith("﻿") ? 1 : 0;
+  const bom = source.startsWith("\uFEFF") ? 1 : 0;
   let helper = HELPER;
   for (let suffix = 1; source.includes(helper); suffix++) helper = `${HELPER}${suffix}`;
   const order = queries
@@ -48,7 +48,9 @@ export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]
     // Spans that overlap are no two values the parser gave: the later one is left out.
     if (value.start < at) continue;
     text += source.slice(at, value.start);
-    const attribute = /=\s*$/.test(source.slice(Math.max(bom, value.start - 16), value.start));
+    // The parser says which a value is: a string attribute's literal takes the braces of a
+    // container, which a container's expression already has.
+    const attribute = query.kind === "string";
     const call = `${helper}(${source.slice(directive.start, directive.end)}, (${source.slice(value.start, value.end)}))`;
     if (attribute) text += "{";
     calls[index] = text.length;

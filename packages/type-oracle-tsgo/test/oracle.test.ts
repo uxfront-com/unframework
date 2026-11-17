@@ -735,6 +735,7 @@ describe("tsgo adapter", () => {
       const directive = source.indexOf(name);
       return {
         value: { start, end: start + length },
+        kind: braced ? "expression" : "string",
         directive: { start: directive, end: directive + name.length },
       };
     };
@@ -937,13 +938,80 @@ describe("tsgo adapter", () => {
     it("gives a source with a byte order mark the answers it gives one without", async () => {
       await authoring();
       await writePanel();
-      const marked = `﻿${PANEL}`;
-      const queries = panelQueries(PANEL).map(({ value, directive }) => ({
+      const marked = `\uFEFF${PANEL}`;
+      const queries = panelQueries(PANEL).map(({ value, kind, directive }) => ({
         value: { start: value.start + 1, end: value.end + 1 },
+        kind,
         directive: { start: directive.start + 1, end: directive.end + 1 },
       }));
       const { checks } = await open().checkDirectiveValues!("Panel.uf.tsx", marked, queries);
       expect(checks).toEqual(PANEL_CHECKS);
+    });
+
+    it("wraps each value as the parser spans it, whatever the text before it", async () => {
+      await authoring();
+      // A container whose comment ends in `=`, and a string after a long run of spaces: the
+      // shadow must still parse, or a later narrowed value loses its narrowing.
+      const source = [
+        'import { defineDirective, ref } from "@uxfront/unframework";',
+        "const vFlag = defineDirective<boolean>({});",
+        'const vTone = defineDirective<"info" | "warn">({});',
+        "export default function A() {",
+        "  const open = ref(false);",
+        '  const tone = ref<"info" | "warn" | undefined>(undefined);',
+        "  return (",
+        "    <div",
+        "      v-flag={",
+        "        // Trap the focus while open =",
+        "        open.value",
+        "      }",
+        `      v-tone=${" ".repeat(20)}"warn"`,
+        "    >",
+        "      {tone.value !== undefined && <p v-tone={tone.value}>Toned</p>}",
+        "    </div>",
+        "  );",
+        "}",
+        "",
+      ].join("\n");
+      await put("A.uf.tsx", source);
+      const trap = source.indexOf("open.value");
+      const warn = source.indexOf('"warn"', source.indexOf("v-tone="));
+      const { checks } = await open().checkDirectiveValues!("A.uf.tsx", source, [
+        {
+          value: { start: trap, end: trap + "open.value".length },
+          kind: "expression",
+          directive: { start: source.indexOf("vFlag"), end: source.indexOf("vFlag") + 5 },
+        },
+        {
+          value: { start: warn, end: warn + '"warn"'.length },
+          kind: "string",
+          directive: { start: source.indexOf("vTone"), end: source.indexOf("vTone") + 5 },
+        },
+        use(source, "v-tone={tone.value}", "vTone"),
+      ]);
+      expect(checks).toEqual([
+        { assignable: true, value: "boolean", expected: "boolean" },
+        { assignable: true, value: '"warn"', expected: '"info" | "warn"' },
+        { assignable: true, value: '"info" | "warn"', expected: '"info" | "warn"' },
+      ]);
+    });
+
+    it("leaves a file of the shadow's name alone, and answers null", async () => {
+      await authoring();
+      await put("B.uf.tsx", SWAP);
+      await put("B.uf.tsx.uf-directive-values.tsx", "export const kept = 1;\n");
+      const kept = await component(
+        "{ a: typeof kept }",
+        'import { kept } from "./B.uf.tsx.uf-directive-values.tsx";',
+        "K",
+        "K.uf.tsx",
+      );
+      const oracle = open();
+      const { checks } = await oracle.checkDirectiveValues!("B.uf.tsx", SWAP, [
+        use(SWAP, "v-flag={v.value}", "vFlag"),
+      ]);
+      expect(checks).toEqual([null]);
+      expect(canonical(await oracle.resolveShape(kept))).toBe("{ a: 1 }");
     });
 
     it("picks a helper name the source doesn't hold", async () => {

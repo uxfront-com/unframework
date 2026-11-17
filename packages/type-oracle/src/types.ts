@@ -28,6 +28,8 @@ export type TypeQuery = ShapeQuery;
 export interface DirectiveValueQuery {
   /** The value as the parser spans it: a container's expression, or a string attribute's literal. */
   value: Span;
+  /** Which of the two the value is: a string attribute's literal, or a container's expression. */
+  kind: "string" | "expression";
   /** An identifier in the same file bound to the directive: its `const`'s name, or its import's local name. */
   directive: Span;
 }
