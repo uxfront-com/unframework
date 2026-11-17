@@ -22,7 +22,7 @@ const SOLID_DEPENDENCIES = ["seroval", "seroval-plugins"];
 type SolidPlugin = (options: {
   ssr?: boolean;
   refresh?: boolean;
-  solid?: { hydratable?: boolean };
+  solid?: { hydratable?: boolean; validate?: boolean };
 }) => PluginOption;
 
 /** @solidjs/vite-plugin, from the toolchain directory. */
@@ -50,8 +50,10 @@ export const toolchain: Toolchain = {
           // plain DOM compile.
           ssr: mode !== "browser",
           // Under Vitest the plugin compiles nothing hydratable whatever `ssr` says, so it is said
-          // again for the compiler.
-          solid: { hydratable: mode !== "browser" },
+          // again for the compiler. Its template validation is L3's (`frameworkCompile`), where a
+          // template a browser would parse otherwise is an error: here, as Solid 1's compiler only
+          // warned, it would stop the render before L6 and the browser layers judge what it shows.
+          solid: { hydratable: mode !== "browser", validate: false },
           // solid-refresh would wrap the code under test in HMR proxies.
           refresh: false,
         }),
