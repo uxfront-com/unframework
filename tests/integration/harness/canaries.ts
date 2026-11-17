@@ -204,14 +204,16 @@ const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "an
  * The L12 sub-checks that catch a client render's text that differs from the server's, on each
  * target (ADR-0095), every case judged on one of its target's. React and Vue report the mismatch.
  * Solid keeps a text the server wrote, which only the client render shows, and throws for a
- * structure the marker changed. Angular and Svelte throw for such a structure too, and elsewhere
- * write the client's text over the server's, which the expected DOM shows, or keep the server's.
+ * structure the marker changed, but an async setup's subtree it creates again from the client's
+ * render once the setup resolves, which the expected DOM shows (ADR-0101). Angular and Svelte
+ * throw for such a structure too, and elsewhere write the client's text over the server's, which
+ * the expected DOM shows, or keep the server's.
  * `ids` and `client agreement` each fail on their own in the testing package's tests.
  */
 const CLIENT_TEXT_CHECK: Readonly<Record<string, RegExp>> = {
   react: /^mismatch: /m,
   vue: /^mismatch: /m,
-  solid: /^(?:mismatch|client agreement): /m,
+  solid: /^(?:mismatch|DOM|client agreement): /m,
   angular: /^(?:mismatch|DOM|client agreement): /m,
   svelte: /^(?:mismatch|DOM|client agreement): /m,
 };
@@ -693,7 +695,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L12-client-text",
     layer: "L12",
     description:
-      "Appends a marker to the text of an element every render of every component shows, in the hydrate projects' page alone: the server's HTML stays right, and only the client's render differs from it (ADR-0095). React and Vue must report it as a `mismatch`. Solid may report a `mismatch` or a `client agreement` failure, and Svelte and Angular a `mismatch`, `DOM` or `client agreement` one, since those frameworks throw on some changes and keep the server's text on others.",
+      "Appends a marker to the text of an element every render of every component shows, in the hydrate projects' page alone: the server's HTML stays right, and only the client's render differs from it (ADR-0095). React and Vue must report it as a `mismatch`. Solid, Svelte and Angular may report a `mismatch`, `DOM` or `client agreement` one, since those frameworks throw on some changes, keep the server's text on others, and write the client's over it on others (Solid where an async setup's subtree is created again, ADR-0101).",
     evidence: {
       hydrate: {
         "client render": (target) => CLIENT_TEXT_CHECK[target] ?? /^client agreement: /m,
@@ -1999,9 +2001,16 @@ function classBodyStart(contents: string): number | undefined {
  * past a generic component's type parameters, `function List<T>(` (ADR-0068).
  */
 function componentParameters(contents: string): number | undefined {
-  const component = /\bfunction\s+[A-Z][\w$]*\s*(?=[<(])/.exec(contents);
+  const component = /\bfunction\s+([A-Z][\w$]*)\s*(?=[<(])/.exec(contents);
   if (!component) return undefined;
-  const index = component.index + component[0].length;
+  // React's async component (ADR-0101) renders its template in `<Name>Resolved`, which the
+  // exported one renders under `<Suspense>`: that function's parameters are the template's.
+  const name = component[1]!;
+  const resolved = new RegExp(`\\bfunction\\s+${escapeRegExp(name)}Resolved\\s*(?=[<(])`).exec(
+    contents,
+  );
+  const own = resolved && contents.includes(`<${name}Resolved `) ? resolved : component;
+  const index = own.index + own[0].length;
   if (contents[index] !== "<") return index;
   // A constraint may hold brackets of its own.
   const parameters = matchingBracket(contents, index, "<", ">");

@@ -142,7 +142,12 @@ Declared differences, on the targets page:
 3. **The focus after `client agreement`.** A component that focuses as it mounts focuses its client
    render's copy too, which the check then removes. The client render gives the focus back to the
    element that held it, so the hydrated view keeps it. This amends ADR-0095.
-4. **Loaders resolve after a microtask.** Settling stops when two rounds read the same DOM, so a
+4. **The canaries.** A text, attribute or statement a canary puts in a React output's template goes
+   in `<Name>Resolved`, where an async component's template is: the exported component renders
+   only `<Suspense>`. `L12-client-text` takes Solid's `DOM` sub-check as evidence too, as it does
+   Svelte's and Angular's: Solid creates an async setup's subtree again from the client's render,
+   so the hydrated DOM shows the client's text, and no mismatch is reported.
+5. **Loaders resolve after a microtask.** Settling stops when two rounds read the same DOM, so a
    slower setup could read as settled while pending. The cases' loaders are deterministic and
    resolve after one `await Promise.resolve()`.
 
