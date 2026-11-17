@@ -1029,6 +1029,9 @@ importers:
       '@unframework.dev/target-solid':
         specifier: workspace:*
         version: link:../target-solid
+      '@unframework.dev/target-solid2':
+        specifier: workspace:*
+        version: link:../target-solid2
       '@unframework.dev/target-svelte':
         specifier: workspace:*
         version: link:../target-svelte
@@ -1500,6 +1503,9 @@ importers:
       '@unframework.dev/target-solid':
         specifier: workspace:*
         version: link:../../packages/target-solid
+      '@unframework.dev/target-solid2':
+        specifier: workspace:*
+        version: link:../../packages/target-solid2
       '@unframework.dev/target-svelte':
         specifier: workspace:*
         version: link:../../packages/target-svelte

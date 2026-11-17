@@ -4,7 +4,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import { TARGET_NAMES } from "@unframework.dev/compiler";
+import { isTargetSelector, TARGET_SELECTORS, targetName } from "@unframework.dev/compiler";
 import { parseCLI, startVitest } from "vitest/node";
 
 import { defineTestConfig } from "./config/index.ts";
@@ -58,14 +58,14 @@ export function parseTestArguments(args: readonly string[]): TestArguments {
       `unknown argument "${arg}". Pass Vitest's own options after --, such as unframework test -- --reporter=json.`,
     );
   }
-  const unknown = parsed.targets.filter(
-    (name) => !(TARGET_NAMES as readonly string[]).includes(name),
-  );
+  const unknown = parsed.targets.filter((name) => !isTargetSelector(name));
   if (unknown.length) {
     throw new Error(
-      `unknown target${unknown.length > 1 ? "s" : ""} ${unknown.join(", ")}. The targets are ${TARGET_NAMES.join(", ")}.`,
+      `unknown target${unknown.length > 1 ? "s" : ""} ${unknown.join(", ")}. The targets are ${TARGET_SELECTORS.join(", ")}.`,
     );
   }
+  // By id from here: `solid@2` runs the `solid2` projects (ADR-0102).
+  parsed.targets = parsed.targets.map((name) => (isTargetSelector(name) ? targetName(name) : name));
   return parsed;
 }
 

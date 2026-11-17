@@ -30,8 +30,9 @@ export const FRAMEWORK_ATTRIBUTES: readonly { framework: NormalizeTarget; patter
   { framework: "qwik", pattern: /^(?:preventdefault|stoppropagation|capture):/ },
   // Qwik 1 listeners.
   { framework: "qwik", pattern: /^on(?:-document|-window)?:/ },
-  // Hydration keys.
+  // Hydration keys: Solid 1's `data-hk`, Solid 2's `_hk`.
   { framework: "solid", pattern: /^data-hk$/ },
+  { framework: "solid2", pattern: /^_hk$/ },
   // Scoped-style hashes, and the dev toolbar's source annotations.
   { framework: "astro", pattern: /^data-astro-cid-/ },
   { framework: "astro", pattern: /^data-astro-source-/ },

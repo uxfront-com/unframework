@@ -13,6 +13,7 @@ import { QUARANTINE as ASTRO } from "./quarantine/astro.ts";
 import { QUARANTINE as QWIK } from "./quarantine/qwik.ts";
 import { QUARANTINE as REACT } from "./quarantine/react.ts";
 import { QUARANTINE as SOLID } from "./quarantine/solid.ts";
+import { QUARANTINE as SOLID2 } from "./quarantine/solid2.ts";
 import { QUARANTINE as SVELTE } from "./quarantine/svelte.ts";
 import { QUARANTINE as VUE } from "./quarantine/vue.ts";
 
@@ -22,6 +23,7 @@ export const QUARANTINE_FILES: Readonly<Record<TargetName, readonly QuarantineEn
   vue: VUE,
   svelte: SVELTE,
   solid: SOLID,
+  solid2: SOLID2,
   angular: ANGULAR,
   qwik: QWIK,
   astro: ASTRO,

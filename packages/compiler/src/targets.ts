@@ -4,12 +4,13 @@ import astro from "@unframework.dev/target-astro";
 import qwik from "@unframework.dev/target-qwik";
 import react from "@unframework.dev/target-react";
 import solid from "@unframework.dev/target-solid";
+import solid2 from "@unframework.dev/target-solid2";
 import svelte from "@unframework.dev/target-svelte";
 import vue from "@unframework.dev/target-vue";
 
-import type { TargetName } from "./config-types.ts";
+import type { TargetName, TargetSelector } from "./config-types.ts";
 
-export type { TargetName };
+export type { TargetName, TargetSelector };
 
 /** The built-in targets, in the order the docs and reports list them. */
 export const TARGET_NAMES: readonly TargetName[] = [
@@ -17,10 +18,43 @@ export const TARGET_NAMES: readonly TargetName[] = [
   "vue",
   "svelte",
   "solid",
+  "solid2",
   "angular",
   "qwik",
   "astro",
 ];
+
+/**
+ * The targets a configuration without `targets` compiles to: every built-in but `solid2`, which
+ * is opt-in, since a project that selects both Solid majors needs two Solid installs (ADR-0102).
+ */
+export const DEFAULT_TARGETS: readonly TargetName[] = TARGET_NAMES.filter(
+  (name) => name !== "solid2",
+);
+
+/** The selectors that name a framework's major, and the target each selects (ADR-0102). */
+const VERSIONED: Readonly<Record<Exclude<TargetSelector, TargetName>, TargetName>> = {
+  "solid@1": "solid",
+  "solid@2": "solid2",
+};
+
+/** Every selector a configuration or the CLI accepts: the ids, then the versioned forms. */
+export const TARGET_SELECTORS: readonly TargetSelector[] = [
+  ...TARGET_NAMES,
+  ...(Object.keys(VERSIONED) as (keyof typeof VERSIONED)[]),
+];
+
+/** Whether a string selects a built-in target. Own names only: `toString` is not a target. */
+export function isTargetSelector(value: string): value is TargetSelector {
+  return Object.hasOwn(builtinTargets, value) || Object.hasOwn(VERSIONED, value);
+}
+
+/** The id of the target a selector selects: `solid@2` is `solid2`, `solid@1` is `solid`. */
+export function targetName(selector: TargetSelector): TargetName {
+  return Object.hasOwn(VERSIONED, selector)
+    ? VERSIONED[selector as keyof typeof VERSIONED]
+    : (selector as TargetName);
+}
 
 /** The built-in targets by name. */
 export const builtinTargets: Readonly<Record<TargetName, Target>> = {
@@ -28,17 +62,17 @@ export const builtinTargets: Readonly<Record<TargetName, Target>> = {
   vue,
   svelte,
   solid,
+  solid2,
   angular,
   qwik,
   astro,
 };
 
-/** Resolves a target name, or passes a target object through (third-party targets). */
-export function resolveTarget(target: TargetName | Target): Target {
+/** Resolves a target selector, or passes a target object through (third-party targets). */
+export function resolveTarget(target: TargetSelector | Target): Target {
   if (typeof target !== "string") return target;
-  // Own names only: `toString` is not a target.
-  if (!Object.hasOwn(builtinTargets, target)) {
+  if (!isTargetSelector(target)) {
     throw new TypeError(`Unknown target "${target}".`);
   }
-  return builtinTargets[target];
+  return builtinTargets[targetName(target)];
 }

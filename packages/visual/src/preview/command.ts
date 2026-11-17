@@ -1,7 +1,7 @@
 // `unframework preview [--target <t>]… [--port <n>]` (ADR-0088): starts the preview, prints its
 // URL and runs until it is interrupted, then closes every server and exits 0. The umbrella
 // registers it, as it does `visual`, so `@unframework.dev/cli` never imports it.
-import { TARGET_NAMES } from "@unframework.dev/compiler";
+import { isTargetSelector, TARGET_SELECTORS, targetName } from "@unframework.dev/compiler";
 import type { TargetName } from "@unframework.dev/compiler";
 
 import { VisualUsageError } from "../run.ts";
@@ -40,12 +40,12 @@ export function parsePreviewArguments(args: readonly string[]): PreviewArguments
         throw new VisualUsageError(`--port takes a whole number from 0 to 65535, not ${value}.`);
       }
       parsed.port = Number(value);
-    } else if (!(TARGET_NAMES as readonly string[]).includes(value)) {
+    } else if (!isTargetSelector(value)) {
       throw new VisualUsageError(
-        `unknown target ${value}. The targets are ${TARGET_NAMES.join(", ")}.`,
+        `unknown target ${value}. The targets are ${TARGET_SELECTORS.join(", ")}.`,
       );
-    } else if (!parsed.targets.includes(value as TargetName)) {
-      parsed.targets.push(value as TargetName);
+    } else if (!parsed.targets.includes(targetName(value))) {
+      parsed.targets.push(targetName(value));
     }
   }
   return parsed;

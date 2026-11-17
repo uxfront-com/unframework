@@ -18,7 +18,13 @@ export type {
   OutputHookContext,
 } from "./compile.ts";
 export { loadConfig, resolveConfig } from "./config.ts";
-export type { ConfigOrigin, LoadedConfig, ResolveConfigResult, ResolvedConfig } from "./config.ts";
+export type {
+  ConfigOrigin,
+  LoadedConfig,
+  ResolveConfigResult,
+  ResolvedConfig,
+  ResolvedPackageConfig,
+} from "./config.ts";
 export type {
   PackageConfig,
   ProjectViteConfig,
@@ -28,8 +34,16 @@ export type {
   VitePluginOption,
 } from "./config-types.ts";
 export { DEFAULT_PASS_THROUGH } from "@unframework.dev/analyzer";
-export { builtinTargets, resolveTarget, TARGET_NAMES } from "./targets.ts";
-export type { TargetName } from "./targets.ts";
+export {
+  builtinTargets,
+  DEFAULT_TARGETS,
+  isTargetSelector,
+  resolveTarget,
+  TARGET_NAMES,
+  TARGET_SELECTORS,
+  targetName,
+} from "./targets.ts";
+export type { TargetName, TargetSelector } from "./targets.ts";
 export { checkCapabilities } from "./capabilities.ts";
 export { requiredCapabilities } from "@unframework.dev/codegen";
 export type { OutputFile, Target } from "@unframework.dev/codegen";

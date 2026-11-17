@@ -61,6 +61,7 @@
     "@unframework.dev/target-qwik": "workspace:*",
     "@unframework.dev/target-react": "workspace:*",
     "@unframework.dev/target-solid": "workspace:*",
+    "@unframework.dev/target-solid2": "workspace:*",
     "@unframework.dev/target-svelte": "workspace:*",
     "@unframework.dev/target-vue": "workspace:*",
     "@unframework.dev/type-oracle": "workspace:*"

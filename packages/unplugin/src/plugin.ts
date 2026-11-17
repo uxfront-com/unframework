@@ -7,13 +7,16 @@ import {
   checkPassThrough,
   createProject,
   createSyntacticOracle,
+  isTargetSelector,
   resolveTarget,
+  targetName,
 } from "@unframework.dev/compiler";
 import type {
   CompileResult,
   CompilerPlugin,
   Project,
   TargetName,
+  TargetSelector,
   UfModule,
 } from "@unframework.dev/compiler";
 import { formatDiagnostic, formatDiagnostics } from "@unframework.dev/diagnostics";
@@ -77,11 +80,11 @@ export interface CompileEvent {
 /** Options of the unframework plugin. */
 export interface UnframeworkOptions {
   /**
-   * The framework to compile to: a built-in target's name, or a third-party target. On Vite it may
-   * be left out, and the framework's plugin in the configuration decides (ADR-0075). Every other
-   * bundler needs it.
+   * The framework to compile to: a built-in target's selector, such as `"solid@2"` (ADR-0102), or a
+   * third-party target. On Vite it may be left out, and the framework's plugin in the configuration
+   * decides (ADR-0075). Every other bundler needs it.
    */
-  target?: TargetName | Target;
+  target?: TargetSelector | Target;
   /**
    * What module ids append to the `.uf.tsx` path: the extension the framework's own Vite plugin
    * claims, such as `".vue"`, or `""` to keep the `.uf.tsx` id. Defaults to the built-in
@@ -267,7 +270,10 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // them from its own compile of the module. Any other query is a module of its own (Astro's
   // `?container`), which loads like the bare id, whatever the process did before.
   let subRequest!: RegExp;
-  const selectTarget = (selected: TargetName | Target) => {
+  const selectTarget = (selector: TargetSelector | Target) => {
+    // Ids and suffixes are by target id: `solid@2` is `solid2` (ADR-0102).
+    const selected: TargetName | Target =
+      typeof selector === "string" && isTargetSelector(selector) ? targetName(selector) : selector;
     target = resolveTarget(selected);
     suffix = idSuffix(selected, options.extension);
     composableSuffix = composableIdSuffix(selected);
@@ -1180,7 +1186,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
           ? filenameOf(config.configFile)
           : "inline Vite configuration";
         if (options.target === undefined) {
-          const detected = detectTarget(config.plugins, file);
+          const detected = detectTarget(config.plugins, file, config.root);
           if ("error" in detected) this.error(detected.error);
           else selectTarget(detected.target);
         }

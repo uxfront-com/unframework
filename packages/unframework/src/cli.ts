@@ -36,6 +36,8 @@ export const TARGET_TEST_PACKAGES: Readonly<Record<string, readonly string[]>> =
   vue: ["vue", "@vitejs/plugin-vue"],
   svelte: ["svelte", "@sveltejs/vite-plugin-svelte"],
   solid: ["solid-js", "vite-plugin-solid", "@babel/core"],
+  // Solid 2's toolchain loads all three from the toolchain directory (ADR-0102).
+  "solid@2": ["solid-js", "@solidjs/web", "@solidjs/vite-plugin"],
   angular: [
     "@angular/core",
     "@angular/common",
