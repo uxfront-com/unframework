@@ -983,20 +983,26 @@ function rootForReact(
   if (root.kind === "Element") return forReact(root, context, plan);
   return {
     ...root,
-    children: placed(root.children.map((child) => childForReact(child, context, plan))),
+    children: placed(
+      root.children.map((child) => childForReact(child, context, plan)),
+      context,
+    ),
   };
 }
 
 /** Children as their parent prints them, their keyed conditionals placed (`placeConditionals`). */
-function placed(children: RenderNode[]): RenderNode[] {
-  placeConditionals(children);
+function placed(children: RenderNode[], context: JsxContext): RenderNode[] {
+  placeConditionals(children, context.module);
   return children;
 }
 
 /** {@link forReact} over a node, inside conditionals, lists, and composition's content too. */
 function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): RenderNode {
   const children = (nodes: readonly RenderNode[]) =>
-    placed(nodes.map((child) => childForReact(child, context, plan)));
+    placed(
+      nodes.map((child) => childForReact(child, context, plan)),
+      context,
+    );
   switch (node.kind) {
     case "Element":
       return forReact(node, context, plan);
@@ -1046,7 +1052,10 @@ function componentForReact(
   plan: ReactPlan,
 ): ComponentNode {
   const children = (nodes: readonly RenderNode[]) =>
-    placed(nodes.map((child) => childForReact(child, context, plan)));
+    placed(
+      nodes.map((child) => childForReact(child, context, plan)),
+      context,
+    );
   return {
     ...node,
     fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)),
@@ -1107,7 +1116,10 @@ function forReact(node: ElementNode, context: JsxContext, plan: ReactPlan): Elem
   if (node.tag !== "textarea" || node.children.length === 0) {
     return {
       ...node,
-      children: placed(node.children.map((child) => childForReact(child, context, plan))),
+      children: placed(
+        node.children.map((child) => childForReact(child, context, plan)),
+        context,
+      ),
     };
   }
   const texts = node.children.filter((child): child is TextNode => child.kind === "Text");

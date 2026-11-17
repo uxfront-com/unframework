@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The angular target does not support contextual-root: A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).",
+    "file": "async-setup/rows/Member.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 10,
+      "offset": 220
+    },
+    "end": {
+      "line": 7,
+      "column": 45,
+      "offset": 255
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "async-setup/rows/Roster.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 29,
+      "offset": 431
+    },
+    "end": {
+      "line": 13,
+      "column": 71,
+      "offset": 473
+    },
+    "target": "astro"
+  }
+]

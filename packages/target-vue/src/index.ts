@@ -1,5 +1,11 @@
 import { childIsAsync, defineTarget, printMarkup, vueDialect } from "@unframework.dev/codegen";
-import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
+import type {
+  EmitContext,
+  MarkupPiece,
+  OutputFile,
+  PrintedAttribute,
+  Target,
+} from "@unframework.dev/codegen";
 import type { UfComponent } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
@@ -100,6 +106,24 @@ export const vue: Target = defineTarget({
       context.module,
     );
     const root = asyncRootChild(component, context.module);
+    /** Each piece of an async child, inside a `<Suspense>` that takes the piece's directives. */
+    const suspended = (pieces: readonly MarkupPiece[]): MarkupPiece[] =>
+      pieces.map((piece) => {
+        if (
+          piece.kind !== "component" ||
+          !childIsAsync(context.module, piece.component.component)
+        ) {
+          return piece;
+        }
+        const attrs: PrintedAttribute[] =
+          piece.component === root ? [{ name: "v-bind", text: 'v-bind="$attrs"' }] : [];
+        return {
+          kind: "tag",
+          tag: "Suspense",
+          attributes: piece.directives,
+          content: [{ kind: "component", component: piece.component, directives: attrs }],
+        };
+      });
     const dialect: typeof vueDialect = {
       ...vueDialect,
       // A bound `<textarea>` takes the directive that puts its caret after its text (ADR-0095).
@@ -132,21 +156,11 @@ export const vue: Target = defineTarget({
       // binding (compiler-ssr's `ssrTransformTransition`), which would leave the server HTML
       // unsettled, but it reads no object binding.
       // An async child renders under a `<Suspense>` of its own, which Vue requires (ADR-0101);
-      // as the root, it takes the `$attrs` that `<Suspense>` would drop.
-      component: (node) => {
-        if (!childIsAsync(context.module, node.component)) {
-          return [{ kind: "component", component: node, directives: [] }];
-        }
-        const attrs = node === root ? [{ name: "v-bind", text: 'v-bind="$attrs"' }] : [];
-        return [
-          {
-            kind: "tag",
-            tag: "Suspense",
-            attributes: [],
-            content: [{ kind: "component", component: node, directives: attrs }],
-          },
-        ];
-      },
+      // as the root, it takes the `$attrs` that `<Suspense>` would drop. A list's row and a
+      // branch put their `v-for`, `:key` and `v-if` on the `<Suspense>`.
+      component: (node) => suspended([{ kind: "component", component: node, directives: [] }]),
+      conditional: (branches) => suspended(vueDialect.conditional(branches)),
+      list: (parts) => suspended(vueDialect.list(parts)),
       transition: ({ node, container }) => [
         {
           kind: "tag",
