@@ -1,0 +1,155 @@
+// L5 (ADR-0042, ADR-0102): oxlint over every solid2 output file.
+// Not named `.oxlintrc.json`, which oxlint would take for a nested configuration when it lints
+// the repository. Everything but `overrides` is the baseline every toolchain shares, identical
+// but for the import allow-list (tests/integration/harness/toolchain-lint.unit.test.ts compares
+// them).
+//
+// L5 judges the emitter's idiom, not the author's code (ADR-0042). A rule that can only fire
+// on what the author wrote (an expression, a literal, text, markup) is off below: oxlint sees
+// the author's expressions only in the JSX targets' output, so it would fail one target's copy
+// of an expression and pass another's (P4). The author's own linter judges the source.
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
+  // Code that is wrong or most likely wrong. Style, pedantic, perf and restriction are opinions
+  // rather than idiom; type-aware rules would need --type-aware, which L5 does not pass.
+  "categories": { "correctness": "error", "suspicious": "error" },
+  "options": {
+    // oxlint has no --no-inline-config: at least ESLint's directives do not silence it.
+    "respectEslintDisableDirectives": false
+  },
+  "rules": {
+    // P7, D11: an output imports only its framework, and (from M3) the outputs beside it, and
+    // (from M4) the `virtual:` modules a styling engine's plugin registers, which it keeps as
+    // written (plan §4.4, ADR-0064). A type import is erased, so a package's types are imported
+    // by name, as the source imports them (ADR-0067).
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["*", "!solid-js", "!@solidjs/web", "!virtual:*", "!./**", "!../**"],
+            "message": "An output imports only its framework (P7).",
+            "allowTypeImports": true
+          }
+        ]
+      }
+    ],
+    // Angular components are decorated classes, which may have no member.
+    "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
+    // A styled output imports the sheet the compiler scoped for its side effect,
+    // `import "./Card.uf.tsx.css"` (ADR-0063), and a styling engine's stylesheet or setup module,
+    // `import "virtual:theme.css"` (ADR-0064): the bundler attaches them. An author's own sheet
+    // stays an error.
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.uf.tsx.css", "virtual:*"] }],
+    // A useless escape in an output is in code it copies, so it is the author's, `<\/script`
+    // included: UF1002 asks for it where a copied string would end a Vue or Svelte script block.
+    // Only the Vue target escapes one itself, as a guard (ADR-0051).
+    "no-useless-escape": "off",
+
+    // Off: they judge the author's statements, which every target copies but Astro, which drops
+    // client code (ADR-0045): where the author nests a function, and one correct spelling over
+    // another (`sort()` on a fresh array, `instanceof Array`, `new Array(length)`, `Promise.all`
+    // of one promise, an `on…` handler property). No target writes them itself. The targets' own
+    // placement of the setup's functions (React, Solid and Qwik move what captures nothing to
+    // module scope, ADR-0045) is pinned by their emitter tests.
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-array-reverse": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-instanceof-builtins": "off",
+    "unicorn/no-new-array": "off",
+    "unicorn/no-single-promise-in-promise-methods": "off",
+    "unicorn/prefer-add-event-listener": "off",
+
+    // Off: they judge the author's expressions and literals.
+    "no-compare-neg-zero": "off",
+    "no-constant-binary-expression": "off",
+    "no-constant-condition": "off",
+    "no-control-regex": "off",
+    "no-empty-character-class": "off",
+    // `!!x && …` becomes the test of a ternary.
+    "no-extra-boolean-cast": "off",
+    "no-invalid-regexp": "off",
+    // In the author's text and strings.
+    "no-irregular-whitespace": "off",
+    "no-loss-of-precision": "off",
+    "no-misleading-character-class": "off",
+    "no-nonoctal-decimal-escape": "off",
+    // A list or arrow parameter may reuse a name; UF3024 rejects the ones a rewrite would capture.
+    "no-shadow": "off",
+    "no-underscore-dangle": "off",
+    "no-unneeded-ternary": "off",
+    "no-unsafe-optional-chaining": "off",
+    "no-useless-backreference": "off",
+    "no-useless-concat": "off",
+    "use-isnan": "off",
+    "valid-typeof": "off",
+    "oxc/approx-constant": "off",
+    "oxc/bad-char-at-comparison": "off",
+    "oxc/bad-comparison-sequence": "off",
+    "oxc/bad-match-all-arg": "off",
+    "oxc/bad-min-max-func": "off",
+    "oxc/bad-object-literal-comparison": "off",
+    "oxc/bad-replace-all-arg": "off",
+    "oxc/const-comparisons": "off",
+    "oxc/double-comparisons": "off",
+    "oxc/erasing-op": "off",
+    "oxc/number-arg-out-of-range": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/no-useless-length-check": "off",
+    "unicorn/no-useless-spread": "off",
+    "unicorn/prefer-string-starts-ends-with": "off"
+  },
+  // The framework layer: eslint-plugin-solid as an oxlint JS plugin (no type information, which
+  // its rules do not need), for Solid 2 (`settings.solid.version`). Every rule of its `v2-strict`
+  // config, as errors, and the rules Solid 1's config turns on that `v2` leaves off: `prefer-show`,
+  // which pins the lowering of conditionals to <Show> and <Switch> (plan §6), and `no-react-deps`.
+  // `prefer-classlist` is off, since Solid 2 has no `classList`, and so is `no-innerhtml`, as on
+  // Solid 1 (ADR-0102).
+  "settings": { "solid": { "version": 2 } },
+  "overrides": [
+    {
+      "files": ["**/*"],
+      "jsPlugins": ["eslint-plugin-solid"],
+      "rules": {
+        "solid/components-return-once": "error",
+        "solid/event-handlers": "error",
+        "solid/imports": "error",
+        "solid/jsx-no-duplicate-props": "error",
+        "solid/jsx-no-script-url": "error",
+        "solid/jsx-no-undef": ["error", { "typescriptEnabled": true }],
+        "solid/jsx-uses-vars": "error",
+        "solid/no-accessor-as-prop": "error",
+        "solid/no-boolean-enumerated-attribute": "error",
+        "solid/no-browser-globals-in-server-function": "error",
+        "solid/no-destructure": "error",
+        // Off: it judges the author's choice to render markup unescaped, `innerHTML={markup}` in
+        // the source, which the analyser reports as a warning (UF3051), and every target renders
+        // as markup (ADR-0097). The analyser rejects children beside it (UF3052).
+        "solid/no-innerhtml": "off",
+        "solid/no-invalid-server-capture": "error",
+        "solid/no-module-scope-reactive-primitive": "error",
+        "solid/no-react-deps": "error",
+        "solid/no-react-specific-props": "error",
+        "solid/no-restated-default-options": "error",
+        "solid/no-single-arg-create-effect": "error",
+        "solid/no-store-mutation-outside-setter": "error",
+        "solid/no-unassigned-vars": "error",
+        "solid/no-unknown-namespaces": "error",
+        "solid/no-unused-signal": "error",
+        "solid/no-write-in-pure-computation": "error",
+        "solid/prefer-for": "error",
+        "solid/prefer-onSettled-for-side-effects": "error",
+        "solid/prefer-show": "error",
+        "solid/prefer-structured-class": "error",
+        "solid/reactivity": "error",
+        "solid/removed-api": "error",
+        "solid/require-async-server-function": "error",
+        "solid/self-closing-comp": "error",
+        "solid/style-prop": "error",
+        "solid/validate-jsx-nesting": "error",
+        "solid/valid-use-server": "error"
+      }
+    }
+  ]
+}

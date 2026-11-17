@@ -1,0 +1,490 @@
+// The inline helpers the setup's lowering prints after the component (P7, D11: an output imports
+// only its framework). Solid 2 has the primitives (`createSignal`, `createReaction`, `onSettled`)
+// but not Vue's `ref`, `watch`, `watchEffect` or `nextTick`, whose semantics the contract fixes
+// (ADR-0048): each helper puts them together, as a Solid developer would in a utility of their
+// own (ADR-0102).
+//
+// Solid 2 applies writes when it flushes, on a microtask, and runs the computations they trigger
+// then. The contract calls a watcher back once for all the changes of one synchronous run of
+// client code, before or after the DOM updates. So a watcher is not a Solid computation: it is a
+// job of a scheduler, Vue's. Its sources are tracked by `createReaction`, which only queues the
+// watcher when one of them changes; the scheduler's flush, a microtask queued then, runs each
+// queued watcher once, those that run before the DOM updates first. Solid has applied the writes
+// by then, so a watcher sees the DOM they changed. Whatever shape the run takes (awaits, blocks,
+// guards, loops, a `catch`), its writes coalesce (ADR-0046).
+
+/** The state helper's name, before the name scope makes it unique (`interactivity`, emulated). */
+export const STATE_HELPER = "createState";
+
+/**
+ * Vue's `ref` on a Solid signal (`interactivity`, emulated): a read returns the value last
+ * written, as Vue's does, where a signal's read sees a write only once Solid flushes it, which an
+ * effect's callback or `onSettled` cannot ask for. The read tracks the signal only where something
+ * observes it (a template, a memo, a watcher's source), so Solid's dev build never reports an
+ * untracked read; a write of another value (by `Object.is`, as Vue's) counts the signal's version
+ * up, which notifies what read it when Solid flushes. The signal holds a version, not the value,
+ * since `createSignal` takes a function for a computation. It is written from the setup and from
+ * watchers too, as Vue's refs are (`ownedWrite`).
+ */
+export function stateHelperCode(
+  name: string,
+  {
+    createSignal,
+    getObserver,
+    request,
+  }: { createSignal: string; getObserver: string; request?: string },
+): string {
+  return `/**
+ * Vue's \`ref\`: a signal whose read returns the value last written, as Vue's does, and tracks the
+ * signal where something observes it. Solid applies a write when it flushes.
+ */
+function ${name}<T>(): [() => T | undefined, (value: T | undefined) => void];
+function ${name}<T>(initial: T): [() => T, (value: T) => void];
+function ${name}<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
+  let current = initial;
+  // A version, never the value: \`createSignal\` would take a function for a computation.
+  const [tracked, notify] = ${createSignal}(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (${getObserver}()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);${request ? `\n    ${request}();` : ""}
+  }
+  return [read, write];
+}`;
+}
+
+/** The template ref helper's name, before the name scope makes it unique (ADR-0049, ADR-0102). */
+export const REF_HELPER = "clearedRef";
+
+/**
+ * A template ref's `ref` (ADR-0049): Solid 2 calls a `ref` callback where `onCleanup` is refused,
+ * so the helper registers the cleanup that empties the ref as the `ref` expression is evaluated,
+ * in the branch that renders the element, and returns the callback.
+ */
+export function refHelperCode(name: string, onCleanup: string): string {
+  return `/** A \`ref\` that calls \`callback\` with its element, and \`clear\` once the element is removed. */
+function ${name}<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
+  ${onCleanup}(clear);
+  return callback;
+}`;
+}
+
+/** The watcher helper's name, before the name scope makes it unique (`interactivity`, emulated). */
+export const WATCHER_HELPER = "createWatcher";
+
+/** The `watchEffect` helper's name, before the name scope makes it unique. */
+export const WATCH_EFFECT_HELPER = "createWatchEffect";
+
+/** The `nextTick` helper's name, before the name scope makes it unique (`next-tick`, emulated). */
+export const NEXT_TICK_HELPER = "nextTick";
+
+/** What kinds of watcher one output declares, which decide the helpers' signatures. */
+export interface WatcherUses {
+  /** A watcher of one source, lazy or immediate. */
+  single: { lazy: boolean; immediate: boolean };
+  /** A watcher of an array of sources, lazy or immediate. */
+  array: { lazy: boolean; immediate: boolean };
+  /**
+   * A watcher that runs before the DOM updates (Vue's default), or after it (`flush: "post"`,
+   * and every `watchEffect`).
+   */
+  flush: { pre: boolean; post: boolean };
+}
+
+/** The names the helpers' code refers to: Solid's imports and the helpers, as the scope took them. */
+export interface HelperNames {
+  createReaction: string;
+  createRoot: string;
+  runWithOwner: string;
+  onSettled: string;
+  untrack: string;
+  /** The `watch` helper, where the output has a watcher. */
+  watcher?: string;
+  /** The `watchEffect` helper, where the output has one. */
+  watchEffect?: string;
+  /** The array helper's type of the values of an array of sources, when arrays are watched. */
+  values?: string;
+  /** The scheduler's queue (`queuedWatchers`), function (`queueWatcher`) and flag. */
+  queue: string;
+  schedule: string;
+  queued: string;
+  /** The scheduler's request for a flush, which `createState` calls as it writes. */
+  request: string;
+  /** Solid's `flush`. */
+  flush: string;
+}
+
+/**
+ * Vue's `watch` and `watchEffect` on Solid's primitives (ADR-0048), named `create…` as Solid's
+ * own primitives and custom ones are, which `solid/reactivity` reads as tracked scopes for what
+ * they are passed:
+ *
+ * - the scheduler: a queue of watchers whose sources have changed, flushed in a microtask queued
+ *   at the first change, which runs each once, in the order they changed, those that run before
+ *   the DOM updates first, again until none is queued (a watcher's write queues others);
+ * - `createWatcher`: `createReaction` tracks the source (each source of an array) and queues the
+ *   watcher when one changes; the flush reads the source again, tracking it again, and calls the
+ *   callback where the value differs (by `Object.is`, each value of an array) from the value at
+ *   its last callback (or its creation), with that value and a cleanup registrar, whose cleanups
+ *   run before the next callback and when the component is removed. An immediate watcher calls
+ *   back once at once, during the setup, with no previous value (`[]` for an array of sources);
+ * - `createWatchEffect`: Vue's `watchEffect` over the values the effect reads (UF2015 makes them
+ *   static): it runs once the component has mounted, and is queued after the DOM updates
+ *   whenever one of them is written, as Vue's runs again after a write of a ref it read, even
+ *   one written back before the flush.
+ *
+ * A callback's return value is `unknown`: an async callback's promise is neither awaited nor
+ * reported, as on Vue. Only the helpers, signatures, options and timings an output uses are
+ * printed: one source watched lazily is the common case, with a helper of its own.
+ */
+export function watcherHelperCode(uses: WatcherUses, names: HelperNames): string {
+  const { onSettled } = names;
+  // Where the output has watchers of both timings, a call says `flush: "post"` as the source does,
+  // and the scheduler keeps two queues; where every watcher has one timing, one queue serves.
+  const both = uses.flush.post && uses.flush.pre;
+  const immediate = uses.single.immediate || uses.array.immediate;
+  const arrays = uses.array.lazy || uses.array.immediate;
+  const timing = both
+    ? 'before the DOM updates (after it, with `flush: "post"`)'
+    : uses.flush.post
+      ? "after the DOM updates"
+      : "before the DOM updates";
+  const parts = [schedulerCode(names, both)];
+  const effect = names.watchEffect ? [watchEffectCode(names.watchEffect, names, both)] : [];
+  if (!names.watcher) return [...parts, ...effect].join("\n\n");
+  const name = names.watcher;
+  const doc = docComment(
+    [
+      `Vue's \`watch\`: once ${arrays && !(uses.single.lazy || uses.single.immediate) ? "a value `sources` read has" : "the value `source` reads has"} changed (by \`Object.is\`), calls \`callback\``,
+      `back when the code that changed it has finished, ${timing},`,
+      "with the value at its last callback and a cleanup registrar, whose cleanups run before the",
+      "next callback and when the component is removed.",
+      ...(immediate
+        ? [
+            "With `immediate`, it also calls back at once, during the setup, without a previous value.",
+          ]
+        : []),
+    ].join(" "),
+  );
+  /** The queue a watcher goes to, and its call of the scheduler. */
+  const queueOf = both
+    ? `options?.flush === "post" ? ${names.queue}.post : ${names.queue}.pre`
+    : names.queue;
+  const schedule = both ? `${names.schedule}(queue, run)` : `${names.schedule}(run)`;
+  const declareQueue = both ? `\n  const queue = ${queueOf};` : "";
+  const dequeue = both ? "queue.delete(run)" : `${names.queue}.delete(run)`;
+  const stop = `  ${onSettled}(() => () => {
+    ${dequeue};
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    dispose();
+  });`;
+  const track = reactionCode(names, schedule);
+  /** The callback's cleanup registrar's type. */
+  const registrar = "(cleanup: () => void) => void";
+  if (!arrays && !uses.single.immediate) {
+    parts.push(`${doc}
+function ${name}<T>(
+  source: () => T,
+  callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${both ? `\n  options?: { flush: "post" },` : ""}
+): void {
+  const cleanups: (() => void)[] = [];${declareQueue}
+${track}
+  let last = read();
+${stop}
+
+  function read(): T {
+    let value!: T;
+    track(() => {
+      value = source();
+    });
+    return value;
+  }
+
+  function run(): void {
+    const value = read();
+    if (Object.is(value, last)) return;
+    const previous = last;
+    last = value;
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    callback(value, previous, (cleanup) => cleanups.push(cleanup));
+  }
+}`);
+    return [...parts, ...effect].join("\n\n");
+  }
+  // The options each overload takes: a lazy watcher's only where some watcher runs before the DOM
+  // updates and some after it.
+  const lazyOptions = both ? `\n  options?: { flush: "post" },` : "";
+  const immediateOptions = both
+    ? `\n  options: { immediate: true; flush?: "post" },`
+    : `\n  options: { immediate: true },`;
+  const optionsType = immediate
+    ? both
+      ? `{ immediate?: true; flush?: "post" }`
+      : `{ immediate: true }`
+    : both
+      ? `{ flush: "post" }`
+      : undefined;
+  const values = names.values!;
+  const overloads: string[] = [];
+  if (uses.single.lazy) {
+    overloads.push(
+      `function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
+    );
+  }
+  if (uses.single.immediate) {
+    overloads.push(
+      `function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T | undefined, onCleanup: ${registrar}) => unknown,${immediateOptions}\n): void;`,
+    );
+  }
+  if (uses.array.lazy) {
+    overloads.push(
+      `function ${name}<const S extends readonly (() => unknown)[]>(\n  sources: S,\n  callback: (values: ${values}<S>, previous: ${values}<S>, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
+    );
+  }
+  if (uses.array.immediate) {
+    overloads.push(
+      `function ${name}<const S extends readonly (() => unknown)[]>(\n  sources: S,\n  callback: (\n    values: ${values}<S>,\n    previous: Partial<${values}<S>>,\n    onCleanup: ${registrar},\n  ) => unknown,${immediateOptions}\n): void;`,
+    );
+  }
+  // An immediate watcher's test: its options, where immediate is the only option there is.
+  const isImmediate = both ? "options?.immediate" : "options";
+  // During the setup, whose reads Solid 2 checks are tracked or said not to be.
+  const first = immediate
+    ? `\n  if (${isImmediate}) ${names.untrack}(() => call(last, undefined));`
+    : "";
+  const singles = uses.single.lazy || uses.single.immediate;
+  // The single form passes the one value; the array form the values, `[]` before the first call.
+  const callback = arrays
+    ? singles
+      ? `    if (typeof source === "function") {
+      callback(values[0] as never, previous?.[0] as never, register);
+    } else {
+      callback(values as never, (previous ?? []) as never, register);
+    }`
+      : `    callback(values as never, (previous ?? []) as never, register);`
+    : `    callback(values[0] as never, previous?.[0] as never, register);`;
+  // The implementation's first parameter: one source, an array, or either.
+  const parameter = !arrays
+    ? "source: () => unknown"
+    : singles
+      ? "source: (() => unknown) | readonly (() => unknown)[]"
+      : "sources: readonly (() => unknown)[]";
+  const sources = !arrays
+    ? "\n  const sources = [source];"
+    : singles
+      ? `\n  // An array of sources changes when one of its values does: one source is an array of one.\n  const sources = typeof source === "function" ? [source] : source;`
+      : "";
+  parts.push(`${doc}
+${overloads.join("\n")}
+function ${name}(
+  ${parameter},
+  callback: (value: never, previous: never, onCleanup: ${registrar}) => unknown,${optionsType ? `\n  options?: ${optionsType},` : ""}
+): void {${sources}
+  const cleanups: (() => void)[] = [];${declareQueue}
+${track}
+  let last = read();${first}
+${stop}
+
+  function read(): unknown[] {
+    let values: unknown[] = [];
+    track(() => {
+      values = sources.map((each) => each());
+    });
+    return values;
+  }
+
+  function run(): void {
+    const values = read();
+    if (values.every((value, index) => Object.is(value, last[index]))) return;
+    const previous = last;
+    last = values;
+    call(values, previous);
+  }
+
+  function call(values: unknown[], previous: unknown[] | undefined): void {
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    const register = (cleanup: () => void) => cleanups.push(cleanup);
+${callback}
+  }
+}`);
+  parts.push(...effect);
+  if (arrays) {
+    parts.push(
+      `/** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
+type ${values}<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };`,
+    );
+  }
+  return parts.join("\n\n");
+}
+
+/**
+ * Vue's `watchEffect` (see `watcherHelperCode`): created once the component has mounted, it runs
+ * the effect, tracking its sources, and runs it again, after the DOM updates, at the flush after
+ * one is written, with a cleanup registrar whose cleanups run before its next run and when the
+ * component is removed.
+ */
+function watchEffectCode(name: string, names: HelperNames, both: boolean): string {
+  const { onSettled } = names;
+  const queue = both ? `${names.queue}.post` : names.queue;
+  const schedule = both ? `${names.schedule}(${queue}, run)` : `${names.schedule}(run)`;
+  return `/**
+ * Vue's \`watchEffect\` over the values it reads (\`sources\`): runs \`effect\` once the component has
+ * mounted, then again after the DOM updates once one of them has been written, with a cleanup
+ * registrar, whose cleanups run before its next run and when the component is removed.
+ */
+function ${name}(
+  sources: readonly (() => unknown)[],
+  effect: (onCleanup: (cleanup: () => void) => void) => unknown,
+): void {
+  const cleanups: (() => void)[] = [];
+${reactionCode(names, schedule)}
+  ${onSettled}(() => {
+    run();
+    return () => {
+      ${queue}.delete(run);
+      for (const cleanup of cleanups.splice(0)) cleanup();
+      dispose();
+    };
+  });
+
+  function run(): void {
+    track(() => {
+      for (const source of sources) source();
+    });
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    effect((cleanup) => cleanups.push(cleanup));
+  }
+}`;
+}
+
+/**
+ * A helper's reaction, `track`, and the `dispose` that stops it. It is created with the component,
+ * since Solid 2 creates no computation in \`onSettled\`, in a root of its own, apart from the
+ * component's owner: Solid's server creates no reaction, and one among the component's children
+ * would shift the hydration keys of what the client renders after it. The component's cleanup
+ * disposes it.
+ */
+function reactionCode(names: HelperNames, schedule: string): string {
+  const { createReaction, createRoot, runWithOwner } = names;
+  return `  const [track, dispose] = ${runWithOwner}(null, () =>
+    ${createRoot}((stop) => [${createReaction}(() => ${schedule}), stop] as const),
+  );`;
+}
+
+/**
+ * The scheduler (see `watcherHelperCode`): the queue of watchers whose sources have changed, one
+ * per timing where the output has both, the function that queues one, and the one that asks for a
+ * flush of them, which `createState` calls as it writes, so the flush is queued at the write, as
+ * Vue's is, ahead of the code that awaits after it. The flush applies Solid's pending writes first,
+ * whose reactions queue the watchers they concern, so a watcher sees the DOM the writes changed,
+ * and again before the watchers that run after the DOM updates. A write the scheduler did not see
+ * (a prop's, a composable's) queues it from its reaction, when Solid flushes.
+ */
+function schedulerCode(names: HelperNames, both: boolean): string {
+  const { queue, schedule, queued, request, flush } = names;
+  const requestCode = `/** Queues the flush of the watchers, once, in a microtask. */
+function ${request}(): void {
+  if (${queued}) return;
+  ${queued} = true;
+  queueMicrotask(() => {
+    try {
+      ${flush}();${
+        both
+          ? `
+      do {
+        for (const watcher of ${queue}.pre) {
+          ${queue}.pre.delete(watcher);
+          watcher();
+        }
+        ${flush}();
+        for (const watcher of ${queue}.post) {
+          ${queue}.post.delete(watcher);
+          watcher();
+          ${flush}();
+          if (${queue}.pre.size) break;
+        }
+      } while (${queue}.pre.size || ${queue}.post.size);`
+          : `
+      for (const watcher of ${queue}) {
+        ${queue}.delete(watcher);
+        watcher();
+        ${flush}();
+      }`
+      }
+    } finally {
+      ${queued} = false;
+    }
+  });
+}`;
+  if (!both) {
+    return `/** The watchers whose sources have changed since the last flush, in the order they changed. */
+const ${queue} = new Set<() => void>();
+let ${queued} = false;
+
+/**
+ * Vue's scheduler: queues a watcher whose sources have changed and, once the synchronous code that
+ * changed them has finished, runs each queued watcher once, until none is queued: a Set's iteration
+ * visits what a watcher's writes queue while it runs.
+ */
+function ${schedule}(run: () => void): void {
+  ${queue}.add(run);
+  ${request}();
+}
+
+${requestCode}`;
+  }
+  return `/**
+ * The watchers whose sources have changed since the last flush, in the order they changed: those
+ * that run before the DOM updates, and those that run after it.
+ */
+const ${queue} = { pre: new Set<() => void>(), post: new Set<() => void>() };
+let ${queued} = false;
+
+/**
+ * Vue's scheduler: queues a watcher whose sources have changed and, once the synchronous code that
+ * changed them has finished, runs each queued watcher once, those that run before the DOM updates
+ * first, until none is queued.
+ */
+function ${schedule}(queue: Set<() => void>, run: () => void): void {
+  queue.add(run);
+  ${request}();
+}
+
+${requestCode}`;
+}
+
+/** A JSDoc comment of prose, wrapped at 100 columns as the formatter leaves comments. */
+function docComment(text: string): string {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(" ")) {
+    if (line && ` * ${line} ${word}`.length > 100) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = line ? `${line} ${word}` : word;
+    }
+  }
+  if (line) lines.push(line);
+  return `/**\n${lines.map((each) => ` * ${each}`).join("\n")}\n */`;
+}
+
+/**
+ * Vue's `nextTick` (`next-tick`, emulated). Solid 2 applies a write on a microtask queued at the
+ * first write, and the scheduler's flush is queued at the write too; a write the scheduler didn't
+ * see, a prop's, queues its watchers from that flush, a microtask on. So the promise resolves two
+ * microtasks on, after all of them. Client code awaits it (`nextTick(callback)` is UF2025).
+ */
+export function nextTickHelperCode(name: string): string {
+  return `/**
+ * Resolves once the DOM has updated and the watchers have run: Solid applies writes on a microtask
+ * queued at the first write, which queues the watchers of a write the component didn't make.
+ */
+function ${name}(): Promise<void> {
+  return new Promise((resolve) => queueMicrotask(() => queueMicrotask(resolve)));
+}`;
+}

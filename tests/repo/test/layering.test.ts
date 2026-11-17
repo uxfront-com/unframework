@@ -18,6 +18,7 @@ const LAYERS: readonly (readonly string[])[] = [
     "@unframework.dev/target-vue",
     "@unframework.dev/target-svelte",
     "@unframework.dev/target-solid",
+    "@unframework.dev/target-solid2",
     "@unframework.dev/target-angular",
     "@unframework.dev/target-qwik",
     "@unframework.dev/target-astro",

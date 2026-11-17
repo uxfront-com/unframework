@@ -33,6 +33,10 @@ const MODULES: Record<TargetName, { path: string; export: string } | undefined> 
     path: "vFocusTrap.ts",
     export: "export function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void",
   },
+  solid2: {
+    path: "vFocusTrap.ts",
+    export: "export function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void",
+  },
   angular: { path: "v-focus-trap.ts", export: "export class VFocusTrap {" },
   qwik: { path: "vFocusTrap.ts", export: "export const vFocusTrap = {" },
   astro: undefined,

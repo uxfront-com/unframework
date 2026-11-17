@@ -76,6 +76,16 @@ export function useToggle(initial: boolean): { on: Accessor<boolean>; toggle: ()
 }
 `,
   },
+  solid2: {
+    file: "useToggle.ts",
+    contents: `import { createSignal } from "solid-js";
+
+export function useToggle(initial: boolean): { on: () => boolean; toggle: () => void } {
+  const [on, setOn] = createSignal(initial);
+  return { on, toggle: () => setOn((value) => !value) };
+}
+`,
+  },
   svelte: {
     file: "useToggle.svelte.ts",
     // With what the author's code may hold and Svelte's rules would judge: a \`watchEffect\` that

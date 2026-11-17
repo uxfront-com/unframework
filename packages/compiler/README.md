@@ -175,18 +175,18 @@ a Standard Schema may be. `origin` is what `loadConfig` returned: `directory`, w
 resolve against, and `file`, which diagnostics name. Each one has a default: the working directory,
 and `unframework.config.ts`.
 
-| Field                 | Default     | Checked                                                          |
-| --------------------- | ----------- | ---------------------------------------------------------------- |
-| `targets`             | all seven   | a list of at least one built-in name, none repeated              |
-| `srcDir`              | `src`       | a path that isn't empty, made absolute                           |
-| `outDir`              | `dist`      | a path that isn't empty, made absolute                           |
-| `targetOptions`       | `{}`        | each key a built-in name, each value through its target's schema |
-| `typeOracle`          | `syntactic` | `syntactic` or `tsgo`                                            |
-| `strict`              | `false`     | a boolean                                                        |
-| `package.targets`     | left out    | as `targets`, and each name also in `targets`                    |
-| `package.resolveFrom` | left out    | a path, or a path per built-in name, each made absolute          |
-| `vite`                | left out    | a function, kept as it is (ADR-0104)                             |
-| `liveFonts`           | `[]`        | a list of font family names that aren't empty (ADR-0105)         |
+| Field                 | Default     | Checked                                                                         |
+| --------------------- | ----------- | ------------------------------------------------------------------------------- |
+| `targets`             | all seven   | a list of at least one built-in selector, none repeated (`solid@2` is `solid2`) |
+| `srcDir`              | `src`       | a path that isn't empty, made absolute                                          |
+| `outDir`              | `dist`      | a path that isn't empty, made absolute                                          |
+| `targetOptions`       | `{}`        | each key a built-in name, each value through its target's schema                |
+| `typeOracle`          | `syntactic` | `syntactic` or `tsgo`                                                           |
+| `strict`              | `false`     | a boolean                                                                       |
+| `package.targets`     | left out    | as `targets`, and each name also in `targets`                                   |
+| `package.resolveFrom` | left out    | a path, or a path per built-in name, each made absolute                         |
+| `vite`                | left out    | a function, kept as it is (ADR-0104)                                            |
+| `liveFonts`           | `[]`        | a list of font family names that aren't empty (ADR-0105)                        |
 
 A field of the wrong shape, or one the config doesn't have, is UF7002. A name that isn't a built-in
 target is UF7003, with a did-you-mean where one is close. Options a target's schema rejects are

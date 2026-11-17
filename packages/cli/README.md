@@ -100,6 +100,9 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
 - **Solid:** the same through tsdown. A `solid` export condition points at preserved JSX, which a
   consumer's Solid compiler reads. Babel with `babel-preset-solid` compiles the plain JS for the DOM,
   so both must resolve beside tsdown.
+- **Solid 2 (`solid@2`):** the same, under `./solid2`, with Solid 2's native `@solidjs/compiler`
+  for the plain JS, which must resolve beside tsdown. A package with both Solid targets takes
+  `solid-js` `^1.9.0 || ^2.0.0` as its peer.
 - **Svelte:** `@sveltejs/package` keeps the components as Svelte, turns each `.ts` module into JS and
   writes the `.d.ts`, with `types` and `svelte` export conditions. `typescript` must resolve beside it.
 - **Vue:** a Vite library build through `@vitejs/plugin-vue` compiles the SFCs to JS, one module to a

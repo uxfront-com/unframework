@@ -49,5 +49,22 @@
       "offset": 395
     },
     "target": "solid"
+  },
+  {
+    "code": "UF4005",
+    "severity": "info",
+    "message": "The solid2 target does not support composable-effect-order: A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
+    "file": "semantics/composable-effect-order/Timeline.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 3,
+      "offset": 329
+    },
+    "end": {
+      "line": 14,
+      "column": 69,
+      "offset": 395
+    },
+    "target": "solid2"
   }
 ]

@@ -43,7 +43,7 @@ import {
 } from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
-import type { TargetName } from "./targets.ts";
+import type { TargetSelector } from "./targets.ts";
 
 /** What an `output` plugin hook receives besides the files. */
 export interface OutputHookContext {
@@ -76,8 +76,11 @@ export interface CompileOptions {
    * with forward slashes for output that does not depend on the machine.
    */
   filename: string;
-  /** The targets to emit, by name or as target objects. */
-  targets: readonly (TargetName | Target)[];
+  /**
+   * The targets to emit, by selector (`solid@2`, ADR-0102) or as target objects. Outputs are keyed
+   * by each target's id, so `solid@2`'s are under `solid2`.
+   */
+  targets: readonly (TargetSelector | Target)[];
   /** Formats the output with oxfmt. Defaults to `true`; the dev server may skip it. */
   format?: boolean;
   /**

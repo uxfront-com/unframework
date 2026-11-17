@@ -269,6 +269,7 @@ const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> =
   vue: () => import("@unframework.dev/target-vue/toolchain"),
   svelte: () => import("@unframework.dev/target-svelte/toolchain"),
   solid: () => import("@unframework.dev/target-solid/toolchain"),
+  solid2: () => import("@unframework.dev/target-solid2/toolchain"),
   angular: () => import("@unframework.dev/target-angular/toolchain"),
   qwik: () => import("@unframework.dev/target-qwik/toolchain"),
   astro: () => import("@unframework.dev/target-astro/toolchain"),

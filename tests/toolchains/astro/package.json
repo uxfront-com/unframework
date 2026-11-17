@@ -9,6 +9,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "catalog:",
+    "@emnapi/core": "catalog:",
+    "@emnapi/runtime": "catalog:",
     "astro": "catalog:",
     "astro-eslint-parser": "catalog:",
     "eslint": "catalog:",

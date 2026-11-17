@@ -1,0 +1,115 @@
+import type { JSX } from "@solidjs/web";
+import { For, Match, Switch, createMemo, untrack } from "solid-js";
+
+export interface UploadStep {
+  id: string;
+  label: string;
+}
+
+export interface UploadStatusProps {
+  fileName: string;
+  state: "queued" | "uploading" | "failed";
+  percent: number;
+  steps: UploadStep[];
+  error?: string;
+}
+
+export default function UploadStatus(
+  props: UploadStatusProps & { class?: string; style?: JSX.CSSProperties },
+) {
+  return (
+    <section
+      class={cx("upload", `upload-${props.state}`, props.class)}
+      aria-label={`Upload of ${props.fileName}`}
+      style={{
+        ...{
+          color: props.state === "failed" ? "#8a1c1c" : "#1f3d5c",
+          "--upload-percent": props.percent,
+        },
+        ...props.style,
+      }}
+      {...scopeAttributes(props)}
+    >
+      <h2>{props.fileName}</h2>
+      <div
+        role="progressbar"
+        aria-label="Upload progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow={enumeratedValue(props.percent)}
+      >
+        {props.percent}%
+      </div>
+      <Switch>
+        <Match when={props.state === "failed"}>
+          <p class="upload-error">{props.error ?? "The upload failed."}</p>
+        </Match>
+        <Match when={props.state === "failed" ? undefined : { state: props.state }}>
+          {(narrowed) => <p>{narrowed().state === "queued" ? "Waiting to start" : "Uploading"}</p>}
+        </Match>
+      </Switch>
+      <ol>
+        <KeyedFor each={props.steps} by={(step) => step.id}>
+          {(step) => <li>{step.value.label}</li>}
+        </KeyedFor>
+      </ol>
+    </section>
+  );
+}
+
+/** Joins class names: strings as they are, and the names of an object's truthy entries. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") names.push(part);
+    else if (part && typeof part === "object") {
+      for (const [name, on] of Object.entries(part)) if (on) names.push(name);
+    }
+  }
+  return names.join(" ");
+}
+
+/** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
+function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
+  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
+      }}
+    </For>
+  );
+}

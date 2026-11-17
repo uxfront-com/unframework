@@ -58,13 +58,25 @@ export interface DesignSystem {
   files?: Readonly<Record<string, string>>;
   /** A directory to put the project in, for what its path does. */
   under?: string;
+  /**
+   * Where `frameworks` are installed, relative to the repository: tests/integration, or
+   * tests/toolchains/solid2 for Solid 2, which only that toolchain installs (ADR-0102).
+   */
+  frameworksFrom?: string;
   /** Replaces the project's `package.json`, or leaves it out with `null`. */
   manifest?: string | null;
 }
 
 /** A project that compiles a small design system, as a team would lay it out. */
 export function designSystem(options: DesignSystem): string {
-  const { config, frameworks = [], files = {}, under = "", manifest } = options;
+  const {
+    config,
+    frameworks = [],
+    frameworksFrom = "tests/integration",
+    files = {},
+    under = "",
+    manifest,
+  } = options;
   const owned: Record<string, string> =
     manifest === null
       ? {}
@@ -83,7 +95,7 @@ export function designSystem(options: DesignSystem): string {
   for (const name of frameworks) {
     const link = join(root, "node_modules", name);
     mkdirSync(dirname(link), { recursive: true });
-    symlinkSync(inRepository(`tests/integration/node_modules/${name}`), link);
+    symlinkSync(inRepository(`${frameworksFrom}/node_modules/${name}`), link);
   }
   return root;
 }

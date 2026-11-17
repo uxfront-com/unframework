@@ -41,6 +41,7 @@
     "./vue": "./src/targets/vue.ts",
     "./svelte": "./src/targets/svelte.ts",
     "./solid": "./src/targets/solid.ts",
+    "./solid2": "./src/targets/solid2.ts",
     "./angular": "./src/targets/angular.ts",
     "./qwik": "./src/targets/qwik.ts",
     "./astro": "./src/targets/astro.ts",
@@ -100,6 +101,10 @@
         "types": "./dist/targets/solid.d.ts",
         "default": "./dist/targets/solid.js"
       },
+      "./solid2": {
+        "types": "./dist/targets/solid2.d.ts",
+        "default": "./dist/targets/solid2.js"
+      },
       "./angular": {
         "types": "./dist/targets/angular.d.ts",
         "default": "./dist/targets/angular.js"
@@ -132,6 +137,7 @@
     "@unframework.dev/target-qwik": "workspace:*",
     "@unframework.dev/target-react": "workspace:*",
     "@unframework.dev/target-solid": "workspace:*",
+    "@unframework.dev/target-solid2": "workspace:*",
     "@unframework.dev/target-svelte": "workspace:*",
     "@unframework.dev/target-vue": "workspace:*",
     "@unframework.dev/unplugin": "workspace:*",

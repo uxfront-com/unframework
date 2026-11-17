@@ -91,6 +91,19 @@ minimumReleaseAgeExclude:
   - "@vitest/pretty-format@5.0.3"
   - "@vitest/ui@5.0.3"
   - "@vitest/utils@5.0.3"
+  # Solid 2.0.0 and its Vite plugin 3.0.0 were published on 2026-11-17, under pnpm's 24-hour
+  # minimum release age (ADR-0102). The compiler's native builds are its optional dependencies.
+  - "@solidjs/compiler@2.0.0"
+  - "@solidjs/compiler-darwin-arm64@2.0.0"
+  - "@solidjs/compiler-darwin-x64@2.0.0"
+  - "@solidjs/compiler-linux-arm64-gnu@2.0.0"
+  - "@solidjs/compiler-linux-x64-gnu@2.0.0"
+  - "@solidjs/compiler-wasm32-wasi@2.0.0"
+  - "@solidjs/compiler-win32-x64-msvc@2.0.0"
+  - "@solidjs/signals@2.0.0"
+  - "@solidjs/vite-plugin@3.0.0"
+  - "@solidjs/web@2.0.0"
+  - solid-js@2.0.0
 # The version baseline (plan, Appendix C). Every package takes its tooling from
 # here, so one line moves a version for the whole repo. Compiler dependencies
 # that shape the output (oxc, oxfmt) are exact: the same input and the same
@@ -112,6 +125,11 @@ catalog:
   "@astrojs/compiler-rs": 0.5.1
   "@babel/core": 7.29.7
   "@babel/preset-typescript": 7.29.7
+  # The wasm runtime Astro's checker loads (`@astrojs/astro2tsx`), pinned in its toolchain: a peer
+  # of `@napi-rs/wasm-runtime`, which pnpm would otherwise take from rolldown's wasm binding, a 2.0
+  # beta the checker cannot run on.
+  "@emnapi/core": 1.11.3
+  "@emnapi/runtime": 1.11.3
   "@fontsource/inter": ^5.3.0
   "@jridgewell/gen-mapping": 0.3.13
   "@jridgewell/remapping": 2.3.5
@@ -183,6 +201,16 @@ catalog:
   vue: 3.5.43
   vue-eslint-parser: 10.4.1
   vue-tsc: 3.3.11
+# Named catalogs, after the flat one, which tests/e2e/harness/apps.ts reads. `solid2` holds
+# Solid 2 for the `solid2` target (ADR-0102): only target-solid2, tests/toolchains/solid2 and the
+# solid2 e2e app take it, so no package installs both Solid majors.
+catalogs:
+  solid2:
+    "@solidjs/compiler": 2.0.0
+    "@solidjs/vite-plugin": 3.0.0
+    "@solidjs/web": 2.0.0
+    eslint-plugin-solid: 0.19.0
+    solid-js: 2.0.0
 patchedDependencies:
   # TypeScript 7.1 reports its self-referencing `Selector` type as infinitely circular
   # (TS5115, microsoft/TypeScript#64605), so codegen's scoper fails check-types. The patch writes

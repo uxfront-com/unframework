@@ -24,19 +24,21 @@ import type { Packager, SubpathExports } from "./packager.ts";
 import { qwik } from "./qwik.ts";
 import { react } from "./react.ts";
 import { solid } from "./solid.ts";
+import { solid2 } from "./solid2.ts";
 import { svelte } from "./svelte.ts";
 import { vue } from "./vue.ts";
 
 /** Where the package goes under `outDir`, which `build` cleans like a target's tree. */
 export const PACKAGE_DIRECTORY = "package";
 
-/** One line per target, in the order Angular, Astro, Qwik, React, Solid, Svelte, Vue. */
+/** One line per target, in the order Angular, Astro, Qwik, React, Solid, Solid 2, Svelte, Vue. */
 const PACKAGERS: Record<TargetName, Packager> = {
   angular,
   astro,
   qwik,
   react,
   solid,
+  solid2,
   svelte,
   vue,
 };
@@ -156,7 +158,15 @@ function manifest(
   packagers: readonly (readonly [TargetName, Packager])[],
   subpaths: ReadonlyMap<TargetName, SubpathExports>,
 ): string {
-  const peers = packagers.flatMap(([, { peer }]) => peer);
+  // Two packagers may share a peer, as Solid 1 and Solid 2 share `solid-js`: the package takes
+  // either major, so the ranges join (ADR-0102).
+  const ranges = new Map<string, string[]>();
+  for (const { name, range } of packagers.flatMap(([, { peer }]) => peer)) {
+    const each = ranges.get(name) ?? [];
+    if (!each.includes(range)) each.push(range);
+    ranges.set(name, each);
+  }
+  const peers = [...ranges].map(([name, each]) => ({ name, range: each.join(" || ") }));
   return `${JSON.stringify(
     {
       ...fields,

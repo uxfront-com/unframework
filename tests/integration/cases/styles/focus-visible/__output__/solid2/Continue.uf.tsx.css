@@ -1,0 +1,11 @@
+.continue[data-uf-bb3adc28] {
+  padding: 6px 14px;
+  border: 2px solid rgb(75, 85, 99);
+  background-color: rgb(255, 255, 255);
+}
+
+/* The keyboard's focus ring: a pointer's focus would not show it. */
+.continue[data-uf-bb3adc28]:focus-visible {
+  outline: 3px solid rgb(37, 99, 235);
+  outline-offset: 2px;
+}

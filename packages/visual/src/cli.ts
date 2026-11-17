@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { TARGET_NAMES } from "@unframework.dev/compiler";
+import { isTargetSelector, TARGET_SELECTORS, targetName } from "@unframework.dev/compiler";
 import type { TargetName } from "@unframework.dev/compiler";
 
 import { runVisual, VisualUsageError } from "./run.ts";
@@ -62,12 +62,13 @@ export function parseVisualArguments(args: readonly string[]): VisualArguments {
       if (name === "--out") {
         if (parsed.out !== undefined) throw new VisualUsageError("--out is given twice.");
         parsed.out = given;
-      } else if (!(TARGET_NAMES as readonly string[]).includes(given)) {
+      } else if (!isTargetSelector(given)) {
         throw new VisualUsageError(
-          `unknown target ${given}. The targets are ${TARGET_NAMES.join(", ")}.`,
+          `unknown target ${given}. The targets are ${TARGET_SELECTORS.join(", ")}.`,
         );
       } else {
-        parsed.targets.push(given as TargetName);
+        // By id: `solid@2` is `solid2` (ADR-0102).
+        parsed.targets.push(targetName(given));
       }
       continue;
     }

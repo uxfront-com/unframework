@@ -1,0 +1,13 @@
+.toast[data-uf-acfe4ebf] {
+  margin: 0;
+  padding: 8px;
+  background-color: rgb(220, 252, 231);
+}
+
+.pop-enter-active[data-uf-acfe4ebf] {
+  transition: transform 60ms ease;
+}
+
+.pop-enter-from[data-uf-acfe4ebf] {
+  transform: scale(0.9);
+}

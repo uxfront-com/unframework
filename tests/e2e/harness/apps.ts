@@ -217,11 +217,22 @@ export function copyManifest(
  * own workspace root. `overrides` names every packed package because their manifests depend on
  * each other at `0.0.0`, which no registry holds.
  */
-export function copyWorkspace(tarballs: Record<string, string>): string {
+export function copyWorkspace(
+  tarballs: Record<string, string>,
+  releaseAgeExclude: readonly string[] = [],
+): string {
   const overrides = Object.fromEntries(
     Object.entries(tarballs).map(([name, path]) => [name, `file:${path}`]),
   );
-  return `${JSON.stringify({ overrides, allowBuilds: ALLOWED_BUILDS }, null, 2)}\n`;
+  return `${JSON.stringify(
+    {
+      overrides,
+      allowBuilds: ALLOWED_BUILDS,
+      ...(releaseAgeExclude.length ? { minimumReleaseAgeExclude: releaseAgeExclude } : {}),
+    },
+    null,
+    2,
+  )}\n`;
 }
 
 const ALLOWED_BUILDS = {
@@ -280,24 +291,55 @@ export const DESIGN_SYSTEM_TEST_DEPENDENCIES: readonly string[] = [
 ];
 
 /**
- * The `catalog:` of a `pnpm-workspace.yaml`. It reads the flat mapping this repository writes,
- * one `name: version` line each, rather than YAML at large, so it needs no parser.
+ * The `catalog:` of a `pnpm-workspace.yaml`, or with `name` the named catalog under `catalogs:`
+ * (`solid2`, ADR-0102). It reads the flat mappings this repository writes, one `name: version`
+ * line each, rather than YAML at large, so it needs no parser.
  */
-export function readCatalog(text: string): Record<string, string> {
+export function readCatalog(text: string, name?: string): Record<string, string> {
   const lines = text.split("\n");
-  const start = lines.indexOf("catalog:");
-  if (start === -1) throw new Error("pnpm-workspace.yaml has no catalog.");
+  let start = -1;
+  let indent = "  ";
+  if (name === undefined) {
+    start = lines.indexOf("catalog:");
+    if (start === -1) throw new Error("pnpm-workspace.yaml has no catalog.");
+  } else {
+    const catalogs = lines.indexOf("catalogs:");
+    const own = catalogs === -1 ? -1 : lines.indexOf(`  ${name}:`, catalogs + 1);
+    if (own === -1) throw new Error(`pnpm-workspace.yaml has no catalog named ${name}.`);
+    start = own;
+    indent = "    ";
+  }
+  const entryLine = new RegExp(`^${indent}("?)([^":\\s]+)\\1: (\\S+)$`);
   const catalog: Record<string, string> = {};
   for (const line of lines.slice(start + 1)) {
     if (/^\s*(#.*)?$/.test(line)) continue;
-    const entry = /^ {2}("?)([^":\s]+)\1: (\S+)$/.exec(line);
+    const entry = entryLine.exec(line);
     if (!entry) {
-      if (/^\S/.test(line)) break;
+      // The mapping ends where a line is indented less than its entries.
+      if (!line.startsWith(indent) || /^\S/.test(line)) break;
       throw new Error(`The catalog has a line this reader can't take: ${line}`);
     }
     catalog[entry[2]!] = entry[3]!;
   }
   return catalog;
+}
+
+/**
+ * The `minimumReleaseAgeExclude` of a `pnpm-workspace.yaml`: the versions pnpm 11 installs though
+ * they were published in the last day. A copy installs from the registry too, so it takes them.
+ */
+export function readReleaseAgeExclude(text: string): string[] {
+  const lines = text.split("\n");
+  const start = lines.indexOf("minimumReleaseAgeExclude:");
+  if (start === -1) return [];
+  const excluded: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (/^\s*(#.*)?$/.test(line)) continue;
+    const entry = /^ {2}- ("?)([^"]+)\1$/.exec(line);
+    if (!entry) break;
+    excluded.push(entry[2]!);
+  }
+  return excluded;
 }
 
 /**

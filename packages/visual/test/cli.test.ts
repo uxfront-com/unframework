@@ -42,8 +42,16 @@ describe("parseVisualArguments", () => {
     expect(parseVisualArguments(["--live", "--live"])).toMatchObject({ pixels: "live" });
   });
 
+  it("parses unframework visual --target solid@2 to solid2, and solid@1 to solid (ADR-0102)", () => {
+    expect(parseVisualArguments(["--target", "solid@2", "--target=solid@1"]).targets).toEqual([
+      "solid2",
+      "solid",
+    ]);
+  });
+
   it.each([
     [["--target", "preact"], "unknown target preact"],
+    [["--target", "solid@3"], "unknown target solid@3"],
     [["--target"], "--target needs a value"],
     [["--target", "--live"], "--target needs a value"],
     [["--out="], "--out needs a value"],

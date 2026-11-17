@@ -90,7 +90,7 @@ integration harness does (`sourceUtilities` in `tests/integration/harness/stylef
 
 | Option        | Meaning                                                                                                                                                                                                                                                                                                      |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`. Optional on Vite, which detects a built-in target. Required on every other bundler.                                                                                        |
+| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`), `"solid@2"`, or a third-party `Target`. Optional on Vite, which detects a built-in target. Required on every other bundler.                                                                          |
 | `extension`   | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                                                                                                                                   |
 | `onCompile`   | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard.                                                                                                                |
 | `plugins`     | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                            |
@@ -123,6 +123,7 @@ name matches as this table writes it, so `vite:vue-jsx` and `vite-plugin-qwik-po
 | Svelte  | `vite-plugin-svelte`            | `@sveltejs/vite-plugin-svelte`  |
 | React   | `vite:react-*`                  | `@vitejs/plugin-react`          |
 | Solid   | `solid`                         | `vite-plugin-solid`             |
+| Solid 2 | `solid`, with `solid-js` 2      | `@solidjs/vite-plugin`          |
 | Qwik    | `vite-plugin-qwik`              | `qwikVite` from Qwik            |
 | Astro   | `astro:*`                       | Astro's own plugins             |
 | Angular | `@analogjs/vite-plugin-angular` | `@analogjs/vite-plugin-angular` |

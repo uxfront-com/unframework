@@ -9,7 +9,14 @@ import { createDiagnostic } from "@unframework.dev/diagnostics";
 import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 
 import type { PackageConfig, TargetName, UnframeworkConfig } from "./config-types.ts";
-import { builtinTargets, TARGET_NAMES } from "./targets.ts";
+import {
+  builtinTargets,
+  DEFAULT_TARGETS,
+  isTargetSelector,
+  TARGET_NAMES,
+  TARGET_SELECTORS,
+  targetName,
+} from "./targets.ts";
 
 /** The configuration with its defaults applied, and its paths absolute. */
 export interface ResolvedConfig {
@@ -19,11 +26,16 @@ export interface ResolvedConfig {
   targetOptions: Partial<Record<TargetName, unknown>>;
   typeOracle: "syntactic" | "tsgo";
   strict: boolean;
-  package?: PackageConfig;
+  package?: ResolvedPackageConfig;
   /** The project's Vite config, as a function each server calls (ADR-0104). */
   vite?: UnframeworkConfig["vite"];
   /** The font families that may draw text when pixels compare live, besides Inter (ADR-0105). */
   liveFonts: readonly string[];
+}
+
+/** The packaging config with its selectors resolved to target ids (ADR-0102). */
+export interface ResolvedPackageConfig extends Omit<PackageConfig, "targets"> {
+  targets?: readonly TargetName[];
 }
 
 /** Where a configuration came from: what {@link loadConfig} gives {@link resolveConfig}. */
@@ -157,7 +169,7 @@ async function checkConfig(
   checkFields(raw, "", FIELDS, report);
 
   const targets =
-    raw.targets === undefined ? [...TARGET_NAMES] : targetList(raw.targets, "/targets", report);
+    raw.targets === undefined ? [...DEFAULT_TARGETS] : targetList(raw.targets, "/targets", report);
   const srcDir = pathField(
     raw.srcDir === undefined ? "src" : raw.srcDir,
     "/srcDir",
@@ -296,12 +308,18 @@ function isTargetName(name: string): name is TargetName {
   return Object.hasOwn(builtinTargets, name);
 }
 
-function reportUnknownTarget(name: string, pointer: string, report: Report): void {
-  const meant = didYouMean(name, TARGET_NAMES);
+/** `targetOptions` and `resolveFrom` are keyed by id, so the hint lists ids alone there. */
+function reportUnknownTarget(
+  name: string,
+  pointer: string,
+  report: Report,
+  names: readonly string[] = TARGET_SELECTORS,
+): void {
+  const meant = didYouMean(name, names);
   report(
     "UF7003",
     pointer,
-    `names the unknown target ${JSON.stringify(name)}.${meant || ` The built-in targets are ${TARGET_NAMES.join(", ")}.`}`,
+    `names the unknown target ${JSON.stringify(name)}.${meant || ` The built-in targets are ${names.join(", ")}.`}`,
   );
 }
 
@@ -320,11 +338,16 @@ function targetList(
   for (const [index, item] of (value as unknown[]).entries()) {
     const at = `${pointer}/${index}`;
     if (typeof item !== "string") report("UF7002", at, "must be a target name.");
-    else if (!isTargetName(item)) reportUnknownTarget(item, at, report);
-    else if (seen.includes(item)) report("UF7002", at, `repeats the target "${item}".`);
-    else if (within && !within.includes(item)) {
-      report("UF7002", at, `names the target "${item}", which "/targets" leaves out.`);
-    } else seen.push(item);
+    else if (!isTargetSelector(item)) reportUnknownTarget(item, at, report);
+    else {
+      // `solid` and `solid@1` select one target, so the second repeats it (ADR-0102).
+      const name = targetName(item);
+      const named = item === name ? `"${name}"` : `"${name}" (${JSON.stringify(item)})`;
+      if (seen.includes(name)) report("UF7002", at, `repeats the target ${named}.`);
+      else if (within && !within.includes(name)) {
+        report("UF7002", at, `names the target ${named}, which "/targets" leaves out.`);
+      } else seen.push(name);
+    }
   }
   return seen;
 }
@@ -355,7 +378,7 @@ async function resolveTargetOptions(
   for (const [name, options] of Object.entries(value)) {
     const pointer = `/targetOptions${segment(name)}`;
     if (!isTargetName(name)) {
-      reportUnknownTarget(name, pointer, report);
+      reportUnknownTarget(name, pointer, report, TARGET_NAMES);
       continue;
     }
     if (options === undefined) continue;
@@ -399,13 +422,13 @@ function resolvePackage(
   targets: readonly TargetName[] | undefined,
   directory: string,
   report: Report,
-): PackageConfig | undefined {
+): ResolvedPackageConfig | undefined {
   if (!isRecord(value)) {
     report("UF7002", "/package", "must be an object.");
     return undefined;
   }
   checkFields(value, "/package", PACKAGE_FIELDS, report);
-  const resolved: PackageConfig = {};
+  const resolved: ResolvedPackageConfig = {};
   if (value.targets !== undefined) {
     const list = targetList(value.targets, "/package/targets", report, targets);
     if (list) resolved.targets = list;
@@ -419,7 +442,7 @@ function resolvePackage(
     for (const [name, path] of Object.entries(from)) {
       const pointer = `/package/resolveFrom${segment(name)}`;
       if (!isTargetName(name)) {
-        reportUnknownTarget(name, pointer, report);
+        reportUnknownTarget(name, pointer, report, TARGET_NAMES);
         continue;
       }
       if (path === undefined) continue;

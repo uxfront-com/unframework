@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { resolveConfig } from "../src/index.ts";
+import { DEFAULT_TARGETS, resolveConfig } from "../src/index.ts";
 import type { LoadedConfig } from "../src/index.ts";
 import type * as Targets from "../src/targets.ts";
 
@@ -443,6 +443,48 @@ describe("resolveConfig", () => {
     });
   });
 
+  describe("solid@2, the versioned selector (ADR-0102)", () => {
+    it("selects solid2 for solid@2, and solid for solid and solid@1", async () => {
+      const { config } = await resolveConfig({ targets: ["vue", "solid@2"] });
+      expect(config?.targets).toEqual(["vue", "solid2"]);
+      expect((await resolveConfig({ targets: ["solid"] })).config?.targets).toEqual(["solid"]);
+      expect((await resolveConfig({ targets: ["solid@1"] })).config?.targets).toEqual(["solid"]);
+      expect((await resolveConfig({ targets: ["solid@1", "solid@2"] })).config?.targets).toEqual([
+        "solid",
+        "solid2",
+      ]);
+    });
+
+    it("keeps the seven targets without solid@2 when none is given", async () => {
+      const { config } = await resolveConfig({});
+      expect(config?.targets).toEqual([
+        "react",
+        "vue",
+        "svelte",
+        "solid",
+        "angular",
+        "qwik",
+        "astro",
+      ]);
+      expect(config?.targets).toEqual([...DEFAULT_TARGETS]);
+    });
+
+    it("reports solid and solid@1 together as one target named twice, beside solid@2", async () => {
+      expect(await problems({ targets: ["solid", "solid@1", "solid@2"] })).toEqual([
+        ["UF7002", 'The configuration at "/targets/1" repeats the target "solid" ("solid@1").'],
+      ]);
+    });
+
+    it("takes solid@2 in package.targets, by its id, and solid2 in resolveFrom", async () => {
+      const { config } = await resolveConfig({
+        targets: ["vue", "solid@2"],
+        package: { targets: ["solid@2"], resolveFrom: { solid2: "toolchains/solid2" } },
+      });
+      expect(config?.package?.targets).toEqual(["solid2"]);
+      expect(config?.package?.resolveFrom).toEqual({ solid2: resolve("toolchains/solid2") });
+    });
+  });
+
   describe("UF7003", () => {
     it("suggests the target a typo means", async () => {
       expect(await problems({ targets: ["vue", "reac"] })).toEqual([
@@ -457,8 +499,17 @@ describe("resolveConfig", () => {
       const [[code, message] = []] = await problems({ targets: ["flutter"] });
       expect(code).toBe("UF7003");
       expect(message).toContain(
-        "The built-in targets are react, vue, svelte, solid, angular, qwik, astro.",
+        "The built-in targets are react, vue, svelte, solid, solid2, angular, qwik, astro, solid@2, solid@1.",
       );
+    });
+
+    it("names solid@2 for a major Solid has none of, solid@3", async () => {
+      expect(await problems({ targets: ["solid@3"] })).toEqual([
+        [
+          "UF7003",
+          'The configuration at "/targets/0" names the unknown target "solid@3". Did you mean `solid@2`?',
+        ],
+      ]);
     });
 
     it("does not take an inherited name for a target", async () => {

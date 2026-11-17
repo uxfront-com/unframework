@@ -2,12 +2,29 @@
 // `@unframework.dev/compiler/config-types`, so that a project's config type-checks without the
 // compiler's whole type graph, which `skipLibCheck: false` would hold against it (ADR-0076).
 
-/** The names of the built-in targets. */
-export type TargetName = "react" | "vue" | "svelte" | "solid" | "angular" | "qwik" | "astro";
+/**
+ * The ids of the built-in targets. An id names a target wherever it becomes a path, a package or a
+ * project: `solid2` is Solid 2, which a configuration selects as `solid@2` (ADR-0102).
+ */
+export type TargetName =
+  | "react"
+  | "vue"
+  | "svelte"
+  | "solid"
+  | "solid2"
+  | "angular"
+  | "qwik"
+  | "astro";
+
+/**
+ * What a configuration, the CLI and `compile()` accept: a target's id, or its framework and major
+ * (ADR-0102). `solid` and `solid@1` select Solid 1, and `solid@2` selects Solid 2.
+ */
+export type TargetSelector = TargetName | "solid@1" | "solid@2";
 
 /** The targets packaging covers, and where each packager resolves from (ADR-0076). */
 export interface PackageConfig {
-  targets?: readonly TargetName[];
+  targets?: readonly TargetSelector[];
   /** One directory, or one per target. */
   resolveFrom?: string | Partial<Record<TargetName, string>>;
 }
@@ -44,8 +61,11 @@ export type ProjectViteConfig = { plugins?: readonly VitePluginOption[] } & obje
 
 /** The configuration as a project writes it, with `defineConfig` from `@uxfront/unframework/config`. */
 export interface UnframeworkConfig {
-  /** Defaults to all seven targets. */
-  targets?: readonly TargetName[];
+  /**
+   * Defaults to the seven targets of `DEFAULT_TARGETS`. `solid@2` is opt-in, since a project that
+   * selects both Solid majors needs two Solid installs (ADR-0102).
+   */
+  targets?: readonly TargetSelector[];
   /** Defaults to `src`, relative to the config's directory. */
   srcDir?: string;
   /** Defaults to `dist`, relative to the config's directory. */

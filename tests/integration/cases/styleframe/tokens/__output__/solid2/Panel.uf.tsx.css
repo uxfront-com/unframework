@@ -1,0 +1,11 @@
+.panel[data-uf-b6be1fd3] {
+  width: 240px;
+  padding: var(--spacing--lg);
+  border-radius: var(--radius--md);
+  background-color: var(--color--primary);
+}
+
+.body[data-uf-b6be1fd3] {
+  margin: 0;
+  color: var(--color--on-primary);
+}

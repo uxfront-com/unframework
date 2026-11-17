@@ -64,6 +64,10 @@ export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerGap, 
     "model-setter":
       "Solid's setter of a signal (`onValueChange={setCount}`) is assignable to any model's change callback: only the model's value is checked",
   },
+  solid2: {
+    "model-setter":
+      "Solid's setter of a signal (`onValueChange={setCount}`) is assignable to any model's change callback: only the model's value is checked",
+  },
 };
 
 /** A whole directive line: nothing may follow it but the end of an HTML comment. */

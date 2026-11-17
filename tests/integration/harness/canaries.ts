@@ -198,7 +198,7 @@ export interface Canary {
 }
 
 /** The targets that hydrate (ADR-0095): Qwik resumes instead, and Astro runs nothing in a page. */
-const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "angular"];
+const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "solid2", "angular"];
 
 /**
  * The L12 sub-checks that catch a client render's text that differs from the server's, on each
@@ -214,6 +214,7 @@ const CLIENT_TEXT_CHECK: Readonly<Record<string, RegExp>> = {
   react: /^mismatch: /m,
   vue: /^mismatch: /m,
   solid: /^(?:mismatch|DOM|client agreement): /m,
+  solid2: /^(?:mismatch|DOM|client agreement): /m,
   angular: /^(?:mismatch|DOM|client agreement): /m,
   svelte: /^(?:mismatch|DOM|client agreement): /m,
 };
@@ -250,6 +251,7 @@ const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
     rule: "svelte/no-unknown-style-directive-property",
   },
   solid: { attribute: 'className="uf-canary"', rule: "solid/no-react-specific-props" },
+  solid2: { attribute: 'className="uf-canary"', rule: "solid/no-react-specific-props" },
   angular: {
     attribute: '*ngIf="true"',
     rule: "@angular-eslint/template/prefer-control-flow",
@@ -819,7 +821,7 @@ export const CANARIES: readonly Canary[] = [
     description:
       "Moves every line of the map of each module the browser projects serve for the cases whose specs wrap a throwing step in `expectThrown`, Qwik's segments included, down one, so the error's top frame in the case maps a line below the `throw`. The code gains one line break at its end, and no line moves. Astro runs no such step.",
     evidence: { browser: { "mapped stack": /The top frame in the case maps to \S+, not to / } },
-    targets: ["react", "vue", "svelte", "solid", "angular", "qwik"],
+    targets: ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik"],
     appliesTo: (info, target) => info.throws(target),
     servedMap: linesShifted,
   },
@@ -1626,7 +1628,8 @@ function widenProps(file: OutputFile, target: string): string {
   const { contents } = file;
   switch (target) {
     case "react":
-    case "solid": {
+    case "solid":
+    case "solid2": {
       const open = componentParameters(contents);
       if (open === undefined) return contents;
       const close = matchingBracket(contents, open, "(", ")");

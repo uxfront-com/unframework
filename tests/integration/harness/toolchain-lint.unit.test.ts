@@ -28,6 +28,8 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
   vue: ["vue", "vue/*"],
   svelte: ["svelte", "svelte/*"],
   solid: ["solid-js", "solid-js/*"],
+  // Solid 2's DOM renderer is a package of its own, which owns the JSX types (ADR-0102).
+  solid2: ["solid-js", "@solidjs/web"],
   // `DomSanitizer`, which renders `innerHTML` as written (ADR-0097).
   angular: ["@angular/core", "@angular/common", "@angular/platform-browser"],
   qwik: ["@qwik.dev/core", "@qwik.dev/core/*"],
@@ -53,6 +55,7 @@ const BASELINE_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
 const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
   react: "oxlint",
   solid: "oxlint",
+  solid2: "oxlint",
   qwik: "oxlint",
   vue: "eslint",
   svelte: "eslint",
@@ -81,6 +84,7 @@ const BASELINE_RULE = "no-debugger";
 const UNUSED_RULE: Record<string, string> = {
   react: "no-unused-vars",
   solid: "no-unused-vars",
+  solid2: "no-unused-vars",
   qwik: "no-unused-vars",
   angular: "no-unused-vars",
   vue: "@typescript-eslint/no-unused-vars",
@@ -109,6 +113,19 @@ const PROBES: Record<string, { file: string; contents: string; rules: readonly s
     rules: ["react/no-unknown-property"],
   },
   solid: {
+    file: "Probe.tsx",
+    contents: [
+      "export default function Probe() {",
+      "  debugger;",
+      '  const label = "Hi";',
+      "  const unused = 1;",
+      '  return <p className="x">{label}</p>;',
+      "}",
+      "",
+    ].join("\n"),
+    rules: ["solid/no-react-specific-props"],
+  },
+  solid2: {
     file: "Probe.tsx",
     contents: [
       "export default function Probe() {",

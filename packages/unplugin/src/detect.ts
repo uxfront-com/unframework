@@ -2,6 +2,8 @@
 // (plan §8.2, ADR-0075, ADR-0026). Both read the plugins by the names they register, which are the
 // framework plugins' own: none of them is a dependency of this package.
 import { readFileSync, realpathSync, statSync } from "node:fs";
+import { createRequire } from "node:module";
+import { join } from "node:path";
 
 import type { TargetName } from "@unframework.dev/compiler";
 import { createDiagnostic, formatDiagnostic } from "@unframework.dev/diagnostics";
@@ -21,7 +23,10 @@ const FRAMEWORK_PLUGINS: Readonly<Record<TargetName, (name: string) => boolean>>
   react: (name) => name.startsWith("vite:react-"),
   vue: (name) => name === VUE_PLUGIN,
   svelte: (name) => name === "vite-plugin-svelte",
+  // Solid 1's vite-plugin-solid and Solid 2's @solidjs/vite-plugin both register "solid": the
+  // `solid-js` the app resolves tells them apart (ADR-0102).
   solid: (name) => name === "solid",
+  solid2: (name) => name === "solid",
   angular: (name) => name === "@analogjs/vite-plugin-angular",
   qwik: (name) => name === "vite-plugin-qwik",
   astro: (name) => name.startsWith("astro:"),
@@ -31,17 +36,41 @@ const FRAMEWORK_PLUGINS: Readonly<Record<TargetName, (name: string) => boolean>>
 const NO_SPAN = { start: 0, end: 0 };
 
 /**
+ * The major of the `solid-js` that resolves from `root`, or `undefined` when none does. Read from
+ * its `package.json`, so neither Solid build loads.
+ */
+export function solidMajor(root: string): number | undefined {
+  try {
+    const manifest = createRequire(join(root, "package.json")).resolve("solid-js/package.json");
+    const { version } = JSON.parse(readFileSync(manifest, "utf8")) as { version?: unknown };
+    const major = typeof version === "string" ? Number.parseInt(version, 10) : Number.NaN;
+    return Number.isNaN(major) ? undefined : major;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * The one target whose framework's plugin is among `plugins`, or the UF7005 or UF7006 message that
- * says why there isn't one. `file` names the configuration in the message.
+ * says why there isn't one. `file` names the configuration in the message. The `"solid"` plugin is
+ * Solid 2's when the `solid-js` that resolves from `root` is 2.x, and Solid 1's otherwise, as it
+ * was before `solid@2` (ADR-0102).
  */
 export function detectTarget(
   plugins: readonly NamedPlugin[],
   file: string,
+  root: string = process.cwd(),
 ): { target: TargetName } | { error: string } {
   const names = plugins.flatMap(({ name }) => (typeof name === "string" ? [name] : []));
+  let solid: TargetName | undefined;
   const found = Object.entries(FRAMEWORK_PLUGINS).flatMap(([target, belongs]) => {
     const plugin = names.find((name) => belongs(name));
-    return plugin ? [{ target: target as TargetName, plugin }] : [];
+    if (!plugin) return [];
+    if (target === "solid" || target === "solid2") {
+      solid ??= solidMajor(root) === 2 ? "solid2" : "solid";
+      if (target !== solid) return [];
+    }
+    return [{ target: target as TargetName, plugin }];
   });
   if (found.length === 1) return { target: found[0]!.target };
   const diagnostic = found.length

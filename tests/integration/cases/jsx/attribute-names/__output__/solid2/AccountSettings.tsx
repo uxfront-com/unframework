@@ -1,0 +1,84 @@
+import type { JSX } from "@solidjs/web";
+
+export interface AccountSettingsProps {
+  charset: string;
+  bioId: string;
+  bioLimit: number;
+  locked: boolean;
+  bannerCors: "anonymous" | "use-credentials";
+  seatColumns: number;
+  helpOrder: number;
+}
+
+export default function AccountSettings(
+  props: AccountSettingsProps & { class?: string; style?: JSX.CSSProperties },
+) {
+  return (
+    <div
+      class={props.class ? `account-settings ${props.class}` : "account-settings"}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
+      <form accept-charset="utf-8" aria-label="Profile">
+        <img
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"
+          alt="Avatar"
+          width="40"
+          height="40"
+          crossorigin="anonymous"
+        />
+        <label for="display-name">Display name</label>
+        <input
+          id="display-name"
+          type="text"
+          name="display-name"
+          maxlength="40"
+          readonly
+          placeholder="Ada"
+        />
+        <label for={props.bioId}>Bio</label>
+        <textarea
+          id={props.bioId}
+          name="bio"
+          rows="3"
+          maxlength={props.bioLimit}
+          readonly={props.locked}
+        />
+        <button type="button" tabindex="0">
+          Profile help
+        </button>
+      </form>
+      <form accept-charset={props.charset} aria-label="Plan">
+        <img
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Crect width='120' height='40' fill='%23563'/%3E%3C/svg%3E"
+          alt="Team plan banner"
+          width="120"
+          height="40"
+          crossorigin={props.bannerCors}
+        />
+        <table>
+          <tbody>
+            <tr>
+              <th scope="row">Plan</th>
+              <td colspan="2">Team</td>
+            </tr>
+            <tr>
+              <th scope="row">Seats</th>
+              <td colspan={props.seatColumns}>12</td>
+            </tr>
+          </tbody>
+        </table>
+        <button type="button" tabindex={props.helpOrder}>
+          Plan help
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}

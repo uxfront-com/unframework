@@ -27,6 +27,7 @@ import {
   type Packed,
   readManifest,
   readCatalog,
+  readReleaseAgeExclude,
   readPacked,
   repoRoot,
   startCopy,
@@ -91,13 +92,17 @@ function buildAndPack(): Packed {
 
 function installApps({ designSystem, tarballs }: Packed, work: string): void {
   const { packageManager } = readManifest(repoRoot);
+  // A version the root installs though it is under a day old, a copy installs too (solid@2's).
+  const releaseAgeExclude = readReleaseAgeExclude(
+    readFileSync(join(repoRoot, "pnpm-workspace.yaml"), "utf8"),
+  );
   for (const app of findApps()) {
     const copy = join(work, app.name);
     startCopy(copy);
     cpSync(join(e2eRoot, "apps", app.name), copy, { recursive: true });
     const manifest = copyManifest(readManifest(copy), app, tarballs, designSystem, packageManager);
     writeFileSync(join(copy, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-    writeFileSync(join(copy, "pnpm-workspace.yaml"), copyWorkspace(tarballs));
+    writeFileSync(join(copy, "pnpm-workspace.yaml"), copyWorkspace(tarballs, releaseAgeExclude));
     run(copy, "install", "--prefer-offline");
     process.stdout.write(`[e2e] ${app.name}: ${copy}\n`);
   }

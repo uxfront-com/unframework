@@ -400,6 +400,14 @@ describe("parseTestArguments", () => {
     expect(parseTestArguments([])).toEqual({ targets: [], update: false, vitest: [] });
   });
 
+  it("parses unframework test --target solid@2 to solid2, and solid@1 to solid (ADR-0102)", () => {
+    expect(parseTestArguments(["--target", "solid@2", "--target=solid@1"]).targets).toEqual([
+      "solid2",
+      "solid",
+    ]);
+    expect(() => parseTestArguments(["--target", "solid@3"])).toThrow("unknown target solid@3");
+  });
+
   it("prints Vitest's help for -- --help, and runs nothing", async () => {
     const io = { cwd: project({}), stdout: () => undefined, stderr: () => undefined };
     // A project with no test file would fail at startup, so 0 means nothing started.
@@ -408,7 +416,7 @@ describe("parseTestArguments", () => {
 
   it("refuses an unknown target, a missing name and an unknown argument", () => {
     expect(() => parseTestArguments(["--target", "nope"])).toThrow(
-      "unknown target nope. The targets are react, vue, svelte, solid, angular, qwik, astro.",
+      "unknown target nope. The targets are react, vue, svelte, solid, solid2, angular, qwik, astro, solid@2, solid@1.",
     );
     expect(() => parseTestArguments(["--target"])).toThrow("--target needs a target's name");
     expect(() => parseTestArguments(["--target", "--update"])).toThrow("--target needs");

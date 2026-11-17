@@ -59,7 +59,7 @@ jobs:
   # Every package's own tests, and the repo invariants (layering, the package template): what
   # `pnpm test` runs through turbo, except the integration corpus, which runs in the jobs below,
   # split the way plan §7.9 describes. The suites of testing, codegen and the react, vue,
-  # svelte, solid and qwik targets have browser projects in Chromium, so the job runs in the
+  # svelte, solid, solid2 and qwik targets have browser projects in Chromium, so the job runs in the
   # Playwright image, whose git turbo hashes with. There is no cache to restore, so turbo runs
   # every package, two at a time: on the runner's four vCPUs, more at once starve the browser
   # and compiler-heavy suites (Angular's ngtsc, unframework's build and type probes) past
@@ -86,6 +86,9 @@ jobs:
             filter: --filter=@unframework.dev/target-vue --filter=@unframework.dev/target-qwik
           - group: svelte, astro
             filter: --filter=@unframework.dev/target-svelte --filter=@unframework.dev/target-astro
+          # Solid 2 has a group of its own, so the react, solid and angular group keeps its length.
+          - group: solid2
+            filter: --filter=@unframework.dev/target-solid2
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
@@ -109,7 +112,7 @@ jobs:
       - name: Test
         run: pnpm exec turbo run test ${{ matrix.filter }} --continue --concurrency=2
 
-  # L1 and L2: every case compiled to all seven targets, against the golden outputs; and the
+  # L1 and L2: every case compiled to all eight targets, against the golden outputs; and the
   # harness's own unit tests, the canaries' corruptions of every case among them.
   integration-compile:
     name: "Integration: compile"
@@ -246,7 +249,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [react, vue, svelte, solid, angular, qwik, astro]
+        target: [react, vue, svelte, solid, solid2, angular, qwik, astro]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -307,7 +310,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [react, vue, svelte, solid, angular, qwik, astro]
+        target: [react, vue, svelte, solid, solid2, angular, qwik, astro]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

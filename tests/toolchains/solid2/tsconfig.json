@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for Solid 2: tsgo over every case's solid2 output, as a strict Solid 2 project would check
+  // it, with the type strictness every target's checker shares (the strictest of the frameworks'
+  // project defaults; harness/toolchain-strictness.unit.test.ts). The outputs sit in
+  // tests/integration, which holds Solid 1, so `paths` maps Solid 2's packages to this
+  // directory's copy for every file in the program, the outputs and the consumer fixtures alike
+  // (ADR-0102). Solid 2's JSX types are @solidjs/web's: solid-js has no `jsx-runtime`.
+  // `@unframework.dev/target-solid2/toolchain` extends this file with a temporary config that
+  // lists the files to check.
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "preserve",
+    "jsxImportSource": "@solidjs/web",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [],
+    "noEmit": true,
+    "paths": {
+      "solid-js": ["./node_modules/solid-js"],
+      "@solidjs/web": ["./node_modules/@solidjs/web"],
+      // `paths` skips a package's `exports`, so the JSX runtime's types are named as they are.
+      "@solidjs/web/jsx-runtime": ["./node_modules/@solidjs/web/types/jsx.d.ts"],
+      "@solidjs/web/jsx-dev-runtime": ["./node_modules/@solidjs/web/types/jsx.d.ts"]
+    }
+  },
+  "include": [
+    "../../integration/cases/**/__output__/solid2/**/*.ts",
+    "../../integration/cases/**/__output__/solid2/**/*.tsx",
+    "consumers/**/*.tsx"
+  ]
+}
