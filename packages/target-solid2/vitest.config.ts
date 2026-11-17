@@ -10,7 +10,7 @@ import { toolchain } from "./src/toolchain/index.ts";
 
 const context = {
   root: fileURLToPath(new URL(".", import.meta.url)),
-  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/solid", import.meta.url)),
+  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/solid2", import.meta.url)),
 };
 
 /**

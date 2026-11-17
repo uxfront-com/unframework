@@ -21,7 +21,7 @@ interface HydrationGlobal {
 
 /**
  * Hydrates `html` (from `renderForHydration`, compiled hydratable on both sides) in the container
- * with `hydrate`. Each hydration starts from a fresh `_$HY`, the record Solid's hydration script
+ * with `hydrate`, once its scripts have run. Each hydration starts from a fresh `_$HY`, the record Solid's hydration script
  * would put on a page: a page that shares several spec files keeps it from the last hydration
  * (ADR-0092). Solid reports a structure it cannot hydrate by throwing, which fails the mount; it
  * checks no text or attribute, which the `client agreement` sub-check compares instead
@@ -35,6 +35,12 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
   const page = globalThis as { _$HY?: HydrationGlobal };
   page._$HY = { events: [], completed: new WeakSet(), r: {}, fe() {} };
   container.innerHTML = html;
+  // Markup runs no script: run the server's, which record what its async setups awaited in
+  // `_$HY.r` (the bootstrap one finds the record there already), then take them out of the DOM.
+  for (const script of container.querySelectorAll("script")) {
+    new Function(script.textContent ?? "")();
+    script.remove();
+  }
   let dispose: () => void;
   try {
     dispose = hydrateRoot(() => createComponent(solidComponent, props.value), container);

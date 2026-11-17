@@ -1153,6 +1153,7 @@ function teleportHelperCode(name: string, imports: ImportSet): string {
   const flush = imports.add("solid-js", "flush");
   const onSettled = imports.add("solid-js", "onSettled");
   const Show = imports.add("solid-js", "Show");
+  const untrack = imports.add("solid-js", "untrack");
   const Portal = imports.add("@solidjs/web", "Portal");
   const JSX = imports.add("@solidjs/web", "JSX", { type: true });
   const queue = imports.claim(`${name}Queue`);
@@ -1162,7 +1163,9 @@ const ${queue}: (() => void)[] = [];
 /** Mounts \`children\` into the element \`to\` selects once the component has mounted, and removes them with it. */
 function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Element {
   const [target, setTarget] = ${createSignal}<Element | null>(null);
-  ${queue}.push(() => setTarget(document.querySelector(props.to)));
+  // Where it mounts is read once, as it mounts.
+  const to = ${untrack}(() => props.to);
+  ${queue}.push(() => setTarget(document.querySelector(to)));
   ${onSettled}(() => {
     if (${queue}.length) {
       queueMicrotask(() => {
