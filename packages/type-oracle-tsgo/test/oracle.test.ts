@@ -1,10 +1,15 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { printShape } from "@unframework.dev/type-oracle";
-import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
+import type {
+  DirectiveValueQuery,
+  ShapeQuery,
+  TypeOracle,
+  TypeShape,
+} from "@unframework.dev/type-oracle";
 import { typeOracleContract } from "@unframework.dev/type-oracle/contract";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -681,6 +686,521 @@ describe("tsgo adapter", () => {
     it("rejects a type with unresolved parts", async () => {
       const query = await component("{ [K in keyof T]: T[K] }", "", "A<T>");
       await expect(open().printType(query)).rejects.toThrow(/unresolved parts/);
+    });
+  });
+
+  describe("checkDirectiveValues", () => {
+    /** The authoring package's types a directive's check reads, as `@uxfront/unframework` declares them. */
+    const AUTHORING = [
+      "declare const directiveBrand: unique symbol;",
+      "export interface Directive<T, E extends globalThis.Element = HTMLElement> {",
+      "  readonly [directiveBrand]: { value: T; element: E };",
+      "}",
+      "export declare function defineDirective<T = never, E extends globalThis.Element = HTMLElement>(",
+      "  hooks: { mounted?(el: E, value: T): void },",
+      "): Directive<T, E>;",
+      "export interface Ref<T> { value: T }",
+      "export declare function ref<T>(value: T): Ref<T>;",
+      "export declare function ref<T>(): Ref<T | undefined>;",
+      "export declare function computed<T>(getter: () => T): { readonly value: T };",
+      "",
+    ].join("\n");
+    const MANIFEST = JSON.stringify({ name: "@uxfront/unframework", types: "index.d.ts" });
+
+    /** Installs the authoring package in the root's `node_modules`. */
+    const authoring = async () => {
+      await put("node_modules/@uxfront/unframework/package.json", MANIFEST);
+      await put("node_modules/@uxfront/unframework/index.d.ts", AUTHORING);
+    };
+
+    /**
+     * The query for an attribute written in `source`, `v-tone="warn"` or `v-box={good.value}`,
+     * whose directive is the first `name` the source writes: its `const` or its import.
+     */
+    const use = (
+      source: string,
+      attribute: string,
+      name: string,
+      occurrence = 0,
+    ): DirectiveValueQuery => {
+      let at = source.indexOf(attribute);
+      for (let skip = occurrence; skip > 0 && at !== -1; skip--) {
+        at = source.indexOf(attribute, at + 1);
+      }
+      if (at === -1) throw new Error(`No ${attribute} in the source.`);
+      const equals = attribute.indexOf("=");
+      const braced = attribute[equals + 1] === "{";
+      const length = attribute.length - equals - 1 - (braced ? 2 : 0);
+      const start = at + equals + (braced ? 2 : 1);
+      const directive = source.indexOf(name);
+      return {
+        value: { start, end: start + length },
+        kind: braced ? "expression" : "string",
+        directive: { start: directive, end: directive + name.length },
+      };
+    };
+
+    const FOCUS = [
+      'import { defineDirective } from "@uxfront/unframework";',
+      "export const vFocusTrap = defineDirective<boolean>({});",
+      'export const vTone = defineDirective<"info" | "warn">({});',
+      "",
+    ].join("\n");
+    const CAST = "export function cast<T>(value: unknown): T {\n  return value as T;\n}\n";
+    const PANEL = [
+      'import { computed, defineDirective, ref } from "@uxfront/unframework";',
+      'import { cast } from "./cast.ts";',
+      'import { vFocusTrap, vTone } from "./focus.uf.ts";',
+      "const vBox = defineDirective<{ id: string }>({});",
+      "const vLabel = defineDirective<string>({});",
+      "const vPrefixed = defineDirective<`x-${string}`>({});",
+      "export default function Panel() {",
+      "  const open = ref(false);",
+      '  const tone = ref<"info" | "warn">();',
+      "  const n = ref(1);",
+      '  const bad = computed(() => ({ name: "a" }));',
+      '  const good = computed(() => ({ id: "a" }));',
+      "  return (",
+      '    <div v-focus-trap={1} v-tone="loud" v-prefixed="x-1">',
+      '      <p v-focus-trap={open.value} v-tone="warn" v-box={bad.value} v-label="x" />',
+      "      {tone.value !== undefined && <span v-tone={tone.value} v-box={good.value} />}",
+      "      {tone.value !== undefined && <i v-tone={`${tone.value}`} />}",
+      "      <b v-prefixed={`x-${n.value}`} v-focus-trap={cast(1)} v-tone={tone.value} />",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const PANEL_USES: [string, string, unknown][] = [
+      ["v-focus-trap={1}", "vFocusTrap", { assignable: false, value: "1", expected: "boolean" }],
+      [
+        'v-tone="loud"',
+        "vTone",
+        { assignable: false, value: '"loud"', expected: '"info" | "warn"' },
+      ],
+      [
+        'v-prefixed="x-1"',
+        "vPrefixed",
+        { assignable: true, value: '"x-1"', expected: "`x-${string}`" },
+      ],
+      [
+        "v-focus-trap={open.value}",
+        "vFocusTrap",
+        { assignable: true, value: "boolean", expected: "boolean" },
+      ],
+      [
+        'v-tone="warn"',
+        "vTone",
+        { assignable: true, value: '"warn"', expected: '"info" | "warn"' },
+      ],
+      [
+        "v-box={bad.value}",
+        "vBox",
+        { assignable: false, value: "{ name: string; }", expected: "{ id: string; }" },
+      ],
+      ['v-label="x"', "vLabel", { assignable: true, value: '"x"', expected: "string" }],
+      [
+        "v-tone={tone.value}",
+        "vTone",
+        { assignable: true, value: '"info" | "warn"', expected: '"info" | "warn"' },
+      ],
+      [
+        "v-box={good.value}",
+        "vBox",
+        { assignable: true, value: "{ id: string; }", expected: "{ id: string; }" },
+      ],
+      // QA's three: values TypeScript types by what they are given to.
+      [
+        "v-tone={`${tone.value}`}",
+        "vTone",
+        { assignable: true, value: '"info" | "warn"', expected: '"info" | "warn"' },
+      ],
+      [
+        "v-prefixed={`x-${n.value}`}",
+        "vPrefixed",
+        { assignable: true, value: "`x-${number}`", expected: "`x-${string}`" },
+      ],
+      [
+        "v-focus-trap={cast(1)}",
+        "vFocusTrap",
+        { assignable: true, value: "boolean", expected: "boolean" },
+      ],
+      // Not narrowed: a real mismatch.
+      [
+        "v-tone={tone.value}#1",
+        "vTone",
+        {
+          assignable: false,
+          value: '"info" | "warn" | undefined',
+          expected: '"info" | "warn"',
+        },
+      ],
+    ];
+    /** The queries of `PANEL_USES` in `source`: `#1` names an attribute's second use. */
+    const panelQueries = (source: string) =>
+      PANEL_USES.map(([attribute, name]) => {
+        const [written, occurrence] = attribute.split("#");
+        return use(source, written!, name, Number(occurrence ?? 0));
+      });
+    const PANEL_CHECKS = PANEL_USES.map(([, , check]) => check);
+    const writePanel = async () => {
+      await put("cast.ts", CAST);
+      await put("focus.uf.ts", FOCUS);
+      await put("Panel.uf.tsx", PANEL);
+    };
+
+    it("checks each value against its directive's type, as given to it, narrowed, local or imported", async () => {
+      await authoring();
+      await writePanel();
+      expect(
+        await open().checkDirectiveValues!("Panel.uf.tsx", PANEL, panelQueries(PANEL)),
+      ).toEqual({
+        checks: PANEL_CHECKS,
+        dependencies: ["focus.uf.ts"],
+      });
+    });
+
+    it("reads the authoring package through a link outside the root, as a workspace has it", async () => {
+      await put("../authoring/package.json", MANIFEST);
+      await put("../authoring/index.d.ts", AUTHORING);
+      await mkdir(join(root, "node_modules/@uxfront"), { recursive: true });
+      await symlink(join(base, "authoring"), join(root, "node_modules/@uxfront/unframework"));
+      await writePanel();
+      const { checks } = await open().checkDirectiveValues!(
+        "Panel.uf.tsx",
+        PANEL,
+        panelQueries(PANEL),
+      );
+      expect(checks).toEqual(PANEL_CHECKS);
+    });
+
+    it("answers null where it cannot say, and reports nothing", async () => {
+      await authoring();
+      await put(
+        "types.ts",
+        "export interface Directive<T> { value: T }\nexport declare const vForeign: Directive<boolean>;\n",
+      );
+      const source = [
+        'import { defineDirective } from "@uxfront/unframework";',
+        'import { vForeign } from "./types.ts";',
+        "const vPlain = 1;",
+        "const vMissing = defineDirective<Missing>({});",
+        "const vUntyped = defineDirective({});",
+        "export default function A() {",
+        "  return <div v-plain={1} v-foreign={1} v-missing={1} v-untyped={1} />;",
+        "}",
+        "",
+      ].join("\n");
+      await put("A.uf.tsx", source);
+      const { checks } = await open().checkDirectiveValues!("A.uf.tsx", source, [
+        use(source, "v-plain={1}", "vPlain"),
+        use(source, "v-foreign={1}", "vForeign"),
+        use(source, "v-missing={1}", "vMissing"),
+        use(source, "v-untyped={1}", "vUntyped"),
+      ]);
+      expect(checks).toEqual([null, null, null, null]);
+    });
+
+    /** A file whose `v` the disk and the compiled source give different types. */
+    const SWAP = [
+      'import { defineDirective, ref } from "@uxfront/unframework";',
+      "const vFlag = defineDirective<boolean>({});",
+      "export default function A() {",
+      "  const v = ref(10);",
+      "  return <div v-flag={v.value} />;",
+      "}",
+      "",
+    ].join("\n");
+
+    it("types the source it is given, not the disk's", async () => {
+      await authoring();
+      const compiled = SWAP.replace("ref(10)", "ref(!0)");
+      const oracle = open();
+      await put("A.uf.tsx", SWAP);
+      expect(
+        (
+          await oracle.checkDirectiveValues!("A.uf.tsx", compiled, [
+            use(compiled, "v-flag={v.value}", "vFlag"),
+          ])
+        ).checks,
+      ).toEqual([{ assignable: true, value: "boolean", expected: "boolean" }]);
+      await put("A.uf.tsx", compiled);
+      await oracle.update({ files: ["A.uf.tsx"] });
+      expect(
+        (
+          await oracle.checkDirectiveValues!("A.uf.tsx", SWAP, [
+            use(SWAP, "v-flag={v.value}", "vFlag"),
+          ])
+        ).checks,
+      ).toEqual([{ assignable: false, value: "number", expected: "boolean" }]);
+    });
+
+    it("gives a source with a byte order mark the answers it gives one without", async () => {
+      await authoring();
+      await writePanel();
+      const marked = `\uFEFF${PANEL}`;
+      const queries = panelQueries(PANEL).map(({ value, kind, directive }) => ({
+        value: { start: value.start + 1, end: value.end + 1 },
+        kind,
+        directive: { start: directive.start + 1, end: directive.end + 1 },
+      }));
+      const { checks } = await open().checkDirectiveValues!("Panel.uf.tsx", marked, queries);
+      expect(checks).toEqual(PANEL_CHECKS);
+    });
+
+    it("wraps each value as the parser spans it, whatever the text before it", async () => {
+      await authoring();
+      // A container whose comment ends in `=`, and a string after a long run of spaces: the
+      // shadow must still parse, or a later narrowed value loses its narrowing.
+      const source = [
+        'import { defineDirective, ref } from "@uxfront/unframework";',
+        "const vFlag = defineDirective<boolean>({});",
+        'const vTone = defineDirective<"info" | "warn">({});',
+        "export default function A() {",
+        "  const open = ref(false);",
+        '  const tone = ref<"info" | "warn" | undefined>(undefined);',
+        "  return (",
+        "    <div",
+        "      v-flag={",
+        "        // Trap the focus while open =",
+        "        open.value",
+        "      }",
+        `      v-tone=${" ".repeat(20)}"warn"`,
+        "    >",
+        "      {tone.value !== undefined && <p v-tone={tone.value}>Toned</p>}",
+        "    </div>",
+        "  );",
+        "}",
+        "",
+      ].join("\n");
+      await put("A.uf.tsx", source);
+      const trap = source.indexOf("open.value");
+      const warn = source.indexOf('"warn"', source.indexOf("v-tone="));
+      const { checks } = await open().checkDirectiveValues!("A.uf.tsx", source, [
+        {
+          value: { start: trap, end: trap + "open.value".length },
+          kind: "expression",
+          directive: { start: source.indexOf("vFlag"), end: source.indexOf("vFlag") + 5 },
+        },
+        {
+          value: { start: warn, end: warn + '"warn"'.length },
+          kind: "string",
+          directive: { start: source.indexOf("vTone"), end: source.indexOf("vTone") + 5 },
+        },
+        use(source, "v-tone={tone.value}", "vTone"),
+      ]);
+      expect(checks).toEqual([
+        { assignable: true, value: "boolean", expected: "boolean" },
+        { assignable: true, value: '"warn"', expected: '"info" | "warn"' },
+        { assignable: true, value: '"info" | "warn"', expected: '"info" | "warn"' },
+      ]);
+    });
+
+    it("leaves a file of the shadow's name alone, and answers null", async () => {
+      await authoring();
+      await put("B.uf.tsx", SWAP);
+      await put("B.uf.tsx.uf-directive-values.tsx", "export const kept = 1;\n");
+      const kept = await component(
+        "{ a: typeof kept }",
+        'import { kept } from "./B.uf.tsx.uf-directive-values.tsx";',
+        "K",
+        "K.uf.tsx",
+      );
+      const oracle = open();
+      const { checks } = await oracle.checkDirectiveValues!("B.uf.tsx", SWAP, [
+        use(SWAP, "v-flag={v.value}", "vFlag"),
+      ]);
+      expect(checks).toEqual([null]);
+      expect(canonical(await oracle.resolveShape(kept))).toBe("{ a: 1 }");
+    });
+
+    it("picks a helper name the source doesn't hold", async () => {
+      await authoring();
+      // A local of the helper's name would take the call, and the value would lose its context.
+      const source = [
+        'import { defineDirective } from "@uxfront/unframework";',
+        "const vFlag = defineDirective<boolean>({});",
+        "function cast<T>(value: unknown): T {",
+        "  return value as T;",
+        "}",
+        "export default function A() {",
+        "  const __ufDirectiveValue = 1;",
+        "  return <div v-flag={cast(__ufDirectiveValue)} />;",
+        "}",
+        "",
+      ].join("\n");
+      await put("A.uf.tsx", source);
+      const { checks } = await open().checkDirectiveValues!("A.uf.tsx", source, [
+        use(source, "v-flag={cast(__ufDirectiveValue)}", "vFlag"),
+      ]);
+      expect(checks).toEqual([{ assignable: true, value: "boolean", expected: "boolean" }]);
+    });
+
+    it("leaves no shadow behind it", async () => {
+      await authoring();
+      await writePanel();
+      await put("B.uf.tsx", SWAP);
+      // A script's shadow declares its helper globally: once the shadow is gone, no type reads it.
+      const script = [
+        'declare const vFlag: import("@uxfront/unframework").Directive<boolean>;',
+        "function S() {",
+        "  return <div v-flag={1} />;",
+        "}",
+        "",
+      ].join("\n");
+      await put("S.uf.tsx", script);
+      const helper = await component(
+        "{ a: ReturnType<typeof __ufDirectiveValue> }",
+        "",
+        "H",
+        "H.uf.tsx",
+      );
+      const mapped = await component('{ [K in "a"]: number }', "", "M", "M.uf.tsx");
+      const oracle = open();
+      await oracle.checkDirectiveValues!("Panel.uf.tsx", PANEL, panelQueries(PANEL));
+      // A shape the checker evaluates, and a second check, each in a program with no shadow.
+      const shape = await oracle.resolveShape(mapped);
+      expect(canonical(shape)).toBe("{ a: number }");
+      expect(shape.dependencies.some((file) => file.includes("uf-directive-values"))).toBe(false);
+      const again = await oracle.checkDirectiveValues!("B.uf.tsx", SWAP, [
+        use(SWAP, "v-flag={v.value}", "vFlag"),
+      ]);
+      expect(again.checks).toEqual([{ assignable: false, value: "number", expected: "boolean" }]);
+      const answer = await oracle.checkDirectiveValues!("S.uf.tsx", script, [
+        use(script, "v-flag={1}", "vFlag"),
+      ]);
+      expect(answer.checks).toEqual([{ assignable: false, value: "1", expected: "boolean" }]);
+      expect((await oracle.resolveShape(helper)).unresolved).not.toEqual([]);
+      // The same file checks again, after its shadow was removed.
+      const { checks } = await oracle.checkDirectiveValues!(
+        "Panel.uf.tsx",
+        PANEL,
+        panelQueries(PANEL),
+      );
+      expect(checks).toEqual(PANEL_CHECKS);
+    });
+
+    it("gives overlapping calls and an update each their own answers", async () => {
+      await authoring();
+      await writePanel();
+      await put("B.uf.tsx", SWAP);
+      const query = await component('{ [K in "b"]: string }');
+      const oracle = open();
+      const [panel, swap, , shape] = await Promise.all([
+        oracle.checkDirectiveValues!("Panel.uf.tsx", PANEL, panelQueries(PANEL)),
+        oracle.checkDirectiveValues!("B.uf.tsx", SWAP, [use(SWAP, "v-flag={v.value}", "vFlag")]),
+        oracle.update({ files: ["focus.uf.ts"] }),
+        oracle.resolveShape(query),
+      ]);
+      expect(panel.checks).toEqual(PANEL_CHECKS);
+      expect(swap.checks).toEqual([{ assignable: false, value: "number", expected: "boolean" }]);
+      expect(canonical(shape)).toBe("{ b: string }");
+    });
+
+    it("answers null for every use when the authoring package does not resolve", async () => {
+      await writePanel();
+      const queries = panelQueries(PANEL);
+      const { checks } = await open().checkDirectiveValues!("Panel.uf.tsx", PANEL, queries);
+      expect(checks).toEqual(queries.map(() => null));
+    });
+
+    it("starts no checker for a module with no use", async () => {
+      const before = new Set(children());
+      expect(await open().checkDirectiveValues!("A.uf.tsx", "", [])).toEqual({
+        checks: [],
+        dependencies: [],
+      });
+      expect(children().filter((pid) => !before.has(pid))).toEqual([]);
+    });
+
+    it("checks 200 uses in one call", async () => {
+      await authoring();
+      const attributes = Array.from({ length: 200 }, (_, index) =>
+        index % 2 ? `v-flag={${index}}` : `v-flag={on${index}.value}`,
+      );
+      const source = [
+        'import { defineDirective, ref } from "@uxfront/unframework";',
+        "const vFlag = defineDirective<boolean>({});",
+        "export default function A() {",
+        ...attributes.map((_, index) => `  const on${index} = ref(false);`),
+        "  return (",
+        "    <div>",
+        ...attributes.map((attribute) => `      <p ${attribute} />`),
+        "    </div>",
+        "  );",
+        "}",
+        "",
+      ].join("\n");
+      await put("A.uf.tsx", source);
+      const { checks } = await open().checkDirectiveValues!(
+        "A.uf.tsx",
+        source,
+        attributes.map((attribute) => use(source, attribute, "vFlag")),
+      );
+      expect(checks).toHaveLength(200);
+      expect(checks.map((check) => check?.assignable)).toEqual(
+        attributes.map((_, index) => index % 2 === 0),
+      );
+    });
+
+    it("reads a directive's changed type after an update", async () => {
+      await authoring();
+      const oracle = open();
+      await writePanel();
+      const query = use(PANEL, "v-focus-trap={1}", "vFocusTrap");
+      expect((await oracle.checkDirectiveValues!("Panel.uf.tsx", PANEL, [query])).checks).toEqual([
+        { assignable: false, value: "1", expected: "boolean" },
+      ]);
+      await put("focus.uf.ts", FOCUS.replace("<boolean>", "<number>"));
+      await oracle.update({ files: ["focus.uf.ts"] });
+      expect((await oracle.checkDirectiveValues!("Panel.uf.tsx", PANEL, [query])).checks).toEqual([
+        { assignable: true, value: "1", expected: "number" },
+      ]);
+    });
+
+    it("answers null for a file whose shadow its project leaves out", async () => {
+      await authoring();
+      await writePanel();
+      await put("other/B.uf.tsx", SWAP);
+      const oracle = createTsgoOracle({
+        root,
+        include: ["Panel.uf.tsx", "focus.uf.ts", "cast.ts"],
+      });
+      oracles.push(oracle);
+      expect(
+        (await oracle.checkDirectiveValues!("Panel.uf.tsx", PANEL, panelQueries(PANEL))).checks,
+      ).toEqual(PANEL_CHECKS.map(() => null));
+      const narrow = createTsgoOracle({ root, include: ["other/**/*"] });
+      oracles.push(narrow);
+      expect(
+        (
+          await narrow.checkDirectiveValues!("other/B.uf.tsx", SWAP, [
+            use(SWAP, "v-flag={v.value}", "vFlag"),
+          ])
+        ).checks,
+      ).toEqual([{ assignable: false, value: "number", expected: "boolean" }]);
+    });
+
+    it("reads the syntactic layer's files through `readFile`", async () => {
+      await put("A.uf.tsx", "export function A(props: { a: string }) {}\n");
+      const read: string[] = [];
+      const oracle = createTsgoOracle({
+        root,
+        readFile: async (path) => {
+          read.push(path);
+          return path.endsWith("A.uf.tsx")
+            ? "export function A(props: { b: number }) {}\n"
+            : undefined;
+        },
+      });
+      oracles.push(oracle);
+      const start = "export function A(props: ".length;
+      const shape = await oracle.resolveShape({
+        file: "A.uf.tsx",
+        span: { start, end: start + "{ b: number }".length },
+      });
+      expect(canonical(shape)).toBe("{ b: number }");
+      expect(read).toContain(join(root, "A.uf.tsx"));
     });
   });
 });

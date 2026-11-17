@@ -1,6 +1,7 @@
 import {
   analyze,
   componentImports,
+  directiveValueQueries,
   shapeQueries,
   sharedModuleImports,
   stylesheetImports,
@@ -28,7 +29,7 @@ import type {
 import { parseModule } from "@unframework.dev/parser";
 import type { ParsedModule } from "@unframework.dev/parser";
 import { createSyntacticOracle } from "@unframework.dev/type-oracle";
-import type { TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
+import type { DirectiveValueCheck, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
@@ -217,6 +218,22 @@ export async function compile(source: string, options: CompileOptions): Promise<
         diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
       }
     }
+    // Each directive's value, checked against its type argument by an oracle with a checker, in
+    // one request for the module (ADR-0109).
+    const directiveValues = new Map<string, DirectiveValueCheck>();
+    const valueQueries = oracle.checkDirectiveValues ? directiveValueQueries(parsed) : [];
+    if (valueQueries.length) {
+      try {
+        const answer = await oracle.checkDirectiveValues!(file, source, valueQueries);
+        valueQueries.forEach((query, index) => {
+          const check = answer.checks[index];
+          if (check) directiveValues.set(`${query.value.start}:${query.value.end}`, check);
+        });
+        for (const dependency of answer.dependencies) dependencies.add(dependency);
+      } catch (error) {
+        diagnostics.push(internal(file, error, "The type oracle failed on the directives' values"));
+      }
+    }
     const imports = new Map<string, ModuleApi | undefined>();
     for (const specifier of options.resolve ? componentImports(parsed) : []) {
       // A caller's output depends on its composables' APIs, which the project graph watches
@@ -301,6 +318,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
       modules,
       stylesheets,
       shapes: (span) => shapes.get(`${span.start}:${span.end}`),
+      ...(directiveValues.size
+        ? { directiveValues: (span: Span) => directiveValues.get(`${span.start}:${span.end}`) }
+        : {}),
       ...(options.passThrough ? { passThrough: options.passThrough } : {}),
     });
     diagnostics.push(...analysis.diagnostics);

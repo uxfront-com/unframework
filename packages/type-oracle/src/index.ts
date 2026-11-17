@@ -5,6 +5,9 @@ export type { PrintOptions } from "./print.ts";
 export type {
   ArrayNode,
   DeclarationRef,
+  DirectiveValueCheck,
+  DirectiveValueChecks,
+  DirectiveValueQuery,
   FileChanges,
   FunctionNode,
   FunctionParameter,

@@ -1,0 +1,4 @@
+{
+  "description": "UF6007: a directive's value whose type the tsgo oracle finds is not the directive's type argument, from an expression, a string and a derived object.",
+  "typeOracle": "tsgo"
+}

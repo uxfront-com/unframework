@@ -4,8 +4,11 @@
 // UF3056 for a use without an element or with a value built in place, and UF1002 for what is not
 // supported yet (arguments, modifiers, a spread's key, a list's body).
 import type { DirectiveAttribute, ElementNode, ModuleApi } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
+import type { DirectiveValueCheck } from "@unframework.dev/type-oracle";
 import { describe, expect, it } from "vitest";
 
+import { directiveValueQueries } from "../src/index.ts";
 import { problems, root, run } from "./helpers.ts";
 
 const IMPORT = 'import { defineDirective, ref } from "@uxfront/unframework";\n';
@@ -419,5 +422,129 @@ describe("the codes it shares", () => {
       "Directive",
       "Static",
     ]);
+  });
+});
+
+describe("UF6007 directive-value-type", () => {
+  /** The text of each value `directiveValueQueries` names, with the directive's text. */
+  const queried = (text: string, file = "Test.uf.tsx") =>
+    directiveValueQueries(parseModule(file, text)).map((query) => [
+      text.slice(query.value.start, query.value.end),
+      query.kind,
+      text.slice(query.directive.start, query.directive.end),
+    ]);
+
+  it("names each value of a directive the module declares or imports", () => {
+    const text = `${IMPORT}import { vFocusTrap } from "./focusTrap.uf.ts";\n${MARK}export function A() {\n  return <p v-mark="a" v-focus-trap={open} v-other={1} v-empty={} v-bare>a</p>;\n}\n`;
+    expect(queried(text)).toEqual([
+      ['"a"', "string", "vMark"],
+      ["open", "expression", "vFocusTrap"],
+    ]);
+    const [mark, trap] = directiveValueQueries(parseModule("Test.uf.tsx", text));
+    // The names that declare each directive: its `const`, and the import's local name.
+    expect(text.slice(mark!.directive.start - 6, mark!.directive.end)).toBe("const vMark");
+    expect(text.slice(trap!.directive.start - 9, trap!.directive.end)).toBe("import { vFocusTrap");
+  });
+
+  it("leaves out a static value the analyser rejects, which reads otherwise in JavaScript", () => {
+    const text = source(
+      '<div><p v-mark="a\\" title="b">a</p><p v-mark="a &amp; b">c</p><p v-mark="ok">d</p></div>',
+    );
+    expect(queried(text)).toEqual([['"ok"', "string", "vMark"]]);
+  });
+
+  it("names nothing in a module without a directive's use", () => {
+    expect(queried(source("<p>a</p>"))).toEqual([]);
+    expect(queried(`export function A() {\n  return <p v-mark={1}>a</p>;\n}\n`)).toEqual([]);
+    // A type-only import names no value.
+    expect(
+      queried(
+        `import type { vMark } from "./m.uf.ts";\nexport function A() {\n  return <p v-mark={1}>a</p>;\n}\n`,
+      ),
+    ).toEqual([]);
+  });
+
+  /** The diagnostics of a source whose oracle answers `check` for the value written as `value`. */
+  const checked = (text: string, value: string, check: DirectiveValueCheck | undefined) => {
+    const start = text.lastIndexOf(value);
+    const options = {
+      directiveValues: (span: { start: number; end: number }) =>
+        span.start === start && span.end === start + value.length ? check : undefined,
+    };
+    return run(text, "Test.uf.tsx", options).diagnostics;
+  };
+  const MISMATCH = { assignable: false, value: "number", expected: "string" };
+
+  it.each([
+    ["a string", source('<p v-mark="a">a</p>'), '"a"'],
+    ["a setup function", source("<p v-mark={close}>a</p>", "function close() {}\n  "), "close"],
+    [
+      "an expression",
+      source("<p v-mark={count.value}>a</p>", "const count = ref(1);\n  "),
+      "count.value",
+    ],
+  ])(
+    "reports %s the oracle says is not of the directive's type, at the value",
+    (_, text, value) => {
+      const diagnostics = checked(text, value, MISMATCH);
+      expect(problems(text, diagnostics)).toEqual([`UF6007 ${value}`]);
+      expect(diagnostics[0]!.message).toBe(
+        "`v-mark`'s value is `number`, and `vMark` takes `string`.",
+      );
+      expect(diagnostics[0]!.help).toBe(
+        "Pass a value of type `string`, or change the type argument of `vMark`'s `defineDirective`.",
+      );
+    },
+  );
+
+  it("writes a printed type that holds a backtick as one code span", () => {
+    const text = source("<p v-mark={count.value}>a</p>", "const count = ref(1);\n  ");
+    const [diagnostic] = checked(text, "count.value", {
+      assignable: false,
+      value: "`y-${number}`",
+      expected: "`x-${string}`",
+    });
+    expect(diagnostic!.message).toBe(
+      "`v-mark`'s value is `` `y-${number}` ``, and `vMark` takes `` `x-${string}` ``.",
+    );
+    expect(diagnostic!.help).toBe(
+      "Pass a value of type `` `x-${string}` ``, or change the type argument of `vMark`'s `defineDirective`.",
+    );
+  });
+
+  it("drops the attribute it reports from the IR", () => {
+    const text = source("<p v-mark={count.value}>a</p>", "const count = ref(1);\n  ");
+    const { module } = run(text, "Test.uf.tsx", {
+      directiveValues: () => MISMATCH,
+    });
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it("reports nothing for an assignable value, or one the oracle has no answer for", () => {
+    const text = source("<p v-mark={count.value}>a</p>", "const count = ref(1);\n  ");
+    const match = { assignable: true, value: "string", expected: "string" };
+    expect(checked(text, "count.value", match)).toEqual([]);
+    expect(checked(text, "count.value", undefined)).toEqual([]);
+    expect(run(text).diagnostics).toEqual([]);
+  });
+
+  it("reports nothing more on a value already reported", () => {
+    const text = source("<p v-mark={{ a: 1 }}>a</p>");
+    const diagnostics = run(text, "Test.uf.tsx", { directiveValues: () => MISMATCH }).diagnostics;
+    expect(problems(text, diagnostics)).toEqual(["UF3056 { a: 1 }"]);
+  });
+
+  it("reports an imported directive's value by the name the module imports", () => {
+    const text = `import { vFocusTrap } from "./focusTrap.uf.ts";\nexport function A() {\n  return <div v-focus-trap={1}>Text</div>;\n}\n`;
+    const start = text.indexOf("{1}") + 1;
+    const { diagnostics } = run(text, "Test.uf.tsx", {
+      imports: new Map([["./focusTrap.uf.ts", trapApi()]]),
+      directiveValues: (span) =>
+        span.start === start ? { assignable: false, value: "1", expected: "boolean" } : undefined,
+    });
+    expect(problems(text, diagnostics)).toEqual(["UF6007 1"]);
+    expect(diagnostics[0]!.message).toBe(
+      "`v-focus-trap`'s value is `1`, and `vFocusTrap` takes `boolean`.",
+    );
   });
 });
