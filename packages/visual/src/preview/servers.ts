@@ -84,6 +84,7 @@ export function frameModule(
   entries: Readonly<Record<string, string>>,
   serverRender: boolean,
   staticRenders?: StaticRenders,
+  staticPreview = false,
 ): string {
   const loaders = Object.entries(entries)
     .map(([id, file]) => {
@@ -107,6 +108,7 @@ export function frameModule(
     `  target: ${JSON.stringify(target)},`,
     "  mount,",
     `  serverRender: ${serverRender},`,
+    ...(staticPreview ? ["  staticPreview: true,"] : []),
     ...(renders ? ["  staticRenders: {", ...renders, "  },"] : []),
     "  entries: {",
     loaders,
@@ -149,9 +151,14 @@ function previewPlugin(
   staticRenders: StaticRenders | undefined,
 ): Plugin {
   const page = framePageId(options.root);
+  // A build writes a static preview's frame, which takes messages only from its own origin.
+  let building = false;
   return {
     name: "unframework:preview",
     enforce: "pre",
+    configResolved(config) {
+      building = config.command === "build";
+    },
     resolveId(id) {
       if (id === page) return page;
       if (id === FRAME_MODULE) return FRAME_MODULE_ID;
@@ -170,6 +177,7 @@ function previewPlugin(
           options.entries,
           render !== undefined,
           staticRenders,
+          building,
         );
       }
       if (id === NO_VITEST_ID) return "export const commands = {};\n";

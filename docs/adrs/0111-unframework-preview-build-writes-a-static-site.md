@@ -31,12 +31,13 @@ script inlined. Three things stand in the way of a static site:
   `startPreview`, builds each target's frame with Vite's `build` on `targetServerConfig`'s config,
   into `<out>/<target>/`. The frame page is the build's input, written as
   `<out>/<target>/frame.html`, with its modules and sheets under `assets/`. The shell is written as
-  `<out>/index.html`. It resolves to `{ out, targets }` once every target is built and every render
-  server closed.
+  `<out>/index.html`. It resolves to `{ out, targets, diagnostics }` once every target is built
+  and every render server closed. `diagnostics` holds the UF7012 warnings of the examples' doc
+  comments (ADR-0110).
 - **`unframework preview build [--target <t>]... [--out <dir>]`** runs it, prints the site's path
-  and its targets, and exits 0. A usage error, an `--out` it refuses, a project with nothing to
-  show, or a configuration or a build that fails exits 2. `--port` belongs to the served preview
-  and `--out` to the build, and each refuses the other.
+  and its targets, prints each UF7012 warning to stderr, and exits 0. A usage error, an `--out` it
+  refuses, a project with nothing to show, or a configuration or a build that fails exits 2.
+  `--port` belongs to the served preview and `--out` to the build, and each refuses the other.
 - **Relative URLs only.** The shell frames `./<target>/frame.html`, and every URL among a frame's
   files is relative. Vite's `base` is `/`, since Qwik refuses a relative one, and
   `experimental.renderBuiltUrl` gives every module, sheet and asset a URL relative to the file
@@ -46,7 +47,9 @@ script inlined. Three things stand in the way of a static site:
   shell now gets each frame page's URL (`ShellData.frames` is `{ target, src }`), absolute in
   development and relative in the static site, and takes the frame's origin from it. The protocol
   is unchanged. Each side still checks the other's window, and the frame still checks the origin
-  the shell gave it.
+  the shell gave it. A static frame also refuses a shell at any origin but its own: it shows a
+  notice, and sends and takes no message, so no other page can frame it and drive it on the
+  site's origin.
 - **Astro is rendered at build time.** For a target that renders on the server
   (`renderCommandName`), the build starts a Vite server in middleware mode on the same config,
   which holds no port. Each entry is rendered with the props the shell first sends it: none for an

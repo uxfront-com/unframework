@@ -475,13 +475,16 @@ function shellScript(constants: { message: string; themeKey: string }): void {
     form.replaceChildren();
     uncontrolled.replaceChildren();
     form.hidden = !component?.controls.length;
-    noControls.hidden = Boolean(component);
     uncontrolled.hidden = uncontrolledLabel.hidden = !component?.uncontrolled.length;
+    // The message depends on the selection, so it is set on every call: a component
+    // with no props must not leave its text behind for the example selected next.
+    const bare =
+      Boolean(component) && !component?.controls.length && !component?.uncontrolled.length;
+    noControls.hidden = Boolean(component) && !bare;
+    noControls.textContent = bare
+      ? "This component has no props."
+      : "An example takes no props. Select a component to set its props.";
     if (!component) return;
-    if (!component.controls.length && !component.uncontrolled.length) {
-      noControls.hidden = false;
-      noControls.textContent = "This component has no props.";
-    }
     for (const control of component.controls) {
       const id = `uf-prop-${control.name}`;
       const label = document.createElement("label");
