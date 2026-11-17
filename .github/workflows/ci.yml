@@ -231,12 +231,16 @@ jobs:
 
   # L7, L8, L9, L10, L11 and L13 in Chromium. The job runs in the Playwright image that generates the
   # Linux baselines (`pnpm test:baselines`), so fonts and rendering libraries are the same.
-  # Not sharded while the corpus fits the job's ten minutes. To shard (plan §7.9), add a
-  # `shard` dimension to the matrix, pass `--shard ${{ matrix.shard }}/<n>` and put the shard in
-  # the artefact's name: the reporter names each shard's matrix apart, and the parity job counts
-  # a project as run in full once shards 1 to n all reported (harness/summary.unit.test.ts).
+  # Vue runs in two shards (plan §7.9, ADR-0112). Its files keep a fresh frame each (ADR-0092), and
+  # on a runner about six times slower than usual its one job ran past the ten minutes, so each
+  # shard runs half of them. The other targets fit with room and keep one job each, since CI's
+  # job queue is what limits it (ADR-0093). The reporter names each shard's matrix apart, and the
+  # parity job counts a project as run in full once shards 1 to n all reported
+  # (harness/summary.unit.test.ts). The tests' step has a limit under the job's, so a slow runner
+  # fails the step instead of GitHub cancelling the job. A step stopped at its limit leaves no
+  # parity matrix to upload, since the reporter writes it when the run ends (ADR-0112).
   integration-browser:
-    name: "Integration: browser (${{ matrix.target }})"
+    name: "Integration: browser (${{ matrix.target }}${{ matrix.shard && format(', {0}/2', matrix.shard) || '' }})"
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
@@ -246,7 +250,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [react, vue, svelte, solid, angular, qwik, astro]
+        target: [react, svelte, solid, angular, qwik, astro]
+        include:
+          - { target: vue, shard: 1, step_limit: 5 }
+          - { target: vue, shard: 2, step_limit: 5 }
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -262,17 +269,26 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Timed for the slow-runner step below.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        id: install
+        run: |
+          start=$(date +%s)
+          pnpm install --frozen-lockfile
+          echo "seconds=$(($(date +%s) - start))" >> "$GITHUB_OUTPUT"
 
+      # 5 minutes for a vue shard leaves room for a setup as slow as the slowest seen (3 min 37 s)
+      # inside the job's 10. 8 minutes for a whole target keeps about the tolerance it had without
+      # a limit: angular, the slowest, passes on a runner up to about 3 times slower (ADR-0112).
       - name: Browser project
-        run: pnpm --filter @unframework.dev/integration exec vitest run --project "browser:${{ matrix.target }}"
+        timeout-minutes: ${{ matrix.step_limit || 8 }}
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project "browser:${{ matrix.target }}"${{ matrix.shard && format(' --shard {0}/2', matrix.shard) || '' }}
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: parity-browser-${{ matrix.target }}
+          name: parity-browser-${{ matrix.target }}${{ matrix.shard && format('-{0}', matrix.shard) || '' }}
           path: tests/integration/.reports
           include-hidden-files: true
           if-no-files-found: error
@@ -283,7 +299,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: visual-diffs-${{ matrix.target }}
+          name: visual-diffs-${{ matrix.target }}${{ matrix.shard && format('-{0}', matrix.shard) || '' }}
           path: |
             tests/integration/.reports/diffs
             tests/integration/.reports/failures
@@ -292,6 +308,26 @@ jobs:
           if-no-files-found: ignore
           overwrite: true
           retention-days: 7
+
+      # A runner can be several times slower than usual, at disk and network as well as CPU, and
+      # then the 5-second bounds of the browser tests fail (ADR-0112). The install's time shows it:
+      # 11 to 22 s on a normal runner, cache hit or miss. This names such a runner beside the
+      # failure, so a timeout is read as the runner's before the change's. Never a rerun.
+      - name: Name a slow runner
+        if: ${{ always() }}
+        env:
+          INSTALL_SECONDS: ${{ steps.install.outputs.seconds }}
+          SLOW_INSTALL_SECONDS: 45
+        run: |
+          if [ -z "$INSTALL_SECONDS" ]; then
+            echo "Install dependencies did not finish, so the runner's speed is unknown."
+            exit 0
+          fi
+          echo "Install dependencies took $INSTALL_SECONDS s, against 11 to 22 s on a normal runner."
+          if [ "$INSTALL_SECONDS" -gt "$SLOW_INSTALL_SECONDS" ]; then
+            factor=$(awk "BEGIN { printf \"%.1f\", $INSTALL_SECONDS / 15 }")
+            echo "::warning title=Slow runner::Install dependencies took $INSTALL_SECONDS s, against 11 to 22 s on a normal runner, so this runner is about $factor times slower. A timeout in this job may come from the runner, not the change (ADR-0112)."
+          fi
 
   # The Linux screenshots and geometry, generated where CI compares them (ADR-0062): `pnpm
   # test:baselines`' update run, in the same image on a real x64 runner, without Docker. The

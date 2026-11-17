@@ -71,13 +71,34 @@ function partial(
   );
 }
 
-/** One Vitest run of a CI job (a matrix job runs once per target). */
+/** One Vitest run of a CI job (a matrix job runs once per target, or once per shard). */
 interface JobRun {
   job: string;
   name: string;
   projects: string[];
+  /** The shard this run takes, for a matrix entry with a `shard` (plan §7.9). */
+  shard: Shard | null;
   /** Whether the job uploads its partial matrix for the parity job (`parity-*`). */
   uploads: boolean;
+}
+
+/**
+ * A matrix's runs: one per entry of its `target` list, and one per `include` entry, which may
+ * give a `shard`. The shard count comes from the run line's `format(' --shard {0}/<n>', matrix.shard)`.
+ */
+function matrixRuns(block: string): { target?: string; shard: Shard | null }[] {
+  const listed = /^ {8}target: \[([^\]]*)\]/m.exec(block)?.[1]?.split(/,\s*/) ?? [];
+  const count = Number(/--shard \{0\}\/(\d+)', matrix\.shard\)/.exec(block)?.[1] ?? 0);
+  const included = [
+    ...block.matchAll(/^ {10}- \{ target: ([a-z]+)(?:, shard: (\d+))?[^}]*\}$/gm),
+  ].map(([, target, index]) => {
+    if (index !== undefined && !count) {
+      throw new Error(`ci.yml gives ${target} a shard, but its run line passes no --shard.`);
+    }
+    return { target, shard: index === undefined ? null : { index: Number(index), count } };
+  });
+  const runs = [...listed.map((target) => ({ target, shard: null })), ...included];
+  return runs.length ? runs : [{ shard: null }];
 }
 
 /** Each job's block in ci.yml, from its id's line. */
@@ -108,20 +129,43 @@ function ciJobs(): { runs: JobRun[]; parityNeeds: string[] } {
     const patterns = [...command[1]!.matchAll(/--project (?:"([^"]*)"|(\S+))/g)].map(
       ([, quoted, bare]) => (quoted ?? bare)!,
     );
-    const matrix = /^ {8}target: \[([^\]]*)\]/m.exec(block)?.[1]?.split(/,\s*/);
-    for (const target of matrix ?? [undefined]) {
+    for (const { target, shard } of matrixRuns(block)) {
       const selected = patterns.map((pattern) =>
         target ? pattern.replaceAll("${{ matrix.target }}", target) : pattern,
       );
+      const label = [target, shard && `${shard.index}/${shard.count}`].filter(Boolean).join(", ");
       runs.push({
         job,
-        name: target ? `${job} (${target})` : job,
+        name: label ? `${job} (${label})` : job,
         projects: PARITY.filter((project) => isSelected(project, selected)),
+        shard,
         uploads: /^ {10}name: parity-/m.test(block),
       });
     }
   }
   return { runs, parityNeeds };
+}
+
+/** The cases of a shard: its share of the list by position, as the partial matrices take it. */
+function shardCases(shard: Shard): string[] {
+  return CASES.filter((_, position) => position % shard.count === shard.index - 1);
+}
+
+/** Writes the partial matrix a run uploads, named as the reporter names it. */
+function writeRun(dir: string, run: JobRun): void {
+  const name = runName(run.projects, ALL);
+  const { shard } = run;
+  writeFileSync(
+    join(
+      dir,
+      `parity-matrix.${name}${shard ? `+shard-${shard.index}-of-${shard.count}` : ""}.json`,
+    ),
+    partial(
+      run.projects,
+      new Date().toISOString(),
+      shard ? { shard, cases: shardCases(shard) } : {},
+    ),
+  );
 }
 
 let reportsDir: string;
@@ -149,10 +193,27 @@ describe("CI's parity job", () => {
       "integration-compile",
       "integration-toolchains",
       "integration-ssr",
-      ...TARGETS.map((target) => `integration-browser (${target})`),
+      // Vue's files run in two shards (ADR-0112), after the targets of the `target` list.
+      ...TARGETS.filter((target) => target !== "vue").map(
+        (target) => `integration-browser (${target})`,
+      ),
+      "integration-browser (vue, 1/2)",
+      "integration-browser (vue, 2/2)",
       "bench",
     ]);
-    expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(PARITY.toSorted());
+    // Every shard of a project runs its own share, so each project counts once.
+    const whole = runs.filter((run) => !run.shard || run.shard.index === 1);
+    expect(whole.flatMap((run) => run.projects).toSorted()).toEqual(PARITY.toSorted());
+    // A sharded project runs in every shard of its count, once each.
+    for (const { job, projects, shard } of runs) {
+      if (!shard) continue;
+      const shards = runs.filter(
+        (other) => other.job === job && other.projects.join() === projects.join(),
+      );
+      expect(shards.map((other) => other.shard?.index)).toEqual(
+        Array.from({ length: shard.count }, (_, index) => index + 1),
+      );
+    }
     expect(runs.filter((run) => !run.uploads)).toEqual([]);
     // It also waits for `changes`, which skips it with the jobs it waits for on a docs-only
     // pull request (ADR-0084).
@@ -171,27 +232,30 @@ describe("CI's parity job", () => {
   });
 
   it("is green with every job's matrix", () => {
-    for (const run of runs) {
-      writeFileSync(
-        join(reportsDir, `parity-matrix.${runName(run.projects, ALL)}.json`),
-        partial(run.projects, new Date().toISOString()),
-      );
-    }
+    for (const run of runs) writeRun(reportsDir, run);
     expect(runSummary(ci, { ...parityJob(ci), reportsDir })).toBe(0);
+    expect(problems).toBe("");
   });
 
   it.each(runs.map((run) => [run.name, run] as const))(
     "fails without the matrix of %s",
     (_name, missing) => {
-      for (const run of runs.filter((other) => other !== missing)) {
-        writeFileSync(
-          join(reportsDir, `parity-matrix.${runName(run.projects, ALL)}.json`),
-          partial(run.projects, new Date().toISOString()),
-        );
-      }
+      for (const run of runs.filter((other) => other !== missing)) writeRun(reportsDir, run);
       expect(runSummary(ci, { ...parityJob(ci), reportsDir })).toBe(1);
+      const { shard } = missing;
       for (const project of missing.projects) {
-        expect(problems).toContain(`${project}: did not run (no parity matrix has its records).`);
+        if (!shard) {
+          expect(problems).toContain(`${project}: did not run (no parity matrix has its records).`);
+          continue;
+        }
+        // The other shards ran, so the project ran in part.
+        const ran = Array.from({ length: shard.count }, (_, index) => index + 1)
+          .filter((index) => index !== shard.index)
+          .map((index) => `shard ${index}/${shard.count}`)
+          .join(", ");
+        expect(problems).toContain(
+          `${project}: only filtered runs ran it (${ran} without shard ${shard.index}/${shard.count}), so not every cell is checked.`,
+        );
       }
       expect(problems).toMatch(/› L\d+: missing \(no test recorded it\)\./);
     },

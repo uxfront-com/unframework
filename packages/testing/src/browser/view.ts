@@ -20,6 +20,7 @@ import type { HarnessContext } from "../harness.ts";
 import { recordLayer } from "../layers.ts";
 import { inlineHosts } from "../normalize/rules/aria-hosts.ts";
 import { isNormalizeTarget } from "../normalize/targets.ts";
+import { markFailedAction } from "./action-failure.ts";
 import { assertInteractive } from "./capabilities.ts";
 import { advanceClock, checkTick, installClock } from "./clock.ts";
 import type { ViewClock } from "./clock.ts";
@@ -329,7 +330,10 @@ async function mountWith(
     const pending = inputs[Symbol.iterator]();
     for (let next = pending.next(); !next.done;) {
       const input = next.value;
-      await (instance.interact ? instance.interact(input) : input());
+      // The input's own rejection is the action's failure, not the component's throw: marked
+      // here, below the adapter, so `act`'s rethrow of a component's error stays unmarked.
+      const run = () => input().catch((error: unknown) => Promise.reject(markFailedAction(error)));
+      await (instance.interact ? instance.interact(run) : run());
       next = pending.next();
       if (!next.done && !(await settleUntilQuiet())) {
         failTrace(target, `did not settle after an input of ${action}`);

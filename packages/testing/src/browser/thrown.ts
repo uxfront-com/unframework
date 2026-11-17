@@ -10,6 +10,7 @@ import { commands } from "vitest/browser";
 import "../commands.ts";
 import { caseOfFile } from "../harness.ts";
 import { recordLayer } from "../layers.ts";
+import { chooseThrown, isFailedAction } from "./action-failure.ts";
 import { consoleMark, excuseConsoleSince, watchConsoleErrors } from "./console.ts";
 import { currentTarget } from "./target.ts";
 
@@ -48,6 +49,7 @@ export async function expectThrown(host: ThrownStepHost, step: () => Promise<voi
   // of its own, before any listener here hears it. The console is for a framework that only logs.
   let thrown: Error | undefined;
   let logged: Error | undefined;
+  let failedAction: Error | undefined;
   const take = (value: unknown) => {
     if (value instanceof Error) thrown ??= value;
   };
@@ -61,8 +63,13 @@ export async function expectThrown(host: ThrownStepHost, step: () => Promise<voi
   const console = consoleMark();
   const steps = host.stepMark();
   try {
-    // A framework's scheduler may rethrow through the action (React's `act`).
-    await step().catch(take);
+    // A framework's scheduler may rethrow through the action (React's `act`). An action that
+    // failed (an element that never became actionable) is no throw of the component's: its
+    // error never reaches the page, so its stack would map to the spec (ADR-0078).
+    await step().catch((error: unknown) => {
+      if (isFailedAction(error)) failedAction ??= error;
+      else take(error);
+    });
     for (let round = 0; round < SETTLE_ROUNDS; round += 1) {
       await host.settle().catch(take);
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -75,7 +82,13 @@ export async function expectThrown(host: ThrownStepHost, step: () => Promise<voi
   excuseConsoleSince(console, EXCUSE);
   host.forgetSteps(steps);
 
-  const first = thrown ?? logged;
+  const choice = chooseThrown({ thrown, logged, failedAction });
+  if (choice.kind === "failed-action") {
+    recordLayer(test, subject, "L14", { status: "fail", message: choice.message });
+    // The test fails with the action's own error, which names the locator and the bound.
+    throw choice.error;
+  }
+  const first = choice.kind === "thrown" ? choice.error : undefined;
   const failure = await problem(subject.case, first);
   recordLayer(
     test,
