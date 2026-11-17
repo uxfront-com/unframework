@@ -1,5 +1,14 @@
 # @unframework.dev/unplugin
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [58736dd]
+  - @unframework.dev/diagnostics@0.2.0
+  - @unframework.dev/codegen@0.1.3
+  - @unframework.dev/compiler@0.2.3
+
 ## 0.1.3
 
 ### Patch Changes

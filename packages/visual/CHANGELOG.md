@@ -1,5 +1,22 @@
 # @unframework.dev/visual
 
+## 0.3.0
+
+### Minor Changes
+
+- 58736dd: Add example metadata. A doc comment on an example's default export now gives `unframework preview` its description, and `@category`, `@title` and `@order` set where the preview lists it, under what name and in what order. Without a comment, an example takes its category from its directory and its title from its file name, so `src/components/button/examples/ButtonColors` is `Colors` in `Button`. `Example` gains `category`, `title`, `description` and `order`, `Preview` gains `diagnostics`, and a malformed tag is the new warning UF7012, which the preview prints and then ignores. `unframework visual` doesn't read the comment, so ids, baselines and reports stay the same. Code that builds an `Example` by hand must now set `category` and `title`.
+- 58736dd: The preview has a new page. Its sidebar holds your examples as a tree of their categories, with a filter, and your components below them. The canvas shows the selection's title and description, with every target side by side or one at a time, and a docked panel holds the controls. The page follows your system's light or dark setting, keeps the theme you pick, and works from the keyboard: press `?` to list the shortcuts.
+- 58736dd: Add `unframework preview build`, which writes the preview as a static site that any static host serves at any path, and `buildPreview` in `@unframework.dev/visual`, which the command runs. Each target's frame is built with Vite on its dev server's configuration, and Astro is rendered at build time with each entry's initial props.
+
+### Patch Changes
+
+- Updated dependencies [58736dd]
+  - @unframework.dev/diagnostics@0.2.0
+  - @unframework.dev/codegen@0.1.3
+  - @unframework.dev/compiler@0.2.3
+  - @unframework.dev/unplugin@0.1.4
+  - @unframework.dev/testing@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes
