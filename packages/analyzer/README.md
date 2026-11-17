@@ -389,7 +389,9 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   directive reads become the bindings of each component that applies it. A definition outside
   that form is UF2037, a name no directive has UF3055, a directive on a component, `<Teleport>`,
   `<Transition>` or `<component is>`, without a value or with a value built in place UF3056, and an argument, a
-  modifier, a spread's key and a list's body UF1002. A setup name that shadows a directive is
+  modifier and a spread's key UF1002. A directive in a list's body, or in a scoped fill with a
+  value that reads the fill's props, lowers as any other (ADR-0108). A setup name that shadows a
+  directive is
   UF3024. `directiveValueQueries` names each directive's value for the type oracle, from the
   syntax, and a value the oracle's answer (`AnalyzeOptions.directiveValues`) says is not of the
   directive's `T` is UF6007, at the value (ADR-0109). Without an answer, no value is checked.

@@ -1,0 +1,136 @@
+{
+  "irVersion": 1,
+  "file": "directives/rows/mark.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "directives": [
+    {
+      "name": "vMark",
+      "exported": true,
+      "value": {
+        "code": "string",
+        "span": {
+          "start": 254,
+          "end": 260
+        }
+      },
+      "hooks": [
+        {
+          "name": "mounted",
+          "parameters": [
+            "el",
+            "value"
+          ],
+          "body": {
+            "code": "{\n    const call = `mark mounted ${value}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 285,
+              "end": 422
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 333,
+                  "end": 341
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 360,
+                  "end": 371
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 266,
+            "end": 422
+          }
+        },
+        {
+          "name": "updated",
+          "parameters": [
+            "el",
+            "value",
+            "oldValue"
+          ],
+          "body": {
+            "code": "{\n    const call = `mark updated ${value} ${oldValue}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 455,
+              "end": 604
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 515,
+                  "end": 523
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 542,
+                  "end": 553
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 426,
+            "end": 604
+          }
+        },
+        {
+          "name": "unmounted",
+          "parameters": [
+            "el"
+          ],
+          "body": {
+            "code": "{\n    const call = \"mark unmounted\";\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
+            "span": {
+              "start": 622,
+              "end": 752
+            },
+            "refs": [
+              {
+                "kind": "Global",
+                "name": "document",
+                "span": {
+                  "start": 663,
+                  "end": 671
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "CustomEvent",
+                "span": {
+                  "start": 690,
+                  "end": 701
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 608,
+            "end": 752
+          }
+        }
+      ],
+      "bindings": [],
+      "types": [],
+      "span": {
+        "start": 217,
+        "end": 757
+      }
+    }
+  ]
+}

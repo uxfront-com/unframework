@@ -1,0 +1,265 @@
+{
+  "irVersion": 1,
+  "file": "directives/fill-props/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Page",
+      "span": {
+        "start": 305,
+        "end": 642
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "option@441",
+          "name": "option",
+          "kind": "slotScope",
+          "span": {
+            "start": 441,
+            "end": 447
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "page",
+            "span": {
+              "start": 362,
+              "end": 374
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Page",
+            "span": {
+              "start": 375,
+              "end": 392
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Picker",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "option",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ option }",
+                    "names": [
+                      "option"
+                    ],
+                    "span": {
+                      "start": 439,
+                      "end": 449
+                    }
+                  },
+                  "span": {
+                    "start": 439,
+                    "end": 449
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [
+                      {
+                        "kind": "Bound",
+                        "name": "data-name",
+                        "value": {
+                          "code": "`option-${option.id}`",
+                          "span": {
+                            "start": 485,
+                            "end": 506
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "option@441",
+                              "span": {
+                                "start": 495,
+                                "end": 501
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 474,
+                          "end": 507
+                        }
+                      },
+                      {
+                        "kind": "Directive",
+                        "name": "vTrace",
+                        "value": {
+                          "code": "option.label",
+                          "span": {
+                            "start": 517,
+                            "end": 529
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "option@441",
+                              "span": {
+                                "start": 517,
+                                "end": 523
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 508,
+                          "end": 530
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "option.label",
+                          "span": {
+                            "start": 547,
+                            "end": 559
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "option@441",
+                              "span": {
+                                "start": 547,
+                                "end": 553
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 546,
+                          "end": 560
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 468,
+                      "end": 580
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 430,
+                  "end": 592
+                }
+              }
+            ],
+            "span": {
+              "start": 400,
+              "end": 620
+            }
+          }
+        ],
+        "span": {
+          "start": 353,
+          "end": 635
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Page",
+      "span": {
+        "start": 305,
+        "end": 642
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Picker.uf.tsx",
+      "file": "Picker.uf.tsx",
+      "api": {
+        "file": "Picker.uf.tsx",
+        "components": [
+          {
+            "name": "Picker",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "option",
+                "optional": true,
+                "props": "{ option: { id: string; label: string } }"
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Picker",
+          "span": {
+            "start": 7,
+            "end": 13
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 37
+      }
+    },
+    {
+      "specifier": "./trace.uf.ts",
+      "file": "trace.uf.ts",
+      "api": {
+        "file": "trace.uf.ts",
+        "components": [],
+        "keys": [],
+        "directives": [
+          {
+            "name": "vTrace"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Directive",
+          "imported": "vTrace",
+          "local": "vTrace",
+          "span": {
+            "start": 47,
+            "end": 53
+          }
+        }
+      ],
+      "span": {
+        "start": 38,
+        "end": 77
+      }
+    }
+  ]
+}

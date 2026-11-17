@@ -1,0 +1,27 @@
+- region "Menu":
+  - list "Items":
+    - listitem: Alpha 2First
+    - listitem: Beta
+    - listitem: Gamma
+  - list "Marked":
+    - listitem: Alpha 2
+    - listitem: Beta
+    - listitem: Gamma
+  - button "Focus Alpha 2"
+  - button "Focus Beta"
+  - button "Focus Gamma"
+  - status: "1"
+  - list "Prefixed":
+    - listitem: Alpha 2
+    - listitem: Beta
+    - listitem: Gamma
+  - list "Options":
+    - listitem: Xray
+    - listitem: Yankee
+  - button "Reverse options"
+  - button "Remove option"
+  - button "Rename first"
+  - button "Reverse"
+  - button "Remove second"
+  - button "Add item"
+  - button "Change prefix"

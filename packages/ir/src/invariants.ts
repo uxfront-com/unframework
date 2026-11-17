@@ -2524,15 +2524,12 @@ function checkAttributes(
       }
       case "Directive":
         // An element of the component's own template applies a directive the module declares
-        // or imports, once, and outside a list's body (ADR-0099).
+        // or imports, once (ADR-0099), in a list's body too (ADR-0108).
         if (!walk.shared.directives.has(attribute.name)) {
           errors.push({
             path: `${at}/name`,
             message: `must name a directive the module declares or imports, and "${attribute.name}" is not one`,
           });
-        }
-        if (place.inList) {
-          errors.push({ path: at, message: "must not be in a list's body (ADR-0099)" });
         }
         claim(`v:${attribute.name}`, at, false);
         // A setup function by its name, which the hooks call, as a listener's names one.

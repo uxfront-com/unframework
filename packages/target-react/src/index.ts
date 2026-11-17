@@ -60,7 +60,7 @@ import { ReactComposer } from "./compose.ts";
 import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
-import { emitDirective, hooksCode, useDirectiveHelper } from "./directive.ts";
+import { emitDirective, hooksCode, mergeRefsHelper, useDirectiveHelper } from "./directive.ts";
 import {
   modelTextHelper,
   nextTickHelper,
@@ -194,11 +194,12 @@ export const react: Target = defineTarget({
     "keyed-identity": { support: "native" },
     // React 19's server render cannot portal, so the element is portalled once the component
     // has mounted (ADR-0098).
-    // An inline hook per element, whose ref callback and layout effect run the hooks (ADR-0099).
+    // An inline hook per element, whose ref callback and layout effect run the hooks (ADR-0099),
+    // with each element's own value where it reads a row or a fill's props (ADR-0108).
     directive: {
       support: "emulated",
       helper: "useDirective",
-      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose function makes each element's ref callback from its value as the row renders, joined with the element's other callbacks through an inline `mergeRefs`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // React has no transition primitive (ADR-0100).
     transition: {
@@ -260,8 +261,11 @@ export const react: Target = defineTarget({
     // A setup function is passed as client code passes one, its stable variant where it has one,
     // so its identity changes no more than on Vue. Any other value is read in a getter outside
     // the branches around its element, so what they narrow is asserted.
+    // A value that reads a list's row or a fill's props is passed by each element (ADR-0108).
     const directives = [...plan.directiveRefs].map(([attribute, ref]) => ({
-      text: `const ${ref} = ${plan.helpers.directive!.hook}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
+      text: plan.elementDirectives.has(attribute)
+        ? `const ${ref} = ${plan.helpers.directive!.each!}(${attribute.name});`
+        : `const ${ref} = ${plan.helpers.directive!.hook!}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
       group: -150,
       compact: true,
     }));
@@ -367,6 +371,7 @@ export const react: Target = defineTarget({
             hookQueueCode(plan.helpers.directive.queue),
           ]
         : []),
+      ...(plan.helpers.mergeRefs ? [mergeRefsHelper(plan.helpers.mergeRefs)] : []),
       ...(outer ? [setupPendingHelper(outer, plan)] : []),
     ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after

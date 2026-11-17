@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support directive: A directive's hooks never run on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "directives/fill-props/Page.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 53,
+      "offset": 508
+    },
+    "end": {
+      "line": 13,
+      "column": 75,
+      "offset": 530
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "directives/fill-props/Picker.uf.tsx",
+    "start": {
+      "line": 24,
+      "column": 9,
+      "offset": 781
+    },
+    "end": {
+      "line": 28,
+      "column": 10,
+      "offset": 945
+    },
+    "target": "astro"
+  }
+]

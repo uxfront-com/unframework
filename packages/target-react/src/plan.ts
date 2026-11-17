@@ -14,6 +14,7 @@ import {
   ImportSet,
   parseCodeSource,
   pascalCase,
+  readsElementScope,
   sourceNames,
   typeNames,
 } from "@unframework.dev/codegen";
@@ -208,18 +209,33 @@ export interface ReactPlan {
     teleport?: TeleportNames;
     /** The inline components a `<Transition>` runs through, where the template holds one (ADR-0100). */
     transition?: TransitionNames;
-    /** The inline hook a directive's element calls, and the hooks' type (ADR-0099). */
-    directive?: { hook: string; hooks: string; queue: string };
+    /**
+     * The inline hooks a directive's element calls, and the hooks' type (ADR-0099): `hook` for
+     * a use whose value the component reads once, `each` for one whose value each element passes
+     * its ref callback (ADR-0108).
+     */
+    directive?: { hook?: string; each?: string; hooks: string; queue: string };
+    /**
+     * The inline helper that joins an element's ref callbacks, where a directive whose value reads
+     * the row makes its own as the row renders beside another (ADR-0108), claimed as it prints.
+     */
+    mergeRefs?: string;
     /** The names a setup that awaits takes (ADR-0101), where it does. */
     async?: AsyncSetupNames;
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
   /**
-   * The ref callback each directive's call returns (ADR-0099), in a post-order of the elements,
-   * the order the calls are declared in.
+   * The ref callback each directive's call returns (ADR-0099), or the function that makes one from
+   * an element's value (ADR-0108), in a post-order of the elements, the order the calls are
+   * declared in.
    */
   readonly directiveRefs: Map<DirectiveAttribute, string>;
+  /**
+   * The directives whose value reads a list's row or a scoped fill's props (ADR-0108): the
+   * element's callback is made from its own value as the row renders.
+   */
+  readonly elementDirectives: Set<DirectiveAttribute>;
 }
 
 /**
@@ -679,8 +695,18 @@ export function planComponent(
   }
   const helpers: ReactPlan["helpers"] = {};
   if (onceGuards.size) helpers.once = names.claim("useOnce");
+  // A directive whose value reads a list's row or a fill's props makes its element's callback as
+  // the row renders, so the element's own callback is written in place too, as for a listener
+  // that reads the row (ADR-0108).
+  const elementDirectives = new Set(
+    directivesInPostOrder(component).filter((attribute) => readsElementScope(attribute, component)),
+  );
+  const passesValues = (element: ElementNode) =>
+    element.attributes.some(
+      (attribute) => attribute.kind === "Directive" && elementDirectives.has(attribute),
+    );
   for (const [element, native] of nativeElements) {
-    if (stable(native.groups)) {
+    if (stable(native.groups) && !passesValues(element)) {
       native.callback = names.claim(`${callbackBase(element, bindings)}Listeners`);
     }
   }
@@ -692,7 +718,7 @@ export function planComponent(
       if (model?.kind !== "Model") return;
       const native = nativeElements.get(node);
       // A callback written in place runs at every render, which would move the caret each time.
-      if (native && !native.callback) return;
+      if ((native && !native.callback) || passesValues(node)) return;
       carets.set(
         model,
         native
@@ -747,16 +773,32 @@ export function planComponent(
 
   // Each directive's call, in a post-order of the elements, so a component's hooks run in Vue's
   // order (ADR-0099).
+  // A directive whose value each element passes is a function that makes the element's callback
+  // from the value, `withTrace(item.label)`, not a ref: React Compiler reads a `…Ref` name called
+  // during render as a ref read (ADR-0108).
   const directiveRefs = new Map(
     directivesInPostOrder(component).map(
-      (attribute) => [attribute, names.claim(directiveRefBase(attribute.name))] as const,
+      (attribute) =>
+        [
+          attribute,
+          names.claim(
+            elementDirectives.has(attribute)
+              ? `with${attribute.name.slice(1)}`
+              : directiveRefBase(attribute.name),
+          ),
+        ] as const,
     ),
   );
   if (directiveRefs.size) {
+    const perUse = [...directiveRefs.keys()].some((attribute) => !elementDirectives.has(attribute));
+    const hook = perUse ? names.claim("useDirective") : undefined;
+    const hooks = names.claim("DirectiveHooks");
+    const queue = names.claim("queueHook");
     helpers.directive = {
-      hook: names.claim("useDirective"),
-      hooks: names.claim("DirectiveHooks"),
-      queue: names.claim("queueHook"),
+      ...(hook ? { hook } : {}),
+      ...(elementDirectives.size ? { each: names.claim("useElementDirective") } : {}),
+      hooks,
+      queue,
     };
   }
   // A setup that awaits splits the component in three (ADR-0101).
@@ -801,6 +843,7 @@ export function planComponent(
     helpers,
     composition,
     directiveRefs,
+    elementDirectives,
   };
 }
 
@@ -930,6 +973,8 @@ const HELPER_NAMES = [
   "useDirective",
   "DirectiveHooks",
   "queueHook",
+  "useElementDirective",
+  "mergeRefs",
   "SetupPending",
 ];
 

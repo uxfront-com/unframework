@@ -221,11 +221,6 @@ export interface RenderContext {
    * handler's is, with the `template` scope.
    */
   readonly directiveValue?: true;
-  /**
-   * The variables of the scoped slots' fills around the node being lowered (ADR-0099): a child
-   * may call the fill with other props each time, so a directive's value can't read them.
-   */
-  readonly fillVariables: Set<BindingId>;
   /** The values the module's imports of shared modules and its constants give (ADR-0070). */
   readonly shared: SharedValues;
   /** The directives an element may apply, by local name (ADR-0099). */

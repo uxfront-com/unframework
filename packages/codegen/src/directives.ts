@@ -5,6 +5,7 @@
 // factory, Angular's attribute directive, React's and Qwik's helper).
 import { walk } from "@unframework.dev/ir";
 import type {
+  DirectiveAttribute,
   DirectiveHook,
   Expression,
   UfComponent,
@@ -266,6 +267,23 @@ export function appliedDirectives(component: UfComponent): Set<string> {
     },
   });
   return names;
+}
+
+/**
+ * Whether a directive's value reads a name that a list's callback or a scoped fill declares
+ * (ADR-0108): the value then differs at each element one use renders, so a target that gives a
+ * use one value at the component's top level (React's hook, Qwik's task) takes each element's
+ * own, which the element passes where it renders.
+ */
+export function readsElementScope(attribute: DirectiveAttribute, component: UfComponent): boolean {
+  const scoped = new Set(
+    component.bindings
+      .filter(({ kind }) => kind === "loopVar" || kind === "slotScope")
+      .map(({ id }) => id),
+  );
+  return attribute.value.refs.some(
+    (reference) => reference.kind === "Binding" && scoped.has(reference.binding),
+  );
 }
 
 /** The directives of its own module a component applies, in the module's order (ADR-0099). */

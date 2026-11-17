@@ -9,8 +9,17 @@
 // clears a template ref on the same element. The callback is declared once for the instance's
 // life (`useState`), so React never adds the listeners again as it renders: a listener added
 // again while an event is dispatched would miss it. Only one whose listener reads a list's row,
-// or a value its branch narrows, is written in place.
-import { handlerText, js, parameterText, parseStatementsSource } from "@unframework.dev/codegen";
+// or a value its branch narrows, is written in place, and so is one beside a directive whose value
+// reads the row or a scoped fill's props: that directive's callback is made as the row renders,
+// `withTrace(item.label)`, and joins the element's others through the inline `mergeRefs`
+// (ADR-0108).
+import {
+  expressionCode,
+  handlerText,
+  js,
+  parameterText,
+  parseStatementsSource,
+} from "@unframework.dev/codegen";
 import type { JsxContext } from "@unframework.dev/codegen";
 import type {
   Attribute,
@@ -44,8 +53,8 @@ interface ElementListeners {
   callback?: string;
   /** Whether the callback puts a `<textarea>`'s caret after its text (`Caret`, ADR-0060). */
   caret?: boolean;
-  /** The ref callbacks of the directives it applies, in attribute order (ADR-0099). */
-  directives: string[];
+  /** The directives it applies, in attribute order (ADR-0099), each by its ref callback. */
+  directives: { attribute: DirectiveAttribute; ref: string }[];
 }
 
 /** Prints the listeners and template refs of a planned component's elements. */
@@ -128,7 +137,7 @@ export class ReactListeners {
     // Each directive's ref callback, which the element's own callback calls where it has one.
     for (const attribute of element.attributes) {
       if (attribute.kind !== "Directive") continue;
-      found.directives.push(this.#plan.directiveRefs.get(attribute)!);
+      found.directives.push({ attribute, ref: this.#plan.directiveRefs.get(attribute)! });
       found.refAt ??= attribute;
     }
     this.#elements.set(element, found);
@@ -147,8 +156,14 @@ export class ReactListeners {
     const listeners = this.#of(element);
     if (listeners.refAt !== attribute) return [];
     const [only, ...others] = listeners.directives;
-    if (!listeners.native.length && !listeners.caret && !listeners.ref && !others.length) {
-      return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(only!)))];
+    if (
+      !listeners.native.length &&
+      !listeners.caret &&
+      !listeners.ref &&
+      !others.length &&
+      !this.#plan.elementDirectives.has(only!.attribute)
+    ) {
+      return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(only!.ref)))];
     }
     return [this.#refAttribute(listeners, context)];
   }
@@ -235,10 +250,39 @@ export class ReactListeners {
 
   /** The `ref` of an element with native listeners: its declared callback, or one in place. */
   #refAttribute(listeners: ElementListeners, context: JsxContext): JsxAttributeItem {
+    if (listeners.directives.some(({ attribute }) => this.#plan.elementDirectives.has(attribute))) {
+      return js.jsxAttribute(
+        "ref",
+        js.jsxExpressionContainer(
+          context.placeholders.expression(this.#joined(listeners, context)),
+        ),
+      );
+    }
     const value = listeners.callback
       ? js.identifier(listeners.callback)
       : context.placeholders.expression(this.#callback(listeners));
     return js.jsxAttribute("ref", js.jsxExpressionContainer(value));
+  }
+
+  /**
+   * The `ref` of an element one of whose directives reads the row or a scoped fill's props
+   * (ADR-0108): that directive's callback, made as the row renders with the value, where the
+   * branches around the element still narrow it, `withTrace(item.label)`. The element's other
+   * directives' callbacks, and the callback written in place for its native listeners and its
+   * template ref, join it through `mergeRefs`, in attribute order.
+   */
+  #joined(listeners: ElementListeners, context: JsxContext): string {
+    const parts = listeners.directives.map(({ attribute, ref }) =>
+      this.#plan.elementDirectives.has(attribute)
+        ? `${ref}(${expressionCode(attribute.value, context)})`
+        : ref,
+    );
+    if (listeners.native.length || listeners.ref) {
+      parts.push(this.#callback({ ...listeners, directives: [] }));
+    }
+    if (parts.length === 1) return parts[0]!;
+    const merge = (this.#plan.helpers.mergeRefs ??= this.#plan.names.claim("mergeRefs"));
+    return `${merge}(${parts.join(", ")})`;
   }
 
   /**
@@ -390,9 +434,11 @@ export class ReactListeners {
     // element's own callback is cleaned up, through the cleanup it returns (ADR-0099).
     const [onlyDirective, ...otherDirectives] = listeners.directives;
     if (onlyDirective !== undefined && !otherDirectives.length) {
-      lines.push(`const ${local.detach} = ${onlyDirective}(${local.element});`);
+      lines.push(`const ${local.detach} = ${onlyDirective.ref}(${local.element});`);
     } else if (onlyDirective !== undefined) {
-      const calls = listeners.directives.map((directive) => `${directive}(${local.element})`);
+      const calls = listeners.directives.map(
+        ({ ref: directive }) => `${directive}(${local.element})`,
+      );
       lines.push(`const ${local.detaches} = [${calls.join(", ")}];`);
     }
     const stops = [

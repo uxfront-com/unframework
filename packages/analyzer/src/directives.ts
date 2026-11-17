@@ -627,8 +627,9 @@ export function directiveNameOf(attribute: string): string | undefined {
 
 /**
  * Lowers `v-name={value}` on an element (ADR-0099): a directive the module declares or imports
- * (UF3055), outside a list's body (UF1002, not supported yet), with a value that is not built in
- * place (UF3056). Returns the attribute, or `undefined` when it is reported.
+ * (UF3055), with a value that is not built in place (UF3056). An element in a list's body or a
+ * scoped fill may apply one, with a value that reads the row's or the fill's names (ADR-0108).
+ * Returns the attribute, or `undefined` when it is reported.
  */
 export function lowerDirectiveAttribute(
   item: AST.JSXAttribute,
@@ -681,16 +682,6 @@ export function lowerDirectiveAttribute(
         { help: `Rename the ${local ? "local" : "prop"}: no directive needs to share its name.` },
       );
     }
-    return undefined;
-  }
-  if (render.enclosing.length) {
-    reporter.unsupported(
-      nameNode,
-      `\`${authored}\` on an element in a list's body is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`,
-      {
-        help: "Apply the directive to an element around the list, or render each row as a component of its own, whose element applies it.",
-      },
-    );
     return undefined;
   }
   const value = item.value;
@@ -773,23 +764,6 @@ export function lowerDirectiveAttribute(
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(value.expression, { ...render, directiveValue: true });
   if (!checked.clean || reporter.hasErrorsSince(mark)) return undefined;
-  // One helper call per use gives React and Qwik one value, where a scoped fill's variables may
-  // differ at each call, as a list's row does.
-  const variable = checked.expression.refs.flatMap((reference) =>
-    reference.kind === "Binding" && render.fillVariables.has(reference.binding)
-      ? [reference.binding.slice(0, reference.binding.lastIndexOf("@"))]
-      : [],
-  )[0];
-  if (variable !== undefined) {
-    reporter.unsupported(
-      value.expression,
-      `\`${authored}\`'s value reads \`${variable}\`, which the scoped slot's fill declares, and that is not supported yet: React and Qwik give a directive one value per use, where the child may call the fill with other props each time.`,
-      {
-        help: "Read only the component's own names in the value, or render each row as a component of its own, whose element applies the directive.",
-      },
-    );
-    return undefined;
-  }
   if (reportsValueType(value.expression, authored, name, render)) return undefined;
   declareReads(info, render);
   return createDirectiveAttribute(name, checked.expression, span(item));

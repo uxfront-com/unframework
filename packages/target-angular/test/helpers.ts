@@ -150,7 +150,7 @@ const COMPOSABLE_MODULES = /^(?:composables|modules)\/|^semantics\/composable-/;
  * checks their Angular outputs.
  */
 const DIRECTIVE_MODULES =
-  /^directives\/(?:click-outside|focus-trap|order|repeated|shapes|shared|slotted|updated-value)$/;
+  /^directives\/(?:click-outside|fill-props|focus-trap|order|repeated|rows|shapes|shared|slotted|updated-value)$/;
 
 /**
  * The async setup cases, whose sources await loaders from a module beside them (ADR-0101), which

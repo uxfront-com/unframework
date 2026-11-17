@@ -1,0 +1,62 @@
+---
+import Picker from "./Picker.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const items = [
+  { id: "a", label: "Alpha", note: "First" },
+  { id: "b", label: "Beta" },
+  { id: "c", label: "Gamma" },
+] as { id: string; label: string; note?: string }[];
+
+const focused = 0 as number;
+---
+
+<section
+  class:list={["menu", className]}
+  aria-label="Menu"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <ul aria-label="Items">
+    {items.map((item) => (
+      <li
+        data-name={item.id}
+      >{item.label}{item.note ? <b data-name={`note-${item.id}`}>{item.note}</b> : null}</li>
+    ))}
+  </ul>
+  <ul aria-label="Marked">
+    {items.map((item) => (
+      <li data-name={`both-${item.id}`}>{item.label}</li>
+    ))}
+  </ul>
+  <div class="focus">
+    {items.map((item) => (
+      <button type="button" data-name={`focus-${item.id}`}>Focus {item.label}</button>
+    ))}
+  </div>
+  <output>{focused}</output>
+  <ul aria-label="Prefixed">
+    {items.map((item) => (
+      <li data-name={`prefixed-${item.id}`}>{item.label}</li>
+    ))}
+  </ul>
+  <Picker option={({ option }) => <span data-name={`option-${option.id}`}>{option.label}</span>} />
+  <button type="button">Rename first</button>
+  <button type="button">Reverse</button>
+  <button type="button">Remove second</button>
+  <button type="button">Add item</button>
+  <button type="button">Change prefix</button>
+</section>

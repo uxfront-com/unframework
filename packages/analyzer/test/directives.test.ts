@@ -273,15 +273,46 @@ describe("UF3056 invalid-directive-use", () => {
   });
 });
 
+// Each element passes its own value where the value reads a list's row or a scoped fill's props
+// (ADR-0108), so neither is reported.
+describe("a directive whose value differs at each element", () => {
+  it.each([
+    [
+      "a list's body, reading the row",
+      '<ul>{["a"].map((item) => <li key={item} v-mark={item}>{item}</li>)}</ul>',
+    ],
+    [
+      "a list's body, reading the row and the component's state",
+      '<ul>{["a"].map((item) => <li key={item} v-mark={`${label.value} ${item}`}>{item}</li>)}</ul>',
+      'const label = ref("a");\n  ',
+    ],
+    [
+      "a nested list's body, reading the outer row",
+      '<ul>{[{ id: "a", cells: ["b"] }].map((row) => <li key={row.id}>{row.cells.map((cell) => <b key={cell} v-mark={row.id}>{cell}</b>)}</li>)}</ul>',
+    ],
+  ])("accepts one in %s", (_name, body, setup = "") => {
+    expect(reported(source(body, setup))).toEqual([]);
+  });
+
+  it("accepts one in a scoped slot's fill whose value reads the fill's own names", () => {
+    const list = `export function List({ items }: { items: string[] }) {
+  const slots = defineSlots<{ item?(props: { item: string }): Element }>();
+  return <ul>{items.map((item) => <li key={item}>{slots.item?.({ item })}</li>)}</ul>;
+}
+`;
+    const text = source(
+      '<List items={["a"]}>{{ item: ({ item }) => <span v-mark={item}>{item}</span> }}</List>',
+      "",
+      `${MARK}${list}`,
+    ).replace("{ defineDirective, ref }", "{ defineDirective, defineSlots, ref, type Element }");
+    expect(reported(text)).toEqual([]);
+  });
+});
+
 describe("what is not supported yet (UF1002)", () => {
   it.each([
     ["an argument", source('<p v-mark:arg="a">a</p>'), "UF1002 v-mark:arg"],
     ["a modifier", source('<p v-mark_mod="a">a</p>'), "UF1002 v-mark_mod"],
-    [
-      "a list's body",
-      source('<ul>{["a"].map((item) => <li key={item} v-mark={item}>{item}</li>)}</ul>'),
-      "UF1002 v-mark",
-    ],
     ["Vue's own directive", source('<p v-show="a">a</p>'), "UF1002 v-show"],
   ])("reports a directive with %s", (_name, text, expected) => {
     expect(reported(text)).toContain(expected);
@@ -297,22 +328,8 @@ describe("what is not supported yet (UF1002)", () => {
     expect(key?.message).toContain("`v-mark` directive is not supported");
   });
 
-  it("reports a directive in a scoped slot's fill whose value reads the fill's own names", () => {
-    const list = `export function List({ items }: { items: string[] }) {
-  const slots = defineSlots<{ item?(props: { item: string }): Element }>();
-  return <ul>{items.map((item) => <li key={item}>{slots.item?.({ item })}</li>)}</ul>;
-}
-`;
-    const text = source(
-      '<List items={["a"]}>{{ item: ({ item }) => <span v-mark={item}>{item}</span> }}</List>',
-      "",
-      `${MARK}${list}`,
-    ).replace("{ defineDirective, ref }", "{ defineDirective, defineSlots, ref, type Element }");
-    expect(reported(text)).toEqual(["UF1002 item"]);
-  });
-
   // React and Qwik follow each element one use renders, so how often a child renders the
-  // content doesn't matter: only a list's body and a scoped fill's own names are UF1002.
+  // content doesn't matter.
   it.each([
     [
       "a scoped slot's fill whose value reads only the component's state",

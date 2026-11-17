@@ -112,7 +112,7 @@ plain, versioned, schema-validated JSON (plan §5.3).
   whose every branch holds one element or nothing, outside a list's body, and its `name` has no
   whitespace; no `Await` follows another setup item, and an `Await`'s value reads only props, module
   values, globals and earlier `awaited` bindings (ADR-0101); a `Directive` names a directive the module declares or
-  imports, once per element and outside a list's body, and a directive's hooks read their own
+  imports, once per element, in a list's body too (ADR-0108), and a directive's hooks read their own
   names, client globals and the bindings it lists (ADR-0099); slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or
   imports, and a key of a ref (`InjectionKey<Ref<number>>`, ADR-0054) is provided, or injected

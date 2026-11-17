@@ -2144,7 +2144,6 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     shared: module.shared,
     directives: module.directives,
     ...(module.directiveValues ? { directiveValues: module.directiveValues } : {}),
-    fillVariables: new Set(),
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {
