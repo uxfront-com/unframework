@@ -64,7 +64,7 @@ export class ModelHelpers {
 
   /** `isServer`'s local name. */
   isServer(): string {
-    return this.#imports.add("solid-js/web", "isServer");
+    return this.#imports.add("@solidjs/web", "isServer");
   }
 
   /** A Solid import's local name. */

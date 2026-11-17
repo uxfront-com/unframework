@@ -1,39 +1,33 @@
-// The Solid SSR renderer (Node, inside the `ssr:solid` project).
+// The Solid 2 SSR renderer (Node, inside the `ssr:solid2` project).
 import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
-import { createComponent, renderToStringAsync } from "solid-js/web";
+import { createComponent } from "solid-js";
+import { renderToStream } from "@solidjs/web";
 
 import { asComponent } from "./component.ts";
+import { assertSolid2 } from "./guard.ts";
+
+assertSolid2();
 
 /**
- * The server render's options. `solid-js/web` resolves its types to the browser build's
- * (`web/types/server-mock.d.ts`), which leave out `noScripts`; the server build reads it
- * (`web/dist/server.js`, `renderToStream`), and its own types declare it (`web/types/server.d.ts`).
- */
-const SERVER_OPTIONS: NonNullable<Parameters<typeof renderToStringAsync>[1]> & {
-  noScripts: boolean;
-} = { noScripts: true };
-
-/**
- * Renders with `renderToStringAsync`, which waits for async data like a server would. Solid
- * renders only when the component is compiled for the server (`generate: "ssr"`) and
- * `solid-js/web` resolves to its server build; vite-plugin-solid arranges both only with
- * `ssr: true`, which the toolchain's `ssr` Vite config sets. Otherwise Solid's browser build
- * answers with `undefined` and carries on, so that fails here.
+ * Renders with `renderToStream`, which, awaited, gives the fully settled HTML: it waits for async
+ * data like a server would (ADR-0101). Solid renders only when the component is compiled for the
+ * server and `@solidjs/web` resolves to its server build; @solidjs/vite-plugin arranges both only
+ * with `ssr: true`, which the toolchain's `ssr` Vite config sets. Otherwise the result is no
+ * string, which fails here.
  *
- * `noScripts` leaves out the `<script>` that carries an async setup's resource data (ADR-0101),
- * which the HTML comparison (L6) would see; a component without a resource serializes nothing,
- * so its HTML is the same. Without that data, hydration runs the setup again on the client, as
- * the semantics contract asks.
+ * `noScripts` leaves out the hydration and serialization scripts, which the HTML comparison (L6)
+ * would see. Without that data, hydration runs the setup again on the client, as the semantics
+ * contract asks.
  */
 export const renderToString: SsrRenderer = async (component, options) => {
   const solidComponent = asComponent(component);
-  const html: unknown = await renderToStringAsync(
+  const html: unknown = await renderToStream(
     () => createComponent(solidComponent, { ...options.props }),
-    SERVER_OPTIONS,
+    { noScripts: true },
   );
   if (typeof html !== "string") {
     throw new Error(
-      `Solid's server render returned ${typeof html}, not HTML: solid-js/web resolved to its browser build. Compile with vite-plugin-solid({ ssr: true }).`,
+      `Solid's server render returned ${typeof html}, not HTML: @solidjs/web resolved to its browser build. Compile with @solidjs/vite-plugin({ ssr: true }).`,
     );
   }
   return html;
@@ -42,7 +36,7 @@ export const renderToString: SsrRenderer = async (component, options) => {
 /**
  * Renders the server HTML the hydrate adapter hydrates (L12, ADR-0095): the same render, which
  * the toolchain's `hydrate` configuration compiles hydratable, so every element carries the
- * `data-hk` key `hydrate` reads. The hydration script is left out: the adapter puts its record on
+ * hydration key `hydrate` reads. The hydration script is left out: the adapter puts its record on
  * the page itself.
  */
 export const renderForHydration: HydrationRenderer = renderToString;

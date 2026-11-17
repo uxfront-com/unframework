@@ -1,28 +1,29 @@
-// The Solid mount adapter (browser). Solid updates the DOM synchronously, so a mounted
-// component has rendered by the time `render` returns.
+// The Solid 2 mount adapter (browser). Solid 2 batches writes and applies them on a microtask, or
+// at once with `flush()`, so the adapter flushes after it mounts and after each rerender.
 import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
-import { $PROXY, batch, createComponent, createSignal } from "solid-js";
-import { render } from "solid-js/web";
+import { $PROXY, createComponent, createSignal, flush } from "solid-js";
+import { render } from "@solidjs/web";
 
 import { asComponent } from "./component.ts";
+import { assertSolid2 } from "./guard.ts";
+
+assertSolid2();
 
 /**
  * Mounts a Solid component with `render`. Its props are reactive as a parent's spread would make
- * them (`<C {...props} />`): reading a prop tracks that prop alone, and `mergeProps` sees keys come
- * and go, so a removed prop takes its default. The values are the ones the test passed, as a
- * parent passing plain data gives them, never a store's proxies: identity with them holds, and
- * `structuredClone` copies them. A rerender replaces each prop by value, as a parent passing new
- * props does; one it passes unchanged notifies nothing. The test's listeners are props too,
- * `onChange` for an event `change` (ADR-0012), which every rerender keeps.
+ * them (`<C {...props} />`): reading a prop tracks that prop alone, and the component's defaults
+ * see keys come and go, so a removed prop takes its default. The values are the ones the test
+ * passed, as a parent passing plain data gives them, never a store's proxies: identity with them
+ * holds, and `structuredClone` copies them. A rerender replaces each prop by value, as a parent
+ * passing new props does; one it passes unchanged notifies nothing. The test's listeners are
+ * props too, `onChange` for an event `change` (ADR-0012), which every rerender keeps.
  */
 export const mount: MountAdapter = async (component, container, options) => {
   const solidComponent = asComponent(component);
   const listeners = listenerProps(options.on);
   const props = reactiveProps({ ...options.props, ...listeners });
   const dispose = render(() => createComponent(solidComponent, props.value), container);
-  // Solid applies updates synchronously; one microtask lets work that the component queued on
-  // a promise run before the test reads the DOM.
-  const settle = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+  flush();
   return {
     settle,
     async rerender(next) {
@@ -34,8 +35,19 @@ export const mount: MountAdapter = async (component, container, options) => {
 };
 
 /**
- * Props whose keys and values are signals, one per key: a proxy Solid's `mergeProps` reads as
- * one (`$PROXY`), so it resolves each key, present or not, when it is read.
+ * Applies what is queued, then lets work that the component queued on a promise run, and applies
+ * what that wrote, before the test reads the DOM.
+ */
+export async function settle(): Promise<void> {
+  flush();
+  await new Promise<void>((resolve) => queueMicrotask(resolve));
+  flush();
+}
+
+/**
+ * Props whose keys and values are signals, one per key: a proxy Solid reads as one (`$PROXY`), so
+ * it resolves each key, present or not, when it is read. Writes land together, as Solid 2 batches
+ * them, and `assign` applies them at once.
  */
 export function reactiveProps(initial: Record<string, unknown>): {
   value: Record<string, unknown>;
@@ -55,12 +67,12 @@ export function reactiveProps(initial: Record<string, unknown>): {
   const [keys, setKeys] = createSignal<readonly string[]>([], {
     equals: (a, b) => a.length === b.length && a.every((key, index) => key === b[index]),
   });
-  const assign = (next: Record<string, unknown>) =>
-    batch(() => {
-      for (const key of values.keys()) if (!Object.hasOwn(next, key)) entry(key)[1](undefined);
-      for (const [key, value] of Object.entries(next)) entry(key)[1](value);
-      setKeys(Object.keys(next));
-    });
+  const assign = (next: Record<string, unknown>) => {
+    for (const key of values.keys()) if (!Object.hasOwn(next, key)) entry(key)[1](undefined);
+    for (const [key, value] of Object.entries(next)) entry(key)[1](value);
+    setKeys(Object.keys(next));
+    flush();
+  };
   assign(initial);
   const value: Record<string, unknown> = new Proxy(
     {},

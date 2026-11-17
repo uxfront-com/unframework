@@ -53,10 +53,13 @@ import type { SolidResource } from "./setup.ts";
 type JsxExpression = ReturnType<typeof jsxNode>;
 type Statement = Parameters<typeof js.blockStatement>[0][number];
 
-/** The Solid 1.9 target. Solid's JSX takes HTML attribute names as they are. */
-export const solid: Target = defineTarget({
-  name: "solid",
-  framework: { package: "solid-js", range: ">=1.9 <2" },
+/**
+ * The Solid 2 target, selected as `solid@2` (ADR-0102). Solid's JSX takes HTML attribute names as
+ * they are.
+ */
+export const solid2: Target = defineTarget({
+  name: "solid2",
+  framework: { package: "solid-js", range: ">=2 <3" },
   capabilities: {
     element: { support: "native" },
     text: { support: "native" },
@@ -441,4 +444,4 @@ function freeNames(component: UfComponent, names: ReadonlySet<string>): string[]
   return ["onCleanup", NEXT_TICK_HELPER].filter((name) => names.has(name) && !bindings.has(name));
 }
 
-export default solid;
+export default solid2;

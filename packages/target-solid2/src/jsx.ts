@@ -293,7 +293,7 @@ export function solidJsx(
       ];
     },
     dynamic: (node, context) =>
-      jsxDynamic(node, imports.add("solid-js/web", "Dynamic"), context, [
+      jsxDynamic(node, imports.add("@solidjs/web", "Dynamic"), context, [
         js.jsxAttribute("component", js.jsxExpressionContainer(jsxExpression(node.is, context))),
       ]),
     // After a root's own attributes: the `class` and `style` it has not merged with its own
@@ -1132,7 +1132,7 @@ function teleportHelperCode(name: string, imports: ImportSet): string {
   const getOwner = imports.add("solid-js", "getOwner");
   const onCleanup = imports.add("solid-js", "onCleanup");
   const onMount = imports.add("solid-js", "onMount");
-  const insert = imports.add("solid-js/web", "insert");
+  const insert = imports.add("@solidjs/web", "insert");
   const JSX = imports.add("solid-js", "JSX", { type: true });
   return `/** Mounts \`children\` into the element \`to\` selects once the component has mounted, and removes them with it. */
 function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Element {
@@ -1169,7 +1169,7 @@ function transitionHelperCode(name: string, imports: ImportSet): string {
   const onCleanup = imports.add("solid-js", "onCleanup");
   const sharedConfig = imports.add("solid-js", "sharedConfig");
   const untrack = imports.add("solid-js", "untrack");
-  const isServer = imports.add("solid-js/web", "isServer");
+  const isServer = imports.add("@solidjs/web", "isServer");
   const JSX = imports.add("solid-js", "JSX", { type: true });
   return `/** Runs Vue's transition classes of \`name\` on the element \`children\` renders as it enters and leaves. */
 function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Element }): ${JSX}.Element {
