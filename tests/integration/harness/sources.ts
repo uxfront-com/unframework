@@ -105,8 +105,8 @@ export function caseResolver(
  * compile is given, which the oracle reads for its file: a canary's corruption of it, or the
  * source with its fixes applied. A case whose `case.json` names `"typeOracle": "tsgo"` compiles
  * with the tsgo adapter (ADR-0109), whose syntactic layer reads the same files, and whose checker
- * builds a project of the case's own directory, from the disk: where the compiled text differs,
- * it answers nothing about a directive's value.
+ * builds a project of the case's own directory: it types the directives' values in the source
+ * `compile()` is given.
  */
 export function caseOracle(
   info: Pick<CaseInfo, "dir" | "config">,

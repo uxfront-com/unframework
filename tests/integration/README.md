@@ -111,8 +111,8 @@ cases/components/form/
 - A case whose `case.json` names `"typeOracle": "tsgo"` compiles with the tsgo adapter instead
   (ADR-0109), for a check only a type-checker makes, like a directive's value (UF6007). Its
   syntactic layer reads the same files, and its checker builds a project of the case's own
-  directory from the disk, so a source a canary corrupts loses the check rather than getting a
-  wrong one. Only `diagnostics/directive-value-type` needs it.
+  directory. The checker types the source each compile is given, a canary's corrupted one or a
+  fix-applied one included. Only `diagnostics/directive-value-type` needs it.
 - `__expected__/diagnostics.json` holds every input's diagnostics, each with its `file`, sorted by
   file, then by span; `__output__/diagnostics.txt` frames them by file.
 - The golden guard judges each module the browser and SSR projects compile on the files that

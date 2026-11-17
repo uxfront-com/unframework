@@ -5,14 +5,14 @@
     "message": "`v-focus-trap`'s value is `1`, and `vFocusTrap` takes `boolean`.",
     "file": "diagnostics/directive-value-type/Panel.uf.tsx",
     "start": {
-      "line": 22,
+      "line": 31,
       "column": 26,
-      "offset": 840
+      "offset": 1079
     },
     "end": {
-      "line": 22,
+      "line": 31,
       "column": 27,
-      "offset": 841
+      "offset": 1080
     },
     "help": "Pass a value of type `boolean`, or change the type argument of `vFocusTrap`'s `defineDirective`."
   },
@@ -22,14 +22,14 @@
     "message": "`v-tone`'s value is `\"loud\"`, and `vTone` takes `\"info\" | \"warn\"`.",
     "file": "diagnostics/directive-value-type/Panel.uf.tsx",
     "start": {
-      "line": 23,
+      "line": 32,
       "column": 17,
-      "offset": 872
+      "offset": 1111
     },
     "end": {
-      "line": 23,
+      "line": 32,
       "column": 23,
-      "offset": 878
+      "offset": 1117
     },
     "help": "Pass a value of type `\"info\" | \"warn\"`, or change the type argument of `vTone`'s `defineDirective`."
   },
@@ -39,14 +39,14 @@
     "message": "`v-box`'s value is `{ name: string; }`, and `vBox` takes `{ id: string; }`.",
     "file": "diagnostics/directive-value-type/Panel.uf.tsx",
     "start": {
-      "line": 24,
+      "line": 33,
       "column": 17,
-      "offset": 904
+      "offset": 1143
     },
     "end": {
-      "line": 24,
+      "line": 33,
       "column": 28,
-      "offset": 915
+      "offset": 1154
     },
     "help": "Pass a value of type `{ id: string; }`, or change the type argument of `vBox`'s `defineDirective`."
   }

@@ -27,8 +27,8 @@
           "imported": "vFocusTrap",
           "local": "vFocusTrap",
           "span": {
-            "start": 435,
-            "end": 445
+            "start": 553,
+            "end": 563
           }
         },
         {
@@ -36,14 +36,34 @@
           "imported": "vTone",
           "local": "vTone",
           "span": {
-            "start": 447,
-            "end": 452
+            "start": 565,
+            "end": 570
           }
         }
       ],
       "span": {
-        "start": 426,
-        "end": 476
+        "start": 544,
+        "end": 594
+      }
+    }
+  ],
+  "moduleImports": [
+    {
+      "specifier": "./cast.ts",
+      "file": "cast.ts",
+      "names": [
+        {
+          "imported": "cast",
+          "local": "cast",
+          "span": {
+            "start": 519,
+            "end": 523
+          }
+        }
+      ],
+      "span": {
+        "start": 510,
+        "end": 543
       }
     }
   ]
