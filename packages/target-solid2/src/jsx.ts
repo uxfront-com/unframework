@@ -1144,19 +1144,34 @@ function ${name}<T>(props: {
  * it is created, so the helper renders it only once the component has mounted, into the element
  * `to` selects: the server and the hydrating client render none of it in place, as on Vue. Its
  * content reads the component's context, as `<Portal>` keeps its owner, and goes with the
- * component.
+ * component. Solid settles siblings, and runs their portals' effects, last first, so the teleports
+ * mount in the order they rendered, each in a flush of its own, from a queue the first of them to
+ * settle runs in a microtask, as Vue appends them.
  */
 function teleportHelperCode(name: string, imports: ImportSet): string {
   const createSignal = imports.add("solid-js", "createSignal");
+  const flush = imports.add("solid-js", "flush");
   const onSettled = imports.add("solid-js", "onSettled");
   const Show = imports.add("solid-js", "Show");
   const Portal = imports.add("@solidjs/web", "Portal");
   const JSX = imports.add("@solidjs/web", "JSX", { type: true });
-  return `/** Mounts \`children\` into the element \`to\` selects once the component has mounted, and removes them with it. */
+  const queue = imports.claim(`${name}Queue`);
+  return `/** The teleports rendered and not yet mounted, in the order they rendered. */
+const ${queue}: (() => void)[] = [];
+
+/** Mounts \`children\` into the element \`to\` selects once the component has mounted, and removes them with it. */
 function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Element {
   const [target, setTarget] = ${createSignal}<Element | null>(null);
+  ${queue}.push(() => setTarget(document.querySelector(props.to)));
   ${onSettled}(() => {
-    setTarget(document.querySelector(props.to));
+    if (${queue}.length) {
+      queueMicrotask(() => {
+        for (const mount of ${queue}.splice(0)) {
+          mount();
+          ${flush}();
+        }
+      });
+    }
   });
   return (
     <${Show} when={target()}>{(mount) => <${Portal} mount={mount()}>{props.children}</${Portal}>}</${Show}>
@@ -1186,11 +1201,13 @@ function transitionHelperCode(name: string, imports: ImportSet): string {
   const JSX = imports.add("@solidjs/web", "JSX", { type: true });
   return `/** Runs Vue's transition classes of \`name\` on the element \`children\` renders as it enters and leaves. */
 function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Element }): ${JSX}.Element {
-  // The server renders the child as it is, and resolves it nowhere else, so it renders it once.
-  const resolved = ${children}(() => (${isServer} ? undefined : props.children));
-  const element = (value: unknown) => (value instanceof Element ? value : undefined);
+  // Resolved on the server too, which renders it as it is: the child takes the same hydration
+  // keys on both sides.
+  const resolved = ${children}(() => props.children);
+  const element = (value: unknown) =>
+    !${isServer} && value instanceof Element ? value : undefined;
   // The first element is kept at once, so a hydrating client renders the server's.
-  let current = ${isServer} ? undefined : element(${untrack}(resolved));
+  let current = element(${untrack}(resolved));
   const [kept, setKept] = ${createSignal}<Element[]>(current ? [current] : [], { ownedWrite: true });
   const hydrating = ${isHydrating}();
   const stops = new Set<() => void>();
@@ -1244,8 +1261,7 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
   };
   let first = true;
   ${createEffect}(
-    // The server resolves nothing here, and has no \`Element\`.
-    () => (${isServer} ? undefined : element(resolved())),
+    () => element(resolved()),
     (next) => {
       const initial = first;
       first = false;
@@ -1263,7 +1279,7 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
       if (next) run(next, "enter");
     },
   );
-  return <>{${isServer} ? props.children : kept()}</>;
+  return <>{${isServer} ? resolved() : kept()}</>;
 }`;
 }
 

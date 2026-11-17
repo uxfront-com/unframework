@@ -96,6 +96,7 @@ export class SolidCode {
   #nextTick: string | undefined;
   #state: string | undefined;
   #clearedRef: string | undefined;
+  #requestFlush: string | undefined;
 
   constructor(
     component: UfComponent,
@@ -350,6 +351,11 @@ export class SolidCode {
     return this.value(value);
   }
 
+  /** The scheduler's request for a flush (src/helpers.ts), claimed at its first use. */
+  #request(): string {
+    return (this.#requestFlush ??= this.#imports.claim("requestWatcherFlush"));
+  }
+
   /** The template ref helper's name (src/helpers.ts), claimed at its first use. */
   clearedRef(): string {
     return (this.#clearedRef ??= this.#imports.claim(REF_HELPER));
@@ -501,13 +507,22 @@ export class SolidCode {
       helpers.push(
         watcherHelperCode(this.#uses, {
           createReaction: this.solid("createReaction"),
+          createRoot: this.solid("createRoot"),
+          runWithOwner: this.solid("runWithOwner"),
           onSettled: this.solid("onSettled"),
+          // Only an immediate watcher's first call reads it.
+          untrack:
+            this.#uses.single.immediate || this.#uses.array.immediate
+              ? this.solid("untrack")
+              : "",
           ...(this.#watcher ? { watcher: this.#watcher } : {}),
           ...(this.#watchEffect ? { watchEffect: this.#watchEffect } : {}),
           ...(arrays ? { values: this.#imports.claim("WatchedValues") } : {}),
           queue: this.#imports.claim("queuedWatchers"),
           schedule: this.#imports.claim("queueWatcher"),
           queued: this.#imports.claim("flushQueued"),
+          request: this.#request(),
+          flush: this.solid("flush"),
         }),
       );
     }
@@ -518,6 +533,8 @@ export class SolidCode {
         stateHelperCode(this.#state, {
           createSignal: this.solid("createSignal"),
           getObserver: this.solid("getObserver"),
+          // With watchers, a write queues their flush (src/helpers.ts).
+          ...(this.#watcher || this.#watchEffect ? { request: this.#request() } : {}),
         }),
       );
     }

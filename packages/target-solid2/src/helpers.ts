@@ -28,7 +28,11 @@ export const STATE_HELPER = "createState";
  */
 export function stateHelperCode(
   name: string,
-  { createSignal, getObserver }: { createSignal: string; getObserver: string },
+  {
+    createSignal,
+    getObserver,
+    request,
+  }: { createSignal: string; getObserver: string; request?: string },
 ): string {
   return `/**
  * Vue's \`ref\`: a signal whose read returns the value last written, as Vue's does, and tracks the
@@ -47,7 +51,7 @@ function ${name}<T>(initial?: T): [() => T | undefined, (value: T | undefined) =
   function write(value: T | undefined): void {
     if (Object.is(value, current)) return;
     current = value;
-    notify((version) => version + 1);
+    notify((version) => version + 1);${request ? `\n    ${request}();` : ""}
   }
   return [read, write];
 }`;
@@ -94,7 +98,10 @@ export interface WatcherUses {
 /** The names the helpers' code refers to: Solid's imports and the helpers, as the scope took them. */
 export interface HelperNames {
   createReaction: string;
+  createRoot: string;
+  runWithOwner: string;
   onSettled: string;
+  untrack: string;
   /** The `watch` helper, where the output has a watcher. */
   watcher?: string;
   /** The `watchEffect` helper, where the output has one. */
@@ -105,6 +112,10 @@ export interface HelperNames {
   queue: string;
   schedule: string;
   queued: string;
+  /** The scheduler's request for a flush, which `createState` calls as it writes. */
+  request: string;
+  /** Solid's `flush`. */
+  flush: string;
 }
 
 /**
@@ -131,7 +142,7 @@ export interface HelperNames {
  * printed: one source watched lazily is the common case, with a helper of its own.
  */
 export function watcherHelperCode(uses: WatcherUses, names: HelperNames): string {
-  const { createReaction, onSettled } = names;
+  const { onSettled } = names;
   // Where the output has watchers of both timings, a call says `flush: "post"` as the source does,
   // and the scheduler keeps two queues; where every watcher has one timing, one queue serves.
   const both = uses.flush.post && uses.flush.pre;
@@ -169,7 +180,9 @@ export function watcherHelperCode(uses: WatcherUses, names: HelperNames): string
   const stop = `  ${onSettled}(() => () => {
     ${dequeue};
     for (const cleanup of cleanups.splice(0)) cleanup();
+    dispose();
   });`;
+  const track = reactionCode(names, schedule);
   /** The callback's cleanup registrar's type. */
   const registrar = "(cleanup: () => void) => void";
   if (!arrays && !uses.single.immediate) {
@@ -179,7 +192,7 @@ function ${name}<T>(
   callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${both ? `\n  options?: { flush: "post" },` : ""}
 ): void {
   const cleanups: (() => void)[] = [];${declareQueue}
-  const track = ${createReaction}(() => ${schedule});
+${track}
   let last = read();
 ${stop}
 
@@ -239,7 +252,10 @@ ${stop}
   }
   // An immediate watcher's test: its options, where immediate is the only option there is.
   const isImmediate = both ? "options?.immediate" : "options";
-  const first = immediate ? `\n  if (${isImmediate}) call(last, undefined);` : "";
+  // During the setup, whose reads Solid 2 checks are tracked or said not to be.
+  const first = immediate
+    ? `\n  if (${isImmediate}) ${names.untrack}(() => call(last, undefined));`
+    : "";
   const singles = uses.single.lazy || uses.single.immediate;
   // The single form passes the one value; the array form the values, `[]` before the first call.
   const callback = arrays
@@ -269,7 +285,7 @@ function ${name}(
   callback: (value: never, previous: never, onCleanup: ${registrar}) => unknown,${optionsType ? `\n  options?: ${optionsType},` : ""}
 ): void {${sources}
   const cleanups: (() => void)[] = [];${declareQueue}
-  const track = ${createReaction}(() => ${schedule});
+${track}
   let last = read();${first}
 ${stop}
 
@@ -312,7 +328,7 @@ type ${values}<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V :
  * component is removed.
  */
 function watchEffectCode(name: string, names: HelperNames, both: boolean): string {
-  const { createReaction, onSettled } = names;
+  const { onSettled } = names;
   const queue = both ? `${names.queue}.post` : names.queue;
   const schedule = both ? `${names.schedule}(${queue}, run)` : `${names.schedule}(run)`;
   return `/**
@@ -325,13 +341,13 @@ function ${name}(
   effect: (onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
   const cleanups: (() => void)[] = [];
-  // Created with the component: Solid 2 creates no computation in \`onSettled\`.
-  const track = ${createReaction}(() => ${schedule});
+${reactionCode(names, schedule)}
   ${onSettled}(() => {
     run();
     return () => {
       ${queue}.delete(run);
       for (const cleanup of cleanups.splice(0)) cleanup();
+      dispose();
     };
   });
 
@@ -346,12 +362,64 @@ function ${name}(
 }
 
 /**
+ * A helper's reaction, `track`, and the `dispose` that stops it. It is created with the component,
+ * since Solid 2 creates no computation in \`onSettled\`, in a root of its own, apart from the
+ * component's owner: Solid's server creates no reaction, and one among the component's children
+ * would shift the hydration keys of what the client renders after it. The component's cleanup
+ * disposes it.
+ */
+function reactionCode(names: HelperNames, schedule: string): string {
+  const { createReaction, createRoot, runWithOwner } = names;
+  return `  const [track, dispose] = ${runWithOwner}(null, () =>
+    ${createRoot}((stop) => [${createReaction}(() => ${schedule}), stop] as const),
+  );`;
+}
+
+/**
  * The scheduler (see `watcherHelperCode`): the queue of watchers whose sources have changed, one
- * per timing where the output has both, and the function that queues one and, at the first, the
- * microtask that flushes them.
+ * per timing where the output has both, the function that queues one, and the one that asks for a
+ * flush of them, which `createState` calls as it writes, so the flush is queued at the write, as
+ * Vue's is, ahead of the code that awaits after it. The flush applies Solid's pending writes first,
+ * whose reactions queue the watchers they concern, so a watcher sees the DOM the writes changed,
+ * and again before the watchers that run after the DOM updates. A write the scheduler did not see
+ * (a prop's, a composable's) queues it from its reaction, when Solid flushes.
  */
 function schedulerCode(names: HelperNames, both: boolean): string {
-  const { queue, schedule, queued } = names;
+  const { queue, schedule, queued, request, flush } = names;
+  const requestCode = `/** Queues the flush of the watchers, once, in a microtask. */
+function ${request}(): void {
+  if (${queued}) return;
+  ${queued} = true;
+  queueMicrotask(() => {
+    try {
+      ${flush}();${
+        both
+          ? `
+      do {
+        for (const watcher of ${queue}.pre) {
+          ${queue}.pre.delete(watcher);
+          watcher();
+        }
+        ${flush}();
+        for (const watcher of ${queue}.post) {
+          ${queue}.post.delete(watcher);
+          watcher();
+          ${flush}();
+          if (${queue}.pre.size) break;
+        }
+      } while (${queue}.pre.size || ${queue}.post.size);`
+          : `
+      for (const watcher of ${queue}) {
+        ${queue}.delete(watcher);
+        watcher();
+        ${flush}();
+      }`
+      }
+    } finally {
+      ${queued} = false;
+    }
+  });
+}`;
   if (!both) {
     return `/** The watchers whose sources have changed since the last flush, in the order they changed. */
 const ${queue} = new Set<() => void>();
@@ -364,19 +432,10 @@ let ${queued} = false;
  */
 function ${schedule}(run: () => void): void {
   ${queue}.add(run);
-  if (${queued}) return;
-  ${queued} = true;
-  queueMicrotask(() => {
-    try {
-      for (const watcher of ${queue}) {
-        ${queue}.delete(watcher);
-        watcher();
-      }
-    } finally {
-      ${queued} = false;
-    }
-  });
-}`;
+  ${request}();
+}
+
+${requestCode}`;
   }
   return `/**
  * The watchers whose sources have changed since the last flush, in the order they changed: those
@@ -392,26 +451,10 @@ let ${queued} = false;
  */
 function ${schedule}(queue: Set<() => void>, run: () => void): void {
   queue.add(run);
-  if (${queued}) return;
-  ${queued} = true;
-  queueMicrotask(() => {
-    try {
-      do {
-        for (const watcher of ${queue}.pre) {
-          ${queue}.pre.delete(watcher);
-          watcher();
-        }
-        for (const watcher of ${queue}.post) {
-          ${queue}.post.delete(watcher);
-          watcher();
-          if (${queue}.pre.size) break;
-        }
-      } while (${queue}.pre.size || ${queue}.post.size);
-    } finally {
-      ${queued} = false;
-    }
-  });
-}`;
+  ${request}();
+}
+
+${requestCode}`;
 }
 
 /** A JSDoc comment of prose, wrapped at 100 columns as the formatter leaves comments. */

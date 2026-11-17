@@ -5,7 +5,8 @@
 // `Object.is`, and `unmounted` once the branch is disposed. Solid evaluates a ref before the
 // element's children are inserted, so its hooks would run parent first: each goes through the
 // inline `queueHook`, which runs them in Vue's order (`emulated`). Solid 2's server render
-// evaluates a ref factory too, so there the factory does nothing but return (ADR-0102).
+// evaluates a ref factory too, where its primitives run nothing but take their hydration keys, as
+// the client's do, so the factory runs there as it is (ADR-0102).
 import {
   dependencyImports,
   directiveDependencies,
@@ -28,14 +29,12 @@ export const QUEUE_HELPER = "queueHook";
 /** The local names a ref factory reads: Solid's primitives, and the queue helper. */
 export interface FactoryNames {
   solid: (name: "onSettled" | "onCleanup" | "createEffect" | "untrack") => string;
-  /** `isServer`, from `@solidjs/web`. */
-  isServer: () => string;
   queue: string;
 }
 
 /** `function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void { … }`. */
 export function factoryCode(directive: UfDirective, names: FactoryNames, exported = false): string {
-  const { solid, queue, isServer } = names;
+  const { solid, queue } = names;
   // Its own names, apart from every name a hook reads.
   const own = wrapperNames(directive, [
     "hooks",
@@ -52,10 +51,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
   const element = directiveElement(directive);
   const run = (call: string, hook: "mounted" | "updated" | "unmounted") =>
     `${queue}(${own.element}, () => ${call}, "${hook}");`;
-  const body: string[] = [
-    `if (${isServer()}) return () => {};`,
-    `let ${own.target}: ${element} | undefined;`,
-  ];
+  const body: string[] = [`let ${own.target}: ${element} | undefined;`];
   if (mounted || updated) {
     body.push(
       `${updated ? "let" : "const"} ${own.current} = ${solid("untrack")}(${own.getValue});`,
@@ -115,19 +111,13 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
     return local;
   };
   const queue = scope.claim(QUEUE_HELPER);
-  let isServer: string | undefined;
-  const factory = factoryCode(
-    directive,
-    { solid, queue, isServer: () => (isServer ??= scope.claim("isServer")) },
-    true,
-  );
+  const factory = factoryCode(directive, { solid, queue }, true);
   const specifiers = [...used]
     .toSorted(([a], [b]) => (a < b ? -1 : 1))
     .map(([imported, local]) => (imported === local ? local : `${imported} as ${local}`));
   const code = [
     [
       `import { ${specifiers.join(", ")} } from "solid-js";`,
-      `import { ${isServer === "isServer" ? "isServer" : `isServer as ${isServer!}`} } from "@solidjs/web";`,
       ...dependencyImports(dependencies),
     ].join("\n"),
     ...dependencies.types,

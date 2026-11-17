@@ -4,7 +4,7 @@ import type { HydrateAdapter } from "@unframework.dev/codegen";
 import { createComponent, flush } from "solid-js";
 import { hydrate as hydrateRoot } from "@solidjs/web";
 
-import { listenerProps, reactiveProps, settle } from "./client.ts";
+import { listenerProps, reactiveProps, reviveReactivity, settle } from "./client.ts";
 import { asComponent } from "./component.ts";
 import { assertSolid2 } from "./guard.ts";
 
@@ -28,6 +28,7 @@ interface HydrationGlobal {
  * (ADR-0095). A rerender assigns the props, as the mount adapter's does.
  */
 export const hydrate: HydrateAdapter = async (component, container, html, options) => {
+  reviveReactivity();
   const solidComponent = asComponent(component);
   const listeners = listenerProps(options.on);
   const props = reactiveProps({ ...options.props, ...listeners });
@@ -49,7 +50,10 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
       props.assign({ ...next, ...listeners });
       await settle();
     },
-    unmount: async () => dispose(),
+    unmount: async () => {
+      reviveReactivity();
+      dispose();
+    },
     // Solid throws for what it cannot hydrate, and checks nothing else.
     takeMismatches: () => [],
   };

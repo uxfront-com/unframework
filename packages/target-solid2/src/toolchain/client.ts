@@ -1,7 +1,7 @@
 // The Solid 2 mount adapter (browser). Solid 2 batches writes and applies them on a microtask, or
 // at once with `flush()`, so the adapter flushes after it mounts and after each rerender.
 import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
-import { $PROXY, createComponent, createSignal, flush } from "solid-js";
+import { $PROXY, createComponent, createSignal, flush, resetErrorHalt } from "solid-js";
 import { render } from "@solidjs/web";
 
 import { asComponent } from "./component.ts";
@@ -19,6 +19,7 @@ assertSolid2();
  * props too, `onChange` for an event `change` (ADR-0012), which every rerender keeps.
  */
 export const mount: MountAdapter = async (component, container, options) => {
+  reviveReactivity();
   const solidComponent = asComponent(component);
   const listeners = listenerProps(options.on);
   const props = reactiveProps({ ...options.props, ...listeners });
@@ -30,9 +31,23 @@ export const mount: MountAdapter = async (component, container, options) => {
       props.assign({ ...next, ...listeners });
       await settle();
     },
-    unmount: async () => dispose(),
+    unmount: async () => {
+      reviveReactivity();
+      dispose();
+    },
   };
 };
+
+/**
+ * Solid 2 stops every update on the page once a computation throws an error nothing catches
+ * ("treat this as a crash"), as `sourcemaps/computed-throws` makes one on purpose (L14). Spec
+ * files share a page (ADR-0092), so each mount, and each unmount, revives the scheduler first: the
+ * test that threw has seen its error, and its own judgement (L13) holds the message Solid logged
+ * then, and the component it crashed goes without logging that its updates are ignored.
+ */
+export function reviveReactivity(): void {
+  resetErrorHalt();
+}
 
 /**
  * Applies what is queued, then lets work that the component queued on a promise run, and applies

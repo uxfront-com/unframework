@@ -314,11 +314,7 @@ export const solid2: Target = defineTarget({
     const directives = queue
       ? own.map((directive) =>
           placeholders.statements(
-            `${factoryCode(directive, {
-              solid: (name) => code.solid(name),
-              isServer: () => imports.add("@solidjs/web", "isServer"),
-              queue: queue.name,
-            })}\n`,
+            `${factoryCode(directive, { solid: (name) => code.solid(name), queue: queue.name })}\n`,
           ),
         )
       : [];
