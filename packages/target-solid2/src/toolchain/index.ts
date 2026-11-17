@@ -1,0 +1,51 @@
+// The Solid target's toolchain (plan §5.7): how tests and tooling build, check and run Solid
+// output. Node only; the main entry never imports it.
+import type { Toolchain } from "@unframework.dev/codegen";
+import { lintWithOxlint, typecheckWithTsgo } from "@unframework.dev/codegen/toolchain-node";
+import type { UserConfig } from "vite";
+
+import { compileWithSolid, emitWithSolid } from "./compile.ts";
+
+/** The runtime modules compiled output and the mount adapter import in the browser. */
+const BROWSER_RUNTIME = ["solid-js", "solid-js/web"];
+
+/** The Solid 1.9 toolchain. */
+export const toolchain: Toolchain = {
+  name: "solid",
+  client: "@unframework.dev/target-solid/toolchain/client",
+  server: "@unframework.dev/target-solid/toolchain/server",
+  hydrate: "@unframework.dev/target-solid/toolchain/hydrate",
+
+  async vite(mode): Promise<UserConfig> {
+    // Loaded here, not at the top: the harness imports every toolchain to build its config.
+    const { default: solid } = await import("vite-plugin-solid");
+    return {
+      plugins: [
+        solid({
+          // Without `ssr`, the plugin compiles DOM code on the server too, and Solid's
+          // renderToStringAsync then returns undefined instead of failing. With it, server
+          // output is hydratable, and in a hydrate project (L12, ADR-0095) the client's too, so
+          // `hydrate` finds the server's nodes; a browser project keeps the plain DOM compile.
+          ssr: mode !== "browser",
+          // solid-refresh would wrap the code under test in HMR proxies.
+          hot: false,
+        }),
+      ],
+      resolve: { dedupe: ["solid-js"] },
+      // Vite's dependency scanner never sees compiled modules (the unplugin hides them from
+      // it), so name their runtime imports, or a cold run reloads the page mid-test.
+      ...(mode === "ssr" ? {} : { optimizeDeps: { include: BROWSER_RUNTIME } }),
+    };
+  },
+
+  frameworkCompile: (files) => compileWithSolid(files),
+
+  frameworkEmit: (files) => emitWithSolid(files),
+
+  typecheck: (files, context) => typecheckWithTsgo(files, context),
+
+  // L5: oxlint, with the shared baseline and eslint-plugin-solid as a JS plugin (ADR-0042).
+  lint: (files, context) => lintWithOxlint(files, context),
+};
+
+export default toolchain;
