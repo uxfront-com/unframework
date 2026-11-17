@@ -160,6 +160,7 @@ h1 { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 600; overflow-wr
 .description { margin: 4px 0 0; max-width: 70ch; color: var(--muted); }
 .description[hidden] { display: none; }
 .view { display: flex; flex-wrap: wrap; gap: 2px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.view[hidden] { display: none; }
 .view legend { float: left; padding: 0; margin-inline-end: 8px; line-height: 24px; color: var(--muted); }
 .view label {
   position: relative; padding: 2px 8px; border: 1px solid var(--line-strong); border-radius: 4px; cursor: pointer; background: var(--raised);
@@ -228,6 +229,9 @@ dialog button { padding: 3px 10px; border: 1px solid var(--line-strong); border-
 
 /** The shell page. */
 export function shellPage(data: ShellData): string {
+  // A preview of one target opens on the view that fills the canvas, written into the page so
+  // nothing moves once its script runs, and has no switch, since a choice of one is none.
+  const single = data.frames.length === 1;
   const constants = { message: PREVIEW_MESSAGE, themeKey: THEME_KEY };
   const chevron = `<svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   return `<!doctype html>
@@ -271,11 +275,11 @@ export function shellPage(data: ShellData): string {
           <h1 data-uf-selection>Select an example or a component</h1>
           <p class="description" data-uf-description hidden></p>
         </div>
-        <fieldset class="view" data-uf-view>
+        <fieldset class="view" data-uf-view${single ? " hidden" : ""}>
           <legend>Targets</legend>
         </fieldset>
       </div>
-      <div class="frames" data-view="all"></div>
+      <div class="frames" data-view="${single ? "one" : "all"}"></div>
     </main>
     <section class="controls" aria-labelledby="uf-controls-label">
       <h2 id="uf-controls-label">Controls</h2>
@@ -387,7 +391,9 @@ function shellScript(constants: { message: string; themeKey: string }): void {
     grid.append(figure);
     return { target, origin, iframe, status, figure };
   });
-  for (const value of ["all", ...frames.map((each) => each.target)]) {
+  // One target has no choice to make: the page already shows it in the one-target view.
+  const choices = frames.length > 1 ? ["all", ...frames.map((each) => each.target)] : [];
+  for (const value of choices) {
     const label = document.createElement("label");
     const radio = document.createElement("input");
     radio.type = "radio";

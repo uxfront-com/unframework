@@ -8,10 +8,10 @@ export type ShellFixture = (typeof SHELL_FIXTURES)[number];
 declare module "vitest/browser" {
   interface BrowserCommands {
     /**
-     * Writes a fixture's shell page to `.output/shell/<name>.html`, with seven frames on a stub
-     * that answers every render, and returns the page.
+     * Writes a fixture's shell page to `.output/shell/<name>.html`, with a frame per target (all
+     * seven unless `targets` names some) on a stub that answers every render, and returns the page.
      */
-    ufShellFixture(name: ShellFixture): Promise<{ html: string }>;
+    ufShellFixture(name: ShellFixture, targets?: string[]): Promise<{ html: string }>;
     /** Emulates the system's colour scheme, as `prefers-color-scheme` reads it. */
     ufShellColorScheme(scheme: "light" | "dark"): Promise<void>;
   }

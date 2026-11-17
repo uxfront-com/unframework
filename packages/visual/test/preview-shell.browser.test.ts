@@ -12,8 +12,8 @@ const DARK_BACKGROUND = "rgb(22, 23, 27)";
 const LIGHT_BACKGROUND = "rgb(255, 255, 255)";
 
 /** Opens a fixture's shell in this document, as a fresh load of the page would. */
-async function open(name: ShellFixture): Promise<void> {
-  const { html } = await commands.ufShellFixture(name);
+async function open(name: ShellFixture, targets?: string[]): Promise<void> {
+  const { html } = await commands.ufShellFixture(name, targets);
   const shell = new DOMParser().parseFromString(html, "text/html");
   history.replaceState(null, "", location.pathname + location.search);
   delete document.documentElement.dataset.theme;
@@ -115,6 +115,36 @@ describe("the layout", () => {
     expect(shown()).toEqual(["vue"]);
     (page.getByRole("radio", { name: "All" }).element() as HTMLElement).click();
     expect(shown()).toHaveLength(7);
+  });
+
+  it("shows one target across the whole canvas, with no Targets switch", async () => {
+    await open("design-system", ["react"]);
+    const frames = document.querySelector<HTMLElement>(".frames")!;
+    const figure = document.querySelector<HTMLElement>("figure[data-target='react']")!;
+    expect(document.querySelectorAll("figure[data-target]")).toHaveLength(1);
+    // The one-target view from the first paint, not after a click.
+    expect(frames.dataset.view).toBe("one");
+    expect(page.getByRole("group", { name: "Targets" }).query()).toBeNull();
+    expect(page.getByRole("radio").query()).toBeNull();
+    // The frame takes the canvas's width and height, less its padding.
+    const canvas = frames.getBoundingClientRect();
+    const style = getComputedStyle(frames);
+    const box = figure.getBoundingClientRect();
+    expect(box.width).toBeCloseTo(
+      canvas.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+      0,
+    );
+    expect(box.height).toBeCloseTo(
+      canvas.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
+      0,
+    );
+  });
+
+  it("opens two or more targets on All", async () => {
+    await open("design-system", ["react", "vue"]);
+    expect(document.querySelector<HTMLElement>(".frames")!.dataset.view).toBe("all");
+    await expect.element(page.getByRole("group", { name: "Targets" })).toBeVisible();
+    await expect.element(page.getByRole("radio", { name: "All" })).toBeChecked();
   });
 
   it("gives each selection its own message in the controls region", async () => {
