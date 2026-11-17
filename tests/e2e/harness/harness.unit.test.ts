@@ -35,7 +35,9 @@ import {
   packedFile,
   QWIK_VITEST_PEER,
   readCatalog,
+  readManifest,
   readPacked,
+  readReleaseAgeExclude,
   repoRoot,
   TYPESCRIPT6_OLD,
   startCopy,
@@ -231,6 +233,21 @@ describe("the copy's manifest and workspace", () => {
       "msgpackr-extract": true,
       sharp: true,
     });
+    expect(workspace.minimumReleaseAgeExclude).toBeUndefined();
+  });
+
+  it("takes the root's release-age exclusions, so a copy installs a version under a day old", () => {
+    const workspace = JSON.parse(copyWorkspace(tarballs, ["solid-js@2.0.0"]));
+    expect(workspace.minimumReleaseAgeExclude).toEqual(["solid-js@2.0.0"]);
+    const root = readFileSync(join(repoRoot, "pnpm-workspace.yaml"), "utf8");
+    const excluded = readReleaseAgeExclude(root);
+    expect(excluded.length).toBeGreaterThan(0);
+    for (const entry of excluded) expect(entry).toMatch(/^[@a-z].*@\d/);
+    expect(
+      readReleaseAgeExclude(
+        'a: 1\nminimumReleaseAgeExclude:\n  - "@x/y@1.0.0"\n  - z@2.0.0\nb: 2\n',
+      ),
+    ).toEqual(["@x/y@1.0.0", "z@2.0.0"]);
   });
 });
 
@@ -248,6 +265,25 @@ describe("the design system's copy", () => {
     expect(catalog.vitest).toMatch(/^\d+\.\d+\.\d+$/);
     expect(catalog["@vitest/browser-playwright"]).toBe(catalog.vitest);
     expect(Object.keys(catalog).length).toBeGreaterThan(50);
+  });
+
+  it("reads a named catalog, which the solid2 app pins exactly (ADR-0102)", () => {
+    const solid2 = readCatalog(rootWorkspace, "solid2");
+    expect(solid2["solid-js"]).toBe("2.0.0");
+    expect(solid2["@solidjs/web"]).toBe("2.0.0");
+    // The flat catalog keeps Solid 1.
+    expect(catalog["solid-js"]).toMatch(/^1\./);
+    const app = readManifest(join(e2eRoot, "apps/solid2"));
+    const pinned = { ...app.dependencies, ...app.devDependencies };
+    for (const name of ["solid-js", "@solidjs/web", "@solidjs/vite-plugin"]) {
+      expect(pinned[name], name).toBe(solid2[name]);
+    }
+    expect(
+      readCatalog("catalog:\n  a: 1\ncatalogs:\n  b:\n    c: 2\n  d:\n    e: 3\n", "b"),
+    ).toEqual({
+      c: "2",
+    });
+    expect(() => readCatalog("catalog:\n  a: 1\n", "b")).toThrow(/no catalog named b/);
   });
 
   it("refuses a catalog line it can't read, rather than skipping it", () => {
