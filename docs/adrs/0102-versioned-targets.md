@@ -100,7 +100,7 @@ The eighth framework drill (M8): how long a new major took, and what it touched.
 - **D1 first green on eight targets:** `4966a86b`, 2026-11-17T14:12:45+02:00: format, lint and
   types, every unit suite, the corpus at every live layer on all eight targets, and its summary.
 - **Elapsed:** 2 hours 29 minutes.
-- **Golden files:** 421 under `cases/**/__output__/solid2/`, in 273 trees, one wherever
+- **Golden files:** 423 under `cases/**/__output__/solid2/`, in 274 trees, one wherever
   Solid 1 has one.
 
 Every other file the change touched, by area (231):
