@@ -2,35 +2,23 @@
 // project root or in this package's own dependencies. In this repository the corpus's root,
 // tests/integration, holds Solid 1, and only tests/toolchains/solid2 holds Solid 2; in a project
 // with one Solid major, the toolchain directory is the project root.
-import { realpathSync } from "node:fs";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 import type { Plugin } from "vite";
 
 /** Solid 2's runtime packages: what an output, the adapters and Solid itself import. */
 export const SOLID_PACKAGES: readonly string[] = ["solid-js", "@solidjs/web", "@solidjs/signals"];
 
-/** The real directory of a package, as Node resolves it from `fromDir`. */
-export function packageDir(name: string, fromDir: string): string {
-  const require = createRequire(join(fromDir, "package.json"));
-  let manifest: string;
-  try {
-    manifest = require.resolve(`${name}/package.json`);
-  } catch {
-    // A package whose `exports` hides its manifest: find it from its main entry instead.
-    const entry = require.resolve(name);
-    let dir = dirname(entry);
-    while (!dir.endsWith(join("node_modules", name)) && dirname(dir) !== dir) dir = dirname(dir);
-    manifest = join(dir, "package.json");
-  }
-  return realpathSync(dirname(manifest));
-}
-
 /** Whether a specifier names one of Solid 2's packages or a subpath of one. */
 export function isSolidSpecifier(specifier: string): boolean {
   return SOLID_PACKAGES.some((name) => specifier === name || specifier.startsWith(`${name}/`));
 }
+
+/**
+ * The packages an output or an adapter imports, which resolve in the toolchain directory:
+ * `@solidjs/signals` is `solid-js`'s own dependency, which resolves from `solid-js` itself.
+ */
+const IMPORTED: readonly string[] = ["solid-js", "@solidjs/web"];
 
 /**
  * Resolves every import of Solid 2's packages as if the toolchain directory imported it, through
@@ -44,7 +32,7 @@ export function resolveSolid(toolchainDir: string): Plugin {
     name: "unframework:solid2-resolve",
     enforce: "pre",
     async resolveId(source, _importer, options) {
-      if (!isSolidSpecifier(source)) return null;
+      if (!IMPORTED.some((name) => source === name || source.startsWith(`${name}/`))) return null;
       return this.resolve(source, importer, { ...options, skipSelf: true });
     },
   };
