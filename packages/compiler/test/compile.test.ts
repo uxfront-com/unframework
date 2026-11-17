@@ -36,11 +36,23 @@ describe("compile", () => {
       vue: ["Hello.vue"],
       svelte: ["Hello.svelte"],
       solid: ["Hello.tsx"],
+      solid2: ["Hello.tsx"],
       angular: ["hello.ts"],
       qwik: ["Hello.tsx"],
       astro: ["Hello.astro"],
     });
     expect(result.ir?.components.map((component) => component.name)).toEqual(["Hello"]);
+  });
+
+  it("emits solid@2 under solid2, the target it selects (ADR-0102)", async () => {
+    const result = await compile(hello, { filename: "Hello.uf.tsx", targets: ["solid@2"] });
+    expect(Object.keys(result.outputs)).toEqual(["solid2"]);
+    expect(result.outputs.solid2![0]!.contents).toContain('from "@solidjs/web"');
+    const solid1 = await compile(hello, { filename: "Hello.uf.tsx", targets: ["solid@1"] });
+    expect(Object.keys(solid1.outputs)).toEqual(["solid"]);
+    await expect(
+      compile(hello, { filename: "Hello.uf.tsx", targets: ["solid@3" as never] }),
+    ).rejects.toThrow('Unknown target "solid@3".');
   });
 
   it("is deterministic", async () => {

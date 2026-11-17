@@ -23,6 +23,7 @@ const NAMES: Readonly<Record<TargetName, string>> = {
   svelte: "Svelte",
   angular: "Angular",
   solid: "Solid",
+  solid2: "Solid 2",
   qwik: "Qwik",
   astro: "Astro",
 };

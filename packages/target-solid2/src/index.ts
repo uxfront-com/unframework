@@ -66,14 +66,15 @@ export const solid2: Target = defineTarget({
     text: { support: "native" },
     "static-attribute": { support: "native" },
     listbox: { support: "native" },
-    // Signals, memos, listeners and lifecycle hooks are Solid's own. Solid runs what a write
-    // triggers as the write is made, so a watcher and a `watchEffect` go through an inline helper
-    // whose scheduler calls each back once per synchronous run of client code, with Vue's
-    // previous value, change test and cleanup timing (ADR-0048).
+    // Solid 2 lets a read see a write only once it flushes, which an effect's callback or
+    // `onSettled` cannot ask for: state goes through an inline helper, `createState`, whose read
+    // returns the last write. A watcher and a `watchEffect` go through inline helpers whose
+    // scheduler calls each back once per synchronous run of client code, with Vue's previous
+    // value, change test and cleanup timing (ADR-0048, ADR-0102).
     interactivity: {
       support: "emulated",
       helper: WATCHER_HELPER,
-      note: "State, derived values, listeners and lifecycle hooks are Solid's signals, memos, event props and onMount; a watcher and a watchEffect go through an inline helper over createReaction, whose scheduler calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
+      note: "Solid 2 lets a read see a write only once it flushes, so state goes through an inline helper, createState, a signal whose read returns the last value written; derived values are functions, listeners event props and hooks onSettled. A watcher and a watchEffect go through inline helpers over createReaction, whose scheduler is queued at the write and calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
     },
     // A listener with an option is a native listener with its options (`on:click={{ … }}`).
     "event-capture": { support: "native" },
@@ -89,11 +90,11 @@ export const solid2: Target = defineTarget({
     // Listeners run their handlers as the event is dispatched, controls and calls included.
     "conditional-event-control": { support: "native" },
     "use-id": { support: "native" },
-    // Solid applies a write to the DOM as it is made, so a microtask is enough.
+    // Solid 2 applies writes on a microtask, which queues the watchers' run.
     "next-tick": {
       support: "emulated",
       helper: NEXT_TICK_HELPER,
-      note: "Solid has no nextTick: it applies writes to the DOM as it makes them, so an inline helper resolves a promise.",
+      note: "Solid has no nextTick: it applies writes on a microtask queued at the first write, which queues the watchers' run, so an inline helper resolves a promise two microtasks on.",
     },
     // The props proxy reads each key live, whatever keys a parent passes.
     "late-prop": { support: "native" },
@@ -103,12 +104,12 @@ export const solid2: Target = defineTarget({
     list: { support: "native" },
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
-    // Solid's `class` takes one string: static names and toggles print as `class` and
-    // `classList`, and an inline helper joins dynamic parts with them (ADR-0038).
+    // Static names and toggles print as Solid 2's own `class` array, and an inline helper joins
+    // dynamic parts into one string, as a component's `class` prop takes it (ADR-0038).
     "class-binding": {
       support: "emulated",
       helper: CLASS_HELPER,
-      note: "Solid's class takes one string, so an inline helper joins dynamic parts with the static names and toggles; static names and toggles alone print as class and classList.",
+      note: "Static names and toggles print as Solid 2's own class array, class={[\"a b\", { on: active() }]}; a dynamic part goes through an inline helper that joins them into one string, as a component's class prop takes it.",
     },
     "style-binding": {
       support: "emulated",
@@ -171,12 +172,10 @@ export const solid2: Target = defineTarget({
         "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
     },
     hydration: { support: "native" },
-    // One `createResource` runs the awaits, and the rest of the setup and the template wait for
-    // it in a `<Show>` callback inside `<Suspense>` (ADR-0101). Declared there and on the targets
-    // page: after hydration Solid creates that subtree again once the setup resolves, so focus
-    // and selection inside it reset; with the data its server render serializes by default, the
-    // client hydrates in place and doesn't run the setup again; a rejected setup throws from the
-    // resource's read.
+    // One async `createMemo` runs the awaits, and the rest of the setup and the template wait for
+    // it in a keyed `<Show>` callback inside `<Loading>` (ADR-0101, ADR-0102). Declared on the
+    // targets page: Solid 2 hydrates the subtree in place with the values its server render
+    // serializes, so after hydration the awaits don't run again; the rest of the setup does.
     "async-setup": { support: "native" },
     // `<For>` follows the items themselves, so a list goes through an inline helper whose rows
     // follow the source's key (ADR-0096).
@@ -185,7 +184,7 @@ export const solid2: Target = defineTarget({
       helper: KEYED_HELPER,
       note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through an inline helper over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
     },
-    // `<Portal>` wraps its content in a `<div>` (ADR-0098).
+    // `<Portal>` throws on the server and renders where it is created (ADR-0098, ADR-0102).
     // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through an inline queue
     // in Vue's order: Solid runs a parent's ref before its children's (ADR-0099).
     directive: {
@@ -202,7 +201,7 @@ export const solid2: Target = defineTarget({
     teleport: {
       support: "emulated",
       helper: TELEPORT_HELPER,
-      note: "Solid's <Portal> wraps its content in a <div>, so a `<Teleport>` goes through an inline helper, `Teleport`, that inserts its one element into `to` once the component has mounted, as <Portal> does in <head> (ADR-0098).",
+      note: "Solid 2's <Portal> inserts its content with no wrapper, but throws on the server and renders where it is created, so a `<Teleport>` goes through an inline helper, `Teleport`, that renders a <Portal> into `to` once the component has mounted, the teleports in the order they rendered (ADR-0098).",
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {

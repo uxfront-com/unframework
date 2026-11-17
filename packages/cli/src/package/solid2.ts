@@ -25,7 +25,8 @@ async function solidCompiler({ resolve }: PackagerInput): Promise<object> {
     renderChunk: async (code: string, chunk: { fileName: string }) =>
       (
         await compiler.transformAsync(code, {
-          filename: chunk.fileName,
+          // The compiler reads JSX by the file's extension, and a chunk is named `.js`.
+          filename: chunk.fileName.replace(/\.js$/, ".jsx"),
           generate: "dom",
           moduleName: "@solidjs/web",
         })

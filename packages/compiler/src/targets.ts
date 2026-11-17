@@ -32,10 +32,13 @@ export const DEFAULT_TARGETS: readonly TargetName[] = TARGET_NAMES.filter(
   (name) => name !== "solid2",
 );
 
-/** The selectors that name a framework's major, and the target each selects (ADR-0102). */
+/**
+ * The selectors that name a framework's major, and the target each selects (ADR-0102), the newest
+ * first: a major that doesn't exist (`solid@3`) is as close to each, and the hint names the first.
+ */
 const VERSIONED: Readonly<Record<Exclude<TargetSelector, TargetName>, TargetName>> = {
-  "solid@1": "solid",
   "solid@2": "solid2",
+  "solid@1": "solid",
 };
 
 /** Every selector a configuration or the CLI accepts: the ids, then the versioned forms. */
