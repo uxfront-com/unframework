@@ -201,6 +201,8 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
 - **`…/toolchain/client`**: mounts with `mount` and `flushSync`; `settled` settles. Each key of
   the props reads a `$state.raw` box of its own (`src/toolchain/props.svelte.ts`), so a value is
   the caller's own object, never a deep proxy (identity and `structuredClone` hold, ADR-0046).
+  A box starts with its value, so making one at a template effect's first read writes nothing,
+  which Svelte's async mode forbids once an async component has loaded on the page (ADR-0101).
   `rerender` empties the keys the new props lack, which restores their `$props()` defaults, and
   assigns the others whose value changed, as a parent does (ADR-0043): re-assigning an unread
   key's same value would hand an effect's teardown Svelte's value from before the flush,

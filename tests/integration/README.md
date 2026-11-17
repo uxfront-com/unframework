@@ -351,10 +351,6 @@ spec file that a `-t` run skips stalled the tests it kept. The harness's sequenc
 (`harness/sequencer.ts`) runs `sourcemaps/mounted-throws` after every other spec file of
 `hydrate:vue`, so no file runs after it on its page. `LEAVES_PAGE_UNUSABLE` in
 `harness/projects.ts` names that one case per target, with its reason (ADR-0106).
-`CHANGES_PAGE` names an area of cases whose spec files change a target's page for every file after
-them: Svelte's `async-setup` cases turn on Svelte's page-wide async runtime, so the sequencer runs
-them after every other file of `browser:svelte` and `hydrate:svelte`, before any unusable case
-(ADR-0101).
 
 An async setup's loaders resolve after a microtask (`await Promise.resolve()`), deterministically,
 so the server and the client load the same values, and a mount has resolved before the first

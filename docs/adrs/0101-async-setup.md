@@ -3,9 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-11-17
 - **Plan:** §4.2, §5.4, §6, §7.2 L1 to L12, §9 M8; P4, P7; ADR-0033, ADR-0045, ADR-0053,
-  ADR-0069, ADR-0095, ADR-0106; amends ADR-0106 (the harness's sequencer also runs an area of
-  cases last on a target's browser and hydrate pages) and ADR-0095 (the `client agreement` render
-  gives the focus back)
+  ADR-0069, ADR-0095, ADR-0106; amends ADR-0095 (the `client agreement` render gives the focus
+  back)
 
 ## Context
 
@@ -135,11 +134,11 @@ Declared differences, on the targets page:
 1. **Vue's root.** `toolchain/client.ts` and `hydrate.ts` render the root inside `<Suspense>` when
    its `setup` is an async function, and only then, so no other case mounts through Suspense's
    hidden container.
-2. **Svelte's pages.** Svelte's async runtime, once on, changes `tick()` and batching for every
-   later spec file on the page, whose rerenders then fail with `state_unsafe_mutation`. So
-   `CHANGES_PAGE` names the `async-setup` area for Svelte, and the sequencer runs those spec files
-   after every other file of `browser:svelte` and `hydrate:svelte`, before any
-   `LEAVES_PAGE_UNUSABLE` case. This amends ADR-0106.
+2. **Svelte's props.** Svelte's async runtime, once on, is on for every later spec file on the
+   page, and it forbids a write of state inside a template effect. The toolchain's props object
+   makes a key's box at its first read, which a template effect may be, so each box starts with its
+   value rather than being written after it is made (`state_unsafe_mutation` otherwise). The
+   spec files keep sharing their pages in any order.
 3. **The focus after `client agreement`.** A component that focuses as it mounts focuses its client
    render's copy too, which the check then removes. The client render gives the focus back to the
    element that held it, so the hydrated view keeps it. This amends ADR-0095.

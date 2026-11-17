@@ -189,20 +189,6 @@ export const LEAVES_PAGE_UNUSABLE: Readonly<Record<string, { case: string; reaso
   },
 };
 
-/**
- * The area of cases whose spec files change a target's page for every spec file after them, by
- * target, with the reason (ADR-0101). Both page-sharing projects of the target, its browser one
- * and its hydrate one, run the area's spec files after every other file, so no other file runs
- * after one of them on its page. A target's `LEAVES_PAGE_UNUSABLE` case still runs last of all.
- */
-export const CHANGES_PAGE: Readonly<Record<string, { area: string; reason: string }>> = {
-  svelte: {
-    area: "async-setup",
-    reason:
-      "Its components compile in Svelte's async mode (`experimental.async`), whose runtime turns on a flag for the whole page once one loads, which changes `tick()` and batching for every component after it: a later spec file's rerender then fails with `state_unsafe_mutation`.",
-  },
-};
-
 /** A project's `maxWorkers`, when it has its own page count. */
 function pagesOption(pages: number | undefined): { maxWorkers?: number } {
   return pages === undefined ? {} : { maxWorkers: pages };

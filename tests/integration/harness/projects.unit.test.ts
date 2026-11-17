@@ -6,7 +6,6 @@ import { caseConfigs, listCases } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
 import {
   BENCH_PROJECT,
-  CHANGES_PAGE,
   FRESH_PAGE_PER_FILE,
   fileParallelism,
   harnessProjects,
@@ -81,12 +80,6 @@ describe("projects", () => {
     for (const entry of Object.values(LEAVES_PAGE_UNUSABLE)) {
       expect(corpus.find((info) => info.id === entry.case)?.spec).toBeDefined();
     }
-  });
-
-  it("names, for Svelte alone, the area of cases that changes a page, with the reason (ADR-0101)", () => {
-    expect(CHANGES_PAGE).toEqual({
-      svelte: { area: "async-setup", reason: expect.stringMatching(/experimental\.async/) },
-    });
   });
 
   it("names one compile and one harness project, and four projects per target", () => {
