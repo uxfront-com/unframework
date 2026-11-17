@@ -474,16 +474,17 @@ function docComment(text: string): string {
 }
 
 /**
- * Vue's `nextTick` (`next-tick`, emulated): Solid applies a write to the DOM as it is made, and the
- * watchers' flush is a microtask queued at the first write, so a promise resolved now continues
- * after both. Client code awaits it (`nextTick(callback)` is UF2025).
+ * Vue's `nextTick` (`next-tick`, emulated). Solid 2 applies a write on a microtask queued at the
+ * first write, and the scheduler's flush is queued at the write too; a write the scheduler didn't
+ * see, a prop's, queues its watchers from that flush, a microtask on. So the promise resolves two
+ * microtasks on, after all of them. Client code awaits it (`nextTick(callback)` is UF2025).
  */
 export function nextTickHelperCode(name: string): string {
   return `/**
- * Resolves once the DOM has updated and the watchers have run: Solid applies writes as it makes
- * them, and the watchers run in a microtask queued at the first write, before this one.
+ * Resolves once the DOM has updated and the watchers have run: Solid applies writes on a microtask
+ * queued at the first write, which queues the watchers of a write the component didn't make.
  */
 function ${name}(): Promise<void> {
-  return Promise.resolve();
+  return new Promise((resolve) => queueMicrotask(() => queueMicrotask(resolve)));
 }`;
 }

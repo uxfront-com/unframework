@@ -1575,6 +1575,53 @@ function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;
 }
 `,
+  // A parent that writes its child's prop, then awaits `nextTick()`: the child's watcher of the
+  // prop has run by then, as on Vue, though the child's scheduler only learns of the write when
+  // Solid flushes it (test/behaviour.browser.test.ts mounts it).
+  TickParent: `import { defineEmits, nextTick, ref, watch } from "@uxfront/unframework";
+
+export default function TickParent() {
+  const emit = defineEmits<{ checked: [seen: number] }>();
+  const count = ref(0);
+  const seen = ref(0);
+
+  async function bump() {
+    count.value++;
+    await nextTick();
+    emit("checked", seen.value);
+  }
+
+  return (
+    <div>
+      <TickChild count={count.value} onSeen={(value: number) => (seen.value = value)} />
+      <button type="button" onClick={bump}>
+        Bump
+      </button>
+    </div>
+  );
+}
+
+function TickChild({ count }: { count: number }) {
+  const emit = defineEmits<{ seen: [value: number] }>();
+  watch(
+    () => count,
+    (value) => emit("seen", value),
+  );
+  return <output>{count}</output>;
+}
+`,
+  // TickParent's child, as its own output file imports it.
+  TickChild: `import { defineEmits, watch } from "@uxfront/unframework";
+
+export function TickChild({ count }: { count: number }) {
+  const emit = defineEmits<{ seen: [value: number] }>();
+  watch(
+    () => count,
+    (value) => emit("seen", value),
+  );
+  return <output>{count}</output>;
+}
+`,
   // SelectRows's child, as its own output file imports it.
   SelectRow: `export function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;

@@ -212,6 +212,7 @@ describe("solid2 output where Solid needs a rewrite (src/render.ts, src/attribut
     "NumberText",
     "UnmatchedSelect",
     "ListedSelect",
+    "TickChild",
   ])("is test/fixtures/%s.tsx, which the browser test mounts", async (name) => {
     expect(await emitSource(SOURCES[name]!)).toBe(
       readFileSync(new URL(`./fixtures/${name}.tsx`, import.meta.url), "utf8"),
@@ -220,15 +221,18 @@ describe("solid2 output where Solid needs a rewrite (src/render.ts, src/attribut
 
   // The repo's formatter puts a relative import after the packages' (format:check reads the
   // fixtures), where the emitter writes its imports by specifier: the code is the same.
-  it("is test/fixtures/SelectRows.tsx, which imports its child, as the repo formats it", async () => {
-    // The repo's own oxfmt config, by URL: it is no module of this package's to type-check.
-    const config = new URL("../../../oxfmt.config.ts", import.meta.url).href;
-    const { default: repo } = (await import(/* @vite-ignore */ config)) as {
-      default: FormatConfig;
-    };
-    const { code } = await format("SelectRows.tsx", await emitSource(SOURCES.SelectRows!), repo);
-    expect(code).toBe(readFileSync(new URL("./fixtures/SelectRows.tsx", import.meta.url), "utf8"));
-  });
+  it.each(["SelectRows", "TickParent"])(
+    "is test/fixtures/%s.tsx, which imports its child, as the repo formats it",
+    async (name) => {
+      // The repo's own oxfmt config, by URL: it is no module of this package's to type-check.
+      const config = new URL("../../../oxfmt.config.ts", import.meta.url).href;
+      const { default: repo } = (await import(/* @vite-ignore */ config)) as {
+        default: FormatConfig;
+      };
+      const { code } = await format(`${name}.tsx`, await emitSource(SOURCES[name]!), repo);
+      expect(code).toBe(readFileSync(new URL(`./fixtures/${name}.tsx`, import.meta.url), "utf8"));
+    },
+  );
 
   it("renders every line feed of a <pre> whose text follows expressions on the server", async () => {
     const html = await serverRender("Address", { name: "Ada", street: "12 St James's Square" });

@@ -424,3 +424,16 @@ it("runs lifecycle hooks in the browser, empties a template ref with its element
   expect(events).toEqual([]);
   expect(logged).toEqual([]);
 });
+
+// The helper's declaration (src/index.ts, `next-tick`): after `await nextTick()`, the watchers of
+// what the handler wrote have run, a child's too, whose scheduler only learns of the write when
+// Solid applies it.
+it("resumes `await nextTick()` after a child's watcher of the prop it wrote has run", async () => {
+  mounted = await mount(await fixture("TickParent"), container, { on: listeners("checked") });
+  await mounted.settle();
+  await userEvent.click(button("Bump"));
+  await mounted.settle();
+  expect(drain()).toEqual([["checked", 1]]);
+  expect(container.querySelector("output")!.textContent).toBe("1");
+  expect(logged).toEqual([]);
+});

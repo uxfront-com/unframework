@@ -115,11 +115,11 @@ function KeyedFor<T>(props: {
 }
 
 /**
- * Resolves once the DOM has updated and the watchers have run: Solid applies writes as it makes
- * them, and the watchers run in a microtask queued at the first write, before this one.
+ * Resolves once the DOM has updated and the watchers have run: Solid applies writes on a microtask
+ * queued at the first write, which queues the watchers of a write the component didn't make.
  */
 function nextTick(): Promise<void> {
-  return Promise.resolve();
+  return new Promise((resolve) => queueMicrotask(() => queueMicrotask(resolve)));
 }
 
 /**

@@ -791,10 +791,13 @@ describe("solid2 nextTick and names the output takes", () => {
     );
     expect(plain).toContain("    await nextTick();");
     // `await nextTick()` is its one form (UF2025): the helper takes no callback.
-    expect(plain).toContain("function nextTick(): Promise<void> {\n  return Promise.resolve();\n}");
-    // The watchers' flush is a microtask queued at the first write, before this one's.
+    // Two microtasks: the first is Solid's flush, queued at the first write, which queues the
+    // watchers of a child's prop; the second runs them (test/behaviour.browser.test.ts).
     expect(plain).toContain(
-      " * Resolves once the DOM has updated and the watchers have run: Solid applies writes as it makes",
+      "function nextTick(): Promise<void> {\n  return new Promise((resolve) => queueMicrotask(() => queueMicrotask(resolve)));\n}",
+    );
+    expect(plain).toContain(
+      " * Resolves once the DOM has updated and the watchers have run: Solid applies writes on a microtask",
     );
   });
 
