@@ -32,8 +32,9 @@ import {
 import { SolidComposition } from "./composition.ts";
 import { emitDirective, factoryCode, QUEUE_HELPER } from "./directive.ts";
 import { typeParameterDeclaration } from "./generics.ts";
-import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
+import { NEXT_TICK_HELPER, REF_HELPER, STATE_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import {
+  ARIA_HELPER,
   CLASS_HELPER,
   KEYED_HELPER,
   SCOPE_HELPER,
@@ -222,11 +223,14 @@ export const solid2: Target = defineTarget({
     });
     const bases = [
       CLASS_HELPER,
+      ARIA_HELPER,
       SCOPE_HELPER,
       STYLE_HELPER,
       KEYED_HELPER,
       TELEPORT_HELPER,
       QUEUE_HELPER,
+      STATE_HELPER,
+      REF_HELPER,
     ].map((helper) => {
       const { base, others } = moduleHelperName(helper, reserved, index);
       for (const name of others) names.add(name);
@@ -310,7 +314,11 @@ export const solid2: Target = defineTarget({
     const directives = queue
       ? own.map((directive) =>
           placeholders.statements(
-            `${factoryCode(directive, { solid: (name) => code.solid(name), queue: queue.name })}\n`,
+            `${factoryCode(directive, {
+              solid: (name) => code.solid(name),
+              isServer: () => imports.add("@solidjs/web", "isServer"),
+              queue: queue.name,
+            })}\n`,
           ),
         )
       : [];
@@ -375,8 +383,9 @@ function rendered(
   for (const item of component.setup.toReversed()) {
     if (item.kind !== "Provide") continue;
     const value = context.placeholders.expression(code.provided(item.key, item.value));
+    // Solid 2's context is its own provider, `<ThemeKey value={…}>`.
     wrapped = js.jsxElement(
-      `${item.key}.Provider`,
+      item.key,
       [js.jsxAttribute("value", js.jsxExpressionContainer(value))],
       [
         wrapped.type === "JSXElement" || wrapped.type === "JSXFragment"
@@ -390,12 +399,13 @@ function rendered(
 
 /**
  * An async setup's template (ADR-0101): the rest of the setup and the template in the function
- * child of `<Show>`, which runs once the resource resolves, inside a `<Suspense>` with no
+ * child of `<Show>`, which runs once the async memo resolves, inside a `<Loading>` with no
  * fallback, so the server render waits for it and a client mount shows nothing until then. A
  * `<Show>` callback, not an inner component: the rest of the setup closes over `props`, which an
  * inner component would read through props of its own, and `solid/reactivity` (L5) reports.
  */
 function pending(resource: SolidResource, body: Statement[], code: SolidCode): JsxExpression {
+  // Keyed: the child takes the record itself, which Solid 2 reads nowhere but where it tracks.
   const show = js.jsxElement(
     code.solid("Show"),
     [
@@ -403,6 +413,7 @@ function pending(resource: SolidResource, body: Statement[], code: SolidCode): J
         "when",
         js.jsxExpressionContainer(js.callExpression(js.identifier(resource.accessor), [])),
       ),
+      js.jsxAttribute("keyed", null),
     ],
     [
       js.jsxExpressionContainer(
@@ -410,7 +421,7 @@ function pending(resource: SolidResource, body: Statement[], code: SolidCode): J
       ),
     ],
   );
-  return js.jsxElement(code.solid("Suspense"), [], [show]);
+  return js.jsxElement(code.solid("Loading"), [], [show]);
 }
 
 /**

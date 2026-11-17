@@ -1,26 +1,25 @@
-// Listeners and template refs as Solid writes them (ADR-0047, ADR-0049).
+// Listeners and template refs as Solid 2 writes them (ADR-0047, ADR-0049, ADR-0102).
 //
-// - A listener is Solid's event prop, by solid-js 1.9's own spelling (`onClick`, `onKeyDown`,
+// - A listener is Solid's event prop, by its own spelling (`onClick`, `onKeyDown`,
 //   `onDblClick`): Solid delegates the events it lists to the document and listens natively to
 //   the others (`focus`, `blur`, `change`, `submit`, `wheel`), which keeps the DOM's semantics
-//   (`event-semantics`, native). A listener with an option is a native listener with its options,
-//   `on:click={{ handleEvent, capture: true }}` (`event-capture`, `event-once` and
-//   `event-passive`, native). A delegated listener runs when the event reaches the document,
-//   after every native one: where the component also listens to a delegated event natively
-//   after its target (`once`, `passive`), its other listeners of that event are native too,
-//   `on:click={save}`, so they all run in the DOM's order and `stopPropagation()` stops them
-//   alike (ADR-0047). A capture listener needs no such care: it runs before the event reaches its
-//   target in any case.
-// - Solid takes one listener of an event on an element (`solid/jsx-no-duplicate-props` counts
-//   `onClick`, `on:click` and `oncapture:click` as one prop): the element's others of that
-//   event (`onClickCapture` beside `onClick`) are added from its `ref` callback, with their
-//   options, as `addEventListener` takes them, and so are all its listeners of one event and
-//   phase where it has more than one (`onClick` and `onClickOnce`), in attribute order, so they
-//   run in that order (ADR-0047). So is one of an event Solid's types give no prop on that
+//   (`event-semantics`, native). Solid 2 has no `on:` namespace, so a listener with an option is
+//   added from the element's `ref` callback with its options, as `addEventListener` takes them
+//   (`event-capture`, `event-once` and `event-passive`, native), which Solid 2 names the way to
+//   give one. A delegated listener runs when the event reaches the document, after every native
+//   one: where the component also listens to a delegated event natively after its target
+//   (`once`, `passive`), its other listeners of that event are added natively too, so they all
+//   run in the DOM's order and `stopPropagation()` stops them alike (ADR-0047). A capture
+//   listener needs no such care: it runs before the event reaches its target in any case.
+// - Solid takes one listener of an event on an element: the element's others of that event are
+//   added from its `ref` callback, with their options, and so are all its listeners of one event
+//   and phase where it has more than one (`onClick` and `onClickOnce`), in attribute order, so
+//   they run in that order (ADR-0047). So is one of an event Solid's types give no prop on that
 //   element (`encrypted` but on `<audio>` and `<video>`).
 // - A template ref is a `let` the element's `ref` callback sets, and clears when the element is
-//   removed (`onCleanup` in the callback runs when its branch is disposed): empty again, as the
-//   other targets' refs are (ADR-0049).
+//   removed, through an inline helper, `clearedRef`, that registers the cleanup as the `ref` is
+//   evaluated in the element's branch, since Solid 2 refuses `onCleanup` in a `ref` callback:
+//   empty again, as the other targets' refs are (ADR-0049).
 import { jsxExpression, js, rewriteCode } from "@unframework.dev/codegen";
 import type { ImportSet, JsxContext, Placeholders } from "@unframework.dev/codegen";
 import type {
@@ -230,17 +229,14 @@ export function solidListeners(
   imports: ImportSet,
   placeholders: Placeholders,
   narrowings: Narrowings,
-  modelRef: (
-    element: ElementNode,
-    context: JsxContext,
-  ) => ((parameter: string) => string) | undefined,
+  modelRef: (element: ElementNode, context: JsxContext) => string[] | undefined,
 ): SolidListeners {
   const native = nativeEvents(code.component);
   const plans = new WeakMap<ElementNode, ElementPlan>();
   const planOf = (element: ElementNode): ElementPlan => {
     let plan = plans.get(element);
     if (!plan) {
-      plan = elementPlan(element, code.component);
+      plan = elementPlan(element, code.component, native);
       plans.set(element, plan);
     }
     return plan;
@@ -264,36 +260,51 @@ export function solidListeners(
     }
   };
   const expression = (text: string) => js.jsxExpressionContainer(placeholders.expression(text));
-  /** The `ref` callback of an element: its template ref set and cleared, its added listeners. */
+  /**
+   * The `ref` of an element: its template ref set and cleared, its added listeners, a `v-model`'s
+   * helpers and its directives. Solid 2 creates no computation in a `ref` callback, so what makes
+   * one (a directive's factory, `modelText`) is evaluated with the `ref`, and the element's `ref`
+   * is an array of callbacks, which Solid calls in order.
+   */
   const refCallback = (element: ElementNode, context: JsxContext): JsxAttributeItem => {
     parameter ??= imports.claim("element");
-    const statements: string[] = [];
+    const entries: string[] = [];
     const ref = element.attributes.find((attribute) => attribute.kind === "Ref");
-    if (ref) {
-      const { name } = code.component.bindings.find((binding) => binding.id === ref.binding)!;
-      statements.push(
-        `${name} = ${parameter};`,
-        `${code.solid("onCleanup")}(() => {\n${name} = null;\n});`,
-      );
-    }
+    const refName = ref
+      ? code.component.bindings.find((binding) => binding.id === ref.binding)!.name
+      : undefined;
+    const statements: string[] = [];
+    if (refName) statements.push(`${refName} = ${parameter};`);
     for (const added of planOf(element).added) {
       const option = options(added);
       statements.push(
         `${parameter}.addEventListener(${JSON.stringify(added.event)}, ${handler(added)}${option ? `, { ${option} }` : ""});`,
       );
     }
-    // A `v-model`'s helper that needs the element (src/models.ts), in the same callback.
-    const model = modelRef(element, context);
-    if (model) statements.push(model(parameter));
-    // Each directive's factory, called while the element renders, as its own `ref` would be.
+    if (statements.length) {
+      const [only] = statements;
+      const body =
+        statements.length === 1 && !ref ? only!.slice(0, -1) : `{\n${statements.join("\n")}\n}`;
+      const callback = `(${parameter}) => ${body}`;
+      // A template ref is emptied once its element is removed, from the `ref`'s own branch.
+      entries.push(
+        refName
+          ? `${code.clearedRef()}(${callback}, () => {\n${refName} = null;\n})`
+          : callback,
+      );
+    }
+    // A `v-model`'s helpers that need the element (src/models.ts).
+    entries.push(...(modelRef(element, context) ?? []));
+    // Each directive's factory, evaluated as the element renders, as its own `ref` would be.
     for (const directive of planOf(element).directives) {
       const value = rewriteCode(directive.value, code.component, code.rules, "pure");
-      statements.push(`${directive.name}(() => ${value})(${parameter});`);
+      entries.push(`${directive.name}(() => ${value})`);
     }
-    const [only] = statements;
-    const body =
-      statements.length === 1 && !ref ? only!.slice(0, -1) : `{\n${statements.join("\n")}\n}`;
-    return js.jsxAttribute("ref", expression(`(${parameter}) => ${body}`));
+    const [only] = entries;
+    return js.jsxAttribute(
+      "ref",
+      expression(entries.length === 1 ? only! : `[${entries.join(", ")}]`),
+    );
   };
   return {
     eventAttribute(attribute, element, context) {
@@ -301,18 +312,8 @@ export function solidListeners(
       if (plan.added.includes(attribute)) {
         return plan.carrier === attribute ? [refCallback(element, context)] : [];
       }
-      const option = options(attribute);
-      if (option) {
-        return [
-          js.jsxAttribute(
-            `on:${attribute.event}`,
-            expression(`{ handleEvent: ${handler(attribute, false)}, ${option} }`),
-          ),
-        ];
-      }
-      const prop = SOLID_EVENT_PROPS.get(attribute.event);
-      const name = prop && !native.has(attribute.event) ? prop : `on:${attribute.event}`;
-      return [js.jsxAttribute(name, expression(handler(attribute)))];
+      // The plan adds every listener but those Solid's own props carry.
+      return [js.jsxAttribute(SOLID_EVENT_PROPS.get(attribute.event)!, expression(handler(attribute)))];
     },
     refAttribute(_attribute, element, context) {
       return [refCallback(element, context)];
@@ -409,7 +410,11 @@ const SOLID_NARROWER_TYPES: ReadonlyMap<string, string> = new Map([["click", "Po
  * this tag (`encrypted` but on media), or a handler that takes its event as the DOM types it, can
  * only be added.
  */
-function elementPlan(element: ElementNode, component: UfComponent): ElementPlan {
+function elementPlan(
+  element: ElementNode,
+  component: UfComponent,
+  native: ReadonlySet<string>,
+): ElementPlan {
   const listeners = element.attributes.filter(
     (attribute): attribute is EventAttribute => attribute.kind === "Event",
   );
@@ -420,10 +425,14 @@ function elementPlan(element: ElementNode, component: UfComponent): ElementPlan 
       const phase = same.filter((listener) => Boolean(listener.capture) === capture);
       return phase.length === 1 ? phase[0] : undefined;
     };
+    // A prop takes no option, and a native listener of a delegated event is added, so it runs in
+    // the DOM's order: only a plain listener of an event Solid gives a prop is one.
     const own = [alone(false), alone(true)].find(
       (listener) =>
         listener !== undefined &&
-        typedOn(listener.event, element.tag) &&
+        !options(listener) &&
+        !native.has(listener.event) &&
+        SOLID_EVENT_PROPS.has(listener.event) &&
         !needsDomType(listener, component),
     );
     if (own) props.add(own);
@@ -440,17 +449,6 @@ function elementPlan(element: ElementNode, component: UfComponent): ElementPlan 
     carrier: ref ?? added[0] ?? directives[0],
     directives,
   };
-}
-
-/** The elements whose type in Solid's JSX takes `encrypted` (`MediaHTMLAttributes`). */
-const MEDIA_ELEMENTS: ReadonlySet<string> = new Set(["audio", "video"]);
-
-/**
- * Whether Solid's types give an element of a tag a prop for an event: every event of
- * {@link SOLID_EVENT_PROPS} on every element, and `encrypted` (`on:encrypted`) on media ones.
- */
-function typedOn(event: string, tag: string): boolean {
-  return SOLID_EVENT_PROPS.has(event) || (event === "encrypted" && MEDIA_ELEMENTS.has(tag));
 }
 
 /** A listener's option as `addEventListener` takes it, `capture: true`, or none. */

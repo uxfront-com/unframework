@@ -1,8 +1,8 @@
 // `v-model` on a form control as Solid writes it (ADR-0054): the control's state as a prop, and
 // the listener that writes it back, Vue's events for each control.
 //
-// - A text field: `value` and `onInput`; a `<textarea>`: its value in the browser and its text
-//   on the server, and `onInput`; a `<select>`: each option's `selected` (src/render.ts), and `onChange`;
+// - A text field and a `<textarea>`: `value` and `onInput`, which Solid 2's server writes as a
+//   textarea's text; a `<select>`: each option's `selected` (src/render.ts), and `onChange`;
 //   in the browser, `selectOptions` from the `ref` (below), which selects none where no option
 //   holds the state.
 // - A checkbox: `checked` and `onChange`; a radio: `checked={plan() === "monthly"}`, and
@@ -134,13 +134,9 @@ export function modelAttribute(
   const nullish = mayBeNullish(context.component, ref.binding);
   const text = (expression: AstExpression) =>
     nullish ? js.logicalExpression("??", expression, js.stringLiteral("")) : expression;
-  const server = () => js.identifier(helpers.isServer());
-  // Solid's server writes a `<textarea>`'s `value` as an attribute: there the state is its text,
-  // and in the browser its value, as Vue renders it.
-  const textarea = (shown: () => AstExpression) => [
-    prop("value", js.conditionalExpression(server(), nothing(), text(shown()))),
-    prop("children", js.conditionalExpression(server(), value(), nothing())),
-  ];
+  // Solid 2's server writes a `<textarea>`'s `value` as its text, as Vue renders it, and the
+  // browser sets its value.
+  const textarea = (shown: () => AstExpression) => [prop("value", text(shown()))];
   if (attribute.trim || attribute.lazy || number) {
     // The field's initial value, which the server renders; `modelText` keeps it in step after.
     const initial = () =>
@@ -153,9 +149,7 @@ export function modelAttribute(
           prop(
             "ref",
             context.placeholders.expression(
-              attribute.control === "textarea"
-                ? `(field) => {\n${call}(field);\n${helpers.textCaret()}(field);\n}`
-                : call,
+              attribute.control === "textarea" ? `[${call}, ${helpers.textCaret()}]` : call,
             ),
           ),
         ];
@@ -169,13 +163,10 @@ export function modelAttribute(
   const selection = () => {
     if (carried) return [];
     if (attribute.control !== "select" && !unmarkedOptions(element.children)) return [];
-    const select = helpers.select();
     return [
       prop(
         "ref",
-        context.placeholders.expression(
-          `(${select}) => ${helpers.selectOptions()}(${select}, ${binding.name})`,
-        ),
+        context.placeholders.expression(`${helpers.selectOptions()}(${binding.name})`),
       ),
     ];
   };
@@ -248,36 +239,32 @@ export function modelAttribute(
 }
 
 /**
- * What a `v-model` does in its element's `ref`, as a statement of the element's own `ref` callback
- * (src/listeners.ts) given its parameter, where the element has one: `modelText`'s binding, or
- * `selectOptions`' selection; none for any other `v-model`.
+ * What a `v-model` puts in its element's `ref` (src/listeners.ts), where the element has a `ref`
+ * of its own: `modelText`'s binding, the caret of a `<textarea>`, or `selectOptions`' selection,
+ * each a `ref` callback or a factory's call that returns one; none for any other `v-model`.
  */
 export function modelRef(
   element: ElementNode,
   context: JsxContext,
   code: SolidCode,
   helpers: ModelHelpers,
-): ((parameter: string) => string) | undefined {
+): string[] | undefined {
   const attribute = element.attributes.find(
     (each): each is ModelAttribute => each.kind === "Model",
   );
   const [ref] = attribute?.value.refs ?? [];
   if (!attribute || ref?.kind !== "Binding") return undefined;
   const { name } = jsxBinding(ref.binding, context);
-  const caret = attribute.control === "textarea";
+  const caret = attribute.control === "textarea" ? [helpers.textCaret()] : [];
   if (attribute.trim || attribute.lazy || attribute.number || attribute.control === "number") {
-    const call = modelTextCall(attribute, name, code.setter(ref.binding)!, helpers);
-    return (parameter) =>
-      caret
-        ? `${call}(${parameter});\n${helpers.textCaret()}(${parameter});`
-        : `${call}(${parameter});`;
+    return [modelTextCall(attribute, name, code.setter(ref.binding)!, helpers), ...caret];
   }
-  if (caret) return (parameter) => `${helpers.textCaret()}(${parameter});`;
+  if (caret.length) return caret;
   if (
     attribute.control === "select" ||
     (attribute.control === "select-multiple" && unmarkedOptions(element.children))
   ) {
-    return (parameter) => `${helpers.selectOptions()}(${parameter}, ${name});`;
+    return [`${helpers.selectOptions()}(${name})`];
   }
   return undefined;
 }
@@ -337,11 +324,6 @@ function prop(name: string, expression: AstExpression): JsxAttribute {
   return js.jsxAttribute(name, js.jsxExpressionContainer(expression));
 }
 
-/** `undefined`. */
-function nothing(): AstExpression {
-  return js.identifier("undefined");
-}
-
 /** A checkbox's or a radio's own value: its `value` attribute, or `"on"`, as the DOM's. */
 function own(element: ElementNode, context: JsxContext): AstExpression {
   for (const attribute of element.attributes) {
@@ -375,7 +357,23 @@ function ${name}<T extends string | number | null | undefined>(
     const number = Number.parseFloat(text);
     return Number.isNaN(number) ? text : number;
   };
+  let bound: HTMLInputElement | HTMLTextAreaElement | undefined;
+  // Created here, as the \`ref\` is evaluated: Solid 2 creates no computation in a \`ref\` callback.
+  ${createRenderEffect}(
+    () => value() ?? "",
+    (next) => {
+      const field = bound;
+      if (!field) return;
+      const shown =
+        modifiers.number && !/^0\\d/.test(field.value) ? cast(field.value) : field.value;
+      if (shown === next) return;
+      const typing = document.activeElement === field && field.type !== "range";
+      if (typing && modifiers.trim && field.value.trim() === next) return;
+      field.value = String(next);
+    },
+  );
   return (field) => {
+    bound = field;
     field.addEventListener(modifiers.lazy ? "change" : "input", () => {
       const text = modifiers.trim ? field.value.trim() : field.value;
       setValue((modifiers.number ? cast(text) : text) as T);
@@ -386,15 +384,6 @@ function ${name}<T extends string | number | null | undefined>(
         field.value = String(modifiers.number ? cast(text) : text);
       });
     }
-    ${createRenderEffect}(() => {
-      const next = value() ?? "";
-      const shown =
-        modifiers.number && !/^0\\d/.test(field.value) ? cast(field.value) : field.value;
-      if (shown === next) return;
-      const typing = document.activeElement === field && field.type !== "range";
-      if (typing && modifiers.trim && field.value.trim() === next) return;
-      field.value = String(next);
-    });
   };
 }`;
 }
@@ -428,12 +417,15 @@ function selectOptionsHelperCode(
   solid: { createEffect: string; onCleanup: string },
 ): string {
   return `/**
- * Selects a \`<select>\`'s options that hold \`value\`, or a value of it for an array, and none
- * where none holds it: as the value changes, and as options come and go.
+ * The \`ref\` of a \`<select>\` whose options that hold \`value\`, or a value of it for an array, it
+ * selects, and none where none holds it: as the value changes, and as options come and go.
  */
-function ${name}(select: HTMLSelectElement, value: () => unknown): void {
-  const choose = () => {
-    const current = value();
+function ${name}(value: () => unknown): (select: HTMLSelectElement) => void {
+  let bound: HTMLSelectElement | undefined;
+  let observer: MutationObserver | undefined;
+  const choose = (current: unknown) => {
+    const select = bound;
+    if (!select) return;
     if (!Array.isArray(current)) {
       // \`selectedIndex\` -1 where no option holds it: unselecting each one selects the first.
       select.selectedIndex = [...select.options].findIndex(
@@ -443,9 +435,13 @@ function ${name}(select: HTMLSelectElement, value: () => unknown): void {
     }
     for (const option of select.options) option.selected = current.includes(option.value);
   };
-  ${solid.createEffect}(choose);
-  const observer = new MutationObserver(choose);
-  observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
-  ${solid.onCleanup}(() => observer.disconnect());
+  // Created here, as the \`ref\` is evaluated: Solid 2 creates no computation in a \`ref\` callback.
+  ${solid.createEffect}(value, choose);
+  ${solid.onCleanup}(() => observer?.disconnect());
+  return (select) => {
+    bound = select;
+    observer = new MutationObserver(() => choose(value()));
+    observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
+  };
 }`;
 }

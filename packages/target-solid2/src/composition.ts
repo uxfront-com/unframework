@@ -15,8 +15,9 @@
 // - What a component exposes it passes to its `ref` prop, `props.ref?.({ focus })`; a parent's
 //   component ref is a `let` its `ref` callback sets, as an element's is (ADR-0049).
 // - An injection key is a context, `createContext<T>()`, in the output of its module's main
-//   component; `provide` wraps the template in the context's provider, and `inject` is
-//   `useContext(Key) ?? fallback`. A key of a ref holds `refObject`, an object whose `value`
+//   component, `createContext<T | null>(null)`; `provide` wraps the template in the context, which
+//   is its own provider in Solid 2, and `inject` is `useContext(Key) ?? fallback`, or
+//   `?? undefined` without one. A key of a ref holds `refObject`, an object whose `value`
 //   getter reads the signal (`reactive-context`, emulated): written in place, because
 //   `solid/reactivity` (L5) reports a signal handed to a function there.
 import { childImports, keyImports, keyOwner, scopeRoots } from "@unframework.dev/codegen";
@@ -79,7 +80,7 @@ export class SolidComposition {
     for (const key of keyImports(component, module, (name) => name)) {
       if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
     }
-    const jsx = () => imports.add("solid-js", "JSX", { type: true });
+    const jsx = () => imports.add("@solidjs/web", "JSX", { type: true });
     const models = component.setup.filter((item): item is ModelItem => item.kind === "Model");
     if (models.length) {
       const name = imports.claim(`${component.name}Models`);
@@ -243,8 +244,12 @@ export class SolidComposition {
     ) {
       return [];
     }
+    // `null` by default: Solid 2's context without one throws where no provider is, and takes a
+    // provided `undefined` for none, where Vue's `inject` gives `undefined` or its fallback.
     const createContext = this.#imports.add("solid-js", "createContext");
-    return keys.map((key) => `export const ${key.name} = ${createContext}<${contextType(key)}>();`);
+    return keys.map(
+      (key) => `export const ${key.name} = ${createContext}<${contextType(key)} | null>(null);`,
+    );
   }
 
   /** A provided ref, `refObject`: an object whose `value` reads its signal. */

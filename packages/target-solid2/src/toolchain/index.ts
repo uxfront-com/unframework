@@ -10,16 +10,19 @@ import { lintWithOxlint, typecheckWithTsgo } from "@unframework.dev/codegen/tool
 import type { PluginOption, UserConfig } from "vite";
 
 import { compileWithSolid, emitWithSolid } from "./compile.ts";
-import { solidAliases, undedupeSolid } from "./resolve.ts";
+import { resolveSolid, SOLID_PACKAGES, undedupeSolid } from "./resolve.ts";
 
-/** The runtime modules compiled output and the mount adapter import in the browser. */
-const BROWSER_RUNTIME = ["solid-js", "@solidjs/web"];
+/**
+ * What Solid 2's packages import, which Vite would pre-bundle as it finds them, reloading the page
+ * mid-test: Solid itself is served as it is (src/toolchain/resolve.ts), and these with it.
+ */
+const SOLID_DEPENDENCIES = ["seroval", "seroval-plugins"];
 
 /** The part of @solidjs/vite-plugin this toolchain calls. */
 type SolidPlugin = (options: {
   ssr?: boolean;
   refresh?: boolean;
-  dev?: boolean;
+  solid?: { hydratable?: boolean };
 }) => PluginOption;
 
 /** @solidjs/vite-plugin, from the toolchain directory. */
@@ -46,17 +49,24 @@ export const toolchain: Toolchain = {
           // the client's too, so `hydrate` finds the server's nodes; a browser project keeps the
           // plain DOM compile.
           ssr: mode !== "browser",
+          // Under Vitest the plugin compiles nothing hydratable whatever `ssr` says, so it is said
+          // again for the compiler.
+          solid: { hydratable: mode !== "browser" },
           // solid-refresh would wrap the code under test in HMR proxies.
           refresh: false,
         }),
+        // Every import of Solid 2, from an output, an adapter or Solid itself, resolves in the
+        // toolchain directory (ADR-0102).
+        resolveSolid(context.toolchainDir),
         undedupeSolid(),
       ],
-      // Every import of Solid 2, from an output, an adapter or Solid itself, resolves in the
-      // toolchain directory (ADR-0102).
-      resolve: { alias: solidAliases(context.toolchainDir) },
-      // Vite's dependency scanner never sees compiled modules (the unplugin hides them from
-      // it), so name their runtime imports, or a cold run reloads the page mid-test.
-      ...(mode === "ssr" ? {} : { optimizeDeps: { include: BROWSER_RUNTIME } }),
+      // Served through Vite's pipeline, so their imports resolve through `resolveSolid` too: on
+      // the server as well, where Vite would load an external package with Node, from the
+      // importer's own `node_modules`.
+      resolve: { noExternal: [...SOLID_PACKAGES] },
+      ...(mode === "ssr"
+        ? {}
+        : { optimizeDeps: { exclude: [...SOLID_PACKAGES, ...SOLID_DEPENDENCIES] } }),
     };
   },
 

@@ -1,19 +1,22 @@
-// The setup of a Solid component (ADR-0045, ADR-0046, ADR-0048): what the source's body declares
-// and runs before its return, in source order, as a Solid developer writes it.
+// The setup of a Solid 2 component (ADR-0045, ADR-0046, ADR-0048, ADR-0102): what the source's
+// body declares and runs before its return, in source order, as a Solid developer writes it.
 //
-// - `ref` is a signal, `const [count, setCount] = createSignal(…)`, read `count()` and written
-//   through its setter (`count.value += step` → `setCount(count() + props.step)`), which Solid
-//   applies synchronously: a read after a write sees it, in the same function and after an
-//   `await` alike. `computed` is `createMemo`, which Solid recomputes as each write is made.
-// - Client code is copied as written, with no `batch`: Solid applies each write at once, and the
-//   watchers coalesce a synchronous run's writes through their scheduler (src/helpers.ts).
+// - Solid 2 batches writes: a signal's read sees a write only once Solid applies it, on a
+//   microtask or at `flush()`, which an effect's callback or `onSettled` cannot call. Vue's read
+//   sees a write at once, in whatever code makes it. So `ref` goes through an inline helper,
+//   `createState`, a signal whose read returns the last value written and tracks the signal where
+//   something observes it (`interactivity`, emulated): `const [count, setCount] = createState(…)`,
+//   read `count()` and written through its setter. Solid applies what the write changes, the DOM
+//   and what reads it, when it flushes, as Vue renders after a tick. `computed` is a derived
+//   function, `const doubled = () => count() * 2`, which reads the latest values too.
+// - Client code is copied as written: Solid batches its writes, and the watchers coalesce a
+//   synchronous run's writes through their scheduler (src/helpers.ts).
 // - What the component evaluates once (an initial value, a constant) reads props and state in
 //   `untrack`: the component's body runs untracked already, and `solid/reactivity` asks for it to
 //   be said (L5); so does a callback the rule would report (src/untracked.ts).
 // - Watchers go through an inline helper, `createWatcher`, and `watchEffect` through
-//   `createWatchEffect` over the values it reads (src/helpers.ts); `onMounted` is `onMount`;
-//   `onUnmounted` is a cleanup registered from `onMount` (ADR-0048), so neither runs on the
-//   server.
+//   `createWatchEffect` over the values it reads (src/helpers.ts); `onMounted` is `onSettled`;
+//   `onUnmounted` is the cleanup an `onSettled` returns (ADR-0048), so neither runs on the server.
 // - A template ref is a `let`, which the element's `ref` callback sets and clears on cleanup
 //   (src/listeners.ts); `useId()` is `uf-id-` and `createUniqueId()`.
 // - Constants and functions that capture nothing of the component are hoisted to module scope
@@ -23,7 +26,6 @@ import {
   functionText,
   keyOwner,
   rewriteCode,
-  typeNames,
   writtenValue,
 } from "@unframework.dev/codegen";
 import type { ImportSet, Placeholders, RewriteRules } from "@unframework.dev/codegen";
@@ -52,6 +54,10 @@ import { namesTypeParameter } from "./generics.ts";
 import {
   NEXT_TICK_HELPER,
   nextTickHelperCode,
+  REF_HELPER,
+  refHelperCode,
+  STATE_HELPER,
+  stateHelperCode,
   WATCH_EFFECT_HELPER,
   WATCHER_HELPER,
   watcherHelperCode,
@@ -83,13 +89,13 @@ export class SolidCode {
     array: { lazy: false, immediate: false },
     flush: { pre: false, post: false },
   };
-  /** The state whose type names a type parameter of a generic owner (ADR-0068). */
-  readonly #generic = new Set<BindingId>();
   /** The local functions whose call reads a prop, state or a derived value, as `untrack` sees. */
   readonly #reading = new Set<BindingId>();
   #watcher: string | undefined;
   #watchEffect: string | undefined;
   #nextTick: string | undefined;
+  #state: string | undefined;
+  #clearedRef: string | undefined;
 
   constructor(
     component: UfComponent,
@@ -128,16 +134,6 @@ export class SolidCode {
           setter: imports.claim(`setLocal${capitalised(name)}`),
         });
       }
-    }
-    // In a generic owner, a state whose type names a type parameter, or whose type is inferred
-    // from anything but a literal (`ref(initial)` with `initial: T`).
-    const parameters = new Set((component.typeParameters ?? []).map(({ name }) => name));
-    for (const item of component.setup) {
-      if (item.kind !== "State" || !parameters.size) continue;
-      const generic = item.type
-        ? [...typeNames(item.type)].some((name) => parameters.has(name))
-        : item.initial !== undefined && !LITERAL.test(item.initial.code);
-      if (generic) this.#generic.add(item.binding);
     }
     // Whether watchers run before the DOM updates, after it, or both, which decides whether a
     // call names its timing (src/helpers.ts): a `watchEffect` runs after it.
@@ -214,11 +210,9 @@ export class SolidCode {
         switch (binding.kind) {
           case "state":
           case "model": {
-            const value = writtenValue(write, parts);
-            // A setter takes a function as an update, so a value of a type parameter, which may
-            // be a function, is passed as one that returns it (ADR-0068).
-            const update = this.#generic.has(binding.id) ? `() => ${value}` : value;
-            return `${this.#setters.get(binding.id)!}(${update})`;
+            // `createState`'s setter takes the value as it is, a function of a type parameter
+            // included (ADR-0068).
+            return `${this.#setters.get(binding.id)!}(${writtenValue(write, parts)})`;
           }
           case "localVar":
             return undefined;
@@ -294,7 +288,7 @@ export class SolidCode {
     const initial = item.default ? item.default.code : "";
     const pattern = setter ? `[${local.value}, ${local.setter}]` : `[${local.value}]`;
     const lines = [
-      `const ${pattern} = ${this.solid("createSignal")}${typeArgument(item.type)}(${initial});`,
+      `const ${pattern} = ${this.state()}${typeArgument(item.type)}(${initial});`,
       `const ${name} = () => (${prop} === undefined ? ${local.value}() : ${prop});`,
     ];
     if (setter) {
@@ -304,11 +298,13 @@ export class SolidCode {
     return lines.join("\n");
   }
 
-  /** `const theme = useContext(ThemeKey) ?? fallback;` (ADR-0054). */
+  /** `const theme = useContext(ThemeKey) ?? fallback;`, or `?? undefined` (ADR-0054). */
   inject(item: InjectItem): string {
     const { name } = this.#binding(item.binding);
+    // A key's context is `null` where nothing provides it (src/composition.ts): Vue's `inject`
+    // gives `undefined` there.
     const read = `${this.solid("useContext")}(${item.key})`;
-    if (!item.fallback) return `const ${name} = ${read};`;
+    if (!item.fallback) return `const ${name} = ${read} ?? undefined;`;
     return `const ${name} = ${read} ?? ${this.provided(item.key, item.fallback)};`;
   }
 
@@ -354,6 +350,29 @@ export class SolidCode {
     return this.value(value);
   }
 
+  /** The template ref helper's name (src/helpers.ts), claimed at its first use. */
+  clearedRef(): string {
+    return (this.#clearedRef ??= this.#imports.claim(REF_HELPER));
+  }
+
+  /** The state helper's name (src/helpers.ts), claimed at its first use. */
+  state(): string {
+    return (this.#state ??= this.#imports.claim(STATE_HELPER));
+  }
+
+  /**
+   * A lifecycle hook's callback as `onSettled` takes it: one that returns nothing, since Solid
+   * takes a function it returns for a cleanup and refuses any other value. A block body is passed
+   * as it is; an expression body becomes a statement, and an async callback is called from one.
+   */
+  settled(fn: FunctionCode): string {
+    const callback = this.callback(fn);
+    if (fn.async) return `() => {\n(${callback})();\n}`;
+    if (!fn.expression) return callback;
+    const body = this.body(fn, true);
+    return `() => {\n${body.trimStart().startsWith("{") ? `(${body})` : body};\n}`;
+  }
+
   /** A name of the output's own, past every name the source and the output take. */
   claim(name: string): string {
     return this.#imports.claim(name);
@@ -375,11 +394,12 @@ export class SolidCode {
   }
 
   /**
-   * An awaited expression, for the `pure` site, with no `untrack`: the resource runs its fetcher
-   * untracked already (solid-js 1.9 `createResource`), so a prop it reads is read once (ADR-0101).
+   * An awaited expression, for the `pure` site, in `untrack` where it reads a prop, state or a
+   * derived value: the async memo would track what it reads before its first `await`, and the
+   * setup reads a prop once (ADR-0101).
    */
   awaited(code: Code): string {
-    return rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
+    return this.value(code);
   }
 
   /** A getter (`computed`, a watch source) as an arrow, for the `pure` site. */
@@ -481,8 +501,7 @@ export class SolidCode {
       helpers.push(
         watcherHelperCode(this.#uses, {
           createReaction: this.solid("createReaction"),
-          onCleanup: this.solid("onCleanup"),
-          onMount: this.solid("onMount"),
+          onSettled: this.solid("onSettled"),
           ...(this.#watcher ? { watcher: this.#watcher } : {}),
           ...(this.#watchEffect ? { watchEffect: this.#watchEffect } : {}),
           ...(arrays ? { values: this.#imports.claim("WatchedValues") } : {}),
@@ -493,6 +512,15 @@ export class SolidCode {
       );
     }
     if (this.#nextTick) helpers.push(nextTickHelperCode(this.#nextTick));
+    if (this.#clearedRef) helpers.push(refHelperCode(this.#clearedRef, this.solid("onCleanup")));
+    if (this.#state) {
+      helpers.push(
+        stateHelperCode(this.#state, {
+          createSignal: this.solid("createSignal"),
+          getObserver: this.solid("getObserver"),
+        }),
+      );
+    }
     return helpers;
   }
 
@@ -562,13 +590,6 @@ export class SolidCode {
   }
 }
 
-/**
- * A primitive literal, whose inferred type is never a type parameter: a number, a string, a
- * template with no substitution, a boolean or `null`. An array or an object may hold a `T`.
- */
-const LITERAL =
-  /^\s*(?:-?(?:\d|\.\d)[\d_.]*(?:e[+-]?\d+)?n?|0[box][\da-f_]+n?|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`$\\]*`|true|false|null)\s*$/i;
-
 /** Whether Solid tracks a read of a binding of a kind: what `untrack` is for. */
 function tracked(kind: Binding["kind"]): boolean {
   switch (kind) {
@@ -618,7 +639,7 @@ export interface SolidSetup {
 }
 
 /**
- * An async setup's awaits (ADR-0101): one `createResource` whose fetcher runs them in order and
+ * An async setup's awaits (ADR-0101): one async `createMemo` whose function runs them in order and
  * returns their values as a record, `{ user }`, which the component's `<Show>` hands its function
  * child once it resolves. The rest of the setup and the template run in that child.
  */
@@ -676,13 +697,13 @@ export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSe
     const statements = [
       ...component.setup.filter(early).map((item) => placeholders.statements(texts.get(item)!)),
       placeholders.statements(
-        `const [${accessor}] = ${code.solid("createResource")}(async () => {\n${fetcher.join("\n")}\n});\n`,
+        `const ${accessor} = ${code.solid("createMemo")}(async () => {\n${fetcher.join("\n")}\n});\n`,
       ),
     ];
     // The awaited values, read once from the record (`when` tests the record, so a falsy value
     // still renders).
     const bindings = placeholders.statements(
-      `const { ${names} } = ${parameter}();${kept.length ? "" : "\n"}`,
+      `const { ${names} } = ${parameter};${kept.length ? "" : "\n"}`,
     );
     resource = { statements, accessor, parameter, bindings };
   }
@@ -704,7 +725,7 @@ export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSe
 /**
  * The setup's items with the `onUnmounted` hooks before the first watcher or `watchEffect`, in
  * reverse order (ADR-0048): Solid disposes a component's computations in the reverse of their
- * creation (solid-js 1.9 `cleanNode`), and each hook is a cleanup of an `onMount` computation,
+ * creation, and each hook is the cleanup of an `onSettled` computation,
  * so every watcher's and effect's cleanup then runs before the hooks, which run in source order,
  * as Vue stops a component's effects before it calls its `onUnmounted` hooks.
  */
@@ -752,11 +773,13 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
       const setter = code.setter(item.binding);
       const pattern = setter ? `[${name}, ${setter}]` : `[${name}]`;
       const initial = item.initial ? code.value(item.initial) : "";
-      return `const ${pattern} = ${code.solid("createSignal")}${typeArgument(item.type)}(${initial});`;
+      return `const ${pattern} = ${code.state()}${typeArgument(item.type)}(${initial});`;
     }
     case "Derived": {
+      // A derived function, which reads what was last written, as Vue's `computed` does; a memo
+      // would hold its value until Solid applies the write.
       const { name } = bindingOf(item.binding);
-      return `const ${name} = ${code.solid("createMemo")}${typeArgument(item.type)}(${code.getter(item.getter)});`;
+      return `const ${name}${item.type ? `: () => ${item.type.code}` : ""} = ${code.getter(item.getter)};`;
     }
     case "TemplateRef": {
       // Empty until its element is created, and again once it is removed (src/listeners.ts):
@@ -793,12 +816,12 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
     case "WatchEffect":
       return code.watchEffect(item);
     case "Lifecycle": {
-      const onMount = code.solid("onMount");
-      const callback = code.callback(item.callback);
-      // `onCleanup` alone would also run when the server disposes its render (ADR-0048).
+      // `onSettled` runs once the component has mounted, never on the server, and runs the
+      // cleanup it returns as the component is removed (ADR-0048).
+      const onSettled = code.solid("onSettled");
       return item.hook === "mounted"
-        ? `${onMount}(${callback});`
-        : `${onMount}(() => ${code.solid("onCleanup")}(${callback}));`;
+        ? `${onSettled}(${code.settled(item.callback)});`
+        : `${onSettled}(() => ${code.callback(item.callback)});`;
     }
     case "Model":
       return code.model(item);

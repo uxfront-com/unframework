@@ -27,30 +27,35 @@ export function packageDir(name: string, fromDir: string): string {
   return realpathSync(dirname(manifest));
 }
 
+/** Whether a specifier names one of Solid 2's packages or a subpath of one. */
+export function isSolidSpecifier(specifier: string): boolean {
+  return SOLID_PACKAGES.some((name) => specifier === name || specifier.startsWith(`${name}/`));
+}
+
 /**
- * Solid 2's packages as `resolve.alias` entries, each to its real directory under `toolchainDir`.
- * Vite resolves an aliased package directory through its `exports` with the environment's own
- * conditions, so the browser, server and development builds still apply, and its dependency
- * optimizer reads aliases too. `@solidjs/signals` is a dependency of `solid-js`, so it is found
- * from there.
+ * Resolves every import of Solid 2's packages as if the toolchain directory imported it, through
+ * Vite's own resolution, so each environment's export conditions still apply (the browser's dev
+ * build, the server's). It runs before Vite's resolver, which would resolve them from the project
+ * root or from the importer.
  */
-export function solidAliases(toolchainDir: string): { find: RegExp; replacement: string }[] {
-  const solid = packageDir("solid-js", toolchainDir);
-  const dirs: Record<string, string> = {
-    "solid-js": solid,
-    "@solidjs/web": packageDir("@solidjs/web", toolchainDir),
-    "@solidjs/signals": packageDir("@solidjs/signals", solid),
+export function resolveSolid(toolchainDir: string): Plugin {
+  const importer = join(toolchainDir, "package.json");
+  return {
+    name: "unframework:solid2-resolve",
+    enforce: "pre",
+    async resolveId(source, _importer, options) {
+      if (!isSolidSpecifier(source)) return null;
+      return this.resolve(source, importer, { ...options, skipSelf: true });
+    },
   };
-  return SOLID_PACKAGES.map((name) => ({
-    find: new RegExp(`^${name.replace("/", "\\/")}$`),
-    replacement: dirs[name]!,
-  }));
 }
 
 /**
  * Keeps Vite from resolving Solid's packages from the project root: the Vite plugin dedupes every
  * Solid package it finds there, and a deduped package resolves from the root whatever the
- * importer, which in this repository is Solid 1.
+ * importer, which in this repository is Solid 1. It also has Vite pre-bundle Solid and the subpaths
+ * its dev tools import (`solid-js/attribution`), which the dependency optimizer resolves from the
+ * root, past every plugin: Solid 2 is served as it is instead, through `resolveSolid`.
  */
 export function undedupeSolid(): Plugin {
   return {
@@ -58,10 +63,20 @@ export function undedupeSolid(): Plugin {
     config(config) {
       const dedupe = config.resolve?.dedupe;
       if (dedupe) config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+      const include = config.optimizeDeps?.include;
+      if (include) {
+        config.optimizeDeps!.include = include.filter((name) => !isSolidSpecifier(name));
+      }
     },
-    configEnvironment(_name, config) {
+    configEnvironment(name, config) {
       const dedupe = config.resolve?.dedupe;
       if (dedupe) config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+      // In a browser test, the plugin resolves every environment with the `browser` condition, the
+      // server's too, where a hydrate project renders the HTML it hydrates (L12, ADR-0095).
+      const conditions = config.resolve?.conditions;
+      if (name === "ssr" && conditions?.includes("browser")) {
+        config.resolve!.conditions = conditions.filter((condition) => condition !== "browser");
+      }
     },
   };
 }

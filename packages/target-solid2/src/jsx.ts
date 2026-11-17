@@ -84,6 +84,12 @@ export const TELEPORT_HELPER = "Teleport";
 /** The inline helper that runs a `<Transition>`'s classes (ADR-0100). */
 export const TRANSITION_HELPER = "Transition";
 
+/**
+ * The inline helper that writes a boolean of an ARIA attribute as its name, `"true"` or `"false"`
+ * (ADR-0102): Solid 2 removes an attribute bound to `false`, where Vue writes "false".
+ */
+export const ARIA_HELPER = "ariaValue";
+
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
@@ -118,6 +124,7 @@ export function solidJsx(
   let collections = false;
   let scopeHelper: string | undefined;
   let styleHelper: string | undefined;
+  let ariaHelper: string | undefined;
   let keyedHelper: string | undefined;
   let teleportHelper: string | undefined;
   let transitionHelper: string | undefined;
@@ -189,10 +196,21 @@ export function solidJsx(
       const value = js.stringLiteral(attribute.value === true ? "" : attribute.value);
       return untypedJsxAttribute(element, attribute.name, value);
     },
-    boundAttribute: (attribute, element, context) =>
-      isUntyped(element.tag, attribute.name)
-        ? untypedJsxAttribute(element, attribute.name, jsxExpression(attribute.value, context))
-        : boundJsxAttribute(attribute, element, context),
+    boundAttribute(attribute, element, context) {
+      if (isUntyped(element.tag, attribute.name)) {
+        return untypedJsxAttribute(element, attribute.name, jsxExpression(attribute.value, context));
+      }
+      // An ARIA attribute is enumerated: Vue writes a boolean as its name, and Solid 2 would
+      // remove the attribute for `false`.
+      if (attribute.name.startsWith("aria-") && !isString(attribute.value, context.component)) {
+        ariaHelper ??= imports.claim(ARIA_HELPER);
+        const value = js.callExpression(js.identifier(ariaHelper), [
+          jsxExpression(attribute.value, context),
+        ]);
+        return [js.jsxAttribute(attribute.name, js.jsxExpressionContainer(value))];
+      }
+      return boundJsxAttribute(attribute, element, context);
+    },
     spreadAttribute(attribute, element, context) {
       // One attribute per declared key (ADR-0039); a `class` key goes to the element's own
       // `class`, which merges it, when the element has one.
@@ -319,6 +337,7 @@ export function solidJsx(
     helpers: () => [
       ...(helper ? [classHelperCode(helper, collections)] : []),
       ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
+      ...(ariaHelper ? [ariaHelperCode(ariaHelper)] : []),
       ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
       ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
       ...(teleportHelper ? [teleportHelperCode(teleportHelper, imports)] : []),
@@ -777,12 +796,11 @@ function hasTypedProps(element: ElementNode): boolean {
 }
 
 /**
- * A `class` from parts. Solid's `class` takes one string (ADR-0038). Static names and toggles
- * alone print as Solid writes them, `class="a b"` and `classList={{ on: active }}`, which
- * toggle each name in place. A dynamic part, or the class of a spread, goes through an inline
- * helper that joins them all into one string (`class={cx("a", tone, { on: active })}`):
- * Solid sets a dynamic `class` whole, which would drop what a `classList` beside it had
- * toggled on.
+ * A `class` from parts (ADR-0038). Static names and toggles alone print as Solid 2 writes them,
+ * `class="a b"`, and `class={["a b", { on: active }]}` with toggles, which Solid 2's `class` takes
+ * in place of 1.x's `classList`. A dynamic part, or the class of a spread, goes through an inline
+ * helper that joins them all into one string (`class={cx("a", tone, { on: active })}`), as Vue
+ * normalises a class, since a component takes `class` as one string prop.
  */
 function classAttribute(
   attribute: ClassAttribute,
@@ -818,14 +836,16 @@ function classAttribute(
       ? [js.property(item.name, toggleCondition(item.condition, context))]
       : [],
   );
-  const attributes: JsxAttribute[] = [];
-  if (names.length) attributes.push(js.jsxAttribute("class", jsxAttributeValue(names.join(" "))));
-  if (toggles.length) {
-    attributes.push(
-      js.jsxAttribute("classList", js.jsxExpressionContainer(js.objectExpression(toggles))),
-    );
-  }
-  return attributes;
+  if (!toggles.length) return [js.jsxAttribute("class", jsxAttributeValue(names.join(" ")))];
+  const object = js.objectExpression(toggles);
+  return [
+    js.jsxAttribute(
+      "class",
+      js.jsxExpressionContainer(
+        names.length ? js.arrayExpression([js.stringLiteral(names.join(" ")), object]) : object,
+      ),
+    ),
+  ];
 }
 
 /** `class={cx(…parts)}`. */
@@ -1083,7 +1103,7 @@ function keyedHelperCode(name: string, imports: ImportSet): string {
   const For = imports.add("solid-js", "For");
   const createMemo = imports.add("solid-js", "createMemo");
   const untrack = imports.add("solid-js", "untrack");
-  const JSX = imports.add("solid-js", "JSX", { type: true });
+  const JSX = imports.add("@solidjs/web", "JSX", { type: true });
   return `/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function ${name}<T>(props: {
   each: readonly T[];
@@ -1119,35 +1139,28 @@ function ${name}<T>(props: {
 }
 
 /**
- * The inline teleport helper (emulated `teleport`, ADR-0098), printed after the component: the
- * no-wrapper branch of Solid's `<Portal>`, which wraps its content in a `<div>` everywhere but in
- * `<head>`. Once the component has mounted, so that the server and the hydrating client render
- * none of it, it inserts the children into the element `to` selects, in a root its owner owns, so
- * they read its context. On cleanup, a signal empties the insertion before the root is disposed,
- * since disposing a root removes no node. It renders nothing in place.
+ * The inline teleport helper (emulated `teleport`, ADR-0098), printed after the component. Solid
+ * 2's `<Portal>` inserts its content with no wrapper, but it throws on the server and renders where
+ * it is created, so the helper renders it only once the component has mounted, into the element
+ * `to` selects: the server and the hydrating client render none of it in place, as on Vue. Its
+ * content reads the component's context, as `<Portal>` keeps its owner, and goes with the
+ * component.
  */
 function teleportHelperCode(name: string, imports: ImportSet): string {
-  const createRoot = imports.add("solid-js", "createRoot");
   const createSignal = imports.add("solid-js", "createSignal");
-  const getOwner = imports.add("solid-js", "getOwner");
-  const onCleanup = imports.add("solid-js", "onCleanup");
-  const onMount = imports.add("solid-js", "onMount");
-  const insert = imports.add("@solidjs/web", "insert");
-  const JSX = imports.add("solid-js", "JSX", { type: true });
+  const onSettled = imports.add("solid-js", "onSettled");
+  const Show = imports.add("solid-js", "Show");
+  const Portal = imports.add("@solidjs/web", "Portal");
+  const JSX = imports.add("@solidjs/web", "JSX", { type: true });
   return `/** Mounts \`children\` into the element \`to\` selects once the component has mounted, and removes them with it. */
 function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Element {
-  const owner = ${getOwner}();
-  ${onMount}(() => {
-    const target = document.querySelector(props.to);
-    if (!target) return;
-    const [removed, remove] = ${createSignal}(false);
-    ${createRoot}(
-      (dispose) => ${insert}(target, () => (removed() ? dispose() : props.children), null),
-      owner,
-    );
-    ${onCleanup}(() => remove(true));
+  const [target, setTarget] = ${createSignal}<Element | null>(null);
+  ${onSettled}(() => {
+    setTarget(document.querySelector(props.to));
   });
-  return null;
+  return (
+    <${Show} when={target()}>{(mount) => <${Portal} mount={mount()}>{props.children}</${Portal}>}</${Show}>
+  );
 }`;
 }
 
@@ -1164,23 +1177,27 @@ function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Elemen
  */
 function transitionHelperCode(name: string, imports: ImportSet): string {
   const children = imports.add("solid-js", "children");
-  const createComputed = imports.add("solid-js", "createComputed");
+  const createEffect = imports.add("solid-js", "createEffect");
   const createSignal = imports.add("solid-js", "createSignal");
+  const isHydrating = imports.add("solid-js", "isHydrating");
   const onCleanup = imports.add("solid-js", "onCleanup");
-  const sharedConfig = imports.add("solid-js", "sharedConfig");
   const untrack = imports.add("solid-js", "untrack");
   const isServer = imports.add("@solidjs/web", "isServer");
-  const JSX = imports.add("solid-js", "JSX", { type: true });
+  const JSX = imports.add("@solidjs/web", "JSX", { type: true });
   return `/** Runs Vue's transition classes of \`name\` on the element \`children\` renders as it enters and leaves. */
 function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Element }): ${JSX}.Element {
   // The server renders the child as it is, and resolves it nowhere else, so it renders it once.
   const resolved = ${children}(() => (${isServer} ? undefined : props.children));
-  const [kept, setKept] = ${createSignal}<Element[]>([]);
+  const element = (value: unknown) => (value instanceof Element ? value : undefined);
+  // The first element is kept at once, so a hydrating client renders the server's.
+  let current = ${isServer} ? undefined : element(${untrack}(resolved));
+  const [kept, setKept] = ${createSignal}<Element[]>(current ? [current] : [], { ownedWrite: true });
+  const hydrating = ${isHydrating}();
   const stops = new Set<() => void>();
   ${onCleanup}(() => {
     for (const stop of stops) stop();
   });
-  const run = (element: Element, phase: "enter" | "leave", done?: () => void) => {
+  const run = (target: Element, phase: "enter" | "leave", done?: () => void) => {
     const from = \`\${props.name}-\${phase}-from\`;
     const active = \`\${props.name}-\${phase}-active\`;
     const to = \`\${props.name}-\${phase}-to\`;
@@ -1190,22 +1207,22 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
       stops.delete(stop);
       cancelAnimationFrame(frame);
       clearTimeout(timer);
-      element.removeEventListener("transitionend", end);
-      element.removeEventListener("animationend", end);
-      element.classList.remove(from, active, to);
+      target.removeEventListener("transitionend", end);
+      target.removeEventListener("animationend", end);
+      target.classList.remove(from, active, to);
     };
     const end = (event?: Event) => {
-      if (event && event.target !== element) return;
+      if (event && event.target !== target) return;
       stop();
       done?.();
     };
     stops.add(stop);
-    element.classList.add(from, active);
+    target.classList.add(from, active);
     frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => {
-        element.classList.remove(from);
-        element.classList.add(to);
-        const style = getComputedStyle(element);
+        target.classList.remove(from);
+        target.classList.add(to);
+        const style = getComputedStyle(target);
         const longest = (delays: string, durations: string) => {
           const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);
           const delay = each(delays);
@@ -1219,35 +1236,45 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
           end();
           return;
         }
-        element.addEventListener("transitionend", end);
-        element.addEventListener("animationend", end);
+        target.addEventListener("transitionend", end);
+        target.addEventListener("animationend", end);
         timer = setTimeout(end, time + 1);
       });
     });
   };
-  let current: Element | undefined;
   let first = true;
-  const hydrating = Boolean(${sharedConfig}.context);
-  ${createComputed}(() => {
+  ${createEffect}(
     // The server resolves nothing here, and has no \`Element\`.
-    if (${isServer}) return;
-    const value = resolved();
-    const next = value instanceof Element ? value : undefined;
-    ${untrack}(() => {
+    () => (${isServer} ? undefined : element(resolved())),
+    (next) => {
       const initial = first;
       first = false;
+      if (initial) {
+        if (next && props.appear && !hydrating) run(next, "enter");
+        return;
+      }
       if (next === current) return;
       const previous = current;
       current = next;
-      const entering = next !== undefined && (initial ? Boolean(props.appear) && !hydrating : true);
       if (previous) {
         run(previous, "leave", () => setKept((list) => list.filter((each) => each !== previous)));
       }
       setKept((list) => [...list.filter((each) => each !== next), ...(next ? [next] : [])]);
-      if (next && entering) run(next, "enter");
-    });
-  });
+      if (next) run(next, "enter");
+    },
+  );
   return <>{${isServer} ? props.children : kept()}</>;
+}`;
+}
+
+/**
+ * The inline ARIA helper (ADR-0102), printed after the component: a boolean as its name, as Vue
+ * writes it, and anything else as it is, `null` and `undefined` removing the attribute.
+ */
+function ariaHelperCode(name: string): string {
+  return `/** An ARIA attribute's value: a boolean as \`"true"\` or \`"false"\`, as Vue writes it. */
+function ${name}<T>(value: T): T extends boolean ? \`\${T}\` : T {
+  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? \`\${T}\` : T;
 }`;
 }
 

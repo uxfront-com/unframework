@@ -1,9 +1,10 @@
-// The props of a Solid component (ADR-0034). Solid's props object is reactive:
+// The props of a Solid 2 component (ADR-0034, ADR-0102). Solid's props object is reactive:
 // reading `props.label` inside JSX tracks it, while destructuring reads each prop once, when the
 // component runs, and never again (`solid/no-destructure`). So the output never destructures.
-// A destructured source reads every prop as `props.label`, and its defaults go through
-// `mergeProps`, which keeps the merged object reactive and applies a default when a prop is
-// absent or `undefined`, as JavaScript's destructuring does (`null` stays a value).
+// A destructured source reads every prop as `props.label`, and its defaults go through `merge`,
+// which keeps the merged object reactive. Solid 2's `merge` takes a prop passed as `undefined` for
+// a value, where JavaScript's destructuring applies the default (`null` stays a value), so each
+// default is a getter that reads the prop and applies it.
 import { js, parseExpression, referencedBindings } from "@unframework.dev/codegen";
 import type { ImportSet, Placeholders } from "@unframework.dev/codegen";
 import { codeOf } from "@unframework.dev/ir";
@@ -129,41 +130,44 @@ export function solidProps(
     ...(events ? { events } : {}),
   };
   if (!raw) return { parameters: [js.bindingIdentifier(props, type())], statements: [], ...shared };
-  const values = js.objectExpression(
-    defaults.map((prop) => [prop.name, placeholders.expression(prop.default.code)]),
-  );
-  const mergeProps = (first: Parameters<typeof js.callExpression>[1][number]) =>
-    js.callExpression(js.identifier(imports.add("solid-js", "mergeProps")), [
-      first,
-      js.identifier(raw),
-    ]);
-  const propsType = () => placeholders.type(parameter.type.code);
+  // `merge` takes the last source's key, so each default is a getter over the prop that applies
+  // the default where the prop is `undefined`, absent or passed as such.
+  const merge = imports.add("solid-js", "merge");
+  const getters = (value: (prop: Prop) => string) =>
+    defaults
+      .map(
+        (prop) =>
+          `get ${prop.name}() {\nreturn ${raw}.${prop.name} === undefined ? ${value(prop)} : ${raw}.${prop.name};\n}`,
+      )
+      .join(",\n");
   if (!defaults.some((prop) => holdsContainer(parseExpression(prop.default.code)))) {
     return {
       parameters: [js.bindingIdentifier(raw, type())],
       statements: [
-        js.variableDeclaration(
-          "const",
-          props,
-          mergeProps(js.satisfiesExpression(values, js.typeReference("Partial", [propsType()]))),
+        placeholders.statements(
+          `const ${props} = ${merge}(${raw}, {\n${getters((prop) => `(${prop.default.code})`)}\n});`,
         ),
       ],
       ...shared,
     };
   }
-  // `satisfies` keeps an object or array literal's own type, which lacks the optional members
-  // its value leaves out (`{ title: "t" }` for `Attrs`), or holds only the literals it lists
-  // (`["info"]` for `Tone[]`), and `mergeProps` types the prop by both: a read of one fails L4
-  // (`tones.includes(tone)`). Annotated, the defaults take the props' own types, checked as
-  // literals. A scalar's literal type is a member of its prop's, which `mergeProps` keeps.
+  // A default that is or holds an object or array literal is evaluated once, into `defaults`,
+  // annotated with the props' own types, so the getter gives one value each time it is read, as
+  // a destructured default is evaluated once. `satisfies` would keep the literal's own type, which
+  // lacks the optional members its value leaves out (`{ title: "t" }` for `Attrs`), and a read of
+  // the prop would fail L4. Scalars stay in their getters.
   const named = imports.claim("defaults");
   const keys = defaults.map((prop) => JSON.stringify(prop.name)).join(" | ");
-  const annotation = placeholders.type(`Required<Pick<${parameter.type.code}, ${keys}>>`);
+  const annotation = `Required<Pick<${parameter.type.code}, ${keys}>>`;
+  const values = defaults
+    .map((prop) => `${prop.name}: ${`(${prop.default.code})`}`)
+    .join(",\n");
   return {
     parameters: [js.bindingIdentifier(raw, type())],
     statements: [
-      js.variableDeclaration("const", named, values, annotation),
-      js.variableDeclaration("const", props, mergeProps(js.identifier(named))),
+      placeholders.statements(
+        `const ${named}: ${annotation} = {\n${values}\n};\nconst ${props} = ${merge}(${raw}, {\n${getters((prop) => `${named}.${prop.name}`)}\n});`,
+      ),
     ],
     ...shared,
   };

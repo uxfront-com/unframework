@@ -1,10 +1,11 @@
 // A directive as a Solid ref factory (ADR-0099): `ref={vFocusTrap(() => open())}`, Solid 2's own
 // form, which needs no `use:` and no global `JSX.Directives`. The factory runs while its element
-// renders, so its `onMount`, effect and `onCleanup` are its branch's: `mounted` once the element
-// is in the document, `updated` from an effect that reads the value, behind `Object.is`, and
-// `unmounted` once the branch is disposed. Solid evaluates a ref before the element's children
-// are inserted, so its hooks would run parent first: each goes through the inline `queueHook`,
-// which runs them in Vue's order (`emulated`). Solid 1.9's server render drops `ref`.
+// renders, so its `onSettled`, effect and `onCleanup` are its branch's: `mounted` once the
+// element is in the document, `updated` from an effect whose compute reads the value, behind
+// `Object.is`, and `unmounted` once the branch is disposed. Solid evaluates a ref before the
+// element's children are inserted, so its hooks would run parent first: each goes through the
+// inline `queueHook`, which runs them in Vue's order (`emulated`). Solid 2's server render
+// evaluates a ref factory too, so there the factory does nothing but return (ADR-0102).
 import {
   dependencyImports,
   directiveDependencies,
@@ -26,13 +27,15 @@ export const QUEUE_HELPER = "queueHook";
 
 /** The local names a ref factory reads: Solid's primitives, and the queue helper. */
 export interface FactoryNames {
-  solid: (name: "onMount" | "onCleanup" | "createEffect" | "untrack") => string;
+  solid: (name: "onSettled" | "onCleanup" | "createEffect" | "untrack") => string;
+  /** `isServer`, from `@solidjs/web`. */
+  isServer: () => string;
   queue: string;
 }
 
 /** `function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void { … }`. */
 export function factoryCode(directive: UfDirective, names: FactoryNames, exported = false): string {
-  const { solid, queue } = names;
+  const { solid, queue, isServer } = names;
   // Its own names, apart from every name a hook reads.
   const own = wrapperNames(directive, [
     "hooks",
@@ -49,7 +52,10 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
   const element = directiveElement(directive);
   const run = (call: string, hook: "mounted" | "updated" | "unmounted") =>
     `${queue}(${own.element}, () => ${call}, "${hook}");`;
-  const body: string[] = [`let ${own.target}: ${element} | undefined;`];
+  const body: string[] = [
+    `if (${isServer()}) return () => {};`,
+    `let ${own.target}: ${element} | undefined;`,
+  ];
   if (mounted || updated) {
     body.push(
       `${updated ? "let" : "const"} ${own.current} = ${solid("untrack")}(${own.getValue});`,
@@ -57,7 +63,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
   }
   if (mounted) {
     body.push(
-      `${solid("onMount")}(() => {`,
+      `${solid("onSettled")}(() => {`,
       `  const ${own.element} = ${own.target};`,
       `  if (${own.element}) ${run(hookCall(own.hooks, mounted, [own.element, own.current]), "mounted")}`,
       "});",
@@ -66,8 +72,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
   if (updated) {
     const previous = hookParameters(updated).length > 2;
     body.push(
-      `${solid("createEffect")}(() => {`,
-      `  const ${own.next} = ${own.getValue}();`,
+      `${solid("createEffect")}(${own.getValue}, (${own.next}) => {`,
       `  if (Object.is(${own.next}, ${own.current})) return;`,
       ...(previous ? [`  const ${own.previous} = ${own.current};`] : []),
       `  ${own.current} = ${own.next};`,
@@ -110,13 +115,19 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
     return local;
   };
   const queue = scope.claim(QUEUE_HELPER);
-  const factory = factoryCode(directive, { solid, queue }, true);
+  let isServer: string | undefined;
+  const factory = factoryCode(
+    directive,
+    { solid, queue, isServer: () => (isServer ??= scope.claim("isServer")) },
+    true,
+  );
   const specifiers = [...used]
     .toSorted(([a], [b]) => (a < b ? -1 : 1))
     .map(([imported, local]) => (imported === local ? local : `${imported} as ${local}`));
   const code = [
     [
       `import { ${specifiers.join(", ")} } from "solid-js";`,
+      `import { ${isServer === "isServer" ? "isServer" : `isServer as ${isServer!}`} } from "@solidjs/web";`,
       ...dependencyImports(dependencies),
     ].join("\n"),
     ...dependencies.types,
