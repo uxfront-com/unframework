@@ -446,6 +446,11 @@ export interface MarkupDialect {
   /** Writes `<Teleport to>` (ADR-0098): see {@link PrintedTeleport}. */
   teleport?(teleport: PrintedTeleport): MarkupPiece[];
   /**
+   * A child component in the tree (ADR-0101): the pieces it prints as, around a `component`
+   * piece of it, such as Vue's `<Suspense>` around an async child. Absent: the component alone.
+   */
+  component?(component: ComponentNode): MarkupPiece[];
+  /**
    * Writes `<Transition>` around its child (ADR-0100): see {@link PrintedTransition}. By default
    * the child prints in its place, with no wrapper, and {@link transitionAttributes} marks it.
    */
@@ -882,7 +887,9 @@ export function printMarkup(
         case "For":
           return piecesItems(at.dialect.list(listParts(node)), at);
         case "Component":
-          return [componentItem(node, [], at)];
+          return at.dialect.component
+            ? piecesItems(at.dialect.component(node), at)
+            : [componentItem(node, [], at)];
         case "SlotOutlet":
           return piecesItems(hook(at.dialect, "slotOutlet")(slotOutletParts(node)), at);
         case "Dynamic":

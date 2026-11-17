@@ -36,13 +36,15 @@ import { defaultedType, propType } from "./types.ts";
 type Member = ReturnType<typeof js.propertyDefinition> | ReturnType<typeof js.methodDefinition>;
 
 /** The services the class injects, in the order it declares them. */
-const SERVICES = ["injector", "platformId", "appRef"] as const;
+const SERVICES = ["injector", "platformId", "appRef", "pendingTasks", "destroyRef"] as const;
 
 /** Each service's token, by the member that holds it. */
 const TOKENS: Readonly<Record<(typeof SERVICES)[number], string>> = {
   injector: "Injector",
   platformId: "PLATFORM_ID",
   appRef: "ApplicationRef",
+  pendingTasks: "PendingTasks",
+  destroyRef: "DestroyRef",
 };
 
 /** What the class's members need from the rest of the emitter. */
@@ -222,18 +224,19 @@ export function classMembers(context: MemberContext): {
 
   // Injected services, claimed on first use (code is built before the members are listed).
   const injected = new Map<string, { member: string; token: string }>();
+  const service = (name: (typeof SERVICES)[number]) => {
+    let entry = injected.get(name);
+    if (!entry) {
+      entry = { member: plan.members.claim(name), token: TOKENS[name] };
+      injected.set(name, entry);
+    }
+    return entry.member;
+  };
   const names: EffectNames = {
     core,
     common: (name) => imports.add("@angular/common", name),
     type: (name) => imports.add("@angular/core", name, { type: true }),
-    member: (name) => {
-      let entry = injected.get(name);
-      if (!entry) {
-        entry = { member: plan.members.claim(name), token: TOKENS[name] };
-        injected.set(name, entry);
-      }
-      return entry.member;
-    },
+    member: service,
   };
 
   const fields: Member[] = [];
@@ -271,11 +274,51 @@ export function classMembers(context: MemberContext): {
     initCode[initCode.length - 1] = pins.join("\n");
   };
   const methods: Member[] = [];
+  // The awaits, in source order, which `ngOnInit` runs before the rest of the setup (ADR-0101).
+  const awaits: string[] = [];
   const expression = (code: string) => placeholders.expression(code);
   const typed = (type: string | undefined) => (type ? [placeholders.type(type)] : []);
 
   for (const item of component.setup) {
     switch (item.kind) {
+      // A field `ngOnInit` assigns once the inputs are set and its promise resolves (ADR-0101),
+      // typed by its annotation or by what the promise resolves to, through a method that makes
+      // the promise, which nothing else could name.
+      case "Await": {
+        const { name } = bindingById(plan, item.binding);
+        if (awaits.length === 0 && plan.resolved !== undefined) {
+          fields.push(
+            js.propertyDefinition(
+              plan.resolved,
+              js.callExpression(js.identifier(core("signal")), [js.booleanLiteral(false)]),
+              { accessibility: "protected", readonly: true },
+            ),
+          );
+        }
+        let type = item.type?.code;
+        if (type === undefined) {
+          const initial = plan.members.claim(`initial${pascalCase(name)}`);
+          type = `Awaited<ReturnType<typeof this.${initial}>>`;
+          methods.push(
+            js.methodDefinition(
+              initial,
+              [],
+              statements(placeholders, `return ${pure(context, item.value)};`),
+              { accessibility: "private" },
+            ),
+          );
+          awaits.push(`this.${name} = await this.${initial}();`);
+        } else {
+          awaits.push(`this.${name} = await ${pure(context, item.value)};`);
+        }
+        // Definitely assigned: the template and the rest of the setup read it only after.
+        const field = js.propertyDefinition(name, null, {
+          accessibility: visibility(name),
+          typeAnnotation: placeholders.type(type),
+        });
+        fields.push({ ...field, definite: true });
+        break;
+      }
       case "State": {
         const { name } = bindingById(plan, item.binding);
         const form = formOf(plan, bindingById(plan, item.binding));
@@ -637,6 +680,21 @@ export function classMembers(context: MemberContext): {
     );
   }
 
+  if (awaits.length && plan.resolved !== undefined) {
+    // The setup goes on once the inputs are set, as a pending task, so the server's render and
+    // the application's stability wait for it; the rest of the setup runs after the awaits, then
+    // the template renders (ADR-0101).
+    const rest = [
+      "// Destroyed while it waited: the rest of the setup never runs.",
+      `if (this.${service("destroyRef")}.destroyed) return;`,
+    ].join("\n");
+    const body = [awaits.join("\n"), rest, ...initCode, `this.${plan.resolved}.set(true);`];
+    initCode.splice(
+      0,
+      initCode.length,
+      `this.${service("pendingTasks")}.run(async () => {\n${body.join("\n\n")}\n});`,
+    );
+  }
   const services = SERVICES.flatMap((name) => injected.get(name) ?? []).map(({ member, token }) =>
     js.propertyDefinition(
       member,
@@ -692,6 +750,15 @@ export function classMembers(context: MemberContext): {
       js.methodDefinition("ngOnInit", [], statements(placeholders, initCode.join("\n\n")), {
         returnType: js.keywordType("void"),
       }),
+    );
+  }
+  // The `onUnmounted` hooks of a setup that awaits come after the awaits: they run only where
+  // the setup has resolved, as on every target (ADR-0101).
+  if (unmounted.length && plan.resolved !== undefined) {
+    unmounted.splice(
+      0,
+      unmounted.length,
+      `if (this.${plan.resolved}()) {\n${unmounted.join("\n")}\n}`,
     );
   }
   const teardown = [...destroyCode, ...unmounted];

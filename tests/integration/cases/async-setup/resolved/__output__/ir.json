@@ -1,0 +1,329 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/resolved/Profile.uf.tsx",
+  "components": [
+    {
+      "name": "Profile",
+      "span": {
+        "start": 163,
+        "end": 478
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 215,
+              "end": 221
+            }
+          },
+          "binding": "id@203",
+          "span": {
+            "start": 211,
+            "end": 221
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 209,
+            "end": 223
+          }
+        },
+        "span": {
+          "start": 201,
+          "end": 223
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "loadUser@54",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 54,
+            "end": 62
+          }
+        },
+        {
+          "id": "id@203",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 203,
+            "end": 205
+          }
+        },
+        {
+          "id": "user@235",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 235,
+            "end": 239
+          }
+        },
+        {
+          "id": "visits@270",
+          "name": "visits",
+          "kind": "state",
+          "span": {
+            "start": 270,
+            "end": 276
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@235",
+          "value": {
+            "code": "loadUser(id)",
+            "span": {
+              "start": 248,
+              "end": 260
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@54",
+                "span": {
+                  "start": 248,
+                  "end": 256
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@203",
+                "span": {
+                  "start": 257,
+                  "end": 259
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 229,
+            "end": 261
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "visits@270",
+          "initial": {
+            "code": "user.visits",
+            "span": {
+              "start": 283,
+              "end": 294
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "user@235",
+                "span": {
+                  "start": 283,
+                  "end": 287
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 264,
+            "end": 296
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "profile",
+            "span": {
+              "start": 316,
+              "end": 331
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "user.name",
+              "span": {
+                "start": 340,
+                "end": 349
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "user@235",
+                  "span": {
+                    "start": 340,
+                    "end": 344
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 339,
+              "end": 350
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " ",
+            "span": {
+              "start": 350,
+              "end": 355
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 370,
+                  "end": 383
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "visits.value++",
+                      "span": {
+                        "start": 399,
+                        "end": 413
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "visits@270",
+                          "operator": "++",
+                          "span": {
+                            "start": 399,
+                            "end": 413
+                          },
+                          "target": {
+                            "start": 399,
+                            "end": 411
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 393,
+                      "end": 413
+                    }
+                  },
+                  "span": {
+                    "start": 393,
+                    "end": 413
+                  }
+                },
+                "span": {
+                  "start": 384,
+                  "end": 414
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Visits: ",
+                "span": {
+                  "start": 415,
+                  "end": 432
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "visits.value",
+                  "span": {
+                    "start": 433,
+                    "end": 445
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "visits@270",
+                      "span": {
+                        "start": 433,
+                        "end": 445
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 432,
+                  "end": 446
+                }
+              }
+            ],
+            "span": {
+              "start": 362,
+              "end": 462
+            }
+          }
+        ],
+        "span": {
+          "start": 313,
+          "end": 471
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Profile",
+      "span": {
+        "start": 163,
+        "end": 478
+      }
+    }
+  ],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 54,
+            "end": 62
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 78
+      }
+    }
+  ]
+}

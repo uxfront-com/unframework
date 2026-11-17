@@ -1,0 +1,7 @@
+{
+  "description": "An async child as a list's row, a ternary's branch and a `&&`'s branch of a sync parent: the server renders each one's data, and a branch the client shows later renders once its setup resolves.",
+  "main": "Roster.uf.tsx",
+  "ssr": {
+    "two": { "props": { "ids": ["grace", "edsger"] } }
+  }
+}

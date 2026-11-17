@@ -13,6 +13,8 @@ import {
 import type { Warning } from "svelte/compiler";
 import type * as SvelteCompilerModule from "svelte/compiler";
 
+import { componentOptions } from "./async.ts";
+
 type SvelteCompiler = typeof SvelteCompilerModule;
 
 let compiler: Promise<SvelteCompiler> | undefined;
@@ -37,7 +39,7 @@ export async function frameworkCompile(
     if (file.path.endsWith(".svelte.ts")) {
       results.set(file.path, await compileRunesModule(svelte.compileModule, file));
     } else if (!file.path.endsWith(".ts")) {
-      results.set(file.path, compileComponent(svelte.compile, file));
+      results.set(file.path, compileComponent(svelte, file));
     }
   }
   return results;
@@ -62,7 +64,11 @@ export async function frameworkEmit(
       }
       contents = svelte.compileModule(code, { filename: file.path, generate: "client" }).js.code;
     } else if (!file.path.endsWith(".ts")) {
-      contents = svelte.compile(file.contents, { filename: file.path, generate: "client" }).js.code;
+      contents = svelte.compile(file.contents, {
+        filename: file.path,
+        generate: "client",
+        ...componentOptions(svelte.parse, file.contents),
+      }).js.code;
     }
     emitted.set(file.path, [{ path: file.path, contents }]);
   }
@@ -90,16 +96,19 @@ async function compileRunesModule(
   return { errors: result.errors, warnings: [...result.warnings, ...warnings.values()] };
 }
 
-function compileComponent(
-  compile: SvelteCompiler["compile"],
-  file: ToolchainFile,
-): FrameworkCompileResult {
+/**
+ * A component, for the client and for the server. One whose instance script awaits at its top
+ * compiles under `experimental.async`, as the toolchain's Vite plugin compiles it (ADR-0101).
+ */
+function compileComponent(svelte: SvelteCompiler, file: ToolchainFile): FrameworkCompileResult {
+  const { compile } = svelte;
+  const options = componentOptions(svelte.parse, file.contents);
   const errors: ToolchainMessage[] = [];
   const warnings = new Map<string, ToolchainMessage>();
   for (const generate of ["client", "server"] as const) {
     let result: ReturnType<SvelteCompiler["compile"]>;
     try {
-      result = compile(file.contents, { filename: file.path, generate });
+      result = compile(file.contents, { filename: file.path, generate, ...options });
     } catch (error) {
       errors.push(fromThrown(error));
       // The server pass would stop at the same error.

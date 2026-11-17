@@ -1,0 +1,17 @@
+error[UF2039]: An awaited expression reads `emit`, the component's `emit`: it reads only props, the module's values, globals and the values awaited before it, since React and Solid run the awaits outside the component's render.
+  --> diagnostics/late-await/Profile.uf.tsx:10:38
+   |
+10 |   const user = await loadUser(String(emit));
+   |                                      ^^^^
+   |
+   = help: Compute what the awaited call needs from the props, or await it before what reads it.
+   = see: https://unframework.dev/diagnostics/UF2039
+
+error[UF2039]: This `await` follows another setup item: the awaits open the setup, since React and Solid run them outside the component's render, and Qwik runs the body again up to each one.
+  --> diagnostics/late-await/Profile.uf.tsx:12:16
+   |
+12 |   const team = await loadUser(id);
+   |                ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Move the `const … = await …` declarations above the setup's other items.
+   = see: https://unframework.dev/diagnostics/UF2039

@@ -1,0 +1,15 @@
+error[UF4001] (angular): The angular target does not support contextual-root: A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).
+ --> async-setup/rows/Member.uf.tsx:7:10
+  |
+7 |   return <li class="member">{user.name}</li>;
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> async-setup/rows/Roster.uf.tsx:13:29
+   |
+13 |       <button type="button" onClick={() => (lead.value = !lead.value)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

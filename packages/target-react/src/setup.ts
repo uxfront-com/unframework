@@ -454,6 +454,10 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
     // `printSetup` prints a composable's call (`useCall`).
     case "Use":
       return [];
+    // The setup function runs the awaits, and the component reads what they resolved to with
+    // `use` (ADR-0101, `./async.ts`).
+    case "Await":
+      return [];
     default:
       return item satisfies never;
   }
@@ -1088,6 +1092,7 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
     case "loopVar":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":
@@ -1145,6 +1150,11 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "localConst":
       case "localFn":
         if (!plan.hoisted.has(reference.binding)) found.push(binding.name);
+        break;
+      // What `use` read of the setup: a local of the render, which React's lint cannot tell is
+      // stable (ADR-0101).
+      case "awaited":
+        found.push(binding.name);
         break;
       case "loopVar":
       case "templateRef":

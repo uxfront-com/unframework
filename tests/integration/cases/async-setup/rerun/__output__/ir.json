@@ -1,0 +1,379 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/rerun/Note.uf.tsx",
+  "components": [
+    {
+      "name": "Note",
+      "span": {
+        "start": 273,
+        "end": 725
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 322,
+              "end": 328
+            }
+          },
+          "binding": "id@310",
+          "span": {
+            "start": 318,
+            "end": 328
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 316,
+            "end": 330
+          }
+        },
+        "span": {
+          "start": 308,
+          "end": 330
+        }
+      },
+      "types": [],
+      "emits": {
+        "binding": "emit@342",
+        "type": {
+          "code": "{ ready: [name: string] }",
+          "span": {
+            "start": 361,
+            "end": 386
+          }
+        },
+        "events": [
+          {
+            "name": "ready",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 377,
+                    "end": 383
+                  }
+                },
+                "span": {
+                  "start": 371,
+                  "end": 383
+                }
+              }
+            ],
+            "span": {
+              "start": 363,
+              "end": 384
+            }
+          }
+        ],
+        "span": {
+          "start": 336,
+          "end": 390
+        }
+      },
+      "bindings": [
+        {
+          "id": "loadUser@89",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 89,
+            "end": 97
+          }
+        },
+        {
+          "id": "id@310",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 310,
+            "end": 312
+          }
+        },
+        {
+          "id": "emit@342",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 342,
+            "end": 346
+          }
+        },
+        {
+          "id": "user@399",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 399,
+            "end": 403
+          }
+        },
+        {
+          "id": "input@434",
+          "name": "input",
+          "kind": "templateRef",
+          "span": {
+            "start": 434,
+            "end": 439
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@399",
+          "value": {
+            "code": "loadUser(id)",
+            "span": {
+              "start": 412,
+              "end": 424
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@89",
+                "span": {
+                  "start": 412,
+                  "end": 420
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@310",
+                "span": {
+                  "start": 421,
+                  "end": 423
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 393,
+            "end": 425
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "input@434",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 457,
+              "end": 473
+            }
+          },
+          "span": {
+            "start": 428,
+            "end": 477
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    input.value?.focus();\n    emit(\"ready\", user.name);\n  }",
+              "span": {
+                "start": 497,
+                "end": 558
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "input@434",
+                  "span": {
+                    "start": 503,
+                    "end": 514
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@342",
+                  "event": "ready",
+                  "span": {
+                    "start": 529,
+                    "end": 553
+                  },
+                  "arguments": [
+                    {
+                      "start": 543,
+                      "end": 552
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "user@399",
+                  "span": {
+                    "start": 543,
+                    "end": 547
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 491,
+              "end": 558
+            }
+          },
+          "span": {
+            "start": 481,
+            "end": 560
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "note",
+            "span": {
+              "start": 583,
+              "end": 595
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Note",
+            "span": {
+              "start": 596,
+              "end": 613
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note for ",
+                "span": {
+                  "start": 628,
+                  "end": 646
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "user.name",
+                  "span": {
+                    "start": 647,
+                    "end": 656
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "user@399",
+                      "span": {
+                        "start": 647,
+                        "end": 651
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 646,
+                  "end": 657
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " ",
+                "span": {
+                  "start": 657,
+                  "end": 658
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Ref",
+                    "binding": "input@434",
+                    "span": {
+                      "start": 665,
+                      "end": 676
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "text",
+                    "span": {
+                      "start": 677,
+                      "end": 688
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 658,
+                  "end": 691
+                }
+              }
+            ],
+            "span": {
+              "start": 621,
+              "end": 706
+            }
+          }
+        ],
+        "span": {
+          "start": 577,
+          "end": 718
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Note",
+      "span": {
+        "start": 273,
+        "end": 725
+      }
+    }
+  ],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 89,
+            "end": 97
+          }
+        }
+      ],
+      "span": {
+        "start": 80,
+        "end": 113
+      }
+    }
+  ]
+}

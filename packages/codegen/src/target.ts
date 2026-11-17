@@ -201,7 +201,13 @@ export type CapabilityName =
    * (ADR-0096). No IR kind requires it: every list's key asks for it, and the specs that reorder
    * or replace a list while its rows hold the focus or typed text require it.
    */
-  | "keyed-identity";
+  | "keyed-identity"
+  /**
+   * A setup that awaits (`AwaitItem`, ADR-0101): the server renders the resolved template, a
+   * client mount renders nothing until the setup resolves, and a hydrated component keeps the
+   * server's DOM while its setup runs again.
+   */
+  | "async-setup";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -260,6 +266,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "composable-effect-order",
   "hydration",
   "keyed-identity",
+  "async-setup",
 ];
 
 /**

@@ -377,6 +377,11 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   UF3046, a directive UF3056, and a spread, a transition anywhere in a list's body and `Transition`
   used as anything but a tag UF1002. A component whose whole render is a transition is a root of
   kind `other`, wrapped in a fragment.
+- **Async setup** (`setup.ts`, ADR-0101): an `async` component, whose top-level
+  `const user = await …` lowers to an `Await` item with an `awaited` binding. Any other `await` at
+  the top level of the setup is UF2038. An `await` after another setup item, and an awaited
+  expression that reads a setup binding but an earlier awaited one, is UF2039. `api.ts` sets
+  `ComponentApi.async` when the setup awaits, and an async candidate of `<component is>` is UF1002.
 - **Directives** (`directives.ts`, ADR-0099): a top-level `const vName = defineDirective<T>({ … })`
   of a `.uf.tsx` module, or a `.uf.ts` module's named export, lowered with its method hooks, whose
   code reads its parameters, client globals and the module's constants and value imports, and

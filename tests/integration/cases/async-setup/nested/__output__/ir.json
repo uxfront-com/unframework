@@ -1,0 +1,491 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/nested/Team.uf.tsx",
+  "components": [
+    {
+      "name": "Team",
+      "span": {
+        "start": 269,
+        "end": 786
+      },
+      "props": [
+        {
+          "name": "ids",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 314,
+              "end": 322
+            }
+          },
+          "binding": "ids@300",
+          "span": {
+            "start": 309,
+            "end": 322
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ ids: string[] }",
+          "span": {
+            "start": 307,
+            "end": 324
+          }
+        },
+        "span": {
+          "start": 298,
+          "end": 324
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "ids@300",
+          "name": "ids",
+          "kind": "prop",
+          "span": {
+            "start": 300,
+            "end": 303
+          }
+        },
+        {
+          "id": "first@336",
+          "name": "first",
+          "kind": "templateRef",
+          "span": {
+            "start": 336,
+            "end": 341
+          }
+        },
+        {
+          "id": "id@621",
+          "name": "id",
+          "kind": "loopVar",
+          "span": {
+            "start": 621,
+            "end": 623
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "first@336",
+          "type": {
+            "code": "{ reset(): void }",
+            "span": {
+              "start": 359,
+              "end": 376
+            }
+          },
+          "span": {
+            "start": 330,
+            "end": 380
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "team",
+            "span": {
+              "start": 406,
+              "end": 418
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Team",
+            "span": {
+              "start": 419,
+              "end": 436
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Team",
+                "span": {
+                  "start": 448,
+                  "end": 452
+                }
+              }
+            ],
+            "span": {
+              "start": 444,
+              "end": 457
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 472,
+                  "end": 485
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "first.value?.reset()",
+                      "span": {
+                        "start": 501,
+                        "end": 521
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "first@336",
+                          "span": {
+                            "start": 501,
+                            "end": 512
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 495,
+                      "end": 521
+                    }
+                  },
+                  "span": {
+                    "start": 495,
+                    "end": 521
+                  }
+                },
+                "span": {
+                  "start": 486,
+                  "end": 522
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reset",
+                "span": {
+                  "start": 523,
+                  "end": 544
+                }
+              }
+            ],
+            "span": {
+              "start": 464,
+              "end": 553
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Member",
+            "attributes": [
+              {
+                "kind": "Ref",
+                "binding": "first@336",
+                "span": {
+                  "start": 568,
+                  "end": 579
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "id",
+                "value": {
+                  "code": "\"ada\"",
+                  "span": {
+                    "start": 583,
+                    "end": 588
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 580,
+                  "end": 588
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 560,
+              "end": 591
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "ids",
+                  "span": {
+                    "start": 612,
+                    "end": 615
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "ids@300",
+                      "span": {
+                        "start": 612,
+                        "end": 615
+                      }
+                    }
+                  ]
+                },
+                "item": "id@621",
+                "key": {
+                  "code": "id",
+                  "span": {
+                    "start": 649,
+                    "end": 651
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "id@621",
+                      "span": {
+                        "start": 649,
+                        "end": 651
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Component",
+                      "component": "Member",
+                      "attributes": [
+                        {
+                          "kind": "Prop",
+                          "name": "id",
+                          "value": {
+                            "code": "id",
+                            "span": {
+                              "start": 678,
+                              "end": 680
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "id@621",
+                                "span": {
+                                  "start": 678,
+                                  "end": 680
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 674,
+                            "end": 681
+                          }
+                        }
+                      ],
+                      "fills": [],
+                      "span": {
+                        "start": 666,
+                        "end": 684
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 640,
+                    "end": 700
+                  }
+                },
+                "span": {
+                  "start": 612,
+                  "end": 711
+                }
+              }
+            ],
+            "span": {
+              "start": 598,
+              "end": 724
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Lead",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "id",
+                "value": {
+                  "code": "\"hopper\"",
+                  "span": {
+                    "start": 753,
+                    "end": 761
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 750,
+                  "end": 761
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "lead",
+                    "span": {
+                      "start": 737,
+                      "end": 749
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 737,
+                  "end": 749
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 731,
+              "end": 764
+            }
+          }
+        ],
+        "span": {
+          "start": 397,
+          "end": 779
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Team",
+      "span": {
+        "start": 269,
+        "end": 786
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Lead.uf.tsx",
+      "file": "Lead.uf.tsx",
+      "api": {
+        "file": "Lead.uf.tsx",
+        "components": [
+          {
+            "name": "Lead",
+            "export": "default",
+            "props": [
+              {
+                "name": "id",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "component"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Lead",
+          "span": {
+            "start": 63,
+            "end": 67
+          }
+        }
+      ],
+      "span": {
+        "start": 56,
+        "end": 89
+      }
+    },
+    {
+      "specifier": "./Member.uf.tsx",
+      "file": "Member.uf.tsx",
+      "api": {
+        "file": "Member.uf.tsx",
+        "components": [
+          {
+            "name": "Member",
+            "export": "default",
+            "props": [
+              {
+                "name": "id",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [
+              "reset"
+            ],
+            "inheritAttrs": true,
+            "root": "element",
+            "async": true,
+            "rootTag": "article"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Member",
+          "span": {
+            "start": 97,
+            "end": 103
+          }
+        }
+      ],
+      "span": {
+        "start": 90,
+        "end": 127
+      }
+    }
+  ]
+}

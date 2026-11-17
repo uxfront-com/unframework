@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "warning",
+    "message": "The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).",
+    "file": "async-setup/provide/Badge.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 3,
+      "offset": 261
+    },
+    "end": {
+      "line": 8,
+      "column": 41,
+      "offset": 299
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "warning",
+    "message": "The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).",
+    "file": "async-setup/provide/Panel.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 3,
+      "offset": 453
+    },
+    "end": {
+      "line": 12,
+      "column": 28,
+      "offset": 478
+    },
+    "target": "astro"
+  }
+]

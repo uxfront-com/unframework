@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"id\":\"linus\",\"prefix\":\"dr-\"}",
+      "dom": [
+        "<section aria-label=\"Greeting\" class=\"greeting\">",
+        "  <h2>",
+        "    \"Hello, User dr-ada\"",
+        "  </h2>",
+        "  <p>",
+        "    \"Signed in as linus\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Greeting\":",
+        "  - heading \"Hello, User dr-ada\" [level=2]",
+        "  - paragraph: Signed in as linus"
+      ],
+      "events": {}
+    }
+  ]
+}

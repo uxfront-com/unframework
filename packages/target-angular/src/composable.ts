@@ -250,8 +250,10 @@ function itemCode(item: SetupItem, context: ComposableContext): string {
           return unreachable(item.hook);
       }
     }
-    // UF2035 rejects these in a composable (ADR-0069).
+    // UF2035 rejects these in a composable (ADR-0069), and an `await` with the async composable
+    // (ADR-0101).
     case "TemplateRef":
+    case "Await":
     case "Id":
     case "Model":
     case "Provide":

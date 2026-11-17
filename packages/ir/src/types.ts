@@ -495,6 +495,11 @@ export interface ComponentApi {
    * child is generic. Absent when it has none.
    */
   typeParameters?: string[];
+  /**
+   * Set when the component's setup awaits (ADR-0101), so a parent in another file knows: Vue's
+   * parent wraps it in `<Suspense>`. Absent otherwise.
+   */
+  async?: true;
 }
 
 /**
@@ -762,6 +767,8 @@ export interface Binding {
  * - `localConst`: a setup `const` holding a value, `useId()`'s included;
  * - `localFn`: a setup function, `function save() {…}` or `const save = () => …`;
  * - `localVar`: a setup `let`, which holds what no template reads (a timer's id);
+ * - `awaited`: `const user = await loadUser(props.id)`, a read-only constant the setup awaits
+ *   once each time it runs (ADR-0101);
  * - `emit`: the function `defineEmits` returns;
  * - `model`: `const open = defineModel<boolean>("open")`, read and written as `open.value`, as
  *   state is (ADR-0054);
@@ -785,6 +792,7 @@ export type BindingKind =
   | "localConst"
   | "localFn"
   | "localVar"
+  | "awaited"
   | "emit"
   | "model"
   | "slots"
@@ -1109,6 +1117,7 @@ export interface ParameterPattern {
 
 /** What a component's setup declares or runs, in source order (ADR-0045). */
 export type SetupItem =
+  | AwaitItem
   | StateItem
   | DerivedItem
   | TemplateRefItem
@@ -1123,6 +1132,22 @@ export type SetupItem =
   | ProvideItem
   | InjectItem
   | UseItem;
+
+/**
+ * `const user = await loadUser(props.id)`: an `awaited` binding (ADR-0101). The awaits open the
+ * setup: no `Await` follows another item, and its value reads only props, module values, globals
+ * and the `awaited` bindings before it.
+ */
+export interface AwaitItem {
+  kind: "Await";
+  binding: BindingId;
+  /** The type annotation as written. */
+  type?: TypeText;
+  /** The awaited expression, without `await`. */
+  value: Code;
+  /** The declaration, from `const` to its end. */
+  span: Span;
+}
 
 /** `const count = ref(initial)`: a `state` binding (ADR-0046). */
 export interface StateItem {

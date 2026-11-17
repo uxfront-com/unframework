@@ -113,6 +113,17 @@ export function lowerDynamic(
       },
     );
   }
+  // Vue renders an async candidate only under `<Suspense :timeout="0">`, which a later part
+  // brings (ADR-0101).
+  for (const leaf of leaves) {
+    if (leaf.kind !== "Component" || !leaf.info.api.async) continue;
+    generic = true;
+    reporter.unsupported(
+      leaf.node,
+      `\`${leaf.info.name}\`'s setup awaits, and an async component as a candidate of \`<component is>\` is not supported yet.`,
+      { help: `Render \`${leaf.info.name}\` by its own tag.` },
+    );
+  }
   if (generic) return undefined;
   const candidates: DynamicCandidate[] = [];
   for (const leaf of leaves) {

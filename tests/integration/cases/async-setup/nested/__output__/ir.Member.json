@@ -1,0 +1,416 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/nested/Member.uf.tsx",
+  "components": [
+    {
+      "name": "Member",
+      "span": {
+        "start": 186,
+        "end": 603
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 237,
+              "end": 243
+            }
+          },
+          "binding": "id@225",
+          "span": {
+            "start": 233,
+            "end": 243
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 231,
+            "end": 245
+          }
+        },
+        "span": {
+          "start": 223,
+          "end": 245
+        }
+      },
+      "types": [],
+      "exposes": {
+        "functions": [
+          "reset@331"
+        ],
+        "span": {
+          "start": 370,
+          "end": 393
+        }
+      },
+      "bindings": [
+        {
+          "id": "loadUser@68",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 68,
+            "end": 76
+          }
+        },
+        {
+          "id": "id@225",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 225,
+            "end": 227
+          }
+        },
+        {
+          "id": "user@257",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 257,
+            "end": 261
+          }
+        },
+        {
+          "id": "visits@292",
+          "name": "visits",
+          "kind": "state",
+          "span": {
+            "start": 292,
+            "end": 298
+          }
+        },
+        {
+          "id": "reset@331",
+          "name": "reset",
+          "kind": "localFn",
+          "span": {
+            "start": 331,
+            "end": 336
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@257",
+          "value": {
+            "code": "loadUser(id)",
+            "span": {
+              "start": 270,
+              "end": 282
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@68",
+                "span": {
+                  "start": 270,
+                  "end": 278
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@225",
+                "span": {
+                  "start": 279,
+                  "end": 281
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 251,
+            "end": 283
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "visits@292",
+          "initial": {
+            "code": "user.visits",
+            "span": {
+              "start": 305,
+              "end": 316
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "user@257",
+                "span": {
+                  "start": 305,
+                  "end": 309
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 286,
+            "end": 318
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "reset@331",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    visits.value = 0;\n  }",
+              "span": {
+                "start": 339,
+                "end": 366
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "visits@292",
+                  "operator": "=",
+                  "span": {
+                    "start": 345,
+                    "end": 361
+                  },
+                  "target": {
+                    "start": 345,
+                    "end": 357
+                  },
+                  "value": {
+                    "start": 360,
+                    "end": 361
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 336,
+              "end": 366
+            }
+          },
+          "span": {
+            "start": 322,
+            "end": 366
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "member",
+            "span": {
+              "start": 420,
+              "end": 434
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h3",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "user.name",
+                  "span": {
+                    "start": 447,
+                    "end": 456
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "user@257",
+                      "span": {
+                        "start": 447,
+                        "end": 451
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 446,
+                  "end": 457
+                }
+              }
+            ],
+            "span": {
+              "start": 442,
+              "end": 462
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 477,
+                  "end": 490
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "visits.value++",
+                      "span": {
+                        "start": 506,
+                        "end": 520
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "visits@292",
+                          "operator": "++",
+                          "span": {
+                            "start": 506,
+                            "end": 520
+                          },
+                          "target": {
+                            "start": 506,
+                            "end": 518
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 500,
+                      "end": 520
+                    }
+                  },
+                  "span": {
+                    "start": 500,
+                    "end": 520
+                  }
+                },
+                "span": {
+                  "start": 491,
+                  "end": 521
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "user.name",
+                  "span": {
+                    "start": 532,
+                    "end": 541
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "user@257",
+                      "span": {
+                        "start": 532,
+                        "end": 536
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 531,
+                  "end": 542
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " visits: ",
+                "span": {
+                  "start": 542,
+                  "end": 551
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "visits.value",
+                  "span": {
+                    "start": 552,
+                    "end": 564
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "visits@292",
+                      "span": {
+                        "start": 552,
+                        "end": 564
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 551,
+                  "end": 565
+                }
+              }
+            ],
+            "span": {
+              "start": 469,
+              "end": 581
+            }
+          }
+        ],
+        "span": {
+          "start": 411,
+          "end": 596
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Member",
+      "span": {
+        "start": 186,
+        "end": 603
+      }
+    }
+  ],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 68,
+            "end": 76
+          }
+        }
+      ],
+      "span": {
+        "start": 59,
+        "end": 92
+      }
+    }
+  ]
+}

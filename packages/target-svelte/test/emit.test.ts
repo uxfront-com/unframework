@@ -11,11 +11,18 @@ import {
   createText,
 } from "@unframework.dev/ir";
 import type { Component } from "svelte";
-import { compile } from "svelte/compiler";
+import { compile, parse } from "svelte/compiler";
 import { afterAll, describe, expect, it } from "vitest";
 
+// The compiler is no dependency of a target (plan §5.2): tests reach it from its source.
+import {
+  compile as compileUf,
+  createFileResolver,
+  createSyntacticOracle,
+} from "../../compiler/src/index.ts";
 import target from "../src/index.ts";
 import { indent } from "../src/script.ts";
+import { componentOptions } from "../src/toolchain/async.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import {
   compileSources,
@@ -76,6 +83,7 @@ const SCOPE_HELPER = [
 describe("svelte target", () => {
   it("declares every capability, natively but for once listeners, fallthrough, model modifiers, reactive context, the child root, a style bound to a value, a teleport and a transition", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
+      "async-setup",
       "attribute-spread",
       "bound-attribute",
       "child-root-scope",
@@ -192,7 +200,12 @@ describe("svelte target", () => {
   // left, it took 0.6 s alone on a laptop and overran Vitest's 5 s default in CI's Unit tests.
   it.each(cases)("compiles $name in runes mode", async ({ name, modules }) => {
     for (const file of (await Promise.all(modules.map(emitFormatted))).flat()) {
-      const { metadata, js } = compile(file.contents, { filename: file.path });
+      // An async setup's output compiles under `experimental.async`, as the toolchain compiles
+      // it (ADR-0101).
+      const { metadata, js } = compile(file.contents, {
+        filename: file.path,
+        ...componentOptions(parse, file.contents),
+      });
       expect(metadata.runes, name).toBe(true);
       expect(js.code, name).not.toContain("svelte/internal/flags/legacy");
     }
@@ -1091,4 +1104,184 @@ describe("svelte types and generics", () => {
       expect(js.code).toContain("value");
     },
   );
+});
+
+/** The shared module the sources await from. */
+const ASYNC_API = [
+  "export async function loadUser(id: string): Promise<{ name: string; teamId: string }> {",
+  "  return { name: id, teamId: `t-${id}` };",
+  "}",
+  "export async function loadTeam(id: string): Promise<{ name: string }> {",
+  "  return { name: id };",
+  "}",
+].join("\n");
+
+/** A source's lines: the imports, then the component's. */
+const asyncSource = (imports: string[], ...component: string[]) =>
+  [...imports, 'import { loadTeam, loadUser } from "./api.ts";', "", ...component].join("\n");
+
+/** `compile()` of one source beside `api.ts`, as the corpus compiles a case. */
+async function compileAsync(contents: string) {
+  const files: Record<string, string> = { "Source.uf.tsx": contents, "api.ts": ASYNC_API };
+  const readFile = async (path: string) => files[path.slice("/case/".length)];
+  const typeOracle = createSyntacticOracle({ root: "/case", readFile });
+  const resolve = createFileResolver({ root: "/case", readFile, typeOracle });
+  return compileUf(contents, {
+    filename: "Source.uf.tsx",
+    targets: [target],
+    resolve,
+    typeOracle,
+  });
+}
+
+/** The instance script's lines of the component's output, trimmed, without the blank ones. */
+async function scriptLines(contents: string, name: string) {
+  const { diagnostics, outputs } = await compileAsync(contents);
+  expect(diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+  const file = outputs["svelte"]?.find(({ path }) => path === `${name}.svelte`);
+  const text = file?.contents ?? "";
+  const start = text.indexOf('<script lang="ts">');
+  return text
+    .slice(start, text.indexOf("</script>", start))
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+// Top-level `await` in the instance script (ADR-0101). What Svelte allows only during the
+// component's synchronous start moves above the awaits: a `provide` that reads no awaited value
+// and no later item, `mounted` hooks and template refs. Any other `provide` is UF1002.
+describe("svelte async setup", () => {
+  it("prints async awaits in source order, the props read once through untrack", async () => {
+    const printed = await scriptLines(
+      asyncSource(
+        ['import { computed } from "@uxfront/unframework";'],
+        "export default async function Membership({ id }: { id: string }) {",
+        "  const user = await loadUser(id);",
+        "  const team: { name: string } = await loadTeam(user.teamId);",
+        "  const summary = computed(() => `${user.name} in ${team.name}`);",
+        "  return <p>{summary.value}</p>;",
+        "}",
+      ),
+      "Membership",
+    );
+    const user = printed.indexOf("const user = await untrack(() => loadUser(id));");
+    expect(user).toBeGreaterThan(-1);
+    // An awaited value is a constant: read as written, never through `untrack`.
+    expect(printed[user + 1]).toBe("const team: { name: string } = await loadTeam(user.teamId);");
+    expect(printed[user + 2]).toBe("const summary = $derived(`${user.name} in ${team.name}`);");
+  });
+
+  it("moves an async setup's constant provide above the awaits", async () => {
+    const printed = await scriptLines(
+      asyncSource(
+        [
+          'import { provide } from "@uxfront/unframework";',
+          'import type { InjectionKey } from "@uxfront/unframework";',
+        ],
+        'export const ToneKey: InjectionKey<string> = Symbol("uf.tone");',
+        'const PREFIX = "tone-";',
+        "",
+        "export default async function Panel({ id }: { id: string }) {",
+        "  const user = await loadUser(id);",
+        "  provide(ToneKey, PREFIX + id);",
+        "  return <section aria-label={user.name} />;",
+        "}",
+      ),
+      "Panel",
+    );
+    const code = printed.join(" ");
+    const provide = code.indexOf("setContext( ToneKey, untrack(() => PREFIX + id), );");
+    expect(provide).toBeGreaterThan(-1);
+    expect(provide).toBeLessThan(code.indexOf("const user = await untrack(() => loadUser(id));"));
+  });
+
+  it("moves an async setup's mounted hooks and template refs above the awaits", async () => {
+    const printed = await scriptLines(
+      asyncSource(
+        ['import { onMounted, onUnmounted, useTemplateRef } from "@uxfront/unframework";'],
+        "export default async function Note({ id }: { id: string }) {",
+        "  const user = await loadUser(id);",
+        "  const input = useTemplateRef<HTMLInputElement>();",
+        "  onUnmounted(() => {",
+        '    console.log("gone");',
+        "  });",
+        "  onMounted(() => {",
+        "    input.value?.focus();",
+        "    console.log(user.name);",
+        "  });",
+        "  return <input ref={input} aria-label={user.name} />;",
+        "}",
+      ),
+      "Note",
+    );
+    const awaited = printed.indexOf("const user = await untrack(() => loadUser(id));");
+    expect(awaited).toBeGreaterThan(-1);
+    // `bind:this` waits for the awaits before the ref's declaration, and an `onMount` after them
+    // runs before `bind:this` sets it.
+    expect(printed.indexOf("let input: HTMLInputElement | null = null;")).toBeLessThan(awaited);
+    const mounted = printed.indexOf("onMount(() => {");
+    expect(mounted).toBeGreaterThan(-1);
+    expect(mounted).toBeLessThan(awaited);
+    // An unmounted hook keeps its place, and its teardown order (ADR-0048).
+    expect(printed.indexOf("onMount(() => () => {")).toBeGreaterThan(awaited);
+  });
+
+  it.each([
+    ["an awaited value", ["const user = await loadUser(id);"], "provide(ToneKey, user.name);"],
+    [
+      "a later item",
+      ["const user = await loadUser(id);", 'const tone = "calm";'],
+      "provide(ToneKey, tone);",
+    ],
+  ])(
+    "reports UF1002 at an async setup's provide that reads %s, and emits nothing",
+    async (_reads, before, provide) => {
+      const contents = asyncSource(
+        [
+          'import { provide } from "@uxfront/unframework";',
+          'import type { InjectionKey } from "@uxfront/unframework";',
+        ],
+        'export const ToneKey: InjectionKey<string> = Symbol("uf.tone");',
+        "",
+        "export default async function Panel({ id }: { id: string }) {",
+        ...before.map((line) => `  ${line}`),
+        `  ${provide}`,
+        "  return <section aria-label={user.name} />;",
+        "}",
+      );
+      const { diagnostics, outputs } = await compileAsync(contents);
+      expect(outputs["svelte"] ?? []).toEqual([]);
+      const errors = diagnostics.filter(({ severity }) => severity === "error");
+      expect(errors).toEqual([
+        expect.objectContaining({
+          code: "UF1002",
+          target: "svelte",
+          message: expect.stringContaining("Svelte sets a context only before"),
+        }),
+      ]);
+      const { span } = errors[0]!;
+      expect(contents.slice(span.start, span.end)).toMatch(provide.replace(/;$/, ""));
+    },
+  );
+
+  it("reports nothing for a provide in a setup that does not await", async () => {
+    const printed = await scriptLines(
+      asyncSource(
+        [
+          'import { provide } from "@uxfront/unframework";',
+          'import type { InjectionKey } from "@uxfront/unframework";',
+        ],
+        'export const ToneKey: InjectionKey<string> = Symbol("uf.tone");',
+        "",
+        "export default function Panel({ id }: { id: string }) {",
+        '  const tone = "calm";',
+        "  provide(ToneKey, tone);",
+        "  return <section aria-label={id} />;",
+        "}",
+      ),
+      "Panel",
+    );
+    expect(printed).toContain("setContext(ToneKey, tone);");
+  });
 });

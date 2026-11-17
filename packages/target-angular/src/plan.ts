@@ -36,7 +36,8 @@ import { outputName } from "./outputs.ts";
  * - `computed`: a derived value, `computed(getter)`;
  * - `once`: a setup `const` that reads inputs or state, `computed(() => untracked(() => value))`,
  *   read once in `ngOnInit` (setup-once, plan §4.5);
- * - `value`: a setup `const` that reads none, or an id: a plain field (`this.rates`);
+ * - `value`: a setup `const` that reads none, or an id: a plain field (`this.rates`); or an
+ *   awaited binding, a field `ngOnInit` assigns once its promise resolves (`this.user`, ADR-0101);
  * - `query`: a template ref, `viewChild<ElementRef<T>>("name")`;
  * - `method`: a local function, a method (`this.save()`);
  * - `arrow`: a local function passed as a value (`setInterval(tick, 100)`), an arrow-function
@@ -168,6 +169,11 @@ export interface Plan {
    * constructor before it (ADR-0069).
    */
   late: ReadonlySet<SetupItem>;
+  /**
+   * The signal that tells the setup has resolved, where it awaits (ADR-0101): `ngOnInit` sets it
+   * once the awaits and the rest of the setup have run, and the template renders behind it.
+   */
+  resolved?: string;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
@@ -192,6 +198,7 @@ export const ANGULAR_IMPORTS: readonly string[] = [
   "OnDestroy",
   "OnInit",
   "PLATFORM_ID",
+  "PendingTasks",
   "Renderer2",
   "Signal",
   "InjectionToken",
@@ -299,6 +306,10 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
       },
     ];
   });
+  // The template reads it, so it takes no name composition declares (ADR-0101).
+  const resolved = component.setup.some((item) => item.kind === "Await")
+    ? claimMember("resolved")
+    : undefined;
   const results = new Map(
     calls.flatMap(({ item, holder }) =>
       item.members.map(({ member, binding }) => [binding, `${holder}.${member}`] as const),
@@ -334,6 +345,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     results,
     moduleMembers,
     late,
+    ...(resolved === undefined ? {} : { resolved }),
   };
 }
 
@@ -416,6 +428,7 @@ function outputSafeName(name: string, kind: BindingKind): string {
     case "state":
     case "derived":
     case "localConst":
+    case "awaited":
     case "localVar":
     case "prop":
     case "loopVar":
@@ -479,6 +492,7 @@ function formsOf(component: UfComponent): {
       case "localConst":
       case "localFn":
       case "localVar":
+      case "awaited":
         break;
       case "slotScope":
         forms.set(binding.id, "loop");
@@ -519,6 +533,14 @@ function formsOf(component: UfComponent): {
   const late = new Set<SetupItem>();
   for (const item of component.setup) {
     switch (item.kind) {
+      // A field `ngOnInit` assigns once its promise resolves (ADR-0101): whatever reads it is
+      // deferred as what reads an input is, and every hook and effect after the awaits is
+      // registered there, after them.
+      case "Await":
+        forms.set(item.binding, "value");
+        lazy.add(item.binding);
+        defers = true;
+        break;
       case "State": {
         const linked = item.initial !== undefined && readsLazily(item.initial);
         forms.set(item.binding, linked ? "linked" : "signal");
@@ -650,6 +672,7 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
         if (item.initial) visit(item.initial);
         break;
       case "Const":
+      case "Await":
         visit(item.value);
         break;
       case "Derived":
@@ -710,6 +733,7 @@ export function isLoopVariable(kind: BindingKind): boolean {
     case "derived":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":
@@ -742,6 +766,7 @@ function isFunction(kind: BindingKind): boolean {
     case "derived":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localVar":
     case "emit":
     case "model":
@@ -764,8 +789,9 @@ function isFunction(kind: BindingKind): boolean {
 
 /**
  * Whether a binding of this kind is read lazily whatever its item: an input (unset while the
- * class constructs) or a derived value (a `computed` that may read one). A state or a constant
- * is lazy when its own value reads one (`formsOf`).
+ * class constructs), a derived value (a `computed` that may read one) or an awaited value (set
+ * once its promise resolves, ADR-0101). A state or a constant is lazy when its own value reads
+ * one (`formsOf`).
  */
 function readLazily(kind: BindingKind): boolean {
   switch (kind) {
@@ -773,6 +799,7 @@ function readLazily(kind: BindingKind): boolean {
     case "model":
     case "derived":
     case "context":
+    case "awaited":
       return true;
     case "loopVar":
     case "state":

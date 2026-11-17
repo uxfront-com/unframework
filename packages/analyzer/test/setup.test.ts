@@ -31,6 +31,8 @@ function itemOf(source: string, item: SetupItem): string {
       return `TemplateRef ${name}${item.type ? `<${item.type.code}>` : ""}`;
     case "Id":
       return `Id ${name}`;
+    case "Await":
+      return `Await ${name}${item.type ? `: ${item.type.code}` : ""} = ${codeOf(source, item.value)}`;
     case "Const":
       return `Const ${name}${item.type ? `: ${item.type.code}` : ""} = ${codeOf(source, item.value)}`;
     case "Variable":

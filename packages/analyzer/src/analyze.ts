@@ -2089,7 +2089,6 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
       `${candidate.name} is a generator, and a component must be a plain function.`,
     );
   }
-  if (fn.async) reporter.unsupported(name, "Async components are not supported yet.");
   checkTypeParameters(fn, types, parsed, reporter);
   const props = analyzeProps(fn, types, shapes, parsed, reporter);
 

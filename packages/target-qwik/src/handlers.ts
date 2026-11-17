@@ -326,6 +326,7 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
         if (item.initial) visit(item.initial.refs);
         break;
       case "Const":
+      case "Await":
         visit(item.value.refs);
         break;
       case "Derived":

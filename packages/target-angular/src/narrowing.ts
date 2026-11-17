@@ -80,6 +80,7 @@ export function assertedSetup(component: UfComponent): UfComponent {
         case "Variable":
           return item.initial ? { ...item, initial: code(item.initial) } : item;
         case "Const":
+        case "Await":
           return { ...item, value: code(item.value) };
         case "Derived":
           return { ...item, getter: fn(item.getter) };

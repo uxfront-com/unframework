@@ -1,0 +1,70 @@
+[
+  {
+    "code": "UF2038",
+    "severity": "error",
+    "message": "An awaited value is bound whole, by a `const` that declares one name: every target declares the awaited value as one binding.",
+    "file": "diagnostics/nested-await/Profile.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 20,
+      "offset": 358
+    },
+    "end": {
+      "line": 7,
+      "column": 38,
+      "offset": 376
+    },
+    "help": "Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it."
+  },
+  {
+    "code": "UF2038",
+    "severity": "error",
+    "message": "`await` here is inside other code, and an async setup awaits only as the whole value of a top-level `const`, which every target lowers its own way.",
+    "file": "diagnostics/nested-await/Profile.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 19,
+      "offset": 396
+    },
+    "end": {
+      "line": 8,
+      "column": 37,
+      "offset": 414
+    },
+    "help": "Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it."
+  },
+  {
+    "code": "UF2038",
+    "severity": "error",
+    "message": "`await` here is inside other code, and an async setup awaits only as the whole value of a top-level `const`, which every target lowers its own way.",
+    "file": "diagnostics/nested-await/Profile.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 3,
+      "offset": 426
+    },
+    "end": {
+      "line": 9,
+      "column": 21,
+      "offset": 444
+    },
+    "help": "Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it."
+  },
+  {
+    "code": "UF2038",
+    "severity": "error",
+    "message": "`await` here is inside other code, and an async setup awaits only as the whole value of a top-level `const`, which every target lowers its own way.",
+    "file": "diagnostics/nested-await/Profile.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 5,
+      "offset": 462
+    },
+    "end": {
+      "line": 11,
+      "column": 23,
+      "offset": 480
+    },
+    "help": "Write `const value = await load(…);` at the top level of the component's body, and read what you need from `value` after it."
+  }
+]

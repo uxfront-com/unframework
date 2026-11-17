@@ -1,0 +1,18 @@
+- region "Team":
+  - heading "Team" [level=2]
+  - button "Reset"
+  - article:
+    - heading "User ada" [level=3]
+    - 'button "User ada visits: 0"'
+  - list:
+    - listitem:
+      - article:
+        - heading "User grace" [level=3]
+        - 'button "User grace visits: 5"'
+    - listitem:
+      - article:
+        - heading "User linus" [level=3]
+        - 'button "User linus visits: 5"'
+  - article:
+    - heading "User hopper" [level=3]
+    - 'button "User hopper visits: 6"'

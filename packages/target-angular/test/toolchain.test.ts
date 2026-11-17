@@ -55,8 +55,11 @@ describe("frameworkCompile (L3)", () => {
   }, 60_000);
 
   it("reports a mismatched closing tag as NG5002 on its file only", async () => {
-    const [golden, ...others] = goldens.map(read);
-    const broken = { ...golden!, contents: golden!.contents.replace("</p>", "</span>") };
+    // The first component with a paragraph: a case's shared module (`api.ts`) has no template.
+    const files = goldens.map(read);
+    const golden = files.find(({ contents }) => contents.includes("</p>"))!;
+    const others = files.filter((each) => each !== golden);
+    const broken = { ...golden, contents: golden.contents.replace("</p>", "</span>") };
     const results = await toolchain.frameworkCompile([broken, ...others], context);
     const { errors, warnings } = results.get(broken.path)!;
     expect(codes(errors)).toEqual(["NG5002"]);

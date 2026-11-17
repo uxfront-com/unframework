@@ -357,6 +357,11 @@ spec file that a `-t` run skips stalled the tests it kept. The harness's sequenc
 `hydrate:vue`, so no file runs after it on its page. `LEAVES_PAGE_UNUSABLE` in
 `harness/projects.ts` names that one case per target, with its reason (ADR-0106).
 
+An async setup's loaders resolve after a microtask (`await Promise.resolve()`), deterministically,
+so the server and the client load the same values, and a mount has resolved before the first
+settle round reads it: settling stops when two rounds read the same DOM, so a slower setup could
+read as settled while it is pending (ADR-0101).
+
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8
 from the test's own errors (and L9 for a step no `expectParity` compared), then fails the test

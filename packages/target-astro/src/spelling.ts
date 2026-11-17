@@ -97,6 +97,7 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
           case "derived":
           case "templateRef":
           case "localConst":
+          case "awaited":
           case "localFn":
           case "localVar":
           case "emit":
@@ -135,6 +136,7 @@ function declaredBySetup(binding: Binding): boolean {
     case "derived":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":

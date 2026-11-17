@@ -1141,6 +1141,7 @@ class Walk {
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
       case "localConst":
+      case "awaited":
       case "usedConst":
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
@@ -5543,6 +5544,7 @@ const WHAT: Readonly<Record<SetupBinding["kind"], string>> = {
   derived: "a computed value",
   templateRef: "a template ref",
   localConst: "a constant the setup declares",
+  awaited: "a value the setup awaits",
   localFn: "a local function",
   localVar: "a setup `let`",
   emit: "the component's `emit`",

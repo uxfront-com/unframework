@@ -16,12 +16,16 @@ export interface ReactiveProps {
   replace(next: Readonly<Record<string, unknown>>): void;
 }
 
-/** One prop's value, raw. */
+/**
+ * One prop's value, raw. The state starts with the value, so making a box writes nothing: a box a
+ * template effect's first read makes would otherwise be a write inside that effect, which Svelte's
+ * async mode forbids (`state_unsafe_mutation`, ADR-0101).
+ */
 class Prop {
-  value: unknown = $state.raw();
+  value: unknown;
 
   constructor(value: unknown) {
-    this.value = value;
+    this.value = $state.raw(value);
   }
 }
 
