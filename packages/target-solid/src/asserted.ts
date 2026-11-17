@@ -41,6 +41,8 @@ export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): 
     case "localFn":
     case "localVar":
     case "emit":
+    // A constant the resource's record hands on, read as written (ADR-0101).
+    case "awaited":
       return false;
     // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
     case "model":

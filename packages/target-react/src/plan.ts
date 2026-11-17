@@ -210,6 +210,8 @@ export interface ReactPlan {
     transition?: TransitionNames;
     /** The inline hook a directive's element calls, and the hooks' type (ADR-0099). */
     directive?: { hook: string; hooks: string; queue: string };
+    /** The names a setup that awaits takes (ADR-0101), where it does. */
+    async?: AsyncSetupNames;
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
@@ -418,6 +420,8 @@ export function planComponent(
               case "state":
               case "templateRef":
               case "localConst":
+              // What `use` read of the setup, the same value at every render (ADR-0101).
+              case "awaited":
               case "localVar":
               case "emit":
               case "model":
@@ -633,6 +637,8 @@ export function planComponent(
         case "import":
         case "usedFn":
         case "usedConst":
+        // Render and client code read the same value of the setup by its name (ADR-0101).
+        case "awaited":
           break;
         default:
           kind satisfies never;
@@ -753,6 +759,19 @@ export function planComponent(
       queue: names.claim("queueHook"),
     };
   }
+  // A setup that awaits splits the component in three (ADR-0101).
+  if (!composable && component.setup.some((item) => item.kind === "Await")) {
+    const base = component.name[0]!.toLowerCase() + component.name.slice(1);
+    helpers.async = {
+      setup: names.claim(`${base}Setup`),
+      resolved: names.claim(`${component.name}Resolved`),
+      pending: names.claim("SetupPending"),
+      promise: names.claim("setup"),
+      settled: names.claim("settled"),
+      setSettled: names.claim("setSettled"),
+      props: parameter?.form === "object" ? parameter.name! : names.claim("props"),
+    };
+  }
 
   return {
     owner: component,
@@ -868,6 +887,24 @@ export interface TransitionNames {
   subscribe: string;
 }
 
+/** The names an async setup needs (ADR-0101), as the target claims them. */
+export interface AsyncSetupNames {
+  /** The module-level `async` function that runs the awaits, `profileSetup`. */
+  setup: string;
+  /** The component as today, which reads the setup's values with `use`, `ProfileResolved`. */
+  resolved: string;
+  /** The inline fallback that tells the component its setup has settled. */
+  pending: string;
+  /** The setup's promise: the outer component's state, and the prop it passes it as. */
+  promise: string;
+  /** Whether the setup has settled: the outer component's state, and the prop it passes it as. */
+  settled: string;
+  /** The setter of {@link settled}. */
+  setSettled: string;
+  /** The outer component's props, which it passes on whole: the source's object form's name. */
+  props: string;
+}
+
 /** The names a `<Teleport>` needs (ADR-0098), as the target claims them. */
 export interface TeleportNames {
   /** The inline helper that portals an element into the element a selector matches. */
@@ -893,6 +930,7 @@ const HELPER_NAMES = [
   "useDirective",
   "DirectiveHooks",
   "queueHook",
+  "SetupPending",
 ];
 
 /**
@@ -916,6 +954,8 @@ export function reactive(kind: BindingKind): boolean {
     case "localConst":
     case "localFn":
     case "localVar":
+    // A read-only constant, awaited once each time the setup runs (ADR-0101).
+    case "awaited":
     case "emit":
     case "slotScope":
     case "component":
@@ -1342,6 +1382,8 @@ function hoistable(
                 case "derived":
                 case "templateRef":
                 case "localVar":
+                // The resolved component reads it from its setup's promise (ADR-0101).
+                case "awaited":
                 case "emit":
                 case "model":
                 case "slots":

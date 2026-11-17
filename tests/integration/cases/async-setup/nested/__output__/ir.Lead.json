@@ -1,0 +1,163 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/nested/Lead.uf.tsx",
+  "components": [
+    {
+      "name": "Lead",
+      "span": {
+        "start": 163,
+        "end": 248
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 206,
+              "end": 212
+            }
+          },
+          "binding": "id@194",
+          "span": {
+            "start": 202,
+            "end": 212
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string }",
+          "span": {
+            "start": 200,
+            "end": 214
+          }
+        },
+        "span": {
+          "start": 192,
+          "end": 214
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "id@194",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 194,
+            "end": 196
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Member",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "id",
+                "value": {
+                  "code": "id",
+                  "span": {
+                    "start": 239,
+                    "end": 241
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "id@194",
+                      "span": {
+                        "start": 239,
+                        "end": 241
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 235,
+                  "end": 242
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 227,
+              "end": 245
+            }
+          }
+        ],
+        "span": {
+          "start": 227,
+          "end": 245
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Lead",
+      "span": {
+        "start": 163,
+        "end": 248
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Member.uf.tsx",
+      "file": "Member.uf.tsx",
+      "api": {
+        "file": "Member.uf.tsx",
+        "components": [
+          {
+            "name": "Member",
+            "export": "default",
+            "props": [
+              {
+                "name": "id",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [
+              "reset"
+            ],
+            "inheritAttrs": true,
+            "root": "element",
+            "async": true,
+            "rootTag": "article"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Member",
+          "span": {
+            "start": 7,
+            "end": 13
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 37
+      }
+    }
+  ]
+}

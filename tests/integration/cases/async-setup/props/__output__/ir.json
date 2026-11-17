@@ -1,0 +1,292 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/props/Greeting.uf.tsx",
+  "components": [
+    {
+      "name": "Greeting",
+      "span": {
+        "start": 156,
+        "end": 440
+      },
+      "props": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 217,
+              "end": 223
+            }
+          },
+          "binding": "id@197",
+          "span": {
+            "start": 213,
+            "end": 224
+          }
+        },
+        {
+          "name": "prefix",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 233,
+              "end": 239
+            }
+          },
+          "binding": "prefix@201",
+          "span": {
+            "start": 225,
+            "end": 239
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ id: string; prefix: string }",
+          "span": {
+            "start": 211,
+            "end": 241
+          }
+        },
+        "span": {
+          "start": 195,
+          "end": 241
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "loadUser@9",
+          "name": "loadUser",
+          "kind": "import",
+          "span": {
+            "start": 9,
+            "end": 17
+          }
+        },
+        {
+          "id": "id@197",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 197,
+            "end": 199
+          }
+        },
+        {
+          "id": "prefix@201",
+          "name": "prefix",
+          "kind": "prop",
+          "span": {
+            "start": 201,
+            "end": 207
+          }
+        },
+        {
+          "id": "user@253",
+          "name": "user",
+          "kind": "awaited",
+          "span": {
+            "start": 253,
+            "end": 257
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Await",
+          "binding": "user@253",
+          "value": {
+            "code": "loadUser(prefix + id)",
+            "span": {
+              "start": 266,
+              "end": 287
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "loadUser@9",
+                "span": {
+                  "start": 266,
+                  "end": 274
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "prefix@201",
+                "span": {
+                  "start": 275,
+                  "end": 281
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "id@197",
+                "span": {
+                  "start": 284,
+                  "end": 286
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 247,
+            "end": 288
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "greeting",
+            "span": {
+              "start": 314,
+              "end": 330
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Greeting",
+            "span": {
+              "start": 331,
+              "end": 352
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Hello, ",
+                "span": {
+                  "start": 364,
+                  "end": 371
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "user.name",
+                  "span": {
+                    "start": 372,
+                    "end": 381
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "user@253",
+                      "span": {
+                        "start": 372,
+                        "end": 376
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 371,
+                  "end": 382
+                }
+              }
+            ],
+            "span": {
+              "start": 360,
+              "end": 387
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Signed in as ",
+                "span": {
+                  "start": 397,
+                  "end": 410
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "id",
+                  "span": {
+                    "start": 411,
+                    "end": 413
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "id@197",
+                      "span": {
+                        "start": 411,
+                        "end": 413
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 410,
+                  "end": 414
+                }
+              }
+            ],
+            "span": {
+              "start": 394,
+              "end": 418
+            }
+          }
+        ],
+        "span": {
+          "start": 305,
+          "end": 433
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Greeting",
+      "span": {
+        "start": 156,
+        "end": 440
+      }
+    }
+  ],
+  "types": [],
+  "moduleImports": [
+    {
+      "specifier": "./api",
+      "file": "api.ts",
+      "names": [
+        {
+          "imported": "loadUser",
+          "local": "loadUser",
+          "span": {
+            "start": 9,
+            "end": 17
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

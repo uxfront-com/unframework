@@ -168,7 +168,8 @@ const CLIENT_SETTLE_ROUNDS = 10;
  * quiet, read, then unmounted and removed. Its listeners drop what it emits. The root sits in a
  * `<form>` of its own, so its radios are a group apart from the hydrated root's: two radios of
  * one `name` with no form are one group in the page, and checking the client render's would
- * uncheck the hydrated one's.
+ * uncheck the hydrated one's. A component that takes the focus as it mounts takes it in the
+ * client render too, so the focus goes back where the hydrated view left it (ADR-0101).
  */
 export async function clientRender(
   mount: MountAdapter,
@@ -185,6 +186,7 @@ export async function clientRender(
   root.setAttribute("data-testid", "uf-client-agreement");
   form.append(root);
   document.body.append(form);
+  const focused = document.activeElement;
   try {
     const on = Object.fromEntries(events.map(({ name }) => [name, () => {}]));
     const instance = await mount(component, root, { ...(props ? { props } : {}), on, events });
@@ -204,6 +206,13 @@ export async function clientRender(
     }
   } finally {
     form.remove();
+    if (
+      focused instanceof HTMLElement &&
+      focused.isConnected &&
+      document.activeElement !== focused
+    ) {
+      focused.focus({ preventScroll: true });
+    }
   }
 }
 

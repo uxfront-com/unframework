@@ -113,6 +113,8 @@ export function reactCode(plan: ReactPlan): ReactCode {
         return written;
       case "loopVar":
       case "localConst":
+      // What `use` read of the setup, by the setup's name (ADR-0101).
+      case "awaited":
       case "emit":
       case "slots":
       case "slotScope":

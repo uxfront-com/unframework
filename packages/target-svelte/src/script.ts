@@ -1143,6 +1143,8 @@ class ScriptWriter {
         return this.#usedRead(binding.id);
       case "loopVar":
       case "localConst":
+      // An awaited value, a plain constant once the await has resolved (ADR-0101).
+      case "awaited":
       case "localFn":
       case "localVar":
       case "emit":
@@ -1373,7 +1375,8 @@ class ScriptWriter {
   #setup(): string[] {
     const pieces: string[] = [];
     let previousDeclaration = false;
-    for (const item of setupInTeardownOrder(this.#component.setup)) {
+    const items = setupInTeardownOrder(this.#component.setup);
+    for (const item of setupInStartOrder(items, this.#bindings)) {
       if (item.kind === "Model") continue;
       const code = this.#item(item);
       // The first id is two declarations, `$props.id()` and the id itself.
@@ -1387,6 +1390,13 @@ class ScriptWriter {
 
   #item(item: SetupItem): string {
     switch (item.kind) {
+      // Top-level `await` in the instance script, under the `experimental.async` compiler option
+      // (ADR-0101). The awaited call reads the props once, as the setup's other values do.
+      case "Await": {
+        const name = this.#name(item.binding);
+        const type = item.type ? `: ${item.type.code}` : "";
+        return `const ${name}${type} = await ${this.#setupValue(item.value)};`;
+      }
       case "State": {
         const name = this.#name(item.binding);
         const rune = isPrimitiveState(item, this.#component, this.#module)
@@ -1900,6 +1910,64 @@ function setupInTeardownOrder(items: readonly SetupItem[]): SetupItem[] {
   return [...rest.slice(0, at), ...early, ...rest.slice(at)];
 }
 
+/**
+ * The setup items of a setup that awaits (ADR-0101), with the items Svelte needs during the
+ * component's synchronous start moved above the awaits, in their own order. Each `provide`
+ * {@link startsProvide} allows, since `setContext` after an await throws
+ * `set_context_after_init`. Each `mounted` hook and each template ref: an `onMount` registered
+ * after an await runs before `bind:this` sets the ref, and `bind:this` waits for the await that
+ * comes before the ref's declaration, so a hook that reads the ref sees it only when both come
+ * first. The hook's closure runs once the awaited values are set. `unmounted` hooks keep their
+ * teardown order. A setup without awaits keeps its order.
+ */
+function setupInStartOrder(
+  items: readonly SetupItem[],
+  bindings: ReadonlyMap<string, Binding>,
+): SetupItem[] {
+  if (!items.some((item) => item.kind === "Await")) return [...items];
+  const early = items.filter(
+    (item) =>
+      item.kind === "TemplateRef" ||
+      (item.kind === "Lifecycle" && item.hook === "mounted") ||
+      (item.kind === "Provide" && startsProvide(item, bindings)),
+  );
+  return [...early, ...items.filter((item) => !early.includes(item))];
+}
+
+/**
+ * Whether a `provide` of a setup that awaits can move above the awaits (ADR-0101): its value
+ * reads only props, module values and globals, nothing the awaits or a later item set. Its key is
+ * a module's or an imported one.
+ */
+function startsProvide(item: ProvideItem, bindings: ReadonlyMap<string, Binding>): boolean {
+  return item.value.refs.every((reference) => {
+    switch (reference.kind) {
+      case "Global":
+      case "Import":
+        return true;
+      case "Binding": {
+        const kind = bindings.get(reference.binding)?.kind;
+        return kind === "prop" || kind === "moduleConst" || kind === "import";
+      }
+      default:
+        return false;
+    }
+  });
+}
+
+/**
+ * The `provide` items of a setup that awaits which cannot move above the awaits (ADR-0101): each
+ * reads an awaited value or a later item, and `setContext` after an await throws
+ * `set_context_after_init`. The target reports them (UF1002) and emits nothing for the component.
+ */
+export function lateProvides(component: UfComponent): ProvideItem[] {
+  if (!component.setup.some((item) => item.kind === "Await")) return [];
+  const bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
+  return component.setup.filter(
+    (item): item is ProvideItem => item.kind === "Provide" && !startsProvide(item, bindings),
+  );
+}
+
 /** Whether a setup item registers a cleanup that runs when the component is removed. */
 function registersCleanup(item: SetupItem): boolean {
   switch (item.kind) {
@@ -1915,6 +1983,7 @@ function registersCleanup(item: SetupItem): boolean {
 /** Whether an item is a declaration a line long, which the script keeps beside the next one. */
 function isDeclaration(item: SetupItem): boolean {
   switch (item.kind) {
+    case "Await":
     case "State":
     case "Derived":
     case "TemplateRef":
@@ -2528,6 +2597,7 @@ function isReactive(kind: BindingKind): boolean {
     case "loopVar":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":

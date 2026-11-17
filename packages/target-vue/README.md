@@ -148,6 +148,14 @@ A `<Transition>` is Vue's own, around `v-if` and its branches, with no `name` wh
 in `<template>` when it finds `appear` as an attribute or a `:appear` binding, and reads no object
 binding, so the server renders the settled child (ADR-0100).
 
+An async setup (ADR-0101) awaits in `<script setup>`, which Vue compiles through
+`withAsyncContext`, so every item after an await binds to the component. Vue renders it only under
+a `<Suspense>`: a parent prints one around each use of an async child, and a component whose whole
+render is an async child turns `inheritAttrs` off and binds `$attrs` on it, since `<Suspense>` drops
+fallthrough. `defineExpose` comes before the first await, with the functions it names as
+declarations, or the parent's ref keeps the bare proxy. The toolchain's client and hydrate adapters
+render a root whose `setup` is async inside a `<Suspense>`.
+
 ## Composables
 
 A `.uf.ts` module's composable is its own module, `useToggle.ts` (ADR-0069, `src/composable.ts`):

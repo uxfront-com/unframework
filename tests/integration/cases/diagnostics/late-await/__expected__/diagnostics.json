@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF2039",
+    "severity": "error",
+    "message": "An awaited expression reads `emit`, the component's `emit`: it reads only props, the module's values, globals and the values awaited before it, since React and Solid run the awaits outside the component's render.",
+    "file": "diagnostics/late-await/Profile.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 38,
+      "offset": 448
+    },
+    "end": {
+      "line": 10,
+      "column": 42,
+      "offset": 452
+    },
+    "help": "Compute what the awaited call needs from the props, or await it before what reads it."
+  },
+  {
+    "code": "UF2039",
+    "severity": "error",
+    "message": "This `await` follows another setup item: the awaits open the setup, since React and Solid run them outside the component's render, and Qwik runs the body again up to each one.",
+    "file": "diagnostics/late-await/Profile.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 16,
+      "offset": 495
+    },
+    "end": {
+      "line": 12,
+      "column": 34,
+      "offset": 513
+    },
+    "help": "Move the `const … = await …` declarations above the setup's other items."
+  }
+]

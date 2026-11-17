@@ -321,6 +321,7 @@ function templateReadsBinding(kind: BindingKind): boolean {
     case "derived":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "emit":
     case "model":

@@ -285,6 +285,11 @@ function composableCode(composable: UfComposable, plan: SetupPlan): ComposableCo
       case "Const":
         value(item.value);
         break;
+      // An awaited value runs in a `useComputed$` (./setup.ts, ADR-0101), though an async
+      // composable is UF2035, so none holds one.
+      case "Await":
+        found.push({ code: item.value, kind: "expression", captured: true });
+        break;
       case "Derived":
         fn(item.getter, true);
         break;

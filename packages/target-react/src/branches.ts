@@ -10,8 +10,11 @@
 // reconciles one with another: a single root element its own `key`, anything else a keyed
 // `Fragment`, and a nested conditional that is a branch's only root keys its own branches under
 // that branch's key, as the ternary chain it prints in. Branches of text and markup alone stay
-// unkeyed: React's reuse of them is not observable.
+// unkeyed: React's reuse of them is not observable. An async child (ADR-0101) holds what its setup
+// awaited, read once from its props, so two branches that render one async component take keys
+// too, or React would keep the first branch's instance, and its awaited data, for the second.
 import {
+  childIsAsync,
   js,
   jsxAttributeValue,
   jsxBranch,
@@ -20,7 +23,7 @@ import {
   jsxExpression,
 } from "@unframework.dev/codegen";
 import type { ImportSet, JsxContext } from "@unframework.dev/codegen";
-import type { ElementNode, IfBranch, IfNode, RenderNode } from "@unframework.dev/ir";
+import type { ElementNode, IfBranch, IfNode, RenderNode, UfModule } from "@unframework.dev/ir";
 
 type Expression =
   | ReturnType<typeof js.nullLiteral>
@@ -34,7 +37,7 @@ type Expression =
 export function keyedTernary(node: IfNode, context: JsxContext, imports: ImportSet): Expression {
   // A conditional that is a keyed branch's only root renders where the other branches' elements
   // do: each of its own branches takes a key, whether or not they conflict among themselves.
-  const keyed = KEYED.has(node) || conflicts(node);
+  const keyed = KEYED.has(node) || conflicts(node, context.module);
   const prefix = PREFIXES.get(node) ?? "";
   const branch = (entry: IfBranch, index: number): Expression => {
     const [only] = entry.children;
@@ -45,15 +48,20 @@ export function keyedTernary(node: IfNode, context: JsxContext, imports: ImportS
       PREFIXES.set(only, `${prefix}${index}.`);
       if (keyed) KEYED.add(only);
     } else {
-      placeConditionals(entry.children);
+      placeConditionals(entry.children, context.module);
     }
     // Text alone is never reconciled with an element: it needs no key.
-    if (!keyed || !only || (single && only.kind !== "Element" && only.kind !== "For")) {
+    if (
+      !keyed ||
+      !only ||
+      (single && only.kind !== "Element" && only.kind !== "For" && only.kind !== "Component")
+    ) {
       return jsxBranch(entry.children, context);
     }
     if (single && only.kind === "Element") {
       return jsxElement(only, context, [key(prefix, `${index}`)]);
     }
+    // A component takes the key through a fragment, which React reconciles by it as well.
     // Several roots, or a list, whose rows React reconciles by their own keys: a keyed fragment.
     return js.jsxElement(
       imports.add("react", "Fragment"),
@@ -93,9 +101,9 @@ export function keyedBranches(node: IfNode, context: JsxContext, imports: Import
  * about two children with one key and reconciles them by it. Call it on the children a parent
  * prints (an element's, the root fragment's), before they print.
  */
-export function placeConditionals(children: readonly RenderNode[]): void {
+export function placeConditionals(children: readonly RenderNode[], module?: UfModule): void {
   const keyed = children.flatMap((child, position) =>
-    child.kind === "If" && conflicts(child) ? [[child, position] as const] : [],
+    child.kind === "If" && conflicts(child, module) ? [[child, position] as const] : [],
   );
   if (keyed.length < 2) return;
   for (const [child, position] of keyed) PREFIXES.set(child, `${position}-`);
@@ -199,10 +207,20 @@ function statefulElement(element: ElementNode): boolean {
  * React matches a single root against the first of several where it unwraps a fragment, and a
  * keyed branch is never wrong, so a shared tag anywhere at the top is enough.
  */
-function conflicts(node: IfNode): boolean {
+function conflicts(node: IfNode, module: UfModule | undefined): boolean {
   const { branches } = node;
+  const tags = branches.map((branch) => topTags(branch.children, module));
+  // Two branches whose tops render one async component (`<Member>` in `tags`) always conflict.
+  if (
+    tags.some((own, a) =>
+      tags.some(
+        (other, b) => a < b && [...own].some((tag) => tag.startsWith("<") && other.has(tag)),
+      ),
+    )
+  ) {
+    return true;
+  }
   if (!branches.some((branch) => branch.children.some(holdsState))) return false;
-  const tags = branches.map((branch) => topTags(branch.children));
   return tags.some((own, a) =>
     tags.some((other, b) => a < b && [...own].some((tag) => other.has(tag))),
   );
@@ -212,7 +230,7 @@ function conflicts(node: IfNode): boolean {
  * The tags of the elements nodes can render at their top, where React reconciles them: their own
  * elements, those their nested conditionals' branches render there, and a list's rows.
  */
-function topTags(nodes: readonly RenderNode[]): Set<string> {
+function topTags(nodes: readonly RenderNode[], module: UfModule | undefined): Set<string> {
   const tags = new Set<string>();
   for (const node of nodes) {
     switch (node.kind) {
@@ -221,15 +239,18 @@ function topTags(nodes: readonly RenderNode[]): Set<string> {
         break;
       case "If":
         for (const branch of node.branches) {
-          for (const tag of topTags(branch.children)) tags.add(tag);
+          for (const tag of topTags(branch.children, module)) tags.add(tag);
         }
         break;
       case "For":
         if (node.body.kind === "Element") tags.add(node.body.tag);
         break;
+      // An async component, by its name in angle brackets, which no element's tag takes.
+      case "Component":
+        if (module && childIsAsync(module, node.component)) tags.add(`<${node.component}>`);
+        break;
       case "Text":
       case "Interpolation":
-      case "Component":
       case "SlotOutlet":
       case "Dynamic":
       // A portal renders nothing in place (ADR-0098), and a transition is a component of its own,

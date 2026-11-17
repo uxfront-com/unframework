@@ -1,0 +1,127 @@
+{
+  "irVersion": 1,
+  "file": "async-setup/provide/Badge.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 225,
+        "end": 351
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "tone@267",
+          "name": "tone",
+          "kind": "context",
+          "span": {
+            "start": 267,
+            "end": 271
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Inject",
+          "binding": "tone@267",
+          "key": "ToneKey",
+          "fallback": {
+            "code": "\"plain\"",
+            "span": {
+              "start": 290,
+              "end": 297
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 261,
+            "end": 299
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "badge",
+            "span": {
+              "start": 315,
+              "end": 328
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Tone: ",
+            "span": {
+              "start": 329,
+              "end": 335
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "tone",
+              "span": {
+                "start": 336,
+                "end": 340
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tone@267",
+                  "span": {
+                    "start": 336,
+                    "end": 340
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 335,
+              "end": 341
+            }
+          }
+        ],
+        "span": {
+          "start": 309,
+          "end": 348
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Badge",
+      "span": {
+        "start": 225,
+        "end": 351
+      }
+    }
+  ],
+  "types": [],
+  "keys": [
+    {
+      "name": "ToneKey",
+      "description": "uf.tone",
+      "type": {
+        "code": "string",
+        "span": {
+          "start": 141,
+          "end": 147
+        }
+      },
+      "span": {
+        "start": 106,
+        "end": 169
+      }
+    }
+  ]
+}

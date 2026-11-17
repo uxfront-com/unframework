@@ -63,6 +63,7 @@ const bindingKinds = {
   localConst: true,
   localFn: true,
   localVar: true,
+  awaited: true,
   emit: true,
   model: true,
   slots: true,
@@ -78,6 +79,7 @@ const bindingKinds = {
   usedConst: true,
 } satisfies Record<BindingKind, true>;
 const setupItemKinds = {
+  Await: true,
   State: true,
   Derived: true,
   TemplateRef: true,
@@ -494,6 +496,7 @@ function partsOf(
       case "Variable":
         if (item.initial) parts.push({ value: item.initial, path: `${path}/initial` });
         break;
+      case "Await":
       case "Const":
         parts.push({ value: item.value, path: `${path}/value` });
         break;

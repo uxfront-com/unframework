@@ -266,6 +266,47 @@ The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 - Constants and functions that capture nothing of the component move to module scope
   (`unicorn/consistent-function-scoping`).
 
+### Async setup (ADR-0101)
+
+The awaits open an async setup, so they run in one `createResource`, whose fetcher awaits each
+in order and returns their values as a record. The rest of the setup and the template wait for
+it in the function child of `<Show>`, inside a `<Suspense>` with no fallback:
+
+```tsx
+const [awaited] = createResource(async () => {
+  const user = await loadUser(props.id);
+  return { user };
+});
+
+return (
+  <Suspense>
+    <Show when={awaited()}>
+      {(resolved) => {
+        const { user } = resolved();
+        const [visits, setVisits] = createSignal(user.visits);
+        return <p>…</p>;
+      }}
+    </Show>
+  </Suspense>
+);
+```
+
+- The server render waits for the `<Suspense>` and writes the resolved template. A resource
+  read with no `<Suspense>` around it would render nothing there.
+- The fetcher runs untracked, so a prop an awaited expression reads is read once, with no
+  `untrack`, as the source's rule asks.
+- `when` tests the record, so a falsy awaited value still renders.
+- The rest of the setup closes over `props` in the callback. An inner component that took the
+  awaited values as props would fail `solid/reactivity` (L5).
+- `useId()` is created above the resource, where hydration still runs, so it keeps the server's
+  id: the subtree the callback renders is created anew on the client.
+- A parent's `ref` gets the exposed functions once the setup resolves, as on Vue.
+- Declared: after hydration, Solid creates the component's subtree again once its setup
+  resolves, so focus and selection inside it reset. With the data Solid's server render
+  serializes by default, the client hydrates in place and doesn't run the setup again; the
+  harness renders with `noScripts`, which leaves that data out. A setup whose promise rejects
+  throws from the resource's read.
+
 ## Composables and shared modules (ADR-0069, ADR-0070)
 
 A `.uf.ts` module's composable is its own module, `useToggle.ts` (`src/composable.ts`): the
@@ -363,6 +404,7 @@ targets do is the analyser's to reject (ADR-0033).
 | `event-capture`, `event-once`, `event-passive` | native: `on:event={{ handleEvent, … }}`                                                                      |
 | `event-semantics`                              | native: some events delegated, the others native                                                             |
 | `use-id`                                       | native: `createUniqueId`                                                                                     |
+| `async-setup`                                  | native: `createResource`, with the rest of the setup in a `<Show>` callback inside `<Suspense>` (ADR-0101)   |
 | `next-tick`                                    | emulated: `nextTick`                                                                                         |
 | `class-binding`                                | emulated: `cx`, which reads an array's entries where a part may be an array or an object (ADR-0065)          |
 | `style-binding`                                | emulated: `styleProperties`, a style bound to a value as an object with kebab-case keys (ADR-0065)           |
@@ -488,7 +530,9 @@ The tests and tooling build, check and run Solid output through three entries:
   `hydrate`, from a fresh `_$HY` and an unfinished `sharedConfig`, both compiled hydratable
   (`vite("hydrate")` sets `ssr: true`). Solid throws for what it cannot hydrate, and checks no
   text or attribute. `renderForHydration` is `renderToString`.
-- `@unframework.dev/target-solid/toolchain/server` (Node): renders with `renderToStringAsync`.
+- `@unframework.dev/target-solid/toolchain/server` (Node): renders with `renderToStringAsync`,
+  which waits for each `<Suspense>`, with `noScripts`, so the HTML holds no `<script>` of
+  resource data (ADR-0101).
 
 `test/output.test.ts` runs L3, L4 and L5 over what the emitter writes for sources that reach
 every shape above, and renders the rewritten ones on the server (`test/rewrites.browser.test.ts`

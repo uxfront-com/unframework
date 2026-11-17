@@ -1563,6 +1563,7 @@ function htmlTarget() {
     teleport: { support: "native" },
     transition: { support: "native" },
     directive: { support: "native" },
+    "async-setup": { support: "native" },
   };
   return defineTarget({
     name: "html",

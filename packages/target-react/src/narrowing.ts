@@ -50,6 +50,7 @@ export function assertedPaths(
     case "templateRef":
     case "loopVar":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":

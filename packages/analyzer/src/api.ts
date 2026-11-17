@@ -54,6 +54,8 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
   // A parent reads it to reject explicit type arguments and `<component is>` (UF6006).
   const parameters = node.typeParameters?.params ?? [];
   if (parameters.length) api.typeParameters = parameters.map((parameter) => parameter.name.name);
+  // A parent in another file wraps an async child its own way: Vue's in `<Suspense>` (ADR-0101).
+  if (node.async && body.some(awaits)) api.async = true;
   for (const statement of body) {
     const call = macroCall(statement, context);
     if (!call) continue;
@@ -449,4 +451,13 @@ function rootOf(
   if (isComponentName(name.name)) return { kind: "component" };
   if (name.name === "component") return { kind: "other" };
   return { kind: "element", tag: name.name };
+}
+
+/** Whether a setup statement is an awaited declaration, `const user = await …` (ADR-0101). */
+function awaits(statement: AST.Directive | AST.Statement): boolean {
+  return (
+    statement.type === "VariableDeclaration" &&
+    statement.kind === "const" &&
+    statement.declarations.some((declarator) => declarator.init?.type === "AwaitExpression")
+  );
 }

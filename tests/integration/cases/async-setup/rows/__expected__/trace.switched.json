@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Switch lead' })",
+      "dom": [
+        "<section aria-label=\"Roster\" class=\"roster\">",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Switch lead\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Toggle guest\"",
+        "  </button>",
+        "  <ul>",
+        "    <li class=\"member\">",
+        "      \"User grace\"",
+        "    </li>",
+        "    <li class=\"member\">",
+        "      \"User edsger\"",
+        "    </li>",
+        "    <li class=\"member\">",
+        "      \"User linus\"",
+        "    </li>",
+        "  </ul>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Roster\":",
+        "  - button \"Switch lead\"",
+        "  - button \"Toggle guest\"",
+        "  - list:",
+        "    - listitem: User grace",
+        "    - listitem: User edsger",
+        "    - listitem: User linus"
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Toggle guest' })",
+      "dom": [
+        "<section aria-label=\"Roster\" class=\"roster\">",
+        "  <button type=\"button\">",
+        "    \"Switch lead\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Toggle guest\"",
+        "  </button>",
+        "  <ul>",
+        "    <li class=\"member\">",
+        "      \"User grace\"",
+        "    </li>",
+        "    <li class=\"member\">",
+        "      \"User edsger\"",
+        "    </li>",
+        "    <li class=\"member\">",
+        "      \"User linus\"",
+        "    </li>",
+        "    <li class=\"member\">",
+        "      \"User hopper\"",
+        "    </li>",
+        "  </ul>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Roster\":",
+        "  - button \"Switch lead\"",
+        "  - button \"Toggle guest\"",
+        "  - list:",
+        "    - listitem: User grace",
+        "    - listitem: User edsger",
+        "    - listitem: User linus",
+        "    - listitem: User hopper"
+      ],
+      "events": {}
+    }
+  ]
+}

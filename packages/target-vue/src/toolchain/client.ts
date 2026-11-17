@@ -1,5 +1,5 @@
 import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
-import { createApp, h, nextTick, shallowReactive } from "vue";
+import { createApp, h, nextTick, shallowReactive, Suspense } from "vue";
 import type { Component } from "vue";
 
 /**
@@ -19,7 +19,9 @@ import type { Component } from "vue";
 export const mount: MountAdapter = async (component, container, { props, on }) => {
   const current: Record<string, unknown> = shallowReactive({ ...props });
   const listeners = listenerProps(on);
-  const app = createApp({ render: () => h(component as Component, { ...current, ...listeners }) });
+  const app = createApp({
+    render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
+  });
   app.mount(container);
   await nextTick();
   return {
@@ -49,4 +51,17 @@ function listenerProps(
       listener,
     ]),
   );
+}
+
+/**
+ * The root's vnode: an async setup renders only under a `<Suspense>` (ADR-0101), so a root whose
+ * setup awaits takes one, as a hand-written host's would. Any other root renders alone, so no
+ * other case mounts through `<Suspense>`'s hidden container.
+ */
+function rootOf(component: Component, props: () => Record<string, unknown>) {
+  const { setup } = component as { setup?: unknown };
+  if (Object.prototype.toString.call(setup) !== "[object AsyncFunction]") {
+    return h(component, props());
+  }
+  return h(Suspense, null, { default: () => h(component, props()) });
 }

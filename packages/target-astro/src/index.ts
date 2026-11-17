@@ -137,6 +137,8 @@ export const astro: Target = defineTarget({
     transition: inert("A `<Transition>`'s classes never run: its child renders settled"),
     // A directive's hooks run in the browser (ADR-0099): the element renders without them.
     directive: inert("A directive's hooks never run"),
+    // Top-level `await` in the frontmatter, which the Container API waits for (ADR-0101).
+    "async-setup": { support: "native" },
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
