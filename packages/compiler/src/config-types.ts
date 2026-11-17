@@ -62,8 +62,8 @@ export type ProjectViteConfig = { plugins?: readonly VitePluginOption[] } & obje
 /** The configuration as a project writes it, with `defineConfig` from `@uxfront/unframework/config`. */
 export interface UnframeworkConfig {
   /**
-   * Defaults to the seven targets of `DEFAULT_TARGETS`. `solid@2` is opt-in and experimental, since
-   * a project that selects both Solid majors needs two Solid installs (ADR-0102).
+   * Defaults to the seven targets of `DEFAULT_TARGETS`. `solid@2` is opt-in, since a project that
+   * selects both Solid majors needs two Solid installs (ADR-0102).
    */
   targets?: readonly TargetSelector[];
   /** Defaults to `src`, relative to the config's directory. */
