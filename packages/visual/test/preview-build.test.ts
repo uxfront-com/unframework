@@ -308,25 +308,32 @@ describe("unframework preview build", () => {
     }
   });
 
-  it("exits 2 on a bad argument, and on --out at the root, above it or in a directory of others", async () => {
-    const root = project({
-      "unframework.config.ts": 'export default { targets: ["vue"] };\n',
-      "src/Hello.uf.tsx": "export default function Hello() {\n  return <p>Hello</p>;\n}\n",
-      "notes/todo.md": "Keep me.\n",
-    });
-    const cases: [string[], string][] = [
-      [["preview", "build", "--port", "1"], "--port is the served preview's"],
-      [["preview", "build", "--out", "."], "holds the project"],
-      [["preview", "build", "--out", ".."], "holds the project"],
-      [["preview", "build", "--out", "notes"], "is not empty and no earlier build wrote it"],
-    ];
-    const results = await Promise.all(cases.map(([args]) => unframework(args, root)));
-    for (const [index, [args, message]] of cases.entries()) {
-      expect(results[index]!.code, args.join(" ")).toBe(2);
-      expect(results[index]!.stderr).toContain(message);
-    }
-    expect(readFileSync(join(root, "notes/todo.md"), "utf8")).toBe("Keep me.\n");
-  });
+  // Each of the four processes loads the visual package's CLI entry, and so Vitest's Node API,
+  // before it reads its arguments. Four cold starts at once take seconds on a loaded runner, as in
+  // `packages/unframework/test/cli.test.ts`.
+  it(
+    "exits 2 on a bad argument, and on --out at the root, above it or in a directory of others",
+    { timeout: 60_000 },
+    async () => {
+      const root = project({
+        "unframework.config.ts": 'export default { targets: ["vue"] };\n',
+        "src/Hello.uf.tsx": "export default function Hello() {\n  return <p>Hello</p>;\n}\n",
+        "notes/todo.md": "Keep me.\n",
+      });
+      const cases: [string[], string][] = [
+        [["preview", "build", "--port", "1"], "--port is the served preview's"],
+        [["preview", "build", "--out", "."], "holds the project"],
+        [["preview", "build", "--out", ".."], "holds the project"],
+        [["preview", "build", "--out", "notes"], "is not empty and no earlier build wrote it"],
+      ];
+      const results = await Promise.all(cases.map(([args]) => unframework(args, root)));
+      for (const [index, [args, message]] of cases.entries()) {
+        expect(results[index]!.code, args.join(" ")).toBe(2);
+        expect(results[index]!.stderr).toContain(message);
+      }
+      expect(readFileSync(join(root, "notes/todo.md"), "utf8")).toBe("Keep me.\n");
+    },
+  );
 });
 
 describe("unframework preview build on an example's malformed metadata", () => {
