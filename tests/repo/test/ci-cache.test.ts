@@ -62,16 +62,19 @@ function cacheProblems(job: Job): string[] {
   const install = job.steps.findIndex(installs);
   if (install === -1) return [];
   const problems: string[] = [];
-  if (/^[ \t]+cache:[ \t]*pnpm[ \t]*$/m.test(job.text)) problems.push("uses setup-node's cache: pnpm");
+  if (/^[ \t]+cache:[ \t]*pnpm[ \t]*$/m.test(job.text))
+    problems.push("uses setup-node's cache: pnpm");
   const cache = job.steps.findIndex((step) => /^[ \t-]*uses:[ \t]*actions\/cache@/m.test(step));
   if (cache === -1 || cache > install) {
     problems.push("has no actions/cache step before the install");
   } else {
     const step = job.steps[cache] ?? "";
-    if (!/^[ \t]+restore-keys:[ \t]*\S/m.test(step)) problems.push("has no restore-keys on its cache");
+    if (!/^[ \t]+restore-keys:[ \t]*\S/m.test(step))
+      problems.push("has no restore-keys on its cache");
     const id = /^[ \t-]*id:[ \t]*([\w-]+)[ \t]*$/m.exec(step)?.[1];
     const prune = job.steps.findIndex(
-      (candidate, index) => index > install && /^[ \t-]*run:[ \t]*pnpm store prune\b/m.test(candidate),
+      (candidate, index) =>
+        index > install && /^[ \t-]*run:[ \t]*pnpm store prune\b/m.test(candidate),
     );
     if (prune === -1) {
       problems.push("has no pnpm store prune after the install");
