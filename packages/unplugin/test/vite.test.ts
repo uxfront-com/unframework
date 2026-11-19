@@ -1293,12 +1293,13 @@ describe("the project graph (ADR-0071)", () => {
 
   it("compiles again exactly the dependents of a type it changed", async () => {
     await withGraph(async ({ graph, client, ids, compiled }) => {
-      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx", "D.uf.tsx"]);
+      // C's load compiles the composables it imports too, which read the type as well.
+      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx", "D.uf.tsx", "useC.uf.ts"]);
       compiled.length = 0;
       graph.write("a.ts", PROPS.replace("label: string;", "label: string;\n  hint?: string;"));
       client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
       for (const id of Object.values(ids)) await client.transformRequest(id);
-      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx"]);
+      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx", "useC.uf.ts"]);
     });
   });
 

@@ -176,6 +176,12 @@ interface Graph {
   reachedPackages: Set<string>;
 }
 
+/** A file's compile for the selected target, and the source it compiled. */
+interface Compiled {
+  result: CompileResult;
+  source: string;
+}
+
 /** What resolves a bare specifier on Vite: `createIdResolver`'s function. */
 type BareResolver = (
   environment: Environment,
@@ -399,8 +405,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     return { graph, filename: toPosix(relative(graph.root, file)) };
   };
   // A compile and an update both change the project, and client and ssr load ids at once: one
-  // runs at a time, so no compile keeps a result an update has made stale.
+  // runs at a time, so no compile keeps a result an update has made stale. A request whose compile
+  // is current skips it (`currentCompile`).
   let queue: Promise<unknown> = Promise.resolve();
+  // Moves on with each change `handOver` takes, so a compile kept from before it is not current.
+  let generation = 0;
   const exclusive = <T>(task: () => Promise<T>): Promise<T> => {
     const run = queue.then(task);
     queue = run.catch(() => undefined);
@@ -532,6 +541,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     if (!changed.size) return false;
     const before = new Map([...changed.keys()].map((path) => [path, seen.get(path)]));
     for (const [path, text] of changed) seen.set(path, text);
+    // Before `seen` moves on, so no compile kept from before the change reads as current while the
+    // projects take it, and again once they have, whether or not they took it.
+    generation += 1;
     try {
       for (const graph of graphs.values()) {
         const names = [...changed.keys()].flatMap((path) => namesOf(graph, path));
@@ -548,17 +560,21 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       // The project never took the change: the next load hands it over again.
       for (const [path, text] of before) seen.set(path, text);
       throw error;
+    } finally {
+      generation += 1;
     }
     return true;
   };
 
-  /** Hands the project every change it has not seen among what a module reached. */
-  const refresh = (graph: Graph, filename: string): Promise<boolean> => {
+  /** The paths of every file a module's output depends on, its own included. */
+  const reachedPaths = (graph: Graph, filename: string): Set<string> => {
     const { files, packages } = reachedFrom(graph, filename);
-    return handOver(
-      new Set([...files.map((file) => `${graph.root}/${file}`), ...packageFiles(packages)]),
-    );
+    return new Set([...files.map((file) => `${graph.root}/${file}`), ...packageFiles(packages)]);
   };
+
+  /** Hands the project every change it has not seen among what a module reached. */
+  const refresh = (graph: Graph, filename: string): Promise<boolean> =>
+    handOver(reachedPaths(graph, filename));
 
   /**
    * The current compile of a `.uf.tsx` file or a `.uf.ts` module, shared by every id that loads
@@ -569,19 +585,86 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    * compile is taken again. The result's outputs hold the copies of the shared `.ts` modules it
    * reaches, as `compile()`'s do (ADR-0070): the golden guard judges them.
    */
-  const compileFile = (file: string) =>
-    exclusive(async (): Promise<{ result: CompileResult; source: string }> => {
-      const { graph, filename } = locate(file);
-      const { project } = graph;
-      await refresh(graph, filename);
-      let result = await project.compile(filename);
-      if (await refresh(graph, filename)) result = await project.compile(filename);
-      const source = seen.get(`${graph.root}/${filename}`) ?? "";
-      const files = result.outputs[target.name] ?? [];
-      if (!files.length) return { result, source };
-      const outputs = { ...result.outputs, [target.name]: [...files, ...project.copies(filename)] };
-      return { result: { ...result, outputs }, source };
+  const compileFile = async (file: string): Promise<Compiled> =>
+    (await currentCompile(file)) ??
+    exclusive(async () => {
+      const done = await compileNow(file);
+      await warmReach(file, done.result);
+      return done;
     });
+
+  // The last compile of each file, with the `generation` it was taken in.
+  const compiles = new Map<string, { compiled: Compiled; generation: number }>();
+
+  /** The body of `compileFile`, which only a task of `exclusive` runs. */
+  const compileNow = async (file: string): Promise<Compiled> => {
+    const { graph, filename } = locate(file);
+    const { project } = graph;
+    await refresh(graph, filename);
+    let result = await project.compile(filename);
+    if (await refresh(graph, filename)) result = await project.compile(filename);
+    const source = seen.get(`${graph.root}/${filename}`) ?? "";
+    const files = result.outputs[target.name] ?? [];
+    const outputs = files.length
+      ? { ...result.outputs, [target.name]: [...files, ...project.copies(filename)] }
+      : undefined;
+    const done = { result: outputs ? { ...result, outputs } : result, source };
+    compiles.set(file, { compiled: done, generation });
+    return done;
+  };
+
+  /**
+   * The file's last compile, without waiting for `exclusive`, if it is still what `compileNow`
+   * would give: no change has been handed over since, and none waits on disk among the files it
+   * reached, which `refresh` would hand over. Anything else waits its turn. Qwik loads a
+   * component's segments inside a test (ADR-0050), and each resolves its imports through
+   * `childId`, so a request that queued behind every other file's compile on a busy server
+   * outran the test's timeout.
+   */
+  const currentCompile = async (file: string): Promise<Compiled | undefined> => {
+    const kept = compiles.get(file);
+    if (kept?.generation !== generation) return undefined;
+    const { graph, filename } = locate(file);
+    const paths = [...reachedPaths(graph, filename)].filter((path) => seen.has(path));
+    const texts = await Promise.all(
+      paths.map((path) => readFile(path, "utf8").catch(() => undefined)),
+    );
+    if (paths.some((path, index) => texts[index] !== seen.get(path))) return undefined;
+    // A change handed over while the files were read.
+    return compiles.get(file) === kept && kept.generation === generation
+      ? kept.compiled
+      : undefined;
+  };
+
+  /**
+   * Compiles every `.uf.tsx` and `.uf.ts` file a module's IR imports reach, its children's
+   * children too, in the module's own task, so a request for them finds them current. A module's
+   * load runs as its importer is imported, while Qwik's segments, the first to import the
+   * children, load inside a test (ADR-0050). A file that is gone, or whose compile throws, is
+   * left to its own request, which reports it.
+   */
+  const warmReach = async (file: string, result: CompileResult): Promise<void> => {
+    const visited = new Set([file]);
+    const pending = [{ file, result }];
+    for (let next = pending.pop(); next; next = pending.pop()) {
+      for (const entry of next.result.ir?.imports ?? []) {
+        const child = posix.join(posix.dirname(next.file), entry.file);
+        if (visited.has(child)) continue;
+        visited.add(child);
+        if (!existsSync(child)) continue;
+        const kept = compiles.get(child);
+        if (kept?.generation === generation) {
+          pending.push({ file: child, result: kept.compiled.result });
+          continue;
+        }
+        try {
+          pending.push({ file: child, result: (await compileNow(child)).result });
+        } catch {
+          // Its own load fails with the error.
+        }
+      }
+    }
+  };
 
   /** The guard's verdict on a load: the message that fails the module, if any. */
   const guard = async (event: CompileEvent): Promise<string | undefined> => {
