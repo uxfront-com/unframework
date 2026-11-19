@@ -38,6 +38,7 @@ import { startPreview } from "../src/preview/index.ts";
 import type { Preview } from "../src/preview/index.ts";
 import { PREVIEW_MESSAGE, STATIC_RENDER_MESSAGE } from "../src/preview/protocol.ts";
 import { VisualUsageError } from "../src/run.ts";
+import { CENTRED, centred, frameLayout } from "./frame-layout.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
 const REPOSITORY = fileURLToPath(new URL("../../..", import.meta.url)).replace(/\/$/, "");
@@ -212,6 +213,12 @@ describe("unframework preview build", () => {
             .poll(() => status(page, target).textContent(), { timeout: 60_000, message: target })
             .toBe("rendered");
           expect((await rootHtml(page, target)).trim(), `${id} on ${target}`).not.toBe("");
+          // Centred, as in the dev preview (ADR-0114).
+          const layout = await frameLayout(frame(page, target));
+          expect(layout, `${id} on ${target}`).toMatchObject(CENTRED);
+          if (id === "examples/Buttons") {
+            expect(centred(layout), `${target}: ${JSON.stringify(layout)}`).toBe(true);
+          }
         }
       }
     },

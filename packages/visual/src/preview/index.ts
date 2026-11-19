@@ -10,8 +10,9 @@ import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/co
 import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
-import { readCatalogue } from "./catalogue.ts";
+import { entryLayouts, readCatalogue } from "./catalogue.ts";
 import { FRAME_PATH } from "./protocol.ts";
+import type { PreviewLayout } from "./protocol.ts";
 import { startTargetServer } from "./servers.ts";
 import type { TargetServer, TargetServerOptions } from "./servers.ts";
 import { shellData, shellPage, startShellServer } from "./shell.ts";
@@ -66,6 +67,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
       `Nothing to preview under ${root}: add an example (*.example.uf.tsx) or a component under ${config.srcDir}.`,
     );
   }
+  const layouts = entryLayouts(catalogue);
 
   const started: TargetServer[] = [];
   const closeAll = async (shell?: { close(): Promise<void> }) => {
@@ -82,7 +84,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     const servers = await Promise.allSettled(
       targets.map((target) =>
         startTargetServer(
-          targetServerOptions(root, config, target, entries, options.toolchainDirs),
+          targetServerOptions(root, config, target, entries, options.toolchainDirs, layouts),
         ).then((server) => {
           started.push(server);
           return server;
@@ -118,8 +120,9 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
 }
 
 /**
- * What a target's server serves, from the project's configuration: the entries, where the
- * target's compiler stack resolves from, and the project's Vite config (ADR-0104).
+ * What a target's server serves, from the project's configuration: the entries and their layouts
+ * (ADR-0114), where the target's compiler stack resolves from, and the project's Vite config
+ * (ADR-0104).
  */
 export function targetServerOptions(
   root: string,
@@ -127,6 +130,7 @@ export function targetServerOptions(
   target: TargetName,
   entries: Readonly<Record<string, string>>,
   toolchainDirs?: PreviewOptions["toolchainDirs"],
+  layouts?: Readonly<Record<string, PreviewLayout>>,
 ): TargetServerOptions {
   return {
     root,
@@ -134,6 +138,7 @@ export function targetServerOptions(
     toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
     entries,
     ...(config.vite ? { vite: config.vite } : {}),
+    ...(layouts && Object.keys(layouts).length ? { layouts } : {}),
   };
 }
 

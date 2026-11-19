@@ -18,6 +18,7 @@ import { startPreview } from "../src/preview/index.ts";
 import { FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
 import { PREVIEW_HOST } from "../src/preview/servers.ts";
 import { VisualUsageError } from "../src/run.ts";
+import { CENTRED, centred, frameLayout } from "./frame-layout.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
 const TARGETS = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
@@ -90,6 +91,10 @@ describe("startPreview", () => {
           await expect
             .poll(() => status(target).textContent(), { timeout: 30_000 })
             .toBe("rendered");
+          // An example without `@layout` sits at the centre of its frame (ADR-0114).
+          const layout = await frameLayout(frame(target));
+          expect(layout, target).toMatchObject(CENTRED);
+          expect(centred(layout), `${target}: ${JSON.stringify(layout)}`).toBe(true);
         }
 
         await page.getByRole("treeitem", { name: "src/Button", exact: true }).click();
@@ -97,6 +102,10 @@ describe("startPreview", () => {
         await variant.selectOption("primary");
         for (const target of TARGETS) {
           await frame(target).locator('button[data-variant="primary"]').waitFor();
+          // A component takes the same centred layout.
+          const layout = await frameLayout(frame(target));
+          expect(layout, target).toMatchObject(CENTRED);
+          expect(centred(layout), `${target}: ${JSON.stringify(layout)}`).toBe(true);
         }
         await variant.selectOption("secondary");
         for (const target of TARGETS) {
@@ -184,6 +193,95 @@ describe("startPreview", () => {
         for (const { target } of preview.frames) {
           const frame = page.frameLocator(`figure[data-target="${target}"] iframe`);
           await frame.getByText("Release notes").waitFor();
+        }
+      } finally {
+        await browser.close();
+        await preview.close();
+      }
+    },
+  );
+
+  it(
+    "lays out each example as its @layout says, and carries nothing over to the next",
+    { timeout: 180_000 },
+    async () => {
+      const root = fileURLToPath(new URL("fixtures/layouts", import.meta.url));
+      const preview = await startPreview({ root });
+      const browser = await chromium.launch();
+      const targets = preview.frames.map((each) => each.target);
+      try {
+        expect(targets).toEqual(["vue", "angular", "qwik", "astro"]);
+        // The malformed value is a warning, and its example still renders, centred.
+        expect(preview.diagnostics.map((each) => [each.code, each.file])).toEqual([
+          ["UF7012", "examples/Broken.example.uf.tsx"],
+        ]);
+        const page = await browser.newPage();
+        await page.goto(preview.url);
+        const frame = (target: string) =>
+          page.frameLocator(`figure[data-target="${target}"] iframe`);
+        const status = (target: string) => page.locator(`figure[data-target="${target}"] output`);
+        const centredFlex = { ...CENTRED, gap: "0px", paddingTop: "16px" };
+        const expected: Record<string, Record<string, unknown>> = {
+          Column: {
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            alignItems: "safe flex-end",
+            flexWrap: "wrap",
+            gap: "12px",
+            paddingTop: "16px",
+          },
+          Default: centredFlex,
+          Plain: { display: "block", paddingTop: "0px" },
+          Broken: centredFlex,
+        };
+        for (const name of ["Column", "Default", "Plain", "Column", "Broken"]) {
+          await page
+            .locator(`nav [role='treeitem'][data-entry="example:examples/${name}"]`)
+            .click();
+          for (const target of targets) {
+            await frame(target).getByText("Two").waitFor({ timeout: 120_000 });
+            await expect
+              .poll(() => status(target).textContent(), { timeout: 60_000, message: target })
+              .toBe("rendered");
+            await expect
+              .poll(() => frameLayout(frame(target)), { message: `${name} on ${target}` })
+              .toMatchObject(expected[name]!);
+            const layout = await frameLayout(frame(target));
+            const at = `${name} on ${target}: ${JSON.stringify(layout)}`;
+            if (name === "Plain") expect(layout.height, at).toBe(layout.innerHeight);
+            if (name === "Default" || name === "Broken") expect(centred(layout), at).toBe(true);
+            if (name === "Column") {
+              const [one, two] = await Promise.all(
+                ["One", "Two"].map((text) =>
+                  frame(target)
+                    .getByText(text, { exact: true })
+                    .evaluate((span) => {
+                      const { top, bottom } = span.getBoundingClientRect();
+                      return { top, bottom };
+                    }),
+                ),
+              );
+              expect(Math.abs(two!.top - one!.bottom - 12), at).toBeLessThanOrEqual(0.5);
+            }
+            // The frame styles its container alone: the example's own elements keep the styles
+            // their output writes, which is none but Angular's host (ADR-0010).
+            const styled = await frame(target)
+              .locator("[data-uf-preview-root]")
+              .evaluate((container) =>
+                [...container.querySelectorAll("[style]")].map((each) => [
+                  each.localName,
+                  each.getAttribute("style"),
+                ]),
+              );
+            if (target === "angular") {
+              expect(styled.length, at).toBe(1);
+              expect(styled[0]![0], at).toContain("-");
+              expect(styled[0]![1], at).toMatch(/^display: contents;?$/);
+            } else {
+              expect(styled, at).toEqual([]);
+            }
+          }
         }
       } finally {
         await browser.close();

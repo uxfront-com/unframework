@@ -70,6 +70,33 @@ export type ShellMessage = RenderMessage;
 /** A frame's messages to the shell. */
 export type FrameMessage = ReadyMessage | RenderedMessage;
 
+/**
+ * How an example sits in its frame (ADR-0114): a flex layout on the frame's mount container, which
+ * an example's `@layout` tag sets, or a plain block that fills the frame (`@layout none`). An entry
+ * without one takes {@link DEFAULT_LAYOUT}.
+ */
+export type PreviewLayout =
+  | { display: "block" }
+  | {
+      display: "flex";
+      direction: "row" | "column";
+      justify: "start" | "center" | "end" | "between" | "around" | "evenly";
+      align: "start" | "center" | "end" | "stretch" | "baseline";
+      wrap: boolean;
+      /** A CSS length: `0`, or a number in `px`, `rem` or `em`. */
+      gap: string;
+    };
+
+/** The layout of an entry that sets none: centred on both axes, in a row, with no gap. */
+export const DEFAULT_LAYOUT: Extract<PreviewLayout, { display: "flex" }> = {
+  display: "flex",
+  direction: "row",
+  justify: "center",
+  align: "center",
+  wrap: false,
+  gap: "0",
+};
+
 /** What a target's server gives its frame: the target and its entries' modules, by id. */
 export interface FrameOptions {
   target: string;
@@ -97,4 +124,9 @@ export interface FrameOptions {
    * (ADR-0111). Such a frame takes messages from, and sends them to, a shell at its own origin only.
    */
   staticPreview?: boolean;
+  /**
+   * The layout of each entry that sets one, by key (ADR-0114). The frame puts it, or
+   * {@link DEFAULT_LAYOUT}, on the fresh container of each mount.
+   */
+  layouts?: Record<string, PreviewLayout>;
 }

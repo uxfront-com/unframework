@@ -18,7 +18,7 @@ import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/co
 import { loadToolchain } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
-import { readCatalogue } from "./catalogue.ts";
+import { entryLayouts, readCatalogue } from "./catalogue.ts";
 import type { PreviewCatalogue } from "./catalogue.ts";
 import type { PropControl } from "./controls.ts";
 import { previewTargets, projectConfig, targetServerOptions } from "./index.ts";
@@ -110,8 +110,9 @@ async function buildTargets(
   toolchainDirs: PreviewOptions["toolchainDirs"],
 ): Promise<void> {
   const props = initialProps(catalogue);
+  const layouts = entryLayouts(catalogue);
   for (const target of targets) {
-    const server = targetServerOptions(root, config, target, entries, toolchainDirs);
+    const server = targetServerOptions(root, config, target, entries, toolchainDirs, layouts);
     const dir = join(out, target);
     if ((await loadToolchain(target)).renderCommandName === undefined) {
       await buildTarget(server, dir);

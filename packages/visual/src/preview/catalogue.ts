@@ -1,5 +1,5 @@
 // What the preview lists (ADR-0088): the project's examples, as `unframework visual` finds them,
-// with the metadata their doc comments give (ADR-0110), and its components, the default export of each `.uf.tsx` file under `srcDir`, with the
+// with the metadata their doc comments give (ADR-0110, ADR-0114), and its components, the default export of each `.uf.tsx` file under `srcDir`, with the
 // controls their props get. Read once, when the preview starts.
 import { globSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -17,6 +17,7 @@ import {
 import type { Example } from "../examples.ts";
 import { propControls } from "./controls.ts";
 import type { PropControls } from "./controls.ts";
+import type { PreviewLayout } from "./protocol.ts";
 
 /** A component's file suffix. */
 const COMPONENT_SUFFIX = ".uf.tsx";
@@ -25,7 +26,7 @@ const COMPONENT_SUFFIX = ".uf.tsx";
 export type PreviewEntry =
   | ({ kind: "example"; key: string; id: string; file: string } & Pick<
       Example,
-      "category" | "title" | "description" | "order"
+      "category" | "title" | "description" | "order" | "layout"
     >)
   | ({ kind: "component"; key: string; id: string; file: string; name: string } & PropControls);
 
@@ -106,6 +107,7 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
         title,
         description,
         order,
+        layout,
       }): PreviewCatalogue["examples"][number] => ({
         kind: "example",
         key: entryKey("example", id),
@@ -115,6 +117,7 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
         title,
         ...(description === undefined ? {} : { description }),
         ...(order === undefined ? {} : { order }),
+        ...(layout === undefined ? {} : { layout }),
       }),
     );
   // The syntactic oracle reads the types a prop imports, so an alias resolves to its literals.
@@ -143,4 +146,11 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
     await typeOracle.dispose();
   }
   return { examples, components, diagnostics: metadata.diagnostics };
+}
+
+/** The layout of each example that sets one, by key, for the frames (ADR-0114). */
+export function entryLayouts(catalogue: PreviewCatalogue): Record<string, PreviewLayout> {
+  return Object.fromEntries(
+    catalogue.examples.flatMap((entry) => (entry.layout ? [[entry.key, entry.layout]] : [])),
+  );
 }

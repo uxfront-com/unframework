@@ -1,3 +1,4 @@
+import { layoutStyle } from "./layout.ts";
 // The preview's frame (ADR-0088): the page each target's server serves in the shell's iframe. It
 // mounts the entry the shell selects with the target's own mount adapter, rerenders it in place
 // when only the props change, and answers each render. It takes messages only from its parent
@@ -37,6 +38,13 @@ export function startFrame(options: FrameOptions): void {
         const fresh = document.createElement("div");
         fresh.dataset.ufPreviewRoot = "";
         fresh.dataset.target = options.target;
+        // The entry's layout goes on its own container only (ADR-0114), so nothing of the
+        // previous entry's carries over, and the example's own elements keep their styles.
+        const layouts = options.layouts ?? {};
+        const layout = Object.hasOwn(layouts, message.entry) ? layouts[message.entry] : undefined;
+        for (const [property, value] of Object.entries(layoutStyle(layout))) {
+          fresh.style.setProperty(property, value);
+        }
         container.replaceWith(fresh);
         container = fresh;
         const load = Object.hasOwn(options.entries, message.entry)

@@ -174,6 +174,14 @@ describe("readCatalogue", () => {
         category: ["Components", "Feedback"],
         title: "New badge",
         description: "A badge on every target.",
+        layout: {
+          display: "flex",
+          direction: "column",
+          justify: "center",
+          align: "center",
+          wrap: false,
+          gap: "4px",
+        },
       },
     ]);
     expect(catalogue.diagnostics).toHaveLength(1);
