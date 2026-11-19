@@ -28,10 +28,12 @@ export type {
 export type {
   PackageConfig,
   ProjectViteConfig,
+  TargetOptions,
   UnframeworkConfig,
   ViteContext,
   ViteMode,
   VitePluginOption,
+  VueTargetOptions,
 } from "./config-types.ts";
 export { DEFAULT_PASS_THROUGH } from "@unframework.dev/analyzer";
 export {

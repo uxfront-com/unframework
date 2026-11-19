@@ -108,7 +108,8 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
 - **Vue:** a Vite library build through `@vitejs/plugin-vue` compiles the SFCs to JS, one module to a
   file, with each sheet beside its importer, and `vue-tsc` writes the `.d.ts` (ADR-0082). The package
   holds no `.vue` file. `vite`, `@vitejs/plugin-vue` and `vue-tsc` must all resolve, and the components
-  compile with the `vue` that resolves from `outDir`.
+  compile with the `vue` that resolves from `outDir`. With `targetOptions.vue.vapor`, they're Vapor
+  components, which that `vue` compiles only from Vue 3.6 (ADR-0112).
 
 A declaration's inferred types come from `@angular/core`, `@qwik.dev/core`, `@types/react`, `solid-js`,
 `svelte` or `vue`, so each must resolve from where the package is built, the real path of `outDir`.
@@ -119,6 +120,9 @@ Packaged outputs ship with no source maps.
 - **UF7008:** a packager, Solid's Babel, or the `typescript` that Svelte's and Qwik's declarations need
   isn't installed, or the framework's types don't resolve from `outDir`.
   Nothing is cleaned or written.
+- **UF7013:** `targetOptions.vue.vapor` is on, and the `vue/compiler-sfc` that resolves from `outDir`
+  doesn't compile Vapor components, like Vue 3.5's, which would ship virtual-DOM ones. Nothing is
+  cleaned or written.
 - **UF7009:** a packager failed, and its message holds the packager's own error. The targets' trees
   are written by then. Every packager writes declarations without type-checking, so it's usually a
   syntax error, or a type a declaration can't name.

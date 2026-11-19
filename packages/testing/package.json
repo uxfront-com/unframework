@@ -39,6 +39,7 @@
     "./node": "./src/node/index.ts",
     "./react": "./src/targets/react.ts",
     "./vue": "./src/targets/vue.ts",
+    "./vue-vapor": "./src/targets/vue-vapor.ts",
     "./svelte": "./src/targets/svelte.ts",
     "./solid": "./src/targets/solid.ts",
     "./solid2": "./src/targets/solid2.ts",
@@ -92,6 +93,10 @@
       "./vue": {
         "types": "./dist/targets/vue.d.ts",
         "default": "./dist/targets/vue.js"
+      },
+      "./vue-vapor": {
+        "types": "./dist/targets/vue-vapor.d.ts",
+        "default": "./dist/targets/vue-vapor.js"
       },
       "./svelte": {
         "types": "./dist/targets/svelte.d.ts",

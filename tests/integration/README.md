@@ -526,11 +526,20 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 - `harness/projects.ts`: the Vitest projects (`compile`, `harness`, `toolchain:`, `ssr:` and
   `browser:` per target, and `bench`, which only `--project bench` runs). `UF_TARGETS=vue,react`
   restricts the targets; a target a case names as its own reference (`"reference"`, ADR-0057) still runs that case alone (`referencesOnly`).
+- `harness/targets.ts`: the targets a run verifies, the built-in ones, then the option sets
+  (ADR-0112). An option set is a built-in target compiled with options, verified as a target of
+  its own: `vue-vapor` is Vue with `{ vapor: true }`, on Vue 3.6 from `tests/toolchains/vue-vapor`
+  (`UF_TARGETS=vue,vue-vapor`). Its id names its `__output__/<id>/`, its toolchain directory, its
+  quarantine, its projects and its parity-matrix column. Its diagnostics are its own record,
+  `__output__/diagnostics.<id>.json`, with a `.txt` beside it where it has errors, each labelled
+  with its id: the shared `__expected__/diagnostics.json` keeps the built-in targets' alone. It
+  never writes a shared expectation, and compares with Vue live in the browser.
 - `harness/cases.ts`: the corpus, each case's inputs (its `.uf.tsx` and `.uf.ts` sources and its
   `.ts` modules), its main one and its `case.json`;
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/bench.test.ts`: L15, which reads `budgets.json`. `scripts/budgets.ts`: how it measures,
-  and `pnpm test:budgets:update`.
+  and `pnpm test:budgets:update`, or `pnpm test:budgets:update -- --sizes` to measure every size
+  again and keep the recorded times, for a change that adds outputs and leaves compile times alone.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.<k>.test.ts`: the node-side layers, with
   each `ssr.<k>.test.ts` one shard of `ssr.ts` (ADR-0093), which runs the testing package's one
   server render comparison (`describeServerRender`, ADR-0086) with the corpus's skips, and L14's

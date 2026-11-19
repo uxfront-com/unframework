@@ -78,6 +78,10 @@ const PROBES: Record<string, { file: string; contents: string }> = {
     file: "Probe.vue",
     contents: `<script setup lang="ts">\n${PROBE.replace(/^export .*\n/m, "")}</script>\n\n<template>\n  <p>{{ first }} {{ width }} {{ pick(true) }} {{ label(0) }} {{ Square }}</p>\n</template>\n`,
   },
+  "vue-vapor": {
+    file: "Probe.vue",
+    contents: `<script setup vapor lang="ts">\n${PROBE.replace(/^export .*\n/m, "")}</script>\n\n<template>\n  <p>{{ first }} {{ width }} {{ pick(true) }} {{ label(0) }} {{ Square }}</p>\n</template>\n`,
+  },
   svelte: {
     file: "Probe.svelte",
     contents: `<script lang="ts">\n${PROBE.replace(/^export .*\n/m, "")}</script>\n\n<p>{first} {width} {pick(true)} {label(0)} {Square}</p>\n`,

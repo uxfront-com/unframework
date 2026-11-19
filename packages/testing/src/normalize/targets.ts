@@ -1,4 +1,7 @@
-/** The built-in targets whose output the normaliser knows. */
+/**
+ * The built-in targets whose output the normaliser knows, and the corpus's `vue-vapor`, the Vue
+ * target's Vapor components, whose framework noise is Vue's (ADR-0112).
+ */
 export const NORMALIZE_TARGETS: readonly [
   "react",
   "vue",
@@ -8,7 +11,8 @@ export const NORMALIZE_TARGETS: readonly [
   "angular",
   "qwik",
   "astro",
-] = ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik", "astro"];
+  "vue-vapor",
+] = ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik", "astro", "vue-vapor"];
 
 /** A target the normaliser knows the framework noise of. */
 export type NormalizeTarget = (typeof NORMALIZE_TARGETS)[number];

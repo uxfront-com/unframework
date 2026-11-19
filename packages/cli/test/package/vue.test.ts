@@ -281,3 +281,39 @@ export const Klass = class {
     expect(tree(join(root, "dist", "package"))).toEqual(before);
   });
 });
+
+describe("build --package: Vue's Vapor components (ADR-0112)", () => {
+  /** A project with `vapor` on, whose `vue` and packagers come from `toolchain`. */
+  const vapor = (toolchain: "vue" | "vue-vapor") =>
+    designSystem({
+      config: {
+        targets: ["vue"],
+        targetOptions: { vue: { vapor: true } },
+        package: { resolveFrom: inRepository(`tests/toolchains/${toolchain}`) },
+      },
+      frameworks: ["vue"],
+      frameworksFrom: toolchain === "vue" ? "tests/integration" : "tests/toolchains/vue-vapor",
+    });
+
+  it("reports UF7013 with Vue 3.5 where the package is built, and writes no package", async () => {
+    const root = vapor("vue");
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("UF7013");
+    expect(stderr).toContain("(vue)");
+    expect(stderr).toMatch(/Vue 3\.5\.\d+, doesn't compile Vapor components/);
+    expect(existsSync(join(root, "dist", "package"))).toBe(false);
+  });
+
+  it("packages Vapor components with Vue 3.6", async () => {
+    const root = vapor("vue-vapor");
+    const files = await packaged(root);
+    // plugin-vue splits a Vapor component's `<script setup vapor>` off as it does Vue's own.
+    const script = files["vue/Card.vue_vue_type_script_setup_true_vapor_true_lang.js"] ?? "";
+    expect(script).toContain("defineVaporComponent");
+    expect(files["vue/Card.vue.js"]).toContain(
+      'from "./Card.vue_vue_type_script_setup_true_vapor_true_lang.js"',
+    );
+    expect(Object.keys(files)).toContain("vue/Card.vue.d.ts");
+  });
+});

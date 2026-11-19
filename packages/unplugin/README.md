@@ -88,14 +88,15 @@ integration harness does (`sourceUtilities` in `tests/integration/harness/stylef
 
 ## Options
 
-| Option        | Meaning                                                                                                                                                                                                                                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`), `"solid@2"`, or a third-party `Target`. Optional on Vite, which detects a built-in target. Required on every other bundler.                                                                          |
-| `extension`   | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                                                                                                                                   |
-| `onCompile`   | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard.                                                                                                                |
-| `plugins`     | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                            |
-| `format`      | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                  |
-| `passThrough` | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created. |
+| Option          | Meaning                                                                                                                                                                                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `target`        | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`), `"solid@2"`, or a third-party `Target`. Optional on Vite, which detects a built-in target. Required on every other bundler.                                                                          |
+| `extension`     | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                                                                                                                                   |
+| `onCompile`     | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard.                                                                                                                |
+| `plugins`       | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                            |
+| `format`        | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                  |
+| `passThrough`   | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created. |
+| `targetOptions` | Each target's options, by target name, as in `unframework.config.ts`, passed to `compile()`, which validates them: an invalid option fails each module with UF7004. `{ vue: { vapor: true } }` compiles Vue 3.6's Vapor components (ADR-0112).                                                               |
 
 ## The dev server's allow list
 
@@ -136,6 +137,11 @@ UF7006, which names them. Keep in mind that an Astro app that also adds a framew
 On Vue, whichever way the target was chosen, plugin-vue's `template.compilerOptions.whitespace` of
 `"preserve"` reports the warning UF7010 at the start, because outputs assume `"condense"`
 (ADR-0026).
+
+On Vue with `targetOptions.vue.vapor`, the plugin checks the `vue/compiler-sfc` plugin-vue compiles
+with, its `compiler` option or the one the root resolves, as plugin-vue does, by parsing a Vapor
+file. Vue 3.5's ignores `vapor`, so it fails the start with UF7013 rather than build virtual-DOM
+components with no warning (ADR-0112).
 
 On Vue, the plugin also fills plugin-vue's `script.fs` with Node's file system when the app left it
 unset, through plugin-vue's `api.options` (ADR-0082). Vue's `compileScript` reads a props type

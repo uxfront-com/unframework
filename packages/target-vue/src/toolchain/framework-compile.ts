@@ -3,6 +3,7 @@
 // and warning, wherever the compiler reports it (spike: framework-compile ADR).
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
+import { join } from "node:path";
 import { format, stripVTControlCharacters } from "node:util";
 
 import type {
@@ -30,17 +31,31 @@ interface VueCompilers {
   sfc(): CompilerSfc;
   dom: TemplateCompiler;
   ssr: TemplateCompiler;
+  /** Vue 3.6's Vapor template compiler (ADR-0112), or `undefined` before Vue 3.6. */
+  vapor: TemplateCompiler | undefined;
+  /** The version of `vue` the compilers come from. */
+  version: string;
   /** The names of Vue's error codes (`23` → `X_INVALID_END_TAG`). */
   codeNames: ReadonlyMap<number, string>;
 }
 
-let compilers: Promise<VueCompilers> | undefined;
+/** The compilers by the directory they load from (`""` for this package's own `vue`). */
+const compilers = new Map<string, Promise<VueCompilers>>();
 
-/** Loads Vue's compilers on first use, so importing the toolchain stays cheap. */
-function loadCompilers(): Promise<VueCompilers> {
-  compilers ??= (async () => {
+/**
+ * Loads Vue's compilers on first use, so importing the toolchain stays cheap: this package's own
+ * `vue`, or the one `origin` resolves, the Vapor toolchain's directory (ADR-0112).
+ */
+function loadCompilers(origin?: string): Promise<VueCompilers> {
+  const key = origin ?? "";
+  let pending = compilers.get(key);
+  if (pending) return pending;
+  pending = (async () => {
     // `vue/compiler-sfc` re-exports @vue/compiler-sfc, the CommonJS build resolved from `vue`.
-    const fromVue = createRequire(createRequire(import.meta.url).resolve("vue/package.json"));
+    const from = createRequire(origin ? join(origin, "package.json") : import.meta.url);
+    const vuePackage = from.resolve("vue/package.json");
+    const fromVue = createRequire(vuePackage);
+    const { version } = fromVue(vuePackage) as { version: string };
     const sfcPath = fromVue.resolve("@vue/compiler-sfc");
     // The template compilers are compiler-sfc's own dependencies, resolved from it, so they are
     // exactly the versions compileTemplate would pick by itself.
@@ -50,9 +65,19 @@ function loadCompilers(): Promise<VueCompilers> {
       DOMErrorCodes: Record<string, string | number>;
     };
     const ssr = fromSfc("@vue/compiler-ssr") as Pick<TemplateCompiler, "compile">;
+    // Only a compiler-sfc that marks a file Vapor compiles one: Vue 3.5's ignores the attribute.
+    // Whether `@vue/compiler-vapor` resolves beside it says nothing, since a package manager may
+    // hoist Vue 3.6's where Vue 3.5's compiler-sfc finds it.
+    const shared = fromSfc(sfcPath) as CompilerSfc;
+    let vapor: TemplateCompiler | undefined;
+    if (isVapor(shared.parse("<template vapor><p></p></template>\n").descriptor)) {
+      vapor = fromSfc("@vue/compiler-vapor") as TemplateCompiler;
+    }
     return {
       sfc: () => privateCompilerSfc(fromSfc, sfcPath),
       dom,
+      vapor,
+      version,
       // compiler-ssr has no parser of its own: compileTemplate also parses SSR templates with
       // compiler-dom.
       ssr: {
@@ -72,7 +97,8 @@ function loadCompilers(): Promise<VueCompilers> {
       ),
     };
   })();
-  return compilers;
+  compilers.set(key, pending);
+  return pending;
 }
 
 /**
@@ -101,6 +127,8 @@ function privateCompilerSfc(require: NodeJS.Require, path: string): CompilerSfc 
  */
 export async function frameworkCompile(
   files: readonly ToolchainFile[],
+  origin?: string,
+  vapor: boolean = false,
 ): Promise<Map<string, FrameworkCompileResult>> {
   assertFilesToCompile(files);
   // Under NODE_ENV=production, compiler-dom loads its production build and warnOnce is a no-op:
@@ -111,7 +139,8 @@ export async function frameworkCompile(
         "@vue/compiler-sfc warning. Unset NODE_ENV for toolchain checks.",
     );
   }
-  const loaded = await loadCompilers();
+  const loaded = await loadCompilers(origin);
+  if (vapor) assertVaporCompilers(loaded);
   const tree = outputTree(files);
   const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
   for (const file of files) {
@@ -127,9 +156,12 @@ export async function frameworkCompile(
  */
 export async function frameworkEmit(
   files: readonly ToolchainFile[],
+  origin?: string,
+  vapor: boolean = false,
 ): Promise<Map<string, ToolchainFile[]>> {
   assertFilesToCompile(files);
-  const loaded = await loadCompilers();
+  const loaded = await loadCompilers(origin);
+  if (vapor) assertVaporCompilers(loaded);
   const tree = outputTree(files);
   return new Map(
     files.map((file) => {
@@ -149,6 +181,8 @@ function emitSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): string {
   const sheets = descriptor.styles.flatMap((style) =>
     style.src ? [`import ${JSON.stringify(style.src)};`] : [],
   );
+  // Before Vue 3.6, a Vapor file would compile to the virtual DOM in silence.
+  if (isVapor(descriptor)) vaporCompiler(vue, file.path);
   if (descriptor.script || descriptor.scriptSetup) {
     const script = sfc.compileScript(descriptor, {
       id,
@@ -166,7 +200,8 @@ function emitSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): string {
     id,
     isProd: true,
     transformAssetUrls: false,
-    compiler: vue.dom,
+    ...(isVapor(descriptor) ? { vapor: true } : {}),
+    compiler: isVapor(descriptor) ? vaporCompiler(vue, file.path) : vue.dom,
     compilerOptions,
   });
   return [...sheets, render.code, "export default { render };"].join("\n");
@@ -209,6 +244,16 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): Frame
   // plugin-vue hashes the path; the id only names the scope attribute of scoped styles.
   const id = createHash("sha256").update(file.path).digest("hex").slice(0, 8);
   const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
+  // A Vapor component's client template compiles with the Vapor compiler; its server template
+  // with compiler-ssr, as every component's (ADR-0112).
+  let vapor: TemplateCompiler | undefined;
+  if (isVapor(descriptor)) {
+    try {
+      vapor = vaporCompiler(vue, file.path);
+    } catch (error) {
+      return { errors: [thrown(error)], warnings };
+    }
+  }
 
   let bindings: BindingMetadata | undefined;
   if (descriptor.script || descriptor.scriptSetup) {
@@ -243,9 +288,11 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): Frame
             scoped: descriptor.styles.some((style) => style.scoped),
             slotted: descriptor.slotted,
             ssr,
+            // compileTemplate hands `vapor` to compiler-ssr too, which marks its render Vapor's.
+            ...(vapor ? { vapor: true } : {}),
             ssrCssVars: descriptor.cssVars,
             isProd: false,
-            compiler: reportingWarnings(ssr ? vue.ssr : vue.dom, reported),
+            compiler: reportingWarnings(ssr ? vue.ssr : (vapor ?? vue.dom), reported),
             // As the toolchain configures plugin-vue: static URLs stay plain strings.
             transformAssetUrls: false,
             compilerOptions: {
@@ -284,6 +331,36 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): Frame
 
   warnings.push(...logged.map((text) => ({ message: text })));
   return { errors: unique(errors), warnings: unique(warnings) };
+}
+
+/**
+ * Whether compiler-sfc marked a file Vapor (`<script setup vapor>`, `<template vapor>`), which only
+ * Vue 3.6's does: this package's own types are Vue 3.5's, which have no `vapor`.
+ */
+function isVapor(descriptor: SFCDescriptor): boolean {
+  return "vapor" in descriptor && descriptor.vapor === true;
+}
+
+/**
+ * Throws unless the compilers are Vue 3.6's or later: the Vapor toolchain compiles nothing with an
+ * older Vue, whose compiler-sfc ignores `vapor` and does not even mark a file Vapor (ADR-0112).
+ */
+function assertVaporCompilers(vue: VueCompilers): void {
+  if (vue.vapor) return;
+  throw new Error(
+    `The vue-vapor toolchain loaded vue ${vue.version}, which has no Vapor compiler: vue must resolve from the toolchain directory, which holds Vue 3.6 (ADR-0112).`,
+  );
+}
+
+/**
+ * The Vapor template compiler, for a file marked `vapor`. Throws before Vue 3.6, whose compiler
+ * ignores the attribute and would compile the virtual DOM in silence (P2, ADR-0112).
+ */
+function vaporCompiler(vue: VueCompilers, path: string): TemplateCompiler {
+  if (vue.vapor) return vue.vapor;
+  throw new Error(
+    `${path} is a Vapor component, which needs Vue 3.6 or later: the toolchain loaded vue ${vue.version}, whose compiler ignores \`vapor\` and would compile the virtual DOM.`,
+  );
 }
 
 /**

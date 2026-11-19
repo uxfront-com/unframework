@@ -10,7 +10,11 @@ import type { UfComponent } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
 import { emitDirective } from "./directive.ts";
+import { isVapor, vaporCapabilities, vueOptions } from "./options.ts";
 import { asyncRootChild, scriptSetup } from "./script.ts";
+
+export { vueOptions } from "./options.ts";
+export type { ResolvedVueOptions, VueOptions } from "./options.ts";
 
 /**
  * The Vue 3.5 target, the reference (D10): single-file components. A component is its
@@ -18,10 +22,17 @@ import { asyncRootChild, scriptSetup } from "./script.ts";
  * its template cannot hold, then its template, printed in `vueDialect` (plan §6): a setup
  * ref's value read as the ref, which Vue unwraps, and each listener as `listeners.ts` plans it.
  * A component with none of those is a template alone.
+ *
+ * Its `vapor` option writes Vapor components, which Vue 3.6 compiles without a virtual DOM
+ * (ADR-0112): the same component, marked `<script setup vapor>`, or `<template vapor>` without a
+ * script, with its directives in Vapor's function form. Experimental while Vue 3.6 is a release
+ * candidate.
  */
 export const vue: Target = defineTarget({
   name: "vue",
   framework: { package: "vue", range: ">=3.5 <4" },
+  options: vueOptions,
+  capabilitiesFor: vaporCapabilities,
   capabilities: {
     element: { support: "native" },
     text: { support: "native" },
@@ -101,9 +112,11 @@ export const vue: Target = defineTarget({
     "async-setup": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    const vapor = isVapor(context.options);
     const { block, rewrite, listeners, components, keys, textCaret, mounted } = scriptSetup(
       component,
       context.module,
+      vapor,
     );
     const root = asyncRootChild(component, context.module);
     /** Each piece of an async child, inside a `<Suspense>` that takes the piece's directives. */
@@ -191,10 +204,17 @@ export const vue: Target = defineTarget({
     const sheet = component.styles
       ? [`<style src="./${file.slice(file.lastIndexOf("/") + 1)}.css"></style>`]
       : [];
+    // A Vapor component is marked once (ADR-0112): on its `<script setup>`, or, without one, on
+    // its template. compiler-sfc refuses a plain `<script>` beside a Vapor template alone, and
+    // reads a `<script vapor>` as a `<script setup>`, which may export nothing: a component whose
+    // plain block declares its keys or types takes an empty `<script setup vapor>`.
+    const setup =
+      block ??
+      (vapor && keys !== undefined ? '<script setup vapor lang="ts"></script>' : undefined);
     const parts = [
       ...(keys === undefined ? [] : [keys]),
-      ...(block === undefined ? [] : [block]),
-      `<template>\n${template}\n</template>`,
+      ...(setup === undefined ? [] : [setup]),
+      `<template${vapor && setup === undefined ? " vapor" : ""}>\n${template}\n</template>`,
       ...sheet,
     ];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];

@@ -1,4 +1,8 @@
-import { CAPABILITY_PREREQUISITES, requiredCapabilities } from "@unframework.dev/codegen";
+import {
+  CAPABILITY_PREREQUISITES,
+  capabilitiesOf,
+  requiredCapabilities,
+} from "@unframework.dev/codegen";
 import type { CapabilityName, Target } from "@unframework.dev/codegen";
 import { createDiagnostic } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
@@ -11,13 +15,19 @@ import type { UfModule } from "@unframework.dev/ir";
  * capability existed) is unsupported: nothing says the target can lower it. A capability that
  * refines another the target cannot support either (a listener's options and semantics, and
  * `nextTick`, refine `interactivity`: `CAPABILITY_PREREQUISITES`) is not reported again: the
- * one report says the listener is inert, where three would say it at the same span.
+ * one report says the listener is inert, where three would say it at the same span. The matrix is
+ * the target's under its validated `options` (`capabilitiesOf`, ADR-0112).
  */
-export function checkCapabilities(module: UfModule, target: Target): Diagnostic[] {
+export function checkCapabilities(
+  module: UfModule,
+  target: Target,
+  options?: unknown,
+): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const required = requiredCapabilities(module);
+  const matrix = target.capabilities ? capabilitiesOf(target, options) : undefined;
   const cellOf = (capability: CapabilityName) =>
-    (target.capabilities as Partial<Target["capabilities"]> | undefined)?.[capability];
+    (matrix as Partial<Target["capabilities"]> | undefined)?.[capability];
   const supports = (capability: CapabilityName) => {
     const support = cellOf(capability)?.support;
     return support === "native" || support === "emulated";

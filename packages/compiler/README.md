@@ -16,7 +16,8 @@ result.diagnostics; // sorted, with stable UF codes
 `compile()` runs the passes in order: parse (oxc), analyse and lower into IR, the `ir` plugin hook,
 the capability check for each target, each target's `emit`, the `output` plugin hook, and
 formatting (oxfmt). It is a pure function of the source and the options, and it throws only for
-invalid options (an unknown target name, two targets with one name): every other problem is a
+invalid options (an unknown target name, two targets with one name, a target option its schema
+rejects, as UF7004 with the option's path, ADR-0112): every other problem is a
 diagnostic, including a plugin or a target that throws, or returns or reports something malformed. Hooks and
 targets receive the IR frozen, a target's missing capability cell counts as unsupported, and two
 output files whose paths differ only in case are reported, since they collide on macOS and Windows.
@@ -192,9 +193,10 @@ A field of the wrong shape, or one the config doesn't have, is UF7002. A name th
 target is UF7003, with a did-you-mean where one is close. Options a target's schema rejects are
 UF7004, and options a schema returns replace the ones written.
 
-A target without a schema takes no options, so any key under it is UF7004 too. No built-in target
-declares a schema yet, so `react: { compiler: true }` reports "`react` declares no options" until
-React declares that option.
+A target without a schema takes no options, so any key under it is UF7004 too:
+`react: { compiler: true }` reports "`react` declares no options" until React declares that option.
+The Vue target declares one, `vapor`, which writes Vue 3.6's Vapor components (ADR-0112), and
+`TargetOptions` types it as `VueTargetOptions`.
 
 `vite` and `liveFonts` are for `unframework test`, `visual` and `preview`, which
 `@unframework.dev/testing` and `@unframework.dev/visual` read. `compile()`, `build` and `check`

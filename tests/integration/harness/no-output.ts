@@ -34,7 +34,7 @@ export function noOutputCases(cases: readonly CaseInfo[], target: string): Recor
   const found: Record<string, string> = {};
   for (const info of cases) {
     if (!info.spec || errorState(info, target) !== true) continue;
-    const errors = (expectedDiagnostics(info) ?? []).filter(
+    const errors = (expectedDiagnostics(info, target) ?? []).filter(
       (diagnostic) =>
         diagnostic.severity === "error" &&
         (diagnostic.target === undefined || diagnostic.target === target),

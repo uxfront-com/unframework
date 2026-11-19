@@ -96,6 +96,8 @@ export function detectTarget(
 interface VueOptions {
   template?: { compilerOptions?: { whitespace?: unknown } };
   script?: { fs?: unknown };
+  /** The `vue/compiler-sfc` plugin-vue compiles with, once given or resolved (UF7013). */
+  compiler?: unknown;
 }
 
 /** plugin-vue's `api`, whose `options` is a getter and a setter over the options it compiles with. */
@@ -123,6 +125,71 @@ export function hostOptionWarning(
     message:
       'plugin-vue\'s `template.compilerOptions.whitespace` is "preserve", and outputs assume "condense", so a component can render different whitespace from the other targets.',
     help: 'Remove the option, or set it to "condense".',
+  });
+  return formatDiagnostic(diagnostic, undefined);
+}
+
+/** Whether the Vue target's options, as given, turn `vapor` on (ADR-0112). */
+export function vaporOn(options: unknown): boolean {
+  return (
+    typeof options === "object" && options !== null && "vapor" in options && options.vapor === true
+  );
+}
+
+/** What UF7013 reads of a `vue/compiler-sfc`: its version, and how it parses a Vapor file. */
+interface CompilerSfc {
+  version?: unknown;
+  parse(source: string): { descriptor: { vapor?: unknown } };
+}
+
+/**
+ * Whether a `vue/compiler-sfc` reads `<script setup vapor>` as a Vapor component, as Vue 3.6's
+ * does: an older one ignores the attribute and compiles the virtual DOM (ADR-0112). It parses a
+ * Vapor file rather than reading the version, so a release that reads it passes whatever its
+ * number. Also used by the CLI's Vue packager.
+ */
+export function compilesVapor(compiler: unknown): boolean {
+  if (typeof (compiler as Partial<CompilerSfc> | null)?.parse !== "function") return false;
+  try {
+    const { descriptor } = (compiler as CompilerSfc).parse(
+      '<script setup vapor lang="ts"></script>\n<template><p></p></template>\n',
+    );
+    return descriptor.vapor === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The UF7013 message when `targetOptions.vue.vapor` is on and the `vue/compiler-sfc` that
+ * plugin-vue compiles with doesn't compile Vapor components (ADR-0112): its own `compiler` option,
+ * or the one it resolves from the root, as plugin-vue does without it. Without plugin-vue there is
+ * nothing to check.
+ */
+export function vaporCompilerError(
+  plugins: readonly NamedPlugin[],
+  file: string,
+  root: string,
+): string | undefined {
+  const api = vueApiOf(plugins);
+  if (!api) return undefined;
+  let compiler = api.options?.compiler;
+  let from = "plugin-vue's `compiler` option";
+  if (compiler === undefined) {
+    from = `the \`vue/compiler-sfc\` of ${root}`;
+    try {
+      compiler = createRequire(join(root, "package.json"))("vue/compiler-sfc");
+    } catch {
+      compiler = undefined;
+    }
+  }
+  if (compilesVapor(compiler)) return undefined;
+  const version = (compiler as Partial<CompilerSfc> | undefined)?.version;
+  const diagnostic = createDiagnostic("UF7013", {
+    file,
+    span: NO_SPAN,
+    message: `\`targetOptions.vue.vapor\` is on, and ${from}${typeof version === "string" ? `, Vue ${version},` : ""} doesn't compile Vapor components: it would build virtual-DOM components with no warning.`,
+    help: "Install Vue 3.6 or later where plugin-vue resolves it, or turn `vapor` off.",
   });
   return formatDiagnostic(diagnostic, undefined);
 }

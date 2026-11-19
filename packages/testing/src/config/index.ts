@@ -7,6 +7,7 @@ import { realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { capabilitiesOf } from "@unframework.dev/codegen";
 import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
 import { builtinTargets, loadConfig, resolveConfig, TARGET_NAMES } from "@unframework.dev/compiler";
 import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
@@ -148,6 +149,7 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     toolchainDir: (target) =>
       toolchainDirOf(target, root, options.toolchainDirs, config.package?.resolveFrom),
     vite: config.vite,
+    targetOptions: config.targetOptions,
     declarations: passThroughDeclarations(root),
   };
   const projects = await Promise.all(
@@ -244,6 +246,8 @@ interface ProjectSetup {
   cases: readonly ProjectCase[];
   targets: readonly TargetName[];
   toolchainDir(target: TargetName): string;
+  /** The project's `targetOptions`, which its compiles take (ADR-0112). */
+  targetOptions: Readonly<Partial<Record<TargetName, unknown>>>;
   /** The project's `vite` function (ADR-0104). */
   vite: ProjectVite;
   /** The declarations of the pass-through modules, which Angular's compile reads (ADR-0104). */
@@ -276,33 +280,69 @@ const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> =
 };
 
 /**
+ * Whether a project's `targetOptions` turn the Vue target's `vapor` on (ADR-0112): its tests and
+ * its preview then compile Vapor components, and mount them with the Vapor toolchain.
+ */
+export function isVaporTarget(
+  target: TargetName,
+  targetOptions: Readonly<Partial<Record<TargetName, unknown>>> | undefined,
+): boolean {
+  const options = targetOptions?.[target];
+  return (
+    target === "vue" &&
+    typeof options === "object" &&
+    options !== null &&
+    "vapor" in options &&
+    options.vapor === true
+  );
+}
+
+/**
  * Loads a target's toolchain, refusing one of another name. It loads from this package, which
  * depends on every target, so a project need not install the target packages itself: the
- * preview (`@unframework.dev/visual`) builds its servers from it too.
+ * preview (`@unframework.dev/visual`) builds its servers from it too. Where the project's
+ * `targetOptions` turn Vue's `vapor` on, Vue's is its Vapor toolchain, `vue-vapor` (ADR-0112).
  */
-export async function loadToolchain(target: TargetName): Promise<Toolchain> {
+export async function loadToolchain(
+  target: TargetName,
+  targetOptions?: Readonly<Partial<Record<TargetName, unknown>>>,
+): Promise<Toolchain> {
+  const vapor = isVaporTarget(target, targetOptions);
+  const specifier = `@unframework.dev/target-${target}/${vapor ? "toolchain/vapor" : "toolchain"}`;
+  const name = vapor ? "vue-vapor" : target;
   let module: ToolchainModule;
   try {
-    module = await TOOLCHAINS[target]();
+    module = await (vapor
+      ? import("@unframework.dev/target-vue/toolchain/vapor")
+      : TOOLCHAINS[target]());
   } catch (error) {
     throw new Error(
-      `[uf] The ${target} toolchain (@unframework.dev/target-${target}/toolchain) could not be loaded: install the ${target} framework and its Vite plugin.`,
+      `[uf] The ${name} toolchain (${specifier}) could not be loaded: install the ${target} framework and its Vite plugin.`,
       { cause: error },
     );
   }
   const toolchain = module.toolchain ?? module.default;
-  if (!toolchain || toolchain.name !== target) {
-    throw new Error(
-      `[uf] @unframework.dev/target-${target}/toolchain must export \`toolchain\` with name "${target}".`,
-    );
+  if (!toolchain || toolchain.name !== name) {
+    throw new Error(`[uf] ${specifier} must export \`toolchain\` with name "${name}".`);
   }
   return toolchain;
 }
 
-async function unpluginOf(target: TargetName): Promise<Plugin[]> {
+/**
+ * The unframework plugin of a project: its target, and its `targetOptions`, which `compile()`
+ * validates, so the tests and the preview compile what `unframework build` writes (ADR-0112).
+ */
+async function unpluginOf(
+  target: TargetName,
+  targetOptions: Readonly<Partial<Record<TargetName, unknown>>>,
+): Promise<Plugin[]> {
   const { default: unframework } = await import("@unframework.dev/unplugin/vite");
   // Every compile is recorded, so a mount listens to the events of the module it compiled.
-  const options: UnframeworkOptions = { target, onCompile: (event) => recordCompiledModule(event) };
+  const options: UnframeworkOptions = {
+    target,
+    targetOptions,
+    onCompile: (event) => recordCompiledModule(event),
+  };
   return unframework(options);
 }
 
@@ -366,7 +406,8 @@ async function browserProject(
   target: TargetName,
 ): Promise<UserWorkspaceConfig> {
   const name = `browser:${target}`;
-  const toolchain = await loadToolchain(target);
+  const toolchain = await loadToolchain(target, setup.targetOptions);
+  const vapor = isVaporTarget(target, setup.targetOptions);
   const context = toolchainContext(setup, target, "browser");
   const fragment = await toolchain.vite("browser", context);
   // The project's config goes in last: its plugins before the unplugin, the rest merged after
@@ -375,7 +416,7 @@ async function browserProject(
     mergeConfig(
       {
         root: setup.root,
-        plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
+        plugins: [...(await unpluginOf(target, setup.targetOptions)), noErrorBroadcast()],
         // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
         // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
         // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
@@ -409,12 +450,13 @@ async function browserProject(
         exclude: [...EXCLUDED],
         setupFiles: [
           resolveModule("@unframework.dev/testing/setup"),
-          resolveModule(`@unframework.dev/testing/${target}`),
+          // Vue's Vapor mount adapter, registered for the project's `vue` (ADR-0112).
+          resolveModule(`@unframework.dev/testing/${vapor ? "vue-vapor" : target}`),
         ],
         provide: {
           target,
           ufHarness: setup.harness,
-          ufCapabilities: builtinTargets[target].capabilities,
+          ufCapabilities: capabilitiesOf(builtinTargets[target], setup.targetOptions[target]),
           ufNoOutput: {},
         },
         sequence: { groupOrder: group(setup, "browser", target) },
@@ -432,10 +474,13 @@ async function browserProject(
 }
 
 async function ssrProject(setup: ProjectSetup, target: TargetName): Promise<UserWorkspaceConfig> {
-  const toolchain = await loadToolchain(target);
+  const toolchain = await loadToolchain(target, setup.targetOptions);
   const fragment = await toolchain.vite("ssr", toolchainContext(setup, target, "ssr"));
   const config = await withProjectVite(
-    mergeConfig({ root: setup.root, plugins: await unpluginOf(target) }, fragment),
+    mergeConfig(
+      { root: setup.root, plugins: await unpluginOf(target, setup.targetOptions) },
+      fragment,
+    ),
     setup.vite,
     { target, mode: "ssr" },
   );

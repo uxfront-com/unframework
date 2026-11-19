@@ -76,6 +76,11 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
 | `toolchainDirs` | `package.resolveFrom`, then the root                  | Where each target's compiler stack resolves from (Angular's)                           |
 | `root`          | the working directory                                 | Where `unframework.config.ts` is: case ids are relative to it                          |
 
+- **A project's target options** (ADR-0112), `targetOptions` in `unframework.config.ts`: each
+  project hands them to the unframework plugin, so the tests compile what `unframework build`
+  writes. With `vue: { vapor: true }`, Vue's projects load the Vapor toolchain
+  (`@unframework.dev/target-vue/toolchain/vapor`) and its mount adapter, and its capability cells.
+  Vue 3.6 must then resolve from the toolchain directory, the root by default.
 - **A project's Vite config** (ADR-0104), `vite` in `unframework.config.ts`: each `browser:` and
   `ssr:` project calls it with `{ target, mode }` and merges what it gives with
   `withProjectVite(config, vite, context)`: the project's plugins, flattened, before the
@@ -397,6 +402,9 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   released, the focus blurred and the frame focused again). It registers the matchers above.
 - **`@unframework.dev/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `solid2`, `angular`,
   `qwik`, `astro`): registers `@unframework.dev/target-<target>/toolchain/client`'s mount adapter.
+  `@unframework.dev/testing/vue-vapor` registers the Vue target's Vapor adapter
+  (`…/toolchain/vapor/client`) for the project's own target: `vue-vapor` in the corpus, `vue` in a
+  project with `vapor` on (ADR-0112).
 
 ## Node (`@unframework.dev/testing/node`)
 

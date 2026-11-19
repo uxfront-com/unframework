@@ -390,6 +390,12 @@ export interface Target {
   readonly capabilities: Capabilities;
   /** Validates the target's options. */
   readonly options?: StandardSchemaV1;
+  /**
+   * The cells its validated options change, over `capabilities` (ADR-0112): the Vue target's
+   * `vapor` option declares the cells Vapor components support differently. Read the matrix
+   * through `capabilitiesOf`, never `capabilities` alone, wherever options apply.
+   */
+  readonly capabilitiesFor?: (options: unknown) => Partial<Capabilities>;
   /** Emits one component as one or more files. Never throws: report problems instead. */
   emit(component: UfComponent, context: EmitContext): OutputFile[];
   /**
@@ -405,6 +411,16 @@ export interface Target {
    * UF1002 for a directive of a target without it.
    */
   emitDirective?(directive: UfDirective, context: EmitContext): OutputFile[];
+}
+
+/**
+ * A target's capability matrix under its validated options (ADR-0112): `capabilities`, with the
+ * cells `capabilitiesFor` changes. Without options, or without `capabilitiesFor`, it is
+ * `capabilities` itself.
+ */
+export function capabilitiesOf(target: Target, options: unknown): Capabilities {
+  if (options === undefined || !target.capabilitiesFor) return target.capabilities;
+  return { ...target.capabilities, ...target.capabilitiesFor(options) };
 }
 
 /** Declares a target, checking its shape at compile time. */

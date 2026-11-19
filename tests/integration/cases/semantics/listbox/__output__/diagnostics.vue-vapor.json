@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The vue target does not support listbox: runtime-dom's `nodeOps.createElement` sets `multiple` but not `size` before the options are inserted, so Vue's client selects the first option, as a drop-down does.",
+    "file": "semantics/listbox/ColourList.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 9,
+      "offset": 182
+    },
+    "end": {
+      "line": 8,
+      "column": 17,
+      "offset": 190
+    },
+    "target": "vue-vapor"
+  }
+]

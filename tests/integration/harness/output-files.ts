@@ -4,7 +4,6 @@ import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs
 import { join } from "node:path";
 
 import { compile } from "@unframework.dev/compiler";
-import type { TargetName } from "@unframework.dev/compiler";
 import { writeIfChanged } from "@unframework.dev/testing/node";
 
 import { canaryPlugins } from "./canaries.ts";
@@ -12,6 +11,7 @@ import { errorState } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { CANARY_DIR } from "./paths.ts";
 import { caseOracle, caseResolver } from "./sources.ts";
+import { compiledAs } from "./targets.ts";
 import { toolchainFiles } from "./toolchain-results.ts";
 
 /** A case's committed output files for a target, without its scoped sheets (`toolchainFiles`). */
@@ -52,9 +52,11 @@ export async function outputFiles(
       const typeOracle = caseOracle(info, casesDir, { filename: source.filename, text });
       let result: Awaited<ReturnType<typeof compile>>;
       try {
+        const { target: compiled, targetOptions } = compiledAs(target);
         result = await compile(text, {
           filename: source.filename,
-          targets: [target as TargetName],
+          targets: [compiled],
+          ...(targetOptions ? { targetOptions } : {}),
           plugins: canaryPlugins(canary, target),
           resolve: caseResolver(info, casesDir, typeOracle),
           typeOracle,
@@ -62,7 +64,7 @@ export async function outputFiles(
       } finally {
         await typeOracle.dispose();
       }
-      for (const file of result.outputs[target] ?? []) {
+      for (const file of result.outputs[compiledAs(target).target] ?? []) {
         const path = join(directory, file.path);
         writeIfChanged(path, file.contents);
         paths.push(path);

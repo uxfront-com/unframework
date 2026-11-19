@@ -5,13 +5,23 @@
  */
 import type {
   ProjectViteConfig,
+  TargetOptions,
   UnframeworkConfig,
   ViteContext,
   ViteMode,
   VitePluginOption,
+  VueTargetOptions,
 } from "@unframework.dev/compiler/config-types";
 
-export type { ProjectViteConfig, UnframeworkConfig, ViteContext, ViteMode, VitePluginOption };
+export type {
+  ProjectViteConfig,
+  TargetOptions,
+  UnframeworkConfig,
+  ViteContext,
+  ViteMode,
+  VitePluginOption,
+  VueTargetOptions,
+};
 
 /** Types a configuration, and returns it as it is. */
 export function defineConfig(config: UnframeworkConfig): UnframeworkConfig {

@@ -3,6 +3,10 @@
 The target kit (plan §5.8): everything a target needs to emit idiomatic code, and nothing
 framework-specific.
 
+- **`capabilitiesOf(target, options)`**: a target's matrix under its validated options, its
+  `capabilities` with the cells its optional `capabilitiesFor(options)` changes (ADR-0112), such as
+  the Vue target's `directive` under `vapor`. Without options, or without `capabilitiesFor`, it is
+  `capabilities`. Read a matrix through it wherever options apply.
 - **`defineTarget`** and the `Target` interface: `name`, `framework`, a capability matrix,
   `emit(component, context)`, and `emitComposable(composable, context)`, which emits a `.uf.ts`
   module's composable as its own module (ADR-0069). Every built-in target has `emitComposable`.

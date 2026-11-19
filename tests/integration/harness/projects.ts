@@ -20,8 +20,6 @@ import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
-import { builtinTargets } from "@unframework.dev/compiler";
-import type { TargetName } from "@unframework.dev/compiler";
 import {
   caseReferences,
   formatError,
@@ -49,7 +47,7 @@ import { hydrationRunners, ufHydrationRender } from "./hydrate.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { SSR_SHARDS, shardFiles } from "./shards.ts";
-import { loadToolchain, REFERENCE } from "./targets.ts";
+import { capabilitiesOfTarget, compiledAs, loadToolchain, REFERENCE } from "./targets.ts";
 import { ufMapStack } from "./thrown.ts";
 
 /** What every project factory needs. */
@@ -380,9 +378,15 @@ function lazyProject(
  */
 function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOptions {
   const guard = guardsGoldens(setup.mode.canary);
+  // An option set compiles as its built-in target, with its options (ADR-0112).
+  const { target: compiled, targetOptions } = compiledAs(target);
   return {
-    target: target as UnframeworkOptions["target"],
-    onCompile: (event) => {
+    target: compiled,
+    ...(targetOptions ? { targetOptions } : {}),
+    // Recorded and guarded under the target's id: an option set's compile is its own, with its
+    // own golden files (`__output__/vue-vapor/`), never its built-in target's.
+    onCompile: (compile) => {
+      const event = { ...compile, target };
       recordCompiledModule(event);
       return guard ? goldenGuard(event) : undefined;
     },
@@ -566,7 +570,7 @@ async function pageProject(
         provide: {
           target,
           ufHarness: setup.harness,
-          ufCapabilities: builtinTargets[target as TargetName].capabilities,
+          ufCapabilities: capabilitiesOfTarget(target)!,
           ufNoOutput: noOutput,
           ufStandIn: standIns,
           ...(kind === "hydrate" ? { ufHydrate: true, ufServer: toolchain.server } : {}),

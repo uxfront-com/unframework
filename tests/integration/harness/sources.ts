@@ -13,6 +13,7 @@ import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { createTsgoOracle } from "@unframework.dev/type-oracle-tsgo";
 
 import type { CaseInfo, CaseSource } from "./cases.ts";
+import { isOptionSet } from "./targets.ts";
 
 /** One source of a case and its compile to every target. */
 export interface SourceCompile {
@@ -41,6 +42,47 @@ export function sourceTexts(compiles: readonly SourceCompile[]): Map<string, str
 /** Every source's diagnostics in one list, sorted by file, then by span. */
 export function caseDiagnostics(compiles: readonly SourceCompile[]): Diagnostic[] {
   return sortDiagnostics(compiles.flatMap(({ result }) => result.diagnostics));
+}
+
+/** One option set's compile of a source: its target's result, under the set's id (ADR-0112). */
+export interface OptionSetCompile {
+  id: string;
+  target: string;
+  result: CompileResult;
+}
+
+/**
+ * A source's compile with each option set's merged in (ADR-0112): the set's files and owners
+ * under its id, and its target's own diagnostics, labelled with its id, so a reader tells them
+ * from the built-in target's. The diagnostics of every target are the built-in compile's.
+ */
+export function withOptionSets(
+  result: CompileResult,
+  sets: readonly OptionSetCompile[],
+): CompileResult {
+  const outputs = { ...result.outputs };
+  const owners = { ...result.owners };
+  const diagnostics = [...result.diagnostics];
+  for (const set of sets) {
+    outputs[set.id] = set.result.outputs[set.target] ?? [];
+    owners[set.id] = set.result.owners[set.target] ?? {};
+    for (const diagnostic of set.result.diagnostics) {
+      if (diagnostic.target === set.target) diagnostics.push({ ...diagnostic, target: set.id });
+    }
+  }
+  return { ...result, outputs, owners, diagnostics: sortDiagnostics(diagnostics) };
+}
+
+/** The diagnostics of every target and of the built-in targets: the shared expectations'. */
+export function builtinDiagnostics(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+  return diagnostics.filter(
+    (diagnostic) => diagnostic.target === undefined || !isOptionSet(diagnostic.target),
+  );
+}
+
+/** An option set's own diagnostics, its record beside its output (ADR-0112). */
+export function optionSetDiagnostics(diagnostics: readonly Diagnostic[], id: string): Diagnostic[] {
+  return diagnostics.filter((diagnostic) => diagnostic.target === id);
 }
 
 /**

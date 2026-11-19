@@ -32,6 +32,9 @@ interface UserConfigLike {
   optimizeDeps?: { include?: string[] };
 }
 
+// The Vue target's Vapor components (ADR-0112).
+export const vapor = defineConfig({ targetOptions: { vue: { vapor: true } } });
+
 export const annotated = defineConfig({
   vite: (): UserConfigLike => ({ plugins: [], optimizeDeps: { include: ["@styleframe/runtime"] } }),
 });

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadConfig, resolveConfig } from "@unframework.dev/compiler";
 import type { ResolvedConfig, ViteContext } from "@unframework.dev/compiler";
-import { resolveConfig as resolveViteConfig } from "vite";
+import { createServer, resolveConfig as resolveViteConfig } from "vite";
 import { describe, expect, it } from "vitest";
 
 import { startFailure, startPreview, targetServerOptions } from "../src/preview/index.ts";
@@ -103,6 +103,33 @@ describe("a project's Vite config", () => {
     ).rejects.toThrow(
       `[uf] vite in unframework.config.ts sets \`${key}\`, which the preview server for vue sets itself: leave it out.`,
     );
+  });
+});
+
+describe("a project's targetOptions (ADR-0112)", () => {
+  const vapor = fileURLToPath(new URL("../../../tests/toolchains/vue-vapor", import.meta.url));
+
+  it("compiles Vue's Vapor components through the Vapor toolchain, as `build` writes them", async () => {
+    const root = fixture("project-plugins");
+    const config = { ...(await projectConfig(root)), targetOptions: { vue: { vapor: true } } };
+    const options = targetServerOptions(root, config, "vue", {}, { vue: vapor });
+    expect(options.targetOptions).toEqual({ vue: { vapor: true } });
+    const { config: inline, toolchain } = await targetServerConfig(options);
+    expect(toolchain.name).toBe("vue-vapor");
+    const server = await createServer({
+      ...inline,
+      logLevel: "silent",
+      server: { middlewareMode: true, hmr: false, ws: false, watch: null },
+    });
+    try {
+      const id = `${root}/examples/Greeting.example.uf.tsx.vue`;
+      const loaded = await server.environments.client.pluginContainer.load(id);
+      expect(typeof loaded === "string" ? loaded : loaded?.code).toMatch(
+        /^<script setup vapor lang="ts">|^<template vapor>/,
+      );
+    } finally {
+      await server.close();
+    }
   });
 });
 

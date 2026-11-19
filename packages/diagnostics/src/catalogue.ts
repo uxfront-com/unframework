@@ -2974,6 +2974,23 @@ const entries: CatalogueEntry[] = [
     ].join("\n"),
   },
   {
+    code: "UF7013",
+    name: "vapor-compiler-too-old",
+    severity: "error",
+    title: "Vapor components need Vue 3.6",
+    description: [
+      "The Vue target's `vapor` option writes Vapor components, `<script setup vapor>`, which only",
+      "Vue 3.6 or later compiles (ADR-0112). The `vue/compiler-sfc` that compiles them here is older:",
+      "it ignores `vapor`, and would build virtual-DOM components with no warning. The bundler plugin",
+      "checks the compiler `@vitejs/plugin-vue` uses, and `unframework build --package` the one it",
+      "resolves from `package.resolveFrom`, before it writes anything.",
+      "",
+      "Install Vue 3.6 or later where the build resolves it, or turn `vapor` off in",
+      "`targetOptions.vue`. A plain `unframework build` writes `.vue` sources that your own bundler",
+      "compiles, so it can't check: the project that compiles them needs Vue 3.6 too.",
+    ].join("\n"),
+  },
+  {
     code: "UF8001",
     name: "plugin-failed",
     severity: "error",

@@ -57,7 +57,10 @@ export interface PackageInput {
 
 /** A package that has passed what can be checked before anything is written. */
 export interface PackagePlan {
-  /** UF7008, one per packager that can't run. `run` isn't safe to call unless this is empty. */
+  /**
+   * UF7008, one per packager that can't run, and UF7013, where the Vue packager would ship
+   * virtual-DOM components for Vapor ones. `run` isn't safe to call unless this is empty.
+   */
   diagnostics: Diagnostic[];
   /** Writes the package, and gives UF7009 if a packager failed. */
   run(): Promise<Diagnostic[]>;
@@ -103,6 +106,52 @@ function resolverFrom(directory: string): (module: string) => string {
     }
     return resolve(module);
   };
+}
+
+/** Whether the Vue target's options, as given, turn `vapor` on (ADR-0112). */
+function vaporOn(options: unknown): boolean {
+  return (
+    typeof options === "object" && options !== null && "vapor" in options && options.vapor === true
+  );
+}
+
+/**
+ * Why the `vue/compiler-sfc` that resolves from a directory, as plugin-vue resolves it, can't compile
+ * Vapor components, or `undefined` when it can (UF7013, ADR-0112). It parses a Vapor file rather
+ * than reading the version, as the bundler plugin's check does: Vue 3.5's ignores `vapor`. A
+ * directory where `vue` doesn't resolve is UF7008's.
+ */
+function vaporCompilerProblem(directory: string): string | undefined {
+  if (!isInstalled(directory, "vue")) return undefined;
+  let compiler: { version?: unknown; parse?: unknown };
+  try {
+    compiler = createRequire(join(directory, "package.json"))(
+      "vue/compiler-sfc",
+    ) as typeof compiler;
+  } catch {
+    return undefined;
+  }
+  let vapor = false;
+  try {
+    if (typeof compiler.parse === "function") {
+      const parsed: unknown = compiler.parse(
+        '<script setup vapor lang="ts"></script>\n<template><p></p></template>\n',
+      );
+      vapor =
+        typeof parsed === "object" &&
+        parsed !== null &&
+        "descriptor" in parsed &&
+        typeof parsed.descriptor === "object" &&
+        parsed.descriptor !== null &&
+        "vapor" in parsed.descriptor &&
+        parsed.descriptor.vapor === true;
+    }
+  } catch {
+    vapor = false;
+  }
+  if (vapor) return undefined;
+  const version = typeof compiler.version === "string" ? `, Vue ${compiler.version},` : "";
+  return `targetOptions.vue.vapor is on, and the vue/compiler-sfc the Vue packager compiles with${version} doesn't compile Vapor components: it would ship virtual-DOM components. Install Vue 3.6 or later where the package is built, point package.resolveFrom and outDir at a directory that has it, or turn vapor off.`;
 }
 
 /** Reads what a manifest takes from the project's `package.json`, or says why it can't. */
@@ -222,6 +271,12 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
         const message = `The ${target} packager needs ${packageOf(need)}, which doesn't resolve from ${place}. Install it there, point package.resolveFrom at a directory that has it, or leave ${target} out of package.targets.`;
         diagnostics.push(problem("UF7008", target, message));
       }
+    }
+    // Vapor components compile only with Vue 3.6's compiler-sfc, which plugin-vue resolves from
+    // the stage, under outDir: an older one would ship virtual-DOM components (UF7013, ADR-0112).
+    if (target === "vue" && vaporOn(config.targetOptions?.vue)) {
+      const message = vaporCompilerProblem(realOutDir);
+      if (message) diagnostics.push(problem("UF7013", target, message));
     }
     // The stage is under outDir, and its declarations read the framework from there.
     if (packager.types && !isInstalled(realOutDir, packager.types)) {

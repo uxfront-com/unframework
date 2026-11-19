@@ -7,12 +7,13 @@ import { posix } from "node:path";
 import { decodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import { formatOutput } from "@unframework.dev/codegen";
 import type { Capabilities, OutputFile } from "@unframework.dev/codegen";
-import { builtinTargets } from "@unframework.dev/compiler";
 import type { CompileResult } from "@unframework.dev/compiler";
 import { applyFixes } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { parseStylesheet } from "@unframework.dev/parser";
 import { diffLines } from "@unframework.dev/testing/node";
+
+import { builtinOf, capabilitiesOfTarget } from "./targets.ts";
 
 /** The diagnostics that concern a target: its own, and those of every target. */
 export const forTarget = <T extends { target?: string | undefined }>(
@@ -20,10 +21,6 @@ export const forTarget = <T extends { target?: string | undefined }>(
   target: string,
 ): T[] =>
   list.filter((diagnostic) => diagnostic.target === undefined || diagnostic.target === target);
-
-/** The built-in targets by any name: a name that is no target has no capability matrix. */
-const targetsByName: Readonly<Record<string, { capabilities: Capabilities } | undefined>> =
-  builtinTargets;
 
 /** What {@link expectationProblems} reads of an expected diagnostic. */
 export interface ExpectedDiagnosticText {
@@ -45,7 +42,7 @@ export function expectationProblems(
   expected: readonly ExpectedDiagnosticText[],
   target: string,
   hasSpec: boolean,
-  capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
+  capabilities: Capabilities | undefined = capabilitiesOfTarget(target),
 ): string[] {
   const own = forTarget(expected, target);
   const problems = own
@@ -84,7 +81,7 @@ export function referenceProblems(
       ? []
       : ["The case names a reference, and has no spec: only a spec's expectations have a writer."];
   }
-  const capabilities: Partial<Capabilities> = targetsByName[runReference]?.capabilities ?? {};
+  const capabilities: Partial<Capabilities> = capabilitiesOfTarget(runReference) ?? {};
   const lacking = Object.entries(capabilities).flatMap(([capability, cell]) =>
     cell &&
     cell.support === "unsupported" &&
@@ -109,7 +106,7 @@ export function referenceProblems(
       `The case names ${reference} as its reference, yet ${runReference} renders it: a case names another reference only for a capability ${runReference} leaves unsupported (ADR-0057).`,
     ];
   }
-  const cells: Partial<Capabilities> = targetsByName[reference]?.capabilities ?? {};
+  const cells: Partial<Capabilities> = capabilitiesOfTarget(reference) ?? {};
   return lacking.flatMap((capability) =>
     cells[capability as keyof Capabilities]?.support === "native"
       ? []
@@ -126,13 +123,15 @@ export function referenceProblems(
  */
 function capabilityCellDiagnostics(
   target: string,
-  capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
+  capabilities: Capabilities | undefined = capabilitiesOfTarget(target),
 ): Set<string> {
+  // The compiler names the target it compiled with: an option set's is its built-in target's.
+  const name = builtinOf(target)?.name ?? target;
   return new Set(
     Object.entries(capabilities ?? {}).flatMap(([capability, cell]) =>
       cell.support === "unsupported"
         ? [
-            `${cell.code} ${cell.severity} The ${target} target does not support ${capability}: ${cell.reason}`,
+            `${cell.code} ${cell.severity} The ${name} target does not support ${capability}: ${cell.reason}`,
           ]
         : [],
     ),
@@ -157,7 +156,7 @@ export async function checkFixes(
   diagnostics: readonly Diagnostic[],
   target: string,
   recompile: (source: string) => Promise<readonly Diagnostic[]>,
-  capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
+  capabilities: Capabilities | undefined = capabilitiesOfTarget(target),
 ): Promise<void> {
   const own = forTarget(diagnostics, target);
   const fixable = own.filter((diagnostic) => diagnostic.fixes?.length);

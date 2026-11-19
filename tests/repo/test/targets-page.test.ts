@@ -6,8 +6,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
-import type { CapabilityCell } from "@unframework.dev/codegen";
+import { CAPABILITY_NAMES, capabilitiesOf } from "@unframework.dev/codegen";
+import type { Capabilities, CapabilityCell } from "@unframework.dev/codegen";
 import { builtinTargets, TARGET_NAMES } from "@unframework.dev/compiler";
 import type { TargetName } from "@unframework.dev/compiler";
 import { describe, expect, it } from "vitest";
@@ -27,6 +27,16 @@ const NAMES: Readonly<Record<TargetName, string>> = {
   qwik: "Qwik",
   astro: "Astro",
 };
+
+/** The Vue target's cells under its `vapor` option, a column of their own (ADR-0112). */
+const VAPOR = "Vue Vapor";
+const vaporCells: Capabilities = capabilitiesOf(builtinTargets.vue, { vapor: true });
+
+/** A column's cells: a target's, or Vue Vapor's. */
+function cellsOfColumn(column: string): Capabilities {
+  if (column === VAPOR) return vaporCells;
+  return builtinTargets[TARGET_NAMES.find((name) => NAMES[name] === column)!].capabilities;
+}
 
 /** A cell as the table writes it: `native`, `emulated` and its helper, or `unsupported`. */
 function written(cell: CapabilityCell): string {
@@ -63,7 +73,9 @@ describe("the targets reference page", () => {
   it("has a row for every capability, in the matrix's order, and a column for every target", () => {
     const { header, rows } = capabilityTable();
     expect(header.slice(0, 2)).toEqual(["Capability", "What it covers"]);
-    expect(header.slice(2).toSorted()).toEqual(TARGET_NAMES.map((name) => NAMES[name]).toSorted());
+    expect(header.slice(2).toSorted()).toEqual(
+      [...TARGET_NAMES.map((name) => NAMES[name]), VAPOR].toSorted(),
+    );
     expect(rows.map((row) => row[0])).toEqual(CAPABILITY_NAMES.map((name) => `\`${name}\``));
     for (const row of rows) expect(row[1], row[0]).not.toBe("");
   });
@@ -73,10 +85,7 @@ describe("the targets reference page", () => {
     const expected = rows.map((row, index) => [
       row[0],
       row[1],
-      ...header.slice(2).map((column) => {
-        const target = TARGET_NAMES.find((name) => NAMES[name] === column)!;
-        return written(builtinTargets[target].capabilities[CAPABILITY_NAMES[index]!]);
-      }),
+      ...header.slice(2).map((column) => written(cellsOfColumn(column)[CAPABILITY_NAMES[index]!])),
     ]);
     expect(rows).toEqual(expected);
   });
@@ -95,6 +104,26 @@ describe("the targets reference page", () => {
             ),
         )
         .map((capability) => `${NAMES[target]}, \`${capability}\``),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it("has a note under the table for every Vue Vapor cell that differs from Vue's (ADR-0112)", () => {
+    const headings = notes();
+    const differ = CAPABILITY_NAMES.filter(
+      (capability) =>
+        JSON.stringify(vaporCells[capability]) !==
+        JSON.stringify(builtinTargets.vue.capabilities[capability]),
+    );
+    expect(differ).not.toEqual([]);
+    const missing = [
+      ...differ,
+      ...CAPABILITY_NAMES.filter((capability) => vaporCells[capability].support !== "native"),
+    ].filter(
+      (capability) =>
+        !headings.some(
+          (heading) => heading.startsWith(`${VAPOR}, `) && heading.includes(`\`${capability}\``),
+        ),
     );
     expect(missing).toEqual([]);
   });

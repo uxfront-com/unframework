@@ -15,8 +15,6 @@
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 
-import { builtinTargets } from "@unframework.dev/compiler";
-import type { TargetName } from "@unframework.dev/compiler";
 import { checkLayers } from "@unframework.dev/testing/node";
 import { describeServerRender } from "@unframework.dev/testing/ssr";
 import type { SsrCase } from "@unframework.dev/testing/ssr";
@@ -27,6 +25,7 @@ import type { CaseInfo } from "./cases.ts";
 import { onlyCases } from "./references.ts";
 import { shardOf } from "./shards.ts";
 import { ssrSkip } from "./ssr-skip.ts";
+import { capabilitiesOfTarget } from "./targets.ts";
 import { checkMappedStack } from "./thrown.ts";
 import "./context.ts";
 
@@ -51,10 +50,7 @@ export function describeSsrShard(index: number): void {
       // A case whose every test requires a capability the target lacks renders differently
       // there by declaration (`ssr-skip.ts`).
       const skip = info.spec
-        ? ssrSkip(
-            specTests(readFileSync(info.spec, "utf8")),
-            builtinTargets[target as TargetName].capabilities,
-          )
+        ? ssrSkip(specTests(readFileSync(info.spec, "utf8")), capabilitiesOfTarget(target)!)
         : undefined;
       return [
         {

@@ -1,6 +1,7 @@
 # @unframework.dev/target-vue
 
-The Vue 3.5 target of the Unframework compiler, and the reference target (D10): what Vue renders,
+The Vue 3.5 target of the Unframework compiler, with Vue 3.6's Vapor components as an option, and
+the reference target (D10): what Vue renders,
 and what it does when a test interacts with it, becomes every target's shared expectation. It
 emits one single-file component per component (plan §6): its script, its template, then, for a
 component that imports a stylesheet, its sheet.
@@ -156,6 +157,29 @@ fallthrough. `defineExpose` comes before the first await, with the functions it 
 declarations, or the parent's ref keeps the bare proxy. The toolchain's client and hydrate adapters
 render a root whose `setup` is async inside a `<Suspense>`.
 
+## Vapor
+
+The target takes one option, `vapor` (ADR-0112): `targetOptions: { vue: { vapor: true } }` writes
+Vue 3.6's Vapor components, which compile without a virtual DOM. It's experimental while Vue 3.6 is
+a release candidate, and `vueOptions` is its Standard Schema: `vapor` is `true` or `false`, and any
+other key is an issue. The component is the same, marked once: `<script setup vapor lang="ts">`,
+or `<template vapor>` without a script. A few things differ:
+
+- **Exported types and keys.** vue-tsc checks a `<script setup vapor>` as a function, where an
+  `export` is TS1184, so the types a component exports go in a plain `<script lang="ts">` beside
+  it, as a component's injection keys do. compiler-sfc reads `<script vapor>` as a
+  `<script setup>`, so a component whose plain block holds its keys and that has no script of its
+  own takes an empty `<script setup vapor lang="ts"></script>`.
+- **Directives.** A directive is a `VaporDirective`, a function of the element and a getter of the
+  value. `mounted` runs from a post-flush effect that reads nothing after its first run,
+  `updated` from a post-flush watcher of the value, behind `Object.is`, and `unmounted` from the
+  cleanup the function returns. Vapor applies an element's directives in an order of its own, so
+  the hooks go through the inline `queueHook`, which runs them in Vue's order: `directive` is
+  emulated (`capabilitiesFor`). `vTextCaret` is a post-flush effect.
+
+Every other output is Vue's. The toolchain for it is `…/toolchain/vapor` (below), and the corpus
+runs it as the `vue-vapor` option set.
+
 ## Composables
 
 A `.uf.ts` module's composable is its own module, `useToggle.ts` (ADR-0069, `src/composable.ts`):
@@ -230,6 +254,16 @@ For tests and tooling (the target's main entry never loads it):
   `renderForHydration` renders the same root, so `useId` makes the same ids on both sides.
 - **`…/toolchain/server`**: renders with `createSSRApp` and `vue/server-renderer`. Vue runs an
   immediate watcher's first callback during the server's setup, and nothing else of the effects.
+- **`…/toolchain/vapor`** (ADR-0112): the toolchain of the `vapor` option, named `vue-vapor`. Vue
+  3.6, its compilers and plugin-vue load from `context.toolchainDir`, never from the project root,
+  through a `pre` plugin that resolves `vue` from there, and on the server `vue` and every `@vue/*`
+  package run inlined from their ES module builds. L3 compiles a Vapor template with Vue's Vapor
+  compiler, and refuses a compiler-sfc that doesn't mark a `vapor` file Vapor, Vue 3.5's. L4 and L5
+  are Vue's. `…/toolchain/vapor/client` mounts in `createVaporApp`, its root's props a dynamic
+  source over a shallow reactive object, `…/hydrate` hydrates with `createVaporSSRApp`, and both
+  install `vaporInteropPlugin` and render an async root under a `<Suspense>` in a virtual-DOM app.
+  Each adapter throws if `vue` has no `createVaporApp`, and the client ones if a root isn't
+  marked `__vapor`.
 
 Its own tests pin the shapes (`test/emit.test.ts`, `test/lint-probes.ts` against L3, L4 and L5),
 the server's setup (`test/setup.test.ts`), and the behaviour of the emitted components in

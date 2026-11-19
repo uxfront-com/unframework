@@ -1,0 +1,22 @@
+{
+  "name": "@unframework.dev/toolchain-vue-vapor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The vue-vapor test toolchain: Vue 3.6, whose runtime and compilers every vue-vapor layer resolves from here (ADR-0112), the checker and tsconfig that type-check every case's vue-vapor golden output in one run (L4), and the oxlint and ESLint (eslint-plugin-vue) configs that lint it (L5).",
+  "type": "module",
+  "scripts": {
+    "check": "vue-tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:",
+    "vue": "catalog:vue-vapor",
+    "vue-eslint-parser": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

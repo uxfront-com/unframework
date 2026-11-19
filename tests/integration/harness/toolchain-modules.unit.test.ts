@@ -56,6 +56,19 @@ export function useToggle(initial: boolean): { on: ShallowRef<boolean>; toggle: 
 }
 `,
   },
+  "vue-vapor": {
+    file: "useToggle.ts",
+    contents: `import { type ShallowRef, shallowRef } from "vue";
+
+export function useToggle(initial: boolean): { on: ShallowRef<boolean>; toggle: () => void } {
+  const on = shallowRef(initial);
+  function toggle(): void {
+    on.value = !on.value;
+  }
+  return { on, toggle };
+}
+`,
+  },
   react: {
     file: "useToggle.ts",
     contents: `import { useState } from "react";

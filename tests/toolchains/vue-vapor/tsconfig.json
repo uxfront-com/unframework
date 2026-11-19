@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for the vue-vapor option set (ADR-0112): vue-tsc (TypeScript 6) over every case's golden
+  // Vapor output, with the type strictness every target's checker shares
+  // (harness/toolchain-strictness.unit.test.ts). The toolchain's `typecheck` extends this file
+  // with an explicit file list, so these options are the contract for both. Vue resolves from
+  // here, Vue 3.6: the outputs sit in tests/integration, whose `vue` is the reference's 3.5, so
+  // `paths` maps it, and its subpaths, which vue-tsc types native elements through.
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "jsx": "preserve",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": [],
+    "paths": {
+      "vue": ["./node_modules/vue"],
+      "vue/*": ["./node_modules/vue/*"]
+    }
+  },
+  // As the vue toolchain's: unknown components, props and events in templates are errors, and
+  // `data-*` and `accept-charset` are allowed on every element.
+  "vueCompilerOptions": {
+    "strictTemplates": true,
+    "dataAttributes": ["data-*", "accept-charset"]
+  },
+  "include": ["../../integration/cases/**/__output__/vue-vapor/**/*.vue"]
+}

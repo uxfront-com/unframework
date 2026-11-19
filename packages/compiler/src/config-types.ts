@@ -22,6 +22,23 @@ export type TargetName =
  */
 export type TargetSelector = TargetName | "solid@1" | "solid@2";
 
+/** The Vue target's options (ADR-0112), as `@unframework.dev/target-vue`'s schema checks them. */
+export interface VueTargetOptions {
+  /**
+   * Writes each component as a Vapor component, `<script setup vapor>`, which Vue 3.6 compiles
+   * without a virtual DOM. Defaults to `false`. Experimental while Vue 3.6 is a release candidate.
+   */
+  vapor?: boolean;
+}
+
+/**
+ * Each target's options, by id: the Vue target's are typed, and every other target's go to its
+ * Standard Schema as they are. A target without one takes none (UF7004).
+ */
+export interface TargetOptions extends Partial<Record<Exclude<TargetName, "vue">, unknown>> {
+  vue?: VueTargetOptions;
+}
+
 /** The targets packaging covers, and where each packager resolves from (ADR-0076). */
 export interface PackageConfig {
   targets?: readonly TargetSelector[];
@@ -71,7 +88,7 @@ export interface UnframeworkConfig {
   /** Defaults to `dist`, relative to the config's directory. */
   outDir?: string;
   /** Each target's options, validated through its Standard Schema. A target without one takes none. */
-  targetOptions?: Partial<Record<TargetName, unknown>>;
+  targetOptions?: TargetOptions;
   /** Defaults to `syntactic`. */
   typeOracle?: "syntactic" | "tsgo";
   /** Plan §8.1: `true` makes portability warnings errors, in the CLI. Defaults to `false`. */

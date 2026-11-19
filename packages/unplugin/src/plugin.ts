@@ -33,7 +33,13 @@ import type {
 
 import { assembleModule } from "./assemble.ts";
 import { chainQwikSegments, chainSvelteOnce } from "./chain.ts";
-import { detectTarget, fillVueScriptFs, hostOptionWarning } from "./detect.ts";
+import {
+  detectTarget,
+  fillVueScriptFs,
+  hostOptionWarning,
+  vaporCompilerError,
+  vaporOn,
+} from "./detect.ts";
 import {
   COMPONENT_ID_FILTER,
   COMPOSABLE_EXTENSION,
@@ -109,6 +115,12 @@ export interface UnframeworkOptions {
    * the plugin that registers the module does, such as a styling engine's.
    */
   passThrough?: readonly string[];
+  /**
+   * Each target's options, by target name, as `targetOptions` in `unframework.config.ts`, passed
+   * to `compile()`, which validates them: an invalid option fails the module, as UF7004
+   * (ADR-0112). `{ vue: { vapor: true } }` compiles Vue's Vapor components.
+   */
+  targetOptions?: Readonly<Record<string, unknown>>;
 }
 
 /** What the pre plugin exposes as `api`, for other plugins that need the compiled sources. */
@@ -386,6 +398,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         sourceMap: true,
         plugins: options.plugins,
         ...(options.passThrough ? { passThrough: options.passThrough } : {}),
+        ...(options.targetOptions ? { targetOptions: options.targetOptions } : {}),
       });
       graph = { root: graphRoot, project, reachedPackages: new Set() };
       graphs.set(graphRoot, graph);
@@ -1194,6 +1207,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
           const warning = hostOptionWarning(config.plugins, file);
           if (warning) this.warn(warning);
           fillVueScriptFs(config.plugins);
+          // Vapor components compile only with Vue 3.6's compiler-sfc (UF7013, ADR-0112).
+          if (vaporOn(options.targetOptions?.["vue"])) {
+            const error = vaporCompilerError(config.plugins, file, config.root);
+            if (error) this.error(error);
+          }
         }
         chainSvelteOnce(config.plugins, (id) => compiled.has(id));
         chainQwikSegments(config.plugins, (id) => {

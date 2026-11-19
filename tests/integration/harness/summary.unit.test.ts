@@ -302,7 +302,7 @@ describe("a run of scripts/run.ts", () => {
     expect(runSummary({ CI: "1" }, run)).toBe(0);
     expect(problems).toBe("");
     expect(readFileSync(join(reportsDir, "parity-matrix.md"), "utf8")).toContain(
-      "Partial run: 26 project(s) did not run",
+      "Partial run: 29 project(s) did not run",
     );
   });
 
@@ -355,7 +355,7 @@ describe("the nightly's WebKit job, merged browser-only (ADR-0081)", () => {
     ["vue", "react", "svelte"],
     ["vue", "solid", "angular"],
     ["vue", "qwik", "astro"],
-    ["vue", "solid2"],
+    ["vue", "solid2", "vue-vapor"],
   ];
   /** `semantics/listbox` names React as its reference, so a batch without React adds it there. */
   const LISTBOX = "semantics/listbox";

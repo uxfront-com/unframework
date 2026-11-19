@@ -26,6 +26,8 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
   // `createPortal` lives in react-dom, React's renderer, which a `<Teleport>` needs (ADR-0098).
   react: ["react", "react/*", "react-dom"],
   vue: ["vue", "vue/*"],
+  // The Vue target's Vapor components, on Vue 3.6 (ADR-0112).
+  "vue-vapor": ["vue", "vue/*"],
   svelte: ["svelte", "svelte/*"],
   solid: ["solid-js", "solid-js/*"],
   // Solid 2's DOM renderer is a package of its own, which owns the JSX types (ADR-0102).
@@ -58,6 +60,7 @@ const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
   solid2: "oxlint",
   qwik: "oxlint",
   vue: "eslint",
+  "vue-vapor": "eslint",
   svelte: "eslint",
   astro: "eslint",
   angular: "eslint",
@@ -88,6 +91,7 @@ const UNUSED_RULE: Record<string, string> = {
   qwik: "no-unused-vars",
   angular: "no-unused-vars",
   vue: "@typescript-eslint/no-unused-vars",
+  "vue-vapor": "@typescript-eslint/no-unused-vars",
   svelte: "@typescript-eslint/no-unused-vars",
   astro: "@typescript-eslint/no-unused-vars",
 };
@@ -160,6 +164,22 @@ const PROBES: Record<string, { file: string; contents: string; rules: readonly s
     file: "Probe.vue",
     contents: [
       '<script setup lang="ts">',
+      "debugger;",
+      'const html = "Hi";',
+      "const unused = 1;",
+      "</script>",
+      "",
+      "<template>",
+      '  <p :title.uf="html"></p>',
+      "</template>",
+      "",
+    ].join("\n"),
+    rules: ["vue/valid-v-bind"],
+  },
+  "vue-vapor": {
+    file: "Probe.vue",
+    contents: [
+      '<script setup vapor lang="ts">',
       "debugger;",
       'const html = "Hi";',
       "const unused = 1;",

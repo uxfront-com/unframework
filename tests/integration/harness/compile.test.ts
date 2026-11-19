@@ -49,9 +49,18 @@ import {
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
-import { caseDiagnostics, caseOracle, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
+import {
+  builtinDiagnostics,
+  caseDiagnostics,
+  caseOracle,
+  caseOutputs,
+  caseResolver,
+  optionSetDiagnostics,
+  sourceTexts,
+  withOptionSets,
+} from "./sources.ts";
 import type { SourceCompile } from "./sources.ts";
-import { REFERENCE, selectTargets } from "./targets.ts";
+import { compiledAs, isOptionSet, OPTION_SETS, REFERENCE, selectTargets } from "./targets.ts";
 
 const harness = inject("ufHarness");
 const cases = listCases(harness.casesDir);
@@ -97,15 +106,28 @@ async function compileSource(
 ): Promise<CompileResult> {
   const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
   try {
-    return await compile(text, {
+    const options = {
       filename: source.filename,
-      targets: TARGET_NAMES,
       plugins,
       format,
       sourceMap,
       resolve: caseResolver(info, harness.casesDir, typeOracle),
       typeOracle,
-    });
+    };
+    const result = await compile(text, { ...options, targets: TARGET_NAMES });
+    // Each option set compiles its target again with its options (ADR-0112), its files and its
+    // diagnostics under its own id.
+    const sets = await Promise.all(
+      Object.keys(OPTION_SETS).map(async (id) => {
+        const { target, targetOptions } = compiledAs(id);
+        return {
+          id,
+          target,
+          result: await compile(text, { ...options, targets: [target], targetOptions }),
+        };
+      }),
+    );
+    return withOptionSets(result, sets);
   } finally {
     await typeOracle.dispose();
   }
@@ -247,7 +269,10 @@ async function checkDiagnostics(
   target: string,
 ): Promise<void> {
   const joined = firsts(compiles);
-  const actual = jsonDiagnostics(caseDiagnostics(joined), sourceTexts(joined));
+  const records: string[] = [];
+  // The shared expectations hold the built-in targets' diagnostics alone: an option set's are a
+  // record of their own, beside its output, checked after them (ADR-0112).
+  const actual = jsonDiagnostics(builtinDiagnostics(caseDiagnostics(joined)), sourceTexts(joined));
   const path = join(info.dir, "__expected__", "diagnostics.json");
   const outcome = settleArtefact(path, `${JSON.stringify(actual, null, 2)}\n`, owner);
   if (!outcome.pass) {
@@ -259,17 +284,22 @@ async function checkDiagnostics(
       `${JSON.stringify(forTarget(list, target), null, 2)}\n`;
     if (own(expected) !== own(actual)) {
       const file = relative(ROOT, path).split(sep).join("/");
-      throw new Error(
+      records.push(
         `${file} differs from this run's output on ${target}:\n${diffLines(own(expected), own(actual))}\n\nRun \`pnpm test:update\` and review the diff if the change is intended.`,
       );
     }
   }
+  if (isOptionSet(target)) records.push(...optionSetRecordProblems(info, joined, target));
+  if (records.length) throw new Error(records.join("\n\n"));
 
   // P2: no internal error is an expectation, and a feature case expects only declared errors.
   // The case's own reference (ADR-0057) is judged on the L1 cell of the target that writes its
   // expectations.
+  const own = isOptionSet(target)
+    ? jsonDiagnostics(optionSetDiagnostics(caseDiagnostics(joined), target), sourceTexts(joined))
+    : actual;
   const problems = [
-    ...expectationProblems(actual, target, info.spec !== undefined),
+    ...expectationProblems(own, target, info.spec !== undefined),
     ...(target === (info.config.reference ?? REFERENCE)
       ? referenceProblems(actual, info.spec !== undefined, REFERENCE, info.config.reference)
       : []),
@@ -285,6 +315,36 @@ async function checkDiagnostics(
       async (fixed) => (await compileSource(info, source, fixed, [])).diagnostics,
     );
   }
+}
+
+/**
+ * L1 of an option set (ADR-0112), as problems: its own diagnostics equal
+ * `__output__/diagnostics.<id>.json`, written for every case, and its errors
+ * `__output__/diagnostics.<id>.txt` when it has any.
+ */
+function optionSetRecordProblems(
+  info: CaseInfo,
+  joined: readonly SourceCompile[],
+  target: string,
+): string[] {
+  const texts = sourceTexts(joined);
+  const own = optionSetDiagnostics(caseDiagnostics(joined), target);
+  const output = join(info.dir, "__output__");
+  const outcomes = [
+    settleArtefact(
+      join(output, `diagnostics.${target}.json`),
+      `${JSON.stringify(jsonDiagnostics(own, texts), null, 2)}\n`,
+      owner,
+    ),
+    settleArtefact(
+      join(output, `diagnostics.${target}.txt`),
+      own.some((diagnostic) => diagnostic.severity === "error")
+        ? `${formatDiagnostics(own, texts)}\n`
+        : undefined,
+      owner,
+    ),
+  ];
+  return outcomes.filter((outcome) => !outcome.pass).map((outcome) => outcome.message);
 }
 
 /**
@@ -329,7 +389,7 @@ async function checkOutputs(
   for (const file of stale) settle(settleArtefact(join(output, file), undefined, owner));
 
   const joined = firsts(compiles);
-  const diagnostics = caseDiagnostics(joined);
+  const diagnostics = builtinDiagnostics(caseDiagnostics(joined));
   const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
   settle(
     settleArtefact(

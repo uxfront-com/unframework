@@ -203,7 +203,8 @@ catalog:
   vue-tsc: 3.3.11
 # Named catalogs, after the flat one, which tests/e2e/harness/apps.ts reads. `solid2` holds
 # Solid 2 for the `solid2` target (ADR-0102): only target-solid2, tests/toolchains/solid2 and the
-# solid2 e2e app take it, so no package installs both Solid majors.
+# solid2 e2e app take it, so no package installs both Solid majors. `vue-vapor` holds Vue 3.6 for
+# the Vue target's `vapor` option (ADR-0112).
 catalogs:
   solid2:
     "@solidjs/compiler": 2.0.0
@@ -211,6 +212,11 @@ catalogs:
     "@solidjs/web": 2.0.0
     eslint-plugin-solid: 0.19.0
     solid-js: 2.0.0
+  # Vue 3.6, whose compiler writes Vapor components, for the `vue-vapor` option set (ADR-0112):
+  # only tests/toolchains/vue-vapor takes it, so the reference Vue stays on the flat catalog's 3.5.
+  # The release candidate until 3.6 is npm's `latest`.
+  vue-vapor:
+    vue: 3.6.0-rc.15
 patchedDependencies:
   # TypeScript 7.1 reports its self-referencing `Selector` type as infinitely circular
   # (TS5115, microsoft/TypeScript#64605), so codegen's scoper fails check-types. The patch writes

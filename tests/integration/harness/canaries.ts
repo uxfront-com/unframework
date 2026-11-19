@@ -21,7 +21,6 @@ import { basename, join, relative, sep } from "node:path";
 import { decodedMappings, encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import { parseStatementsSource } from "@unframework.dev/codegen";
 import type { OutputFile, ParsedStatements, SourceMapV3 } from "@unframework.dev/codegen";
-import { builtinTargets } from "@unframework.dev/compiler";
 import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework.dev/compiler";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import {
@@ -60,7 +59,7 @@ import { consumerFixtures } from "./consumers.ts";
 import { standInCases } from "./no-output.ts";
 import { ROOT } from "./paths.ts";
 import { QUARANTINE } from "./quarantine.ts";
-import { REFERENCE } from "./targets.ts";
+import { capabilitiesOfTarget, REFERENCE } from "./targets.ts";
 
 /** What a sub-check's failure says: a pattern, or one built for the target of the cell. */
 export type Evidence = RegExp | ((target: string) => RegExp);
@@ -138,7 +137,7 @@ export interface Canary {
    * The targets it corrupts, when not every one: a corruption of one framework's own code. The
    * runner runs only these targets' projects, and the verdict judges only these.
    */
-  targets?: readonly TargetName[];
+  targets?: readonly string[];
   /**
    * Leaves the golden guard on. Every other canary turns it off: it changes the output on
    * purpose, and the guard would fail every module before the canary's layer could.
@@ -197,8 +196,19 @@ export interface Canary {
   clientOnly?: true;
 }
 
-/** The targets that hydrate (ADR-0095): Qwik resumes instead, and Astro runs nothing in a page. */
-const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "solid2", "angular"];
+/**
+ * The targets that hydrate (ADR-0095), the vue-vapor option set's included (ADR-0112): Qwik
+ * resumes instead, and Astro runs nothing in a page.
+ */
+const HYDRATING: readonly string[] = [
+  "react",
+  "vue",
+  "svelte",
+  "solid",
+  "solid2",
+  "angular",
+  "vue-vapor",
+];
 
 /**
  * The L12 sub-checks that catch a client render's text that differs from the server's, on each
@@ -213,6 +223,9 @@ const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "so
 const CLIENT_TEXT_CHECK: Readonly<Record<string, RegExp>> = {
   react: /^mismatch: /m,
   vue: /^mismatch: /m,
+  // Vapor's hydration keeps the server's text without a warning, which the client render shows
+  // differs (ADR-0112).
+  "vue-vapor": /^(?:mismatch|DOM|client agreement): /m,
   solid: /^(?:mismatch|DOM|client agreement): /m,
   solid2: /^(?:mismatch|DOM|client agreement): /m,
   angular: /^(?:mismatch|DOM|client agreement): /m,
@@ -241,11 +254,13 @@ interface FrameworkRule {
  * One idiom each target's lint plugin forbids, written on the root element (ADR-0042): the
  * framework layer of L5, which the baseline rules cannot prove.
  */
-const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
+const FRAMEWORK_RULES: Readonly<Record<TargetName | "vue-vapor", FrameworkRule>> = {
   react: { attribute: 'class="uf-canary"', rule: "react/no-unknown-property" },
   // A modifier `v-bind` does not have, which Vue's compiler ignores. `v-html` is an output's
   // own idiom since ADR-0097, which turned `vue/no-v-html` off.
   vue: { attribute: ":title.uf=\"'uf-canary'\"", rule: "vue/valid-v-bind" },
+  // Vue's rule, which eslint-plugin-vue runs on a Vapor component as on Vue's own (ADR-0112).
+  "vue-vapor": { attribute: ":title.uf=\"'uf-canary'\"", rule: "vue/valid-v-bind" },
   svelte: {
     attribute: 'style:uf-canary="1"',
     rule: "svelte/no-unknown-style-directive-property",
@@ -821,7 +836,7 @@ export const CANARIES: readonly Canary[] = [
     description:
       "Moves every line of the map of each module the browser projects serve for the cases whose specs wrap a throwing step in `expectThrown`, Qwik's segments included, down one, so the error's top frame in the case maps a line below the `throw`. The code gains one line break at its end, and no line moves. Astro runs no such step.",
     evidence: { browser: { "mapped stack": /The top frame in the case maps to \S+, not to / } },
-    targets: ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik"],
+    targets: ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik", "vue-vapor"],
     appliesTo: (info, target) => info.throws(target),
     servedMap: linesShifted,
   },
@@ -1224,11 +1239,9 @@ export function canaryCase(info: CaseInfo): CanaryCase {
  * that is no capability, as the setup does.
  */
 function supports(target: string, capability: string): boolean {
-  const targets: Readonly<
-    Record<string, { capabilities: Readonly<Record<string, { support: string }>> } | undefined>
-  > = builtinTargets;
+  // An option set's cells are its target's under its options (ADR-0112).
   const cells: Readonly<Record<string, { support: string } | undefined>> =
-    targets[target]?.capabilities ?? {};
+    capabilitiesOfTarget(target) ?? {};
   const cell = Object.hasOwn(cells, capability) ? cells[capability] : undefined;
   if (!cell) throw new Error(`${MARKER} "${capability}" is not a capability of ${target}.`);
   return cell.support !== "unsupported";
@@ -1817,7 +1830,8 @@ export function addRootAttribute(file: OutputFile, attribute: string): string {
 
 /**
  * Where an output file's template is, in each target's own syntax: after the component's
- * `return` in JSX, inside `template:` in an Angular class, inside the outer `<template>` in Vue,
+ * `return` in JSX, inside `template:` in an Angular class, inside the outer `<template>` in Vue
+ * (`<template vapor>` in a template-only Vapor component),
  * after the options and script blocks in Svelte and after the frontmatter in Astro. Script
  * blocks and frontmatter come first, and their TypeScript has tags of its own (`Array<string>`).
  */
@@ -1846,7 +1860,8 @@ function templateRange(path: string, contents: string): { start: number; end: nu
     return close === undefined ? undefined : { start, end: close };
   }
   if (path.endsWith(".vue")) {
-    const start = endOf(/<template>/.exec(contents));
+    // A Vapor component marks a template-only file on its template, `<template vapor>` (ADR-0112).
+    const start = endOf(/<template(?: vapor)?>/.exec(contents));
     const close = contents.lastIndexOf("</template>");
     return start === undefined || close < start ? undefined : { start, end: close };
   }

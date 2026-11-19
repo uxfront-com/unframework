@@ -15,6 +15,7 @@ import {
   keyOwner,
   componentTypes,
   functionText,
+  hookQueueCode,
   ImportSet,
   isPrimitiveState,
   js,
@@ -52,7 +53,13 @@ import {
   moduleBindings,
 } from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
-import { addDirectiveImports, directiveCode } from "./directive.ts";
+import {
+  addDirectiveImports,
+  directiveCode,
+  QUEUE_HELPER,
+  vaporDirectiveCode,
+  vaporNames,
+} from "./directive.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
 import { moduleReach, unreachable, VUE_RESERVED, VueNames } from "./names.ts";
@@ -69,7 +76,8 @@ export interface ScriptSetup {
   components: ReadonlyMap<string, string>;
   /**
    * The `<script lang="ts">` block of the output that declares the module's injection keys
-   * (ADR-0054), which a `<script setup>` cannot export: absent elsewhere.
+   * (ADR-0054), which a `<script setup>` cannot export, or, under Vapor, the types it exports
+   * (ADR-0112): absent elsewhere.
    */
   keys?: string;
   /**
@@ -137,7 +145,11 @@ export interface Statement {
  * The object form is `const props = defineProps<P>()`, through `withDefaults` with an
  * `undefined` default for each optional prop, for the same two reasons.
  */
-export function scriptSetup(component: UfComponent, module: UfModule): ScriptSetup {
+export function scriptSetup(
+  component: UfComponent,
+  module: UfModule,
+  vapor: boolean = false,
+): ScriptSetup {
   const names = new VueNames(component, module);
   const imports = new ImportSet(names.scope);
   // Each child's output, by the name the template uses (ADR-0053), a component of the same file
@@ -176,10 +188,18 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   const constants = reads.constants;
   // The output of the module's main component declares the keys, and the types it copies, in a
   // plain `<script lang="ts">` block, which `<script setup>` reads.
+  const ownsKeys = Boolean(
+    module.keys?.length && keyOwner(module.components, module.exports) === component.name,
+  );
+  // Under Vapor, the types it exports go there too: vue-tsc checks a `<script setup vapor>` as a
+  // function, where an `export` declaration is TS1184, while compiler-sfc reads the plain block's
+  // types as its own (ADR-0112).
+  const exportsTypes =
+    vapor &&
+    !ownsKeys &&
+    moduleTypes(component, module, reads, names).some((code) => /^export\b/m.test(code));
   const keys =
-    module.keys?.length && keyOwner(module.components, module.exports) === component.name
-      ? keyBlock(component, module, names, reads)
-      : undefined;
+    ownsKeys || exportsTypes ? keyBlock(component, module, names, reads, ownsKeys) : undefined;
   // The types it imports, by name, beside the types it copies (ADR-0067): a child's from its
   // output, `./Field.vue`.
   if (!keys) {
@@ -268,7 +288,14 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
   const textCaret = bindsTextarea(component) ? names.scope.claim("vTextCaret") : undefined;
   if (textCaret !== undefined) {
-    statements.push({ code: textCaretDirective(textCaret), layout: "block" });
+    const code = vapor
+      ? vaporTextCaretDirective(
+          textCaret,
+          imports.add("vue", "VaporDirective", { type: true }),
+          imports.add("vue", "watchPostEffect"),
+        )
+      : textCaretDirective(textCaret);
+    statements.push({ code, layout: "block" });
   }
   // A plain `<Teleport>` renders its content on the server, into a buffer no server render here
   // reads, and Vue then mismatches as it hydrates (`runtime-core`'s `hydrateTeleport`): each
@@ -288,8 +315,27 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   const types = keys ? [] : moduleTypes(component, module, reads, names);
   // The module's own directives it applies, which `<script setup>` resolves by name (ADR-0099).
   const own = ownDirectives(component, module);
-  const directiveType = own.length ? imports.add("vue", "ObjectDirective", { type: true }) : "";
-  const directives = own.map((directive) => directiveCode(directive, directiveType));
+  // Vapor's templates take a function, `VaporDirective`, where the virtual DOM's take an object of
+  // hooks (ADR-0112).
+  const directiveType = own.length
+    ? imports.add("vue", vapor ? "VaporDirective" : "ObjectDirective", { type: true })
+    : "";
+  // Under Vapor, every directive's hooks go through one inline queue, declared once (ADR-0112).
+  const queue = vapor && own.length ? names.scope.claim(QUEUE_HELPER) : undefined;
+  const directives = own.map((directive) =>
+    queue !== undefined
+      ? vaporDirectiveCode(
+          directive,
+          vaporNames(
+            directive,
+            (name) => imports.add("vue", name),
+            (name) => imports.add("vue", name, { type: true }),
+            () => queue,
+          ),
+        )
+      : directiveCode(directive, directiveType),
+  );
+  if (queue !== undefined) directives.push(hookQueueCode(queue));
   if (
     statements.length === 0 &&
     imports.size === 0 &&
@@ -307,7 +353,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     ...(statements.length ? [laidOut(statements)] : []),
   ].join("\n\n");
   return {
-    block: `<script setup lang="ts"${genericAttribute(component)}>\n${escapeScriptEnd(code)}\n</script>`,
+    block: `<script setup${vapor ? " vapor" : ""} lang="ts"${genericAttribute(component)}>\n${escapeScriptEnd(code)}\n</script>`,
     rewrite: template,
     listeners,
     components,
@@ -384,23 +430,41 @@ function textCaretDirective(name: string): string {
   ].join("\n");
 }
 
+/**
+ * The Vapor form of {@link textCaretDirective} (ADR-0112): a post-flush effect, which runs once the
+ * field is in the document and reads nothing reactive, so it never runs again.
+ */
+function vaporTextCaretDirective(name: string, type: string, watchPostEffect: string): string {
+  return [
+    `const ${name}: ${type}<HTMLTextAreaElement> = (element) => {`,
+    `  ${watchPostEffect}(() => {`,
+    "    const text = element.value;",
+    '    element.value = "";',
+    "    element.value = text;",
+    "  });",
+    "};",
+  ].join("\n");
+}
+
 /** The authoring types of a ref a key may hold, which are Vue's own (ADR-0054). */
 const REF_TYPES = ["Ref", "ComputedRef", "ModelRef"] as const;
 
 /**
  * The `<script lang="ts">` block that declares a module's injection keys (ADR-0054), each a
  * `Symbol` typed with Vue's `InjectionKey`, after the types the component copies, which
- * `<script setup>` reads from it.
+ * `<script setup>` reads from it. Under Vapor, a component that owns no keys but exports types
+ * declares its types alone there (`ownsKeys` false, ADR-0112).
  */
 function keyBlock(
   component: UfComponent,
   module: UfModule,
   names: VueNames,
   reads: ModuleReads,
+  ownsKeys: boolean = true,
 ): string {
   const imports = new ImportSet(names.scope);
-  const injectionKey = imports.add("vue", "InjectionKey", { type: true });
-  const declarations = module.keys!.map((key) => {
+  const injectionKey = ownsKeys ? imports.add("vue", "InjectionKey", { type: true }) : "";
+  const declarations = (ownsKeys ? (module.keys ?? []) : []).map((key) => {
     // A ref the key holds is typed with Vue's own `Ref`, as the source's authoring one is.
     let type = key.type.code;
     for (const name of REF_TYPES) {
@@ -417,7 +481,9 @@ function keyBlock(
     printProgram(js.program(imports.toDeclarations())).trim(),
     ...moduleTypes(component, module, reads, names),
     declarations.join("\n"),
-  ].join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
 }
 

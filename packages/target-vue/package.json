@@ -1,7 +1,7 @@
 {
   "name": "@unframework.dev/target-vue",
   "version": "0.2.0",
-  "description": "The Vue 3.5 target of the Unframework compiler: emits idiomatic Vue components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
+  "description": "The Vue 3.5 target of the Unframework compiler, with Vue 3.6 Vapor components as an option: emits idiomatic Vue components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
   "keywords": [
     "compiler",
     "unframework",
@@ -26,6 +26,10 @@
     "./toolchain/client": "./src/toolchain/client.ts",
     "./toolchain/hydrate": "./src/toolchain/hydrate.ts",
     "./toolchain/server": "./src/toolchain/server.ts",
+    "./toolchain/vapor": "./src/toolchain/vapor/index.ts",
+    "./toolchain/vapor/client": "./src/toolchain/vapor/client.ts",
+    "./toolchain/vapor/hydrate": "./src/toolchain/vapor/hydrate.ts",
+    "./toolchain/vapor/server": "./src/toolchain/vapor/server.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -49,6 +53,22 @@
       "./toolchain/server": {
         "types": "./dist/toolchain/server.d.ts",
         "default": "./dist/toolchain/server.js"
+      },
+      "./toolchain/vapor": {
+        "types": "./dist/toolchain/vapor/index.d.ts",
+        "default": "./dist/toolchain/vapor/index.js"
+      },
+      "./toolchain/vapor/client": {
+        "types": "./dist/toolchain/vapor/client.d.ts",
+        "default": "./dist/toolchain/vapor/client.js"
+      },
+      "./toolchain/vapor/hydrate": {
+        "types": "./dist/toolchain/vapor/hydrate.d.ts",
+        "default": "./dist/toolchain/vapor/hydrate.js"
+      },
+      "./toolchain/vapor/server": {
+        "types": "./dist/toolchain/vapor/server.d.ts",
+        "default": "./dist/toolchain/vapor/server.js"
       },
       "./package.json": "./package.json"
     },

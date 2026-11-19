@@ -3,6 +3,7 @@
 //
 //   pnpm --filter @unframework.dev/integration budgets   the `bench` project, then its summary
 //   pnpm test:budgets:update                         measures, and writes `budgets.json`
+//   pnpm test:budgets:update -- --sizes              the sizes alone, keeping the recorded times
 //
 // A compile's time is a ratio with `basics/hello` on the same machine, since an absolute time
 // would measure the runner as much as the compiler. A size is each target's framework compile,
@@ -24,7 +25,7 @@ import { ENGINE_DECLARATIONS } from "../harness/engines.ts";
 import { committedOutputFiles } from "../harness/output-files.ts";
 import { ROOT, toolchainDir } from "../harness/paths.ts";
 import { caseOracle, caseResolver } from "../harness/sources.ts";
-import { loadToolchain, selectTargets } from "../harness/targets.ts";
+import { HARNESS_TARGETS, loadToolchain, selectTargets } from "../harness/targets.ts";
 import { runSummary } from "./summary.ts";
 import { isCI, runVitest } from "./vitest.ts";
 
@@ -54,7 +55,8 @@ export interface CaseCost {
   /** Its compile on all seven targets, as a ratio of {@link CALIBRATION}'s. */
   time: number;
   /** Its size on each target it has output for. */
-  sizes: Partial<Record<TargetName, OutputSize>>;
+  /** By target id: a built-in target's, or an option set's, `vue-vapor` (ADR-0112). */
+  sizes: Record<string, OutputSize>;
 }
 
 /** The contents of `budgets.json`. */
@@ -279,17 +281,33 @@ export async function bundleSize(
   }
 }
 
-/** Measures every cell and writes `budgets.json`: the baseline, which the margins sit on. */
-async function update(): Promise<void> {
+/**
+ * Measures every cell and writes `budgets.json`: the baseline, which the margins sit on. With
+ * `sizesOnly` (`--sizes`) it measures every size again and keeps each case's recorded time, for
+ * a change that adds or changes outputs and leaves the compiler's speed as it was, such as a
+ * target or an option set (ADR-0112): a time is a ratio a run on another machine would move for
+ * every case. A case with no recorded time needs the full update.
+ */
+async function update(sizesOnly: boolean): Promise<void> {
   const cases = budgetedCases(listCases());
-  const times = await measureTimes(cases, join(ROOT, "cases"));
+  const recorded = sizesOnly ? readBudgets() : undefined;
+  const untimed = cases.filter((info) => recorded && !recorded.cases[info.id]);
+  if (untimed.length) {
+    throw new Error(
+      `--sizes keeps the recorded times, and these cases have none: ${untimed.map((info) => info.id).join(", ")}. Run the full update.`,
+    );
+  }
+  const times = recorded ? undefined : await measureTimes(cases, join(ROOT, "cases"));
   const budgets: Budgets = { cases: {} };
   for (const info of cases) {
     // Two decimals, rounded up: more would only record the noise.
-    const time = Math.ceil(times.get(info.id)! * 100) / 100;
+    const time = recorded
+      ? recorded.cases[info.id]!.time
+      : Math.ceil(times!.get(info.id)! * 100) / 100;
     budgets.cases[info.id] = { time, sizes: {} };
   }
-  for (const target of TARGET_NAMES) {
+  // Every target the harness verifies, the option sets' included (ADR-0112).
+  for (const target of HARNESS_TARGETS) {
     const toolchain = await loadToolchain(target);
     for (const info of cases) {
       if (errorState(info, target) !== false) continue;
@@ -312,11 +330,11 @@ async function main(): Promise<number> {
     console.error("[uf] `pnpm test:budgets:update` refuses to run in CI or under a canary.");
     return 1;
   }
-  if (selectTargets(process.env.UF_TARGETS).length !== TARGET_NAMES.length) {
+  if (selectTargets(process.env.UF_TARGETS).length !== HARNESS_TARGETS.length) {
     console.error("[uf] `pnpm test:budgets:update` measures every target: unset UF_TARGETS.");
     return 1;
   }
-  await update();
+  await update(process.argv.includes("--sizes"));
   return 0;
 }
 

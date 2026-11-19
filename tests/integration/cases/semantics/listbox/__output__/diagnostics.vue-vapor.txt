@@ -1,0 +1,7 @@
+error[UF4001] (vue-vapor): The vue target does not support listbox: runtime-dom's `nodeOps.createElement` sets `multiple` but not `size` before the options are inserted, so Vue's client selects the first option, as a drop-down does.
+ --> semantics/listbox/ColourList.uf.tsx:8:9
+  |
+8 |         size="3"
+  |         ^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001

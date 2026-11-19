@@ -1328,6 +1328,7 @@ describe("canaries", () => {
         "solid",
         "solid2",
         "angular",
+        "vue-vapor",
       ]);
     }
     // A diagnostics case has no spec, so no hydrate project mounts it.

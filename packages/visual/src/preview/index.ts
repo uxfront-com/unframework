@@ -119,7 +119,8 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
 
 /**
  * What a target's server serves, from the project's configuration: the entries, where the
- * target's compiler stack resolves from, and the project's Vite config (ADR-0104).
+ * target's compiler stack resolves from, the project's Vite config (ADR-0104) and its target
+ * options (ADR-0112).
  */
 export function targetServerOptions(
   root: string,
@@ -134,6 +135,7 @@ export function targetServerOptions(
     toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
     entries,
     ...(config.vite ? { vite: config.vite } : {}),
+    targetOptions: config.targetOptions,
   };
 }
 

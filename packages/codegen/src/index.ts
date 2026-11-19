@@ -2,6 +2,7 @@ export {
   BEHAVIOURAL_CAPABILITIES,
   CAPABILITY_NAMES,
   CAPABILITY_PREREQUISITES,
+  capabilitiesOf,
   defineTarget,
 } from "./target.ts";
 export { bindingForms, mergesWholeStyle, spreadStyleExpression } from "./binding-forms.ts";

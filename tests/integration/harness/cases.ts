@@ -8,7 +8,7 @@ import { COLOR_SCHEMES, KEBAB_CASE, ssrScenarios } from "@unframework.dev/testin
 import type { CaseConfig } from "@unframework.dev/testing/node";
 
 import { CASES_DIR } from "./paths.ts";
-import { REFERENCE } from "./targets.ts";
+import { isOptionSet, REFERENCE } from "./targets.ts";
 
 /**
  * A corpus case's `case.json`: the public keys, and the type oracle its sources compile with,
@@ -247,11 +247,25 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
   return config as CorpusCaseConfig;
 }
 
-/** The diagnostics a case expects (`__expected__/diagnostics.json`), or `undefined` if missing. */
-export function expectedDiagnostics(info: CaseInfo): ExpectedDiagnostic[] | undefined {
+/**
+ * The diagnostics a case expects (`__expected__/diagnostics.json`), or `undefined` if missing. An
+ * option set's are those of every target there, and its own record,
+ * `__output__/diagnostics.<id>.json` (ADR-0112).
+ */
+export function expectedDiagnostics(
+  info: CaseInfo,
+  target?: string,
+): ExpectedDiagnostic[] | undefined {
   const file = join(info.dir, "__expected__", "diagnostics.json");
   if (!existsSync(file)) return undefined;
-  return JSON.parse(readFileSync(file, "utf8")) as ExpectedDiagnostic[];
+  const shared = JSON.parse(readFileSync(file, "utf8")) as ExpectedDiagnostic[];
+  if (target === undefined || !isOptionSet(target)) return shared;
+  const own = join(info.dir, "__output__", `diagnostics.${target}.json`);
+  if (!existsSync(own)) return undefined;
+  return [
+    ...shared.filter((diagnostic) => diagnostic.target === undefined),
+    ...(JSON.parse(readFileSync(own, "utf8")) as ExpectedDiagnostic[]),
+  ];
 }
 
 /** The fields of a JSON diagnostic the harness reads; the file holds the full form. */
@@ -270,10 +284,14 @@ export interface ExpectedDiagnostic {
  * the compile project must write it first (`pnpm test:update`).
  */
 export function expectsErrors(info: CaseInfo, target?: string): boolean {
-  const diagnostics = expectedDiagnostics(info);
+  const diagnostics = expectedDiagnostics(info, target);
   if (!diagnostics) {
+    const missing =
+      target !== undefined && isOptionSet(target) && existsSync(join(info.dir, "__expected__"))
+        ? `__output__/diagnostics.${target}.json`
+        : "__expected__/diagnostics.json";
     throw new Error(
-      `Missing artefact ${info.id}/__expected__/diagnostics.json. Run \`pnpm test:update\` to write it.`,
+      `Missing artefact ${info.id}/${missing}. Run \`pnpm test:update\` to write it.`,
     );
   }
   return diagnostics.some(

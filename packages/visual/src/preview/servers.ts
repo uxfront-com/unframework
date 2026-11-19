@@ -58,6 +58,12 @@ export interface TargetServerOptions {
    * and its other keys merge into the server's config. None by default.
    */
   vite?: ProjectVite;
+  /**
+   * The project's `targetOptions` (ADR-0112), which the unframework plugin compiles with: with
+   * Vue's `vapor` on, the preview shows the Vapor components `unframework build` writes, through
+   * the Vapor toolchain. None by default.
+   */
+  targetOptions?: Readonly<Partial<Record<TargetName, unknown>>>;
 }
 
 /** The frame runtime's file, wherever the package is installed. */
@@ -268,8 +274,8 @@ export async function targetServerConfig(
   options: TargetServerOptions,
   staticRenders?: StaticRenders,
 ): Promise<{ config: InlineConfig; toolchain: Toolchain; render?: TargetRender }> {
-  const { root, target } = options;
-  const toolchain = await loadToolchain(target);
+  const { root, target, targetOptions } = options;
+  const toolchain = await loadToolchain(target, targetOptions);
   // Angular's compiler takes the pass-through modules through their declarations, and a render
   // server of the toolchain's own (Astro's) loads the project's plugins too (ADR-0104).
   const project = { target, mode: "preview" } as const;
@@ -321,7 +327,7 @@ export async function targetServerConfig(
         render,
         staticRenders,
       ),
-      ...unframework({ target }),
+      ...unframework({ target, ...(targetOptions ? { targetOptions } : {}) }),
     ],
     // Vite's own TypeScript transform, set so it stays on: outside Vitest, Analog's Angular plugin
     // turns it off unless the configuration sets it (`config.oxc ?? false`), and then nothing

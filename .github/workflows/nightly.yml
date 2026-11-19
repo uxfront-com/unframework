@@ -39,7 +39,7 @@ jobs:
         browser: [firefox, webkit]
         include:
           - browser: webkit
-            batches: "vue,react,svelte vue,solid,angular vue,qwik,astro vue,solid2"
+            batches: "vue,react,svelte vue,solid,angular vue,qwik,astro vue,solid2,vue-vapor"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

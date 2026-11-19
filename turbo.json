@@ -61,7 +61,8 @@
         "@unframework.dev/toolchain-solid#transit",
         "@unframework.dev/toolchain-solid2#transit",
         "@unframework.dev/toolchain-svelte#transit",
-        "@unframework.dev/toolchain-vue#transit"
+        "@unframework.dev/toolchain-vue#transit",
+        "@unframework.dev/toolchain-vue-vapor#transit"
       ],
       "env": ["CI", "UF_*"],
       "outputs": [".reports/parity-matrix*"]

@@ -37,8 +37,8 @@ export const toolchain: Toolchain = {
   client: "@unframework.dev/target-vue/toolchain/client",
   server: "@unframework.dev/target-vue/toolchain/server",
   hydrate: "@unframework.dev/target-vue/toolchain/hydrate",
-  frameworkCompile,
-  frameworkEmit,
+  frameworkCompile: (files) => frameworkCompile(files),
+  frameworkEmit: (files) => frameworkEmit(files),
   typecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
   // ESLint reads only the `.vue` files: a `.ts` module beside them, a shared module (ADR-0070)
@@ -63,7 +63,11 @@ export default toolchain;
  * none through TypeScript 7, whose `typescript` module has no `sys`, so without it every
  * imported props type fails to compile.
  */
-const projectFs = {
+export const projectFs: {
+  fileExists(path: string): boolean;
+  readFile(path: string): string | undefined;
+  realpath(path: string): string;
+} = {
   fileExists: (path: string): boolean => existsSync(path) && statSync(path).isFile(),
   readFile: (path: string): string | undefined => readFileSync(path, "utf8"),
   realpath: (path: string): string => realpathSync(path),

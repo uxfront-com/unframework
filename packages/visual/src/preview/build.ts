@@ -113,7 +113,7 @@ async function buildTargets(
   for (const target of targets) {
     const server = targetServerOptions(root, config, target, entries, toolchainDirs);
     const dir = join(out, target);
-    if ((await loadToolchain(target)).renderCommandName === undefined) {
+    if ((await loadToolchain(target, config.targetOptions)).renderCommandName === undefined) {
       await buildTarget(server, dir);
       continue;
     }

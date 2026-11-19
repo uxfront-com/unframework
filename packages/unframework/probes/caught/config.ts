@@ -20,3 +20,8 @@ export const unknownFonts = defineConfig({
   // @ts-expect-error TS2322 the fonts are a list of family names
   liveFonts: "any",
 });
+
+export const vaporNumber = defineConfig({
+  // @ts-expect-error TS2322 the Vue target's `vapor` is true or false
+  targetOptions: { vue: { vapor: 1 } },
+});

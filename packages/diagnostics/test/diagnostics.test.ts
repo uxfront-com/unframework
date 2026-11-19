@@ -65,6 +65,7 @@ describe("the config and tooling codes", () => {
       ["UF7010", "host-option-incompatible", "warning"],
       ["UF7011", "example-with-props", "error"],
       ["UF7012", "malformed-example-metadata", "warning"],
+      ["UF7013", "vapor-compiler-too-old", "error"],
       ["UF9002", "sourcemap-not-remapped", "error"],
       ["UF9003", "sourcemap-skipped", "warning"],
     ]);

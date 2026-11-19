@@ -98,8 +98,9 @@ jobs:
       - name: Test
         run: pnpm exec turbo run test ${{ matrix.filter }} --continue --concurrency=2
 
-  # L1 and L2: every case compiled to all eight targets, against the golden outputs; and the
-  # harness's own unit tests, the canaries' corruptions of every case among them.
+  # L1 and L2: every case compiled to all eight targets and the vue-vapor option set (ADR-0112),
+  # against the golden outputs; and the harness's own unit tests, the canaries' corruptions of
+  # every case among them.
   integration-compile:
     name: "Integration: compile"
     needs: changes
@@ -214,7 +215,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [react, vue, svelte, solid, solid2, angular, qwik, astro]
+        target: [react, vue, svelte, solid, solid2, angular, qwik, astro, vue-vapor]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -268,7 +269,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [react, vue, svelte, solid, solid2, angular, qwik, astro]
+        target: [react, vue, svelte, solid, solid2, angular, qwik, astro, vue-vapor]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

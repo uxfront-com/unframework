@@ -11,7 +11,7 @@ import { DEFAULT_TARGETS, resolveConfig } from "../src/index.ts";
 import type { LoadedConfig } from "../src/index.ts";
 import type * as Targets from "../src/targets.ts";
 
-// No built-in target declares a schema yet, so these two lend React and Vue one each.
+// These lend React a schema of their own, and Vue one that throws in place of its own (ADR-0112).
 vi.mock("../src/targets.ts", async (original) => {
   const module = await original<typeof Targets>();
   const schema = (validate: (value: unknown) => unknown) => ({

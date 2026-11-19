@@ -1,0 +1,21 @@
+.panel[data-uf-357b6b1f] {
+  padding: 8px;
+}
+
+.note[data-uf-357b6b1f] {
+  margin: 0;
+}
+
+.outer-enter-active[data-uf-357b6b1f],
+.outer-leave-active[data-uf-357b6b1f],
+.inner-enter-active[data-uf-357b6b1f],
+.inner-leave-active[data-uf-357b6b1f] {
+  transition: opacity 80ms ease;
+}
+
+.outer-enter-from[data-uf-357b6b1f],
+.outer-leave-to[data-uf-357b6b1f],
+.inner-enter-from[data-uf-357b6b1f],
+.inner-leave-to[data-uf-357b6b1f] {
+  opacity: 0;
+}

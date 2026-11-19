@@ -636,7 +636,7 @@ export interface Target {
 ```
 
 - **Targets are versioned.** A framework's new major is a target variant, such as `solid@1` →
-  `solid@2`, or Vue 3.5 → 3.6 Vapor as an option. Users can ship both from one source while they move.
+  `solid@2`, or Vue 3.5 → 3.6 Vapor as an option (ADR-0112). Users can ship both from one source while they move.
 - **Capabilities drive the diagnostics.** With Angular selected, using slot presence reports how it is
   emulated there. On Astro, which is static, an `onClick` reports that it is inert.
 - **The corpus is the conformance kit.** `unframework test --target ./my-target` runs the whole corpus
@@ -1350,7 +1350,7 @@ a report that gates no pull request.
 - Portable directives.
 - Hydration (L12) on every target that hydrates.
 - The Solid 2 target variant, once 2.0 is stable.
-- Vue 3.6 Vapor as a target option.
+- Vue 3.6 Vapor as a target option: taken after M8, on 3.6's release candidate (ADR-0112).
 - A review of the Qwik decision (D7).
 
 **Exit:**
@@ -1729,7 +1729,7 @@ These are npm `latest` versions on 2026-10-01. Each target pins its tested range
 | typescript                                | 7.1.0-beta        | 7.1 stable planned for Nov 24, 2026, with the API and content mappers            |
 | @typescript/typescript6                   | 6.0.2             | for vue-tsc, svelte-check, `astro check` and Angular until they move             |
 | react / react-dom                         | 19.3.0            | React Compiler 1.0                                                               |
-| vue / @vue/runtime-dom                    | 3.5.43            | 3.6.0-rc.10 has Vapor; the JSX types are vendored from runtime-dom               |
+| vue / @vue/runtime-dom                    | 3.5.43            | the `vue-vapor` catalog holds 3.6.0-rc.15 (ADR-0112). JSX types from runtime-dom |
 | svelte                                    | 5.57.1            | async is still experimental, so output never uses it                             |
 | solid-js                                  | 1.9.15            | Solid 1, the `solid` target, from the flat `catalog:`                            |
 | solid-js (`catalog:solid2`)               | 2.0.0             | Solid 2, the `solid2` target (`solid@2`, ADR-0102), in `tests/toolchains/solid2` |

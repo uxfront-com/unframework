@@ -91,7 +91,11 @@ export interface CompileOptions {
    */
   sourceMap?: boolean;
   plugins?: readonly CompilerPlugin[];
-  /** Each target's options, by target name. */
+  /**
+   * Each target's options, by target name. Each selected target's schema validates its options
+   * first, and an invalid one throws, as UF7004 (ADR-0112): the target emits with the value its
+   * schema returns.
+   */
   targetOptions?: Readonly<Record<string, unknown>>;
   /**
    * Resolves an imported `.uf.tsx` module to its public API (ADR-0053): `createFileResolver`
@@ -175,7 +179,7 @@ export interface CompileResult {
  * selected target. A pure function of the source and
  * the options: the same input and versions give byte-identical output (P8). It throws only
  * for invalid options (an unknown target name, two targets with one name, an invalid
- * `passThrough` prefix); every other
+ * `passThrough` prefix, a target option its schema rejects, as UF7004); every other
  * problem, a misbehaving plugin or target included, is a diagnostic, and an error in one
  * component or target never stops the others.
  */
@@ -193,6 +197,10 @@ export async function compile(source: string, options: CompileOptions): Promise<
     outputs[target.name] = [];
     owners[target.name] = {};
   }
+  // Each target emits with the value its schema returns, so every entry that compiles through
+  // here, the unplugin's included, rejects an option the config loader would (ADR-0112).
+  const targetOptions = await validateTargetOptions(targets, options.targetOptions);
+  const compileOptions: CompileOptions = { ...options, targetOptions };
 
   // The analyser's module, frozen: every plugin's module is compared with it, whatever the
   // plugins before it returned.
@@ -391,7 +399,7 @@ export async function compile(source: string, options: CompileOptions): Promise<
           target,
           module,
           source,
-          options,
+          compileOptions,
           diagnostics,
           sheets,
           copies,
@@ -422,6 +430,50 @@ const COMPOSABLE_SPECIFIER = /\.uf\.ts$/;
  * source, at the root of a project that holds nothing else, so it reads no file and resolves
  * the module's own types only.
  */
+/**
+ * Each selected target's options, validated by its schema (ADR-0076, ADR-0112), by target name: the
+ * value the schema returns. An invalid option throws a `TypeError` that starts with UF7004 and names
+ * the option's path, as the config loader reports it, since invalid options are the one thing
+ * `compile()` throws for. A target without a schema keeps its options as given.
+ */
+async function validateTargetOptions(
+  targets: readonly Target[],
+  given: Readonly<Record<string, unknown>> | undefined,
+): Promise<Record<string, unknown>> {
+  const validated: Record<string, unknown> = { ...given };
+  for (const target of targets) {
+    const schema = target.options;
+    const value = given?.[target.name];
+    if (!schema || value === undefined) continue;
+    const pointer = `/targetOptions/${pointerSegment(target.name)}`;
+    let result: Awaited<ReturnType<(typeof schema)["~standard"]["validate"]>>;
+    try {
+      result = await schema["~standard"].validate(value);
+    } catch (error) {
+      throw new TypeError(
+        `UF7004 ${pointer} could not be validated: the target's schema threw: ${messageOf(error)}`,
+        { cause: error },
+      );
+    }
+    if (result.issues) {
+      const problems = result.issues.map((issue) => {
+        const path = (issue.path ?? [])
+          .map((part) => `/${pointerSegment(String(typeof part === "object" ? part.key : part))}`)
+          .join("");
+        return `${pointer}${path} is not valid: ${issue.message}`;
+      });
+      throw new TypeError(`UF7004 ${problems.join("; ")}`);
+    }
+    validated[target.name] = result.value;
+  }
+  return validated;
+}
+
+/** A JSON Pointer segment (RFC 6901), as the config loader writes it. */
+function pointerSegment(key: string): string {
+  return key.replaceAll("~", "~0").replaceAll("/", "~1");
+}
+
 function sourceOracle(file: string, source: string): TypeOracle {
   return createSyntacticOracle({
     root: "",
@@ -526,7 +578,7 @@ async function emitTarget(
 ): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
   const file = options.filename;
   const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
-  diagnostics.push(...checkCapabilities(module, target));
+  diagnostics.push(...checkCapabilities(module, target, options.targetOptions?.[target.name]));
   const written: OutputFile[] = [];
   const owners = new Map<string, { path: string; component: string }>();
   for (const component of module.components) {

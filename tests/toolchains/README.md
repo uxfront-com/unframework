@@ -62,4 +62,9 @@ them, and every directive must then go unmet (`pnpm test:canaries L4-consumer`).
   tsconfig maps `solid-js` and `@solidjs/web` with `paths` to its own copy, for the outputs and the
   fixtures alike, and names `@solidjs/web`'s JSX runtime's types, which `paths` would otherwise
   look for past the package's `exports`.
+- `vue-vapor` holds Vue 3.6 (the `vue-vapor` catalog), for the Vue target's `vapor` option
+  (ADR-0112): the corpus's `tests/integration` holds Vue 3.5, the reference's, and every vue-vapor
+  layer resolves Vue, its compilers and plugin-vue from here. Its tsconfig maps `vue` with `paths`
+  to its own copy, since the outputs would resolve Vue 3.5 by their location. It has no consumer
+  fixtures yet, and its lint configurations are the vue toolchain's.
 - Angular reports a mistyped handler argument as TS2345, not TS2322.
