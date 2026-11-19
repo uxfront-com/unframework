@@ -5,6 +5,12 @@
 // the target's, so each frame's reading sorts them. The harness gives no transition a duration
 // (plan §7.6), so the tests that swap give the case's `-active` classes one for themselves, and
 // read the classes once a frame.
+//
+// Each element ends on its own `transitionend`, or on its own timer (ADR-0100, "The end"), as
+// Vue's `whenTransitionEnds` does. So the leave and the enter start in the same frame, but can end
+// a frame apart, and a frame can then read one element settled while the other still runs. The
+// tests check each element's own order of classes, and that the two start together, never that
+// they end together.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
@@ -40,6 +46,36 @@ function everyFrame(root: Element, selector: string, prefix: string): { stop: ()
   };
 }
 
+/**
+ * Splits `everyFrame`'s readings into each element's own sequence of classes, by its text, with
+ * consecutive duplicates removed. An element read twice in one frame, or missing from a reading
+ * between two that hold it, fails the test: a swap keeps both elements in the DOM until the
+ * leave ends (ADR-0100).
+ */
+function byElement(frames: string[]): Record<string, string[]> {
+  const sequences: Record<string, string[]> = {};
+  const lastRead = new Map<string, number>();
+  frames.forEach((frame, index) => {
+    for (const entry of frame.split(" | ")) {
+      if (entry === "") continue;
+      // A settled reading has been through `trimEnd`, so it is `text:`, with no space to split on.
+      const colon = entry.lastIndexOf(":");
+      if (colon === -1) throw new Error(`The reading "${entry}" has no ":".`);
+      const text = entry.slice(0, colon);
+      const classes = entry.slice(colon + 1).trim();
+      const last = lastRead.get(text);
+      if (last === index) throw new Error(`Two elements read "${text}" in one frame: "${frame}".`);
+      if (last !== undefined && last !== index - 1) {
+        throw new Error(`"${text}" left the DOM and came back: ${JSON.stringify(frames)}`);
+      }
+      lastRead.set(text, index);
+      const sequence = (sequences[text] ??= []);
+      if (sequence.at(-1) !== classes) sequence.push(classes);
+    }
+  });
+  return sequences;
+}
+
 /** Gives the `-active` classes of `name` a duration of their own, until the returned removal. */
 function slowDown(name: string): () => void {
   const style = document.createElement("style");
@@ -66,12 +102,18 @@ describeTargets("transitions/swap", () => {
         const frames = everyFrame(view.container, ".card", "swap");
         await view.user.click(view.getByRole("button", { name: "Swap" }));
         await view.expectParity("swapped");
-        expect(frames.stop()).toEqual([
-          "Cart:",
+        const readings = frames.stop();
+        expect(byElement(readings)).toEqual({
+          Cart: ["", "swap-leave-active swap-leave-from", "swap-leave-active swap-leave-to"],
+          Payment: ["swap-enter-active swap-enter-from", "swap-enter-active swap-enter-to", ""],
+        });
+        // At once: the leave and the enter take each class in the same frame.
+        expect(readings).toContain(
           "Cart: swap-leave-active swap-leave-from | Payment: swap-enter-active swap-enter-from",
+        );
+        expect(readings).toContain(
           "Cart: swap-leave-active swap-leave-to | Payment: swap-enter-active swap-enter-to",
-          "Payment:",
-        ]);
+        );
         await expect.element(view.getByText("Payment")).toBeVisible();
         expect(view.container.querySelectorAll(".card")).toHaveLength(1);
       } finally {
@@ -92,15 +134,35 @@ describeTargets("transitions/swap", () => {
         await view.expectParity("second-step");
         await view.user.click(view.getByRole("button", { name: "Next" }));
         await view.expectParity("third-step");
-        expect(frames.stop()).toEqual([
-          "Step one:",
+        const readings = frames.stop();
+        expect(byElement(readings)).toEqual({
+          "Step one": ["", "step-leave-active step-leave-from", "step-leave-active step-leave-to"],
+          "Step two": [
+            "step-enter-active step-enter-from",
+            "step-enter-active step-enter-to",
+            "",
+            "step-leave-active step-leave-from",
+            "step-leave-active step-leave-to",
+          ],
+          "Step three": [
+            "step-enter-active step-enter-from",
+            "step-enter-active step-enter-to",
+            "",
+          ],
+        });
+        // In turn, each swap's leave and enter take each class in the same frame.
+        expect(readings).toContain(
           "Step one: step-leave-active step-leave-from | Step two: step-enter-active step-enter-from",
+        );
+        expect(readings).toContain(
           "Step one: step-leave-active step-leave-to | Step two: step-enter-active step-enter-to",
-          "Step two:",
+        );
+        expect(readings).toContain(
           "Step three: step-enter-active step-enter-from | Step two: step-leave-active step-leave-from",
+        );
+        expect(readings).toContain(
           "Step three: step-enter-active step-enter-to | Step two: step-leave-active step-leave-to",
-          "Step three:",
-        ]);
+        );
         await expect.element(view.getByText("Step three")).toBeVisible();
       } finally {
         restore();
