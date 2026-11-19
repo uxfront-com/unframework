@@ -55,8 +55,11 @@ const installs = (step: string): boolean => /^[ \t-]*run:.*\bpnpm install\b/m.te
  * What a job that installs is missing, or nothing. setup-node's `cache: pnpm` restores only the
  * exact lockfile key, so a PR whose lockfile differs from main's, like a part on an integration
  * branch, started with an empty store and downloaded every package (UXF-858). The install takes an
- * `actions/cache` step with a restore key before it, and a prune after it on a partial or missed
- * hit, so the saved store holds only this lockfile's packages and doesn't grow.
+ * `actions/cache` step before it, whose restore key falls back to the newest store. The ISO week in
+ * both keys limits how far a store grows, since `pnpm install` never removes a package: a fallback
+ * reaches only a store from the same week. Nothing prunes the store, since `pnpm store prune`
+ * deletes the packages pnpm copies rather than links, like esbuild, which every restore then
+ * downloads again.
  */
 function cacheProblems(job: Job): string[] {
   const install = job.steps.findIndex(installs);
@@ -64,42 +67,49 @@ function cacheProblems(job: Job): string[] {
   const problems: string[] = [];
   if (/^[ \t]+cache:[ \t]*pnpm[ \t]*$/m.test(job.text))
     problems.push("uses setup-node's cache: pnpm");
+  if (job.steps.some((step) => /^[ \t-]*run:.*\bpnpm store prune\b/m.test(step)))
+    problems.push("prunes the pnpm store");
   const cache = job.steps.findIndex((step) => /^[ \t-]*uses:[ \t]*actions\/cache@/m.test(step));
   if (cache === -1 || cache > install) {
     problems.push("has no actions/cache step before the install");
+    return problems.map((problem) => `${job.id}: ${problem}`);
+  }
+  const step = job.steps[cache] ?? "";
+  const week = /\$\{\{\s*steps\.[\w-]+\.outputs\.week\s*\}\}/;
+  const key = /^[ \t]+key:[ \t]*(.*?)[ \t]*$/m.exec(step)?.[1];
+  const restore = /^[ \t]+restore-keys:[ \t]*(.*?)[ \t]*$/m.exec(step)?.[1];
+  const keyWeek = key === undefined ? undefined : week.exec(key)?.[0];
+  if (keyWeek === undefined) problems.push("has no week in its cache key");
+  if (restore === undefined || restore === "") {
+    problems.push("has no restore-keys on its cache");
   } else {
-    const step = job.steps[cache] ?? "";
-    if (!/^[ \t]+restore-keys:[ \t]*\S/m.test(step))
-      problems.push("has no restore-keys on its cache");
-    const id = /^[ \t-]*id:[ \t]*([\w-]+)[ \t]*$/m.exec(step)?.[1];
-    const prune = job.steps.findIndex(
-      (candidate, index) =>
-        index > install && /^[ \t-]*run:[ \t]*pnpm store prune\b/m.test(candidate),
-    );
-    if (prune === -1) {
-      problems.push("has no pnpm store prune after the install");
-    } else if (
-      id === undefined ||
-      !new RegExp(String.raw`^[ \t-]*if:.*steps\.${id}\.outputs\.cache-hit != 'true'`, "m").test(
-        job.steps[prune] ?? "",
-      )
-    ) {
-      problems.push("prunes without reading its cache step's cache-hit");
-    }
+    if (keyWeek === undefined || !restore.includes(keyWeek))
+      problems.push("has no week of its key in its restore-keys");
+    if (!restore.endsWith("-")) problems.push("has restore-keys that don't end in -");
   }
   return problems.map((problem) => `${job.id}: ${problem}`);
 }
 
 const ci = (): string => readFileSync(join(root, ".github", "workflows", "ci.yml"), "utf8");
 
+/** An `actions/cache` step of a fixture workflow. */
+const cacheStep = (key: string, restore: string): string[] => [
+  "      - uses: actions/cache@0 # v1",
+  "        with:",
+  `          key: ${key}`,
+  ...(restore === "" ? [] : [`          restore-keys: ${restore}`]),
+];
+
 describe("CI's dependency cache", () => {
-  it("falls back to the nearest store and prunes it, in every job that installs", () => {
+  it("falls back to the nearest store of the same week, in every job that installs", () => {
     const jobs = workflowJobs(ci());
     expect(jobs.filter((job) => job.steps.some(installs)).length).toBeGreaterThan(0);
     expect(jobs.flatMap(cacheProblems)).toEqual([]);
   });
 
-  it("names each job that installs without the fallback", () => {
+  it("names each job that installs without the weekly fallback", () => {
+    const week = "${{ steps.s.outputs.week }}";
+    const hash = "${{ hashFiles('pnpm-lock.yaml') }}";
     const workflow = [
       "jobs:",
       "  bare:",
@@ -108,33 +118,33 @@ describe("CI's dependency cache", () => {
       "        with:",
       "          cache: pnpm",
       "      - run: pnpm install --frozen-lockfile",
-      "  fallback:",
+      "  weekly:",
       "    steps:",
-      "      - id: deps",
-      "        uses: actions/cache@0 # v1",
-      "        with:",
-      "          key: k-${{ hashFiles('pnpm-lock.yaml') }}",
-      "          restore-keys: k-",
-      "      # pnpm install, in a comment, is no install",
+      ...cacheStep(`k-${week}-${hash}`, `k-${week}-`),
+      "      # pnpm install, in a comment, is no install, and neither is pnpm store prune",
       "      - name: Install",
       "        run: pnpm install --frozen-lockfile",
-      "      - if: steps.deps.outputs.cache-hit != 'true'",
-      "        run: pnpm store prune",
-      "  unpruned:",
+      "  unlimited:",
       "    steps:",
-      "      - id: deps",
-      "        uses: actions/cache@0 # v1",
-      "        with:",
-      "          restore-keys: k-",
+      ...cacheStep(`k-${hash}`, "k-"),
       "      - run: pnpm install",
-      "  unconditional:",
+      "  exact:",
       "    steps:",
-      "      - id: deps",
-      "        uses: actions/cache@0 # v1",
-      "        with:",
-      "          restore-keys: k-",
+      ...cacheStep(`k-${week}-${hash}`, ""),
+      "      - run: pnpm install",
+      "  unprefixed:",
+      "    steps:",
+      ...cacheStep(`k-${week}-${hash}`, `k-${week}`),
+      "      - run: pnpm install",
+      "  pruned:",
+      "    steps:",
+      ...cacheStep(`k-${week}-${hash}`, `k-${week}-`),
       "      - run: pnpm install",
       "      - run: pnpm store prune",
+      "  late:",
+      "    steps:",
+      "      - run: pnpm install",
+      ...cacheStep(`k-${week}-${hash}`, `k-${week}-`),
       "  none:",
       "    steps:",
       "      - run: pnpm test",
@@ -142,8 +152,12 @@ describe("CI's dependency cache", () => {
     expect(workflowJobs(workflow).flatMap(cacheProblems)).toEqual([
       "bare: uses setup-node's cache: pnpm",
       "bare: has no actions/cache step before the install",
-      "unpruned: has no pnpm store prune after the install",
-      "unconditional: prunes without reading its cache step's cache-hit",
+      "unlimited: has no week in its cache key",
+      "unlimited: has no week of its key in its restore-keys",
+      "exact: has no restore-keys on its cache",
+      "unprefixed: has restore-keys that don't end in -",
+      "pruned: prunes the pnpm store",
+      "late: has no actions/cache step before the install",
     ]);
   });
 });
