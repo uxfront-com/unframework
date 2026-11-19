@@ -24,6 +24,26 @@ export const STATIC_FRAME_FILE = "frame.html";
  */
 export const STATIC_RENDERS_DIR = "renders";
 
+/**
+ * The page that opens one example on one target by its own URL (ADR-0112):
+ * `embed.html?example=<id>&target=<target>`, beside the shell, at `<out>/embed.html` in a static
+ * preview and at `/embed.html` on the dev shell's server. It sends the browser on to that target's
+ * frame page in standalone mode.
+ */
+export const EMBED_FILE = "embed.html";
+
+/**
+ * The query parameter that names an example by its id, on {@link EMBED_FILE} and on a frame page
+ * in standalone mode, which renders that example alone and takes no messages (ADR-0112).
+ */
+export const EXAMPLE_PARAM = "example";
+
+/** The query parameter of {@link EMBED_FILE} that names the target, as the shell's captions do. */
+export const TARGET_PARAM = "target";
+
+/** The start of an example's entry key, `example:<id>`, as `entryKey` writes it. */
+export const EXAMPLE_KEY_PREFIX = "example:";
+
 /** What a static preview's frame says when asked for a render the build did not make. */
 export const STATIC_RENDER_MESSAGE =
   "The static preview renders this target with each entry's initial props only: run unframework preview to change them.";

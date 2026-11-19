@@ -36,7 +36,7 @@ import {
 import { sameProps } from "../src/preview/frame.ts";
 import { startPreview } from "../src/preview/index.ts";
 import type { Preview } from "../src/preview/index.ts";
-import { PREVIEW_MESSAGE, STATIC_RENDER_MESSAGE } from "../src/preview/protocol.ts";
+import { EMBED_FILE, PREVIEW_MESSAGE, STATIC_RENDER_MESSAGE } from "../src/preview/protocol.ts";
 import { VisualUsageError } from "../src/run.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
@@ -166,6 +166,7 @@ describe("unframework preview build", () => {
     expect(written).toContain("index.html");
     expect(written).toContain(PREVIEW_MARKER);
     for (const target of TARGETS) expect(written).toContain(join(target, "frame.html"));
+    expect(written).toContain(EMBED_FILE);
     expect(written.filter((file) => file.startsWith(join("astro", "renders")))).toHaveLength(
       EXAMPLES.length + 4,
     );
@@ -305,6 +306,161 @@ describe("unframework preview build", () => {
     } finally {
       await page.close();
       await new Promise((done) => other.close(done));
+    }
+  });
+
+  it(
+    "opens an example by its own URL on each of seven targets, alone, as the shell's frame shows it",
+    { timeout: 300_000 },
+    async () => {
+      // What the shell's frames show for the example, to compare each embed with.
+      const shell = await browser.newPage();
+      const expected: Record<string, string | null> = {};
+      try {
+        await shell.goto(`${site.url}#example:examples/Card`);
+        for (const target of TARGETS) {
+          await expect
+            .poll(() => status(shell, target).textContent(), { timeout: 60_000, message: target })
+            .toBe("rendered");
+          expected[target] = await frame(shell, target)
+            .locator("[data-uf-preview-root]")
+            .textContent();
+          expect(expected[target], target).toContain("Release notes");
+        }
+      } finally {
+        await shell.close();
+      }
+
+      const page = await browser.newPage();
+      try {
+        for (const target of TARGETS) {
+          await page.goto(`${site.url}${EMBED_FILE}?example=examples/Card&target=${target}`);
+          // The embed page replaces itself with the target's frame, standalone: no `shell`.
+          await expect
+            .poll(() => new URL(page.url()).pathname, { message: target })
+            .toBe(`/sub/${target}/frame.html`);
+          const params = new URL(page.url()).searchParams;
+          expect([...params.keys()], target).toEqual(["example"]);
+          expect(params.get("example")).toBe("examples/Card");
+          await expect
+            .poll(() => page.locator("[data-uf-preview-root]").textContent(), {
+              timeout: 60_000,
+              message: target,
+            })
+            .toBe(expected[target]);
+          expect(await page.locator("nav, figure, [data-uf-tree]").count(), target).toBe(0);
+        }
+        // Back skips the embed page, which replaced itself: the history holds frames only.
+        await page.goBack();
+        expect(new URL(page.url()).pathname).toBe(`/sub/${TARGETS.at(-2)}/frame.html`);
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it(
+    "renders each embed in another origin's iframe, which can neither drive it nor hear from it",
+    { timeout: 300_000 },
+    async () => {
+      // A page on a second origin frames the example on every target, records every message it
+      // receives, and then asks each frame for another example, as a shell would.
+      const other = createServer((_request, response) => {
+        response.writeHead(200, { "content-type": "text/html" });
+        response.end(
+          [
+            "<!doctype html>",
+            "<script>",
+            "  window.received = [];",
+            "  addEventListener('message', (event) => window.received.push(event.data));",
+            "</script>",
+            ...TARGETS.map((target) => {
+              const src = new URL(EMBED_FILE, site.url);
+              src.searchParams.set("example", "examples/Buttons");
+              src.searchParams.set("target", target);
+              return `<iframe data-target="${target}" src="${src.href}"></iframe>`;
+            }),
+          ].join("\n"),
+        );
+      });
+      await new Promise<void>((done) => other.listen(0, "127.0.0.1", done));
+      const page = await browser.newPage();
+      try {
+        await page.goto(`http://127.0.0.1:${(other.address() as AddressInfo).port}/`);
+        const framed = (target: string) => page.frameLocator(`iframe[data-target="${target}"]`);
+        for (const target of TARGETS) {
+          await framed(target)
+            .getByRole("button", { name: "Save" })
+            .waitFor({ timeout: 60_000 })
+            .catch((error: unknown) => {
+              throw new Error(`${target}: ${String(error)}`);
+            });
+        }
+        await page.evaluate(
+          ([type, entry]) => {
+            for (const iframe of document.querySelectorAll("iframe")) {
+              iframe.contentWindow!.postMessage(
+                { type, kind: "render", seq: 1, entry, props: {} },
+                "*",
+              );
+            }
+          },
+          [PREVIEW_MESSAGE, "example:examples/Card"],
+        );
+        // Nothing listens in a standalone frame, so a render would have answered by now.
+        await page.waitForTimeout(1000);
+        for (const target of TARGETS) {
+          expect(await framed(target).getByRole("button", { name: "Save" }).count(), target).toBe(
+            1,
+          );
+          expect(await framed(target).getByText("Release notes").count(), target).toBe(0);
+        }
+        expect(await page.evaluate(() => (window as { received?: unknown[] }).received)).toEqual(
+          [],
+        );
+      } finally {
+        await page.close();
+        await new Promise((done) => other.close(done));
+      }
+    },
+  );
+
+  it("says why on a missing or unknown example or target, never a blank page", async () => {
+    const targets = TARGETS.join(", ");
+    const usage = `Open an example with embed.html?example=<id>&target=<target>. The targets are ${targets}.`;
+    const cases: [path: string, message: string, stays: string][] = [
+      [`${EMBED_FILE}?example=nope&target=vue`, 'This preview has no example "nope".', EMBED_FILE],
+      [
+        `${EMBED_FILE}?example=examples/Card&target=nope`,
+        `This preview has no target "nope". Its targets are ${targets}.`,
+        EMBED_FILE,
+      ],
+      [EMBED_FILE, usage, EMBED_FILE],
+      [`${EMBED_FILE}?example=examples/Card`, usage, EMBED_FILE],
+      [`${EMBED_FILE}?target=vue`, usage, EMBED_FILE],
+      // A frame opened alone on an id it lacks, through a client runtime and a static render.
+      ["vue/frame.html?example=nope", 'This preview has no example "nope".', "vue/frame.html"],
+      ["astro/frame.html?example=nope", 'This preview has no example "nope".', "astro/frame.html"],
+      // A component takes props, which an embed has none of: the frame opens examples only.
+      [
+        "vue/frame.html?example=src/Button",
+        'This preview has no example "src/Button".',
+        "vue/frame.html",
+      ],
+    ];
+    const page = await browser.newPage();
+    try {
+      for (const [path, message, stays] of cases) {
+        await page.goto(`${site.url}${path}`);
+        // The page's own markup after its script leaves a line break: the message is the text.
+        await expect
+          .poll(async () => (await page.locator("body").textContent())?.trim(), { message: path })
+          .toBe(message);
+        expect(new URL(page.url()).pathname, path).toBe(`/sub/${stays}`);
+        expect(await page.locator("[data-uf-preview-root]").count(), path).toBe(0);
+      }
+    } finally {
+      await page.close();
     }
   });
 
