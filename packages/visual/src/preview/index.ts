@@ -11,6 +11,7 @@ import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
 import { entryLayouts, readCatalogue } from "./catalogue.ts";
+import { embedData, embedPage } from "./embed.ts";
 import { FRAME_PATH } from "./protocol.ts";
 import type { PreviewLayout } from "./protocol.ts";
 import { startTargetServer } from "./servers.ts";
@@ -101,7 +102,13 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
       target: frame.target,
       src: `${frame.origin}${FRAME_PATH}`,
     }));
-    const shell = await startShellServer(shellPage(shellData(catalogue, pages)), port);
+    const shell = await startShellServer(
+      {
+        shell: shellPage(shellData(catalogue, pages)),
+        embed: embedPage(embedData(catalogue, pages)),
+      },
+      port,
+    );
     let closing: Promise<void> | undefined;
     return {
       url: shell.url,

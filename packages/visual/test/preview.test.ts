@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import { preview } from "../src/preview/command.ts";
 import { startPreview } from "../src/preview/index.ts";
-import { FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
+import { EMBED_FILE, FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
 import { PREVIEW_HOST } from "../src/preview/servers.ts";
 import { VisualUsageError } from "../src/run.ts";
 import { CENTRED, centred, frameLayout } from "./frame-layout.ts";
@@ -156,6 +156,43 @@ describe("startPreview", () => {
   );
 
   it(
+    "opens an example by its own URL on each of seven targets' servers (ADR-0112)",
+    { timeout: 300_000 },
+    async () => {
+      const preview = await startPreview({ root: DESIGN_SYSTEM });
+      const browser = await chromium.launch();
+      try {
+        const embed = await fetch(`${preview.url}${EMBED_FILE}`);
+        expect(embed.status).toBe(200);
+        expect(embed.headers.get("content-type")).toBe("text/html; charset=utf-8");
+        const head = await fetch(`${preview.url}${EMBED_FILE}`, { method: "HEAD" });
+        expect(head.status).toBe(200);
+        expect((await fetch(`${preview.url}other`)).status).toBe(404);
+        expect((await fetch(`${preview.url}${EMBED_FILE}`, { method: "POST" })).status).toBe(404);
+
+        const page = await browser.newPage();
+        for (const { target, origin } of preview.frames) {
+          await page.goto(`${preview.url}${EMBED_FILE}?example=examples/Card&target=${target}`);
+          // The embed page on the shell's server sends the browser to the target's own server.
+          await expect
+            .poll(() => new URL(page.url()).origin + new URL(page.url()).pathname, {
+              message: target,
+            })
+            .toBe(`${origin}${FRAME_PATH}`);
+          const params = new URL(page.url()).searchParams;
+          expect([...params.keys()], target).toEqual(["example"]);
+          expect(params.get("example")).toBe("examples/Card");
+          await page.getByText("Release notes").waitFor({ timeout: 120_000 });
+          expect(await page.locator("nav, figure, [data-uf-tree]").count(), target).toBe(0);
+        }
+      } finally {
+        await browser.close();
+        await preview.close();
+      }
+    },
+  );
+
+  it(
     "shows an example kept beside its component apart from the component",
     { timeout: 180_000 },
     async () => {
@@ -283,6 +320,15 @@ describe("startPreview", () => {
               expect(styled, at).toEqual([]);
             }
           }
+        }
+        // An example opened by its own URL, with no shell, takes its layout too (ADR-0112).
+        const alone = await browser.newPage();
+        for (const { target } of preview.frames) {
+          await alone.goto(`${preview.url}${EMBED_FILE}?example=examples/Column&target=${target}`);
+          await alone.getByText("Two").waitFor({ timeout: 120_000 });
+          await expect
+            .poll(() => frameLayout(alone), { message: `standalone Column on ${target}` })
+            .toMatchObject(expected.Column!);
         }
       } finally {
         await browser.close();

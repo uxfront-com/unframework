@@ -7,9 +7,10 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { compareExamples, readCatalogue } from "../src/preview/catalogue.ts";
+import { compareExamples, entryKey, readCatalogue } from "../src/preview/catalogue.ts";
 import { parsePreviewArguments } from "../src/preview/command.ts";
 import { controlOf, propControls, stringLiteral, unionMembers } from "../src/preview/controls.ts";
+import { EXAMPLE_KEY_PREFIX } from "../src/preview/protocol.ts";
 import { VisualUsageError } from "../src/run.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
@@ -240,6 +241,13 @@ describe("readCatalogue", () => {
     expect(catalogue.components.map((each) => [each.key, each.file])).toEqual([
       ["component:src/Shown", join(root, "src/Shown.uf.tsx")],
     ]);
+  });
+});
+
+describe("entryKey", () => {
+  // The frame names an example's entry with the prefix, since it can't import this Node module.
+  it("starts an example's key with the prefix a standalone frame reads (ADR-0112)", () => {
+    expect(entryKey("example", "examples/Card")).toBe(`${EXAMPLE_KEY_PREFIX}examples/Card`);
   });
 });
 

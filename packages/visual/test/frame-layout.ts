@@ -1,6 +1,6 @@
 // What a preview frame's mount container lays out (ADR-0114), read in the frame: its computed flex
 // properties, and where its content sits against the frame's centre.
-import type { FrameLocator } from "playwright";
+import type { FrameLocator, Page } from "playwright";
 
 /** The container's computed layout, and its content's offset from the frame's centre, in pixels. */
 export interface FrameLayout {
@@ -19,8 +19,8 @@ export interface FrameLayout {
   dy: number;
 }
 
-/** Reads a frame's layout. */
-export function frameLayout(frame: FrameLocator): Promise<FrameLayout> {
+/** Reads a frame's layout: one in the shell, or a standalone frame page (ADR-0112). */
+export function frameLayout(frame: FrameLocator | Page): Promise<FrameLayout> {
   return frame.locator("[data-uf-preview-root]").evaluate((container) => {
     const style = getComputedStyle(container);
     // The boxes of the container's flex items: an element with `display: contents`, as Angular's
