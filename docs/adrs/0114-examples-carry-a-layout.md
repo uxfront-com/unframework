@@ -21,15 +21,18 @@ captures and baselines must not move.
 - **The tag.** `@layout` in the example's doc comment. Its value is `none`, or words separated by
   whitespace, in any order, at most one of each kind:
 
-  | Words                                                                                                   | Sets                 | Left out         |
-  | ------------------------------------------------------------------------------------------------------- | -------------------- | ---------------- |
-  | `row`, `column`                                                                                         | the direction        | `row`            |
-  | `justify-start`, `justify-center`, `justify-end`, `justify-between`, `justify-around`, `justify-evenly` | main-axis alignment  | `justify-center` |
-  | `align-start`, `align-center`, `align-end`, `align-stretch`, `align-baseline`                           | cross-axis alignment | `align-center`   |
-  | `wrap`                                                                                                  | wrapping             | no wrapping      |
-  | `gap-<length>`                                                                                          | the gap              | `0`              |
+  | Words                                                                                                   | Sets                  | Left out         |
+  | ------------------------------------------------------------------------------------------------------- | --------------------- | ---------------- |
+  | `row`, `column`                                                                                         | the direction         | `row`            |
+  | `justify-start`, `justify-center`, `justify-end`, `justify-between`, `justify-around`, `justify-evenly` | main-axis alignment   | `justify-center` |
+  | `align-start`, `align-center`, `align-end`, `align-stretch`, `align-baseline`                           | cross-axis alignment  | `align-center`   |
+  | `wrap`                                                                                                  | wrapping              | no wrapping      |
+  | `gap-xs`, `gap-sm`, `gap`, `gap-lg`, `gap-xl`                                                           | the gap, from a scale | `0`              |
+  | `gap-<length>`                                                                                          | the gap               | `0`              |
 
-  `<length>` is `0`, or digits with an optional fraction followed by `px`, `rem` or `em`
+  The scale is `0.25rem`, `0.5rem`, `1rem`, `1.5rem` and `2rem`, so a bare `gap` is the frame's
+  own padding, and an author picks a gap by name rather than in pixels. `<length>` is for the odd
+  case the scale misses: `0`, or digits with an optional fraction followed by `px`, `rem` or `em`
   (`^gap-(?:0|\d+(?:\.\d+)?(?:px|rem|em))$`), so `gap-.5rem`, `gap-1e2px`, `gap-+4px` and `gap-8`
   are malformed. Words are lower case.
 
@@ -55,7 +58,7 @@ captures and baselines must not move.
 ```tsx
 /**
  * The two sizes, stacked.
- * @layout column align-start gap-12px
+ * @layout column align-start gap
  */
 export default function ButtonSizes() { … }
 ```
@@ -83,5 +86,10 @@ export default function ButtonSizes() { … }
   (P2), and invites padding and backgrounds, which are out of scope.
 - **The layout in the shell's render message.** A frame rendered without a shell, like a standalone
   embed, would get no layout, and ADR-0088's protocol would change.
+- **Classes from a stylesheet in the frame page, like `uf-layout-column uf-gap`.** They look the
+  same on screen, and custom properties could theme the scale. A `gap-<length>` would still need a
+  generated rule or inline style, and the page would hold global class names an example's own CSS
+  could meet. The words stay the same either way, so classes can replace inline style later
+  without changing the tag.
 - **Styling the frame's `<body>`.** A layout left on the body would outlive the entry that set it,
   where the fresh container per mount resets it for free.
