@@ -1,8 +1,16 @@
 // The preview shell's fixtures and the browser commands that serve them, as both sides of the
 // shell's browser test see them: `shell-fixture.ts` implements the commands in Node.
 
-/** The design system's catalogue, and a project whose examples nest and order by metadata. */
-export const SHELL_FIXTURES = ["design-system", "shell-tree"] as const;
+/**
+ * The design system's catalogue, a project whose examples nest and order by metadata, and two
+ * whose examples have controls (ADR-0113).
+ */
+export const SHELL_FIXTURES = [
+  "design-system",
+  "shell-tree",
+  "example-controls",
+  "example-twins",
+] as const;
 export type ShellFixture = (typeof SHELL_FIXTURES)[number];
 
 declare module "vitest/browser" {

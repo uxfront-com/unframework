@@ -19,10 +19,15 @@ const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
 const ROOTS: Record<ShellFixture, string> = {
   "design-system": fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url)),
   "shell-tree": fileURLToPath(new URL("fixtures/shell-tree", import.meta.url)),
+  "example-controls": fileURLToPath(new URL("fixtures/example-controls", import.meta.url)),
+  "example-twins": fileURLToPath(new URL("fixtures/example-twins", import.meta.url)),
 };
 const TARGETS = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
 
-/** A frame that answers each render it is sent, from the shell it names, as `frame.ts` does. */
+/**
+ * A frame that answers each render it is sent, from the shell it names, as `frame.ts` does, and
+ * gives back the entry and the props it was sent, which the shell ignores and a test reads.
+ */
 const STUB_FRAME = `<!doctype html>
 <html lang="en">
   <head><meta charset="utf-8" /><title>Frame</title></head>
@@ -34,7 +39,8 @@ const STUB_FRAME = `<!doctype html>
       addEventListener("message", (event) => {
         if (event.source !== parent || event.origin !== shell) return;
         if (event.data?.type !== type || event.data.kind !== "render") return;
-        parent.postMessage({ type, kind: "rendered", seq: event.data.seq }, shell);
+        const { seq, entry, props } = event.data;
+        parent.postMessage({ type, kind: "rendered", seq, entry, props }, shell);
       });
       parent.postMessage({ type, kind: "ready" }, shell);
     </script>

@@ -2,21 +2,27 @@
 // sample design system, its shell in Chromium with seven frames of seven origins, a control that
 // reaches every frame, and nothing left listening after `close()` or after the command's SIGINT.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { connect, createServer } from "node:net";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type { TargetName } from "@unframework.dev/compiler";
+import { normalizeHtml } from "@unframework.dev/testing/normalize";
 import { chromium } from "playwright";
+import type { FrameLocator, Page } from "playwright";
 import { describe, expect, it } from "vitest";
 
+import { readCatalogue } from "../src/preview/catalogue.ts";
 import { preview } from "../src/preview/command.ts";
-import { startPreview } from "../src/preview/index.ts";
+import { projectConfig, startPreview, targetServerOptions } from "../src/preview/index.ts";
+import { exampleTransform } from "../src/preview/instrument.ts";
 import { FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
-import { PREVIEW_HOST } from "../src/preview/servers.ts";
+import { PREVIEW_HOST, startTargetServer } from "../src/preview/servers.ts";
+import { shellData, shellPage, startShellServer } from "../src/preview/shell.ts";
 import { VisualUsageError } from "../src/run.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
@@ -53,6 +59,41 @@ function project(files: Record<string, string>): string {
     writeFileSync(join(root, path), contents);
   }
   return root;
+}
+
+const EXAMPLE_CONTROLS = fileURLToPath(new URL("fixtures/example-controls", import.meta.url));
+const REPOSITORY = fileURLToPath(new URL("../../..", import.meta.url));
+/** The fixture's eight targets, as the preview names them. */
+const EIGHT = ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik", "astro"];
+
+/**
+ * A copy of the example controls' fixture, for a test that edits it, beside the fixtures, so its
+ * frameworks resolve as theirs do, with where each compiler stack resolves from (A9).
+ */
+function fixtureCopy(): { root: string; toolchainDirs: Partial<Record<TargetName, string>> } {
+  const parent = fileURLToPath(new URL("fixtures/.uf-tmp", import.meta.url));
+  mkdirSync(parent, { recursive: true });
+  const root = mkdtempSync(join(parent, "example-controls-"));
+  cpSync(EXAMPLE_CONTROLS, root, { recursive: true });
+  const toolchain = (name: string) => relative(root, join(REPOSITORY, "tests/toolchains", name));
+  return {
+    root,
+    toolchainDirs: {
+      angular: toolchain("angular"),
+      vue: toolchain("vue"),
+      svelte: toolchain("svelte"),
+      solid2: toolchain("solid2"),
+    },
+  };
+}
+
+/** A frame's root, normalised as the harness normalises a target's DOM (ADR-0031). */
+async function frameRoot(page: Page, target: string): Promise<string> {
+  const html = await page
+    .frameLocator(`figure[data-target="${target}"] iframe`)
+    .locator("[data-uf-preview-root]")
+    .innerHTML();
+  return normalizeHtml(html, { target: target as "react" });
 }
 
 /** How many TCP servers this process holds open. */
@@ -220,6 +261,165 @@ describe("startPreview", () => {
         await expect.poll(servers, { timeout: 5_000 }).toBe(before);
       } finally {
         await new Promise((done) => taken.close(done));
+      }
+    },
+  );
+});
+
+describe("an example's controls", () => {
+  it(
+    "reach every instance that leaves the prop unset, on eight targets, and no other component's",
+    { timeout: 600_000 },
+    async () => {
+      const { root, toolchainDirs } = fixtureCopy();
+      const example = join(root, "examples/Flags.example.uf.tsx");
+      const written = readFileSync(example, "utf8");
+      const preview = await startPreview({ root, toolchainDirs });
+      const browser = await chromium.launch();
+      try {
+        expect(preview.frames.map((each) => each.target)).toEqual(EIGHT);
+        const page = await browser.newPage();
+        await page.goto(preview.url);
+        const frame = (target: string): FrameLocator =>
+          page.frameLocator(`figure[data-target="${target}"] iframe`);
+        const status = (target: string) => page.locator(`figure[data-target="${target}"] output`);
+        const flag = (target: string, label: string) =>
+          frame(target).locator(`[data-flag="${label}"]`);
+        const badge = (target: string, text: string) =>
+          frame(target).locator(`[data-badge="${text}"]`);
+        const control = (group: string, name: string) =>
+          page.getByRole("group", { name: group, exact: true }).getByLabel(name, { exact: true });
+        /** Waits until every frame has rendered the last change, then checks each. */
+        const each = async (check: (target: string) => Promise<void>) => {
+          for (const target of EIGHT) {
+            await expect
+              .poll(() => status(target).textContent(), { timeout: 60_000 })
+              .toBe("rendered");
+            await check(target);
+          }
+        };
+        const attribute = (locator: ReturnType<typeof flag>, name: string) =>
+          expect.poll(() => locator.getAttribute(name), {
+            timeout: 30_000,
+            message: `${String(locator)} ${name}`,
+          });
+
+        // The example as written, on every frame.
+        for (const target of EIGHT) {
+          await flag(target, "bare").waitFor({ timeout: 180_000 });
+        }
+        const written_ = new Map<string, string>();
+        await each(async (target) => {
+          await attribute(flag(target, "bare"), "data-tone").toBe("info");
+          written_.set(target, await frameRoot(page, target));
+        });
+
+        // Flag's tone alone: every unset Flag, nested too, and no Badge.
+        await control("Flag", "tone").selectOption("error");
+        await each(async (target) => {
+          for (const label of ["bare", "nested"]) {
+            await attribute(flag(target, label), "data-tone").toBe("error");
+          }
+          await attribute(flag(target, "warned"), "data-tone").toBe("warn");
+          // The `<component is>` is not an instance the controls reach (A4).
+          await attribute(flag(target, "dynamic"), "data-tone").toBe("info");
+          for (const text of ["first", "second"]) {
+            await attribute(badge(target, text), "data-tone").toBe("info");
+          }
+        });
+
+        await control("Flag", "on").selectOption("true");
+        await control("Flag", "size").fill("3");
+        await control("Badge", "tone").selectOption("warn");
+        await each(async (target) => {
+          for (const label of ["bare", "nested", "warned"]) {
+            await attribute(flag(target, label), "data-on").toBe("yes");
+            await attribute(flag(target, label), "data-size").toBe("3");
+          }
+          await attribute(flag(target, "warned"), "data-tone").toBe("warn");
+          for (const label of ["dynamic"]) {
+            await attribute(flag(target, label), "data-on").toBe("no");
+            await attribute(flag(target, label), "data-size").toBe("2");
+          }
+          for (const text of ["first", "second"]) {
+            await attribute(badge(target, text), "data-tone").toBe("warn");
+          }
+        });
+
+        // Back to "(default)" one at a time, Flag's tone first: Badge's alone leaves every Flag's.
+        await control("Flag", "tone").selectOption("");
+        await control("Flag", "on").selectOption("");
+        await control("Flag", "size").fill("");
+        await each(async (target) => {
+          for (const label of ["bare", "nested", "dynamic"]) {
+            await attribute(flag(target, label), "data-tone").toBe("info");
+            await attribute(flag(target, label), "data-on").toBe("no");
+            await attribute(flag(target, label), "data-size").toBe("2");
+          }
+          await attribute(flag(target, "warned"), "data-tone").toBe("warn");
+          await attribute(badge(target, "first"), "data-tone").toBe("warn");
+        });
+        await control("Badge", "tone").selectOption("");
+        // Every control at "(default)": each frame shows the example as it first did.
+        await each(async (target) => {
+          await attribute(badge(target, "second"), "data-tone").toBe("info");
+          expect(await frameRoot(page, target), target).toBe(written_.get(target));
+        });
+
+        // An instance an edit adds takes the controls of its component (A8).
+        await control("Flag", "tone").selectOption("error");
+        writeFileSync(example, written.replace("<Plain />", '<Plain />\n      <Flag label="d" />'));
+        await each(async (target) => {
+          await flag(target, "d").waitFor({ timeout: 120_000 });
+          await attribute(flag(target, "d"), "data-tone").toBe("error");
+          await attribute(flag(target, "warned"), "data-tone").toBe("warn");
+        });
+      } finally {
+        writeFileSync(example, written);
+        await browser.close();
+        await preview.close();
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "render the example as written at their defaults, on each of eight targets",
+    { timeout: 600_000 },
+    async () => {
+      const root = EXAMPLE_CONTROLS;
+      const config = await projectConfig(root);
+      const catalogue = await readCatalogue(root, config.srcDir);
+      const entries = Object.fromEntries(catalogue.examples.map((each) => [each.key, each.file]));
+      const transformSource = exampleTransform(root, catalogue);
+      expect(transformSource).toBeDefined();
+      const browser = await chromium.launch();
+      try {
+        const page = await browser.newPage();
+        // One target at a time, and one server at a time: the two share the target's cache.
+        for (const target of config.targets) {
+          const roots: string[] = [];
+          for (const transform of [transformSource, undefined]) {
+            const server = await startTargetServer(
+              targetServerOptions(root, config, target, entries, undefined, transform),
+            );
+            const pages = [{ target, src: `${server.origin}${FRAME_PATH}` }];
+            const shell = await startShellServer(shellPage(shellData(catalogue, pages)), 0);
+            try {
+              await page.goto(shell.url);
+              const status = page.locator(`figure[data-target="${target}"] output`);
+              await expect.poll(() => status.textContent(), { timeout: 180_000 }).toBe("rendered");
+              roots.push(await frameRoot(page, target));
+            } finally {
+              await shell.close();
+              await server.close();
+            }
+          }
+          expect(roots[0], target).toContain('data-flag="bare"');
+          expect(roots[0], target).toBe(roots[1]);
+        }
+      } finally {
+        await browser.close();
       }
     },
   );

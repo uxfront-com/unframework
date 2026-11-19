@@ -11,11 +11,11 @@ const THEME_KEY = "unframework-preview-theme";
 const DARK_BACKGROUND = "rgb(22, 23, 27)";
 const LIGHT_BACKGROUND = "rgb(255, 255, 255)";
 
-/** Opens a fixture's shell in this document, as a fresh load of the page would. */
-async function open(name: ShellFixture, targets?: string[]): Promise<void> {
+/** Opens a fixture's shell in this document, as a fresh load of the page, at `hash`, would. */
+async function open(name: ShellFixture, targets?: string[], hash = ""): Promise<void> {
   const { html } = await commands.ufShellFixture(name, targets);
   const shell = new DOMParser().parseFromString(html, "text/html");
-  history.replaceState(null, "", location.pathname + location.search);
+  history.replaceState(null, "", location.pathname + location.search + hash);
   delete document.documentElement.dataset.theme;
   document.head.querySelector("style[data-shell]")?.remove();
   const style = shell.querySelector("style")!;
@@ -54,7 +54,28 @@ const tree = (name: string) => page.getByRole("tree", { name });
 const item = (name: string) => page.getByRole("treeitem", { name, exact: true });
 const focused = () => document.activeElement;
 
+/** Each render a frame answered: the stub frame gives back the entry and the props it was sent. */
+const renders: { entry: unknown; props: unknown }[] = [];
+addEventListener("message", (event) => {
+  const data = event.data as { kind?: unknown; entry?: unknown; props?: unknown } | null;
+  if (data?.kind === "rendered") renders.push({ entry: data.entry, props: data.props });
+});
+
+/** The heading text of each control group, in order. */
+const groupNames = () =>
+  [...document.querySelectorAll("[data-uf-group]")].map(
+    (group) => document.getElementById(group.getAttribute("aria-labelledby")!)!.textContent,
+  );
+
+/** Every field of the example's controls. */
+const exampleFields = () => [
+  ...document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+    "[data-uf-group] select, [data-uf-group] input",
+  ),
+];
+
 afterEach(async () => {
+  renders.length = 0;
   localStorage.removeItem(THEME_KEY);
   await commands.ufShellColorScheme("light");
 });
@@ -150,13 +171,15 @@ describe("the layout", () => {
   it("gives each selection its own message in the controls region", async () => {
     await open("design-system");
     const controls = page.getByRole("region", { name: "Controls" });
-    const example = "An example takes no props. Select a component to set its props.";
+    const example = "This example renders no component whose props the preview can set.";
     const component = "This component has no props.";
+    // The Card example renders only a Card, which has no props.
+    (item("Card").element() as HTMLElement).click();
     await expect.element(controls.getByText(example)).toBeVisible();
     // A component with no props, then an example: the example's message comes back.
     (item("src/Card").element() as HTMLElement).click();
     await expect.element(controls.getByText(component)).toBeVisible();
-    (item("Buttons").element() as HTMLElement).click();
+    (item("Card").element() as HTMLElement).click();
     await expect.element(controls.getByText(example)).toBeVisible();
     expect(controls.getByText(component).query()).toBeNull();
     // A component with props shows its form and no message.
@@ -165,6 +188,115 @@ describe("the layout", () => {
     expect(controls.getByText(example).query()?.checkVisibility() ?? false).toBe(false);
     expect(controls.getByText(component).query()).toBeNull();
   });
+});
+
+describe("an example's controls", () => {
+  const group = (name: string) => page.getByRole("group", { name, exact: true });
+
+  it("groups them by component, in the order each first renders, each field its own", async () => {
+    await open("example-controls");
+    // Badge renders first: neither the alphabetical order nor the catalogue's.
+    expect(groupNames()).toEqual(["Badge", "Flag"]);
+    const badge = group("Badge");
+    const flag = group("Flag");
+    await expect.element(flag).toBeVisible();
+    const labels = (each: typeof flag) =>
+      [...each.element().querySelectorAll("label")].map((label) => label.textContent);
+    expect(labels(badge)).toEqual(["tone"]);
+    expect(labels(flag)).toEqual(["on", "tone", "size"]);
+    await expect
+      .element(flag.getByRole("list", { name: "Set by the example" }))
+      .toHaveTextContent("label");
+    await expect
+      .element(badge.getByRole("list", { name: "Set by the example" }))
+      .toHaveTextContent("text");
+    // Plain has no prop a control can set: no group.
+    expect(document.querySelector('[data-uf-group="src/Plain"]')).toBeNull();
+    // Two `tone` fields, each with an id of its own, which its label targets.
+    const tones = [badge, flag].map((each) => each.getByLabelText("tone").element());
+    expect(tones[0]!.id).not.toBe(tones[1]!.id);
+    expect(tones.every((tone) => document.querySelectorAll(`[id="${tone.id}"]`).length === 1)).toBe(
+      true,
+    );
+    // Every one starts at "(default)", and a boolean takes the three-way list.
+    expect(exampleFields().map((field) => field.value)).toEqual(["", "", "", ""]);
+    const on = flag.getByLabelText("on").element() as HTMLSelectElement;
+    expect([...on.options].map((option) => option.text)).toEqual(["(default)", "true", "false"]);
+    expect(document.querySelector("[data-uf-no-controls]")!.checkVisibility()).toBe(false);
+
+    // Each value goes under its own key. Once one is set, every key goes, "(default)" as
+    // `undefined`, for Qwik, which follows only the props a component first rendered with.
+    const unset = { ufControl0: undefined, ufControl1: undefined, ufControl3: undefined };
+    await userEvent.selectOptions(flag.getByLabelText("tone"), "error");
+    await expect.poll(() => renders.at(-1)?.props).toStrictEqual({ ...unset, ufControl2: "error" });
+    await userEvent.selectOptions(badge.getByLabelText("tone"), "warn");
+    await userEvent.selectOptions(flag.getByLabelText("on"), "true");
+    await userEvent.fill(flag.getByLabelText("size"), "3");
+    await expect
+      .poll(() => renders.at(-1)?.props)
+      .toStrictEqual({
+        ufControl0: "warn",
+        ufControl1: true,
+        ufControl2: "error",
+        ufControl3: 3,
+      });
+    await userEvent.selectOptions(flag.getByLabelText("tone"), "");
+    await expect
+      .poll(() => renders.at(-1)?.props)
+      .toStrictEqual({
+        ufControl0: "warn",
+        ufControl1: true,
+        ufControl2: undefined,
+        ufControl3: 3,
+      });
+    // Every one back at "(default)": no props, so the example renders as written.
+    await userEvent.selectOptions(badge.getByLabelText("tone"), "");
+    await userEvent.selectOptions(flag.getByLabelText("on"), "");
+    await userEvent.fill(flag.getByLabelText("size"), "");
+    await expect.poll(() => renders.at(-1)?.props).toStrictEqual({});
+  });
+
+  it("names each group's id where two components share a name", async () => {
+    await open("example-twins");
+    expect(groupNames()).toEqual(["Badge src/Badge", "Badge src/status/Badge"]);
+    await expect.element(group("Badge src/status/Badge").getByLabelText("level")).toBeVisible();
+  });
+
+  it("starts every control over on a reload and on a change of selection", async () => {
+    const flags = "example:examples/Flags";
+    await open("example-controls");
+    await userEvent.selectOptions(group("Flag").getByLabelText("tone"), "error");
+    await expect.poll(() => renders.at(-1)?.props).toMatchObject({ ufControl2: "error" });
+
+    // A reload keeps the selection only.
+    renders.length = 0;
+    await open("example-controls", undefined, `#${flags}`);
+    await expect.element(group("Flag")).toBeVisible();
+    expect(location.hash).toBe(`#${flags}`);
+    expect(exampleFields().map((field) => field.value)).toEqual(["", "", "", ""]);
+    await expect.poll(() => renders.at(-1)).toStrictEqual({ entry: flags, props: {} });
+
+    // Another entry, then the example again.
+    await userEvent.selectOptions(group("Flag").getByLabelText("tone"), "error");
+    await expect.poll(() => renders.at(-1)?.props).toMatchObject({ ufControl2: "error" });
+    (item("src/Flag").element() as HTMLElement).click();
+    await expect.poll(() => renders.at(-1)?.entry).toBe("component:src/Flag");
+    expect(groupNames()).toEqual([]);
+    (item("Flags").element() as HTMLElement).click();
+    await expect.element(group("Flag")).toBeVisible();
+    expect(location.hash).toBe(`#${flags}`);
+    expect(exampleFields().map((field) => field.value)).toEqual(["", "", "", ""]);
+    await expect.poll(() => renders.at(-1)).toStrictEqual({ entry: flags, props: {} });
+  });
+
+  for (const fixture of ["example-controls", "example-twins"] as const) {
+    it(`has no axe violations with the ${fixture} example's groups`, async () => {
+      await open(fixture);
+      await expect.element(page.getByRole("group").first()).toBeVisible();
+      expect(groupNames().length).toBe(2);
+      await expect.element(document.body).toHaveNoAxeViolations();
+    });
+  }
 });
 
 describe("the keyboard", () => {

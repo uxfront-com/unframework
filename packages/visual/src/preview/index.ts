@@ -11,6 +11,8 @@ import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
 import { readCatalogue } from "./catalogue.ts";
+import { exampleTransform } from "./instrument.ts";
+import type { SourceTransform } from "./instrument.ts";
 import { FRAME_PATH } from "./protocol.ts";
 import { startTargetServer } from "./servers.ts";
 import type { TargetServer, TargetServerOptions } from "./servers.ts";
@@ -67,6 +69,8 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     );
   }
 
+  const transformSource = exampleTransform(root, catalogue);
+
   const started: TargetServer[] = [];
   const closeAll = async (shell?: { close(): Promise<void> }) => {
     const results = await Promise.allSettled([
@@ -82,7 +86,14 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     const servers = await Promise.allSettled(
       targets.map((target) =>
         startTargetServer(
-          targetServerOptions(root, config, target, entries, options.toolchainDirs),
+          targetServerOptions(
+            root,
+            config,
+            target,
+            entries,
+            options.toolchainDirs,
+            transformSource,
+          ),
         ).then((server) => {
           started.push(server);
           return server;
@@ -119,7 +130,8 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
 
 /**
  * What a target's server serves, from the project's configuration: the entries, where the
- * target's compiler stack resolves from, and the project's Vite config (ADR-0104).
+ * target's compiler stack resolves from, the project's Vite config (ADR-0104), and the rewrite
+ * that binds the examples' controls (ADR-0113).
  */
 export function targetServerOptions(
   root: string,
@@ -127,6 +139,7 @@ export function targetServerOptions(
   target: TargetName,
   entries: Readonly<Record<string, string>>,
   toolchainDirs?: PreviewOptions["toolchainDirs"],
+  transformSource?: SourceTransform,
 ): TargetServerOptions {
   return {
     root,
@@ -134,6 +147,7 @@ export function targetServerOptions(
     toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
     entries,
     ...(config.vite ? { vite: config.vite } : {}),
+    ...(transformSource ? { transformSource } : {}),
   };
 }
 

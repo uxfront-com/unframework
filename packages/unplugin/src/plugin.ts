@@ -99,6 +99,14 @@ export interface UnframeworkOptions {
    * errors fails anyway, with the message after its diagnostics.
    */
   onCompile?(event: CompileEvent): string | void | Promise<string | void>;
+  /**
+   * Gives the source to compile for a `.uf.tsx` or `.uf.ts` file, in place of its text on disk:
+   * called with the file's absolute path, with forward slashes, and its text, each time the plugin
+   * reads it, on the first load and on a hot update alike. `undefined` compiles the file as
+   * written. `unframework preview` binds its controls to an example's components this way
+   * (ADR-0113). None by default.
+   */
+  transformSource?(file: string, source: string): string | undefined | Promise<string | undefined>;
   /** Compiler plugins, passed to `compile()` (the harness's canaries). */
   plugins?: readonly CompilerPlugin[];
   /** Formats the output with oxfmt. Defaults to `true`, so modules equal the golden files. */
@@ -316,8 +324,15 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // `update` that named the file. Only `update` moves it on, so a read for one module never hides
   // an edit from the others, whose results the project still holds.
   const seen = new Map<string, string | undefined>();
-  const read = async (path: string) => {
+  // A file's text as the project compiles it: through `transformSource` for a source file, so
+  // `seen` holds what was compiled and a hot update compares like with like.
+  const readSource = async (path: string): Promise<string | undefined> => {
     const text = await readFile(path, "utf8").catch(() => undefined);
+    if (text === undefined || !options.transformSource || !isSource(path)) return text;
+    return (await options.transformSource(path, text)) ?? text;
+  };
+  const read = async (path: string) => {
+    const text = await readSource(path);
     if (!seen.has(path)) seen.set(path, text);
     return text;
   };
@@ -526,7 +541,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const changed = new Map<string, string | undefined>();
     for (const path of paths) {
       if (!seen.has(path)) continue;
-      const text = await readFile(path, "utf8").catch(() => undefined);
+      const text = await readSource(path);
       if (text !== seen.get(path)) changed.set(path, text);
     }
     if (!changed.size) return false;

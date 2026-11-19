@@ -161,6 +161,13 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
 - **Controls** (`src/preview/controls.ts`, `propControls`): `boolean`, `string`, `number` and a
   union of string literals, as written or resolved from an alias (`ApiMember.literals`), with
   `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
+- **An example's controls** (`src/preview/instrument.ts`, ADR-0113): the catalogue gives each
+  example one group per listed component it renders that has a controllable prop, in the order of
+  its first instance, with a prop every instance sets named "Set by the example". Each live
+  control is an optional prop of the example, `ufControl<n>`, which the servers bind on every
+  instance that leaves the prop unset, through the unframework plugin's `transformSource`. The
+  rewrite adds no line break, and `unframework visual` never sees it. An example that declares
+  props or doesn't compile is served as written.
 - **`close()`** stops the shell and every target's server, then what a toolchain's commands
   started (`toolchain.close`, Astro's render servers). A start that fails closes what it started, and its error names each reason with the targets it stopped (`startFailure`), once for the targets that failed alike.
 

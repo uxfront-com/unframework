@@ -14,6 +14,8 @@ import { VisualUsageError } from "../src/run.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
 const METADATA = fileURLToPath(new URL("fixtures/metadata", import.meta.url));
+const EXAMPLE_CONTROLS = fileURLToPath(new URL("fixtures/example-controls", import.meta.url));
+const EXAMPLE_TWINS = fileURLToPath(new URL("fixtures/example-twins", import.meta.url));
 
 function project(files: Record<string, string>): string {
   const root = mkdtempSync(join(tmpdir(), "uf-preview-"));
@@ -171,6 +173,7 @@ describe("readCatalogue", () => {
         key: "example:examples/Badge",
         id: "examples/Badge",
         file: join(METADATA, "examples/Badge.example.uf.tsx"),
+        controls: [],
         category: ["Components", "Feedback"],
         title: "New badge",
         description: "A badge on every target.",
@@ -231,6 +234,108 @@ describe("readCatalogue", () => {
     ]);
     expect(catalogue.components.map((each) => [each.key, each.file])).toEqual([
       ["component:src/Shown", join(root, "src/Shown.uf.tsx")],
+    ]);
+  });
+});
+
+describe("an example's controls", () => {
+  const tone = {
+    optional: true,
+    kind: "select",
+    options: ["info", "warn", "error"],
+    initial: "info",
+  };
+
+  it("groups them by component, in the order each first renders, with keys across the example", async () => {
+    const catalogue = await readCatalogue(EXAMPLE_CONTROLS, join(EXAMPLE_CONTROLS, "src"));
+    // The catalogue lists its components by id, which is not the example's order.
+    expect(catalogue.components.map((each) => each.id)).toEqual([
+      "src/Badge",
+      "src/Box",
+      "src/Flag",
+      "src/Plain",
+    ]);
+    const [flags] = catalogue.examples;
+    expect(flags!.id).toBe("examples/Flags");
+    // No group for `Box`, whose only member is a slot, or `Plain`, whose prop no control can set.
+    // `Flag`'s `tone` is live, since one instance leaves it unset, and every one sets `label`.
+    expect(flags!.controls).toEqual([
+      {
+        component: "src/Badge",
+        name: "Badge",
+        controls: [{ name: "tone", ...tone, key: "ufControl0" }],
+        setByExample: ["text"],
+        uncontrolled: [],
+      },
+      {
+        component: "src/Flag",
+        name: "Flag",
+        controls: [
+          { name: "on", optional: true, kind: "boolean", initial: false, key: "ufControl1" },
+          { name: "tone", ...tone, key: "ufControl2" },
+          { name: "size", optional: true, kind: "number", initial: 0, key: "ufControl3" },
+        ],
+        setByExample: ["label"],
+        uncontrolled: [],
+      },
+    ]);
+  });
+
+  it("keeps two components of one name apart, by their ids", async () => {
+    const catalogue = await readCatalogue(EXAMPLE_TWINS, join(EXAMPLE_TWINS, "src"));
+    expect(catalogue.examples[0]!.controls.map((group) => [group.component, group.name])).toEqual([
+      ["src/Badge", "Badge"],
+      ["src/status/Badge", "Badge"],
+    ]);
+    expect(
+      catalogue.examples[0]!.controls.flatMap((group) => group.controls.map((each) => each.key)),
+    ).toEqual(["ufControl0", "ufControl1"]);
+  });
+
+  it("names a prop every instance sets as set by the example, and lists the uncontrolled", async () => {
+    const root = project({
+      "src/Tag.uf.tsx":
+        "export default function Tag({ label, tone, tags }: { label: string; tone?: string; tags?: string[] }) {\n  return <p data-tone={tone}>{label}{tags}</p>;\n}\n",
+      "examples/Tags.example.uf.tsx":
+        'import Tag from "../src/Tag.uf.tsx";\n\nexport default function Tags() {\n  return (\n    <div>\n      <Tag label="a" tone="x" />\n      <Tag label="b" tone="y" />\n    </div>\n  );\n}\n',
+    });
+    const catalogue = await readCatalogue(root, join(root, "src"));
+    expect(catalogue.examples[0]!.controls).toEqual([
+      {
+        component: "src/Tag",
+        name: "Tag",
+        controls: [],
+        setByExample: ["label", "tone"],
+        uncontrolled: [
+          {
+            name: "tags",
+            type: "string[]",
+            reason: "its type, string[], is not one the preview can set",
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("gives none to an example that declares props, does not compile or renders no component", async () => {
+    const tag =
+      "export default function Tag({ tone }: { tone?: string }) {\n  return <p>{tone}</p>;\n}\n";
+    const example = (name: string, parameter: string, body: string) =>
+      `import Tag from "../src/Tag.uf.tsx";\n\nexport default function ${name}(${parameter}) {\n  return ${body};\n}\n`;
+    const root = project({
+      "src/Tag.uf.tsx": tag,
+      "examples/Props.example.uf.tsx": example("Props", "{ x }: { x?: string }", "<Tag />"),
+      "examples/Broken.example.uf.tsx": example("Broken", "", "<Tag tone={1} nope />"),
+      "examples/Bare.example.uf.tsx": example("Bare", "", "<p>Bare</p>"),
+      "examples/Own.example.uf.tsx":
+        "function Tag({ tone }: { tone?: string }) {\n  return <p>{tone}</p>;\n}\n\nexport default function Own() {\n  return <Tag />;\n}\n",
+    });
+    const catalogue = await readCatalogue(root, join(root, "src"));
+    expect(catalogue.examples.map((each) => [each.id, each.controls])).toEqual([
+      ["examples/Bare", []],
+      ["examples/Broken", []],
+      ["examples/Own", []],
+      ["examples/Props", []],
     ]);
   });
 });

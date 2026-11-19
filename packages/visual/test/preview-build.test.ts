@@ -350,6 +350,63 @@ describe("unframework preview build on an example's malformed metadata", () => {
   });
 });
 
+describe("buildPreview of an example's controls", () => {
+  it(
+    "applies them on every target with a client runtime, and Astro's frame says it can't",
+    { timeout: 600_000 },
+    async () => {
+      const root = fileURLToPath(new URL("fixtures/example-controls", import.meta.url));
+      const out = join(realpathSync(mkdtempSync(join(tmpdir(), "uf-preview-site-"))), "site");
+      const built = await buildPreview({ root, out });
+      const targets = built.targets.map(String);
+      expect(targets).toEqual([
+        "react",
+        "vue",
+        "svelte",
+        "solid",
+        "solid2",
+        "angular",
+        "qwik",
+        "astro",
+      ]);
+      const site = await fileServer(out);
+      const browser = await chromium.launch();
+      try {
+        const page = await browser.newPage();
+        await page.goto(`${site.url}#example:examples/Flags`);
+        const tone = (target: string, label: string) =>
+          frame(page, target).locator(`[data-flag="${label}"]`).getAttribute("data-tone");
+        // As written, Astro's build-time render included.
+        for (const target of targets) {
+          await expect
+            .poll(() => status(page, target).textContent(), { timeout: 60_000, message: target })
+            .toBe("rendered");
+          expect(await tone(target, "bare"), target).toBe("info");
+        }
+        const flagTone = page
+          .getByRole("group", { name: "Flag", exact: true })
+          .getByLabel("tone", { exact: true });
+        await flagTone.selectOption("error");
+        for (const target of targets.filter((each) => each !== "astro")) {
+          await expect.poll(() => tone(target, "bare"), { message: target }).toBe("error");
+          await expect.poll(() => tone(target, "nested"), { message: target }).toBe("error");
+          expect(await tone(target, "warned"), target).toBe("warn");
+        }
+        await expect
+          .poll(() => status(page, "astro").textContent())
+          .toBe(`failed: ${STATIC_RENDER_MESSAGE}`);
+        // Every control back at "(default)": the props it was built with, which it renders.
+        await flagTone.selectOption("");
+        await expect.poll(() => status(page, "astro").textContent()).toBe("rendered");
+        expect(await tone("astro", "bare")).toBe("info");
+      } finally {
+        await browser.close();
+        await new Promise((done) => site.server.close(done));
+      }
+    },
+  );
+});
+
 describe("buildPreview", () => {
   it("refuses an out it must not empty before it reads the project", async () => {
     const root = project({ "keep/file.txt": "x" });
@@ -431,6 +488,7 @@ describe("initialProps", () => {
             key: "example:e",
             id: "e",
             file: "/e",
+            controls: [],
             category: ["Examples"],
             title: "E",
           },

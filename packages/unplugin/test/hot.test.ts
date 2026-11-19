@@ -20,6 +20,7 @@ import solidPlugin from "vite-plugin-solid";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import astro from "../src/astro.ts";
+import type { UnframeworkOptions } from "../src/plugin.ts";
 import unframework from "../src/vite.ts";
 
 // A real server with real framework plugins, and a real watcher, which takes seconds.
@@ -89,6 +90,7 @@ async function startHot(
   target: TargetName,
   toolchain: Toolchain,
   mode: "browser" | "ssr" = "browser",
+  transformSource?: UnframeworkOptions["transformSource"],
 ): Promise<HotServer> {
   let compiles = 0;
   const counter: CompilerPlugin = { name: "count", output: () => void (compiles += 1) };
@@ -130,7 +132,15 @@ async function startHot(
       },
     },
     optimizeDeps: { noDiscovery: true, include: [] },
-    plugins: [...unframework({ target, plugins: [counter] }), ...(framework.plugins ?? []), probe],
+    plugins: [
+      ...unframework({
+        target,
+        plugins: [counter],
+        ...(transformSource ? { transformSource } : {}),
+      }),
+      ...(framework.plugins ?? []),
+      probe,
+    ],
   });
   const reported = new Map<string, number>();
   server.watcher.on("all", (_event, file) => reported.set(file, performance.now()));
@@ -520,6 +530,44 @@ describe("what a change reaches", () => {
       await hot.close();
     }
   });
+});
+
+describe("transformSource", () => {
+  it(
+    "compiles what it gives for a file, on the first load and on a hot update, and the file as written for undefined",
+    { timeout: SLOW },
+    async () => {
+      const root = createRoot({
+        ...FILES,
+        "main.ts":
+          'import Card from "./src/Card.uf.tsx";\nimport Other from "./src/Other.uf.tsx";\n\nexport { Card, Other };\n',
+        "src/Other.uf.tsx": "export default function Other() {\n  return <p>Other Hello</p>;\n}\n",
+      });
+      const calls: string[] = [];
+      const hot = await startHot(root, "vue", vue, "browser", (file, source) => {
+        calls.push(file);
+        return file.endsWith("/src/Card.uf.tsx")
+          ? source.replace(/Hello|Goodbye/, "Rewritten $&")
+          : undefined;
+      });
+      try {
+        const first = await hot.fetchAll();
+        expect(contentsOf(first, "Card.uf.tsx.vue")).toContain("Rewritten Hello");
+        expect(contentsOf(first, "Other.uf.tsx.vue")).toContain("Other Hello");
+        expect(contentsOf(first, "Other.uf.tsx.vue")).not.toContain("Rewritten");
+        // Absolute, with forward slashes, and only source files: never the types or the sheet.
+        expect(calls).toContain(`${root}/src/Card.uf.tsx`);
+        expect(calls).toContain(`${root}/src/Other.uf.tsx`);
+        expect(calls.every((file) => /\.uf\.tsx?$/.test(file))).toBe(true);
+
+        await hot.edit("src/Card.uf.tsx", () => write(root, "src/Card.uf.tsx", CARD("Goodbye")));
+        expect(updates(hot.sent).join()).toContain("Card.uf.tsx.vue");
+        expect(contentsOf(await hot.fetchAll(), "Card.uf.tsx.vue")).toContain("Rewritten Goodbye");
+      } finally {
+        await hot.close();
+      }
+    },
+  );
 });
 
 describe("a framework with no hot update of its own", () => {

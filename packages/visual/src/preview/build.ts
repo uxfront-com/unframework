@@ -23,6 +23,7 @@ import type { PreviewCatalogue } from "./catalogue.ts";
 import type { PropControl } from "./controls.ts";
 import { previewTargets, projectConfig, targetServerOptions } from "./index.ts";
 import type { PreviewOptions } from "./index.ts";
+import { exampleTransform } from "./instrument.ts";
 import { STATIC_FRAME_FILE, STATIC_RENDERS_DIR } from "./protocol.ts";
 import type { StaticRender } from "./protocol.ts";
 import { buildTarget, renderTargetEntries } from "./servers.ts";
@@ -110,8 +111,16 @@ async function buildTargets(
   toolchainDirs: PreviewOptions["toolchainDirs"],
 ): Promise<void> {
   const props = initialProps(catalogue);
+  const transformSource = exampleTransform(root, catalogue);
   for (const target of targets) {
-    const server = targetServerOptions(root, config, target, entries, toolchainDirs);
+    const server = targetServerOptions(
+      root,
+      config,
+      target,
+      entries,
+      toolchainDirs,
+      transformSource,
+    );
     const dir = join(out, target);
     if ((await loadToolchain(target)).renderCommandName === undefined) {
       await buildTarget(server, dir);
