@@ -299,6 +299,87 @@ describe("an example's controls", () => {
   }
 });
 
+describe("the Open link", () => {
+  const TARGETS = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
+  const links = () =>
+    TARGETS.map((target) =>
+      document.querySelector<HTMLAnchorElement>(`figure[data-target="${target}"] figcaption a`),
+    );
+
+  it("links each frame's caption to the selected example's own URL on that target", async () => {
+    await open("design-system");
+    (item("Card").element() as HTMLElement).click();
+    for (const [index, link] of links().entries()) {
+      const target = TARGETS[index]!;
+      expect(link, target).not.toBeNull();
+      expect(link!.hidden, target).toBe(false);
+      const url = new URL(link!.href);
+      // Beside the shell, whatever its path.
+      expect(url.origin).toBe(location.origin);
+      expect(url.pathname).toBe(new URL("embed.html", location.href).pathname);
+      expect([...url.searchParams]).toEqual([
+        ["example", "examples/Card"],
+        ["target", target],
+      ]);
+      expect(link!.getAttribute("href")).toMatch(/^embed\.html\?/);
+      expect(link!.target).toBe("_blank");
+      expect(link!.rel).toBe("noopener");
+      expect(link!.textContent).toBe("Open");
+      await expect
+        .element(page.getByRole("link", { name: `Open Card on ${target} in a new tab` }))
+        .toBeVisible();
+    }
+    // Another example moves every link with it.
+    (item("Buttons").element() as HTMLElement).click();
+    expect(links().map((link) => new URL(link!.href).searchParams.get("example"))).toEqual(
+      TARGETS.map(() => "examples/Buttons"),
+    );
+    await expect
+      .element(page.getByRole("link", { name: "Open Buttons on vue in a new tab" }))
+      .toBeVisible();
+    // A component takes props, which no URL holds: no caption links it.
+    (item("src/Button").element() as HTMLElement).click();
+    for (const link of links()) expect(link!.checkVisibility()).toBe(false);
+    expect(page.getByRole("link").query()).toBeNull();
+    // An example again brings them back.
+    (item("Card").element() as HTMLElement).click();
+    for (const link of links()) expect(link!.checkVisibility()).toBe(true);
+  });
+
+  it("keeps each caption on one line in the grid's narrowest cell", async () => {
+    await open("design-system");
+    const grid = document.querySelector<HTMLElement>(".frames")!;
+    // The cells at their minimum width, 20rem, as in a window just wide enough for one.
+    grid.style.gridTemplateColumns = "repeat(auto-fill, 20rem)";
+    for (const target of TARGETS) {
+      const caption = document.querySelector(`figure[data-target="${target}"] figcaption`)!;
+      await expect.element(caption.querySelector("output")!).toHaveTextContent("rendered");
+      const [label, link, status] = [...caption.children].map((each) =>
+        each.getBoundingClientRect(),
+      );
+      // One line: the three share a top and a height, the line's own.
+      expect(link!.top, target).toBeCloseTo(label!.top, 0);
+      expect(status!.top, target).toBeCloseTo(label!.top, 0);
+      expect(link!.height, target).toBeCloseTo(label!.height, 0);
+      expect(status!.height, target).toBeCloseTo(label!.height, 0);
+      // The link follows the name, and the status keeps the end.
+      expect(link!.left, target).toBeGreaterThan(label!.right);
+      expect(status!.left, target).toBeGreaterThan(link!.right);
+    }
+  });
+
+  for (const scheme of ["light", "dark"] as const) {
+    it(`has no axe violations in ${scheme} with an example's links shown`, async () => {
+      await commands.ufShellColorScheme(scheme);
+      await open("design-system");
+      await expect
+        .element(page.getByRole("link", { name: "Open Buttons on vue in a new tab" }))
+        .toBeVisible();
+      await expect.element(document.body).toHaveNoAxeViolations();
+    });
+  }
+});
+
 describe("the keyboard", () => {
   it("focuses the filter on /, and drives the tree with the arrows and Enter", async () => {
     await open("shell-tree");

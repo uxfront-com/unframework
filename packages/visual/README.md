@@ -47,6 +47,10 @@ keeps the derived value. The preview sorts the examples by `order`, those withou
 title, then by id. `unframework visual` never reads the comment, so it changes no capture and no
 report.
 
+`@layout` gives the example's `layout` in its frame (ADR-0114): `none`, or flex words like
+`column align-start gap`, where `gap` is `1rem` on a scale from `gap-xs` to `gap-xl`. A malformed value is UF7012 too, and the preview centres that
+example.
+
 `exampleBaselines(example)` gives the baselines beside it:
 `__screenshots__/<name>-chromium-linux.png` and `__expected__/geometry.<name>.json`, in the example's
 directory.
@@ -158,6 +162,20 @@ example's doc comment, which the command prints to stderr:
 - **The protocol** (`src/preview/protocol.ts`): the shell sends `render` messages, `{ seq, entry,
 props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on load and
   `rendered` or `failed` with the `seq`. Each side checks the other's origin and window.
+- **Embeds** (ADR-0112): the shell's server also serves `embedPage` (`src/preview/embed.ts`) at
+  `/embed.html`, and 404s every other path. `embed.html?example=<id>&target=<target>` checks both
+  against its own lists (`EmbedData`: the frames' `{ target, src }` and the examples' ids), then
+  `location.replace`s itself with that target's frame page and `?example=<id>`, or shows why it
+  can't, as text. A frame with `example` and no `shell` parameter is standalone: it renders
+  `example:<id>` once with no props, through the same `render` as the shell's frames, adds no
+  message listener and posts nothing. A failed render, an unknown id included, replaces the page
+  with its message. Any `shell` parameter keeps the shell's path. Each frame's caption in the
+  shell links the selected example's URL on its target (**Open**), and hides it for a component.
+- **Layouts** (ADR-0114): each target's frame module carries the `layouts` of the examples that
+  set one, by entry key, and the frame puts the entry's layout, or the centred default, on the
+  fresh mount container it makes for each new entry, as inline style (`layoutStyle` in
+  `src/preview/layout.ts`). The frame page sets `html, body { margin: 0; height: 100%; }`, so the
+  container fills the iframe.
 - **Controls** (`src/preview/controls.ts`, `propControls`): `boolean`, `string`, `number` and a
   union of string literals, as written or resolved from an alias (`ApiMember.literals`), with
   `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
@@ -193,6 +211,8 @@ target is built and every render server closed (ADR-0111):
   `ShellData.frames` is `{ target, src }`: each frame page's URL, from which the shell takes the
   frame's origin. In the static site every frame shares the shell's origin, and a frame refuses a
   shell at any other origin (`FrameOptions.staticPreview`): it sends and takes no message.
+- **The embed page** is `embedPage` written as `<out>/embed.html`, beside `index.html`, with the
+  same relative frame URLs (ADR-0112).
 - **Astro** (a target with a `renderCommandName`) is rendered at build time by
   `renderTargetEntries`, through a server in middleware mode, with each entry's initial props
   (`initialProps`: none for an example, a component's required props at their controls' initial
@@ -227,13 +247,17 @@ and still fails with another family listed or against baselines.
 
 `preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
 frames from seven origins, a control that reaches all of them, and that no port listens after
-`close()` or after the command's SIGINT. `preview-catalogue.test.ts` covers the catalogue, the
+`close()` or after the command's SIGINT. It also opens `embed.html` on the shell's server for each
+target, which lands on that target's server, standalone. `preview-catalogue.test.ts` covers the catalogue, the
 controls and the command's arguments.
 
 `preview-build.test.ts` runs `unframework preview build` on `tests/e2e/design-system` once, into a
 temporary directory, serves the site under `/sub/` with a server that only maps URLs to files, and
 checks, in Chromium, seven frames from the shell's origin, every example rendered on every target,
 Astro's frame equal to the dev preview's, and a changed prop failing Astro's frame with the static
-message. It also checks the site holds no path of the machine, the command's exit 2 on a bad
+message. For embeds, it opens `embed.html` on each target alone and compares the example with the
+shell's frame, frames all seven from a second origin that posts each a render and hears nothing
+back, and checks the message for each missing or unknown value. It also checks the site holds no
+path of the machine, the command's exit 2 on a bad
 argument and on each `--out` it refuses, and, on `test/fixtures/astro-throws`, a render that fails
 at build time, and, on `test/fixtures/metadata`, that the command prints UF7012 and still exits 0.

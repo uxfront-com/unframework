@@ -2,7 +2,8 @@
 // props, so every target renders it the same way with nothing to pass. Discovery skips installed
 // packages, build output and the run's own directory, and UF7011 refuses an example with props.
 // The preview alone reads an example's doc comment for its category, title, description and order
-// (ADR-0110): discovery derives them from the path, and `visual` never reads the comment.
+// (ADR-0110), and for its layout in the frame (ADR-0114): discovery derives them from the path, and
+// `visual` never reads the comment.
 import { globSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -12,6 +13,9 @@ import type { Diagnostic } from "@unframework.dev/compiler";
 import { createDiagnostic } from "@unframework.dev/diagnostics";
 import { parseModule } from "@unframework.dev/parser";
 import { baselineFileName } from "@unframework.dev/testing/node";
+
+import { DEFAULT_LAYOUT } from "./preview/protocol.ts";
+import type { PreviewLayout } from "./preview/protocol.ts";
 
 /** An example's file suffix. */
 export const EXAMPLE_SUFFIX = ".example.uf.tsx";
@@ -41,6 +45,10 @@ export interface Example {
   description?: string;
   /** Where the preview sorts it among the others, `@order`: unset sorts after every number. */
   order?: number;
+  /**
+   * How the preview lays it out in its frame, `@layout` (ADR-0114): unset, the preview centres it.
+   */
+  layout?: PreviewLayout;
 }
 
 /** What {@link discoverExamples} reads. */
@@ -186,9 +194,9 @@ export interface ExampleMetadataResult {
 
 /**
  * Reads the doc comment on each example's default export (ADR-0110): its text is the description,
- * and `@category` (split on `/`), `@title` and `@order` (a finite number) set the others. Other tags
- * are ignored. A known tag that is empty, not a number where one is due, or given twice is UF7012
- * (a warning) at the tag, and the example keeps the derived value. An example whose file can't be
+ * and `@category` (split on `/`), `@title`, `@order` (a finite number) and `@layout` (ADR-0114) set
+ * the others. Other tags are ignored. A known tag that is empty, malformed or given twice is UF7012
+ * (a warning) at the tag, and the example keeps the derived value, or the default layout. An example whose file can't be
  * read or parsed keeps what discovery derived, and the compile reports why.
  */
 export async function readExampleMetadata(
@@ -219,7 +227,7 @@ interface DocTag {
 }
 
 /** The tags {@link readExampleMetadata} reads. */
-const KNOWN_TAGS = ["category", "title", "order"] as const;
+const KNOWN_TAGS = ["category", "title", "order", "layout"] as const;
 type KnownTag = (typeof KNOWN_TAGS)[number];
 
 /** A decimal number, as `@order` takes it: no hex, no `Infinity`, nothing after it. */
@@ -244,7 +252,7 @@ function exampleMetadata(
     for (const repeat of given.slice(1)) {
       warn(
         repeat,
-        `The example ${example.name} gives @${name} ${given.length} times, so the preview uses neither and derives it.`,
+        `The example ${example.name} gives @${name} ${given.length} times, so the preview uses neither and ${name === "layout" ? "centres the example" : "derives it"}.`,
         `Keep one @${name}.`,
       );
     }
@@ -287,8 +295,86 @@ function exampleMetadata(
       result.order = order;
     }
   }
+  if (values.layout !== undefined) {
+    const layout = parseLayout(values.layout);
+    if (typeof layout === "string") {
+      warn(
+        tagOf("layout"),
+        `The example ${example.name}'s @layout ${values.layout ? `"${values.layout}" ${layout}` : "is empty"}, so the preview centres it.`,
+        "Write none, or at most one word of each kind, in any order: @layout column align-start gap.",
+      );
+    } else {
+      result.layout = layout;
+    }
+  }
   if (description) result.description = description;
   return { example: result, diagnostics };
+}
+
+type FlexLayout = Extract<PreviewLayout, { display: "flex" }>;
+
+/** A kind of `@layout` word, as a message names it, and what one of its words sets. */
+interface LayoutWord {
+  kind: string;
+  sets: Partial<FlexLayout>;
+}
+
+/**
+ * Each word of an `@layout` but a gap length: the kind it is, as a message names it, and what it
+ * sets.
+ */
+const LAYOUT_WORDS: ReadonlyMap<string, LayoutWord> = new Map<string, LayoutWord>([
+  ...(["row", "column"] as const).map(
+    (direction) => [direction, { kind: "the direction", sets: { direction } }] as const,
+  ),
+  ...(["start", "center", "end", "between", "around", "evenly"] as const).map(
+    (justify) =>
+      [`justify-${justify}`, { kind: "the main-axis alignment", sets: { justify } }] as const,
+  ),
+  ...(["start", "center", "end", "stretch", "baseline"] as const).map(
+    (align) => [`align-${align}`, { kind: "the cross-axis alignment", sets: { align } }] as const,
+  ),
+  ["wrap", { kind: "the wrapping", sets: { wrap: true } }],
+  // The gap's scale, with a bare `gap` as its middle: `1rem`, the frame's own padding.
+  ...(
+    [
+      ["gap-xs", "0.25rem"],
+      ["gap-sm", "0.5rem"],
+      ["gap", "1rem"],
+      ["gap-lg", "1.5rem"],
+      ["gap-xl", "2rem"],
+    ] as const
+  ).map(([word, gap]) => [word, { kind: "the gap", sets: { gap } }] as const),
+]);
+
+/** A gap word: `0`, or a number in `px`, `rem` or `em`, with no sign, exponent or leading dot. */
+const GAP_WORD = /^gap-(0|\d+(?:\.\d+)?(?:px|rem|em))$/;
+
+/**
+ * An `@layout` value (ADR-0114): `none`, or words separated by whitespace, in any order, at most one
+ * of each kind, the others taking {@link DEFAULT_LAYOUT}'s. Gives the layout, or for a malformed
+ * value the end of the sentence that says why, after the value: `sets the direction twice`.
+ */
+function parseLayout(value: string): PreviewLayout | string {
+  const words = value.split(/\s+/).filter(Boolean);
+  if (!words.length) return "is empty";
+  if (words.includes("none")) {
+    if (words.length === 1) return { display: "block" };
+    return words.every((word) => word === "none")
+      ? "gives none twice"
+      : "gives none with other words";
+  }
+  let layout: FlexLayout = DEFAULT_LAYOUT;
+  const seen = new Set<string>();
+  for (const word of words) {
+    const gap = GAP_WORD.exec(word)?.[1];
+    const known = gap === undefined ? LAYOUT_WORDS.get(word) : { kind: "the gap", sets: { gap } };
+    if (!known) return `has the unknown word ${word}`;
+    if (seen.has(known.kind)) return `sets ${known.kind} twice`;
+    seen.add(known.kind);
+    layout = { ...layout, ...known.sets };
+  }
+  return layout;
 }
 
 /**

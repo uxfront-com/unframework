@@ -20,10 +20,11 @@ import { readCatalogue } from "../src/preview/catalogue.ts";
 import { preview } from "../src/preview/command.ts";
 import { projectConfig, startPreview, targetServerOptions } from "../src/preview/index.ts";
 import { exampleTransform } from "../src/preview/instrument.ts";
-import { FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
+import { EMBED_FILE, FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts";
 import { PREVIEW_HOST, startTargetServer } from "../src/preview/servers.ts";
 import { shellData, shellPage, startShellServer } from "../src/preview/shell.ts";
 import { VisualUsageError } from "../src/run.ts";
+import { CENTRED, centred, frameLayout } from "./frame-layout.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
 const TARGETS = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
@@ -131,6 +132,10 @@ describe("startPreview", () => {
           await expect
             .poll(() => status(target).textContent(), { timeout: 30_000 })
             .toBe("rendered");
+          // An example without `@layout` sits at the centre of its frame (ADR-0114).
+          const layout = await frameLayout(frame(target));
+          expect(layout, target).toMatchObject(CENTRED);
+          expect(centred(layout), `${target}: ${JSON.stringify(layout)}`).toBe(true);
         }
 
         await page.getByRole("treeitem", { name: "src/Button", exact: true }).click();
@@ -138,6 +143,10 @@ describe("startPreview", () => {
         await variant.selectOption("primary");
         for (const target of TARGETS) {
           await frame(target).locator('button[data-variant="primary"]').waitFor();
+          // A component takes the same centred layout.
+          const layout = await frameLayout(frame(target));
+          expect(layout, target).toMatchObject(CENTRED);
+          expect(centred(layout), `${target}: ${JSON.stringify(layout)}`).toBe(true);
         }
         await variant.selectOption("secondary");
         for (const target of TARGETS) {
@@ -188,6 +197,43 @@ describe("startPreview", () => {
   );
 
   it(
+    "opens an example by its own URL on each of seven targets' servers (ADR-0112)",
+    { timeout: 300_000 },
+    async () => {
+      const preview = await startPreview({ root: DESIGN_SYSTEM });
+      const browser = await chromium.launch();
+      try {
+        const embed = await fetch(`${preview.url}${EMBED_FILE}`);
+        expect(embed.status).toBe(200);
+        expect(embed.headers.get("content-type")).toBe("text/html; charset=utf-8");
+        const head = await fetch(`${preview.url}${EMBED_FILE}`, { method: "HEAD" });
+        expect(head.status).toBe(200);
+        expect((await fetch(`${preview.url}other`)).status).toBe(404);
+        expect((await fetch(`${preview.url}${EMBED_FILE}`, { method: "POST" })).status).toBe(404);
+
+        const page = await browser.newPage();
+        for (const { target, origin } of preview.frames) {
+          await page.goto(`${preview.url}${EMBED_FILE}?example=examples/Card&target=${target}`);
+          // The embed page on the shell's server sends the browser to the target's own server.
+          await expect
+            .poll(() => new URL(page.url()).origin + new URL(page.url()).pathname, {
+              message: target,
+            })
+            .toBe(`${origin}${FRAME_PATH}`);
+          const params = new URL(page.url()).searchParams;
+          expect([...params.keys()], target).toEqual(["example"]);
+          expect(params.get("example")).toBe("examples/Card");
+          await page.getByText("Release notes").waitFor({ timeout: 120_000 });
+          expect(await page.locator("nav, figure, [data-uf-tree]").count(), target).toBe(0);
+        }
+      } finally {
+        await browser.close();
+        await preview.close();
+      }
+    },
+  );
+
+  it(
     "shows an example kept beside its component apart from the component",
     { timeout: 180_000 },
     async () => {
@@ -225,6 +271,105 @@ describe("startPreview", () => {
         for (const { target } of preview.frames) {
           const frame = page.frameLocator(`figure[data-target="${target}"] iframe`);
           await frame.getByText("Release notes").waitFor();
+        }
+      } finally {
+        await browser.close();
+        await preview.close();
+      }
+    },
+  );
+
+  it(
+    "lays out each example as its @layout says, and carries nothing over to the next",
+    { timeout: 180_000 },
+    async () => {
+      const root = fileURLToPath(new URL("fixtures/layouts", import.meta.url));
+      const preview = await startPreview({ root });
+      const browser = await chromium.launch();
+      const targets = preview.frames.map((each) => each.target);
+      try {
+        expect(targets).toEqual(["vue", "angular", "qwik", "astro"]);
+        // The malformed value is a warning, and its example still renders, centred.
+        expect(preview.diagnostics.map((each) => [each.code, each.file])).toEqual([
+          ["UF7012", "examples/Broken.example.uf.tsx"],
+        ]);
+        const page = await browser.newPage();
+        await page.goto(preview.url);
+        const frame = (target: string) =>
+          page.frameLocator(`figure[data-target="${target}"] iframe`);
+        const status = (target: string) => page.locator(`figure[data-target="${target}"] output`);
+        const centredFlex = { ...CENTRED, gap: "0px", paddingTop: "16px" };
+        const expected: Record<string, Record<string, unknown>> = {
+          Column: {
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            alignItems: "safe flex-end",
+            flexWrap: "wrap",
+            // A bare `gap` is the scale's middle, `1rem`.
+            gap: "16px",
+            paddingTop: "16px",
+          },
+          Default: centredFlex,
+          Plain: { display: "block", paddingTop: "0px" },
+          Broken: centredFlex,
+        };
+        for (const name of ["Column", "Default", "Plain", "Column", "Broken"]) {
+          await page
+            .locator(`nav [role='treeitem'][data-entry="example:examples/${name}"]`)
+            .click();
+          for (const target of targets) {
+            await frame(target).getByText("Two").waitFor({ timeout: 120_000 });
+            await expect
+              .poll(() => status(target).textContent(), { timeout: 60_000, message: target })
+              .toBe("rendered");
+            await expect
+              .poll(() => frameLayout(frame(target)), { message: `${name} on ${target}` })
+              .toMatchObject(expected[name]!);
+            const layout = await frameLayout(frame(target));
+            const at = `${name} on ${target}: ${JSON.stringify(layout)}`;
+            if (name === "Plain") expect(layout.height, at).toBe(layout.innerHeight);
+            if (name === "Default" || name === "Broken") expect(centred(layout), at).toBe(true);
+            if (name === "Column") {
+              const [one, two] = await Promise.all(
+                ["One", "Two"].map((text) =>
+                  frame(target)
+                    .getByText(text, { exact: true })
+                    .evaluate((span) => {
+                      const { top, bottom } = span.getBoundingClientRect();
+                      return { top, bottom };
+                    }),
+                ),
+              );
+              expect(Math.abs(two!.top - one!.bottom - 16), at).toBeLessThanOrEqual(0.5);
+            }
+            // The frame styles its container alone: the example's own elements keep the styles
+            // their output writes, which is none but Angular's host (ADR-0010).
+            const styled = await frame(target)
+              .locator("[data-uf-preview-root]")
+              .evaluate((container) =>
+                [...container.querySelectorAll("[style]")].map((each) => [
+                  each.localName,
+                  each.getAttribute("style"),
+                ]),
+              );
+            if (target === "angular") {
+              expect(styled.length, at).toBe(1);
+              expect(styled[0]![0], at).toContain("-");
+              expect(styled[0]![1], at).toMatch(/^display: contents;?$/);
+            } else {
+              expect(styled, at).toEqual([]);
+            }
+          }
+        }
+        // An example opened by its own URL, with no shell, takes its layout too (ADR-0112).
+        const alone = await browser.newPage();
+        for (const { target } of preview.frames) {
+          await alone.goto(`${preview.url}${EMBED_FILE}?example=examples/Column&target=${target}`);
+          await alone.getByText("Two").waitFor({ timeout: 120_000 });
+          await expect
+            .poll(() => frameLayout(alone), { message: `standalone Column on ${target}` })
+            .toMatchObject(expected.Column!);
         }
       } finally {
         await browser.close();
@@ -401,10 +546,14 @@ describe("an example's controls", () => {
           const roots: string[] = [];
           for (const transform of [transformSource, undefined]) {
             const server = await startTargetServer(
-              targetServerOptions(root, config, target, entries, undefined, transform),
+              targetServerOptions(root, config, target, entries, undefined, undefined, transform),
             );
             const pages = [{ target, src: `${server.origin}${FRAME_PATH}` }];
-            const shell = await startShellServer(shellPage(shellData(catalogue, pages)), 0);
+            // The page alone: this test opens no embed.
+            const shell = await startShellServer(
+              { shell: shellPage(shellData(catalogue, pages)), embed: "" },
+              0,
+            );
             try {
               await page.goto(shell.url);
               const status = page.locator(`figure[data-target="${target}"] output`);

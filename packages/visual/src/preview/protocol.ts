@@ -24,6 +24,26 @@ export const STATIC_FRAME_FILE = "frame.html";
  */
 export const STATIC_RENDERS_DIR = "renders";
 
+/**
+ * The page that opens one example on one target by its own URL (ADR-0112):
+ * `embed.html?example=<id>&target=<target>`, beside the shell, at `<out>/embed.html` in a static
+ * preview and at `/embed.html` on the dev shell's server. It sends the browser on to that target's
+ * frame page in standalone mode.
+ */
+export const EMBED_FILE = "embed.html";
+
+/**
+ * The query parameter that names an example by its id, on {@link EMBED_FILE} and on a frame page
+ * in standalone mode, which renders that example alone and takes no messages (ADR-0112).
+ */
+export const EXAMPLE_PARAM = "example";
+
+/** The query parameter of {@link EMBED_FILE} that names the target, as the shell's captions do. */
+export const TARGET_PARAM = "target";
+
+/** The start of an example's entry key, `example:<id>`, as `entryKey` writes it. */
+export const EXAMPLE_KEY_PREFIX = "example:";
+
 /** What a static preview's frame says when asked for a render the build did not make. */
 export const STATIC_RENDER_MESSAGE =
   "The static preview renders this target only as each entry first shows: run unframework preview to change its controls.";
@@ -70,6 +90,33 @@ export type ShellMessage = RenderMessage;
 /** A frame's messages to the shell. */
 export type FrameMessage = ReadyMessage | RenderedMessage;
 
+/**
+ * How an example sits in its frame (ADR-0114): a flex layout on the frame's mount container, which
+ * an example's `@layout` tag sets, or a plain block that fills the frame (`@layout none`). An entry
+ * without one takes {@link DEFAULT_LAYOUT}.
+ */
+export type PreviewLayout =
+  | { display: "block" }
+  | {
+      display: "flex";
+      direction: "row" | "column";
+      justify: "start" | "center" | "end" | "between" | "around" | "evenly";
+      align: "start" | "center" | "end" | "stretch" | "baseline";
+      wrap: boolean;
+      /** A CSS length: `0`, or a number in `px`, `rem` or `em`. */
+      gap: string;
+    };
+
+/** The layout of an entry that sets none: centred on both axes, in a row, with no gap. */
+export const DEFAULT_LAYOUT: Extract<PreviewLayout, { display: "flex" }> = {
+  display: "flex",
+  direction: "row",
+  justify: "center",
+  align: "center",
+  wrap: false,
+  gap: "0",
+};
+
 /** What a target's server gives its frame: the target and its entries' modules, by id. */
 export interface FrameOptions {
   target: string;
@@ -97,4 +144,9 @@ export interface FrameOptions {
    * (ADR-0111). Such a frame takes messages from, and sends them to, a shell at its own origin only.
    */
   staticPreview?: boolean;
+  /**
+   * The layout of each entry that sets one, by key (ADR-0114). The frame puts it, or
+   * {@link DEFAULT_LAYOUT}, on the fresh container of each mount.
+   */
+  layouts?: Record<string, PreviewLayout>;
 }

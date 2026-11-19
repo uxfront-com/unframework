@@ -2,7 +2,8 @@
 // frame is built with Vite's `build` on its dev server's configuration, into `<out>/<target>/`,
 // and the shell is written as `<out>/index.html`, framing each by a relative URL, so the site
 // serves at any path with no server. A target with no client runtime (Astro) is rendered at build
-// time with each entry's initial props, and its frame reads those renders.
+// time with each entry's initial props, and its frame reads those renders. `<out>/embed.html`
+// opens one example on one target by its own URL (ADR-0112).
 import {
   existsSync,
   mkdirSync,
@@ -18,13 +19,14 @@ import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/co
 import { loadToolchain } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
-import { readCatalogue } from "./catalogue.ts";
+import { entryLayouts, readCatalogue } from "./catalogue.ts";
 import type { PreviewCatalogue } from "./catalogue.ts";
 import type { PropControl } from "./controls.ts";
+import { embedData, embedPage } from "./embed.ts";
 import { previewTargets, projectConfig, targetServerOptions } from "./index.ts";
 import type { PreviewOptions } from "./index.ts";
 import { exampleTransform } from "./instrument.ts";
-import { STATIC_FRAME_FILE, STATIC_RENDERS_DIR } from "./protocol.ts";
+import { EMBED_FILE, STATIC_FRAME_FILE, STATIC_RENDERS_DIR } from "./protocol.ts";
 import type { StaticRender } from "./protocol.ts";
 import { buildTarget, renderTargetEntries } from "./servers.ts";
 import type { StaticRenders } from "./servers.ts";
@@ -97,6 +99,7 @@ export async function buildPreview(options: BuildPreviewOptions): Promise<BuiltP
   }
   const frames = targets.map((target) => ({ target, src: `./${target}/${STATIC_FRAME_FILE}` }));
   writeFileSync(join(out, "index.html"), shellPage(shellData(catalogue, frames)));
+  writeFileSync(join(out, EMBED_FILE), embedPage(embedData(catalogue, frames)));
   return { out, targets, diagnostics: catalogue.diagnostics };
 }
 
@@ -111,6 +114,7 @@ async function buildTargets(
   toolchainDirs: PreviewOptions["toolchainDirs"],
 ): Promise<void> {
   const props = initialProps(catalogue);
+  const layouts = entryLayouts(catalogue);
   const transformSource = exampleTransform(root, catalogue);
   for (const target of targets) {
     const server = targetServerOptions(
@@ -119,6 +123,7 @@ async function buildTargets(
       target,
       entries,
       toolchainDirs,
+      layouts,
       transformSource,
     );
     const dir = join(out, target);

@@ -1,5 +1,5 @@
 // What the preview lists (ADR-0088): the project's examples, as `unframework visual` finds them,
-// with the metadata their doc comments give (ADR-0110), and its components, the default export of each `.uf.tsx` file under `srcDir`, with the
+// with the metadata their doc comments give (ADR-0110, ADR-0114), and its components, the default export of each `.uf.tsx` file under `srcDir`, with the
 // controls their props get, and each example's controls: one group for each component it renders
 // (ADR-0113). Read once, when the preview starts.
 import { globSync } from "node:fs";
@@ -20,6 +20,7 @@ import { propControls } from "./controls.ts";
 import type { PropControls } from "./controls.ts";
 import { exampleControls } from "./instrument.ts";
 import type { ExampleControlGroup } from "./instrument.ts";
+import type { PreviewLayout } from "./protocol.ts";
 
 /** A component's file suffix. */
 const COMPONENT_SUFFIX = ".uf.tsx";
@@ -33,7 +34,7 @@ export type PreviewEntry =
       file: string;
       /** The example's controls, by component: none for one the preview serves as written. */
       controls: ExampleControlGroup[];
-    } & Pick<Example, "category" | "title" | "description" | "order">)
+    } & Pick<Example, "category" | "title" | "description" | "order" | "layout">)
   | ({ kind: "component"; key: string; id: string; file: string; name: string } & PropControls);
 
 /**
@@ -126,9 +127,15 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
       });
     }
     const examples: PreviewCatalogue["examples"] = [];
-    for (const { id, file, category, title, description, order } of metadata.examples.toSorted(
-      compareExamples,
-    )) {
+    for (const {
+      id,
+      file,
+      category,
+      title,
+      description,
+      order,
+      layout,
+    } of metadata.examples.toSorted(compareExamples)) {
       const source = await read(file);
       examples.push({
         kind: "example",
@@ -143,10 +150,18 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
         title,
         ...(description === undefined ? {} : { description }),
         ...(order === undefined ? {} : { order }),
+        ...(layout === undefined ? {} : { layout }),
       });
     }
     return { examples, components, diagnostics: metadata.diagnostics };
   } finally {
     await typeOracle.dispose();
   }
+}
+
+/** The layout of each example that sets one, by key, for the frames (ADR-0114). */
+export function entryLayouts(catalogue: PreviewCatalogue): Record<string, PreviewLayout> {
+  return Object.fromEntries(
+    catalogue.examples.flatMap((entry) => (entry.layout ? [[entry.key, entry.layout]] : [])),
+  );
 }

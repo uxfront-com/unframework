@@ -10,10 +10,12 @@ import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/co
 import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
-import { readCatalogue } from "./catalogue.ts";
+import { entryLayouts, readCatalogue } from "./catalogue.ts";
+import { embedData, embedPage } from "./embed.ts";
 import { exampleTransform } from "./instrument.ts";
 import type { SourceTransform } from "./instrument.ts";
 import { FRAME_PATH } from "./protocol.ts";
+import type { PreviewLayout } from "./protocol.ts";
 import { startTargetServer } from "./servers.ts";
 import type { TargetServer, TargetServerOptions } from "./servers.ts";
 import { shellData, shellPage, startShellServer } from "./shell.ts";
@@ -68,6 +70,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
       `Nothing to preview under ${root}: add an example (*.example.uf.tsx) or a component under ${config.srcDir}.`,
     );
   }
+  const layouts = entryLayouts(catalogue);
 
   const transformSource = exampleTransform(root, catalogue);
 
@@ -92,6 +95,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
             target,
             entries,
             options.toolchainDirs,
+            layouts,
             transformSource,
           ),
         ).then((server) => {
@@ -110,7 +114,13 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
       target: frame.target,
       src: `${frame.origin}${FRAME_PATH}`,
     }));
-    const shell = await startShellServer(shellPage(shellData(catalogue, pages)), port);
+    const shell = await startShellServer(
+      {
+        shell: shellPage(shellData(catalogue, pages)),
+        embed: embedPage(embedData(catalogue, pages)),
+      },
+      port,
+    );
     let closing: Promise<void> | undefined;
     return {
       url: shell.url,
@@ -129,9 +139,9 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
 }
 
 /**
- * What a target's server serves, from the project's configuration: the entries, where the
- * target's compiler stack resolves from, the project's Vite config (ADR-0104), and the rewrite
- * that binds the examples' controls (ADR-0113).
+ * What a target's server serves, from the project's configuration: the entries and their layouts
+ * (ADR-0114), where the target's compiler stack resolves from, the project's Vite config
+ * (ADR-0104), and the rewrite that binds the examples' controls (ADR-0113).
  */
 export function targetServerOptions(
   root: string,
@@ -139,6 +149,7 @@ export function targetServerOptions(
   target: TargetName,
   entries: Readonly<Record<string, string>>,
   toolchainDirs?: PreviewOptions["toolchainDirs"],
+  layouts?: Readonly<Record<string, PreviewLayout>>,
   transformSource?: SourceTransform,
 ): TargetServerOptions {
   return {
@@ -147,6 +158,7 @@ export function targetServerOptions(
     toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
     entries,
     ...(config.vite ? { vite: config.vite } : {}),
+    ...(layouts && Object.keys(layouts).length ? { layouts } : {}),
     ...(transformSource ? { transformSource } : {}),
   };
 }

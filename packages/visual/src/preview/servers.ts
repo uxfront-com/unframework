@@ -23,6 +23,7 @@ import type { InlineConfig, Plugin, ViteDevServer } from "vite";
 
 import type { SourceTransform } from "./instrument.ts";
 import { FRAME_PATH, RENDER_PATH, STATIC_FRAME_FILE } from "./protocol.ts";
+import type { PreviewLayout } from "./protocol.ts";
 
 /** The host every preview server binds to: the preview is for this machine alone. */
 export const PREVIEW_HOST = "127.0.0.1";
@@ -64,6 +65,8 @@ export interface TargetServerOptions {
    * preview binds its controls to an example's components this way (ADR-0113). None by default.
    */
   transformSource?: SourceTransform;
+  /** The layout of each entry that sets one, by key (ADR-0114): the frame centres the others. */
+  layouts?: Readonly<Record<string, PreviewLayout>>;
 }
 
 /** The frame runtime's file, wherever the package is installed. */
@@ -91,6 +94,7 @@ export function frameModule(
   serverRender: boolean,
   staticRenders?: StaticRenders,
   staticPreview = false,
+  layouts: Readonly<Record<string, PreviewLayout>> = {},
 ): string {
   const loaders = Object.entries(entries)
     .map(([id, file]) => {
@@ -116,6 +120,7 @@ export function frameModule(
     `  serverRender: ${serverRender},`,
     ...(staticPreview ? ["  staticPreview: true,"] : []),
     ...(renders ? ["  staticRenders: {", ...renders, "  },"] : []),
+    ...(Object.keys(layouts).length ? [`  layouts: ${JSON.stringify(layouts)},`] : []),
     "  entries: {",
     loaders,
     "  },",
@@ -132,6 +137,8 @@ export function framePage(target: TargetName): string {
     "  <head>",
     '    <meta charset="utf-8" />',
     `    <title>${target}: unframework preview</title>`,
+    // The frame fills its iframe, so the container's layout can centre an example in it (ADR-0114).
+    "    <style>html, body { margin: 0; height: 100%; }</style>",
     "  </head>",
     "  <body>",
     `    <div data-uf-preview-root data-target="${target}"></div>`,
@@ -184,6 +191,7 @@ function previewPlugin(
           render !== undefined,
           staticRenders,
           building,
+          options.layouts,
         );
       }
       if (id === NO_VITEST_ID) return "export const commands = {};\n";

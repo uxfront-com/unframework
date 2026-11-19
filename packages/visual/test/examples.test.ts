@@ -250,6 +250,134 @@ describe("readExampleMetadata", () => {
     expect(gone.diagnostics).toEqual([]);
   });
 
+  describe("@layout", () => {
+    const flex = {
+      display: "flex",
+      direction: "row",
+      justify: "center",
+      align: "center",
+      wrap: false,
+      gap: "0",
+    };
+    const layoutOf = async (value: string) => {
+      const source = `/**\n * @layout ${value}\n */\n${EXAMPLE}`;
+      return { source, ...(await read(source)) };
+    };
+
+    it("gives no layout to an example without the tag", async () => {
+      const { example } = await read("/** @title Plain */\n" + EXAMPLE);
+      expect(example).not.toHaveProperty("layout");
+    });
+
+    it.each([
+      ["row", {}],
+      ["column", { direction: "column" }],
+      ["justify-start", { justify: "start" }],
+      ["justify-center", {}],
+      ["justify-end", { justify: "end" }],
+      ["justify-between", { justify: "between" }],
+      ["justify-around", { justify: "around" }],
+      ["justify-evenly", { justify: "evenly" }],
+      ["align-start", { align: "start" }],
+      ["align-center", {}],
+      ["align-end", { align: "end" }],
+      ["align-stretch", { align: "stretch" }],
+      ["align-baseline", { align: "baseline" }],
+      ["wrap", { wrap: true }],
+      ["gap-0", {}],
+      ["gap-8px", { gap: "8px" }],
+      ["gap-0.5rem", { gap: "0.5rem" }],
+      ["gap-2em", { gap: "2em" }],
+      ["gap-12.25px", { gap: "12.25px" }],
+      ["gap", { gap: "1rem" }],
+      ["gap-xs", { gap: "0.25rem" }],
+      ["gap-sm", { gap: "0.5rem" }],
+      ["gap-lg", { gap: "1.5rem" }],
+      ["gap-xl", { gap: "2rem" }],
+    ])("reads @layout %s, and the defaults for the words left out", async (value, sets) => {
+      const { example, diagnostics } = await layoutOf(value);
+      expect(example.layout).toEqual({ ...flex, ...sets });
+      expect(diagnostics).toEqual([]);
+    });
+
+    it("reads none, words in any order and a value over two lines", async () => {
+      expect((await layoutOf("none")).example.layout).toEqual({ display: "block" });
+      const all = {
+        display: "flex",
+        direction: "column",
+        justify: "between",
+        align: "end",
+        wrap: true,
+        gap: "12px",
+      };
+      for (const value of [
+        "column justify-between align-end wrap gap-12px",
+        "gap-12px wrap align-end justify-between column",
+        "  column\t justify-between  align-end wrap gap-12px ",
+      ]) {
+        const { example, diagnostics } = await layoutOf(value);
+        expect(example.layout, value).toEqual(all);
+        expect(diagnostics, value).toEqual([]);
+      }
+      const wrapped = await read(
+        "/**\n * @layout column\n *   align-start gap-8px\n * @title Wrapped\n */\n" + EXAMPLE,
+      );
+      expect(wrapped.example).toMatchObject({
+        title: "Wrapped",
+        layout: { ...flex, direction: "column", align: "start", gap: "8px" },
+      });
+      expect(wrapped.diagnostics).toEqual([]);
+    });
+
+    it.each([
+      ["", "is empty"],
+      ["diagonal", '"diagonal" has the unknown word diagonal'],
+      ["Row", '"Row" has the unknown word Row'],
+      ["center", '"center" has the unknown word center'],
+      ["gap-8", '"gap-8" has the unknown word gap-8'],
+      ["gap--1px", '"gap--1px" has the unknown word gap--1px'],
+      ["gap-+4px", '"gap-+4px" has the unknown word gap-+4px'],
+      ["gap-.5rem", '"gap-.5rem" has the unknown word gap-.5rem'],
+      ["gap-1e2px", '"gap-1e2px" has the unknown word gap-1e2px'],
+      ["gap-8vh", '"gap-8vh" has the unknown word gap-8vh'],
+      ["gap-", '"gap-" has the unknown word gap-'],
+      ["row column", '"row column" sets the direction twice'],
+      [
+        "justify-start justify-end",
+        '"justify-start justify-end" sets the main-axis alignment twice',
+      ],
+      ["align-end align-end", '"align-end align-end" sets the cross-axis alignment twice'],
+      ["wrap wrap", '"wrap wrap" sets the wrapping twice'],
+      ["gap-0 gap-4px", '"gap-0 gap-4px" sets the gap twice'],
+      ["gap gap-sm", '"gap gap-sm" sets the gap twice'],
+      ["gap-lg gap-8px", '"gap-lg gap-8px" sets the gap twice'],
+      ["gap-md", '"gap-md" has the unknown word gap-md'],
+      ["gap-2xl", '"gap-2xl" has the unknown word gap-2xl'],
+      ["Gap", '"Gap" has the unknown word Gap'],
+      ["none row", '"none row" gives none with other words'],
+      ["column none", '"column none" gives none with other words'],
+      ["none none", '"none none" gives none twice'],
+    ])("reports UF7012 for @layout %j, and gives no layout", async (value, problem) => {
+      const { source, example, diagnostics } = await layoutOf(value);
+      expect(example).not.toHaveProperty("layout");
+      expect(diagnostics.map((each) => each.code)).toEqual(["UF7012"]);
+      expect(diagnostics[0]!.message).toBe(
+        `The example ButtonColors's @layout ${problem}, so the preview centres it.`,
+      );
+      expect(at(source, diagnostics[0]!.span)).toBe(`@layout ${value}`.trim());
+    });
+
+    it("reports UF7012 at each repeat of @layout, and gives no layout", async () => {
+      const source = "/**\n * @layout column\n * @layout none\n */\n" + EXAMPLE;
+      const { example, diagnostics } = await read(source);
+      expect(example).not.toHaveProperty("layout");
+      expect(diagnostics.map((each) => at(source, each.span))).toEqual(["@layout none"]);
+      expect(diagnostics[0]!.message).toBe(
+        "The example ButtonColors gives @layout 2 times, so the preview uses neither and centres the example.",
+      );
+    });
+  });
+
   it("keeps the order of the examples and their tags", async () => {
     const root = project({
       "examples/A.example.uf.tsx": `/** @order x */\n${EXAMPLE}`,

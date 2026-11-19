@@ -10,7 +10,7 @@ import type { AddressInfo } from "node:net";
 
 import type { PreviewCatalogue } from "./catalogue.ts";
 import type { ExampleControlGroup } from "./instrument.ts";
-import { PREVIEW_MESSAGE } from "./protocol.ts";
+import { EMBED_FILE, EXAMPLE_PARAM, PREVIEW_MESSAGE, TARGET_PARAM } from "./protocol.ts";
 import { PREVIEW_HOST } from "./servers.ts";
 
 /**
@@ -69,7 +69,7 @@ export function shellData(
 }
 
 /** JSON safe inside a `<script>` element: no `</script>` or `<!--` can close it. */
-function scriptJson(value: unknown): string {
+export function scriptJson(value: unknown): string {
   return JSON.stringify(value)
     .replace(/</g, "\\u003c")
     .replace(/\u2028/g, "\\u2028")
@@ -183,6 +183,8 @@ figure { margin: 0; display: flex; flex-direction: column; min-height: 0; border
 figure[hidden] { display: none; }
 figcaption { display: flex; justify-content: space-between; gap: 8px; padding: 4px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
 figcaption span { font-weight: 500; }
+figcaption a { flex: none; margin-inline-end: auto; color: var(--muted); white-space: nowrap; text-underline-offset: 2px; }
+figcaption a:hover { color: var(--fg); }
 figcaption output { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
 figcaption output::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
 figcaption output[data-state="rendered"]::before { background: var(--ok); }
@@ -241,7 +243,11 @@ export function shellPage(data: ShellData): string {
   // A preview of one target opens on the view that fills the canvas, written into the page so
   // nothing moves once its script runs, and has no switch, since a choice of one is none.
   const single = data.frames.length === 1;
-  const constants = { message: PREVIEW_MESSAGE, themeKey: THEME_KEY };
+  const constants = {
+    message: PREVIEW_MESSAGE,
+    themeKey: THEME_KEY,
+    embed: { file: EMBED_FILE, example: EXAMPLE_PARAM, target: TARGET_PARAM },
+  };
   const chevron = `<svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   return `<!doctype html>
 <html lang="en">
@@ -326,7 +332,11 @@ export function shellPage(data: ShellData): string {
  * two trees with the keyboard model of the ARIA tree view pattern: the examples by category
  * (ADR-0110) and the components.
  */
-function shellScript(constants: { message: string; themeKey: string }): void {
+function shellScript(constants: {
+  message: string;
+  themeKey: string;
+  embed: { file: string; example: string; target: string };
+}): void {
   type Control = ShellData["components"][number]["controls"][number];
   type Component = ShellData["components"][number];
   type Example = ShellData["examples"][number];
@@ -395,15 +405,21 @@ function shellScript(constants: { message: string; themeKey: string }): void {
     const caption = document.createElement("figcaption");
     const label = document.createElement("span");
     label.textContent = target;
+    // The example's own URL on this target (ADR-0112), relative to the shell: \`select\` sets it.
+    const link = document.createElement("a");
+    link.textContent = "Open";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.hidden = true;
     const status = document.createElement("output");
-    caption.append(label, status);
+    caption.append(label, link, status);
     const iframe = document.createElement("iframe");
     iframe.title = `${target} preview`;
     url.searchParams.set("shell", location.origin);
     iframe.src = url.href;
     figure.append(caption, iframe);
     grid.append(figure);
-    return { target, origin, iframe, status, figure };
+    return { target, origin, iframe, link, status, figure };
   });
   // One target has no choice to make: the page already shows it in the one-target view.
   const choices = frames.length > 1 ? ["all", ...frames.map((each) => each.target)] : [];
@@ -830,6 +846,20 @@ function shellScript(constants: { message: string; themeKey: string }): void {
     for (const tree of trees) rove(tree);
     showControls(component);
     showExampleControls(example);
+    // An example opens by its own URL on each target. A component takes props, which no URL holds.
+    for (const frame of frames) {
+      frame.link.hidden = !example;
+      if (!example) continue;
+      const query = new URLSearchParams({
+        [constants.embed.example]: example.id,
+        [constants.embed.target]: frame.target,
+      });
+      frame.link.href = `${constants.embed.file}?${query}`;
+      frame.link.setAttribute(
+        "aria-label",
+        `Open ${example.title} on ${frame.target} in a new tab`,
+      );
+    }
     // An example starts as written: every control at "(default)", so it takes no props.
     props = component ? propsOf(component.controls) : {};
     if (location.hash !== `#${key}`) history.replaceState(null, "", `#${key}`);
@@ -868,11 +898,18 @@ export interface ShellServer {
   close(): Promise<void>;
 }
 
-/** Serves the shell page at `/` on `port` (0 for any free one), and resolves once it listens. */
-export function startShellServer(page: string, port: number): Promise<ShellServer> {
+/**
+ * Serves the shell page at `/` and the embed page at `/embed.html` (ADR-0112) on `port` (0 for any
+ * free one), and resolves once it listens.
+ */
+export function startShellServer(
+  pages: { shell: string; embed: string },
+  port: number,
+): Promise<ShellServer> {
   const server: Server = createServer((request, response) => {
     const path = new URL(request.url ?? "/", "http://preview").pathname;
-    if (path !== "/" || (request.method !== "GET" && request.method !== "HEAD")) {
+    const page = path === "/" ? pages.shell : path === `/${EMBED_FILE}` ? pages.embed : undefined;
+    if (page === undefined || (request.method !== "GET" && request.method !== "HEAD")) {
       response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
       response.end("Not found: the preview serves its page at /.");
       return;
