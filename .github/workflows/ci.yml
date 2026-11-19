@@ -35,7 +35,27 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      # The dependency cache, with a fallback. setup-node's pnpm cache restores only the exact
+      # lockfile key, and a PR whose lockfile differs from main's, like a part on an integration
+      # branch, finds no such key in a scope it can read, so it downloaded every package. The
+      # restore key falls back to the newest store, and pnpm downloads only the difference.
+      # `pnpm install` never removes a package from the store, so a restored store keeps older
+      # lockfiles' packages. The ISO week in the key limits that: a fallback reaches only a store
+      # from the same week, and each week starts from a cold install. A store prune can't do it,
+      # since it deletes the packages pnpm copies rather than links, like esbuild.
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       # Also runs `nuxt prepare`, which generates the .nuxt tsconfigs that
       # type-aware linting and `check-types` resolve types through.
@@ -104,7 +124,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -133,7 +165,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -174,7 +218,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -213,7 +269,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -263,7 +331,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -324,7 +404,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -527,7 +619,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -569,7 +673,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -619,7 +735,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -669,7 +797,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -714,7 +854,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -770,7 +922,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -815,7 +979,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: node-cache-Linux-x64-pnpm-${{ steps.pnpm-store.outputs.week }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
