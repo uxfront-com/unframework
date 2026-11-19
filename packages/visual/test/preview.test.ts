@@ -228,7 +228,8 @@ describe("startPreview", () => {
             justifyContent: "flex-start",
             alignItems: "safe flex-end",
             flexWrap: "wrap",
-            gap: "12px",
+            // A bare `gap` is the scale's middle, `1rem`.
+            gap: "16px",
             paddingTop: "16px",
           },
           Default: centredFlex,
@@ -262,7 +263,7 @@ describe("startPreview", () => {
                     }),
                 ),
               );
-              expect(Math.abs(two!.top - one!.bottom - 12), at).toBeLessThanOrEqual(0.5);
+              expect(Math.abs(two!.top - one!.bottom - 16), at).toBeLessThanOrEqual(0.5);
             }
             // The frame styles its container alone: the example's own elements keep the styles
             // their output writes, which is none but Angular's host (ADR-0010).

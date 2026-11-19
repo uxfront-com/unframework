@@ -301,7 +301,7 @@ function exampleMetadata(
       warn(
         tagOf("layout"),
         `The example ${example.name}'s @layout ${values.layout ? `"${values.layout}" ${layout}` : "is empty"}, so the preview centres it.`,
-        "Write none, or at most one word of each kind, in any order: @layout column align-start gap-8px.",
+        "Write none, or at most one word of each kind, in any order: @layout column align-start gap.",
       );
     } else {
       result.layout = layout;
@@ -319,7 +319,10 @@ interface LayoutWord {
   sets: Partial<FlexLayout>;
 }
 
-/** Each word of an `@layout` but a gap: the kind it is, as a message names it, and what it sets. */
+/**
+ * Each word of an `@layout` but a gap length: the kind it is, as a message names it, and what it
+ * sets.
+ */
 const LAYOUT_WORDS: ReadonlyMap<string, LayoutWord> = new Map<string, LayoutWord>([
   ...(["row", "column"] as const).map(
     (direction) => [direction, { kind: "the direction", sets: { direction } }] as const,
@@ -332,6 +335,16 @@ const LAYOUT_WORDS: ReadonlyMap<string, LayoutWord> = new Map<string, LayoutWord
     (align) => [`align-${align}`, { kind: "the cross-axis alignment", sets: { align } }] as const,
   ),
   ["wrap", { kind: "the wrapping", sets: { wrap: true } }],
+  // The gap's scale, with a bare `gap` as its middle: `1rem`, the frame's own padding.
+  ...(
+    [
+      ["gap-xs", "0.25rem"],
+      ["gap-sm", "0.5rem"],
+      ["gap", "1rem"],
+      ["gap-lg", "1.5rem"],
+      ["gap-xl", "2rem"],
+    ] as const
+  ).map(([word, gap]) => [word, { kind: "the gap", sets: { gap } }] as const),
 ]);
 
 /** A gap word: `0`, or a number in `px`, `rem` or `em`, with no sign, exponent or leading dot. */

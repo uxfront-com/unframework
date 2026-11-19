@@ -289,6 +289,11 @@ describe("readExampleMetadata", () => {
       ["gap-0.5rem", { gap: "0.5rem" }],
       ["gap-2em", { gap: "2em" }],
       ["gap-12.25px", { gap: "12.25px" }],
+      ["gap", { gap: "1rem" }],
+      ["gap-xs", { gap: "0.25rem" }],
+      ["gap-sm", { gap: "0.5rem" }],
+      ["gap-lg", { gap: "1.5rem" }],
+      ["gap-xl", { gap: "2rem" }],
     ])("reads @layout %s, and the defaults for the words left out", async (value, sets) => {
       const { example, diagnostics } = await layoutOf(value);
       expect(example.layout).toEqual({ ...flex, ...sets });
@@ -344,6 +349,11 @@ describe("readExampleMetadata", () => {
       ["align-end align-end", '"align-end align-end" sets the cross-axis alignment twice'],
       ["wrap wrap", '"wrap wrap" sets the wrapping twice'],
       ["gap-0 gap-4px", '"gap-0 gap-4px" sets the gap twice'],
+      ["gap gap-sm", '"gap gap-sm" sets the gap twice'],
+      ["gap-lg gap-8px", '"gap-lg gap-8px" sets the gap twice'],
+      ["gap-md", '"gap-md" has the unknown word gap-md'],
+      ["gap-2xl", '"gap-2xl" has the unknown word gap-2xl'],
+      ["Gap", '"Gap" has the unknown word Gap'],
       ["none row", '"none row" gives none with other words'],
       ["column none", '"column none" gives none with other words'],
       ["none none", '"none none" gives none twice'],

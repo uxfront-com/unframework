@@ -48,7 +48,7 @@ title, then by id. `unframework visual` never reads the comment, so it changes n
 report.
 
 `@layout` gives the example's `layout` in its frame (ADR-0114): `none`, or flex words like
-`column align-start gap-12px`. A malformed value is UF7012 too, and the preview centres that
+`column align-start gap`, where `gap` is `1rem` on a scale from `gap-xs` to `gap-xl`. A malformed value is UF7012 too, and the preview centres that
 example.
 
 `exampleBaselines(example)` gives the baselines beside it:
