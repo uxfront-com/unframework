@@ -12,7 +12,7 @@ disabled, or in another size, you write another example. Examples are where the 
 is: a component entry renders with empty slots.
 
 What a control should do on an example follows from what an example is. It renders components and
-sets some of their props itself. A colors example sets each button's `color`, and leaves
+sets some of their props itself. A colours example sets each button's `color`, and leaves
 `disabled` alone. A control for `disabled` should reach those buttons, and a control for `color`
 must not undo what the example shows.
 
@@ -88,7 +88,7 @@ export default function Buttons(ufPreview: { ufControl0?: "primary" | "secondary
 **Positive:**
 
 - An example shows the states its author didn't write out, on every target, with no new example.
-- An example's own values hold, so a colors example still shows its colours.
+- An example's own values hold, so a colours example still shows its colours.
 - `unframework visual`, the tests and the corpus are untouched. With every control at "(default)",
   each frame's DOM equals the example as written, on all eight targets.
 
