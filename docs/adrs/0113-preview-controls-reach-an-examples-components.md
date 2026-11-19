@@ -55,8 +55,9 @@ The frames already mount a component with props and update them in place on ever
   (`late-prop`), and its mount adapter renders new props for an example that had none as a new
   instance, which then has every key.
 - **An example the preview can't instrument is served as written:** one that declares props
-  (UF7011), one that doesn't compile, and one that renders no component with a controllable
-  prop. The panel says it has no controls, and the real compile reports the real error at its real
+  (UF7011), one that doesn't compile, one that renders no component with a controllable prop, and
+  one whose default export isn't written `function Name()`, like `function Flags<T>()`, since the
+  rewrite finds the empty parameter list in the text. The panel says it has no controls, and the real compile reports the real error at its real
   span.
 - **The plugin takes the rewrite.** `@unframework.dev/unplugin` gains `transformSource(file,
 source)`, which gives the text to compile for a `.uf.tsx` or `.uf.ts` file, or `undefined` for
@@ -68,16 +69,17 @@ source)`, which gives the text to compile for a `.uf.tsx` or `.uf.ts` file, or `
   gets its controls after a restart, as a new example does. A control whose prop the child no
   longer declares is left unbound.
 
-The sample design system's `Buttons` example, as each target's server compiles it:
+The sample design system's `Buttons` example, as each target's server compiles it: the binding
+and the parameter sit on the lines they were written on.
 
+<!-- prettier-ignore -->
 ```tsx
 import Button from "../src/Button.uf.tsx";
 
 export default function Buttons(ufPreview: { ufControl0?: "primary" | "secondary" }) {
   return (
     <div>
-      <Button variant={ufPreview.ufControl0}>Save</Button>{" "}
-      <Button variant="secondary">Cancel</Button>
+      <Button variant={ufPreview.ufControl0}>Save</Button> <Button variant="secondary">Cancel</Button>
     </div>
   );
 }
@@ -95,8 +97,8 @@ export default function Buttons(ufPreview: { ufControl0?: "primary" | "secondary
 **Negative:**
 
 - `@unframework.dev/unplugin` has a new public option, which a release makes a promise.
-- The preview compiles each example once more at start, and once more on each load, to place the
-  bindings.
+- The preview compiles each example once more at start, and once more each time the plugin
+  reads it to place the bindings, which is several times for one load.
 - A compile error on a line the rewrite touched points at a shifted column.
 - The controls an example gets are fixed when the preview starts, like the catalogue.
 

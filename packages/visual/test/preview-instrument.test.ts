@@ -16,6 +16,13 @@ import type { PreviewCatalogue } from "../src/preview/catalogue.ts";
 import { exampleTransform } from "../src/preview/instrument.ts";
 
 const FIXTURE = fileURLToPath(new URL("fixtures/example-controls", import.meta.url));
+const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
+const ADR = fileURLToPath(
+  new URL(
+    "../../../docs/adrs/0113-preview-controls-reach-an-examples-components.md",
+    import.meta.url,
+  ),
+);
 const FLAGS = join(FIXTURE, "examples/Flags.example.uf.tsx");
 
 /**
@@ -81,6 +88,16 @@ describe("exampleTransform", () => {
     expect(result).toContain('return <Flag label="helper" />;');
     expect(result).toContain('<component is={Flag} label="dynamic" />');
     expect(result).toContain("<Plain />\n      <Helper />");
+  });
+
+  it("rewrites the sample design system's Buttons as ADR-0113 shows it", async () => {
+    const file = join(DESIGN_SYSTEM, "examples/Buttons.example.uf.tsx");
+    const { result } = await rewrite(readFileSync(file, "utf8"), DESIGN_SYSTEM, file);
+    const adr = readFileSync(ADR, "utf8");
+    const shown = /as each target's server compiles it:[\s\S]*?```tsx\n([\s\S]*?)```/.exec(
+      adr,
+    )?.[1];
+    expect(shown).toBe(result);
   });
 
   it("places a binding right after the tag name, after non-ASCII text", async () => {

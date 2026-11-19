@@ -570,6 +570,22 @@ describe("transformSource", () => {
   );
 });
 
+describe("transformSource that throws", () => {
+  it("fails the load with the hook's reason, naming the file", { timeout: SLOW }, async () => {
+    const root = createRoot(FILES);
+    const hot = await startHot(root, "vue", vue, "browser", () => {
+      throw new Error("no rewrite today");
+    });
+    try {
+      await expect(hot.fetchAll()).rejects.toThrow(
+        `transformSource threw while reading ${root}/src/Card.uf.tsx: no rewrite today`,
+      );
+    } finally {
+      await hot.close();
+    }
+  });
+});
+
 describe("a framework with no hot update of its own", () => {
   it("reloads the page on Qwik, and serves the new content", { timeout: SLOW }, async () => {
     const root = createRoot(FILES);

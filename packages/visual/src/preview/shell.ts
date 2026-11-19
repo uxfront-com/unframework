@@ -570,7 +570,7 @@ function shellScript(constants: { message: string; themeKey: string }): void {
     exampleBox.hidden = !groups.length;
     if (!example) return;
     noControls.hidden = groups.length > 0;
-    noControls.textContent = "This example renders no component whose props the preview can set.";
+    noControls.textContent = "This example has no controls.";
     groups.forEach((group, index) => {
       const section = document.createElement("div");
       section.dataset.ufGroup = group.component;

@@ -171,7 +171,7 @@ describe("the layout", () => {
   it("gives each selection its own message in the controls region", async () => {
     await open("design-system");
     const controls = page.getByRole("region", { name: "Controls" });
-    const example = "This example renders no component whose props the preview can set.";
+    const example = "This example has no controls.";
     const component = "This component has no props.";
     // The Card example renders only a Card, which has no props.
     (item("Card").element() as HTMLElement).click();

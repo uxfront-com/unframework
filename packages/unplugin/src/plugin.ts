@@ -329,7 +329,13 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const readSource = async (path: string): Promise<string | undefined> => {
     const text = await readFile(path, "utf8").catch(() => undefined);
     if (text === undefined || !options.transformSource || !isSource(path)) return text;
-    return (await options.transformSource(path, text)) ?? text;
+    try {
+      return (await options.transformSource(path, text)) ?? text;
+    } catch (error) {
+      // Loud, and named: the load fails with the hook's own reason (P2).
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new Error(`transformSource threw while reading ${path}: ${reason}`, { cause: error });
+    }
   };
   const read = async (path: string) => {
     const text = await readSource(path);
