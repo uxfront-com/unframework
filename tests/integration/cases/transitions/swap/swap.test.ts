@@ -76,6 +76,18 @@ function byElement(frames: string[]): Record<string, string[]> {
   return sequences;
 }
 
+/**
+ * Asserts that a swap starts in step: the reading `settled` before it, then the `-from` pair,
+ * then the `-to` pair, in three readings in a row. The leave and the enter take each class in the
+ * same frame. Their ends come after the `-to` pair, so a frame between the two ends can't reach
+ * this check.
+ */
+function expectStartInStep(readings: string[], settled: string, from: string, to: string): void {
+  const index = readings.indexOf(from);
+  expect(readings, "the -from pair is one reading").toContain(from);
+  expect(readings.slice(index - 1, index + 2)).toEqual([settled, from, to]);
+}
+
 /** Gives the `-active` classes of `name` a duration of their own, until the returned removal. */
 function slowDown(name: string): () => void {
   const style = document.createElement("style");
@@ -108,10 +120,10 @@ describeTargets("transitions/swap", () => {
           Payment: ["swap-enter-active swap-enter-from", "swap-enter-active swap-enter-to", ""],
         });
         // At once: the leave and the enter take each class in the same frame.
-        expect(readings).toContain(
+        expectStartInStep(
+          readings,
+          "Cart:",
           "Cart: swap-leave-active swap-leave-from | Payment: swap-enter-active swap-enter-from",
-        );
-        expect(readings).toContain(
           "Cart: swap-leave-active swap-leave-to | Payment: swap-enter-active swap-enter-to",
         );
         await expect.element(view.getByText("Payment")).toBeVisible();
@@ -151,16 +163,16 @@ describeTargets("transitions/swap", () => {
           ],
         });
         // In turn, each swap's leave and enter take each class in the same frame.
-        expect(readings).toContain(
+        expectStartInStep(
+          readings,
+          "Step one:",
           "Step one: step-leave-active step-leave-from | Step two: step-enter-active step-enter-from",
-        );
-        expect(readings).toContain(
           "Step one: step-leave-active step-leave-to | Step two: step-enter-active step-enter-to",
         );
-        expect(readings).toContain(
+        expectStartInStep(
+          readings,
+          "Step two:",
           "Step three: step-enter-active step-enter-from | Step two: step-leave-active step-leave-from",
-        );
-        expect(readings).toContain(
           "Step three: step-enter-active step-enter-to | Step two: step-leave-active step-leave-to",
         );
         await expect.element(view.getByText("Step three")).toBeVisible();
