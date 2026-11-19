@@ -142,6 +142,12 @@ describe("startPreview", () => {
         const variant = page.getByLabel("variant");
         await variant.selectOption("primary");
         for (const target of TARGETS) {
+          // The example's Save is `primary` too: the frame has the component once it rendered the
+          // last change and shows its one button.
+          await expect
+            .poll(() => status(target).textContent(), { timeout: 30_000, message: target })
+            .toBe("rendered");
+          await expect.poll(() => frame(target).locator("button[data-variant]").count()).toBe(1);
           await frame(target).locator('button[data-variant="primary"]').waitFor();
           // A component takes the same centred layout.
           const layout = await frameLayout(frame(target));
