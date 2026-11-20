@@ -165,6 +165,16 @@ describe("startFrame, standalone with an embed's options", () => {
     expect(submitted.defaultPrevented).toBe(true);
   });
 
+  it("says an example without controls has none, and renders it", async () => {
+    framePage("example=examples/Buttons&controls=true");
+    const calls: Calls = { mounts: [], rerenders: [] };
+    startFrame({ ...frameOptions(calls), controls: {} });
+    await vi.waitFor(() => expect(calls.mounts).toHaveLength(1));
+    expect(shadow().querySelector("p")!.textContent).toBe("This example has no controls.");
+    expect(shadow().querySelectorAll("[data-uf-group], input, select")).toHaveLength(0);
+    expect(area().textContent).toBe("Save");
+  });
+
   it("takes the theme message from its parent window only, in the documented shape", async () => {
     framePage("example=examples/Buttons&theme=light");
     const calls: Calls = { mounts: [], rerenders: [] };
