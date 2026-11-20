@@ -44,26 +44,24 @@ and an embed accepts only the inputs it documents.
   `min-height: 100%` on the example's container. With neither, the page is ADR-0112's.
 - **The colour mode.** `theme` sets `data-theme` and `color-scheme` on the frame's `<html>` before
   the first render, which matches Styleframe's theme selector, `[data-theme="dark"]`. The panel
-  follows it. The frame then takes one message, from its parent window only, from any origin:
+  follows it. Without `theme` in its URL, the frame adds no listener and follows the reader's
+  system, as before. With it, the frame takes one message, from its parent window only, from any
+  origin, with exactly these three keys. It changes the mode in place, so the control values and
+  the render stay, and it ignores every other message. The message is:
 
   ```ts
   { type: "unframework:embed", kind: "theme", theme: "light" | "dark" }
   ```
 
-  It must have exactly these three keys. The frame changes the mode in place, so the control values
-  and the render stay. It ignores every other message. Without `theme` in its URL, the frame adds no
-  listener and follows the reader's system, as before.
-
 - **The height.** With `resize=true`, the frame posts its content's height to its parent window,
-  with the target origin `"*"`, after the first render and whenever the height changes:
+  with the target origin `"*"`, after the first render and whenever the height changes. The page
+  has its natural height in this mode, so the measure doesn't depend on the iframe's, and a host
+  that applies it doesn't make it grow. Content outside the page's flow, like a dialog that
+  `<Teleport>` moves or an element positioned outside it, isn't counted. The message is:
 
   ```ts
   { type: "unframework:embed", kind: "resize", height: number } // whole CSS pixels, rounded up
   ```
-
-  The page has its natural height in this mode, so the measure doesn't depend on the iframe's. A
-  host that applies it doesn't make it grow. Content outside the page's flow, like a dialog that
-  `<Teleport>` moves or an element positioned outside it, isn't counted.
 
 - **A public message type.** `unframework:embed` is apart from the shell's `unframework:preview`,
   which isn't public. The parameter names, their values and both messages are now public.

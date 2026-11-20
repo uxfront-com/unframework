@@ -268,12 +268,14 @@ and still fails with another family listed or against baselines.
 `preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
 frames from seven origins, a control that reaches all of them, and that no port listens after
 `close()` or after the command's SIGINT. It also opens `embed.html` on the shell's server for each
-target, which lands on that target's server, standalone. For an embed's options (ADR-0116), it
-opens `controls=true` on each of the seven targets and compares each value's render with the
+target, which lands on that target's server, standalone.
+
+For an embed's options (ADR-0116), `preview.test.ts` opens `controls=true` on each of the seven targets and compares each value's render with the
 shell's frame, Astro's included, checks the first field shows whole in an iframe of 300 px and of
 150 px, and, on `test/fixtures/embed` (Vue and Astro), that `theme` recolours a component under
 `[data-theme="dark"]`, that a project's global styles leave the panel's styles as they are, and
 that the reported height settles with nothing scrolling, before and after a control changes it.
+
 `preview-catalogue.test.ts` covers the catalogue, the controls and the command's arguments.
 `embed-options.test.ts` covers `embedOptions` and `controlKit`'s props rule, and
 `frame.browser.test.ts` runs `startFrame` standalone with a recording mount: the mode set before
