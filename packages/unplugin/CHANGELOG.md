@@ -1,5 +1,19 @@
 # @unframework.dev/unplugin
 
+## 0.3.0
+
+### Minor Changes
+
+- 60248fb: Add controls to an example in `unframework preview` and in a static preview. Selecting an example used to leave the controls panel empty, and now it shows a group for each component the example renders: a value reaches every instance that doesn't set the prop itself, so a colours example can toggle `disabled` and keep each button's colour. The preview rewrites the example for its own servers only, so `unframework visual` and the tests render it as written. It does so through the unframework plugin's new `transformSource` option, which gives the text to compile for a `.uf.tsx` or `.uf.ts` file in place of the one on disk.
+
+### Patch Changes
+
+- f4f2374: Serve a module's children without waiting on other files' compiles. When a module loads, the plugin now also compiles the `.uf.tsx` and `.uf.ts` files it imports, and theirs, so they are ready before anything requests them. A request for a file whose compile is still current no longer waits behind the compiles of unrelated files. On a busy dev server, Qwik's first render of a component with children took tens of seconds, because each of its segments waited in that line to resolve its imports.
+- Updated dependencies [90d0393]
+  - @unframework.dev/diagnostics@0.3.1
+  - @unframework.dev/codegen@0.2.1
+  - @unframework.dev/compiler@0.3.1
+
 ## 0.2.0
 
 ### Minor Changes

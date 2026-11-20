@@ -1,5 +1,32 @@
 # @unframework.dev/visual
 
+## 0.5.0
+
+### Minor Changes
+
+- cbee4db: Let an embedded example show its controls, take a colour mode and report its height. `embed.html` takes three optional parameters, and any other value shows a message that names the values it takes. Without them, an embed is unchanged.
+
+  `controls=true` shows the example's controls below it, with the preview's props rule, and keeps their styles apart from the project's. `theme=light` or `theme=dark` sets `data-theme` and `color-scheme` on the embed's page before it renders, and the page that frames it can change the mode with `{ type: "unframework:embed", kind: "theme", theme }`. `resize=true` posts `{ type: "unframework:embed", kind: "resize", height }` to that page whenever the content's height changes, so it can size the `<iframe>`.
+
+- 103d33c: Open an example by its own URL, so another page can show it in an `<iframe>`. `embed.html?example=<id>&target=<target>`, beside the preview's page in a static site from `unframework preview build` and on the dev preview's server, shows that example alone on that target, with no sidebar, canvas or controls. It takes no messages from the page that frames it, and an unknown or missing example or target shows a message instead of a blank page. Each frame's caption in the preview now has an **Open** link to the selected example's URL on that target.
+- 60248fb: Add controls to an example in `unframework preview` and in a static preview. Selecting an example used to leave the controls panel empty, and now it shows a group for each component the example renders: a value reaches every instance that doesn't set the prop itself, so a colours example can toggle `disabled` and keep each button's colour. The preview rewrites the example for its own servers only, so `unframework visual` and the tests render it as written. It does so through the unframework plugin's new `transformSource` option, which gives the text to compile for a `.uf.tsx` or `.uf.ts` file in place of the one on disk.
+- 90d0393: Centre examples in the preview, and add an `@layout` tag. `unframework preview` and `preview build` now centre every example and component in its frame, with `1rem` of padding, so a small component no longer sits in a corner. This moves every existing example.
+
+  `@layout` in an example's doc comment changes how it sits, the way `display: flex` would: `row` or `column`, `justify-*`, `align-*`, `wrap` and a gap, like `@layout column align-start gap`. The gap comes from a scale, `gap-xs`, `gap-sm`, `gap`, `gap-lg` and `gap-xl` (`0.25rem` to `2rem`), or as a length like `gap-12px`.
+
+  `@layout none` gives the old full-width block back, without padding. `Example` gains `layout`, and a malformed value is UF7012, whose description now covers it. `unframework visual` doesn't read the tag, so captures and baselines stay the same.
+
+### Patch Changes
+
+- Updated dependencies [60248fb]
+- Updated dependencies [90d0393]
+- Updated dependencies [f4f2374]
+  - @unframework.dev/unplugin@0.3.0
+  - @unframework.dev/diagnostics@0.3.1
+  - @unframework.dev/testing@0.3.1
+  - @unframework.dev/codegen@0.2.1
+  - @unframework.dev/compiler@0.3.1
+
 ## 0.4.0
 
 ### Minor Changes

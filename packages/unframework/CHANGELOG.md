@@ -1,5 +1,18 @@
 # @uxfront/unframework
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [cbee4db]
+- Updated dependencies [103d33c]
+- Updated dependencies [60248fb]
+- Updated dependencies [90d0393]
+  - @unframework.dev/visual@0.5.0
+  - @unframework.dev/testing@0.3.1
+  - @unframework.dev/cli@0.2.1
+  - @unframework.dev/compiler@0.3.1
+
 ## 0.4.0
 
 ### Minor Changes
