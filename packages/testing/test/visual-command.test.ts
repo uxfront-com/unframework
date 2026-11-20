@@ -125,9 +125,14 @@ const pierced = (marker: string | undefined) => ({
   },
 });
 
+/** The part of a CDP session the font audit calls. */
+interface FakeCdp {
+  send(method: string, params?: { nodeId?: number }): Promise<unknown>;
+}
+
 function context(target: string, browser: FakeBrowser, overrides: Partial<HarnessContext> = {}) {
   let shot = 0;
-  const cdp = {
+  const cdp: FakeCdp = {
     async send(method: string, params?: { nodeId?: number }) {
       switch (method) {
         case "DOM.getDocument":
@@ -613,6 +618,39 @@ describe("ufVisualCapture's preconditions", () => {
       );
       expect(result, target).toMatchObject({ pass: false, outcome: "font-fallback" });
     }
+  });
+
+  it("asks for every element's fonts before it waits for an answer (UXF-896)", async () => {
+    // A session that answers only once the audit has stopped sending: an audit that waits for
+    // each answer before its next request would wait here for ever, so the release below is
+    // what lets it finish, once every request is in.
+    const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
+    const asked: number[] = [];
+    let release = () => {};
+    const released = new Promise<void>((resolve) => (release = resolve));
+    const held: FakeCdp = {
+      async send(method, params) {
+        if (method === "DOM.getDocument") return pierced("m-1");
+        if (method !== "CSS.getPlatformFontsForNode") return {};
+        const nodeId = params?.nodeId ?? 0;
+        asked.push(nodeId);
+        await released;
+        return { fonts: nodeId === 13 ? fallback : inter };
+      },
+    };
+    const capture = ufVisualCapture(
+      Object.assign(context("vue", { shots: [png(20, 10)], fonts: inter }), {
+        page: { context: () => ({ newCDPSession: async () => held }) },
+      }),
+      request(),
+    );
+    // The container, the paragraph, its ::before, the textarea and its shadow root's div.
+    await expect.poll(() => asked.toSorted((a, b) => a - b)).toEqual([10, 11, 13, 14, 16]);
+    release();
+    const result = await capture;
+    // The answers are read in the elements' order, as before.
+    expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
+    expect(result.message).toContain('<p>::before rendered 2 glyph(s) with "Hiragino Sans"');
   });
 
   it("rejects a web font that is not the bundled one", async () => {
