@@ -10,10 +10,10 @@ import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/co
 import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
-import { entryLayouts, readCatalogue } from "./catalogue.ts";
+import { entryControls, entryLayouts, readCatalogue } from "./catalogue.ts";
 import { embedData, embedPage } from "./embed.ts";
 import { exampleTransform } from "./instrument.ts";
-import type { SourceTransform } from "./instrument.ts";
+import type { ExampleControlGroup, SourceTransform } from "./instrument.ts";
 import { FRAME_PATH } from "./protocol.ts";
 import type { PreviewLayout } from "./protocol.ts";
 import { startTargetServer } from "./servers.ts";
@@ -71,6 +71,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     );
   }
   const layouts = entryLayouts(catalogue);
+  const controls = entryControls(catalogue);
 
   const transformSource = exampleTransform(root, catalogue);
 
@@ -97,6 +98,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
             options.toolchainDirs,
             layouts,
             transformSource,
+            controls,
           ),
         ).then((server) => {
           started.push(server);
@@ -141,7 +143,8 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
 /**
  * What a target's server serves, from the project's configuration: the entries and their layouts
  * (ADR-0114), where the target's compiler stack resolves from, the project's Vite config
- * (ADR-0104), and the rewrite that binds the examples' controls (ADR-0113).
+ * (ADR-0104), the rewrite that binds the examples' controls (ADR-0113), and those controls, for
+ * an embed's panel (ADR-0116).
  */
 export function targetServerOptions(
   root: string,
@@ -151,6 +154,7 @@ export function targetServerOptions(
   toolchainDirs?: PreviewOptions["toolchainDirs"],
   layouts?: Readonly<Record<string, PreviewLayout>>,
   transformSource?: SourceTransform,
+  controls?: Readonly<Record<string, ExampleControlGroup[]>>,
 ): TargetServerOptions {
   return {
     root,
@@ -160,6 +164,7 @@ export function targetServerOptions(
     ...(config.vite ? { vite: config.vite } : {}),
     ...(layouts && Object.keys(layouts).length ? { layouts } : {}),
     ...(transformSource ? { transformSource } : {}),
+    ...(controls && Object.keys(controls).length ? { controls } : {}),
   };
 }
 

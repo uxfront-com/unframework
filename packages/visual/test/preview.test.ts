@@ -24,6 +24,19 @@ import { EMBED_FILE, FRAME_PATH, RENDER_PATH } from "../src/preview/protocol.ts"
 import { PREVIEW_HOST, startTargetServer } from "../src/preview/servers.ts";
 import { shellData, shellPage, startShellServer } from "../src/preview/shell.ts";
 import { VisualUsageError } from "../src/run.ts";
+import {
+  embedFrame,
+  expectedPanel,
+  expectFieldInView,
+  expectFilled,
+  expectNoScroll,
+  fieldPlace,
+  framing,
+  hostPage,
+  panel,
+  scrolls,
+  settled,
+} from "./embed-page.ts";
 import { CENTRED, centred, frameLayout } from "./frame-layout.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
@@ -63,6 +76,7 @@ function project(files: Record<string, string>): string {
 }
 
 const EXAMPLE_CONTROLS = fileURLToPath(new URL("fixtures/example-controls", import.meta.url));
+const EMBED = fileURLToPath(new URL("fixtures/embed", import.meta.url));
 const REPOSITORY = fileURLToPath(new URL("../../..", import.meta.url));
 /** The fixture's eight targets, as the preview names them. */
 const EIGHT = ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik", "astro"];
@@ -575,6 +589,183 @@ describe("an example's controls", () => {
         }
       } finally {
         await browser.close();
+      }
+    },
+  );
+});
+
+describe("an embed's options in development (ADR-0116)", () => {
+  it(
+    "shows an example's controls on seven targets, rendering as the shell's frames, in view",
+    { timeout: 600_000 },
+    async () => {
+      const preview = await startPreview({ root: DESIGN_SYSTEM });
+      const browser = await chromium.launch();
+      const host = await hostPage();
+      try {
+        const catalogue = await readCatalogue(
+          DESIGN_SYSTEM,
+          (await projectConfig(DESIGN_SYSTEM)).srcDir,
+        );
+        const groups = catalogue.examples.find((each) => each.id === "examples/Buttons")!.controls;
+
+        // What the shell's frames show for each value, Astro's included: a dev server renders it.
+        const shell = await browser.newPage();
+        const frame = (target: string) =>
+          shell.frameLocator(`figure[data-target="${target}"] iframe`);
+        const status = (target: string) => shell.locator(`figure[data-target="${target}"] output`);
+        const shown: Record<string, Record<string, string>> = { secondary: {}, primary: {} };
+        await shell.goto(`${preview.url}#example:examples/Buttons`);
+        for (const target of TARGETS) {
+          await frame(target).getByRole("button", { name: "Save" }).waitFor({ timeout: 180_000 });
+        }
+        for (const value of ["secondary", "primary"]) {
+          await shell
+            .getByRole("group", { name: "Button", exact: true })
+            .getByLabel("variant", { exact: true })
+            .selectOption(value);
+          for (const target of TARGETS) {
+            await expect
+              .poll(() => status(target).textContent(), { timeout: 60_000, message: target })
+              .toBe("rendered");
+            shown[value]![target] = await frame(target)
+              .locator("[data-uf-preview-root]")
+              .innerHTML();
+          }
+        }
+        await shell.close();
+
+        const page = await browser.newPage();
+        const root = () => page.locator("[data-uf-preview-root]").innerHTML();
+        const variant = () =>
+          page.getByRole("region", { name: "Controls" }).getByLabel("variant", { exact: true });
+        for (const target of TARGETS) {
+          const embed = `${preview.url}${EMBED_FILE}?example=examples/Buttons&target=${target}`;
+          await page.goto(embed);
+          await page.getByRole("button", { name: "Save" }).waitFor({ timeout: 120_000 });
+          const plain = await root();
+          await page.goto(`${embed}&controls=true`);
+          await page.getByRole("button", { name: "Save" }).waitFor({ timeout: 120_000 });
+          expect(await panel(page), target).toEqual(expectedPanel(groups));
+          expect(await root(), target).toBe(plain);
+          for (const value of ["secondary", "primary"]) {
+            await variant().selectOption(value);
+            await expect
+              .poll(root, { timeout: 60_000, message: `${value} on ${target}` })
+              .toBe(shown[value]![target]);
+          }
+          await expect
+            .poll(() => page.getByRole("button", { name: "Cancel" }).getAttribute("data-variant"))
+            .toBe("secondary");
+          await variant().selectOption("");
+          await expect.poll(root, { timeout: 60_000, message: `default on ${target}` }).toBe(plain);
+          expect(await page.locator("[data-uf-embed-failure]").count(), target).toBe(0);
+        }
+
+        // A fixed height, and an iframe's default of 150 px: the first field shows whole.
+        for (const target of ["vue", "astro"]) {
+          for (const height of [300, undefined]) {
+            const src = `${preview.url}${EMBED_FILE}?example=examples/Buttons&target=${target}&controls=true`;
+            host.set(framing(src, height));
+            await page.goto(host.url);
+            const framed = page.frameLocator("#embed");
+            await framed.getByRole("button", { name: "Save" }).waitFor({ timeout: 120_000 });
+            const place = await fieldPlace(framed);
+            const at = `${target} at ${height ?? "default"}: ${JSON.stringify(place)}`;
+            expect(place.innerHeight, at).toBe(height ?? 150);
+            expectFieldInView(place, at);
+            expectFilled(place, at);
+          }
+        }
+      } finally {
+        await host.close();
+        await browser.close();
+        await preview.close();
+      }
+    },
+  );
+
+  it(
+    "themes the example by Styleframe's selector, keeps the panel's own styles, and resizes",
+    { timeout: 300_000 },
+    async () => {
+      const preview = await startPreview({ root: EMBED });
+      const browser = await chromium.launch();
+      const host = await hostPage();
+      try {
+        const page = await browser.newPage();
+        const embed = (example: string, target: string, query: string) =>
+          `${preview.url}${EMBED_FILE}?example=examples/${example}&target=${target}${query}`;
+        const panelStyle = () =>
+          page.locator("uf-embed-controls").evaluate((host) =>
+            ["label", "select"].map((selector) => {
+              const style = getComputedStyle(host.shadowRoot!.querySelector(selector)!);
+              return [style.color, style.fontFamily, style.fontSize, style.lineHeight];
+            }),
+          );
+        for (const target of ["vue", "astro"]) {
+          // The colour mode reaches the example's own styles, as Styleframe's themes select it.
+          const colours: Record<string, string> = {};
+          for (const theme of ["light", "dark"]) {
+            await page.goto(embed("Bare", target, `&theme=${theme}`));
+            await page.getByText("First line").waitFor({ timeout: 120_000 });
+            colours[theme] = await page
+              .locator(".note")
+              .evaluate((note) => getComputedStyle(note).color);
+          }
+          expect(colours, target).toEqual({ light: "rgb(10, 20, 30)", dark: "rgb(230, 240, 250)" });
+
+          // A project's global styles reach the example and stop at the panel.
+          const styles: Record<string, unknown> = {};
+          for (const example of ["Styled", "Bare"]) {
+            await page.goto(embed(example, target, "&controls=true"));
+            await page.getByText("First line").waitFor({ timeout: 120_000 });
+            styles[example] = await panelStyle();
+          }
+          expect(
+            await page.locator("body").evaluate((body) => getComputedStyle(body).fontFamily),
+          ).not.toContain("Georgia");
+          await page.goto(embed("Styled", target, ""));
+          await page.getByText("First line").waitFor({ timeout: 120_000 });
+          expect(
+            await page.locator("body").evaluate((body) => getComputedStyle(body).fontFamily),
+            target,
+          ).toContain("Georgia");
+          expect(styles.Styled, target).toEqual(styles.Bare);
+
+          // A control that changes the example's height changes the report, which settles with
+          // nothing scrolling.
+          for (const query of ["&resize=true&controls=true", "&resize=true"]) {
+            const at = `${target}${query}`;
+            host.set(framing(embed("Bare", target, query), 1000));
+            await page.goto(host.url);
+            const framed = page.frameLocator("#embed");
+            await framed.getByText("First line").waitFor({ timeout: 120_000 });
+            const first = await settled(page, at);
+            expect(first, at).toBeLessThan(1000);
+            const frame = await embedFrame(page);
+            let boxes = await scrolls(frame);
+            expectNoScroll(boxes, `${at}: ${JSON.stringify(boxes)}`);
+            if (!query.includes("controls")) {
+              expect(first, at).toBeLessThanOrEqual(Math.ceil(boxes.example) + 2);
+              continue;
+            }
+            await framed
+              .getByRole("region", { name: "Controls" })
+              .getByLabel("lines", { exact: true })
+              .selectOption("three");
+            await framed.getByText("Third line").waitFor({ timeout: 60_000 });
+            const second = await settled(page, `${at}, three lines`);
+            expect(second, at).toBeGreaterThan(first);
+            await expect.poll(() => frame.evaluate(() => innerHeight)).toBe(second);
+            boxes = await scrolls(frame);
+            expectNoScroll(boxes, `${at}, three lines: ${JSON.stringify(boxes)}`);
+          }
+        }
+      } finally {
+        await host.close();
+        await browser.close();
+        await preview.close();
       }
     },
   );

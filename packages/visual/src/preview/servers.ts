@@ -21,7 +21,7 @@ import {
 import type { ProjectVite } from "@unframework.dev/testing/config";
 import type { InlineConfig, Plugin, ViteDevServer } from "vite";
 
-import type { SourceTransform } from "./instrument.ts";
+import type { ExampleControlGroup, SourceTransform } from "./instrument.ts";
 import { FRAME_PATH, RENDER_PATH, STATIC_FRAME_FILE } from "./protocol.ts";
 import type { PreviewLayout } from "./protocol.ts";
 
@@ -67,6 +67,8 @@ export interface TargetServerOptions {
   transformSource?: SourceTransform;
   /** The layout of each entry that sets one, by key (ADR-0114): the frame centres the others. */
   layouts?: Readonly<Record<string, PreviewLayout>>;
+  /** The control groups of each example that has any, by key, for an embed's controls (ADR-0116). */
+  controls?: Readonly<Record<string, ExampleControlGroup[]>>;
 }
 
 /** The frame runtime's file, wherever the package is installed. */
@@ -95,6 +97,7 @@ export function frameModule(
   staticRenders?: StaticRenders,
   staticPreview = false,
   layouts: Readonly<Record<string, PreviewLayout>> = {},
+  controls: Readonly<Record<string, ExampleControlGroup[]>> = {},
 ): string {
   const loaders = Object.entries(entries)
     .map(([id, file]) => {
@@ -121,6 +124,7 @@ export function frameModule(
     ...(staticPreview ? ["  staticPreview: true,"] : []),
     ...(renders ? ["  staticRenders: {", ...renders, "  },"] : []),
     ...(Object.keys(layouts).length ? [`  layouts: ${JSON.stringify(layouts)},`] : []),
+    ...(Object.keys(controls).length ? [`  controls: ${JSON.stringify(controls)},`] : []),
     "  entries: {",
     loaders,
     "  },",
@@ -192,6 +196,7 @@ function previewPlugin(
           staticRenders,
           building,
           options.layouts,
+          options.controls,
         );
       }
       if (id === NO_VITEST_ID) return "export const commands = {};\n";

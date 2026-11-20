@@ -19,7 +19,7 @@ import type { Diagnostic, ResolvedConfig, TargetName } from "@unframework.dev/co
 import { loadToolchain } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
-import { entryLayouts, readCatalogue } from "./catalogue.ts";
+import { entryControls, entryLayouts, readCatalogue } from "./catalogue.ts";
 import type { PreviewCatalogue } from "./catalogue.ts";
 import type { PropControl } from "./controls.ts";
 import { embedData, embedPage } from "./embed.ts";
@@ -115,6 +115,7 @@ async function buildTargets(
 ): Promise<void> {
   const props = initialProps(catalogue);
   const layouts = entryLayouts(catalogue);
+  const controls = entryControls(catalogue);
   const transformSource = exampleTransform(root, catalogue);
   for (const target of targets) {
     const server = targetServerOptions(
@@ -125,6 +126,7 @@ async function buildTargets(
       toolchainDirs,
       layouts,
       transformSource,
+      controls,
     );
     const dir = join(out, target);
     if ((await loadToolchain(target)).renderCommandName === undefined) {

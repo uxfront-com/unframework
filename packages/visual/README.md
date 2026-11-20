@@ -171,6 +171,24 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
   message listener and posts nothing. A failed render, an unknown id included, replaces the page
   with its message. Any `shell` parameter keeps the shell's path. Each frame's caption in the
   shell links the selected example's URL on its target (**Open**), and hides it for a component.
+- **An embed's options** (ADR-0116): `controls=true`, `theme=light|dark` and `resize=true` on
+  `embed.html`, read by `embedOptions` (`src/preview/embed-options.ts`), which the embed page writes
+  into its script and the frame imports, so both read a URL the same way. Any other value shows a
+  message that names the parameter. `embed.html` forwards only the options it checked, and the
+  frame checks them again. With `controls`, the frame draws the example's groups below it in a
+  shadow root (`<uf-embed-controls>`, `:host { all: initial }`), from `FrameOptions.controls`,
+  which each frame module carries by entry key, and rerenders on each input through the same
+  `render`. `controlKit` (`src/preview/panel.ts`) holds the fields and the props rule, and the shell
+  writes it into its page with `toString()`, so the shell's frames and an embed take the same
+  props. A failed rerender shows its message in the example's area (`[data-uf-embed-example]`)
+  only. With `controls` and no `resize`, the page fits the iframe: the area takes the space above
+  the panel, which takes at most half the frame. With `resize`, the page takes its natural height:
+  no `height: 100%`, and no `min-height: 100%` on the container. With `theme`, the frame sets
+  `data-theme` and `color-scheme` on `<html>` before the first render, and takes
+  `{ type: "unframework:embed", kind: "theme", theme }` with exactly those keys, from its parent
+  window only. With `resize`, it posts `{ type: "unframework:embed", kind: "resize", height }` to
+  its parent after the first render and on each change of height, deduplicated. Without options,
+  the standalone frame is ADR-0112's.
 - **Layouts** (ADR-0114): each target's frame module carries the `layouts` of the examples that
   set one, by entry key, and the frame puts the entry's layout, or the centred default, on the
   fresh mount container it makes for each new entry, as inline style (`layoutStyle` in
@@ -212,7 +230,9 @@ target is built and every render server closed (ADR-0111):
   frame's origin. In the static site every frame shares the shell's origin, and a frame refuses a
   shell at any other origin (`FrameOptions.staticPreview`): it sends and takes no message.
 - **The embed page** is `embedPage` written as `<out>/embed.html`, beside `index.html`, with the
-  same relative frame URLs (ADR-0112).
+  same relative frame URLs (ADR-0112). An embed with `controls=true` on Astro shows
+  `STATIC_RENDER_MESSAGE` in its example's area for a changed control, and renders again at
+  "(default)" (ADR-0116).
 - **Astro** (a target with a `renderCommandName`) is rendered at build time by
   `renderTargetEntries`, through a server in middleware mode, with each entry's initial props
   (`initialProps`: none for an example, a component's required props at their controls' initial
@@ -248,8 +268,17 @@ and still fails with another family listed or against baselines.
 `preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
 frames from seven origins, a control that reaches all of them, and that no port listens after
 `close()` or after the command's SIGINT. It also opens `embed.html` on the shell's server for each
-target, which lands on that target's server, standalone. `preview-catalogue.test.ts` covers the catalogue, the
-controls and the command's arguments.
+target, which lands on that target's server, standalone. For an embed's options (ADR-0116), it
+opens `controls=true` on each of the seven targets and compares each value's render with the
+shell's frame, Astro's included, checks the first field shows whole in an iframe of 300 px and of
+150 px, and, on `test/fixtures/embed` (Vue and Astro), that `theme` recolours a component under
+`[data-theme="dark"]`, that a project's global styles leave the panel's styles as they are, and
+that the reported height settles with nothing scrolling, before and after a control changes it.
+`preview-catalogue.test.ts` covers the catalogue, the controls and the command's arguments.
+`embed-options.test.ts` covers `embedOptions` and `controlKit`'s props rule, and
+`frame.browser.test.ts` runs `startFrame` standalone with a recording mount: the mode set before
+the first mount, the panel's rerenders and a failure in the area alone, the theme message's filter,
+and a value the frame doesn't take.
 
 `preview-build.test.ts` runs `unframework preview build` on `tests/e2e/design-system` once, into a
 temporary directory, serves the site under `/sub/` with a server that only maps URLs to files, and
@@ -257,7 +286,15 @@ checks, in Chromium, seven frames from the shell's origin, every example rendere
 Astro's frame equal to the dev preview's, and a changed prop failing Astro's frame with the static
 message. For embeds, it opens `embed.html` on each target alone and compares the example with the
 shell's frame, frames all seven from a second origin that posts each a render and hears nothing
-back, and checks the message for each missing or unknown value. It also checks the site holds no
+back, and checks the message for each missing or unknown value, and for each option's bad value on
+the embed page and on a frame. With the options (ADR-0116), it checks that a plain embed forwards
+none, that `controls=true` shows the catalogue's groups on seven targets and renders each value as
+the shell's frame does, leaves the example's DOM and styles as they are and keeps Astro's panel
+on a failed render, that the panel and its first field fill an iframe of 300 px and of 150 px,
+that the theme message from a second origin changes the mode in place and that one from another
+window, of another shape or to an embed without `theme` changes nothing, and that `resize=true`,
+alone and with controls, settles on a height below the iframe's first 1000 px with nothing
+scrolling. It also checks the site holds no
 path of the machine, the command's exit 2 on a bad
 argument and on each `--out` it refuses, and, on `test/fixtures/astro-throws`, a render that fails
 at build time, and, on `test/fixtures/metadata`, that the command prints UF7012 and still exits 0.

@@ -33,11 +33,31 @@ import {
   initialProps,
   PREVIEW_MARKER,
 } from "../src/preview/build.ts";
+import { readCatalogue } from "../src/preview/catalogue.ts";
 import { sameProps } from "../src/preview/frame.ts";
-import { startPreview } from "../src/preview/index.ts";
+import { projectConfig, startPreview } from "../src/preview/index.ts";
 import type { Preview } from "../src/preview/index.ts";
-import { EMBED_FILE, PREVIEW_MESSAGE, STATIC_RENDER_MESSAGE } from "../src/preview/protocol.ts";
+import {
+  EMBED_FILE,
+  EMBED_MESSAGE,
+  PREVIEW_MESSAGE,
+  STATIC_RENDER_MESSAGE,
+} from "../src/preview/protocol.ts";
 import { VisualUsageError } from "../src/run.ts";
+import {
+  embedFrame,
+  expectedPanel,
+  expectFieldInView,
+  expectFilled,
+  expectNoScroll,
+  fieldPlace,
+  framing,
+  hostPage,
+  panel,
+  reports,
+  scrolls,
+  settled,
+} from "./embed-page.ts";
 import { CENTRED, centred, frameLayout } from "./frame-layout.ts";
 
 const DESIGN_SYSTEM = fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url));
@@ -432,6 +452,309 @@ describe("unframework preview build", () => {
     },
   );
 
+  it(
+    "opens an embed without its options as it did, with no panel, no mode and nothing forwarded",
+    { timeout: 300_000 },
+    async () => {
+      const page = await browser.newPage();
+      try {
+        for (const target of TARGETS) {
+          await page.goto(`${site.url}${EMBED_FILE}?example=examples/Buttons&target=${target}`);
+          await page
+            .getByRole("button", { name: "Save" })
+            .waitFor({ timeout: 60_000 })
+            .catch((error: unknown) => {
+              throw new Error(`${target}: ${String(error)}`);
+            });
+          expect([...new URL(page.url()).searchParams.keys()], target).toEqual(["example"]);
+          expect(await page.getByRole("region", { name: "Controls" }).count(), target).toBe(0);
+          expect(await panel(page), target).toBeNull();
+          expect(await page.locator("html").getAttribute("data-theme"), target).toBeNull();
+          expect(await page.locator("[data-uf-embed-example], body[data-uf-embed]").count()).toBe(
+            0,
+          );
+        }
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it(
+    "shows an example's controls in its embed on seven targets, which render as the shell's frames",
+    { timeout: 600_000 },
+    async () => {
+      const catalogue = await readCatalogue(
+        DESIGN_SYSTEM,
+        (await projectConfig(DESIGN_SYSTEM)).srcDir,
+      );
+      const groups = catalogue.examples.find((each) => each.id === "examples/Buttons")!.controls;
+      // `Save` leaves `variant` unset, so it is live, and `Cancel` sets it (ADR-0113).
+      expect(expectedPanel(groups)).toEqual([
+        expect.objectContaining({ name: "Button", controls: ["variant"] }),
+      ]);
+      const clients = TARGETS.filter((target) => target !== "astro");
+
+      // What the shell's frames show for each value, to compare each embed with.
+      const shell = await browser.newPage();
+      const shown: Record<string, Record<string, string>> = { secondary: {}, primary: {} };
+      try {
+        await shell.goto(`${site.url}#example:examples/Buttons`);
+        for (const target of TARGETS) {
+          await expect
+            .poll(() => status(shell, target).textContent(), { timeout: 60_000, message: target })
+            .toBe("rendered");
+        }
+        for (const value of ["secondary", "primary"]) {
+          await shell
+            .getByRole("group", { name: "Button", exact: true })
+            .getByLabel("variant", { exact: true })
+            .selectOption(value);
+          for (const target of clients) {
+            await expect
+              .poll(() => status(shell, target).textContent(), { timeout: 60_000, message: target })
+              .toBe("rendered");
+            shown[value]![target] = await rootHtml(shell, target);
+          }
+        }
+      } finally {
+        await shell.close();
+      }
+
+      const page = await browser.newPage();
+      const save = () => page.getByRole("button", { name: "Save" });
+      const saveStyle = () =>
+        save().evaluate((button) => {
+          const style = getComputedStyle(button);
+          return [style.color, style.backgroundColor, style.fontFamily];
+        });
+      const root = () => page.locator("[data-uf-preview-root]").evaluate((each) => each.innerHTML);
+      const variant = () =>
+        page.getByRole("region", { name: "Controls" }).getByLabel("variant", { exact: true });
+      try {
+        for (const target of TARGETS) {
+          const embed = `${site.url}${EMBED_FILE}?example=examples/Buttons&target=${target}`;
+          await page.goto(embed);
+          await save().waitFor({ timeout: 60_000 });
+          const plain = { html: await root(), style: await saveStyle() };
+
+          await page.goto(`${embed}&controls=true`);
+          await save().waitFor({ timeout: 60_000 });
+          const params = new URL(page.url()).searchParams;
+          expect([...params.entries()], target).toEqual([
+            ["example", "examples/Buttons"],
+            ["controls", "true"],
+          ]);
+          await expect(page.getByRole("region", { name: "Controls" }).count()).resolves.toBe(1);
+          expect(await panel(page), target).toEqual(expectedPanel(groups));
+          // The panel changes nothing of the example: its DOM, nor the styles it renders with.
+          expect(await root(), target).toBe(plain.html);
+          expect(await saveStyle(), target).toEqual(plain.style);
+
+          if (target === "astro") {
+            // Astro's static frame renders only what the build rendered: the panel stays, and
+            // the area says why (ADR-0111).
+            await variant().selectOption("secondary");
+            const failure = page.locator("[data-uf-embed-failure]");
+            await expect.poll(() => failure.textContent()).toBe(STATIC_RENDER_MESSAGE);
+            await expect.poll(() => save().count()).toBe(0);
+            await expect(variant().isVisible()).resolves.toBe(true);
+            await variant().selectOption("");
+            await expect.poll(() => failure.count()).toBe(0);
+            await expect.poll(root).toBe(plain.html);
+            continue;
+          }
+          for (const value of ["secondary", "primary"]) {
+            await variant().selectOption(value);
+            await expect
+              .poll(root, { timeout: 30_000, message: `${value} on ${target}` })
+              .toBe(shown[value]![target]);
+          }
+          // `Cancel` sets its own variant, which no control overrides (UXF-874).
+          await expect
+            .poll(() => page.getByRole("button", { name: "Cancel" }).getAttribute("data-variant"))
+            .toBe("secondary");
+          await variant().selectOption("");
+          await expect.poll(root, { message: `default on ${target}` }).toBe(plain.html);
+        }
+      } finally {
+        await page.close();
+      }
+    },
+  );
+
+  it(
+    "keeps the panel and its first field in view in an iframe of a fixed height",
+    { timeout: 300_000 },
+    async () => {
+      const host = await hostPage();
+      const page = await browser.newPage();
+      try {
+        for (const target of ["vue", "astro"]) {
+          // 300 px, then no height at all: an iframe's default, 150 px.
+          for (const height of [300, undefined]) {
+            const src = `${site.url}${EMBED_FILE}?example=examples/Buttons&target=${target}&controls=true`;
+            host.set(framing(src, height));
+            await page.goto(host.url);
+            const frame = page.frameLocator("#embed");
+            await frame.getByRole("button", { name: "Save" }).waitFor({ timeout: 60_000 });
+            const place = await fieldPlace(frame);
+            const at = `${target} at ${height ?? "default"}: ${JSON.stringify(place)}`;
+            expect(place.innerHeight, at).toBe(height ?? 150);
+            expectFieldInView(place, at);
+            expectFilled(place, at);
+          }
+        }
+        expect(await reports(page)).toEqual([]);
+      } finally {
+        await page.close();
+        await host.close();
+      }
+    },
+  );
+
+  it(
+    "sets the colour mode from the URL, and takes it only from the parent, in place",
+    { timeout: 300_000 },
+    async () => {
+      const page = await browser.newPage();
+      const host = await hostPage();
+      try {
+        await page.goto(`${site.url}${EMBED_FILE}?example=examples/Buttons&target=vue&theme=dark`);
+        await page.getByRole("button", { name: "Save" }).waitFor({ timeout: 60_000 });
+        expect(await page.locator("html").getAttribute("data-theme")).toBe("dark");
+        expect(
+          await page.locator("html").evaluate((html) => getComputedStyle(html).colorScheme),
+        ).toBe("dark");
+
+        // A host on another origin, an embed that asked for the message, one that didn't, and a
+        // frame of the host's own that posts to the embed, which is not the embed's parent.
+        const embed = (query: string) =>
+          `${site.url}${EMBED_FILE}?example=examples/Buttons&target=vue${query}`;
+        host.set(
+          [
+            framing(embed("&theme=light&controls=true")),
+            `<iframe id="plain" src="${embed("")}"></iframe>`,
+            `<iframe id="sibling" srcdoc="<script>window.post = (data) => parent.document.getElementById('embed').contentWindow.postMessage(data, '*');</script>"></iframe>`,
+          ].join("\n"),
+        );
+        await page.goto(host.url);
+        const frame = page.frameLocator("#embed");
+        const plain = page.frameLocator("#plain");
+        await frame.getByRole("button", { name: "Save" }).waitFor({ timeout: 60_000 });
+        await plain.getByRole("button", { name: "Save" }).waitFor({ timeout: 60_000 });
+        const theme = () => frame.locator("html").getAttribute("data-theme");
+        await frame
+          .getByRole("region", { name: "Controls" })
+          .getByLabel("variant", { exact: true })
+          .selectOption("secondary");
+        await expect
+          .poll(() => frame.getByRole("button", { name: "Save" }).getAttribute("data-variant"))
+          .toBe("secondary");
+        await frame.locator("html").evaluate(() => {
+          (window as { loaded?: boolean }).loaded = true;
+        });
+        expect(await theme()).toBe("light");
+
+        const post = (id: string, data: unknown) =>
+          page.evaluate(
+            ([id, data]) =>
+              (document.getElementById(id) as HTMLIFrameElement).contentWindow!.postMessage(
+                data,
+                "*",
+              ),
+            [id, data] as const,
+          );
+        await post("embed", {
+          type: PREVIEW_MESSAGE,
+          kind: "render",
+          seq: 1,
+          entry: "x",
+          props: {},
+        });
+        await post("embed", { type: EMBED_MESSAGE, kind: "theme", theme: "blue" });
+        await page
+          .frameLocator("#sibling")
+          .locator("html")
+          .evaluate((_html, data) => (window as { post?: (data: unknown) => void }).post!(data), {
+            type: EMBED_MESSAGE,
+            kind: "theme",
+            theme: "dark",
+          });
+        await post("plain", { type: EMBED_MESSAGE, kind: "theme", theme: "dark" });
+        await page.waitForTimeout(500);
+        expect(await theme()).toBe("light");
+        expect(await plain.locator("html").getAttribute("data-theme")).toBeNull();
+
+        await post("embed", { type: EMBED_MESSAGE, kind: "theme", theme: "dark" });
+        await expect.poll(theme).toBe("dark");
+        expect(
+          await frame.locator("html").evaluate((html) => ({
+            scheme: getComputedStyle(html).colorScheme,
+            loaded: (window as { loaded?: boolean }).loaded,
+          })),
+        ).toEqual({ scheme: "dark", loaded: true });
+        expect(await frame.getByRole("button", { name: "Save" }).getAttribute("data-variant")).toBe(
+          "secondary",
+        );
+        expect(
+          await frame
+            .getByRole("region", { name: "Controls" })
+            .getByLabel("variant", { exact: true })
+            .inputValue(),
+        ).toBe("secondary");
+        // Nothing reports a height, since neither embed asked to.
+        expect(await reports(page)).toEqual([]);
+      } finally {
+        await page.close();
+        await host.close();
+      }
+    },
+  );
+
+  it(
+    "reports a height the host can apply, with and without controls, that settles and shrinks",
+    { timeout: 300_000 },
+    async () => {
+      const host = await hostPage();
+      const page = await browser.newPage();
+      try {
+        for (const target of ["vue", "astro"]) {
+          for (const query of ["&resize=true", "&resize=true&controls=true"]) {
+            const src = `${site.url}${EMBED_FILE}?example=examples/Buttons&target=${target}${query}`;
+            host.set(framing(src, 1000));
+            await page.goto(host.url);
+            await page
+              .frameLocator("#embed")
+              .getByRole("button", { name: "Save" })
+              .waitFor({ timeout: 60_000 });
+            const at = `${target}${query}`;
+            const height = await settled(page, at);
+            expect(height, at).toBeLessThan(1000);
+            const frame = await embedFrame(page);
+            await expect
+              .poll(() => frame.evaluate(() => innerHeight), { message: at })
+              .toBe(height);
+            const boxes = await scrolls(frame);
+            expectNoScroll(boxes, `${at}: ${JSON.stringify(boxes)}`);
+            if (query.includes("controls")) {
+              expect(boxes.panel, at).not.toBeNull();
+              expectFieldInView(await fieldPlace(frame), at);
+            } else {
+              // The example's own height, not the container's `min-height: 100%` of the frame's.
+              expect(height, `${at}: ${JSON.stringify(boxes)}`).toBeLessThanOrEqual(
+                Math.ceil(boxes.example) + 2,
+              );
+            }
+          }
+        }
+      } finally {
+        await page.close();
+        await host.close();
+      }
+    },
+  );
+
   it("says why on a missing or unknown example or target, never a blank page", async () => {
     const targets = TARGETS.join(", ");
     const usage = `Open an example with embed.html?example=<id>&target=<target>. The targets are ${targets}.`;
@@ -454,6 +777,16 @@ describe("unframework preview build", () => {
         'This preview has no example "src/Button".',
         "vue/frame.html",
       ],
+      // An option with a value it doesn't take, on the embed page and on a frame (ADR-0116).
+      ...[
+        ["controls=yes", 'The controls parameter takes true, not "yes".'],
+        ["theme=blue", 'The theme parameter takes light or dark, not "blue".'],
+        ["resize=1", 'The resize parameter takes true, not "1".'],
+      ].flatMap(([query, message]): [string, string, string][] => [
+        [`${EMBED_FILE}?example=examples/Card&target=vue&${query}`, message!, EMBED_FILE],
+        [`vue/frame.html?example=examples/Card&${query}`, message!, "vue/frame.html"],
+        [`astro/frame.html?example=examples/Card&${query}`, message!, "astro/frame.html"],
+      ]),
     ];
     const page = await browser.newPage();
     try {

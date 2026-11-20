@@ -1,6 +1,7 @@
 // What the preview's shell and its frames say to each other (ADR-0088), through `postMessage`, and
 // where a static preview keeps its files (ADR-0111). Types and constants only, so the frame's
 // browser code imports this file without Node.
+import type { ExampleControlGroup } from "./instrument.ts";
 
 /** Marks the preview's messages among any others a page receives. */
 export const PREVIEW_MESSAGE = "unframework:preview";
@@ -40,6 +41,49 @@ export const EXAMPLE_PARAM = "example";
 
 /** The query parameter of {@link EMBED_FILE} that names the target, as the shell's captions do. */
 export const TARGET_PARAM = "target";
+
+/**
+ * The query parameter of {@link EMBED_FILE} and of a standalone frame that shows the example's
+ * controls below it, `controls=true` (ADR-0116).
+ */
+export const CONTROLS_PARAM = "controls";
+
+/**
+ * The query parameter of {@link EMBED_FILE} and of a standalone frame that sets its colour mode,
+ * `theme=light` or `theme=dark`, and lets the page that frames it change the mode with an
+ * {@link EmbedThemeMessage} (ADR-0116).
+ */
+export const THEME_PARAM = "theme";
+
+/**
+ * The query parameter of {@link EMBED_FILE} and of a standalone frame that makes it post its
+ * content's height to the page that frames it, `resize=true`, in an {@link EmbedResizeMessage}
+ * (ADR-0116).
+ */
+export const RESIZE_PARAM = "resize";
+
+/**
+ * Marks an embed's messages: the public ones an embed and the page that frames it exchange
+ * (ADR-0116), apart from the shell's, {@link PREVIEW_MESSAGE}, which are not public.
+ */
+export const EMBED_MESSAGE = "unframework:embed";
+
+/** The colour modes an embed takes. */
+export type EmbedTheme = "light" | "dark";
+
+/** The page that frames an embed sets its colour mode, if the embed's URL has a `theme`. */
+export interface EmbedThemeMessage {
+  type: typeof EMBED_MESSAGE;
+  kind: "theme";
+  theme: EmbedTheme;
+}
+
+/** An embed with `resize=true` says how tall its content is, in whole CSS pixels. */
+export interface EmbedResizeMessage {
+  type: typeof EMBED_MESSAGE;
+  kind: "resize";
+  height: number;
+}
 
 /** The start of an example's entry key, `example:<id>`, as `entryKey` writes it. */
 export const EXAMPLE_KEY_PREFIX = "example:";
@@ -149,4 +193,9 @@ export interface FrameOptions {
    * {@link DEFAULT_LAYOUT}, on the fresh container of each mount.
    */
   layouts?: Record<string, PreviewLayout>;
+  /**
+   * The control groups of each example that has any, by key (ADR-0113), which a standalone frame
+   * shows with `controls=true` (ADR-0116).
+   */
+  controls?: Record<string, ExampleControlGroup[]>;
 }

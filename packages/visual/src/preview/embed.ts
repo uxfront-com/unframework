@@ -4,9 +4,19 @@
 // example and the target against its own lists, then replaces itself with that target's frame page
 // in standalone mode, so it only ever sends the browser to one of the preview's own frames. A
 // missing or unknown value shows a message instead, since a static host's own 404 page for a frame
-// that isn't there can be blank.
+// that isn't there can be blank. It forwards the embed's options, `controls`, `theme` and
+// `resize`, once they hold values it takes, and only those (ADR-0116).
 import type { PreviewCatalogue } from "./catalogue.ts";
-import { EMBED_FILE, EXAMPLE_PARAM, TARGET_PARAM } from "./protocol.ts";
+import { embedOptions } from "./embed-options.ts";
+import type { EmbedParamNames } from "./embed-options.ts";
+import {
+  CONTROLS_PARAM,
+  EMBED_FILE,
+  EXAMPLE_PARAM,
+  RESIZE_PARAM,
+  TARGET_PARAM,
+  THEME_PARAM,
+} from "./protocol.ts";
 import { scriptJson } from "./shell.ts";
 
 /**
@@ -31,7 +41,12 @@ export function embedData(
 
 /** The embed page. */
 export function embedPage(data: EmbedData): string {
-  const constants = { file: EMBED_FILE, example: EXAMPLE_PARAM, target: TARGET_PARAM };
+  const constants = {
+    file: EMBED_FILE,
+    example: EXAMPLE_PARAM,
+    target: TARGET_PARAM,
+    options: { controls: CONTROLS_PARAM, theme: THEME_PARAM, resize: RESIZE_PARAM },
+  };
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -42,7 +57,7 @@ export function embedPage(data: EmbedData): string {
   </head>
   <body>
     <script type="application/json" id="uf-embed-data">${scriptJson(data)}</script>
-    <script>(${embedScript.toString()})(${scriptJson(constants)});</script>
+    <script>(${embedScript.toString()})(${scriptJson(constants)}, ${embedOptions.toString()});</script>
   </body>
 </html>
 `;
@@ -52,7 +67,15 @@ export function embedPage(data: EmbedData): string {
  * The embed page's script, run in the browser as written: the frame for the URL's example and
  * target, with `location.replace` so Back skips this page, or a message, written as text.
  */
-function embedScript(constants: { file: string; example: string; target: string }): void {
+function embedScript(
+  constants: {
+    file: string;
+    example: string;
+    target: string;
+    options: EmbedParamNames;
+  },
+  readOptions: typeof embedOptions,
+): void {
   const data = JSON.parse(document.getElementById("uf-embed-data")!.textContent!) as EmbedData;
   const params = new URLSearchParams(location.search);
   const example = params.get(constants.example);
@@ -78,7 +101,15 @@ function embedScript(constants: { file: string; example: string; target: string 
     say(`This preview has no example ${JSON.stringify(example)}.`);
     return;
   }
+  const options = readOptions(params, constants.options);
+  if ("error" in options) {
+    say(options.error);
+    return;
+  }
   const url = new URL(frame.src, location.href);
   url.searchParams.set(constants.example, example);
+  if (options.controls) url.searchParams.set(constants.options.controls, "true");
+  if (options.theme) url.searchParams.set(constants.options.theme, options.theme);
+  if (options.resize) url.searchParams.set(constants.options.resize, "true");
   location.replace(url.href);
 }

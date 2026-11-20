@@ -159,6 +159,15 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
   }
 }
 
+/** The control groups of each example that has any, by key, for an embed's controls (ADR-0116). */
+export function entryControls(catalogue: PreviewCatalogue): Record<string, ExampleControlGroup[]> {
+  return Object.fromEntries(
+    catalogue.examples.flatMap((entry) =>
+      entry.controls.length ? [[entry.key, entry.controls]] : [],
+    ),
+  );
+}
+
 /** The layout of each example that sets one, by key, for the frames (ADR-0114). */
 export function entryLayouts(catalogue: PreviewCatalogue): Record<string, PreviewLayout> {
   return Object.fromEntries(
