@@ -41,6 +41,7 @@ import type {
   ComponentAttribute,
   ComponentNode,
   DynamicCandidate,
+  DynamicNode,
   ElementNode,
   Expression,
   IfNode,
@@ -396,6 +397,45 @@ describe("checkInvariants on `<component is>`", () => {
       `${at}/children`,
       "is a void element",
     );
+  });
+
+  it("checks an attribute `only` gives to some tags on those tags alone (ADR-0119)", () => {
+    const tags: DynamicCandidate[] = [
+      { kind: "Tag", tag: "a" },
+      { kind: "Tag", tag: "button" },
+    ];
+    const href = createStaticAttribute("href", "/", find("label={label}"));
+    const module = withDynamic(tags, [href]);
+    const node = root(module).children[4] as DynamicNode;
+    // Unchecked on `<button>`, which does not take it.
+    node.only = [{ name: "href", tags: ["a"] }];
+    expect(checkInvariants(module)).toEqual([]);
+    // Without the entry, `<button>` checks it.
+    delete node.only;
+    reports(module, `${at}/attributes/0/name`, "must be an attribute of <button>");
+  });
+
+  it.each([
+    [[{ name: "href", tags: [] }], "/only/0/tags", "must list some of the node's tag candidates"],
+    [[{ name: "href", tags: ["a", "button"] }], "/only/0/tags", "and not all of them"],
+    [[{ name: "href", tags: ["p"] }], "/only/0/tags", "must list some"],
+    [[{ name: "title", tags: ["a"] }], "/only/0/name", "must name a static or bound attribute"],
+    [
+      [
+        { name: "href", tags: ["a"] },
+        { name: "href", tags: ["a"] },
+      ],
+      "/only/1/name",
+      'must name "href" once',
+    ],
+  ])("reports a malformed `only`: %j", (only, path, message) => {
+    const tags: DynamicCandidate[] = [
+      { kind: "Tag", tag: "a" },
+      { kind: "Tag", tag: "button" },
+    ];
+    const module = withDynamic(tags, [createStaticAttribute("href", "/", find("label={label}"))]);
+    (root(module).children[4] as DynamicNode).only = only;
+    reports(module, `${at}${path}`, message);
   });
 
   it("reports an element's attribute and children for component candidates", () => {
