@@ -715,10 +715,12 @@ describe("canaries", () => {
   it("L10-stylesheet-rule-dropped drops a rule of each styled case's sheet, on the followers only", async () => {
     const styled = listCases().filter((info) => canaryCase(info).styled);
     // The scoping corpus, the Styleframe cases with a sheet of their own (ADR-0064), a teleport
-    // root's sheet (ADR-0098), and the transition cases, whose sheets declare their classes
-    // (ADR-0100).
+    // root's sheet (ADR-0098), the transition cases, whose sheets declare their classes
+    // (ADR-0100), and a parent whose sheet reaches a `<component is>` root (ADR-0119).
     for (const { id } of styled) {
-      expect(["styles", "styleframe", "teleport", "transitions"], id).toContain(id.split("/")[0]);
+      expect(["styles", "styleframe", "teleport", "transitions", "fallthrough"], id).toContain(
+        id.split("/")[0],
+      );
     }
     expect(styled.length).toBeGreaterThanOrEqual(15);
     /** The cases a sheet of which the reference emitted. */
