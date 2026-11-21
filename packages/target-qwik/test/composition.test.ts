@@ -1056,6 +1056,16 @@ export default function Toggle({ link }: { link: boolean }) {
     expect(contents).not.toContain("<Tag");
   });
 
+  it("guards an untyped attribute only some tags take, which Qwik writes as a spread (ADR-0119)", async () => {
+    const contents =
+      await emitSource(`export default function Field({ x, f }: { x: boolean; f: string }) {
+  return <component is={x ? "input" : "a"} form="f1" list={f} />;
+}`);
+    // Qwik's types declare neither on <input>, so each is an object spread, guarded key by key.
+    expect(contents).toContain('{...{ form: Tag === "input" ? "f1" : undefined }}');
+    expect(contents).toContain('{...{ list: Tag === "input" ? f : undefined }}');
+  });
+
   it("plans a tag's listeners as an element's: named, called, capture, control and emitting ones", async () => {
     const plain = await emitSource(listening("button", "button"));
     const dynamic = await emitSource(

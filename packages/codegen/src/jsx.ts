@@ -609,7 +609,7 @@ export function onlyContext(
       const tags = only.get(attribute.name);
       if (!tags) return print(attribute, element, at);
       const items = print(attribute, { ...element, tag: tags[0]! }, at);
-      return items.map((item) => guardJsxAttribute(item, tagTest(tag, tags)));
+      return items.map((item) => guardJsxAttribute(item, () => tagTest(tag, tags)));
     };
   return {
     ...context,
@@ -635,9 +635,37 @@ export function tagTest(tag: () => AST.Expression, tags: readonly string[]): AST
     .reduce((left, right) => js.logicalExpression("||", left, right));
 }
 
-/** An attribute that renders only where `test` holds: `name={test ? value : undefined}`. */
-function guardJsxAttribute(item: AST.JSXAttributeItem, test: AST.Expression): AST.JSXAttributeItem {
-  if (item.type !== "JSXAttribute") return item;
+/**
+ * An attribute that renders only where `test` holds: `name={test ? value : undefined}`. A
+ * dialect may print it as an object spread (Qwik's untyped attributes, `{...{ form: "f" }}`),
+ * whose each key is guarded the same way, `{...{ form: test ? "f" : undefined }}`. `test` makes
+ * a new node for each use, since a placeholder prints once.
+ */
+function guardJsxAttribute(
+  item: AST.JSXAttributeItem,
+  test: () => AST.Expression,
+): AST.JSXAttributeItem {
+  const guard = (value: AST.Expression) =>
+    js.conditionalExpression(test(), value, js.identifier("undefined"));
+  if (item.type === "JSXSpreadAttribute") {
+    const { argument } = item;
+    if (argument.type !== "ObjectExpression") {
+      // Any other object renders all of its keys or none.
+      return {
+        ...item,
+        argument: js.conditionalExpression(test(), argument, js.objectExpression([])),
+      };
+    }
+    return {
+      ...item,
+      argument: {
+        ...argument,
+        properties: argument.properties.map((property) =>
+          property.type === "Property" ? { ...property, value: guard(property.value) } : property,
+        ),
+      },
+    };
+  }
   const { value } = item;
   const expression: AST.Expression =
     value === null
@@ -649,12 +677,7 @@ function guardJsxAttribute(item: AST.JSXAttributeItem, test: AST.Expression): AS
         : value.type === "Literal"
           ? js.stringLiteral(value.value)
           : value;
-  return {
-    ...item,
-    value: js.jsxExpressionContainer(
-      js.conditionalExpression(test, expression, js.identifier("undefined")),
-    ),
-  };
+  return { ...item, value: js.jsxExpressionContainer(guard(expression)) };
 }
 
 /** A prop, `label="Name"` for a string literal (as written), and `tone={tone}` otherwise. */
