@@ -34,6 +34,7 @@ export type {
   DynamicCandidate,
   DynamicClass,
   DynamicNode,
+  DynamicOnly,
   ElementNode,
   EmitReference,
   Emits,

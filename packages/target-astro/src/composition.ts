@@ -70,15 +70,20 @@ export interface DynamicTag {
 }
 
 /**
- * Whether a component's root takes a consumer's `class` and `style`: one element, or one
- * component, unless `inheritAttrs` is off (the analyser's `ComponentApi.root`).
+ * Whether a component's root takes a consumer's `class` and `style`: one element, one component,
+ * or one `<component is>` over tags, unless `inheritAttrs` is off (the analyser's
+ * `ComponentApi.root`).
  */
 export function takesFallthrough(component: UfComponent): boolean {
   if (component.inheritAttrs === false) return false;
   const { render } = component;
+  if (render.kind === "Element") return true;
+  const [only] = render.children;
+  if (render.children.length !== 1) return false;
+  // A `<component is>` over tags renders one element (ADR-0119).
   return (
-    render.kind === "Element" ||
-    (render.children.length === 1 && render.children[0]!.kind === "Component")
+    only?.kind === "Component" ||
+    (only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag"))
   );
 }
 
@@ -140,7 +145,8 @@ export function astroRender(
   };
   const code = (expression: Expression) => rewriteExpression(expression, component, rules);
 
-  // A root component takes the fallthrough before it branches (`withFallthrough`).
+  // A root component or `<component is>` takes the fallthrough before it branches
+  // (`withFallthrough`).
   const rootComponent =
     component.render.kind === "Fragment" ? component.render.children[0] : undefined;
   const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
@@ -217,9 +223,12 @@ export function astroRender(
             ]),
           );
         }
+        // A root `<component is>` over tags takes the fallthrough as its element (ADR-0119).
+        const own =
+          each === rootComponent && fallthrough ? withFallthrough(each, fallthrough) : each;
         const copy = branched({
-          ...each,
-          attributes: [...each.attributes, ...first],
+          ...own,
+          attributes: [...own.attributes, ...first],
           children: nodes(each.children),
           ...(copied ? { fills: copied } : {}),
         });
@@ -344,7 +353,10 @@ export function astroRender(
  * after its own declarations: Astro passes a component's `class` (`class:list` resolved) and
  * `style` as props.
  */
-function withFallthrough<T extends ElementNode | ComponentNode>(root: T, names: Fallthrough): T {
+function withFallthrough<T extends ElementNode | ComponentNode | DynamicNode>(
+  root: T,
+  names: Fallthrough,
+): T {
   const attributes = [...root.attributes] as (Attribute | ComponentAttribute)[];
   const className = {
     kind: "Dynamic" as const,

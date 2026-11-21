@@ -1,0 +1,410 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/dynamic-root/Base.uf.tsx",
+  "components": [
+    {
+      "name": "Base",
+      "span": {
+        "start": 228,
+        "end": 781
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 301,
+              "end": 307
+            }
+          },
+          "binding": "href@261",
+          "span": {
+            "start": 294,
+            "end": 308
+          }
+        },
+        {
+          "name": "disabled",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 322,
+              "end": 329
+            }
+          },
+          "binding": "disabled@269",
+          "span": {
+            "start": 311,
+            "end": 330
+          }
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 339,
+              "end": 345
+            }
+          },
+          "binding": "text@281",
+          "span": {
+            "start": 333,
+            "end": 346
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{\n  href?: string;\n  disabled?: boolean;\n  text: string;\n}",
+          "span": {
+            "start": 290,
+            "end": 348
+          }
+        },
+        "span": {
+          "start": 257,
+          "end": 348
+        }
+      },
+      "types": [],
+      "emits": {
+        "binding": "emit@360",
+        "type": {
+          "code": "{ press: [] }",
+          "span": {
+            "start": 379,
+            "end": 392
+          }
+        },
+        "events": [
+          {
+            "name": "press",
+            "parameters": [],
+            "span": {
+              "start": 381,
+              "end": 390
+            }
+          }
+        ],
+        "span": {
+          "start": 354,
+          "end": 396
+        }
+      },
+      "bindings": [
+        {
+          "id": "href@261",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 261,
+            "end": 265
+          }
+        },
+        {
+          "id": "disabled@269",
+          "name": "disabled",
+          "kind": "prop",
+          "span": {
+            "start": 269,
+            "end": 277
+          }
+        },
+        {
+          "id": "text@281",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 281,
+            "end": 285
+          }
+        },
+        {
+          "id": "emit@360",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 360,
+            "end": 364
+          }
+        },
+        {
+          "id": "press@486",
+          "name": "press",
+          "kind": "localFn",
+          "span": {
+            "start": 486,
+            "end": 491
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Function",
+          "binding": "press@486",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "MouseEvent",
+                  "span": {
+                    "start": 499,
+                    "end": 509
+                  }
+                },
+                "event": "MouseEvent",
+                "span": {
+                  "start": 492,
+                  "end": 509
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.preventDefault();\n    emit(\"press\");\n  }",
+              "span": {
+                "start": 511,
+                "end": 563
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 517,
+                    "end": 537
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@360",
+                  "event": "press",
+                  "span": {
+                    "start": 545,
+                    "end": 558
+                  },
+                  "arguments": []
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 517,
+                  "end": 540
+                }
+              }
+            ],
+            "span": {
+              "start": 491,
+              "end": 563
+            }
+          },
+          "span": {
+            "start": 477,
+            "end": 563
+          }
+        }
+      ],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "href ? \"a\" : \"button\"",
+              "span": {
+                "start": 600,
+                "end": 621
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@261",
+                  "span": {
+                    "start": 600,
+                    "end": 604
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "a"
+              },
+              {
+                "kind": "Tag",
+                "tag": "button"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 635,
+                    "end": 639
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@261",
+                      "span": {
+                        "start": 635,
+                        "end": 639
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 629,
+                  "end": 640
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "disabled",
+                "value": {
+                  "code": "disabled",
+                  "span": {
+                    "start": 657,
+                    "end": 665
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "disabled@269",
+                      "span": {
+                        "start": 657,
+                        "end": 665
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 647,
+                  "end": 666
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "base",
+                "span": {
+                  "start": 673,
+                  "end": 685
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "padding",
+                    "value": "4px 8px",
+                    "span": {
+                      "start": 699,
+                      "end": 715
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 692,
+                  "end": 716
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "press@486",
+                  "span": {
+                    "start": 732,
+                    "end": 737
+                  }
+                },
+                "span": {
+                  "start": 723,
+                  "end": 738
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 752,
+                    "end": 756
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@281",
+                      "span": {
+                        "start": 752,
+                        "end": 756
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 751,
+                  "end": 757
+                }
+              }
+            ],
+            "only": [
+              {
+                "name": "href",
+                "tags": [
+                  "a"
+                ]
+              },
+              {
+                "name": "disabled",
+                "tags": [
+                  "button"
+                ]
+              }
+            ],
+            "span": {
+              "start": 579,
+              "end": 774
+            }
+          }
+        ],
+        "span": {
+          "start": 579,
+          "end": 774
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Base",
+      "span": {
+        "start": 228,
+        "end": 781
+      }
+    }
+  ],
+  "types": []
+}

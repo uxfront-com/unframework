@@ -1,0 +1,12 @@
+- link "Docs":
+  - /url: "#docs"
+- button "Off" [disabled]
+- button "Save"
+- list "Items":
+  - listitem:
+    - link "One":
+      - /url: "#one"
+  - listitem:
+    - button "Two" [disabled]
+- button "Toggle"
+- status: none

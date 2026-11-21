@@ -205,14 +205,18 @@ function renderedSlots(component: UfComponent): string[] {
 
 /**
  * Whether a consumer's `class` and `style` fall through to the component (ADR-0054): its root is
- * one element, or one component that takes them in turn, and it does not turn them off.
+ * one element, one `<component is>` over tags (ADR-0119), or one component that takes them in
+ * turn, and it does not turn them off.
  */
 function fallsThrough(component: UfComponent, module: UfModule): boolean {
   if (component.inheritAttrs === false) return false;
   if (component.render.kind === "Element") return true;
-  // A component at the root is the only child of the root fragment.
+  // A component at the root is the only child of the root fragment, and so is a
+  // `<component is>` over tags, which renders one element (ADR-0119).
   const [root, ...rest] = component.render.children;
-  if (root?.kind !== "Component" || rest.length) return false;
+  if (rest.length) return false;
+  if (root?.kind === "Dynamic") return root.candidates.every((each) => each.kind === "Tag");
+  if (root?.kind !== "Component") return false;
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find(
       (name) => name.kind === "Component" && name.local === root.component,

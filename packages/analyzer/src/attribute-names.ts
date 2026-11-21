@@ -233,6 +233,36 @@ function reservedProblem(authored: string, name: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Whether an HTML element takes an attribute by its name: false only where `nameProblem` finds
+ * that it is no attribute of the element (UF3006). `<component is>` over tags judges this one
+ * check per candidate, and renders the attribute only on those that take it (ADR-0119). An
+ * ARIA or `data-*` name, `key`, a listener and a template ref are judged elsewhere: true.
+ */
+export function takesByName(tag: string, authored: string): boolean {
+  const name = canonicalName(tag, "html", authored);
+  if (name === "key" || name.startsWith("aria-") || name.startsWith("data-")) return true;
+  const problem = nameProblem(tag, "html", authored, name);
+  return !(problem?.code === "UF3006" && !isAttributeOf(tag, "html", name));
+}
+
+/**
+ * The problem with a name that no tag `<component is>` may render takes (ADR-0119), reported
+ * once for them all: "`colspan` is not an attribute of <a> or <button>."
+ */
+export function unknownOnEvery(tags: readonly string[], authored: string): Problem {
+  const [first = "div"] = tags;
+  const name = canonicalName(first, "html", authored);
+  const problem = unknownProblem(first, "html", authored, name);
+  return {
+    ...problem,
+    message: `\`${authored}\` is not an attribute of ${list(
+      tags.map((tag) => `<${tag}>`),
+      "or",
+    )}.`,
+  };
+}
+
 /** The problem with a name that is not an attribute of the element. */
 function unknownProblem(
   tag: string,

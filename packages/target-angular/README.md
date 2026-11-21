@@ -282,7 +282,8 @@ parent, so the composable's effects stay the component's view effects.
   listeners, so the model's write runs first in the element's one template listener of its event,
   ahead of an author's listener there, a `once` or `passive` one included (a capture listener runs
   before the bubble phase at its target, on Vue too, and keeps its directive).
-- **Fallthrough.** A component whose root is an element or a component, and that does not set
+- **Fallthrough.** A component whose root is an element, a component or a `<component is>` over
+  tags (ADR-0119, in each `@case`), and that does not set
   `inheritAttrs: false`, declares `class` and `style` inputs and merges them into its root: the
   class among its parts, the style in one map after the root's own, so a property the consumer
   leaves `undefined` removes the root's, as Vue's merge does. The host clears both with

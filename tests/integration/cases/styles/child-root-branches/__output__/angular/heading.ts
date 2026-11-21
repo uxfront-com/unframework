@@ -36,16 +36,26 @@ export class ScopeAttributes implements OnInit {
 @Component({
   selector: "uf-heading",
   imports: [ScopeAttributes],
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let big = this.big();
     @let text = this.text();
     @switch (big ? "h2" : "h3") {
       @case ("h2") {
-        <h2 class="heading" [ufScope]="this.host">{{ text }}</h2>
+        <h2
+          class="heading"
+          [class]="this.class()"
+          [style]="this.style()"
+          [ufScope]="this.host"
+        >{{ text }}</h2>
       } @case ("h3") {
-        <h3 class="heading" [ufScope]="this.host">{{ text }}</h3>
+        <h3
+          class="heading"
+          [class]="this.class()"
+          [style]="this.style()"
+          [ufScope]="this.host"
+        >{{ text }}</h3>
       }
     }
   `,
@@ -53,5 +63,7 @@ export class ScopeAttributes implements OnInit {
 export default class Heading {
   readonly big = input.required<boolean>();
   readonly text = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

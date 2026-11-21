@@ -1,8 +1,8 @@
 // `<component is={…}>` over a statically known set (ADR-0054, plan §4.6): `is` is a literal, a
 // conditional whose leaves are literals or components, or a value typed as a union of tags (a
-// prop's `"h2" | "h3"`). The leaves are all HTML tags, whose attributes and children each tag
-// must take, or all components, whose attributes and fills each must declare (UF3044
-// otherwise). Each component a leaf names is a `component` binding, which only the `is` reads.
+// prop's `"h2" | "h3"`). The leaves are all HTML tags, whose children each tag must take and
+// whose attributes at least one must (each renders only on those that take it, ADR-0119), or all
+// components, whose attributes and fills each must declare (UF3044 otherwise). Each component a leaf names is a `component` binding, which only the `is` reads.
 
 import {
   createBinding,
@@ -18,10 +18,12 @@ import type {
   ComponentAttribute,
   DynamicCandidate,
   DynamicNode,
+  DynamicOnly,
   SlotFill,
 } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
+import { canonicalName, takesByName, unknownOnEvery } from "./attribute-names.ts";
 import { lowerAttributes } from "./attributes.ts";
 import { componentOf, lowerComponentAs } from "./components.ts";
 import { Reporter } from "./context.ts";
@@ -159,6 +161,7 @@ export function lowerDynamic(
     lowered.children,
     span(node),
     lowered.fills,
+    lowered.only,
   );
 }
 
@@ -257,6 +260,7 @@ interface Lowered {
   attributes: (Attribute | ComponentAttribute)[];
   children: DynamicNode["children"];
   fills?: SlotFill[];
+  only?: DynamicOnly[];
 }
 
 /**
@@ -299,10 +303,12 @@ function merge(render: RenderContext, mark: number, probes: readonly RenderConte
 
 /**
  * Tag candidates (ADR-0055): each tag is checked as the element it may render, from the context
- * as it was before any of them: its placement among its ancestors (UF3003), its attributes
- * (UF3006 for one a tag does not take; a template ref attaches once whichever renders), and the
- * children inside it, which no void tag takes. The first one's lowering is the node's; what any
- * other finds besides is reported too, so the order of `is` changes nothing. A control's
+ * as it was before any of them: its placement among its ancestors (UF3003), the attributes it
+ * takes (an attribute only some tags take renders on those, and one none takes is UF3006,
+ * ADR-0119; a template ref attaches once whichever renders), and the children inside it, which
+ * no void tag takes. The first one's lowering is the node's, with what only later tags take
+ * lowered as the first of them; what any other finds besides is reported too, so the order of
+ * `is` changes nothing. A control's
  * `v-model` binds a control its tag decides, which `is` does not fix: UF3042.
  */
 function lowerTags(
@@ -377,11 +383,34 @@ function lowerTags(
   };
   const content = hasContent(node.children);
   const mark = render.reporter.diagnostics.length;
+  // An attribute only some tags take renders on those alone, and one none takes is UF3006, once
+  // for them all (ADR-0119). Each tag lowers the attributes it takes.
+  const only: DynamicOnly[] = [];
+  const skipped = new Map(tags.map((tag) => [tag, new Set<AST.JSXAttributeItem>()]));
+  for (const item of opening.attributes) {
+    if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") continue;
+    const authored = item.name.name;
+    const takers = tags.filter((tag) => takesByName(tag, authored));
+    if (takers.length === tags.length) continue;
+    for (const tag of tags) if (!takers.includes(tag)) skipped.get(tag)!.add(item);
+    if (takers.length) {
+      only.push({ name: canonicalName(takers[0]!, "html", authored), tags: takers });
+      continue;
+    }
+    const problem = unknownOnEvery(tags, authored);
+    render.reporter.report(problem.code, item.name, problem.message, {
+      ...(problem.help ? { help: problem.help } : {}),
+    });
+  }
+  const own = (tag: string, items = opening.attributes) => ({
+    ...opening,
+    attributes: items.filter((item) => !skipped.get(tag)!.has(item)),
+  });
   // Taken before the first tag lowers, so each later one starts from the same context.
   const probes = tags.slice(1).map(() => probe(render));
   const check = (tag: string, at: RenderContext) => {
     checkPlacement(tag, name, place.ancestors, at.reporter, !place.fill);
-    const { attributes } = lowerAttributes(opening, {
+    const { attributes } = lowerAttributes(own(tag), {
       tag,
       namespace: "html",
       hasChildren: content,
@@ -399,6 +428,22 @@ function lowerTags(
     return { attributes, children };
   };
   const lowered = check(tags[0]!, render);
+  // What the first tag does not take is lowered as the first later tag that takes it, so the
+  // order of `is` drops nothing.
+  let rest = opening.attributes.filter((item) => skipped.get(tags[0]!)!.has(item));
+  for (const tag of tags.slice(1)) {
+    const items = own(tag, rest).attributes;
+    if (!items.length) continue;
+    rest = rest.filter((item) => !items.includes(item));
+    const { attributes } = lowerAttributes(
+      { ...opening, attributes: items },
+      { tag, namespace: "html", hasChildren: content, listBody: false, render },
+    );
+    for (const attribute of attributes) {
+      const at = lowered.attributes.findIndex((each) => each.span.start > attribute.span.start);
+      lowered.attributes.splice(at === -1 ? lowered.attributes.length : at, 0, attribute);
+    }
+  }
   for (const [index, tag] of tags.slice(1).entries()) check(tag, probes[index]!);
   merge(render, mark, probes);
   const empty = tags.find((tag) => isVoidElement(tag));
@@ -410,7 +455,7 @@ function lowerTags(
       { help: "Leave the void tag out of `is`, or move the children after the element." },
     );
   }
-  return lowered;
+  return only.length ? { ...lowered, only } : lowered;
 }
 
 /**

@@ -1,0 +1,16 @@
+.page[data-uf-64cf7c28] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  row-gap: 8px;
+  padding: 8px;
+}
+
+/* Each child's root carries the page's attribute, whichever tag it renders. */
+.base[data-uf-64cf7c28] {
+  border: 2px solid rgb(220, 38, 38);
+}
+
+.wide[data-uf-64cf7c28] {
+  min-width: 160px;
+}

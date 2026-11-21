@@ -15,6 +15,7 @@ import {
   js,
   jsxAttributeValue,
   jsxContext,
+  candidateAttributes,
   jsxDynamic,
   jsxElement,
   jsxExpression,
@@ -624,6 +625,8 @@ type Parameter = Parameters<typeof js.arrowFunction>[0][number];
 type AstExpression = Parameters<typeof js.conditionalExpression>[0];
 type JsxAttribute = ReturnType<typeof js.jsxAttribute> | ReturnType<typeof js.jsxSpreadAttribute>;
 type JsxAttributeNode = ReturnType<typeof js.jsxAttribute>;
+type JsxElementNode = ReturnType<typeof js.jsxElement>;
+type JsxChild = Parameters<typeof js.jsxFragment>[0][number];
 
 /**
  * Where the scope attributes of the styled parents that render the component land (the
@@ -841,15 +844,38 @@ function keyDeclarations(
  * tokens after the root's own, `class={["tag", className]}`, and the style's declarations after
  * the root's, `style={{ padding: "2px", ...style }}`, so the consumer's win (ADR-0054).
  */
-function mergeFallthrough(
-  root: AstExpression,
+function mergeFallthrough(root: AstExpression, names: { className: string; style: string }): void {
+  for (const element of rootElements(root)) mergeInto(element, names);
+}
+
+/**
+ * The elements a root renders, one of which shows: the root element, the only child of a
+ * fragment (a component at the root, or a `<component is>` a sibling never follows), and each
+ * branch of the ternary a `<component is>` with listeners writes, one element per tag
+ * (`candidateBranches`, ADR-0119).
+ */
+function rootElements(node: AstExpression | JsxChild): JsxElementNode[] {
+  switch (node.type) {
+    case "JSXElement":
+      return [node];
+    case "JSXFragment": {
+      const [only] = node.children;
+      return only ? rootElements(only) : [];
+    }
+    case "JSXExpressionContainer":
+      return node.expression.type === "JSXEmptyExpression" ? [] : rootElements(node.expression);
+    case "ConditionalExpression":
+      return [...rootElements(node.consequent), ...rootElements(node.alternate)];
+    default:
+      return [];
+  }
+}
+
+/** Merges the consumer's `class` and `style` into one element of the root. */
+function mergeInto(
+  element: JsxElementNode,
   { className, style }: { className: string; style: string },
 ): void {
-  // A component at the root is the only child of a fragment.
-  const [only] = root.type === "JSXFragment" ? root.children : [];
-  const element =
-    root.type === "JSXElement" ? root : only?.type === "JSXElement" ? only : undefined;
-  if (!element) return;
   const attributes = element.openingElement.attributes;
   const find = (name: string) =>
     attributes.find(
@@ -1398,13 +1424,9 @@ function candidateBranches(
       {
         kind: "Element",
         tag,
-        // A tag candidate's attributes are an element's (ADR-0054).
-        attributes: node.attributes.filter(
-          (attribute) =>
-            attribute.kind !== "Prop" &&
-            attribute.kind !== "Listener" &&
-            attribute.kind !== "ModelBinding",
-        ),
+        // A tag candidate's attributes are an element's (ADR-0054), but those only other tags
+        // take (ADR-0119).
+        attributes: candidateAttributes(node, tag),
         children: node.children,
         span: node.span,
       },

@@ -17,9 +17,11 @@ import {
 } from "./escape.ts";
 import {
   classArrayItems,
+  guardsOf,
   directiveAttributeName,
   isRoot,
   keepsWhitespace,
+  onlyGuards,
   staticClassValue,
   staticStyleValue,
   toggleObject,
@@ -366,6 +368,8 @@ export const vueDialect: MarkupDialect = {
             span: node.span,
           },
           directives,
+          // An attribute only some tags take renders on those (ADR-0119).
+          ...guardsOf(onlyGuards(node, is)),
         },
       ];
     }

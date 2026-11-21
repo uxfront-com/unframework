@@ -56,14 +56,19 @@ export function takesFallthrough(component: UfComponent): boolean {
   const { render } = component;
   if (render.kind === "Element") return true;
   const [only, ...rest] = render.children;
-  // A lone component is a fragment of one child in the IR, with the fragment's own span; a
-  // written fragment around it (`<><Base /></>`) is wider.
+  // A lone component or `<component is>` over tags (ADR-0119) is a fragment of one child in the
+  // IR, with the fragment's own span; a written fragment around it (`<><Base /></>`) is wider.
   return (
-    only?.kind === "Component" &&
+    (only?.kind === "Component" || isTagDynamic(only)) &&
     rest.length === 0 &&
     only.span.start === render.span.start &&
     only.span.end === render.span.end
   );
+}
+
+/** Whether a node is a `<component is>` over tags, which renders one element (ADR-0119). */
+function isTagDynamic(node: RenderNode | undefined): node is DynamicNode {
+  return node?.kind === "Dynamic" && node.candidates.every((candidate) => candidate.kind === "Tag");
 }
 
 /** Whether an attribute of a `<component is>` over components is a component's. */
@@ -140,6 +145,7 @@ export function rootTakesFallthrough(component: UfComponent, module: UfModule): 
   const { render } = component;
   if (render.kind === "Element") return true;
   const [root] = render.children;
+  if (isTagDynamic(root)) return true;
   if (root?.kind !== "Component") return false;
   const name = root.component;
   for (const entry of module.imports ?? []) {
@@ -163,7 +169,7 @@ export function hasOwnStyle(component: UfComponent): boolean {
   const { render } = component;
   const root = render.kind === "Element" ? render : render.children[0];
   return (
-    (root?.kind === "Element" || root?.kind === "Component") &&
+    (root?.kind === "Element" || root?.kind === "Component" || isTagDynamic(root)) &&
     root.attributes.some(
       (attribute) =>
         attribute.kind === "Style" ||
@@ -290,6 +296,24 @@ export function composedRender(
   }
   const fragment: FragmentNode = { ...render, children: rewrite(render.children) };
   const [only] = fragment.children;
+  if (fallthrough && isTagDynamic(only)) {
+    // Merged as its element's: `<svelte:element>` renders one tag (ADR-0119).
+    const merged = rootElement(
+      {
+        kind: "Element",
+        tag: "svelte:element",
+        attributes: only.attributes as Attribute[],
+        children: only.children,
+        span: only.span,
+      },
+      fallthrough,
+      code,
+    );
+    return {
+      render: { ...fragment, children: [{ ...only, attributes: merged.attributes }] },
+      candidates,
+    };
+  }
   if (!fallthrough || only?.kind !== "Component") return { render: fragment, candidates };
   return {
     render: { ...fragment, children: [rootComponent(only, fallthrough, code)] },

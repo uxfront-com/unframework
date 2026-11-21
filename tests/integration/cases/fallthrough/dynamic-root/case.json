@@ -1,0 +1,4 @@
+{
+  "description": "A component whose root is a <component is> over tags takes a parent's class and style, through a component root too, and renders each attribute only on the tags that take it.",
+  "main": "Page.uf.tsx"
+}

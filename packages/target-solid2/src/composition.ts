@@ -273,16 +273,20 @@ function propertyKey(name: string): string {
 }
 
 /**
- * Where `class` and `style` fall through (ADR-0054): the root element, or the root component
- * that passes them on, as `ComponentApi.root` reads the source; none for any other root or with
- * `inheritAttrs: false`.
+ * Where `class` and `style` fall through (ADR-0054): the root element, the root component that
+ * passes them on, or the root `<component is>` over tags (ADR-0119), as `ComponentApi.root` reads
+ * the source; none for any other root or with `inheritAttrs: false`.
  */
 function fallthroughRoot(component: UfComponent): Span | undefined {
   if (component.inheritAttrs === false) return undefined;
   const { render } = component;
   if (render.kind === "Element") return render.span;
   const [only] = render.children;
-  return render.children.length === 1 && only?.kind === "Component" ? only.span : undefined;
+  if (render.children.length !== 1) return undefined;
+  // A `<component is>` over tags renders one element, which takes them as a root element does
+  // (ADR-0119): `jsxDynamic` keeps its span for `isRoot`.
+  const tags = only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag");
+  return only?.kind === "Component" || tags ? only!.span : undefined;
 }
 
 /** What a template, or a row, does with its slots, outside the list rows it holds. */

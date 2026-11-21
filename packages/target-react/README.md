@@ -8,7 +8,8 @@ component, written as a React developer would write it (plan §6):
   `function Plain(props: PlainProps)` with `props.label` kept. A prop that no expression reads is
   left out with its default, and a parameter nothing reads is `_props` (an object form's keeps a
   name that is `_` and more, and takes `_` before any other: `_props`, `__`): unused bindings
-  fail L5. A component whose root is an element or a component, and that keeps fallthrough on,
+  fail L5. A component whose root is an element, a component or a `<component is>` over tags
+  (ADR-0119), and that keeps fallthrough on,
   also takes `className` and `style` (see Composition below).
 - the types the source imports, by name, where the output reads them (ADR-0067): from a `.ts`
   module or a package as written, `import type { BadgeProps } from "./types"`, and from a

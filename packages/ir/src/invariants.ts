@@ -1981,10 +1981,11 @@ function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
   let attachments: Map<BindingId, number> | undefined;
   for (const candidate of node.candidates) {
     if (candidate.kind !== "Tag") continue;
+    // An attribute only some candidates take is checked on those alone (ADR-0119).
     const element: ElementNode = {
       kind: "Element",
       tag: candidate.tag,
-      attributes,
+      attributes: attributes.filter((attribute) => takes(node, candidate.tag, attribute)),
       children: node.children,
       span: node.span,
     };
@@ -2005,6 +2006,52 @@ function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
     }
   }
   for (const [id, count] of attachments ?? []) walk.attachments.set(id, count);
+}
+
+/** Whether a tag candidate takes an attribute: every one does, but those `only` lists. */
+function takes(node: DynamicNode, tag: string, attribute: Attribute): boolean {
+  if (attribute.kind !== "Static" && attribute.kind !== "Bound") return true;
+  const only = node.only?.find((entry) => entry.name === attribute.name);
+  return !only || only.tags.includes(tag);
+}
+
+/**
+ * Checks a `Dynamic` node's `only` (ADR-0119): each entry names a `Static` or `Bound` attribute
+ * of the node once, and lists some of its tag candidates, never none and never all.
+ */
+function checkOnly(node: DynamicNode, place: Place, walk: Walk): void {
+  if (!node.only) return;
+  const tags = node.candidates.flatMap((candidate) =>
+    candidate.kind === "Tag" ? [candidate.tag] : [],
+  );
+  const names = new Set<string>();
+  for (const [index, entry] of node.only.entries()) {
+    const path = `${place.path}/only/${index}`;
+    if (names.has(entry.name)) {
+      walk.errors.push({ path: `${path}/name`, message: `must name "${entry.name}" once` });
+    }
+    names.add(entry.name);
+    if (
+      !node.attributes.some(
+        (attribute) =>
+          (attribute.kind === "Static" || attribute.kind === "Bound") &&
+          attribute.name === entry.name,
+      )
+    ) {
+      walk.errors.push({
+        path: `${path}/name`,
+        message: `must name a static or bound attribute of the node, and "${entry.name}" is none`,
+      });
+    }
+    const known = entry.tags.every((tag) => tags.includes(tag));
+    const distinct = new Set(entry.tags).size === entry.tags.length;
+    if (!entry.tags.length || !known || !distinct || entry.tags.length >= tags.length) {
+      walk.errors.push({
+        path: `${path}/tags`,
+        message: "must list some of the node's tag candidates, each once, and not all of them",
+      });
+    }
+  }
 }
 
 /**
@@ -2038,6 +2085,7 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
     if (node.fills) {
       errors.push({ path: `${place.path}/fills`, message: "must be absent for tag candidates" });
     }
+    checkOnly(node, place, walk);
     for (const [index, attribute] of node.attributes.entries()) {
       if (
         attribute.kind === "Prop" ||
@@ -2075,6 +2123,9 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
       path: `${place.path}/children`,
       message: "must be empty for component candidates: their content is fills",
     });
+  }
+  if (node.only) {
+    errors.push({ path: `${place.path}/only`, message: "must be absent for component candidates" });
   }
   for (const [index, attribute] of node.attributes.entries()) {
     if (

@@ -1,7 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { big, text, ...attributes }: { big: boolean; text: string } = $props();
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { big: boolean; text: string; class?: ClassValue; style?: string };
+
+  let { big, text, class: className, style, ...attributes }: Props = $props();
 
   /** The scope attributes of the styled parents that render this component, for its root. */
   function scopeAttributes(props: object): Record<string, ""> {
@@ -13,6 +17,7 @@
 
 <svelte:element
   this={big ? "h2" : "h3"}
-  class="heading"
+  class={["heading", className]}
+  {style}
   {...scopeAttributes(attributes)}
 >{text}</svelte:element>

@@ -24,6 +24,7 @@ import {
   unicodeEscape,
 } from "./escape.ts";
 import {
+  candidateAttributes,
   isRoot,
   keepsWhitespace,
   operand,
@@ -633,7 +634,8 @@ export const angularDialect: MarkupDialect = {
               element: {
                 kind: "Element",
                 tag: candidate.tag,
-                attributes: node.attributes as Attribute[],
+                // Each case prints only the attributes its tag takes (ADR-0119).
+                attributes: candidateAttributes(node, candidate.tag),
                 children: node.children,
                 span: node.span,
               },

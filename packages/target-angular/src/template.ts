@@ -17,6 +17,7 @@ import type {
   ClassItem,
   ComponentAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   Expression,
   FragmentNode,
@@ -259,15 +260,18 @@ export function template(
 }
 
 /**
- * The component's root (an element, or a fragment of one element or component), which a
- * consumer's `class` and `style` fall through to (ADR-0054), or none.
+ * The component's root (an element, or a fragment of one element, one component or one
+ * `<component is>` over tags, ADR-0119), which a consumer's `class` and `style` fall through to
+ * (ADR-0054), or none. A `<component is>` takes them in each `@case`.
  */
 export function fallthroughRoot(
   render: ElementNode | FragmentNode,
-): ElementNode | ComponentNode | undefined {
+): ElementNode | ComponentNode | DynamicNode | undefined {
   if (render.kind === "Element") return render;
   const [only] = render.children;
-  return render.children.length === 1 && (only?.kind === "Element" || only?.kind === "Component")
+  if (render.children.length !== 1) return undefined;
+  if (only?.kind === "Element" || only?.kind === "Component") return only;
+  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
     ? only
     : undefined;
 }
@@ -317,7 +321,7 @@ function withFallthrough(render: ElementNode | FragmentNode): ElementNode | Frag
   } else if (style?.kind === "Style") {
     attributes[styleAt] = { ...style, declarations: [...style.declarations, declaration] };
   } else attributes.push({ kind: "Style", declarations: [declaration], span });
-  const merged = { ...root, attributes } as ElementNode | ComponentNode;
+  const merged = { ...root, attributes } as ElementNode | ComponentNode | DynamicNode;
   if (render.kind === "Element") return merged as ElementNode;
   return { ...render, children: [merged] };
 }
