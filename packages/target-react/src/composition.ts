@@ -76,8 +76,11 @@ export interface ModelPlan {
 
 /** What the component's root takes of a consumer's `class` and `style` (ADR-0054). */
 export interface FallthroughPlan {
-  /** The root they merge into: the render root's element, or its one component. */
-  root: ElementNode | ComponentNode;
+  /**
+   * The root they merge into: the render root's element, its one component, or its one
+   * `<component is>` over tags (ADR-0119).
+   */
+  root: ElementNode | ComponentNode | DynamicNode;
   className: string;
   style: string;
 }
@@ -389,15 +392,21 @@ function readSlots(component: UfComponent): Set<string> {
 
 /**
  * The root a consumer's `class` and `style` merge into (ADR-0054): the render root's element, or
- * the one component a fragment holds. None where `inheritAttrs` is off, or the root is anything
- * else, where a consumer's `class` is UF3045.
+ * the one component or `<component is>` over tags a fragment holds (ADR-0119). None where
+ * `inheritAttrs` is off, or the root is anything else, where a consumer's `class` is UF3045.
  */
-function fallthroughRoot(component: UfComponent): ElementNode | ComponentNode | undefined {
+function fallthroughRoot(
+  component: UfComponent,
+): ElementNode | ComponentNode | DynamicNode | undefined {
   if (component.inheritAttrs === false) return undefined;
   const { render } = component;
   if (render.kind === "Element") return render;
   const [only] = render.children;
-  return render.children.length === 1 && only?.kind === "Component" ? only : undefined;
+  if (render.children.length !== 1) return undefined;
+  if (only?.kind === "Component") return only;
+  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
+    ? only
+    : undefined;
 }
 
 /** The authoring type of the ref a key holds, by the local name the setup uses. */

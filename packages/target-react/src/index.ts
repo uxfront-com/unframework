@@ -509,6 +509,15 @@ function withFallthrough(
   if (target.kind === "Element") {
     return { ...target, attributes: fallthroughAttributes(target, consumer, composer) };
   }
+  if (target.kind === "Dynamic") {
+    // Over tags, its attributes are an element's (ADR-0119).
+    const attributes = fallthroughAttributes(
+      { attributes: target.attributes as Attribute[], span: target.span },
+      consumer,
+      composer,
+    );
+    return { ...root, children: [{ ...target, attributes }] };
+  }
   const attributes = fallthroughAttributes(target, consumer, composer);
   return { ...root, children: [{ ...target, attributes }] };
 }

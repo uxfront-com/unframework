@@ -1,6 +1,7 @@
 import {
   addTypeImports,
   angularDialect,
+  candidateAttributes,
   codeNames,
   codeKind,
   defineTarget,
@@ -355,7 +356,21 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const fallthrough =
     component.inheritAttrs !== false &&
     root !== undefined &&
-    (root.kind === "Component" || angularDialect.literalRegion?.(root) === undefined);
+    (root.kind === "Component" ||
+      (root.kind === "Dynamic"
+        ? // Each `@case` is an element of its own tag (ADR-0119).
+          root.candidates.every(
+            (candidate) =>
+              candidate.kind === "Tag" &&
+              angularDialect.literalRegion?.({
+                kind: "Element",
+                tag: candidate.tag,
+                attributes: candidateAttributes(root, candidate.tag),
+                children: root.children,
+                span: root.span,
+              }) === undefined,
+          )
+        : angularDialect.literalRegion?.(root) === undefined));
   const clearsHost = fallthrough || component.inheritAttrs === false;
   reportApiClashes(component, composition, fallthrough, context);
   const usesRefObject = component.setup.some(
