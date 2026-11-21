@@ -686,6 +686,17 @@ describe("a <component is> root over tags (ADR-0119)", () => {
     expect(api.rootUnlisted).toBeUndefined();
   });
 
+  it("reads a capitalised prop typed as tags as tags, not as a component", () => {
+    const api = apiOf(
+      'export function Child({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }',
+    );
+    expect(api.root).toBe("dynamic");
+    expect(api.rootTags).toEqual(["a", "button"]);
+    const source = `function A3({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }
+export function P() { return <p><A3 Tag="a" text="3" class="c3" /></p>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
   it("reads a prop renamed in the pattern, and one typed through an alias", () => {
     const renamed = apiOf(
       'export function Child({ tag: t }: { tag: "h2" | "h3" }) { return <component is={t} />; }',

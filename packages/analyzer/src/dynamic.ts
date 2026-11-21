@@ -285,6 +285,37 @@ function probe(render: RenderContext): RenderContext {
   };
 }
 
+/**
+ * Takes into the context what a probe found that it lacks: the bindings, the template refs'
+ * attachments and the code facts of the attributes lowered there alone (ADR-0119). What both
+ * found is kept once.
+ */
+function adopt(render: RenderContext, probe: RenderContext): void {
+  for (const binding of probe.bindings) {
+    if (!render.bindings.some((each) => each.id === binding.id)) render.bindings.push(binding);
+  }
+  for (const [key, value] of probe.attached)
+    if (!render.attached.has(key)) render.attached.set(key, value);
+  const { facts } = render;
+  for (const call of probe.facts.nestedCalls) {
+    const known = facts.nestedCalls.some(
+      (each) =>
+        each.binding === call.binding &&
+        each.span.start === call.span.start &&
+        each.span.end === call.span.end,
+    );
+    if (!known) facts.nestedCalls.push(call);
+  }
+  for (const [key, value] of probe.facts.getterKinds) {
+    if (!facts.getterKinds.has(key)) facts.getterKinds.set(key, value);
+  }
+  for (const call of probe.facts.tickCallbacks) {
+    if (!facts.tickCallbacks.includes(call)) facts.tickCallbacks.push(call);
+  }
+  for (const [key, value] of probe.facts.passed)
+    if (!facts.passed.has(key)) facts.passed.set(key, value);
+}
+
 /** Reports what each later candidate's check found that the first one's did not. */
 function merge(render: RenderContext, mark: number, probes: readonly RenderContext[]): void {
   const seen = new Set(
@@ -432,24 +463,25 @@ function lowerTags(
     return { attributes, children };
   };
   const lowered = check(tags[0]!, render);
-  // What the first tag does not take is lowered as the first later tag that takes it, so the
-  // order of `is` drops nothing.
-  let rest = opening.attributes.filter((item) => skipped.get(tags[0]!)!.has(item));
-  for (const later of tags.slice(1)) {
-    const items = own(later, rest).attributes;
-    if (!items.length) continue;
-    rest = rest.filter((item) => !items.includes(item));
-    const { attributes } = lowerAttributes(
-      { ...opening, attributes: items },
-      { tag: later, namespace: "html", hasChildren: content, listBody: false, render },
-    );
-    for (const attribute of attributes) {
-      const at = lowered.attributes.findIndex((each) => each.span.start > attribute.span.start);
+  const later = tags.slice(1).map((each, index) => check(each, probes[index]!));
+  merge(render, mark, probes);
+  // What the first tag does not take comes from the first later tag that takes it, lowered with
+  // every attribute that tag takes, so the rules that read the others (`type` for form state and
+  // for a submit-only attribute) see them and the order of `is` changes nothing. That tag's probe
+  // lowered it, so the facts it found are taken into the context too.
+  const rest = new Set(
+    opening.attributes.filter((item) => skipped.get(tags[0]!)!.has(item)).map((item) => item.start),
+  );
+  for (const [index, each] of later.entries()) {
+    const taken = each.attributes.filter((attribute) => rest.has(attribute.span.start));
+    if (!taken.length) continue;
+    for (const attribute of taken) {
+      rest.delete(attribute.span.start);
+      const at = lowered.attributes.findIndex((other) => other.span.start > attribute.span.start);
       lowered.attributes.splice(at === -1 ? lowered.attributes.length : at, 0, attribute);
     }
+    adopt(render, probes[index]!);
   }
-  for (const [index, tag] of tags.slice(1).entries()) check(tag, probes[index]!);
-  merge(render, mark, probes);
   const empty = tags.find((tag) => isVoidElement(tag));
   if (empty && content) {
     render.reporter.report(

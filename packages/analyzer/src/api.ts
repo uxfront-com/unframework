@@ -515,9 +515,11 @@ function tagsOf(
       return consequent && alternate ? [...consequent, ...alternate] : undefined;
     }
     case "Identifier": {
-      if (isComponentName(node.name)) return "component";
-      const prop = props.find((each) => each.name === propNamed(node, component, context));
-      return prop ? stringLiterals(prop) : undefined;
+      // A prop first: `{ Tag }: { Tag: "a" | "button" }` names tags, though it is capitalised.
+      const name = propNamed(node, component, context);
+      const prop = name === undefined ? undefined : props.find((each) => each.name === name);
+      if (prop) return stringLiterals(prop);
+      return isComponentName(node.name) ? "component" : undefined;
     }
     case "MemberExpression": {
       // The object form's `props.tag`.

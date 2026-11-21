@@ -502,6 +502,26 @@ export function A() {
     },
   );
 
+  it.each([
+    ['type="button" value="Go" href="/g"', ["type", "value", "href"]],
+    ['type="submit" formaction="/f"', ["type", "formaction"]],
+    ['type="submit" value="Send"', ["type", "value"]],
+  ])(
+    "judges what only a later tag takes with that tag's other attributes, in either order: %s",
+    (attributes, names) => {
+      for (const is of ['x ? "a" : "input"', 'x ? "input" : "a"']) {
+        const { diagnostics, node } = dynamicOf(
+          `export function A({ x }: { x: boolean }) { return <component is={${is}} ${attributes} />; }`,
+        );
+        expect(codes(diagnostics), is).toEqual([]);
+        expect(
+          node!.attributes.map((attribute) => (attribute as { name?: string }).name),
+          is,
+        ).toEqual(names);
+      }
+    },
+  );
+
   it("keeps the other checks of each tag that takes an attribute", () => {
     // `formaction` only applies to a submit button, and `<a>` does not take it.
     const { diagnostics } = run(
