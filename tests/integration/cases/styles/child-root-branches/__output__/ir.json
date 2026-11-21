@@ -257,7 +257,11 @@
             "slots": [],
             "exposes": [],
             "inheritAttrs": true,
-            "root": "other"
+            "root": "dynamic",
+            "rootTags": [
+              "h2",
+              "h3"
+            ]
           }
         ],
         "keys": []
