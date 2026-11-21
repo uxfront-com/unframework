@@ -32,7 +32,7 @@ in a case of its own. So both rules can be lifted without a new capability.
 **A dynamic root.** A component's root is **dynamic** when its returned JSX is exactly one
 `<component is>` whose candidates are all HTML tags, in the place a one-element root sits. Inside
 a fragment, a conditional, a list, a `<Teleport>` or a `<Transition>`, and over components, it is
-still `"other"`.
+still `"other"`. The API records it so:
 
 - `ComponentApi.root` takes a fourth value, `"dynamic"`, and `ComponentApi.rootTags` lists the
   tags in source order. `rootTag` stays an element root's alone, so no reader of it changes.
