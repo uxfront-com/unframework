@@ -65,12 +65,17 @@ or `<div>` inside a `<p>` is UF3003 for each tag that can't sit there.
   attributes go on every tag, as before.
 - An attribute no tag takes is still UF3006, reported once, with a message that names every tag:
   "`colspan` is not an attribute of <a> or <button>."
+- A spread's keys go on every tag, since a spread renders its keys together. So each tag must take
+  each key, and a key a tag doesn't take is UF3006 for that tag, as before.
 - `DynamicNode.only` lists, by name, each `Static` or `Bound` attribute that only some tags take,
   with those tags. An invariant checks that each entry names one such attribute of the node once,
   and lists some of the node's tags, never none and never all. An attribute every tag takes has no
   entry, so the IR and the output of every existing case stay the same.
 - The node keeps every attribute, whichever tag comes first in `is`. An attribute the first tag
-  doesn't take is lowered as the first later tag that takes it.
+  doesn't take is lowered as the first later tag that takes it, with that tag's other attributes,
+  so a rule that reads them, like the submit-only rule's `type`, judges it the same in either
+  order.
+- No diagnostic code is added: only UF3006's and UF3045's descriptions change.
 
 **Each target.** No capability cell changes: `fallthrough` and `dynamic-component` keep their
 values.
@@ -111,7 +116,8 @@ export default function Page() {
 }
 ```
 
-render `<a href="#docs" class="base wide">Docs</a>` on every target, with no `disabled`.
+render `<a href="#docs" class="base wide">Docs</a>` on every target, inside Angular's
+`display: contents` host there, with no `disabled`.
 
 ## Consequences
 

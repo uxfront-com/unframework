@@ -11,7 +11,7 @@ import Page from "./Page.uf.tsx";
 const SCOPED = { borderTopColor: "rgb(220, 38, 38)" };
 
 describeTargets("fallthrough/dynamic-root", () => {
-  it("merges the class and the style into whichever tag renders", async () => {
+  it("merges the class and the style into whichever tag renders, in a list too", async () => {
     const view = await mount(Page);
     await view.expectParity("initial");
     const docs = view.getByRole("link", { name: "Docs" });
@@ -31,10 +31,7 @@ describeTargets("fallthrough/dynamic-root", () => {
     await expect.element(save).not.toHaveAttribute("disabled");
     await expect.element(save).toHaveClass("base", "save");
     await expect.element(save).toHaveStyle(SCOPED);
-  });
-
-  it("renders each row's attributes on the tag it renders", async () => {
-    const view = await mount(Page);
+    // Each row of the list renders its attributes on the tag it renders.
     const items = view.getByRole("list", { name: "Items" });
     await expect.element(items.getByRole("link", { name: "One" })).toHaveAttribute("href", "#one");
     await expect.element(items.getByRole("link", { name: "One" })).not.toHaveAttribute("disabled");
