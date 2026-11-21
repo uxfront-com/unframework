@@ -280,8 +280,10 @@ function fallthroughRoot(component: UfComponent): Span | undefined {
   if (render.children.length !== 1) return undefined;
   // A `<component is>` over tags renders one element, which takes them as a root element does
   // (ADR-0119): `jsxDynamic` keeps its span for `isRoot`.
-  const tags = only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag");
-  return only?.kind === "Component" || tags ? only!.span : undefined;
+  if (only?.kind === "Component") return only.span;
+  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
+    ? only.span
+    : undefined;
 }
 
 /** What a template, or a row, does with its slots, outside the list rows it holds. */

@@ -8,7 +8,7 @@ import {
   angularMisreads,
   BINDABLE_BOOLEAN_ATTRIBUTES,
 } from "@unframework.dev/ir";
-import type { Attribute, ComponentAttribute } from "@unframework.dev/ir";
+import type { ComponentAttribute } from "@unframework.dev/ir";
 
 import { kebabCase } from "../names.ts";
 import { parseCodeSource, parseExpression } from "../parse.ts";

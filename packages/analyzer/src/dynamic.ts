@@ -386,25 +386,28 @@ function lowerTags(
   // An attribute only some tags take renders on those alone, and one none takes is UF3006, once
   // for them all (ADR-0119). Each tag lowers the attributes it takes.
   const only: DynamicOnly[] = [];
-  const skipped = new Map(tags.map((tag) => [tag, new Set<AST.JSXAttributeItem>()]));
+  const skipped = new Map(tags.map((each) => [each, new Set<AST.JSXAttributeItem>()]));
   for (const item of opening.attributes) {
     if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") continue;
     const authored = item.name.name;
-    const takers = tags.filter((tag) => takesByName(tag, authored));
+    const takers = tags.filter((each) => takesByName(each, authored));
     if (takers.length === tags.length) continue;
-    for (const tag of tags) if (!takers.includes(tag)) skipped.get(tag)!.add(item);
+    for (const each of tags) if (!takers.includes(each)) skipped.get(each)!.add(item);
     if (takers.length) {
       only.push({ name: canonicalName(takers[0]!, "html", authored), tags: takers });
       continue;
     }
     const problem = unknownOnEvery(tags, authored);
-    render.reporter.report(problem.code, item.name, problem.message, {
-      ...(problem.help ? { help: problem.help } : {}),
-    });
+    render.reporter.report(
+      problem.code,
+      item.name,
+      problem.message,
+      problem.help ? { help: problem.help } : {},
+    );
   }
-  const own = (tag: string, items = opening.attributes) => ({
+  const own = (candidate: string, items = opening.attributes) => ({
     ...opening,
-    attributes: items.filter((item) => !skipped.get(tag)!.has(item)),
+    attributes: items.filter((item) => !skipped.get(candidate)!.has(item)),
   });
   // Taken before the first tag lowers, so each later one starts from the same context.
   const probes = tags.slice(1).map(() => probe(render));
@@ -431,13 +434,13 @@ function lowerTags(
   // What the first tag does not take is lowered as the first later tag that takes it, so the
   // order of `is` drops nothing.
   let rest = opening.attributes.filter((item) => skipped.get(tags[0]!)!.has(item));
-  for (const tag of tags.slice(1)) {
-    const items = own(tag, rest).attributes;
+  for (const later of tags.slice(1)) {
+    const items = own(later, rest).attributes;
     if (!items.length) continue;
     rest = rest.filter((item) => !items.includes(item));
     const { attributes } = lowerAttributes(
       { ...opening, attributes: items },
-      { tag, namespace: "html", hasChildren: content, listBody: false, render },
+      { tag: later, namespace: "html", hasChildren: content, listBody: false, render },
     );
     for (const attribute of attributes) {
       const at = lowered.attributes.findIndex((each) => each.span.start > attribute.span.start);

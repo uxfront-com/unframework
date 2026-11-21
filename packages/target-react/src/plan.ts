@@ -17,6 +17,7 @@ import {
   readsElementScope,
   sourceNames,
   typeNames,
+  tagAttributes,
 } from "@unframework.dev/codegen";
 import {
   codeOf,
@@ -27,7 +28,6 @@ import {
   walk,
 } from "@unframework.dev/ir";
 import type {
-  Attribute,
   Binding,
   BindingId,
   BindingKind,
@@ -1229,7 +1229,7 @@ export function tagElementOf(node: DynamicNode): ElementNode | undefined {
     element = {
       kind: "Element",
       tag: first.tag,
-      attributes: node.attributes as Attribute[],
+      attributes: tagAttributes(node),
       children: node.children,
       span: node.span,
     };

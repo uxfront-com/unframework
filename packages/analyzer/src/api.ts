@@ -531,7 +531,7 @@ function tagsOf(
       ) {
         return undefined;
       }
-      const resolution = context.scopes.resolve(node.object as AST.IdentifierReference);
+      const resolution = context.scopes.resolve(node.object);
       if (resolution.kind !== "parameter" || resolution.function !== component) return undefined;
       const property = node.property.name;
       const prop = props.find((each) => each.name === property);

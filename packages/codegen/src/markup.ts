@@ -13,6 +13,7 @@ export {
   printMarkup,
   staticClassValue,
   staticStyleValue,
+  tagAttributes,
   test,
   toggleObject,
   withoutEmptyBranches,

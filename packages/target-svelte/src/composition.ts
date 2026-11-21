@@ -3,7 +3,7 @@
 // and `style` are props it merges into its root; a forwarded slot is the parent's snippet
 // passed on as a prop (`{title}`); and `<component is>` over components renders a variable the
 // script declares with `$derived`. The target prints the tree this module returns.
-import { parseExpression, spreadStyleExpression } from "@unframework.dev/codegen";
+import { parseExpression, spreadStyleExpression, tagAttributes } from "@unframework.dev/codegen";
 import type {
   Attribute,
   ComponentAttribute,
@@ -302,7 +302,7 @@ export function composedRender(
       {
         kind: "Element",
         tag: "svelte:element",
-        attributes: only.attributes as Attribute[],
+        attributes: tagAttributes(only),
         children: only.children,
         span: only.span,
       },

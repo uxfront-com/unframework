@@ -58,6 +58,7 @@ describeTargets("fallthrough/dynamic-root", () => {
   it("runs the root's listener on each tag", { requires: ["interactivity"] }, async () => {
     const view = await mount(Page);
     await view.user.click(view.getByRole("button", { name: "Save" }));
+    await view.expectParity("saved");
     await expect.element(view.getByRole("status")).toHaveTextContent("save");
     await view.user.click(view.getByRole("link", { name: "Docs" }));
     await view.expectParity("pressed");

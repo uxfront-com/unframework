@@ -647,8 +647,8 @@ function guardJsxAttribute(item: AST.JSXAttributeItem, test: AST.Expression): AS
           ? js.identifier("undefined")
           : value.expression
         : value.type === "Literal"
-          ? js.stringLiteral(String(value.value))
-          : (value as AST.Expression);
+          ? js.stringLiteral(value.value)
+          : value;
   return {
     ...item,
     value: js.jsxExpressionContainer(

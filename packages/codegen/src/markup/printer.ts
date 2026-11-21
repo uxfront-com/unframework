@@ -221,19 +221,21 @@ export function onlyGuards(node: DynamicNode, is: string): ReadonlyMap<string, s
  * tag (Angular's `@case`, Qwik's branches).
  */
 export function candidateAttributes(node: DynamicNode, tag: string): Attribute[] {
-  return node.attributes.filter((attribute): attribute is Attribute => {
-    // A tag candidate's attributes are an element's (ADR-0054).
-    if (
-      attribute.kind === "Prop" ||
-      attribute.kind === "Listener" ||
-      attribute.kind === "ModelBinding"
-    ) {
-      return false;
-    }
+  return tagAttributes(node).filter((attribute) => {
     if (attribute.kind !== "Static" && attribute.kind !== "Bound") return true;
     const only = node.only?.find((entry) => entry.name === attribute.name);
     return !only || only.tags.includes(tag);
   });
+}
+
+/** A `<component is>`'s attributes as an element's: a tag candidate's are (ADR-0054). */
+export function tagAttributes(node: DynamicNode): Attribute[] {
+  return node.attributes.filter(
+    (attribute): attribute is Attribute =>
+      attribute.kind !== "Prop" &&
+      attribute.kind !== "Listener" &&
+      attribute.kind !== "ModelBinding",
+  );
 }
 
 /** An element piece's `guards` field, left out where there are none. */

@@ -132,6 +132,7 @@ export {
   printMarkup,
   staticClassValue,
   svelteDialect,
+  tagAttributes,
   test,
   TRUSTED_HTML_PIPE,
   vueAttributeCode,
