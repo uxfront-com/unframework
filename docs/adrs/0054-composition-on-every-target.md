@@ -1,6 +1,6 @@
 # ADR-0054: Composition constructs on every target
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0119
 - **Date:** 2026-10-18
 - **Plan:** §4.1, §4.2 (Models, Slots, Expose, Options, Context), §4.3 (Two-way binding, Slots,
   Composition), §4.5, §4.6, §6, §7.8 (M3), §9 M3; P2, P3, P4, P6, P7; R1, R5, R6, R13; ADR-0007,

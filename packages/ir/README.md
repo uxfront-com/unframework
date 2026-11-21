@@ -19,7 +19,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
 - **Composition (ADR-0055):** a module's `imports` of other `.uf.tsx` modules, each with the
   `ModuleApi` the compiler's resolver returned (ADR-0053), and its injection `keys`; a
   component's `slots`, `exposes` and `inheritAttrs`; the render nodes `Component`, `SlotOutlet`
-  and `Dynamic` (`<component is>`), the render node `Teleport` (`<Teleport to>`, one element
+  and `Dynamic` (`<component is>`, with `only`, the attributes only some of its tags take,
+  ADR-0119), a `ComponentApi.root` of `"dynamic"` with its `rootTags`, the render node `Teleport` (`<Teleport to>`, one element
   mounted elsewhere, ADR-0098), the render node `Transition` (`<Transition name appear>`, Vue's
   classes on one element or one conditional of elements, ADR-0100), the `Directive` attribute and a module's `directives`, each with
   its hooks' code (`v-focus-trap={open.value}`, ADR-0099), a list's body that is a component, a component's attributes
