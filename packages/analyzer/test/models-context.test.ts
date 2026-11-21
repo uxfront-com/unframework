@@ -459,12 +459,63 @@ export function A() {
     }
   });
 
-  it("reports an attribute a tag candidate does not take (UF3006)", () => {
+  it("reports an attribute no tag candidate takes, once (UF3006)", () => {
     const { diagnostics } = run(
-      'export function A({ b }: { b: boolean }) { return <component is={b ? "a" : "p"} href="/">x</component>; }',
+      'export function A({ b }: { b: boolean }) { return <component is={b ? "a" : "p"} colspan="2">x</component>; }',
     );
     expect(codes(diagnostics)).toEqual(["UF3006"]);
-    expect(diagnostics[0]!.message).toContain("<p>");
+    expect(diagnostics[0]!.message).toBe("`colspan` is not an attribute of <a> or <p>.");
+  });
+
+  /** The `Dynamic` node a component renders as its root. */
+  function dynamicOf(source: string) {
+    const result = run(source);
+    const [component] = result.module?.components ?? [];
+    const root = component?.render;
+    const node = root?.kind === "Fragment" ? root.children[0] : root;
+    return { diagnostics: result.diagnostics, node: node?.kind === "Dynamic" ? node : undefined };
+  }
+
+  it.each([
+    ['href ? "a" : "button"', ["a", "button"]],
+    ['href ? "button" : "a"', ["button", "a"]],
+  ])(
+    "takes an attribute only some tags take, rendered on those (ADR-0119): is={%s}",
+    (is, tags) => {
+      const { diagnostics, node } = dynamicOf(
+        `export function A({ href, off }: { href?: string; off: boolean }) { return <component is={${is}} href={href} disabled={off} type="button" title="t">x</component>; }`,
+      );
+      expect(codes(diagnostics)).toEqual([]);
+      expect(node!.candidates.map((candidate) => (candidate as { tag: string }).tag)).toEqual(tags);
+      // `<a>` takes `type` too, and every tag takes `title`.
+      expect(node!.only).toEqual([
+        { name: "href", tags: ["a"] },
+        { name: "disabled", tags: ["button"] },
+      ]);
+      // Every attribute is kept, in source order, whichever tag comes first.
+      expect(node!.attributes.map((attribute) => (attribute as { name?: string }).name)).toEqual([
+        "href",
+        "disabled",
+        "type",
+        "title",
+      ]);
+    },
+  );
+
+  it("keeps the other checks of each tag that takes an attribute", () => {
+    // `formaction` only applies to a submit button, and `<a>` does not take it.
+    const { diagnostics } = run(
+      'export function A({ b }: { b: boolean }) { return <component is={b ? "a" : "button"} type="button" formaction="/x">x</component>; }',
+    );
+    expect(codes(diagnostics)).toEqual(["UF3006"]);
+    expect(diagnostics[0]!.message).toContain("only applies to a submit button");
+  });
+
+  it("gives an attribute every tag takes no entry", () => {
+    const { node } = dynamicOf(
+      'export function A({ big }: { big: boolean }) { return <component is={big ? "h2" : "h3"} title="t">x</component>; }',
+    );
+    expect(node!.only).toBeUndefined();
   });
 });
 

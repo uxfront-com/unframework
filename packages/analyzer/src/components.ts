@@ -98,8 +98,9 @@ export function lowerComponentAs(
   // (ADR-0054): a root that lives only inside a given parent (`<li>`, `<tr>`) is checked against
   // the element around the component, which only the parent's compile knows. With no element
   // around it (a slot's fill, this component's own root), nothing places such a root.
-  if (api.rootTag !== undefined) {
-    checkPlacement(api.rootTag, name, place.ancestors, reporter, false);
+  // A `<component is>` root may render any of its tags, so each is placed (ADR-0119).
+  for (const tag of api.rootTag !== undefined ? [api.rootTag] : (api.rootTags ?? [])) {
+    checkPlacement(tag, name, place.ancestors, reporter, false);
   }
   const attributes: ComponentAttribute[] = [];
   const fallthrough: AST.JSXAttribute[] = [];
@@ -481,16 +482,20 @@ function lowerFallthrough(
   const dropped =
     api.inheritAttrs === false
       ? `${info.name} sets \`inheritAttrs: false\`, so it renders no \`class\` or \`style\` passed to it`
-      : api.root === "other"
-        ? `${info.name}'s root is not one element or one component, so no target knows where a \`class\` or a \`style\` passed to it goes`
-        : undefined;
+      : api.rootUnlisted
+        ? `${info.name}'s root is a \`<component is>\` whose \`is\` reads a value ${info.name}'s API can't list the tags of, so no target knows where a \`class\` or a \`style\` passed to it goes`
+        : api.root === "other"
+          ? `${info.name}'s root is not one element or one component, so no target knows where a \`class\` or a \`style\` passed to it goes`
+          : undefined;
   if (dropped) {
     for (const item of items) {
       reporter.report("UF3045", item.name, `${dropped}.`, {
         help:
           api.inheritAttrs === false
             ? `Pass what ${info.name} declares, or remove \`defineOptions({ inheritAttrs: false })\`.`
-            : `Give ${info.name} one root element, or pass a prop it declares.`,
+            : api.rootUnlisted
+              ? `Choose ${info.name}'s root tag with a literal, a conditional of literals or a prop typed as a union of tags, \`is={href ? "a" : "button"}\`, or pass a prop it declares.`
+              : `Give ${info.name} one root element, or pass a prop it declares.`,
       });
     }
     return [];
@@ -498,7 +503,8 @@ function lowerFallthrough(
   const lowered = lowerAttributes(
     { ...opening, attributes: [...items] },
     {
-      tag: api.rootTag ?? "div",
+      // `class` and `style` are global, so any of a `<component is>` root's tags lowers them.
+      tag: api.rootTag ?? api.rootTags?.[0] ?? "div",
       namespace: "html",
       hasChildren: false,
       listBody: false,
