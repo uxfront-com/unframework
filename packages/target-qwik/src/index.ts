@@ -15,6 +15,7 @@ import {
   js,
   jsxAttributeValue,
   jsxContext,
+  candidateAttributes,
   jsxDynamic,
   jsxElement,
   jsxExpression,
@@ -1398,13 +1399,9 @@ function candidateBranches(
       {
         kind: "Element",
         tag,
-        // A tag candidate's attributes are an element's (ADR-0054).
-        attributes: node.attributes.filter(
-          (attribute) =>
-            attribute.kind !== "Prop" &&
-            attribute.kind !== "Listener" &&
-            attribute.kind !== "ModelBinding",
-        ),
+        // A tag candidate's attributes are an element's (ADR-0054), but those only other tags
+        // take (ADR-0119).
+        attributes: candidateAttributes(node, tag),
         children: node.children,
         span: node.span,
       },

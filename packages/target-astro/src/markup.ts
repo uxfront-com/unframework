@@ -3,7 +3,9 @@
 // Astro's shape (`./composition.ts`): render props, fallthrough, models and `<component is>`.
 import {
   astroDialect,
+  guardsOf,
   isIdentifier,
+  onlyGuards,
   operand,
   printMarkup,
   rewriteExpression,
@@ -244,6 +246,8 @@ function composition(
               span: node.span,
             },
             directives: [],
+            // An attribute only some tags take renders on those (ADR-0119).
+            ...guardsOf(onlyGuards(node, name)),
           }
         : component(name, node.attributes as ComponentAttribute[]);
       if (hoisted) return [piece];

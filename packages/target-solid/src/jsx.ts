@@ -293,9 +293,14 @@ export function solidJsx(
       ];
     },
     dynamic: (node, context) =>
-      jsxDynamic(node, imports.add("solid-js/web", "Dynamic"), context, [
-        js.jsxAttribute("component", js.jsxExpressionContainer(jsxExpression(node.is, context))),
-      ]),
+      jsxDynamic(
+        node,
+        imports.add("solid-js/web", "Dynamic"),
+        context,
+        [js.jsxAttribute("component", js.jsxExpressionContainer(jsxExpression(node.is, context)))],
+        // An attribute only some tags take is guarded on the tag that renders (ADR-0119).
+        () => jsxExpression(node.is, context, "operand"),
+      ),
     // After a root's own attributes: the `class` and `style` it has not merged with its own
     // (`class={props.class}`), then the `data-uf-*` attributes of the styled parents that render
     // it, whose names only they know, picked out of the props by name (the child-root rule,

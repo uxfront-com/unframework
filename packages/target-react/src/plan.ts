@@ -27,6 +27,7 @@ import {
   walk,
 } from "@unframework.dev/ir";
 import type {
+  Attribute,
   Binding,
   BindingId,
   BindingKind,
@@ -34,6 +35,7 @@ import type {
   ComposableApi,
   ComposableMemberApi,
   DirectiveAttribute,
+  DynamicNode,
   Expression,
   ElementNode,
   EventAttribute,
@@ -1030,11 +1032,15 @@ function listenerModes(
   component: UfComponent,
 ): Map<EventAttribute, { element: ElementNode; mode: ListenerMode }> {
   const found: [EventAttribute, ElementNode][] = [];
+  /** The tags each element may render: one, or a `<component is>`'s candidates. */
+  const tags = new Map<ElementNode, string[]>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Event") found.push([attribute, node]);
+      const element = node.kind === "Dynamic" ? tagElementOf(node) : node;
+      if (element?.kind !== "Element") return;
+      tags.set(element, node.kind === "Dynamic" ? candidateTags(node) : [element.tag]);
+      for (const attribute of element.attributes) {
+        if (attribute.kind === "Event") found.push([attribute, element]);
       }
     },
   });
@@ -1046,7 +1052,8 @@ function listenerModes(
   const entries = found.map(([listener, element]) => ({
     listener,
     element,
-    native: !synthetic(listener, element),
+    // A `<component is>`'s listener is synthetic only where every tag it may render keeps it so.
+    native: !tags.get(element)!.every((tag) => synthetic(listener, { ...element, tag })),
   }));
   const paths = elementPaths(component);
   const related = (a: ElementNode, b: ElementNode) =>
@@ -1193,15 +1200,47 @@ function elementPaths(component: UfComponent): Map<ElementNode, ElementNode[]> {
   const stack: ElementNode[] = [];
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
-      stack.unshift(node);
-      paths.set(node, [...stack]);
+      const element = node.kind === "Dynamic" ? tagElementOf(node) : node;
+      if (element?.kind !== "Element") return;
+      stack.unshift(element);
+      paths.set(element, [...stack]);
     },
     leave(node) {
-      if (node.kind === "Element") stack.shift();
+      if (node.kind === "Element" || (node.kind === "Dynamic" && tagElementOf(node))) {
+        stack.shift();
+      }
     },
   });
   return paths;
+}
+
+const tagElements = new WeakMap<DynamicNode, ElementNode>();
+
+/**
+ * A `<component is>` over tags as the element its listeners are planned on, the same object
+ * each time: React prints it as one element, `<Tag>`, named here by its first tag. Undefined
+ * over components.
+ */
+export function tagElementOf(node: DynamicNode): ElementNode | undefined {
+  const [first] = node.candidates;
+  if (first?.kind !== "Tag") return undefined;
+  let element = tagElements.get(node);
+  if (!element) {
+    element = {
+      kind: "Element",
+      tag: first.tag,
+      attributes: node.attributes as Attribute[],
+      children: node.children,
+      span: node.span,
+    };
+    tagElements.set(node, element);
+  }
+  return element;
+}
+
+/** The tags a `<component is>` over tags may render. */
+function candidateTags(node: DynamicNode): string[] {
+  return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
 }
 
 /**
