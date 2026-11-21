@@ -252,6 +252,19 @@ function invalidate(ssr: RunnableDevEnvironment, id: string): void {
   }
 }
 
+/**
+ * Starts the render server for a root now, rather than on the first render (UXF-916). A Vitest
+ * browser project calls it when Vitest configures the project (`astroBrowserRef`), so the start
+ * runs before any test, not inside the first test's render, where every Astro file that waits
+ * in the render queue would pay for it under a busy run. The first render awaits the same
+ * server; a server that fails to start fails that render with its error, as a lazy start does.
+ */
+export function startAstroRenderServer(root: string, plugins?: () => Promise<Plugin[]>): void {
+  // Handled here so a failed start with no render yet is not an unhandled rejection: the render
+  // that awaits the server still rejects with the error.
+  renderServer(root, plugins).catch(() => undefined);
+}
+
 function renderServer(
   root: string,
   plugins: (() => Promise<Plugin[]>) | undefined,

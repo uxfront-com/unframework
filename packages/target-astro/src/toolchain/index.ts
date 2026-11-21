@@ -24,8 +24,9 @@ export const toolchain: Toolchain = {
   vite(mode, context) {
     if (mode === "ssr") return astroViteConfig(context.root);
     // Nothing to pre-bundle: in the browser a compiled component is a plain reference that
-    // imports nothing, and the unframework plugin keeps virtual ids out of the dep scan.
-    return { plugins: [astroBrowserRef()] };
+    // imports nothing, and the unframework plugin keeps virtual ids out of the dep scan. The
+    // plugin starts the render server when Vitest configures the project, for the context's root.
+    return { plugins: [astroBrowserRef(context)] };
   },
   browserCommands: (context) => ({ ufAstroRender: createAstroRenderCommand(context) }),
   renderCommandName: "ufAstroRender",

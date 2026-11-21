@@ -197,8 +197,10 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   (`ToolchainContext.plugins`), so a styling engine's plugin resolves its `virtual:` modules,
   and the engine's stylesheet goes before the markup too (ADR-0064). A module of composables a
   component imports (`/abs/useToggle.uf.ts`, ADR-0069) is served as the browser project compiles
-  it, read again on each render. The toolchain names that command as `renderCommandName`, and
-  `close()` stops its render servers. The mount adapter (`/toolchain/client`) renders through
+  it, read again on each render. In a Vitest browser project, the render server starts when
+  Vitest configures the project, before any test runs, so no test waits for the start. Another
+  host, like the preview, starts it on the first render. The toolchain names that command as
+  `renderCommandName`, and `close()` stops its render servers. The mount adapter (`/toolchain/client`) renders through
   `MountOptions.renderCommand` when a host outside Vitest passes one, like the preview, which runs
   the command behind an endpoint of its own (ADR-0088), and through Vitest's command otherwise.
   The checks:
