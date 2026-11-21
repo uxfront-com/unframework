@@ -1,5 +1,13 @@
 # @uxfront/unframework
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [ba64fcf]
+  - @unframework.dev/testing@0.3.2
+  - @unframework.dev/visual@0.5.1
+
 ## 0.4.1
 
 ### Patch Changes
