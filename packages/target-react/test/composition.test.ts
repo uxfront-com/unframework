@@ -143,8 +143,23 @@ export default function Page() {
 }`);
     const heading = files.get("Heading")!;
     expect(heading).toContain("const Tag = level;");
-    // The tag a root `<component is>` renders takes its styled parents' scope attributes (ADR-0063).
-    expect(heading).toContain('<Tag className="title" {...scopeAttributes(attributes)}>');
+    // The tag a root `<component is>` renders takes its styled parents' scope attributes (ADR-0063),
+    // and a consumer's class and style, as a root element does (ADR-0119).
+    expect(heading).toContain(
+      '<Tag className={cx("title", className)} style={style} {...scopeAttributes(attributes)}>',
+    );
+  });
+
+  it("renders an attribute only some of a <component is>'s tags take on those (ADR-0119)", async () => {
+    const files =
+      await outputs(`export default function Action({ href, off }: { href?: string; off: boolean }) {
+  return <component is={href ? "a" : "button"} href={href} disabled={off} onClick={() => {}}>Go</component>;
+}`);
+    const action = files.get("Action")!;
+    expect(action).toContain('href={Tag === "a" ? href : undefined}');
+    expect(action).toContain('disabled={Tag === "button" ? off : undefined}');
+    // A listener on it is planned as an element's: it used to fail to emit (UF9001).
+    expect(action).toContain("onClick={() => {}}");
   });
 
   it("merges a consumer's class and style into the root, the consumer's style last", async () => {

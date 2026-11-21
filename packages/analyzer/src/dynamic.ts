@@ -2,7 +2,8 @@
 // conditional whose leaves are literals or components, or a value typed as a union of tags (a
 // prop's `"h2" | "h3"`). The leaves are all HTML tags, whose children each tag must take and
 // whose attributes at least one must (each renders only on those that take it, ADR-0119), or all
-// components, whose attributes and fills each must declare (UF3044 otherwise). Each component a leaf names is a `component` binding, which only the `is` reads.
+// components, whose attributes and fills each must declare (UF3044 otherwise). Each component a
+// leaf names is a `component` binding, which only the `is` reads.
 
 import {
   createBinding,
@@ -308,8 +309,8 @@ function merge(render: RenderContext, mark: number, probes: readonly RenderConte
  * ADR-0119; a template ref attaches once whichever renders), and the children inside it, which
  * no void tag takes. The first one's lowering is the node's, with what only later tags take
  * lowered as the first of them; what any other finds besides is reported too, so the order of
- * `is` changes nothing. A control's
- * `v-model` binds a control its tag decides, which `is` does not fix: UF3042.
+ * `is` changes nothing. A control's `v-model` binds a control its tag decides, which `is` does
+ * not fix: UF3042.
  */
 function lowerTags(
   node: AST.JSXElement,
