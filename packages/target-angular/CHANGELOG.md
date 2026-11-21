@@ -1,5 +1,19 @@
 # @unframework.dev/target-angular
 
+## 0.3.0
+
+### Minor Changes
+
+- 348db69: Let a `<component is>` over tags be a component's root that a parent styles. A parent's `class` and `style` now merge into whichever tag renders, as into a one-element root, and so does a styled parent's scope attribute. An attribute that only some of the tags take, like `href` on `is={href ? "a" : "button"}`, is accepted and renders only on those tags, where it used to be UF3006. So one component can render a link or a button with one styled root.
+
+  `ComponentApi.root` has a new value, `"dynamic"`, with the tags in `ComponentApi.rootTags`. `ComponentApi.rootUnlisted` marks a `<component is>` root whose tags the API can't read, and `DynamicNode.only` lists the attributes only some tags take. Code that switches on every value of `ComponentApi.root` must handle `"dynamic"`. React also compiles a listener on a `<component is>` over tags, which failed to emit before.
+
+### Patch Changes
+
+- Updated dependencies [348db69]
+  - @unframework.dev/ir@0.3.0
+  - @unframework.dev/codegen@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes
