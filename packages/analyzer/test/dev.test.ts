@@ -95,6 +95,13 @@ export function useCount() {
     expect(problems(source, run(source, "count.uf.ts").diagnostics)).toEqual(["UF2040 isDev"]);
   });
 
+  it("is UF2040 in a directive's hook", () => {
+    const source = `import { defineDirective, isDev } from "@uxfront/unframework";
+const vFocus = defineDirective<boolean>({ mounted(element) { if (isDev) console.warn("x"); element.focus(); } });
+export function A() { return <input v-focus={true} />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF2040 isDev"]);
+  });
+
   // A development render must be the production one: the block writes, emits and calls nothing
   // the component holds, reads no browser global, and never returns (ADR-0117).
   it.each([

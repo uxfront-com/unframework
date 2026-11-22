@@ -11,9 +11,11 @@ plain, versioned, schema-validated JSON (plan §5.3).
   `Ref`, and an element's markup, `RawHtml`, ADR-0097). A binding is a prop, a loop variable, a `ref` (`state`), a `computed` (`derived`), a
   template ref, a setup `const`, function or `let`, or `emit`, by its `name@offset` id. The setup
   is a list of items in source order (`State`, `Derived`, `TemplateRef`, `Id`, `Const`,
-  `Variable`, `Function`, `Watch`, `WatchEffect`, `Lifecycle`, ADR-0045). An `Expression` is a
-  template's source text at its span, with every identifier resolved to a binding or an allowed
-  global; setup `Code` also resolves writes, emits, `nextTick` and a handler's event members, and
+  `Variable`, `Function`, `Watch`, `WatchEffect`, `Lifecycle`, ADR-0045, and `DevCheck`, a
+  top-level `if (isDev) { … }`, ADR-0117). An `Expression` is a template's source text at its
+  span, with every identifier resolved to a binding or an allowed global; setup `Code` also
+  resolves writes, emits, `nextTick`, `isDev` as an `if`'s test (`Dev`) and a handler's event
+  members, and
   a `FunctionCode` keeps a function's parameters, flags and body apart, for the targets that print
   it from its parts. A ref's value is read as `count.value`, which its reference spans.
 - **Composition (ADR-0055):** a module's `imports` of other `.uf.tsx` modules, each with the

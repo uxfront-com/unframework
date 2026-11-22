@@ -68,6 +68,7 @@ Item">` (ADR-0068). An attribute cannot hold its own quote, so each string liter
    | `watch(source, callback, options)`        | the same; a prop or a `shallowRef` by a getter                 |
    | `watchEffect(effect)`                     | `watchPostEffect(effect)`: after the render, never on a server |
    | `onMounted`, `onUnmounted`, `nextTick`    | the same                                                       |
+   | `if (isDev) { … }`                        | `if (process.env.NODE_ENV !== "production") { … }` (ADR-0117)  |
    | `const { on, toggle } = useToggle(false)` | the same: getters and callbacks as written (ADR-0069)          |
 
    State is replaced whole (ADR-0008, UF2004), so a state not known to hold a primitive
