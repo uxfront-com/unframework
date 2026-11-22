@@ -2064,6 +2064,80 @@
         }
       }
     },
+    "dev/client-warning": {
+      "time": 4.67,
+      "sizes": {
+        "react": {
+          "raw": 1315,
+          "gzip": 723
+        },
+        "vue": {
+          "raw": 526,
+          "gzip": 390
+        },
+        "svelte": {
+          "raw": 632,
+          "gzip": 443
+        },
+        "solid": {
+          "raw": 641,
+          "gzip": 451
+        },
+        "solid2": {
+          "raw": 681,
+          "gzip": 478
+        },
+        "angular": {
+          "raw": 3334,
+          "gzip": 1436
+        },
+        "qwik": {
+          "raw": 991,
+          "gzip": 760
+        },
+        "astro": {
+          "raw": 576,
+          "gzip": 397
+        }
+      }
+    },
+    "dev/setup-warning": {
+      "time": 2.43,
+      "sizes": {
+        "react": {
+          "raw": 690,
+          "gzip": 452
+        },
+        "vue": {
+          "raw": 456,
+          "gzip": 348
+        },
+        "svelte": {
+          "raw": 645,
+          "gzip": 456
+        },
+        "solid": {
+          "raw": 524,
+          "gzip": 387
+        },
+        "solid2": {
+          "raw": 481,
+          "gzip": 370
+        },
+        "angular": {
+          "raw": 3144,
+          "gzip": 1371
+        },
+        "qwik": {
+          "raw": 699,
+          "gzip": 531
+        },
+        "astro": {
+          "raw": 729,
+          "gzip": 486
+        }
+      }
+    },
     "diagnostics/composable-effect-order": {
       "time": 30.81,
       "sizes": {
