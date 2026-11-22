@@ -89,6 +89,7 @@ function factsOf(refs: readonly CodeReference[]): Facts {
       case "Event":
       case "Slot":
       case "Import":
+        break;
       // `isDev` reads no binding: the build's, not the component's (ADR-0117).
       case "Dev":
         facts.dev = true;
