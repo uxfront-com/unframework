@@ -1,0 +1,53 @@
+error[UF2040]: `isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.
+ --> diagnostics/misplaced-dev-check/Badge.uf.tsx:7:15
+  |
+7 |   const dev = isDev;
+  |               ^^^^^
+  |
+  = help: Write `if (isDev) { … }` at the top of the setup or in client code.
+  = see: https://unframework.dev/diagnostics/UF2040
+
+error[UF2040]: `isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.
+ --> diagnostics/misplaced-dev-check/Badge.uf.tsx:8:33
+  |
+8 |   const shown = computed(() => (isDev ? text : ""));
+  |                                 ^^^^^
+  |
+  = help: Write `if (isDev) { … }` at the top of the setup or in client code.
+  = see: https://unframework.dev/diagnostics/UF2040
+
+error[UF2040]: `isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.
+ --> diagnostics/misplaced-dev-check/Badge.uf.tsx:9:7
+  |
+9 |   if (isDev) {
+  |       ^^^^^
+  |
+  = help: Write `if (isDev) { … }` at the top of the setup or in client code.
+  = see: https://unframework.dev/diagnostics/UF2040
+
+error[UF2040]: `isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.
+  --> diagnostics/misplaced-dev-check/Badge.uf.tsx:14:8
+   |
+14 |   if (!isDev) console.warn("a negation");
+   |        ^^^^^
+   |
+   = help: Write `if (isDev) { … }` at the top of the setup or in client code.
+   = see: https://unframework.dev/diagnostics/UF2040
+
+error[UF2040]: `isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.
+  --> diagnostics/misplaced-dev-check/Badge.uf.tsx:18:18
+   |
+18 |     console.warn(isDev && dev);
+   |                  ^^^^^
+   |
+   = help: Write `if (isDev) { … }` at the top of the setup or in client code.
+   = see: https://unframework.dev/diagnostics/UF2040
+
+error[UF2040]: `isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.
+  --> diagnostics/misplaced-dev-check/Badge.uf.tsx:22:22
+   |
+22 |       {shown.value} {isDev ? "dev" : ""}
+   |                      ^^^^^
+   |
+   = help: Write `if (isDev) { … }` at the top of the setup or in client code.
+   = see: https://unframework.dev/diagnostics/UF2040

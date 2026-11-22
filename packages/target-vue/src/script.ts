@@ -715,6 +715,7 @@ function declares(item: SetupItem): boolean {
     case "WatchEffect":
     case "Lifecycle":
     case "Provide":
+    case "DevCheck":
       return false;
     default:
       return unreachable(item);
@@ -864,6 +865,9 @@ export function itemCode(
       });
       return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
     }
+    // Copied as written, where `<script setup>` runs it: once per instance (ADR-0117).
+    case "DevCheck":
+      return code(item.code, "pure");
     default:
       return unreachable(item);
   }

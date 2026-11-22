@@ -458,6 +458,10 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
     // `use` (ADR-0101, `./async.ts`).
     case "Await":
       return [];
+    // In the body, which React runs on every render, as React's own render-time warnings run
+    // (ADR-0117): once a render, more than once under StrictMode.
+    case "DevCheck":
+      return [["body", code.code(item.code, "pure")]];
     default:
       return item satisfies never;
   }

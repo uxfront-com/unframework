@@ -1,0 +1,15 @@
+{
+  "description": "`if (isDev)` in client code: a hook checks the rendered link's accessible name in a development build, and a production build drops the check.",
+  "ssr": {
+    "labelled": {
+      "props": {
+        "href": "#next",
+        "label": "Next"
+      }
+    }
+  },
+  "axe": [
+    "link-name"
+  ],
+  "requires": "Its warning comes from a lifecycle hook, client code that Astro never runs, so the spec needs `interactivity`."
+}

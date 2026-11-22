@@ -1298,6 +1298,7 @@ function replaced(
       case "Event":
       case "Api":
       case "Slot":
+      case "Dev":
         return [{ ...ref, span: moved(ref.span) }];
       default:
         return ref satisfies never;

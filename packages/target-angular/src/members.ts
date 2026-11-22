@@ -702,6 +702,12 @@ export function classMembers(context: MemberContext): {
         }
         break;
       }
+      // In `ngOnInit`, once the inputs are set, in source order among what runs there
+      // (ADR-0117).
+      case "DevCheck":
+        initCode.push(pure(context, item.code));
+        pins = undefined;
+        break;
       default:
         unreachable(item);
     }

@@ -318,6 +318,8 @@ function composableCode(composable: UfComposable, plan: SetupPlan): ComposableCo
       case "Id":
       case "Model":
       case "Use":
+      // UF2040 in a composable (ADR-0117).
+      case "DevCheck":
         break;
       default:
         unreachable(item);

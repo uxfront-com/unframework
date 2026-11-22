@@ -1,0 +1,104 @@
+[
+  {
+    "code": "UF2040",
+    "severity": "error",
+    "message": "`isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.",
+    "file": "diagnostics/misplaced-dev-check/Badge.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 15,
+      "offset": 407
+    },
+    "end": {
+      "line": 7,
+      "column": 20,
+      "offset": 412
+    },
+    "help": "Write `if (isDev) { … }` at the top of the setup or in client code."
+  },
+  {
+    "code": "UF2040",
+    "severity": "error",
+    "message": "`isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.",
+    "file": "diagnostics/misplaced-dev-check/Badge.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 33,
+      "offset": 446
+    },
+    "end": {
+      "line": 8,
+      "column": 38,
+      "offset": 451
+    },
+    "help": "Write `if (isDev) { … }` at the top of the setup or in client code."
+  },
+  {
+    "code": "UF2040",
+    "severity": "error",
+    "message": "`isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.",
+    "file": "diagnostics/misplaced-dev-check/Badge.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 7,
+      "offset": 473
+    },
+    "end": {
+      "line": 9,
+      "column": 12,
+      "offset": 478
+    },
+    "help": "Write `if (isDev) { … }` at the top of the setup or in client code."
+  },
+  {
+    "code": "UF2040",
+    "severity": "error",
+    "message": "`isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.",
+    "file": "diagnostics/misplaced-dev-check/Badge.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 8,
+      "offset": 563
+    },
+    "end": {
+      "line": 14,
+      "column": 13,
+      "offset": 568
+    },
+    "help": "Write `if (isDev) { … }` at the top of the setup or in client code."
+  },
+  {
+    "code": "UF2040",
+    "severity": "error",
+    "message": "`isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.",
+    "file": "diagnostics/misplaced-dev-check/Badge.uf.tsx",
+    "start": {
+      "line": 18,
+      "column": 18,
+      "offset": 715
+    },
+    "end": {
+      "line": 18,
+      "column": 23,
+      "offset": 720
+    },
+    "help": "Write `if (isDev) { … }` at the top of the setup or in client code."
+  },
+  {
+    "code": "UF2040",
+    "severity": "error",
+    "message": "`isDev` is read only as the whole test of an `if` with no `else`: each target writes its framework's own development check in its place, which a production build drops with its block.",
+    "file": "diagnostics/misplaced-dev-check/Badge.uf.tsx",
+    "start": {
+      "line": 22,
+      "column": 22,
+      "offset": 776
+    },
+    "end": {
+      "line": 22,
+      "column": 27,
+      "offset": 781
+    },
+    "help": "Write `if (isDev) { … }` at the top of the setup or in client code."
+  }
+]

@@ -170,18 +170,22 @@ export function bindingOf(component: UfComponent, id: BindingId): Binding {
 const blockBodies = new WeakMap<UfComponent, ReadonlySet<string>>();
 
 /**
- * What a piece of a component's setup code is: the block body of one of its functions is
- * statements; everything else (initial values, values, expression bodies, conditions) is an
+ * What a piece of a component's setup code is: the block body of one of its functions, and a
+ * top-level `if (isDev) { … }` (ADR-0117), is statements; everything else (initial values, values, expression bodies, conditions) is an
  * expression. Code alone cannot say (`{ a }`), its place in the component does.
  */
 export function codeKind(code: Code, component: UfComponent): CodeKind {
   let bodies = blockBodies.get(component);
   if (!bodies) {
-    bodies = new Set(
-      functionsOf(component).flatMap(({ function: fn }) =>
+    bodies = new Set([
+      ...functionsOf(component).flatMap(({ function: fn }) =>
         fn.expression ? [] : [spanKey(fn.body.span)],
       ),
-    );
+      // A top-level `if (isDev) { … }` is a statement (ADR-0117).
+      ...component.setup.flatMap((item) =>
+        item.kind === "DevCheck" ? [spanKey(item.code.span)] : [],
+      ),
+    ]);
     blockBodies.set(component, bodies);
   }
   return bodies.has(spanKey(code.span)) ? "statements" : "expression";

@@ -1,0 +1,313 @@
+{
+  "irVersion": 1,
+  "file": "dev/client-warning/IconLink.uf.tsx",
+  "components": [
+    {
+      "name": "IconLink",
+      "span": {
+        "start": 248,
+        "end": 832
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 306,
+              "end": 312
+            }
+          },
+          "binding": "href@283",
+          "span": {
+            "start": 300,
+            "end": 313
+          }
+        },
+        {
+          "name": "label",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 322,
+              "end": 328
+            }
+          },
+          "binding": "label@289",
+          "span": {
+            "start": 314,
+            "end": 328
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ href: string; label?: string }",
+          "span": {
+            "start": 298,
+            "end": 330
+          }
+        },
+        "span": {
+          "start": 281,
+          "end": 330
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "href@283",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 283,
+            "end": 287
+          }
+        },
+        {
+          "id": "label@289",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 289,
+            "end": 294
+          }
+        },
+        {
+          "id": "link@342",
+          "name": "link",
+          "kind": "templateRef",
+          "span": {
+            "start": 342,
+            "end": 346
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "link@342",
+          "type": {
+            "code": "HTMLAnchorElement",
+            "span": {
+              "start": 364,
+              "end": 381
+            }
+          },
+          "span": {
+            "start": 336,
+            "end": 385
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    if (isDev) {\n      const name = link.value?.getAttribute(\"aria-label\") ?? link.value?.textContent?.trim();\n      if (!name) console.warn(\"IconLink has no accessible name: give it a `label` or some text.\");\n    }\n  }",
+              "span": {
+                "start": 404,
+                "end": 625
+              },
+              "refs": [
+                {
+                  "kind": "Dev",
+                  "span": {
+                    "start": 414,
+                    "end": 419
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "link@342",
+                  "span": {
+                    "start": 442,
+                    "end": 452
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "link@342",
+                  "span": {
+                    "start": 484,
+                    "end": 494
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "console",
+                  "span": {
+                    "start": 534,
+                    "end": 541
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 398,
+              "end": 625
+            }
+          },
+          "span": {
+            "start": 388,
+            "end": 627
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "a",
+        "attributes": [
+          {
+            "kind": "Ref",
+            "binding": "link@342",
+            "span": {
+              "start": 646,
+              "end": 656
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "href",
+            "value": {
+              "code": "href",
+              "span": {
+                "start": 663,
+                "end": 667
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@283",
+                  "span": {
+                    "start": 663,
+                    "end": 667
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 657,
+              "end": 668
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 681,
+                "end": 686
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@289",
+                  "span": {
+                    "start": 681,
+                    "end": 686
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 669,
+              "end": 687
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "svg",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "viewBox",
+                "value": "0 0 16 16",
+                "span": {
+                  "start": 700,
+                  "end": 719
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "width",
+                "value": "16",
+                "span": {
+                  "start": 720,
+                  "end": 730
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "height",
+                "value": "16",
+                "span": {
+                  "start": 731,
+                  "end": 742
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-hidden",
+                "value": "true",
+                "span": {
+                  "start": 743,
+                  "end": 761
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "path",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "d",
+                    "value": "M2 8h10M8 4l4 4-4 4",
+                    "span": {
+                      "start": 777,
+                      "end": 800
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 771,
+                  "end": 803
+                }
+              }
+            ],
+            "span": {
+              "start": 695,
+              "end": 816
+            }
+          }
+        ],
+        "span": {
+          "start": 643,
+          "end": 825
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "IconLink",
+      "span": {
+        "start": 248,
+        "end": 832
+      }
+    }
+  ],
+  "types": []
+}

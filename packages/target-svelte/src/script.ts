@@ -643,6 +643,8 @@ class ScriptWriter {
         `${this.#callback(emit.event)}?.(${parts.arguments.join(", ")})`,
       // `nextTick()` is only awaited (UF2025): Svelte's `tick()` is the same promise.
       api: () => this.#names.import("svelte", "tick"),
+      // Svelte has no public flag a library may import, so a bundler's own check (ADR-0117).
+      dev: () => 'process.env.NODE_ENV !== "production"',
       // A slot's presence is its snippet's (ADR-0054).
       slot: (reference) => this.#slotLocal(reference.slot),
     };
@@ -1641,6 +1643,19 @@ class ScriptWriter {
         return "";
       case "Use":
         return this.#use(item);
+      // In the instance script, which runs once per instance, untracked as the setup's other
+      // reads are (ADR-0117).
+      case "DevCheck": {
+        const text = rewriteCode(item.code, this.#component, this.rules, "pure");
+        // Statements, so any reactive read: one in a callback it calls runs at once too.
+        const reads = item.code.refs.some((reference) => {
+          if (reference.kind !== "Binding") return false;
+          const binding = this.#bindings.get(reference.binding);
+          return binding !== undefined && isReactive(binding.kind);
+        });
+        if (!reads) return text;
+        return `${this.#names.import("svelte", "untrack")}(() => {\n${text}\n});`;
+      }
       default:
         return unreachable(item);
     }
@@ -2278,6 +2293,7 @@ function isDeclaration(item: SetupItem): boolean {
     case "WatchEffect":
     case "Lifecycle":
     case "Provide":
+    case "DevCheck":
       return false;
     default:
       return unreachable(item);

@@ -234,6 +234,9 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
     case "Inject":
       add(item.fallback);
       break;
+    case "DevCheck":
+      add(item.code);
+      break;
     case "TemplateRef":
     case "Id":
     case "Model":
@@ -390,6 +393,9 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
       return [declaration(useStatement(plan, item))];
     case "Await":
       return awaitStatements(plan, item);
+    // In the `component$` body, which runs where the setup does (ADR-0117).
+    case "DevCheck":
+      return [block(rewritten(plan, item.code, "statements", undefined, "pure"))];
     default:
       return unreachable(item);
   }
