@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { defineTarget } from "@unframework.dev/codegen";
@@ -394,11 +394,21 @@ describe("an import that never names the file", () => {
   });
 
   it("compiles it on a target whose module id is the file itself", async () => {
-    const expected = await compile(HELLO, { filename: "Hello.uf.tsx", targets: ["react"] });
+    // The package's root holds its helper modules, a directory above the source (ADR-0121).
+    const expected = await compile(HELLO, {
+      filename: "src/Hello.uf.tsx",
+      targets: ["react"],
+      helperRoot: "",
+    });
     await withServer(unframework({ target: "react" }), async ({ client }) => {
       const resolved = await client.pluginContainer.resolveId("@ds/core/hello", importer());
       expect(codeOf(await client.pluginContainer.load(resolved!.id))).toBe(
         expected.outputs.react![0]!.contents,
+      );
+      const helper = await client.pluginContainer.resolveId("../_unframework/cx", resolved!.id);
+      expect(helper?.id).toBe(file("node_modules/@ds/core/_unframework/cx.ts"));
+      expect(codeOf(await client.pluginContainer.load(helper!.id))).toBe(
+        expected.outputs.react!.find((output) => output.path === "../_unframework/cx.ts")!.contents,
       );
     });
   });
@@ -619,6 +629,133 @@ describe("files with several components", () => {
         id: component,
       });
     });
+  });
+});
+
+describe("shared helper modules (ADR-0121)", () => {
+  const TWO =
+    'export default function Card(props: { open: boolean }) {\n  return <section class={["card", { open: props.open }]}>Card</section>;\n}\n\nexport function Badge(props: { fresh: boolean }) {\n  return <span class={["badge", { fresh: props.fresh }]}>New</span>;\n}\n';
+  const PANEL =
+    'import { Transition, ref } from "@uxfront/unframework";\n\nexport default function Panel() {\n  const open = ref(false);\n  return (\n    <section>\n      <button type="button" onClick={() => (open.value = !open.value)}>Details</button>\n      <Transition>{open.value && <p>Ships in two days.</p>}</Transition>\n    </section>\n  );\n}\n';
+  const files = { "src/a/Two.uf.tsx": TWO, "src/b/Hello.uf.tsx": HELLO, "src/Panel.uf.tsx": PANEL };
+
+  it("loads each helper a module imports from one id in the graph's root", async () => {
+    const helpers = createProject(files);
+    try {
+      const server = await startServer(helpers.root, unframework({ target: "react" }));
+      try {
+        const { client } = server;
+        const at = (path: string) => join(helpers.root, path);
+        const two = at("src/a/Two.uf.tsx");
+        const compiled = await compile(TWO, {
+          filename: "src/a/Two.uf.tsx",
+          targets: ["react"],
+          helperRoot: "",
+        });
+        const code = codeOf(await client.pluginContainer.load(two));
+        // Both components import `cx` alike, so the join writes the import once (ADR-0053).
+        expect(code.match(/^import .* from "\.\.\/\.\.\/_unframework\/cx";$/gm)).toEqual([
+          'import { cx } from "../../_unframework/cx";',
+        ]);
+        expect(code).not.toMatch(/function cx\b/);
+        const cx = at("_unframework/cx.ts");
+        expect(await client.pluginContainer.resolveId("../../_unframework/cx", two)).toMatchObject({
+          id: cx,
+        });
+        // A Qwik-style segment split off the module imports what the module imports.
+        const segment = `${two}_Card_component_Jf8mu3bRpe0.js`;
+        expect(
+          await client.pluginContainer.resolveId("../../_unframework/cx", segment),
+        ).toMatchObject({ id: cx });
+        // Another directory's module reaches the same module.
+        const hello = at("src/b/Hello.uf.tsx");
+        expect(codeOf(await client.pluginContainer.load(hello))).toContain(
+          'import { cx } from "../../_unframework/cx";',
+        );
+        expect(
+          await client.pluginContainer.resolveId("../../_unframework/cx", hello),
+        ).toMatchObject({ id: cx });
+        // Its text is the compile's, mapped onto itself.
+        const loaded = await client.pluginContainer.load(cx);
+        expect(codeOf(loaded)).toBe(
+          compiled.outputs.react!.find((output) => output.path === "../../_unframework/cx.ts")!
+            .contents,
+        );
+        // A project file's own import of a file there is its own, not the helper.
+        expect(
+          await client.pluginContainer.resolveId("./_unframework/cx", at("main.ts")),
+        ).not.toMatchObject({ id: cx });
+        // An import no compile emitted is left alone.
+        expect(
+          await client.pluginContainer.resolveId("../../_unframework/missing", two),
+        ).toBeNull();
+      } finally {
+        await server.close();
+      }
+    } finally {
+      helpers.remove();
+    }
+  });
+
+  it("resolves a helper module's import of another, its sibling", async () => {
+    const helpers = createProject(files);
+    try {
+      const server = await startServer(helpers.root, unframework({ target: "react" }));
+      try {
+        const { client } = server;
+        const panel = join(helpers.root, "src/Panel.uf.tsx");
+        expect(codeOf(await client.pluginContainer.load(panel))).toContain(
+          'import { Transition } from "../_unframework/Transition";',
+        );
+        const transition = await client.pluginContainer.resolveId(
+          "../_unframework/Transition",
+          panel,
+        );
+        expect(transition?.id).toBe(join(helpers.root, "_unframework/Transition.tsx"));
+        expect(codeOf(await client.pluginContainer.load(transition!.id))).toContain(
+          'import { subscribeNothing } from "./subscribeNothing";',
+        );
+        expect(
+          await client.pluginContainer.resolveId("./subscribeNothing", transition!.id),
+        ).toMatchObject({ id: join(helpers.root, "_unframework/subscribeNothing.ts") });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      helpers.remove();
+    }
+  });
+
+  it("puts the helper modules where helperRoot says", async () => {
+    const helpers = createProject(files);
+    try {
+      const options = { target: "react" as const, helperRoot: (path: string) => dirname(path) };
+      const server = await startServer(helpers.root, unframework(options));
+      try {
+        const { client } = server;
+        const two = join(helpers.root, "src/a/Two.uf.tsx");
+        expect(codeOf(await client.pluginContainer.load(two))).toContain(
+          'import { cx } from "./_unframework/cx";',
+        );
+        expect(await client.pluginContainer.resolveId("./_unframework/cx", two)).toMatchObject({
+          id: join(helpers.root, "src/a/_unframework/cx.ts"),
+        });
+        // A directory outside the file's graph is refused, naming it.
+        const outside = unframework({ target: "react", helperRoot: () => "/elsewhere" });
+        const refused = await startServer(helpers.root, outside);
+        try {
+          await expect(refused.client.pluginContainer.load(two)).rejects.toThrow(
+            /The helperRoot "\/elsewhere" is invalid/,
+          );
+        } finally {
+          await refused.close();
+        }
+      } finally {
+        await server.close();
+      }
+    } finally {
+      helpers.remove();
+    }
   });
 });
 

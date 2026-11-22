@@ -36,6 +36,9 @@ writes it:
 - **The outputs,** in the directories their sources have under `srcDir`. Each file equals what
   `compile()` gives, byte for byte, but for the comment below.
 - **The copy of each shared `.ts` module** a source reaches, unchanged, with no map.
+- **Each shared helper module** a target emits (ADR-0121), once, in `_unframework/` at the root of
+  the tree, where every output imports it from. Its sidecar map names the module itself, since no
+  source holds its text.
 - **A source map** for a JS or TS output that has one: `<file>.map` beside it, and a trailing
   `//# sourceMappingURL=<file>.map` comment. The sidecar names the source relative to where the file
   was written. Any other output, like a `.vue` file or a scoped sheet, gets neither, since the comment is written
@@ -56,7 +59,8 @@ and keeps the last good package.
 - **UF7007:** `srcDir` holds no source.
 - **UF1104:** two modules would write one file, without case and extension as an output imports
   it, or a target's barrel would export one name from two files. A module that would write the
-  barrel's own `index.ts` counts too.
+  barrel's own `index.ts` counts too, and so does a shared module that would write a helper
+  module's place in `_unframework/`. Two compiles that give one helper module two texts are UF9001.
 - **UF7002** at `/outDir`: cleaning an `outDir/<target>` would delete the project, a source, or a file
   a source read.
 - **UF7002** at `/srcDir`: a source imports a child the search didn't find, or a shared module above
@@ -74,7 +78,8 @@ and adds:
 
 - **`exports`:** one subpath per packaged target (`./react`, `./vue`, …), whose entry is that target's
   barrel, then `./source/*`, which reaches the `.uf.tsx` sources and the files under `srcDir` they
-  read, and `./package.json`.
+  read, and `./package.json`. The shared helper modules in each target's `_unframework/` ship as
+  the outputs import them, and no entry exports them (ADR-0121).
 - **`peerDependencies`:** each packaged target's framework, every one optional in
   `peerDependenciesMeta`, so a React app installs no Vue.
 
