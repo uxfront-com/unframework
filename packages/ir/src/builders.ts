@@ -4,6 +4,8 @@
 
 import type {
   ApiReference,
+  DevCheckItem,
+  DevReference,
   CallbackArgument,
   ComposableParameter,
   DeclaredBy,
@@ -612,6 +614,16 @@ export function createEmitReference(
 /** Builds a use of an authoring API inside setup code: `nextTick`. */
 export function createApiReference(api: ApiReference["api"], at: Span): ApiReference {
   return { kind: "Api", api, span: at };
+}
+
+/** Builds a read of `isDev` as an `if`'s test (ADR-0117). */
+export function createDevReference(at: Span): DevReference {
+  return { kind: "Dev", span: at };
+}
+
+/** Builds a top-level `if (isDev) { … }` of the setup (ADR-0117). */
+export function createDevCheckItem(code: Code, at: Span): DevCheckItem {
+  return { kind: "DevCheck", code, span: at };
 }
 
 /** Builds a use of a member of a handler's event parameter (`event.key`); `call` for a call. */

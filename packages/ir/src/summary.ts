@@ -85,6 +85,8 @@ function factsOf(refs: readonly CodeReference[]): Facts {
       case "Event":
       case "Slot":
       case "Import":
+      // `isDev` is the build's, not the component's (ADR-0117).
+      case "Dev":
         break;
       default:
         unreachable(ref);

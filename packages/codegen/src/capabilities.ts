@@ -116,6 +116,8 @@ const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly Capab
   // One whose composable runs code in the browser also needs `composable-effect-order`
   // (ADR-0069), added at the same span.
   Use: ["composables"],
+  // Every target checks its build natively (ADR-0117).
+  DevCheck: [],
 };
 /**
  * What each kind of reference in code needs: `nextTick` its own capability, and the others
@@ -128,6 +130,7 @@ const REFERENCE_CAPABILITIES: Readonly<Record<CodeReference["kind"], CapabilityN
     Global: undefined,
     Write: undefined,
     Emit: undefined,
+    Dev: undefined,
     Api: "next-tick",
     Event: undefined,
     Slot: undefined,
@@ -540,6 +543,7 @@ function trackedCode(item: SetupItem): Code[] {
       return [item.effect.body];
     // A composable's getter argument is the composable's to track (ADR-0069): its lane decides.
     case "Use":
+    case "DevCheck":
     case "Await":
     case "State":
     case "Variable":
@@ -603,6 +607,8 @@ function itemCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
+    case "DevCheck":
+      return [item.code];
     case "Use":
       return item.arguments.flatMap((argument) => {
         switch (argument.kind) {

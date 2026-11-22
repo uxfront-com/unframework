@@ -14,6 +14,7 @@ import type {
   BindingReference,
   Code,
   CodeReference,
+  DevReference,
   EmitReference,
   EventReference,
   Expression,
@@ -96,6 +97,12 @@ export interface RewriteRules {
   event?(reference: EventReference, site: RewriteSite): string;
   /** The code that replaces a use of an authoring API (`nextTick`): as written when absent. */
   api?(reference: ApiReference, site: RewriteSite): string;
+  /**
+   * The code that replaces `isDev`, an `if`'s test (ADR-0117): the target's framework's own
+   * development check, `process.env.NODE_ENV !== "production"` or `ngDevMode`. As written when
+   * absent, which no output declares, so a target that leaves it out fails its type check (L3).
+   */
+  dev?(reference: DevReference, site: RewriteSite): string;
   /**
    * The code that replaces a slot's presence, `slots.title` (ADR-0054): whether the parent filled
    * it, as the target tests it (`title != null`, `title()`). As written when absent.
@@ -322,6 +329,7 @@ function slotsOf(reference: CodeReference): readonly Span[] {
     case "Api":
     case "Slot":
     case "Import":
+    case "Dev":
       return [];
     default:
       return unreachable(reference);
@@ -399,6 +407,8 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
     // A pass-through import is read as written, and its module's plugin resolves it (ADR-0064).
     case "Import":
       return rules.import?.(reference, site) ?? written;
+    case "Dev":
+      return rules.dev?.(reference, site) ?? written;
     default:
       return unreachable(reference);
   }

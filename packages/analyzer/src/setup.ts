@@ -25,6 +25,7 @@ import {
   createGetterSource,
   createIdItem,
   createInjectItem,
+  createDevCheckItem,
   createLifecycleItem,
   createModelItem,
   createProvideItem,
@@ -74,7 +75,8 @@ import { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, checkType, closure } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
 import { misplacedDirective } from "./directives.ts";
-import { checkCode, checkDirectives, lowerFunction, span } from "./expressions.ts";
+import { devTest, isDevIdentifier, misplacedDev } from "./dev.ts";
+import { checkCode, checkDirectives, lowerDevCheck, lowerFunction, span } from "./expressions.ts";
 import { annotatedInterface, listenerName } from "./listeners.ts";
 import { isStatic } from "./props.ts";
 import type { PropsAnalysis } from "./props.ts";
@@ -192,6 +194,7 @@ type Declared =
       binding: SetupBinding;
     }
   | { kind: "watch" | "watchEffect"; statement: AST.Statement; call: AST.CallExpression }
+  | { kind: "dev"; statement: AST.IfStatement; test: AST.IdentifierReference }
   | {
       kind: "lifecycle";
       statement: AST.Statement;
@@ -413,6 +416,8 @@ export function declareSetup(context: SetupContext): Setup {
           transitionNotTag(call.callee as AST.IdentifierReference, reporter);
         } else if (api === "defineDirective") {
           misplacedDirective(call.callee as AST.IdentifierReference, reporter);
+        } else if (api === "isDev") {
+          misplacedDev(call.callee as AST.IdentifierReference, reporter);
         } else misplacedNextTick(call.callee as AST.IdentifierReference);
         continue;
       }
@@ -429,6 +434,14 @@ export function declareSetup(context: SetupContext): Setup {
       case "ReturnStatement":
         conditionalReturn(statement);
         continue;
+      case "IfStatement": {
+        // `if (isDev) { … }`: code that runs only in a development build (ADR-0117).
+        const test = context.composable ? undefined : devTest(statement, context);
+        // A development build must render what a production one does: no early return.
+        if (test && !returnsIn(statement).length) declared.push({ kind: "dev", statement, test });
+        else other(statement);
+        continue;
+      }
       default:
         other(statement);
     }
@@ -854,6 +867,9 @@ export function declareSetup(context: SetupContext): Setup {
         return;
       case "nextTick":
         misplacedNextTick(call.callee as AST.IdentifierReference);
+        return;
+      case "isDev":
+        misplacedDev(call.callee as AST.IdentifierReference, reporter);
         return;
       case "Teleport":
         teleportNotTag(call.callee as AST.IdentifierReference, reporter);
@@ -1810,6 +1826,10 @@ export function declareSetup(context: SetupContext): Setup {
     const apis = apisIn(statement, context);
     if (apis.length) {
       for (const { identifier, called } of apis) {
+        if (isDevIdentifier(identifier, context)) {
+          misplacedDev(identifier, reporter);
+          continue;
+        }
         reporter.report(
           "UF2005",
           identifier,
@@ -1892,6 +1912,7 @@ export function declareSetup(context: SetupContext): Setup {
   }
 
   const scope: SetupScope = {
+    ...(context.composable ? { composable: true as const } : {}),
     bindings,
     authoring: context.authoring,
     composables: context.composables ?? new Map(),
@@ -2152,6 +2173,8 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       });
       return createLifecycleItem(item.hook, lowered.function, at);
     }
+    case "dev":
+      return createDevCheckItem(lowerDevCheck(item.statement, item.test, render), at);
     default:
       return unreachable(item);
   }

@@ -267,6 +267,8 @@ function referenceValue(reference: CodeReference): unknown[] {
       return [reference.kind, reference.slot, spanValue(reference.span)];
     case "Import":
       return [reference.kind, reference.name, spanValue(reference.span)];
+    case "Dev":
+      return [reference.kind, spanValue(reference.span)];
     default:
       return unreachable(reference);
   }
