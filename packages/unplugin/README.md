@@ -172,7 +172,9 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   import from one of the plugin's modules, a Qwik segment split off one, or another helper module,
   and for its id coming back, once a compile has emitted it. `load` gives the compile's text and
   its map, which names the module itself. Every module of a graph imports one id of each helper,
-  so a bundle holds it once.
+  so a bundle holds it once. A project file at that path stays the project's: the plugin never
+  serves the helper in its place, and the module that would import the helper fails with UF1104,
+  as the CLI reports the same layout.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,

@@ -139,15 +139,14 @@ export interface CompileOptions {
  * `filename` or one above it, since a helper module there would sit outside the output tree.
  */
 export function checkHelperRoot(filename: string, helperRoot: string | undefined): string {
-  const directory = directoryOf(filename).split("/").filter(Boolean);
+  const parts = (path: string) => path.split("/").filter((part) => part && part !== ".");
+  const directory = parts(directoryOf(filename));
   if (helperRoot === undefined) return "";
-  const root =
-    typeof helperRoot === "string"
-      ? helperRoot.split("/").filter((part) => part && part !== ".")
-      : [];
+  const root = typeof helperRoot === "string" ? parts(helperRoot) : [];
+  // Named as `filename` is: both absolute, or both relative.
   const above =
     typeof helperRoot === "string" &&
-    !helperRoot.startsWith("/") &&
+    helperRoot.startsWith("/") === filename.startsWith("/") &&
     root.length <= directory.length &&
     root.every((part, index) => part === directory[index]);
   if (!above) {
@@ -785,9 +784,12 @@ async function emitTarget(
       }
       output = { path: module.path, contents: outcome.file.contents };
     }
-    const key = output.path.toLowerCase();
-    const owner = owners.get(key);
-    const copy = [...copies].find(([path]) => path.toLowerCase() === key);
+    // Compared where each file lands, so `../_unframework/cx.ts` from a source inside
+    // `_unframework/` meets that source's copy `cx.ts`.
+    const place = (path: string) => joinPath(directoryOf(file), `./${path}`)?.toLowerCase();
+    const key = place(output.path);
+    const owner = [...owners.values()].find(({ path }) => place(path) === key);
+    const copy = [...copies].find(([path]) => place(path) === key);
     if (owner || copy) {
       const span = copy?.[1].span ?? { start: 0, end: 0 };
       const what = copy

@@ -19,7 +19,11 @@ import type {
   TargetSelector,
   UfModule,
 } from "@unframework.dev/compiler";
-import { formatDiagnostic, formatDiagnostics } from "@unframework.dev/diagnostics";
+import {
+  createDiagnostic,
+  formatDiagnostic,
+  formatDiagnostics,
+} from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { createUnplugin } from "unplugin";
 import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOptions } from "unplugin";
@@ -162,8 +166,9 @@ const SHEET_SUFFIX = ".css";
 const SHEET_ID_FILTER = moduleIdFilter(SHEET_SUFFIX);
 
 /**
- * A shared helper module's id (ADR-0121): `<helper root>/_unframework/<file>`, a path no file
- * holds, which loads from the compile that emitted it.
+ * A shared helper module's id (ADR-0121): `<helper root>/_unframework/<file>`, which loads from the
+ * compile that emitted it. A project file there is the project's: the plugin never serves the
+ * helper in its place, and fails the module that would import it with UF1104 (`helperClash`).
  */
 const HELPER_ID_FILTER = /\/_unframework\/[^/?]+(?:\?.*)?$/;
 
@@ -462,6 +467,33 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const helperId = (path: string): string | undefined =>
     HELPER_EXTENSIONS.map((extension) => `${path}${extension}`).find((id) => helperModules.has(id));
 
+  /**
+   * UF1104, formatted, where a helper module a compile of `file` emitted would sit at a project
+   * file's path (ADR-0121), as the CLI reports it for its tree: the output's import would read
+   * that file, so the module fails rather than load it.
+   */
+  const helperClash = (
+    file: string,
+    result: CompileResult,
+    graph: Graph,
+    filename: string,
+    source: string,
+  ): string | undefined => {
+    for (const path of result.helpers[target.name] ?? []) {
+      const id = posix.join(posix.dirname(file), path);
+      if (!existsSync(id)) continue;
+      const diagnostic = createDiagnostic("UF1104", {
+        file: filename,
+        span: { start: 0, end: 0 },
+        target: target.name,
+        message: `${filenameOf(id)} is a file of the project, where the ${target.name} output of ${filename} puts its helper module ${path}: \`_unframework/\` at the root of the output tree holds the helper modules (ADR-0121).`,
+        help: "Rename the file or the directory that holds it, or give the plugin another `helperRoot`.",
+      });
+      return formatErrors(graph, filename, [diagnostic], source);
+    }
+    return undefined;
+  };
+
   /** A file's graph and its name there: relative to the graph's root, with forward slashes. */
   const locate = (file: string) => {
     const graph = graphOf(file);
@@ -670,9 +702,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const files = result.outputs[target.name] ?? [];
     const helpers = new Set(result.helpers[target.name] ?? []);
     for (const output of files) {
-      if (helpers.has(output.path)) {
-        helperModules.set(posix.join(posix.dirname(file), output.path), output);
-      }
+      const id = posix.join(posix.dirname(file), output.path);
+      // A project file at a helper's id stays the project's (`helperClash`).
+      if (helpers.has(output.path) && !existsSync(id)) helperModules.set(id, output);
     }
     const outputs = files.length
       ? { ...result.outputs, [target.name]: [...files, ...project.copies(filename)] }
@@ -889,6 +921,8 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     };
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
     if (errors.length > 0) return fail(formatErrors(graph, filename, errors, source));
+    const clash = helperClash(file, result, graph, filename, source);
+    if (clash !== undefined) return fail(clash);
     const owners = result.owners[target.name] ?? {};
     const owned = files.filter((output) => Object.hasOwn(owners, output.path));
     const assembly = assembleModule({
@@ -1175,9 +1209,12 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     failed: Map<string, FailedModule>,
     access?: AccessCheck,
   ) {
-    // A shared helper module (ADR-0121), which no file holds: its text is the compile's.
+    // A shared helper module (ADR-0121): its text is the compile's, unless a project file has
+    // taken its place since, which is the project's to load (`helperClash`).
     const helper = helperModules.get(withoutQuery(id));
-    if (helper) return { code: helper.contents, ...(helper.map ? { map: helper.map } : {}) };
+    if (helper && !existsSync(withoutQuery(id))) {
+      return { code: helper.contents, ...(helper.map ? { map: helper.map } : {}) };
+    }
     const requested =
       parseModuleId(id, SHEET_SUFFIX) ??
       componentRequest(id) ??
@@ -1231,6 +1268,8 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
 
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
     if (errors.length > 0) return fail(formatErrors(graph, filename, errors, source));
+    const clash = helperClash(request.file, result, graph, filename, source);
+    if (clash !== undefined) return fail(clash);
     const owners = result.owners[target.name] ?? {};
     const main = mainComponent(result.ir);
     // A component id loads its component's file; a main id, the main component's files,

@@ -697,6 +697,42 @@ describe("shared helper modules (ADR-0121)", () => {
     }
   });
 
+  it("leaves a project's own file there alone, and fails the module whose helper it is (UF1104)", async () => {
+    const helpers = createProject({
+      ...files,
+      "_unframework/cx.ts": 'export const label = "mine";\n',
+      "main.ts": 'import { label } from "./_unframework/cx.ts";\nexport default label;\n',
+    });
+    try {
+      const server = await startServer(helpers.root, unframework({ target: "react" }));
+      try {
+        const { client } = server;
+        const own = join(helpers.root, "_unframework/cx.ts");
+        const two = join(helpers.root, "src/a/Two.uf.tsx");
+        // The module whose `cx` would be the project's file fails, as the CLI reports it.
+        await expect(client.pluginContainer.load(two)).rejects.toThrow(
+          /UF1104[^]*_unframework\/cx\.ts is a file of the project, where the react output of src\/a\/Two\.uf\.tsx puts its helper module \.\.\/\.\.\/_unframework\/cx\.ts/,
+        );
+        // The project's own import, after that compile, still reads the project's file.
+        const resolved = await client.pluginContainer.resolveId(
+          "./_unframework/cx.ts",
+          join(helpers.root, "main.ts"),
+        );
+        expect(resolved?.id).toBe(own);
+        expect(await client.pluginContainer.load(own)).toBeNull();
+        expect((await client.transformRequest("/_unframework/cx.ts"))?.code).toContain('"mine"');
+        // A module that imports no helper there still loads.
+        expect(
+          codeOf(await client.pluginContainer.load(join(helpers.root, "src/Panel.uf.tsx"))),
+        ).toContain('import { Transition } from "../_unframework/Transition";');
+      } finally {
+        await server.close();
+      }
+    } finally {
+      helpers.remove();
+    }
+  });
+
   it("resolves a helper module's import of another, its sibling", async () => {
     const helpers = createProject(files);
     try {

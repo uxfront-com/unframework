@@ -294,9 +294,13 @@ export function planComponent(
   // A shared helper (ADR-0121) is imported by every component of the source under one name, the
   // module's own unless a component declares it, so their imports are one line in the join: each
   // leaves every name of the helper's that any of them declares.
+  // A child a component of the source imports binds its name in the join too, rendered or not.
+  const imported = (module.imports ?? []).flatMap((entry) => entry.names.map(({ local }) => local));
   for (const helper of shares ? SHARED_HELPER_NAMES : []) {
     const own = new RegExp(`^${helper}(?:_\\d+)*$`);
-    for (const each of reserved) for (const name of each) if (own.test(name)) names.reserve(name);
+    for (const each of [...reserved, imported]) {
+      for (const name of each) if (own.test(name)) names.reserve(name);
+    }
   }
   // The imports that pass through, which the render reads as written (ADR-0064).
   addPassThroughImports(component, module, names);
