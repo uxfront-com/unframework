@@ -5,7 +5,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { validateModule } from "@unframework.dev/ir";
-import type { UfModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 const CASES = join(import.meta.dirname, "..", "cases");
@@ -24,12 +23,12 @@ describe("the IR goldens", () => {
 
   it("each pass validateModule", () => {
     const failures = goldens().flatMap((path) => {
-      const module = JSON.parse(readFileSync(join(CASES, path), "utf8")) as UfModule;
+      const module: unknown = JSON.parse(readFileSync(join(CASES, path), "utf8"));
       try {
         const errors = validateModule(module);
         return errors.length ? [`${path}: ${JSON.stringify(errors[0])}`] : [];
       } catch (error) {
-        return [`${path}: throws ${(error as Error).message}`];
+        return [`${path}: throws ${error instanceof Error ? error.message : String(error)}`];
       }
     });
     expect(failures).toEqual([]);
