@@ -1,5 +1,6 @@
 import Card from "./Card";
 import Chip from "./Chip";
+import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { type CSSProperties, useRef, useState } from "react";
 
 export interface TagAttributes {
@@ -31,13 +32,4 @@ export default function Tag({
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

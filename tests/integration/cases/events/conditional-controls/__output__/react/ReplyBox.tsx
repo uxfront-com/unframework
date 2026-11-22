@@ -1,3 +1,6 @@
+import { cx } from "./_unframework/cx";
+import { scopeAttributes } from "./_unframework/scopeAttributes";
+import { useOnce } from "./_unframework/useOnce";
 import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
 
 export interface ReplyBoxAttributes {
@@ -65,39 +68,4 @@ export default function ReplyBox({ className, style, ...attributes }: ReplyBoxAt
       <p>Accepted: {accepted}</p>
     </section>
   );
-}
-
-/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") {
-      if (part) names.push(part);
-    } else if (part && typeof part === "object") {
-      for (const [key, on] of Object.entries(part)) {
-        if (on) names.push(key);
-      }
-    }
-  }
-  return names.join(" ");
-}
-
-/** The guard of a listener that runs once per element, as `{ once: true }` makes it. */
-function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
-  const fired = useRef(new WeakSet<EventTarget>());
-  return (event) => {
-    const target = event.currentTarget;
-    if (!target || fired.current.has(target)) return false;
-    fired.current.add(target);
-    return true;
-  };
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

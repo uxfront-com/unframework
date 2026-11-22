@@ -58,6 +58,7 @@ import type { CompositionPlan } from "./composition.ts";
 import { directiveRefBase, directivesInPostOrder } from "./directive.ts";
 import { elementInterface } from "./elements.ts";
 import { synthetic } from "./events.ts";
+import { SHARED_HELPER_NAMES } from "./shared-names.ts";
 
 /** A `state` binding: `const [count, setCount] = useState(…)`, and its mirror when written. */
 export interface StatePlan {
@@ -250,6 +251,7 @@ export function planComponent(
   component: UfComponent,
   module: UfModule,
   composable?: UfComposable,
+  shares = false,
 ): ReactPlan {
   const bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
   const kindOf = (id: BindingId) => bindings.get(id)?.kind;
@@ -284,9 +286,17 @@ export function planComponent(
     return reservedNames(each, module, modes, eventParameterModes(each, modes));
   });
   for (const helper of HELPER_NAMES) {
+    if (shares && SHARED_HELPER_NAMES.includes(helper)) continue;
     const { base, others } = moduleHelperName(helper, reserved, index);
     names.reserve(...others);
     names.scope.rebase(helper, base);
+  }
+  // A shared helper (ADR-0121) is imported by every component of the source under one name, the
+  // module's own unless a component declares it, so their imports are one line in the join: each
+  // leaves every name of the helper's that any of them declares.
+  for (const helper of shares ? SHARED_HELPER_NAMES : []) {
+    const own = new RegExp(`^${helper}(?:_\\d+)*$`);
+    for (const each of reserved) for (const name of each) if (own.test(name)) names.reserve(name);
   }
   // The imports that pass through, which the render reads as written (ADR-0064).
   addPassThroughImports(component, module, names);

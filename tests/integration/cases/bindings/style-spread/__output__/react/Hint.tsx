@@ -1,3 +1,5 @@
+import { scopeAttributes } from "./_unframework/scopeAttributes";
+import { styleObject } from "./_unframework/styleObject";
 import type { CSSProperties } from "react";
 
 interface HintAttributes {
@@ -32,31 +34,4 @@ export default function Hint({
       {text}
     </small>
   );
-}
-
-/** A style bound to a value as React's style takes it: a declaration list becomes an object. */
-function styleObject(style: object | string | null | undefined): CSSProperties | undefined {
-  if (typeof style !== "string") return (style ?? undefined) as CSSProperties | undefined;
-  const object: Record<string, string> = {};
-  for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
-    const [property, value] = declaration.split(/:([^]+)/);
-    const key = property!.trim();
-    // A property is a custom property or a CSS identifier: anything else would reach the markup.
-    if (value === undefined || !/^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key)) continue;
-    // A standard name is case-insensitive, as the browser reads it: COLOR is color.
-    const camel = key
-      .toLowerCase()
-      .replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
-    object[key.startsWith("--") ? key : camel] = value.trim();
-  }
-  return object as CSSProperties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

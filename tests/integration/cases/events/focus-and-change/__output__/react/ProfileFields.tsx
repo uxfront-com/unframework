@@ -1,3 +1,7 @@
+import { cx } from "./_unframework/cx";
+import { listen } from "./_unframework/listen";
+import { scopeAttributes } from "./_unframework/scopeAttributes";
+import { useOnce } from "./_unframework/useOnce";
 import { type CSSProperties, type MouseEvent, useLayoutEffect, useRef, useState } from "react";
 
 export interface ProfileFieldsEvents {
@@ -141,53 +145,4 @@ export default function ProfileFields({
       </ol>
     </section>
   );
-}
-
-/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") {
-      if (part) names.push(part);
-    } else if (part && typeof part === "object") {
-      for (const [key, on] of Object.entries(part)) {
-        if (on) names.push(key);
-      }
-    }
-  }
-  return names.join(" ");
-}
-
-/**
- * Listens to a DOM event natively, where React's synthetic event would not keep the DOM's
- * semantics, and gives back what stops it: the cleanup a ref callback returns.
- */
-function listen<K extends keyof HTMLElementEventMap>(
-  element: EventTarget | null,
-  type: K,
-  listener: (event: HTMLElementEventMap[K]) => void,
-  options?: AddEventListenerOptions,
-): () => void {
-  element?.addEventListener(type, listener as EventListener, options);
-  return () => element?.removeEventListener(type, listener as EventListener, options);
-}
-
-/** The guard of a listener that runs once per element, as `{ once: true }` makes it. */
-function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
-  const fired = useRef(new WeakSet<EventTarget>());
-  return (event) => {
-    const target = event.currentTarget;
-    if (!target || fired.current.has(target)) return false;
-    fired.current.add(target);
-    return true;
-  };
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
