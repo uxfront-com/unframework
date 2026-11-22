@@ -13,7 +13,7 @@ const CASES = join(import.meta.dirname, "..", "cases");
 function goldens(): string[] {
   return readdirSync(CASES, { recursive: true, encoding: "utf8" })
     .filter((path) => /(^|[/\\])__output__[/\\]ir(\.[A-Za-z0-9]+)?\.json$/.test(path))
-    .sort();
+    .toSorted();
 }
 
 describe("the IR goldens", () => {
