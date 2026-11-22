@@ -18,6 +18,7 @@ import type {
   ClassItem,
   ComponentAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   Expression,
   FragmentNode,
@@ -322,9 +323,9 @@ function withFallthrough(
 
 /** The node that takes what the consumer passes, with it merged in (see `withFallthrough`). */
 function takingPassed(
-  root: ElementNode | ComponentNode,
+  root: ElementNode | ComponentNode | DynamicNode,
   fallthrough: FallthroughPlan,
-): ElementNode | ComponentNode {
+): ElementNode | ComponentNode | DynamicNode {
   const span = root.span;
   const expression = (code: string): Expression => ({ code, span, refs: [] });
   const attributes: (Attribute | ComponentAttribute)[] = [...root.attributes];
@@ -380,17 +381,19 @@ function takingPassed(
     if (!has("Static", "Bound")) attributes.push(prop(ATTRIBUTES_INPUT, CONSUMER_ATTRIBUTES));
     if (!has("Event")) attributes.push(prop(LISTENERS_INPUT, CONSUMER_LISTENERS));
   }
-  return { ...root, attributes } as ElementNode | ComponentNode;
+  return { ...root, attributes } as ElementNode | ComponentNode | DynamicNode;
 }
 
 /**
- * A tree with each element or component node `replace` gives another for replaced, and every
- * object on the way to it copied: the others, attributes included, are the tree's own, which
- * the listeners' and models' plans name.
+ * A tree with each element, component or `<component is>` node `replace` gives another for
+ * replaced, and every object on the way to it copied: the others, attributes included, are the
+ * tree's own, which the listeners' and models' plans name.
  */
 function mapNodes<T>(
   value: T,
-  replace: (node: ElementNode | ComponentNode) => ElementNode | ComponentNode | undefined,
+  replace: (
+    node: ElementNode | ComponentNode | DynamicNode,
+  ) => ElementNode | ComponentNode | DynamicNode | undefined,
 ): T {
   if (Array.isArray(value)) {
     let changed = false;
@@ -403,8 +406,8 @@ function mapNodes<T>(
   }
   if (value === null || typeof value !== "object") return value;
   const { kind } = value as { kind?: unknown };
-  if (kind === "Element" || kind === "Component") {
-    const replaced = replace(value as unknown as ElementNode | ComponentNode);
+  if (kind === "Element" || kind === "Component" || kind === "Dynamic") {
+    const replaced = replace(value as unknown as ElementNode | ComponentNode | DynamicNode);
     if (replaced) return replaced as unknown as T;
   }
   let changed = false;

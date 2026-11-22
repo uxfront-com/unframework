@@ -14,7 +14,9 @@ import {
 } from "./escape.ts";
 import {
   classArrayItems,
+  guardsOf,
   keepsWhitespace,
+  onlyGuards,
   staticClassValue,
   staticStyleValue,
   unreachable,
@@ -452,6 +454,8 @@ export const svelteDialect: MarkupDialect = {
           span: node.span,
         },
         directives: [{ name: "this", text: `this={${is}}` }],
+        // An attribute only some tags take renders on those (ADR-0119).
+        ...guardsOf(onlyGuards(node, is)),
       },
     ];
   },

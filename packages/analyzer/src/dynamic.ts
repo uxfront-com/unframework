@@ -1,8 +1,9 @@
 // `<component is={…}>` over a statically known set (ADR-0054, plan §4.6): `is` is a literal, a
 // conditional whose leaves are literals or components, or a value typed as a union of tags (a
-// prop's `"h2" | "h3"`). The leaves are all HTML tags, whose attributes and children each tag
-// must take, or all components, whose attributes and fills each must declare (UF3044
-// otherwise). Each component a leaf names is a `component` binding, which only the `is` reads.
+// prop's `"h2" | "h3"`). The leaves are all HTML tags, whose children each tag must take and
+// whose attributes at least one must (each renders only on those that take it, ADR-0119), or all
+// components, whose attributes and fills each must declare (UF3044 otherwise). Each component a
+// leaf names is a `component` binding, which only the `is` reads.
 
 import {
   createBinding,
@@ -18,10 +19,12 @@ import type {
   ComponentAttribute,
   DynamicCandidate,
   DynamicNode,
+  DynamicOnly,
   SlotFill,
 } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
+import { canonicalName, takesByName, unknownOnEvery } from "./attribute-names.ts";
 import { lowerAttributes } from "./attributes.ts";
 import { componentOf, isRestSpread, lowerComponentAs } from "./components.ts";
 import { Reporter } from "./context.ts";
@@ -175,6 +178,7 @@ export function lowerDynamic(
     lowered.children,
     span(node),
     lowered.fills,
+    lowered.only,
   );
 }
 
@@ -273,6 +277,7 @@ interface Lowered {
   attributes: (Attribute | ComponentAttribute)[];
   children: DynamicNode["children"];
   fills?: SlotFill[];
+  only?: DynamicOnly[];
 }
 
 /**
@@ -296,6 +301,37 @@ function probe(render: RenderContext): RenderContext {
   };
 }
 
+/**
+ * Takes into the context what a probe found that it lacks: the bindings, the template refs'
+ * attachments and the code facts of the attributes lowered there alone (ADR-0119). What both
+ * found is kept once.
+ */
+function adopt(render: RenderContext, probe: RenderContext): void {
+  for (const binding of probe.bindings) {
+    if (!render.bindings.some((each) => each.id === binding.id)) render.bindings.push(binding);
+  }
+  for (const [key, value] of probe.attached)
+    if (!render.attached.has(key)) render.attached.set(key, value);
+  const { facts } = render;
+  for (const call of probe.facts.nestedCalls) {
+    const known = facts.nestedCalls.some(
+      (each) =>
+        each.binding === call.binding &&
+        each.span.start === call.span.start &&
+        each.span.end === call.span.end,
+    );
+    if (!known) facts.nestedCalls.push(call);
+  }
+  for (const [key, value] of probe.facts.getterKinds) {
+    if (!facts.getterKinds.has(key)) facts.getterKinds.set(key, value);
+  }
+  for (const call of probe.facts.tickCallbacks) {
+    if (!facts.tickCallbacks.includes(call)) facts.tickCallbacks.push(call);
+  }
+  for (const [key, value] of probe.facts.passed)
+    if (!facts.passed.has(key)) facts.passed.set(key, value);
+}
+
 /** Reports what each later candidate's check found that the first one's did not. */
 function merge(render: RenderContext, mark: number, probes: readonly RenderContext[]): void {
   const seen = new Set(
@@ -315,11 +351,13 @@ function merge(render: RenderContext, mark: number, probes: readonly RenderConte
 
 /**
  * Tag candidates (ADR-0055): each tag is checked as the element it may render, from the context
- * as it was before any of them: its placement among its ancestors (UF3003), its attributes
- * (UF3006 for one a tag does not take; a template ref attaches once whichever renders), and the
- * children inside it, which no void tag takes. The first one's lowering is the node's; what any
- * other finds besides is reported too, so the order of `is` changes nothing. A control's
- * `v-model` binds a control its tag decides, which `is` does not fix: UF3042.
+ * as it was before any of them: its placement among its ancestors (UF3003), the attributes it
+ * takes (an attribute only some tags take renders on those, and one none takes is UF3006,
+ * ADR-0119; a template ref attaches once whichever renders), and the children inside it, which
+ * no void tag takes. The first one's lowering is the node's, with what only later tags take
+ * lowered as the first of them; what any other finds besides is reported too, so the order of
+ * `is` changes nothing. A control's `v-model` binds a control its tag decides, which `is` does
+ * not fix: UF3042.
  */
 function lowerTags(
   node: AST.JSXElement,
@@ -393,11 +431,37 @@ function lowerTags(
   };
   const content = hasContent(node.children);
   const mark = render.reporter.diagnostics.length;
+  // An attribute only some tags take renders on those alone, and one none takes is UF3006, once
+  // for them all (ADR-0119). Each tag lowers the attributes it takes.
+  const only: DynamicOnly[] = [];
+  const skipped = new Map(tags.map((each) => [each, new Set<AST.JSXAttributeItem>()]));
+  for (const item of opening.attributes) {
+    if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") continue;
+    const authored = item.name.name;
+    const takers = tags.filter((each) => takesByName(each, authored));
+    if (takers.length === tags.length) continue;
+    for (const each of tags) if (!takers.includes(each)) skipped.get(each)!.add(item);
+    if (takers.length) {
+      only.push({ name: canonicalName(takers[0]!, "html", authored), tags: takers });
+      continue;
+    }
+    const problem = unknownOnEvery(tags, authored);
+    render.reporter.report(
+      problem.code,
+      item.name,
+      problem.message,
+      problem.help ? { help: problem.help } : {},
+    );
+  }
+  const own = (candidate: string, items = opening.attributes) => ({
+    ...opening,
+    attributes: items.filter((item) => !skipped.get(candidate)!.has(item)),
+  });
   // Taken before the first tag lowers, so each later one starts from the same context.
   const probes = tags.slice(1).map(() => probe(render));
   const check = (tag: string, at: RenderContext) => {
     checkPlacement(tag, name, place.ancestors, at.reporter, !place.fill);
-    const { attributes } = lowerAttributes(opening, {
+    const { attributes } = lowerAttributes(own(tag), {
       tag,
       namespace: "html",
       hasChildren: content,
@@ -415,8 +479,25 @@ function lowerTags(
     return { attributes, children };
   };
   const lowered = check(tags[0]!, render);
-  for (const [index, tag] of tags.slice(1).entries()) check(tag, probes[index]!);
+  const later = tags.slice(1).map((each, index) => check(each, probes[index]!));
   merge(render, mark, probes);
+  // What the first tag does not take comes from the first later tag that takes it, lowered with
+  // every attribute that tag takes, so the rules that read the others (`type` for form state and
+  // for a submit-only attribute) see them and the order of `is` changes nothing. That tag's probe
+  // lowered it, so the facts it found are taken into the context too.
+  const rest = new Set(
+    opening.attributes.filter((item) => skipped.get(tags[0]!)!.has(item)).map((item) => item.start),
+  );
+  for (const [index, each] of later.entries()) {
+    const taken = each.attributes.filter((attribute) => rest.has(attribute.span.start));
+    if (!taken.length) continue;
+    for (const attribute of taken) {
+      rest.delete(attribute.span.start);
+      const at = lowered.attributes.findIndex((other) => other.span.start > attribute.span.start);
+      lowered.attributes.splice(at === -1 ? lowered.attributes.length : at, 0, attribute);
+    }
+    adopt(render, probes[index]!);
+  }
   const empty = tags.find((tag) => isVoidElement(tag));
   if (empty && content) {
     render.reporter.report(
@@ -426,7 +507,7 @@ function lowerTags(
       { help: "Leave the void tag out of `is`, or move the children after the element." },
     );
   }
-  return lowered;
+  return only.length ? { ...lowered, only } : lowered;
 }
 
 /**

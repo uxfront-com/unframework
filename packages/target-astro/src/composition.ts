@@ -136,7 +136,8 @@ export function astroRender(
   };
   const code = (expression: Expression) => rewriteExpression(expression, component, rules);
 
-  // The node that takes the fallthrough: a root component takes it before it branches.
+  // The node that takes the fallthrough: a root component or `<component is>` takes it before
+  // it branches.
   const target = fallthrough?.target;
   const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
   const fills = (each: readonly SlotFill[]): SlotFill[] =>
@@ -212,9 +213,11 @@ export function astroRender(
             ]),
           );
         }
+        // A root `<component is>` over tags takes the fallthrough as its element (ADR-0119).
+        const own = each === target && fallthrough ? withFallthrough(each, fallthrough) : each;
         const copy = branched({
-          ...each,
-          attributes: [...each.attributes, ...first],
+          ...own,
+          attributes: [...own.attributes, ...first],
           children: nodes(each.children),
           ...(copied ? { fills: copied } : {}),
         });
@@ -363,7 +366,10 @@ export function astroRender(
  * (`class:list` resolved) and `style` as props. The rest of what the consumer passes is spread
  * on it by the markup (`./markup.ts`).
  */
-function withFallthrough<T extends ElementNode | ComponentNode>(root: T, names: Fallthrough): T {
+function withFallthrough<T extends ElementNode | ComponentNode | DynamicNode>(
+  root: T,
+  names: Fallthrough,
+): T {
   const attributes = [...root.attributes] as (Attribute | ComponentAttribute)[];
   const className = {
     kind: "Dynamic" as const,

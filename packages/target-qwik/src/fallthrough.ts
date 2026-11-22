@@ -18,6 +18,7 @@ import { walk } from "@unframework.dev/ir";
 import type {
   ComponentApi,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   Span,
   TemplateRefItem,
@@ -163,6 +164,32 @@ export function fallthroughTarget(
   return root && (root.kind === "Element" || takesFallthrough(module, root.component))
     ? root
     : undefined;
+}
+
+/**
+ * The root that takes a consumer's `class` and `style` alone (ADR-0119): a `<component is>`
+ * over tags, the one node its fragment holds, or a root component that renders one in turn,
+ * where no rest spreads (`fallthroughTarget`). Nothing else falls through to it yet.
+ */
+export function classAndStyleRoot(
+  component: UfComponent,
+  module: UfModule,
+  seen: ReadonlySet<string> = new Set(),
+): DynamicNode | ComponentNode | undefined {
+  if (component.inheritAttrs === false) return undefined;
+  const { render } = component;
+  if (render.kind !== "Fragment") return undefined;
+  const [root, ...others] = render.children;
+  if (others.length) return undefined;
+  if (root?.kind === "Dynamic") {
+    return root.candidates.every((each) => each.kind === "Tag") ? root : undefined;
+  }
+  if (root?.kind !== "Component") return undefined;
+  const api = importedApi(module, root.component);
+  if (api !== null) return api?.inheritAttrs && api.rootTags !== undefined ? root : undefined;
+  const own = module.components.find((each) => each.name === root.component);
+  if (!own || own === component || seen.has(own.name)) return undefined;
+  return classAndStyleRoot(own, module, new Set([...seen, component.name])) ? root : undefined;
 }
 
 /** Whether two spans are the same. */

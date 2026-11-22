@@ -606,6 +606,7 @@ export function jsxDynamic(
   name: string,
   context: JsxContext,
   leading: readonly AST.JSXAttributeItem[] = [],
+  tag: () => AST.Expression = () => js.identifier(name),
 ): AST.JSXElement {
   const [first] = node.candidates;
   if (first?.kind === "Component") {
@@ -630,9 +631,100 @@ export function jsxDynamic(
   };
   return js.jsxElement(
     name,
-    [...leading, ...jsxAttributes(element, context)],
+    [...leading, ...jsxAttributes(element, onlyContext(node, tag, context))],
     jsxChildren(node.children, context),
   );
+}
+
+/**
+ * The context a `<component is>` over tags prints its attributes in (ADR-0119): an attribute
+ * only some tags take is printed as the first of them would print it, under a guard on the tag
+ * that renders, `href={Tag === "a" ? href : undefined}`, which every JSX target leaves out.
+ */
+export function onlyContext(
+  node: DynamicNode,
+  tag: () => AST.Expression,
+  context: JsxContext,
+): JsxContext {
+  if (!node.only?.length) return context;
+  const only = new Map(node.only.map((entry) => [entry.name, entry.tags]));
+  const { dialect } = context;
+  const guarded = <T extends StaticAttribute | BoundAttribute>(
+    print: (attribute: T, element: ElementNode, context: JsxContext) => AST.JSXAttributeItem[],
+  ) =>
+    function (attribute: T, element: ElementNode, at: JsxContext): AST.JSXAttributeItem[] {
+      const tags = only.get(attribute.name);
+      if (!tags) return print(attribute, element, at);
+      const items = print(attribute, { ...element, tag: tags[0]! }, at);
+      return items.map((item) => guardJsxAttribute(item, () => tagTest(tag, tags)));
+    };
+  return {
+    ...context,
+    dialect: {
+      ...dialect,
+      staticAttribute: guarded<StaticAttribute>(
+        dialect.staticAttribute?.bind(dialect) ?? staticJsxAttribute,
+      ),
+      boundAttribute: guarded<BoundAttribute>(
+        dialect.boundAttribute?.bind(dialect) ?? boundJsxAttribute,
+      ),
+    },
+  };
+}
+
+/**
+ * Whether the tag that renders is one of `tags`: `Tag === "a"`, `Tag === "a" || Tag === "b"`.
+ * `tag` makes a new node for each use, since a placeholder prints once.
+ */
+export function tagTest(tag: () => AST.Expression, tags: readonly string[]): AST.Expression {
+  return tags
+    .map((each) => js.binaryExpression("===", tag(), js.stringLiteral(each)) as AST.Expression)
+    .reduce((left, right) => js.logicalExpression("||", left, right));
+}
+
+/**
+ * An attribute that renders only where `test` holds: `name={test ? value : undefined}`. A
+ * dialect may print it as an object spread (Qwik's untyped attributes, `{...{ form: "f" }}`),
+ * whose each key is guarded the same way, `{...{ form: test ? "f" : undefined }}`. `test` makes
+ * a new node for each use, since a placeholder prints once.
+ */
+function guardJsxAttribute(
+  item: AST.JSXAttributeItem,
+  test: () => AST.Expression,
+): AST.JSXAttributeItem {
+  const guard = (value: AST.Expression) =>
+    js.conditionalExpression(test(), value, js.identifier("undefined"));
+  if (item.type === "JSXSpreadAttribute") {
+    const { argument } = item;
+    if (argument.type !== "ObjectExpression") {
+      // Any other object renders all of its keys or none.
+      return {
+        ...item,
+        argument: js.conditionalExpression(test(), argument, js.objectExpression([])),
+      };
+    }
+    return {
+      ...item,
+      argument: {
+        ...argument,
+        properties: argument.properties.map((property) =>
+          property.type === "Property" ? { ...property, value: guard(property.value) } : property,
+        ),
+      },
+    };
+  }
+  const { value } = item;
+  const expression: AST.Expression =
+    value === null
+      ? js.booleanLiteral(true)
+      : value.type === "JSXExpressionContainer"
+        ? value.expression.type === "JSXEmptyExpression"
+          ? js.identifier("undefined")
+          : value.expression
+        : value.type === "Literal"
+          ? js.stringLiteral(value.value)
+          : value;
+  return { ...item, value: js.jsxExpressionContainer(guard(expression)) };
 }
 
 /** A prop, `label="Name"` for a string literal (as written), and `tone={tone}` otherwise. */

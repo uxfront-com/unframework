@@ -4,9 +4,11 @@
 import {
   astroDialect,
   elementNamespace,
+  guardsOf,
   isBooleanAttribute,
   isIdentifier,
   needsParentheses,
+  onlyGuards,
   operand,
   printMarkup,
   rewriteExpression,
@@ -116,7 +118,10 @@ export function printComponentMarkup(
   const { scope, fallthrough } = composed;
   const roots = new Set(scope?.roots.map(key));
   // The root that takes what falls through spreads it, the scope attributes included.
-  const root = fallthrough && !fallthrough.rest ? key(fallthrough.target.span) : undefined;
+  const root =
+    fallthrough?.attributes !== undefined && !fallthrough.rest
+      ? key(fallthrough.target.span)
+      : undefined;
   const own = ownAttributes(component, composed);
   // A scoped fill is printed with these (`renderFunction`): it is the parent's content, not its
   // root.
@@ -216,6 +221,7 @@ function composition(
     // but the scope attributes, which the root keeps where the rest is on another element.
     restAttribute: () => {
       const { attributes, scopeless } = fallthrough!;
+      if (attributes === undefined) throw new Error("A rest spread with no rest of the props.");
       return [{ name: "", text: `{...${scopeless ? `${scopeless}(${attributes})` : attributes}}` }];
     },
     // A scoped fill is a render prop named as the slot, the forwarded one the component's own.
@@ -314,6 +320,8 @@ function composition(
               span: node.span,
             },
             directives: [],
+            // An attribute only some tags take renders on those (ADR-0119).
+            ...guardsOf(onlyGuards(node, name)),
           }
         : component(name, node.attributes as ComponentAttribute[]);
       if (hoisted) return [piece];

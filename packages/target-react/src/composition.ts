@@ -78,10 +78,11 @@ export interface ModelPlan {
 /** What the component's root takes of a consumer's `class` and `style` (ADR-0054). */
 export interface FallthroughPlan {
   /**
-   * The node they merge into: the render root's element, or its one component, or with
-   * `inheritAttrs: false` the element that spreads the props' rest (ADR-0118).
+   * The node they merge into: the render root's element, its one component, or its one
+   * `<component is>` over tags (ADR-0119), or with `inheritAttrs: false` the element that spreads
+   * the props' rest (ADR-0118).
    */
-  root: ElementNode | ComponentNode;
+  root: ElementNode | ComponentNode | DynamicNode;
   className: string;
   style: string;
 }
@@ -313,7 +314,7 @@ export function planComposition(
         }
       : undefined;
   const passing: PassingPlan | undefined =
-    root && tag !== undefined
+    root && root.kind !== "Dynamic" && tag !== undefined
       ? {
           tag,
           target: root,
@@ -465,16 +466,23 @@ function readSlots(component: UfComponent): Set<string> {
 
 /**
  * The node a consumer's `class` and `style` merge into (ADR-0054): the render root's element, or
- * the one component a fragment holds, and where `inheritAttrs` is off the element that spreads
- * the props' rest (ADR-0118). None where the root is anything else, or `inheritAttrs` is off and
- * no element spreads the rest, where a consumer's `class` is UF3045.
+ * the one component or `<component is>` over tags a fragment holds (ADR-0119), and where
+ * `inheritAttrs` is off the element that spreads the props' rest (ADR-0118). None where the root
+ * is anything else, or `inheritAttrs` is off and no element spreads the rest, where a consumer's
+ * `class` is UF3045.
  */
-function fallthroughRoot(component: UfComponent): ElementNode | ComponentNode | undefined {
+function fallthroughRoot(
+  component: UfComponent,
+): ElementNode | ComponentNode | DynamicNode | undefined {
   if (component.inheritAttrs === false) return restElement(component);
   const { render } = component;
   if (render.kind === "Element") return render;
   const [only] = render.children;
-  return render.children.length === 1 && only?.kind === "Component" ? only : undefined;
+  if (render.children.length !== 1) return undefined;
+  if (only?.kind === "Component") return only;
+  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
+    ? only
+    : undefined;
 }
 
 /** The element that spreads the props' rest, `<input {...rest} />`: one at most (ADR-0118). */
@@ -491,15 +499,17 @@ function restElement(component: UfComponent): ElementNode | undefined {
 
 /**
  * The tag of the element what passes through a fallthrough node lands on (ADR-0118): an
- * element's own, or a component's `fallthroughTag`, as its API gives it or, for one of the
+ * element's own, none for a `<component is>`, or a component's `fallthroughTag`, as its API gives it or, for one of the
  * module's own components, as its render says (`seen` stops a cycle).
  */
 function fallthroughTag(
   module: UfModule,
-  node: ElementNode | ComponentNode,
+  node: ElementNode | ComponentNode | DynamicNode,
   seen: Set<string>,
 ): string | undefined {
   if (node.kind === "Element") return node.tag;
+  // A `<component is>` takes a consumer's `class` and `style` alone (ADR-0119).
+  if (node.kind === "Dynamic") return undefined;
   const api = childApi(module, node.component);
   if (api) return api.fallthroughTag;
   const own = module.components.find((each) => each.name === node.component);

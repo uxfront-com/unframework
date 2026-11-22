@@ -102,8 +102,13 @@ export function lowerComponentAs(
   // (ADR-0054): a root that lives only inside a given parent (`<li>`, `<tr>`) is checked against
   // the element around the component, which only the parent's compile knows. With no element
   // around it (a slot's fill, this component's own root), nothing places such a root.
-  if (api.rootTag !== undefined) {
-    checkPlacement(api.rootTag, name, place.ancestors, reporter, false);
+  // A `<component is>` root may render any of its tags, so each is placed (ADR-0119).
+  for (const tag of api.rootTag !== undefined
+    ? [api.rootTag]
+    : api.root === "dynamic"
+      ? (api.rootTags ?? [])
+      : []) {
+    checkPlacement(tag, name, place.ancestors, reporter, false);
   }
   const attributes: ComponentAttribute[] = [];
   const fallthrough: AST.JSXAttribute[] = [];
@@ -723,19 +728,28 @@ function lowerFallthrough(
 ): ComponentAttribute[] {
   if (!items.length) return [];
   const { reporter } = render;
+  // A `<component is>` root over tags, or a root component that renders one, takes only `class`
+  // and `style` (ADR-0119): no target places anything else on it yet (ADR-0118).
+  if (!takesFallthrough(api) && api.inheritAttrs && api.rootTags !== undefined) {
+    return lowerClassAndStyle(items, opening, api, info, render);
+  }
   if (!takesFallthrough(api)) {
     const dropped =
       api.inheritAttrs === false
         ? `${info.name} sets \`inheritAttrs: false\` and spreads no \`...rest\`, so it renders nothing passed to it that it does not declare`
-        : api.root === "component"
-          ? `${info.name}'s root component takes nothing it does not declare, so ${info.name} renders nothing passed to it that it does not declare`
-          : `${info.name}'s root is not one element or one component, so no target knows where what it does not declare goes`;
+        : api.rootUnlisted
+          ? `${info.name}'s root is a \`<component is>\` whose \`is\` reads a value ${info.name}'s API can't list the tags of, so no target knows where what it does not declare goes`
+          : api.root === "component"
+            ? `${info.name}'s root component takes nothing it does not declare, so ${info.name} renders nothing passed to it that it does not declare`
+            : `${info.name}'s root is not one element or one component, so no target knows where what it does not declare goes`;
     for (const item of items) {
       reporter.report("UF3045", item.name, `${dropped}.`, {
         help:
           api.inheritAttrs === false
             ? `Pass what ${info.name} declares, or spread the props' rest on one of its elements: \`<input {...rest} />\`.`
-            : `Give ${info.name} one root element, or pass what it declares.`,
+            : api.rootUnlisted
+              ? `Choose ${info.name}'s root tag with a literal, a conditional of literals or a prop typed as a union of tags, \`is={href ? "a" : "button"}\`, or pass what it declares.`
+              : `Give ${info.name} one root element, or pass what it declares.`,
       });
     }
     return [];
@@ -779,6 +793,61 @@ function lowerFallthrough(
           return [];
         }
         return [attribute];
+      default:
+        return [];
+    }
+  });
+}
+
+/**
+ * What falls through to a `<component is>` root over tags, or to a root component that renders
+ * one (ADR-0119): its `class` and `style`, lowered as the first tag's, since both are global, so
+ * the tag can't change them. Anything else is not supported yet (ADR-0118, ADR-0119).
+ */
+function lowerClassAndStyle(
+  items: readonly AST.JSXAttribute[],
+  opening: AST.JSXOpeningElement,
+  api: ComponentApi,
+  info: ComponentInfo,
+  render: RenderContext,
+): ComponentAttribute[] {
+  const passed = items.filter((item) => {
+    const written = item.name.type === "JSXIdentifier" ? item.name.name : "";
+    if (written === "class" || written === "style") return true;
+    render.reporter.unsupported(
+      item.name,
+      `What falls through to ${info.name}'s \`<component is>\` root is not supported yet: \`class\` and \`style\` do.`,
+      { help: `Pass what ${info.name} declares, or give ${info.name} one root element.` },
+    );
+    return false;
+  });
+  if (!passed.length) return [];
+  const lowered = lowerAttributes(
+    { ...opening, attributes: passed },
+    {
+      tag: api.rootTags?.[0] ?? "div",
+      namespace: "html",
+      hasChildren: false,
+      listBody: false,
+      render,
+    },
+  );
+  return lowered.attributes.flatMap((attribute): ComponentAttribute[] => {
+    switch (attribute.kind) {
+      case "Class":
+      case "Style":
+        return [attribute];
+      // A static `class` lowers to a static attribute on an element, and is one class here.
+      case "Static":
+        if (attribute.name !== "class") return [attribute];
+        return attribute.value === true
+          ? []
+          : [
+              createClassAttribute(
+                [createStaticClass(attribute.value, attribute.span)],
+                attribute.span,
+              ),
+            ];
       default:
         return [];
     }

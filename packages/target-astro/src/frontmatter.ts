@@ -373,21 +373,22 @@ function propsRead(
   const names: string[] = [];
   const { fallthrough } = render;
   // What falls through is the rest of the props (ADR-0118), so every name `Props` declares is
-  // taken out of it, as `_title` where nothing reads it.
+  // taken out of it, as `_title` where nothing reads it. A `<component is>` takes no rest.
+  const rest = fallthrough?.attributes !== undefined;
   const unread = (name: string) => `${name}: ${spelling.scope.claim(`_${name}`)}`;
   const isLive = (prop: Prop) => prop.binding !== undefined && live.has(prop.binding);
   if (parameter?.form === "object") {
     if (component.props.some(isLive)) {
       statements.push(`const ${spelling.propsObject ?? parameter.name!} = Astro.props;`);
     }
-    if (fallthrough) names.push(...component.props.map(({ name }) => unread(name)));
+    if (rest) names.push(...component.props.map(({ name }) => unread(name)));
   } else if (parameter) {
     // In the order the source destructures them, then the ones it does not, in its type's order.
     const start = (prop: Prop) =>
       prop.binding === undefined ? Infinity : bindingStart(component, prop.binding);
     names.push(
       ...component.props
-        .filter((prop) => isLive(prop) || fallthrough)
+        .filter((prop) => isLive(prop) || rest)
         .map((prop) => ({ prop, start: start(prop) }))
         .toSorted((a, b) => (a.start === b.start ? 0 : a.start < b.start ? -1 : 1))
         .map(({ prop }) =>
@@ -402,13 +403,13 @@ function propsRead(
   for (const item of component.setup) {
     if (item.kind !== "Model") continue;
     if (live.has(item.binding)) names.push(modelRead(item, spelling));
-    else if (fallthrough) names.push(unread(item.name));
+    else if (rest) names.push(unread(item.name));
   }
   const read = renderPropsRead(component);
   for (const [slot, local] of spelling.renderProps) {
     const prop = renderPropName(slot, ownProps(component));
     if (read.has(slot)) names.push(prop === local ? prop : `${prop}: ${local}`);
-    else if (fallthrough) names.push(unread(prop));
+    else if (rest) names.push(unread(prop));
   }
   if (fallthrough) {
     const { className, style, own, attributes } = fallthrough;
@@ -419,7 +420,7 @@ function propsRead(
       const key = isIdentifier(attribute.name) ? attribute.name : JSON.stringify(attribute.name);
       names.push(key === local ? local : `${key}: ${local}`);
     }
-    names.push(`...${attributes}`);
+    if (attributes !== undefined) names.push(`...${attributes}`);
   }
   if (names.length) statements.push(`const { ${names.join(", ")} } = Astro.props;`);
   return statements;

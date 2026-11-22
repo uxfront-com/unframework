@@ -1,0 +1,22 @@
+---
+import Base from "./Base.astro";
+
+interface Props {
+  href?: string;
+  disabled?: boolean;
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { href, disabled, text, class: className, style, ...attrs } = Astro.props;
+---
+
+<Base
+  href={href}
+  disabled={disabled}
+  text={text}
+  class:list={["primary", className]}
+  style={style}
+  {...attrs}
+/>

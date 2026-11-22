@@ -2586,36 +2586,36 @@
       "time": 23.79,
       "sizes": {
         "react": {
-          "raw": 1189,
-          "gzip": 779
+          "raw": 1470,
+          "gzip": 917
         },
         "vue": {
           "raw": 662,
           "gzip": 509
         },
         "svelte": {
-          "raw": 1160,
-          "gzip": 783
+          "raw": 1200,
+          "gzip": 805
         },
         "solid": {
-          "raw": 663,
-          "gzip": 490
+          "raw": 755,
+          "gzip": 527
         },
         "solid2": {
-          "raw": 693,
-          "gzip": 510
+          "raw": 785,
+          "gzip": 547
         },
         "angular": {
-          "raw": 4958,
-          "gzip": 2060
+          "raw": 5301,
+          "gzip": 2153
         },
         "qwik": {
-          "raw": 1277,
-          "gzip": 964
+          "raw": 1348,
+          "gzip": 1006
         },
         "astro": {
-          "raw": 1001,
-          "gzip": 665
+          "raw": 1036,
+          "gzip": 683
         }
       }
     },
@@ -3977,6 +3977,43 @@
         "astro": {
           "raw": 1098,
           "gzip": 730
+        }
+      }
+    },
+    "fallthrough/dynamic-root": {
+      "time": 20.67,
+      "sizes": {
+        "react": {
+          "raw": 4354,
+          "gzip": 2272
+        },
+        "vue": {
+          "raw": 2753,
+          "gzip": 1524
+        },
+        "svelte": {
+          "raw": 4107,
+          "gzip": 2165
+        },
+        "solid": {
+          "raw": 3327,
+          "gzip": 1733
+        },
+        "solid2": {
+          "raw": 3473,
+          "gzip": 1802
+        },
+        "angular": {
+          "raw": 10034,
+          "gzip": 4079
+        },
+        "qwik": {
+          "raw": 4784,
+          "gzip": 3224
+        },
+        "astro": {
+          "raw": 2254,
+          "gzip": 1310
         }
       }
     },
@@ -8178,36 +8215,36 @@
       "time": 7.58,
       "sizes": {
         "react": {
-          "raw": 2166,
-          "gzip": 1320
+          "raw": 2447,
+          "gzip": 1457
         },
         "vue": {
           "raw": 1253,
           "gzip": 865
         },
         "svelte": {
-          "raw": 2212,
-          "gzip": 1335
+          "raw": 2252,
+          "gzip": 1355
         },
         "solid": {
-          "raw": 1587,
-          "gzip": 986
+          "raw": 1679,
+          "gzip": 1023
         },
         "solid2": {
-          "raw": 1503,
-          "gzip": 959
+          "raw": 1595,
+          "gzip": 997
         },
         "angular": {
-          "raw": 7005,
-          "gzip": 3109
+          "raw": 7296,
+          "gzip": 3204
         },
         "qwik": {
-          "raw": 2394,
-          "gzip": 1729
+          "raw": 2465,
+          "gzip": 1771
         },
         "astro": {
-          "raw": 1748,
-          "gzip": 1107
+          "raw": 1783,
+          "gzip": 1126
         }
       }
     },

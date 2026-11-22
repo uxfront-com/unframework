@@ -665,3 +665,125 @@ export function A() { return <Box><tr><td>a</td></tr></Box>; }`;
     );
   });
 });
+
+describe("a <component is> root over tags (ADR-0119)", () => {
+  /** The API of the source's component named `name`. */
+  function apiOf(source: string, name = "Child") {
+    return analyze(parseModule("Test.uf.tsx", source)).api!.components.find(
+      (each) => each.name === name,
+    )!;
+  }
+
+  it.each([
+    ['<component is="a" href="/" />', ["a"]],
+    ["<component is={`button`} />", ["button"]],
+    ['<component is={on ? "a" : "button"} />', ["a", "button"]],
+    ['<component is={on ? "a" : wide ? "section" : "a"} />', ["a", "section"]],
+    ["<component is={tag} />", ["h2", "h3"]],
+    ["<component is={props.tag} />", ["h2", "h3"]],
+  ])("lists the tags of %s", (root, tags) => {
+    const parameter = root.includes("props.")
+      ? "props: { on: boolean; wide: boolean; tag: 'h2' | 'h3' }"
+      : '{ on, wide, tag }: { on: boolean; wide: boolean; tag: "h2" | "h3" }';
+    const api = apiOf(`export function Child(${parameter}) { return ${root}; }`);
+    expect(api.root).toBe("dynamic");
+    expect(api.rootTags).toEqual(tags);
+    expect(api.rootUnlisted).toBeUndefined();
+  });
+
+  it("reads a capitalised prop typed as tags as tags, not as a component", () => {
+    const api = apiOf(
+      'export function Child({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }',
+    );
+    expect(api.root).toBe("dynamic");
+    expect(api.rootTags).toEqual(["a", "button"]);
+    const source = `function A3({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }
+export function P() { return <p><A3 Tag="a" text="3" class="c3" /></p>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
+  it("reads a prop renamed in the pattern, and one typed through an alias", () => {
+    const renamed = apiOf(
+      'export function Child({ tag: t }: { tag: "h2" | "h3" }) { return <component is={t} />; }',
+    );
+    expect(renamed.rootTags).toEqual(["h2", "h3"]);
+    const aliased = apiOf(
+      'type Level = "h2" | "h3";\nexport function Child({ tag }: { tag: Level }) { return <component is={tag} />; }',
+    );
+    expect(aliased.rootTags).toEqual(["h2", "h3"]);
+  });
+
+  it("is other over components, and unlisted where `is` reads a value it can't list", () => {
+    const components = apiOf(
+      "function B() { return <p />; }\nfunction C() { return <p />; }\nexport function Child({ on }: { on: boolean }) { return <component is={on ? B : C} />; }",
+    );
+    expect(components.root).toBe("other");
+    expect(components.rootUnlisted).toBeUndefined();
+    const value = apiOf(
+      `${API}export function Child() { const tag = ref<"a" | "b">("a"); return <component is={tag.value} />; }`,
+    );
+    expect(value.root).toBe("other");
+    expect(value.rootUnlisted).toBe(true);
+    expect(value.rootTags).toBeUndefined();
+  });
+
+  it("is other inside a fragment or a conditional", () => {
+    for (const root of [
+      '<><component is={on ? "a" : "button"} /></>',
+      'on ? <component is="a" /> : <button />',
+    ]) {
+      const api = apiOf(`export function Child({ on }: { on: boolean }) { return ${root}; }`);
+      expect(api.root, root).toBe("other");
+    }
+  });
+
+  it("takes a class and a style, through a component root too", () => {
+    const source = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
+function Outer() { return <Child />; }
+export function A() { const tone = "red"; return <div><Child class="x" style={{ color: tone }} /><Outer class={["y", { z: tone === "red" }]} /></div>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
+  // Attribute, listener and ref fallthrough doesn't reach a `<component is>` root yet (ADR-0118,
+  // ADR-0119): only `class` and `style` do, so anything else is "not yet", not dropped.
+  it("passes it nothing else yet, through a component root too (UF1002)", () => {
+    const source = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
+function Outer() { return <Child />; }
+export function A() { return <div><Child id="x" class="c" onFocus={() => {}} /><Outer aria-label="y" style="color: red" /></div>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual([
+      "UF1002 id",
+      "UF1002 onFocus",
+      "UF1002 aria-label",
+    ]);
+  });
+
+  it("still reports UF3045 for a root over components, a fragment, a conditional and a list", () => {
+    for (const root of [
+      "<component is={on ? B : C} />",
+      "<><p /><p /></>",
+      "<>{on ? <p /> : <span />}</>",
+      "<>{[1, 2].map((n) => <p key={n}>{n}</p>)}</>",
+    ]) {
+      const source = `function B() { return <p />; }
+function C() { return <p />; }
+function Child({ on }: { on: boolean }) { return ${root}; }
+export function A() { return <div><Child on={true} class="x" /></div>; }`;
+      expect(problems(source, run(source).diagnostics), root).toEqual(["UF3045 class"]);
+    }
+  });
+
+  it("says why where the API can't list the tags of `is`", () => {
+    const source = `${API}function Child() { const tag = ref<"a" | "button">("a"); return <component is={tag.value} />; }
+export function A() { return <div><Child class="x" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(codes(diagnostics)).toEqual(["UF3045"]);
+    expect(diagnostics[0]!.message).toContain("can't list the tags of");
+    expect(diagnostics[0]!.help).toContain('is={href ? "a" : "button"}');
+  });
+
+  it("places every tag where the component sits (UF3003)", () => {
+    const source = `function Child({ on }: { on: boolean }) { return <component is={on ? "div" : "li"}>x</component>; }
+export function A() { return <p><Child on={true} /></p>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Child", "UF3003 Child"]);
+  });
+});

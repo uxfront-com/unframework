@@ -1,0 +1,370 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/dynamic-root/Primary.uf.tsx",
+  "components": [
+    {
+      "name": "Primary",
+      "span": {
+        "start": 188,
+        "end": 514
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 264,
+              "end": 270
+            }
+          },
+          "binding": "href@224",
+          "span": {
+            "start": 257,
+            "end": 271
+          }
+        },
+        {
+          "name": "disabled",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 285,
+              "end": 292
+            }
+          },
+          "binding": "disabled@232",
+          "span": {
+            "start": 274,
+            "end": 293
+          }
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 302,
+              "end": 308
+            }
+          },
+          "binding": "text@244",
+          "span": {
+            "start": 296,
+            "end": 309
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{\n  href?: string;\n  disabled?: boolean;\n  text: string;\n}",
+          "span": {
+            "start": 253,
+            "end": 311
+          }
+        },
+        "span": {
+          "start": 220,
+          "end": 311
+        }
+      },
+      "types": [],
+      "emits": {
+        "binding": "emit@323",
+        "type": {
+          "code": "{ press: [] }",
+          "span": {
+            "start": 342,
+            "end": 355
+          }
+        },
+        "events": [
+          {
+            "name": "press",
+            "parameters": [],
+            "span": {
+              "start": 344,
+              "end": 353
+            }
+          }
+        ],
+        "span": {
+          "start": 317,
+          "end": 359
+        }
+      },
+      "bindings": [
+        {
+          "id": "href@224",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 224,
+            "end": 228
+          }
+        },
+        {
+          "id": "disabled@232",
+          "name": "disabled",
+          "kind": "prop",
+          "span": {
+            "start": 232,
+            "end": 240
+          }
+        },
+        {
+          "id": "text@244",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 244,
+            "end": 248
+          }
+        },
+        {
+          "id": "emit@323",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 323,
+            "end": 327
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Base",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 393,
+                    "end": 397
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@224",
+                      "span": {
+                        "start": 393,
+                        "end": 397
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 387,
+                  "end": 398
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "disabled",
+                "value": {
+                  "code": "disabled",
+                  "span": {
+                    "start": 415,
+                    "end": 423
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "disabled@232",
+                      "span": {
+                        "start": 415,
+                        "end": 423
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 405,
+                  "end": 424
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 437,
+                    "end": 441
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@244",
+                      "span": {
+                        "start": 437,
+                        "end": 441
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 431,
+                  "end": 442
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "primary",
+                    "span": {
+                      "start": 449,
+                      "end": 464
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 449,
+                  "end": 464
+                }
+              },
+              {
+                "kind": "Listener",
+                "event": "press",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"press\")",
+                      "span": {
+                        "start": 486,
+                        "end": 499
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@323",
+                          "event": "press",
+                          "span": {
+                            "start": 486,
+                            "end": 499
+                          },
+                          "arguments": []
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 480,
+                      "end": 499
+                    }
+                  },
+                  "span": {
+                    "start": 480,
+                    "end": 499
+                  }
+                },
+                "span": {
+                  "start": 471,
+                  "end": 500
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 375,
+              "end": 507
+            }
+          }
+        ],
+        "span": {
+          "start": 375,
+          "end": 507
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Primary",
+      "span": {
+        "start": 188,
+        "end": 514
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Base.uf.tsx",
+      "file": "Base.uf.tsx",
+      "api": {
+        "file": "Base.uf.tsx",
+        "components": [
+          {
+            "name": "Base",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "disabled",
+                "optional": true,
+                "type": "boolean"
+              },
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [
+              {
+                "name": "press",
+                "parameters": []
+              }
+            ],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Base",
+          "span": {
+            "start": 60,
+            "end": 64
+          }
+        }
+      ],
+      "span": {
+        "start": 53,
+        "end": 86
+      }
+    }
+  ]
+}

@@ -468,7 +468,8 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 - A required model reads its prop alone, with no local signal.
 - A text model that may be `null` or `undefined` (its type names either, or it has no initial
   value) shows no text: `value={name() ?? ""}`.
-- Fallthrough reaches the root element, or the root component, which passes it on. Solid
+- Fallthrough reaches the root element, the root `<component is>` over tags (ADR-0119), or the
+  root component, which passes it on. Solid
   compiles a static style declaration into the element's template, where no later value could
   remove it, so a root's own style is spread before the consumer's:
   `style={{ ...{ padding: "2px" }, ...props.style }}`, and a consumer's `undefined` removes the

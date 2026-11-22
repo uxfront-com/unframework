@@ -15,6 +15,7 @@ import {
   js,
   jsxAttributeValue,
   jsxContext,
+  candidateAttributes,
   jsxDynamic,
   jsxElement,
   jsxExpression,
@@ -449,6 +450,12 @@ export const qwik: Target = defineTarget({
         return [];
       }
     }
+    // A root that takes the consumer's `class` and `style` with no rest, as a `<component is>`
+    // over tags does, merges them into each element it may render (ADR-0119).
+    const { fallthrough } = plan.composition;
+    if (fallthrough && passed?.rest === undefined) {
+      for (const element of rootElements(root)) mergeFallthrough(element, fallthrough);
+    }
     const returned = js.returnStatement(root);
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), as a string
     // Qwik attaches once per component: `useStyles$(styles)`.
@@ -673,6 +680,7 @@ type JsxAttribute = ReturnType<typeof js.jsxAttribute> | ReturnType<typeof js.js
 type JsxAttributeNode = ReturnType<typeof js.jsxAttribute>;
 type JsxSpreadAttribute = ReturnType<typeof js.jsxSpreadAttribute>;
 type JsxElementNode = ReturnType<typeof js.jsxElement>;
+type JsxChild = Parameters<typeof js.jsxFragment>[0][number];
 
 /**
  * Where the scope attributes of the styled parents that render the component land (the
@@ -1162,6 +1170,29 @@ function elementHolding(node: unknown, item: object): JsxElementNode | undefined
 /** Whether a printed node is a JSX element. */
 function isJsxElement(node: object): node is JsxElementNode {
   return "type" in node && node.type === "JSXElement";
+}
+
+/**
+ * The elements a root renders, one of which shows: the root element, the only child of a
+ * fragment (a component at the root, or a `<component is>` a sibling never follows), and each
+ * branch of the ternary a `<component is>` with listeners writes, one element per tag
+ * (`candidateBranches`, ADR-0119).
+ */
+function rootElements(node: AstExpression | JsxChild): JsxElementNode[] {
+  switch (node.type) {
+    case "JSXElement":
+      return [node];
+    case "JSXFragment": {
+      const [only] = node.children;
+      return only ? rootElements(only) : [];
+    }
+    case "JSXExpressionContainer":
+      return node.expression.type === "JSXEmptyExpression" ? [] : rootElements(node.expression);
+    case "ConditionalExpression":
+      return [...rootElements(node.consequent), ...rootElements(node.alternate)];
+    default:
+      return [];
+  }
 }
 
 /**
@@ -1744,13 +1775,9 @@ function candidateBranches(
       {
         kind: "Element",
         tag,
-        // A tag candidate's attributes are an element's (ADR-0054).
-        attributes: node.attributes.filter(
-          (attribute) =>
-            attribute.kind !== "Prop" &&
-            attribute.kind !== "Listener" &&
-            attribute.kind !== "ModelBinding",
-        ),
+        // A tag candidate's attributes are an element's (ADR-0054), but those only other tags
+        // take (ADR-0119).
+        attributes: candidateAttributes(node, tag),
         children: node.children,
         span: node.span,
       },

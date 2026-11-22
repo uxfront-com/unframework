@@ -7,11 +7,12 @@
 // component passes them on to its own root component. A ref on a component that exposes nothing
 // holds its root element: the component declares it, `ufElement`, a query of its root element, or
 // of its root component's own, and the parent's ref reads it.
-import { angularDialect } from "@unframework.dev/codegen";
+import { angularDialect, candidateAttributes } from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
 import type {
   ComponentApi,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   FragmentNode,
   UfComponent,
@@ -45,15 +46,19 @@ export const FALLTHROUGH_MEMBERS: readonly string[] = [
 ];
 
 /**
- * The component's root (an element, or a fragment of one element or component), which what a
- * consumer passes falls through to (ADR-0054, ADR-0118), or none.
+ * The component's root (an element, or a fragment of one element, one component or one
+ * `<component is>` over tags, ADR-0119), which what a consumer passes falls through to
+ * (ADR-0054, ADR-0118), or none. A `<component is>` takes only `class` and `style`, in each
+ * `@case`.
  */
 export function fallthroughRoot(
   render: ElementNode | FragmentNode,
-): ElementNode | ComponentNode | undefined {
+): ElementNode | ComponentNode | DynamicNode | undefined {
   if (render.kind === "Element") return render;
   const [only] = render.children;
-  return render.children.length === 1 && (only?.kind === "Element" || only?.kind === "Component")
+  if (render.children.length !== 1) return undefined;
+  if (only?.kind === "Element" || only?.kind === "Component") return only;
+  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
     ? only
     : undefined;
 }
@@ -64,7 +69,7 @@ export interface FallthroughPlan {
    * The node that takes it: the root element or component, or, with `inheritAttrs: false`, the
    * element that spreads the props' rest.
    */
-  target: ElementNode | ComponentNode;
+  target: ElementNode | ComponentNode | DynamicNode;
   /** Whether {@link target} is the rest's element. */
   rest: boolean;
   /**
@@ -157,6 +162,23 @@ export function planFallthrough(
     if (angularDialect.literalRegion?.(root) !== undefined) return undefined;
     return { target: root, rest: false, passes: true, events: eventsOf(root.tag) };
   }
+  if (root.kind === "Dynamic") {
+    // Each `@case` is an element of its own tag, which takes the consumer's `class` and `style`
+    // alone (ADR-0119): nothing else falls through to a `<component is>` yet.
+    const bindable = root.candidates.every(
+      (candidate) =>
+        candidate.kind === "Tag" &&
+        angularDialect.literalRegion?.({
+          kind: "Element",
+          tag: candidate.tag,
+          attributes: candidateAttributes(root, candidate.tag),
+          children: root.children,
+          span: root.span,
+        }) === undefined,
+    );
+    if (!bindable) return undefined;
+    return { target: root, rest: false, passes: false, events: "HTMLElementEventMap" };
+  }
   const child = childApi(module, root.component);
   const tag = child?.fallthroughTag;
   return {
@@ -191,7 +213,8 @@ export function planRootElement(
 ): RootElementPlan | undefined {
   if (component.exposes?.functions.length) return undefined;
   const root = fallthroughRoot(component.render);
-  if (!root) return undefined;
+  // A `<component is>` root takes no ref of a consumer's yet (ADR-0119).
+  if (!root || root.kind === "Dynamic") return undefined;
   if (root.kind === "Element") {
     const type = ELEMENT_INTERFACES.get(root.tag);
     if (type === undefined || angularDialect.literalRegion?.(root) !== undefined) return undefined;

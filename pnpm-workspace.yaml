@@ -58,8 +58,6 @@ peerDependencyRules:
   allowedVersions:
     # Qwik 2.0.0-rc.5 declares an optional `vitest: ">=2 <5"` peer; the harness runs Vitest 5.
     "@qwik.dev/core>vitest": "5"
-    # The compiler pins oxfmt 0.71 (plan, Appendix C); the shared config still names ^0.70.
-    "@uxfront/oxfmt-config>oxfmt": "0.71"
     # eslint-plugin-solid and eslint-plugin-qwik depend on @typescript-eslint/utils, which peers
     # TypeScript <6.1. The Solid and Qwik toolchains run them as oxlint JS plugins with their
     # type-aware rules off, so nothing calls TypeScript's API there (ADR-0042); Qwik's type-aware
@@ -75,6 +73,8 @@ peerDependencyRules:
 minimumReleaseAgeExclude:
   - "@uxfront/layer-docs@0.8.4"
   - "@uxfront/layer-ui@0.1.11"
+  - "@uxfront/oxfmt-config@0.1.1"
+  - "@uxfront/oxlint-config@0.1.1"
   - "@uxfront/scene@0.5.1"
   - "@uxfront/ui@0.9.1"
   - "@vitest/mocker@5.0.3"

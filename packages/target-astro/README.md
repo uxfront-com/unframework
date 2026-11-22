@@ -110,7 +110,8 @@ per component (ADR-0034, ADR-0046):
     `v-model` renders its initial state: `value` on a text-like `<input>`, `checked` on a checkbox
     (`includes` for an array) or a radio (`===`), `selected` on each option of a `<select>`, and a
     `<textarea>`'s text. Nothing writes it (`two-way-binding`, inert);
-  - a component whose root is one element, or one component, takes a consumer's `class` and
+  - a component whose root is one element, one `<component is>` over tags (ADR-0119), or one
+    component, takes a consumer's `class` and
     `style` unless `inheritAttrs` is off: `Props` declares `class?: string` and
     `style?: Record<string, string | number | undefined>`, and the root merges them,
     `class:list={["field", className]}` and `style={{ padding: "2px", ...style }}`. Astro passes a

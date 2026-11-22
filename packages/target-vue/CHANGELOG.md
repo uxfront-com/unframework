@@ -1,5 +1,13 @@
 # @unframework.dev/target-vue
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [348db69]
+  - @unframework.dev/ir@0.3.0
+  - @unframework.dev/codegen@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

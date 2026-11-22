@@ -87,6 +87,14 @@ export interface FallthroughNames {
   exposed(): string;
 }
 
+/** Whether the component's root is one `<component is>` over tags (ADR-0119). */
+function dynamicRoot(component: UfComponent): boolean {
+  const { render } = component;
+  if (render.kind !== "Fragment" || render.children.length !== 1) return false;
+  const [only] = render.children;
+  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag");
+}
+
 /**
  * How a component passes what falls through (see the module comment). A component whose root is
  * neither one element nor one component, or with `inheritAttrs: false` and no rest, passes
@@ -115,7 +123,15 @@ export function planFallthrough(
     return members.length ? `${omit} & { ${members.join("; ")} }` : omit;
   };
   if (component.inheritAttrs !== false) {
-    if (!root) return { type: exposedType(exposedRef), plan: undefined };
+    if (!root) {
+      // A root `<component is>` over tags takes `class` and `style` alone (ADR-0119).
+      if (!dynamicRoot(component)) return { type: exposedType(exposedRef), plan: undefined };
+      const jsx = names.jsx();
+      return {
+        type: `{ ${["class?: string", `style?: ${jsx}.CSSProperties`, ...exposedRef].join("; ")} }`,
+        plan: undefined,
+      };
+    }
     const base = rootBase(root, component, module, names);
     if (base === undefined) {
       // A root component whose own root takes nothing: `class` and `style` alone, as before.
@@ -244,10 +260,10 @@ function rootBase(
   module: UfModule,
   names: FallthroughNames,
 ): string | undefined {
-  const props = names.componentProps();
-  if (root.kind === "Element") return `${props}<${JSON.stringify(root.tag)}>`;
+  if (root.kind === "Element") return `${names.componentProps()}<${JSON.stringify(root.tag)}>`;
+  // Imported only where the type names it.
   if (childFallthroughTag(module, root.component, component) === undefined) return undefined;
-  return `${props}<typeof ${root.component}>`;
+  return `${names.componentProps()}<typeof ${root.component}>`;
 }
 
 /**

@@ -13,6 +13,7 @@ import type {
   ComponentApi,
   ApiFallthroughOwn,
 } from "@unframework.dev/ir";
+import { isHtmlElement } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 import { isComponentName, parseModule } from "@unframework.dev/parser";
 import { printShape } from "@unframework.dev/type-oracle";
@@ -90,7 +91,7 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
         break;
     }
   }
-  const root = rootOf(node, context);
+  const root = rootOf(node, api.props, context);
   api.root = root.kind;
   if (root.tag !== undefined) api.rootTag = root.tag;
   // Where what a consumer passes lands (ADR-0118): the root element, or with `inheritAttrs:
@@ -109,6 +110,8 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
   }
   // A ref holds what the component exposes, or else its root element (ADR-0118).
   if (!api.exposes.length && root.tag !== undefined) api.refTag = root.tag;
+  if (root.tags !== undefined) api.rootTags = root.tags;
+  if (root.unlisted) api.rootUnlisted = true;
   return api;
 }
 
@@ -139,6 +142,12 @@ export function fillRootComponents(
         api.fallthroughTag = child.fallthroughTag;
         if (child.fallthroughNamespace) api.fallthroughNamespace = child.fallthroughNamespace;
         if (child.fallthroughOwn) api.fallthroughOwn = child.fallthroughOwn;
+        changed = true;
+      }
+      // A root component that renders a `<component is>` over tags passes on the `class` and
+      // `style` a consumer gives it (ADR-0119), so it reads the tags that root may render.
+      if (api.inheritAttrs && child.inheritAttrs && child.rootTags !== undefined && !api.rootTags) {
+        api.rootTags = child.rootTags;
         changed = true;
       }
       if (!api.exposes.length && child.refTag !== undefined && !api.refTag) {
@@ -607,15 +616,19 @@ export function inheritAttrsOption(object: AST.ObjectExpression): AST.ObjectProp
 }
 
 /**
- * What a component's returned JSX is: one element (with its tag), one component, or other, as a
- * `<Teleport>` or a `<Transition>` is (ADR-0098, ADR-0100).
+ * What a component's returned JSX is: one element (with its tag), one component, one
+ * `<component is>` over tags (with the tags, ADR-0119), or other, as a `<Teleport>` or a
+ * `<Transition>` is (ADR-0098, ADR-0100).
  */
 function rootOf(
   node: ComponentFunction,
+  props: readonly ApiMember[],
   context: ApiContext,
 ): {
   kind: ComponentApi["root"];
   tag?: string;
+  tags?: string[];
+  unlisted?: true;
 } {
   const returned = rootElementOf(node);
   if (!returned) return { kind: "other" };
@@ -630,8 +643,128 @@ function rootOf(
     return { kind: "other" };
   }
   if (isComponentName(name.name)) return { kind: "component" };
-  if (name.name === "component") return { kind: "other" };
+  if (name.name === "component") return dynamicRoot(returned.openingElement, node, props, context);
   return { kind: "element", tag: name.name };
+}
+
+/**
+ * A `<component is>` root (ADR-0119): `dynamic`, with its tags, where `is` lists them without
+ * any render context, as a literal, a conditional of literals or a prop typed as a union of
+ * string literals. The lowering reads the same forms (`./dynamic.ts`), so the two agree. Other
+ * where `is` names a component, and `unlisted` where it reads a value the API cannot list.
+ */
+function dynamicRoot(
+  opening: AST.JSXOpeningElement,
+  node: ComponentFunction,
+  props: readonly ApiMember[],
+  context: ApiContext,
+): { kind: ComponentApi["root"]; tags?: string[]; unlisted?: true } {
+  const is = opening.attributes.find(
+    (item): item is AST.JSXAttribute =>
+      item.type === "JSXAttribute" && item.name.type === "JSXIdentifier" && item.name.name === "is",
+  )?.value;
+  const expression =
+    is?.type === "Literal"
+      ? is
+      : is?.type === "JSXExpressionContainer" && is.expression.type !== "JSXEmptyExpression"
+        ? is.expression
+        : undefined;
+  if (!expression) return { kind: "other" };
+  const leaves = tagsOf(expression, node, props, context);
+  if (leaves === "component") return { kind: "other" };
+  if (!leaves?.length || !leaves.every((leaf) => isHtmlElement(leaf))) {
+    return { kind: "other", unlisted: true };
+  }
+  return { kind: "dynamic", tags: [...new Set(leaves)] };
+}
+
+/**
+ * The tags an `is` lists in a form the API reads, in source order: `"component"` where a leaf
+ * names a component, and undefined where a leaf is a value it cannot list.
+ */
+function tagsOf(
+  node: AST.Expression | AST.StringLiteral,
+  component: ComponentFunction,
+  props: readonly ApiMember[],
+  context: ApiContext,
+): string[] | "component" | undefined {
+  switch (node.type) {
+    case "ParenthesizedExpression":
+      return tagsOf(node.expression, component, props, context);
+    case "Literal":
+      return typeof node.value === "string" ? [node.value] : undefined;
+    case "TemplateLiteral":
+      return node.expressions.length ? undefined : [node.quasis[0]!.value.cooked ?? ""];
+    case "ConditionalExpression": {
+      const consequent = tagsOf(node.consequent, component, props, context);
+      const alternate = tagsOf(node.alternate, component, props, context);
+      if (consequent === "component" || alternate === "component") return "component";
+      return consequent && alternate ? [...consequent, ...alternate] : undefined;
+    }
+    case "Identifier": {
+      // A prop first: `{ Tag }: { Tag: "a" | "button" }` names tags, though it is capitalised.
+      const name = propNamed(node, component, context);
+      const prop = name === undefined ? undefined : props.find((each) => each.name === name);
+      if (prop) return stringLiterals(prop);
+      return isComponentName(node.name) ? "component" : undefined;
+    }
+    case "MemberExpression": {
+      // The object form's `props.tag`.
+      const [parameter] = component.params;
+      if (
+        node.computed ||
+        node.property.type !== "Identifier" ||
+        node.object.type !== "Identifier" ||
+        parameter?.type !== "Identifier" ||
+        node.object.name !== parameter.name
+      ) {
+        return undefined;
+      }
+      const resolution = context.scopes.resolve(node.object);
+      if (resolution.kind !== "parameter" || resolution.function !== component) return undefined;
+      const property = node.property.name;
+      const prop = props.find((each) => each.name === property);
+      return prop ? stringLiterals(prop) : undefined;
+    }
+    default:
+      return undefined;
+  }
+}
+
+/** The prop a destructured parameter binds, by the identifier that reads it. */
+function propNamed(
+  node: AST.IdentifierReference,
+  component: ComponentFunction,
+  context: ApiContext,
+): string | undefined {
+  const resolution = context.scopes.resolve(node);
+  if (resolution.kind !== "parameter" || resolution.function !== component) return undefined;
+  const [parameter] = component.params;
+  if (parameter?.type !== "ObjectPattern") return undefined;
+  for (const property of parameter.properties) {
+    if (property.type !== "Property" || property.computed) continue;
+    const value =
+      property.value.type === "AssignmentPattern" ? property.value.left : property.value;
+    if (value !== resolution.declaration) continue;
+    return property.key.type === "Identifier"
+      ? property.key.name
+      : property.key.type === "Literal"
+        ? String(property.key.value)
+        : undefined;
+  }
+  return undefined;
+}
+
+/** The strings a prop's type is a union of, as written or through an alias, or undefined. */
+function stringLiterals(prop: ApiMember): string[] | undefined {
+  const members = prop.literals ?? prop.type.split("|").map((member) => member.trim());
+  const strings: string[] = [];
+  for (const member of members) {
+    const literal = /^"([^"\\]*)"$/.exec(member) ?? /^'([^'\\]*)'$/.exec(member);
+    if (!literal) return undefined;
+    strings.push(literal[1]!);
+  }
+  return strings.length ? strings : undefined;
 }
 
 /** Whether a setup statement is an awaited declaration, `const user = await …` (ADR-0101). */

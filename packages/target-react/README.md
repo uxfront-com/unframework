@@ -11,7 +11,8 @@ component, written as a React developer would write it (plan §6):
   fail L5. A component whose root is an element or a component, and that keeps fallthrough on,
   also takes `className`, `style` and what else a consumer passes it, its props' rest (see
   Composition below), and then takes every prop it declares out of the rest, under a `_` name
-  where nothing reads it (`title: _title`).
+  where nothing reads it (`title: _title`). One whose root is a `<component is>` over tags takes
+  `className` and `style` alone (ADR-0119).
 - the types the source imports, by name, where the output reads them (ADR-0067): from a `.ts`
   module or a package as written, `import type { BadgeProps } from "./types"`, and from a
   child's output, `import Field, { type FieldProps } from "./Field"`. The output of the module's

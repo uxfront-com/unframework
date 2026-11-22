@@ -2917,6 +2917,13 @@
           },
           "description": "The fills of component candidates."
         },
+        "only": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DynamicOnly"
+          },
+          "description": "The attributes only some tag candidates take, by name, each with the tags that take it (ADR-0119): it renders only when one of them does. An attribute every candidate takes has no entry, and the field is absent when there are none."
+        },
         "span": {
           "$ref": "#/definitions/Span"
         }
@@ -2980,6 +2987,28 @@
       ],
       "additionalProperties": false,
       "description": "A component `<component is>` may render: a `component` binding's component."
+    },
+    "DynamicOnly": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The attribute's name, as its `Static` or `Bound` attribute spells it."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The candidate tags that take it, in candidate order: some of them, never all."
+        }
+      },
+      "required": [
+        "name",
+        "tags"
+      ],
+      "additionalProperties": false,
+      "description": "An attribute of a `Dynamic` node that only some of its tag candidates take (ADR-0119)."
     },
     "TeleportNode": {
       "type": "object",
@@ -3299,9 +3328,10 @@
           "enum": [
             "element",
             "component",
+            "dynamic",
             "other"
           ],
-          "description": "What the component's render root is: one element, one component, or anything else (a fragment, a conditional, a slot outlet). Fallthrough and Angular's host need it (ADR-0056)."
+          "description": "What the component's render root is: one element, one component, one `<component is>` over tags (`dynamic`, ADR-0119), or anything else (a fragment, a conditional, a slot outlet). Fallthrough and Angular's host need it (ADR-0056)."
         },
         "rootTag": {
           "type": "string",
@@ -3334,6 +3364,18 @@
         "refTag": {
           "type": "string",
           "description": "The tag of the element a `ref` on the component holds, where the component exposes nothing (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no element."
+        },
+        "rootTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it places them, and merges its `class` and `style` into whichever renders. A root component that renders a `dynamic` root, through a chain of root components that keep `inheritAttrs`, takes its tags too, so a parent passes it `class` and `style` alone."
+        },
+        "rootUnlisted": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set when the root is a `<component is>` whose `is` the API cannot list the tags of, as a setup value's (ADR-0119), so a parent's UF3045 says why. Absent otherwise."
         },
         "styles": {
           "$ref": "#/definitions/ComponentStylesApi",

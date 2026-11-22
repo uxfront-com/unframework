@@ -1,5 +1,24 @@
 # @unframework.dev/testing
 
+## 0.3.2
+
+### Patch Changes
+
+- ba64fcf: Audit a capture's fonts with one round trip to the browser instead of one for each element. The L10 font audit now sends every element's request before it waits for an answer, so its time no longer grows with how busy the test run is. In a full local run, where every page project shares Vitest's main process, the audit's 430 requests for one 10-scenario test took about 20 seconds, and the test came close to its 60-second timeout. The audit checks the same elements and reports the same fonts as before.
+- Updated dependencies [348db69]
+  - @unframework.dev/ir@0.3.0
+  - @unframework.dev/codegen@0.3.0
+  - @unframework.dev/target-react@0.3.0
+  - @unframework.dev/target-svelte@0.3.0
+  - @unframework.dev/target-solid@0.3.0
+  - @unframework.dev/target-solid2@0.2.0
+  - @unframework.dev/target-angular@0.3.0
+  - @unframework.dev/target-qwik@0.3.0
+  - @unframework.dev/target-astro@0.3.0
+  - @unframework.dev/compiler@0.3.2
+  - @unframework.dev/target-vue@0.2.2
+  - @unframework.dev/unplugin@0.3.1
+
 ## 0.3.1
 
 ### Patch Changes

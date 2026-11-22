@@ -482,10 +482,11 @@ export interface ComponentApi {
   /** `false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off. */
   inheritAttrs: boolean;
   /**
-   * What the component's render root is: one element, one component, or anything else (a
-   * fragment, a conditional, a slot outlet). Fallthrough and Angular's host need it (ADR-0056).
+   * What the component's render root is: one element, one component, one `<component is>` over
+   * tags (`dynamic`, ADR-0119), or anything else (a fragment, a conditional, a slot outlet).
+   * Fallthrough and Angular's host need it (ADR-0056).
    */
-  root: "element" | "component" | "other";
+  root: "element" | "component" | "dynamic" | "other";
   /** The root element's tag, when the root is an element. */
   rootTag?: string;
   /**
@@ -526,6 +527,18 @@ export interface ComponentApi {
    * element.
    */
   refTag?: string;
+  /**
+   * The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it
+   * places them, and merges its `class` and `style` into whichever renders. A root component
+   * that renders a `dynamic` root, through a chain of root components that keep `inheritAttrs`,
+   * takes its tags too, so a parent passes it `class` and `style` alone.
+   */
+  rootTags?: string[];
+  /**
+   * Set when the root is a `<component is>` whose `is` the API cannot list the tags of, as a
+   * setup value's (ADR-0119), so a parent's UF3045 says why. Absent otherwise.
+   */
+  rootUnlisted?: true;
   /** The component's scoped styles, when it imports a stylesheet (ADR-0063). */
   styles?: ComponentStylesApi;
   /**
@@ -1565,7 +1578,21 @@ export interface DynamicNode {
   children: RenderNode[];
   /** The fills of component candidates. */
   fills?: SlotFill[];
+  /**
+   * The attributes only some tag candidates take, by name, each with the tags that take it
+   * (ADR-0119): it renders only when one of them does. An attribute every candidate takes has no
+   * entry, and the field is absent when there are none.
+   */
+  only?: DynamicOnly[];
   span: Span;
+}
+
+/** An attribute of a `Dynamic` node that only some of its tag candidates take (ADR-0119). */
+export interface DynamicOnly {
+  /** The attribute's name, as its `Static` or `Bound` attribute spells it. */
+  name: string;
+  /** The candidate tags that take it, in candidate order: some of them, never all. */
+  tags: string[];
 }
 
 /**

@@ -42,6 +42,7 @@ import type {
   DynamicCandidate,
   DynamicClass,
   DynamicNode,
+  DynamicOnly,
   ElementNode,
   EmitReference,
   Emits,
@@ -1035,7 +1036,7 @@ export function createSlotOutlet(
   return { kind: "SlotOutlet", slot, ...(props ? { props } : {}), fallback, span: at };
 }
 
-/** Builds `<component is>`: `fills` for component candidates only. */
+/** Builds `<component is>`: `fills` for component candidates only, `only` for tag ones (ADR-0119). */
 export function createDynamicNode(
   is: Expression,
   candidates: DynamicCandidate[],
@@ -1043,6 +1044,7 @@ export function createDynamicNode(
   children: RenderNode[],
   at: Span,
   fills?: SlotFill[],
+  only?: DynamicOnly[],
 ): DynamicNode {
   return {
     kind: "Dynamic",
@@ -1051,6 +1053,7 @@ export function createDynamicNode(
     attributes,
     children,
     ...(fills ? { fills } : {}),
+    ...(only?.length ? { only } : {}),
     span: at,
   };
 }

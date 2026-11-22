@@ -46,7 +46,7 @@ import type {
 } from "@unframework.dev/ir";
 
 import { qwikEventProp } from "./events.ts";
-import { Passed } from "./fallthrough.ts";
+import { Passed, classAndStyleRoot } from "./fallthrough.ts";
 import { genericModelType } from "./generics.ts";
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";
@@ -151,7 +151,9 @@ export function planComposition(
   const passed = new Passed(component, module, declaredProps(component), (name) =>
     names.fresh(name),
   );
-  const { target } = passed;
+  // A root `<component is>` over tags takes the consumer's `class` and `style` alone, with no
+  // rest (ADR-0119).
+  const target = passed.target ?? classAndStyleRoot(component, module)?.span;
   return {
     slots,
     models,
@@ -161,7 +163,7 @@ export function planComposition(
         }
       : {}),
     ...(component.exposes ? { expose: { ref: local("ref") } } : {}),
-    ...(target || passed.rootRef ? { passed } : {}),
+    ...(passed.target || passed.rootRef ? { passed } : {}),
   };
 }
 

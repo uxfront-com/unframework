@@ -280,7 +280,8 @@ describe("solid child-root rule, rendered by Solid's server", () => {
       '<span class="badge " data-uf-0a1b2c3d="">Saving</span>',
       '<button type="button" data-uf-0a1b2c3d="">Save</button>',
       // `<Dynamic>` passes its `component` key to `ssrElement`, which skips it after a space.
-      '<h3 class="heading " data-uf-0a1b2c3d="" >Notes</h3>',
+      // A root `<component is>` takes a consumer's style as a root element does (ADR-0119).
+      '<h3 class="heading " style="" data-uf-0a1b2c3d="" >Notes</h3>',
     ]);
   });
 
@@ -299,7 +300,8 @@ describe("solid child-root rule, rendered by Solid's server", () => {
     ]);
     expect([await render(Sum, {}), await render(Title, { big: true })]).toEqual([
       "<p >a &lt; b &amp;&amp; c > d</p>",
-      "<h2 >a &lt; b</h2>",
+      // A root `<component is>` takes the class and style as the root element does (ADR-0119).
+      '<h2 class="" style="" >a &lt; b</h2>',
     ]);
   });
 

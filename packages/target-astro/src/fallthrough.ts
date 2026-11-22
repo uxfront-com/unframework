@@ -16,6 +16,7 @@ import { RESERVED_PROP_NAMES, isIdentifier, walk } from "@unframework.dev/ir";
 import type {
   BoundAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   Span,
   StaticAttribute,
@@ -40,13 +41,18 @@ export interface Fallthrough {
   className: string;
   /** The name the frontmatter reads the consumer's `style` under. */
   style: string;
-  /** The rest of `Astro.props`: what the consumer passes that the component does not declare. */
-  attributes: string;
   /**
-   * The node that takes it: the root element, the root component, or with `inheritAttrs: false`
-   * the element that spreads the props' rest (`rest`).
+   * The rest of `Astro.props`: what the consumer passes that the component does not declare.
+   * Absent where the target is a `<component is>` over tags, which takes the consumer's `class`
+   * and `style` alone (ADR-0119).
    */
-  target: ElementNode | ComponentNode;
+  attributes?: string;
+  /**
+   * The node that takes it: the root element, the root component, the root `<component is>`
+   * over tags (ADR-0119), or with `inheritAttrs: false` the element that spreads the props'
+   * rest (`rest`).
+   */
+  target: ElementNode | ComponentNode | DynamicNode;
   /** Whether the target spreads the props' rest, `{...rest}`, where the source writes it. */
   rest: boolean;
   /**
@@ -70,8 +76,8 @@ export interface Fallthrough {
 
 /**
  * What the component takes from its consumer beside its props (ADR-0118): with `inheritAttrs`
- * on, what its root takes, one element or one component; with it off, what the element that
- * spreads the props' rest takes. `undefined` where nothing does.
+ * on, what its root takes, one element, one component or one `<component is>` over tags; with it
+ * off, what the element that spreads the props' rest takes. `undefined` where nothing does.
  */
 export function planFallthrough(
   component: UfComponent,
@@ -79,18 +85,23 @@ export function planFallthrough(
   spelling: Spelling,
 ): Fallthrough | undefined {
   const { render } = component;
-  let target: ElementNode | ComponentNode | undefined;
+  let target: ElementNode | ComponentNode | DynamicNode | undefined;
   const rest = component.inheritAttrs === false;
+  const [only] = render.kind === "Fragment" && render.children.length === 1 ? render.children : [];
   if (rest) target = restElement(component);
   else if (render.kind === "Element") target = render;
-  else if (render.children.length === 1 && render.children[0]!.kind === "Component") {
-    target = render.children[0];
+  else if (only?.kind === "Component") target = only;
+  // A `<component is>` over tags renders one element, which takes the consumer's `class` and
+  // `style` alone (ADR-0119): the analyser lets a parent pass it nothing else yet.
+  else if (only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")) {
+    target = only;
   }
   if (!target) return undefined;
   const { scope } = spelling;
   const className = scope.claim("className");
   const style = scope.claim("style");
-  const attributes = scope.claim("attrs");
+  // A `<component is>` takes nothing else yet, so it spreads no rest (ADR-0119).
+  const attributes = target.kind === "Dynamic" ? undefined : scope.claim("attrs");
   const declared = declaredNames(component);
   const own: OwnAttribute[] = [];
   if (target.kind === "Element") {
@@ -105,7 +116,11 @@ export function planFallthrough(
   }
   const scopeless = rest && target !== render ? scope.claim("withoutScope") : undefined;
   const tag =
-    target.kind === "Element" ? target.tag : componentFallthroughTag(module, target.component);
+    target.kind === "Element"
+      ? target.tag
+      : target.kind === "Component"
+        ? componentFallthroughTag(module, target.component)
+        : undefined;
   const omitted = new Set(declared);
   if (target.kind === "Component") {
     for (const name of childProps(module, target.component)) omitted.add(name);
@@ -114,7 +129,7 @@ export function planFallthrough(
     omitted: [...omitted],
     className,
     style,
-    attributes,
+    ...(attributes === undefined ? {} : { attributes }),
     target,
     rest,
     own,
@@ -137,11 +152,11 @@ export function declaredNames(component: UfComponent): Set<string> {
 
 /**
  * The roots that spread the scope attributes of the styled parents (ADR-0063): none where the
- * root takes what falls through, which holds them, and where the props' rest sits on another
+ * root spreads what falls through, which holds them, and where the props' rest sits on another
  * element, the root, one element or one component, as it would be without the rest.
  */
 export function scopeRootsOf(component: UfComponent, fallthrough: Fallthrough | undefined): Span[] {
-  if (!fallthrough) return scopeRoots(component);
+  if (!fallthrough || fallthrough.attributes === undefined) return scopeRoots(component);
   if (fallthrough.scopeless === undefined) return [];
   const { render } = component;
   if (render.kind === "Element") return [render.span];

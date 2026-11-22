@@ -23,13 +23,16 @@ import {
 import { domNodesOf, el, expectedNodes } from "./render-parity.ts";
 import type { DomElement, ParityCase, ParitySuite } from "./render-parity.ts";
 
-const sourceSuites = () => paritySuites().filter(({ cases }) => cases[0]?.lowered);
+// Built once, at collection, as the other render-parity files build their suites. The
+// build lowers every source case and both attribute sweeps through the analyser, about
+// 1,700 components and 4 to 5 s on a CI runner, which no single test should pay inside
+// its time limit. A build that throws still fails the file.
+const sourceSuites = paritySuites().filter(({ cases }) => cases[0]?.lowered);
 
 describe("the source cases", () => {
   it("lower each alone, with no diagnostic, into a component of their own", () => {
-    const suites = sourceSuites();
-    expect(suites.length).toBeGreaterThan(20);
-    for (const { cases } of suites) {
+    expect(sourceSuites.length).toBeGreaterThan(20);
+    for (const { cases } of sourceSuites) {
       for (const { name, lowered } of cases) {
         expect(lowered!.module.components, name).toHaveLength(1);
         expect(lowered!.module.components[0], name).toBe(lowered!.component);
@@ -38,20 +41,21 @@ describe("the source cases", () => {
   });
 
   // The respelling of props (`c12Label`, `props.c12Label`, shorthands expanded) must change
-  // nothing a case renders, or the targets would be held to the wrong DOM.
-  it("render the same put together in one component as alone", () => {
-    for (const suite of sourceSuites()) {
+  // nothing a case renders, or the targets would be held to the wrong DOM. One test per
+  // suite, since the largest suites each take about a second to analyse and render.
+  // A loop, not `it.each`, which cuts `$title` short and gives suites the same name.
+  for (const suite of sourceSuites) {
+    it(`render ${suite.title} the same put together in one component as alone`, () => {
       const [component] = parityModule(suite).components as [UfComponent];
       const nodes = domNodesOf(instantiate(component, parityProps(suite)));
       const rendered = suite.root === "self" ? nodes : (nodes[0] as DomElement).children;
       expect(rendered, suite.title).toEqual(suite.cases.flatMap(expectedNodes));
-    }
-  });
+    });
+  }
 
   it("read their props destructured, or through one object, as the suite says", () => {
-    const suites = sourceSuites();
     const forms = (form: ParitySuite["form"]) =>
-      suites
+      sourceSuites
         .filter((suite) => (suite.form ?? "destructured") === form)
         .map((suite) => parityModule(suite).components[0]!.propsParameter?.form);
     expect(new Set(forms("destructured"))).toEqual(new Set(["destructured", undefined]));
@@ -210,8 +214,7 @@ describe("the seeded random components", () => {
   });
 
   it("are as varied as the printers' hard parts", () => {
-    const suites = sourceSuites();
-    const fuzzed = suites.filter(({ title }) => title.startsWith("seeded random components"));
+    const fuzzed = sourceSuites.filter(({ title }) => title.startsWith("seeded random components"));
     const found = features(fuzzed.flatMap(({ cases }) => cases));
     expect([...found].toSorted()).toEqual(
       [
@@ -249,13 +252,13 @@ describe("the seeded random components", () => {
         "null",
       ].toSorted(),
     );
-    const roots = suites.filter(({ title }) => title.startsWith("the root: seed"));
+    const roots = sourceSuites.filter(({ title }) => title.startsWith("the root: seed"));
     expect(roots).toHaveLength(ROOT_SOURCE_SEEDS.length);
     expect(features(roots.flatMap(({ cases }) => cases))).toContain("a root fragment");
   });
 
   it("start no <pre> or <textarea> with a line feed", () => {
-    for (const suite of sourceSuites()) {
+    for (const suite of sourceSuites) {
       for (const parityCase of suite.cases) {
         const check = (nodes: readonly unknown[]): void => {
           for (const node of nodes) {
