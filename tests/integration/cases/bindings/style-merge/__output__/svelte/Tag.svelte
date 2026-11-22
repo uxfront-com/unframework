@@ -10,11 +10,24 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TagProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["span"],
+    "label" | "colour" | "weight" | "indent" | "children" | "class" | "style" | "ref"
+  > &
+    TagProps & { class?: ClassValue; style?: string; ref?: HTMLElementTagNameMap["span"] | null };
 
-  let { label, colour, weight, indent, class: className, style, ...attributes }: Props = $props();
+  let {
+    label,
+    colour,
+    weight,
+    indent,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -52,17 +65,11 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <span
   class={["tag", className]}
   style={mergeStyle({ display: "inline-block", padding: "2px 8px", "border-style": "solid", "border-width": "1px", "border-color": colour ?? "#5a5a5a", color: colour, "font-weight": weight, "margin-left": indent }, style)}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{label}</span>

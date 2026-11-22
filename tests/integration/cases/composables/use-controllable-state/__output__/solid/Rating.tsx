@@ -1,13 +1,16 @@
 import { useControllableState } from "./useControllableState";
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export interface RatingEvents {
   onChange?: (value: number) => void;
 }
 
 export default function Rating(
-  props: { value?: number } & RatingEvents & { class?: string; style?: JSX.CSSProperties },
+  props: { value?: number } & RatingEvents &
+    Omit<ComponentProps<"section">, "value" | "onChange" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["value", "onChange", "class"]);
+
   const { current, set } = useControllableState(
     () => props.value,
     1,
@@ -18,8 +21,7 @@ export default function Rating(
     <section
       class={props.class ? `rating ${props.class}` : "rating"}
       aria-label="Rating"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">Rated {current()} of 3</p>
       <button type="button" onClick={() => set(2)}>
@@ -30,11 +32,4 @@ export default function Rating(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

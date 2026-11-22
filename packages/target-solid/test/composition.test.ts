@@ -62,9 +62,10 @@ describe("solid slots", () => {
         return "Body";
       },
     });
-    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
-    // which writes \`class\` where the key holds nothing, and a space after a class.
-    expect(html).toBe('<section data-filled="yes" class="" style=""><h2>Title</h2>Body</section>');
+    // A root that spreads what falls through renders through Solid's \`ssrElement\` (ADR-0063,
+    // ADR-0118), which writes a space after a class, or after its tag where the spread holds
+    // nothing.
+    expect(html).toBe('<section data-filled="yes"><h2>Title</h2>Body</section>');
     expect(reads).toEqual({ title: 1, children: 1 });
   });
 });
@@ -85,10 +86,11 @@ describe("solid models", () => {
     expect(output).toContain('value={name() ?? ""}');
     expect(output).toContain('value={untrack(note) ?? ""}');
     expect(output).toContain('const next = value() ?? "";');
-    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
-    // which writes \`class\` where the key holds nothing, and a space after a class.
+    // A root that spreads what falls through renders through Solid's \`ssrElement\` (ADR-0063,
+    // ADR-0118), which writes a space after a class, or after its tag where the spread holds
+    // nothing.
     expect(await serverHtml("NullableFields", {})).toBe(
-      '<form class="" style=""><input aria-label="Name" value=""><input aria-label="Note" value=""><textarea aria-label="Memo">Buy milk</textarea></form>',
+      '<form ><input aria-label="Name" value=""><input aria-label="Note" value=""><textarea aria-label="Memo">Buy milk</textarea></form>',
     );
   });
 
@@ -147,10 +149,85 @@ describe("solid fallthrough", () => {
     const output = await emitSource(SOURCES.SpreadRoot!);
     expect(output).toContain("class={cx(props.attrs.class, props.class)}");
     expect(output.match(/\bclass=/g)).toHaveLength(1);
-    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
-    // which writes \`class\` where the key holds nothing, and a space after a class.
+    // A root that spreads what falls through renders through Solid's \`ssrElement\` (ADR-0063,
+    // ADR-0118), which writes a space after a class, or after its tag where the spread holds
+    // nothing.
     expect(await serverHtml("SpreadRoot", { attrs: { class: "a", title: "t" }, class: "b" })).toBe(
-      '<div class="a b " title="t" style="">x</div>',
+      '<div class="a b " title="t">x</div>',
+    );
+  });
+
+  // ADR-0118: what a component does not declare falls through, spread after the root's own.
+  it("spreads what it does not declare on the root, and chains its own listeners", async () => {
+    const output = await emitSource(SOURCES.FallthroughChip!);
+    expect(output).toContain(
+      'const [, others] = splitProps(props, [\n    "title",\n    "label",\n    "onClick",\n    "onPick",\n    "class",\n    "onKeyDown",\n    "onFocus",\n  ]);',
+    );
+    // Its own `click` event is the component's: no DOM listener of a consumer's.
+    expect(output).toContain("onClick={() => props.onClick?.(props.label)}");
+    expect(output).toContain(
+      "onFocus={(event) => {\n        press();\n        props.onFocus?.(event);\n      }}",
+    );
+    // A listener that may return early calls the consumer's all the same.
+    expect(output).toContain(
+      '        try {\n          if (event.key !== "Enter") return;\n          press();\n        } finally {\n          props.onKeyDown?.(event);\n        }',
+    );
+    expect(output).toContain("      {...others}\n    >");
+    // The consumer's `type` wins, its class joins the root's, and a declared prop named like an
+    // attribute, `title`, is no attribute.
+    expect(
+      await serverHtml("FallthroughChip", {
+        title: "Save",
+        label: "Ada",
+        type: "submit",
+        id: "save",
+        class: "wide",
+        "data-uf-0a1b2c3d": "",
+      }),
+    ).toBe(
+      '<button type="submit" class="chip wide " aria-pressed="false" id="save" data-uf-0a1b2c3d="">Save</button>',
+    );
+  });
+
+  it("spreads the props' rest on its element, and keeps the scope attributes on the root", async () => {
+    const output = await emitSource(SOURCES.FallthroughField!);
+    expect(output).toContain(
+      'const [, rest] = splitProps(props, ["label", "ref", "class", "onFocus", "onInput"]);',
+    );
+    expect(output).toContain('<label class="field" {...scopeAttributes(props)} ref={props.ref}>');
+    expect(output).toContain(
+      "onInput={(event) => {\n          setText(event.currentTarget.value);\n          props.onInput?.(event);\n        }}",
+    );
+    expect(output).toContain("        {...restAttributes(rest)}\n      />");
+    expect(
+      await serverHtml("FallthroughField", {
+        label: "Email",
+        id: "email",
+        name: "email",
+        class: "wide",
+        "data-uf-0a1b2c3d": "",
+      }),
+    ).toBe(
+      '<label class="field " data-uf-0a1b2c3d="">Email<input class="control wide " value="" id="email" name="email"/></label>',
+    );
+  });
+
+  it("passes a child's root its attributes, listeners and ref, which holds the element", async () => {
+    const output = await emitSource(SOURCES.FallthroughForm!);
+    expect(output).toContain(
+      '        ref={(element) => {\n          name = element;\n          onCleanup(() => {\n            name = null;\n          });\n        }}\n        label="Name"\n        id="name"\n        aria-describedby="hint"\n        title="Your name"\n        onKeyDown={() => setKeys(keys() + 1)}\n        onClick={() => name?.select()}',
+    );
+    const child = await emitSource(SOURCES.FallthroughInput!);
+    expect(child).toContain(
+      "onKeyDown={(event) => {\n        event.stopPropagation();\n        props.onKeyDown?.(event);\n      }}",
+    );
+  });
+
+  it("hands a consumer's ref the root from its own ref callback", async () => {
+    const output = await emitSource(SOURCES.FallthroughRoot!);
+    expect(output).toContain('props: { label: string } & Pick<ComponentProps<"input">, "ref">');
+    expect(output).toContain(
+      '        if (typeof props.ref === "function") props.ref(element);\n      }}',
     );
   });
 });

@@ -1,13 +1,10 @@
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, useRef, useState } from "react";
 
 export interface DisclosureSlots {
   children?: ReactNode;
 }
 
-export interface DisclosureAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DisclosureAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Disclosure({
   children,
@@ -19,7 +16,7 @@ export default function Disclosure({
   const openRef = useRef(open);
 
   return (
-    <div className={cx("disclosure", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("disclosure", className)} style={style} {...attributes}>
       <button
         type="button"
         aria-expanded={open}
@@ -48,13 +45,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

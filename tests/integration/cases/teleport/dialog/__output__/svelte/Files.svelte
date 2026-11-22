@@ -9,15 +9,27 @@
 <script lang="ts">
   import ConfirmDialog from "./ConfirmDialog.svelte";
   import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = FilesProps & {
-    ondelete?: (file: string) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "file" | "ondelete" | "children" | "class" | "style" | "ref"
+  > &
+    FilesProps & {
+      ondelete?: (file: string) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { file, ondelete, class: className, style, ...attributes }: Props = $props();
+  let {
+    file,
+    ondelete,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let open = $state(false);
 
@@ -31,13 +43,6 @@
   onMount(() => {
     mounted = true;
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 
   /** Moves the element into the element `to` selects, and removes it on teardown. */
   function teleport(to: string): (element: HTMLElement) => () => void {
@@ -55,7 +60,7 @@
   }
 </script>
 
-<section class={["files", className]} aria-label="Files" {style} {...scopeAttributes(attributes)}>
+<section class={["files", className]} aria-label="Files" {style} bind:this={ref} {...attributes}>
   <p>{file}</p
   ><button type="button" onclick={() => (open = true)}>Delete {file}</button
   >{#if open}

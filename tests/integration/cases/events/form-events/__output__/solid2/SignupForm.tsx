@@ -1,13 +1,20 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 export interface SignupFormEvents {
   onSignup?: (fullName: string, email: string, plan: string, newsletter: boolean) => void;
 }
 
 export default function SignupForm(
-  props: SignupFormEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SignupFormEvents &
+    Omit<ComponentProps<"form">, "class" | "style" | "onSubmit"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+      onSubmit?: Extract<ComponentProps<"form">["onSubmit"], (event: never) => void>;
+    },
 ) {
+  const others = omit(props, "onSignup", "class", "onSubmit");
+
   const [fullName, setFullName] = createState("");
   const [email, setEmail] = createState("");
   const [plan, setPlan] = createState("free");
@@ -23,9 +30,11 @@ export default function SignupForm(
     <form
       class={props.class ? `signup-form ${props.class}` : "signup-form"}
       aria-label="Sign up"
-      onSubmit={submit}
-      style={props.style}
-      {...scopeAttributes(props)}
+      onSubmit={(event) => {
+        submit(event);
+        props.onSubmit?.(event);
+      }}
+      {...others}
     >
       <label>
         Name
@@ -68,13 +77,6 @@ export default function SignupForm(
       <button type="submit">Sign up</button>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

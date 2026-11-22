@@ -27,6 +27,8 @@ import type {
   ModelBindingAttribute,
   Namespace,
   RefAttribute,
+  StaticAttribute,
+  BoundAttribute,
   RenderNode,
   SlotFill,
   SlotOutletNode,
@@ -114,6 +116,15 @@ export type ClassPart =
 export type StylePart =
   | { kind: "Static"; property: string; value: string }
   | { kind: "Bound"; property: string; value: string };
+
+/**
+ * What a component element passes through to the child's fallthrough element (ADR-0118): an
+ * attribute it does not declare, static or bound, or a native listener.
+ */
+export type PrintedFallthrough =
+  | { kind: "Static"; attribute: StaticAttribute }
+  | { kind: "Bound"; attribute: BoundAttribute; code: string }
+  | { kind: "Event"; event: PrintedEvent };
 
 /** A listener, with its handler as code. */
 export interface PrintedEvent {
@@ -420,6 +431,20 @@ export interface MarkupDialect {
    * each time the child emits it.
    */
   componentEvent?(listener: PrintedListener, context: ComponentContext): PrintedAttribute[];
+  /**
+   * Writes what a component element passes through to the child's fallthrough element
+   * (ADR-0118), all at once, in source order. Without it, each is written as the element hooks
+   * write it on the component's tag (`attribute`, `boundAttribute`, `eventAttribute`).
+   */
+  fallthroughAttributes?(
+    attributes: readonly PrintedFallthrough[],
+    context: ComponentContext & { attributes: AttributeContext },
+  ): PrintedAttribute[];
+  /**
+   * Writes `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it
+   * does not declare. No default: each target names and spreads its rest its own way.
+   */
+  restAttribute?(context: AttributeContext): PrintedAttribute[];
   /**
    * Writes a component element's content from its fills (ADR-0054): the default slot's
    * children, the named slots' templates, and the forwarded slots. None closes the tag.
@@ -1127,6 +1152,7 @@ export function printMarkup(
       ...(spread.length ? { spreads: true } : {}),
     };
     const printed: PrintedAttribute[] = [...directives];
+    const passed: PrintedFallthrough[] = [];
     for (const attribute of node.attributes as readonly ComponentAttribute[]) {
       switch (attribute.kind) {
         case "Prop": {
@@ -1183,9 +1209,52 @@ export function printMarkup(
             ...hook(of, "modelBinding")({ attribute, value: code(attribute.value) }, context),
           );
           break;
+        // What falls through (ADR-0118): all at once below where the dialect takes them so, and
+        // otherwise each as the element hooks write it on the component's tag.
+        case "Static":
+          if (of.fallthroughAttributes) passed.push({ kind: "Static", attribute });
+          else {
+            printed.push({
+              name: attribute.name,
+              text:
+                attribute.value === true
+                  ? attribute.name
+                  : of.attribute(attribute.name, attribute.value, context.tag, attributeContext),
+            });
+          }
+          break;
+        case "Bound": {
+          const value = code(attribute.value);
+          if (of.fallthroughAttributes) passed.push({ kind: "Bound", attribute, code: value });
+          else {
+            printed.push({
+              name: attribute.name,
+              text: of.boundAttribute(attribute.name, value, attributeContext),
+            });
+          }
+          break;
+        }
+        case "Event": {
+          const statement = options.handler?.(attribute, element);
+          const event: PrintedEvent = {
+            attribute,
+            get handler() {
+              return handlerCode(attribute.handler);
+            },
+            ...(statement === undefined ? {} : { statement }),
+          };
+          if (of.fallthroughAttributes) passed.push({ kind: "Event", event });
+          else printed.push(...of.eventAttribute(event, attributeContext));
+          break;
+        }
         default:
           unreachable(attribute);
       }
+    }
+    if (passed.length) {
+      printed.push(
+        ...of.fallthroughAttributes!(passed, { ...context, attributes: attributeContext }),
+      );
     }
     // The scope attributes are values, unless the dialect writes them as code.
     const names = scopeNames(at);
@@ -1452,6 +1521,9 @@ export function printMarkup(
           );
           break;
         }
+        case "Rest":
+          printed.push(...hook(of, "restAttribute")(context));
+          break;
         default:
           unreachable(attribute);
       }
@@ -1746,7 +1818,8 @@ function hook<
     | "teleport"
     | "rawHtmlAttribute"
     | "directiveAttribute"
-    | "branchConstant",
+    | "branchConstant"
+    | "restAttribute",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];
   if (!found) {
@@ -1844,6 +1917,7 @@ function attributeName(attribute: Attribute): string {
     case "Style":
       return "style";
     case "Spread":
+    case "Rest":
       return "";
     // A listener orders as Vue's `@event`, which `vue/attributes-order` puts last.
     case "Event":

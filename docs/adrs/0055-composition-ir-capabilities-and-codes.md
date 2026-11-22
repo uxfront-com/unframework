@@ -1,6 +1,6 @@
 # ADR-0055: The composition contract: IR kinds, capabilities and codes
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0118
 - **Date:** 2026-10-18
 - **Plan:** §5.3, §5.6 (layer 2), §5.7, §5.9, §7.7 (coverage gate), §9 M3; P2, P4, P5; ADR-0032,
   ADR-0033, ADR-0053, ADR-0054, ADR-0056; amends ADR-0032 (its invariants)

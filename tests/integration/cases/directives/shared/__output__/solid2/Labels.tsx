@@ -1,24 +1,24 @@
 import Badge from "./Badge";
 import Tag from "./Tag";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
-export default function Labels(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Labels(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   return (
     <section
       class={props.class ? `labels ${props.class}` : "labels"}
       aria-label="Labels"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Badge label="New" />
       <Tag name="docs" />
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

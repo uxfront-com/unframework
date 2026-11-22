@@ -1,18 +1,20 @@
 import { vRecord } from "./vRecord";
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
-export default function Meter(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Meter(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [level, setLevel] = createState(1);
   const [renders, setRenders] = createState(0);
 
   return (
-    <section
-      class={props.class ? `meter ${props.class}` : "meter"}
-      aria-label="Meter"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `meter ${props.class}` : "meter"} aria-label="Meter" {...others}>
       <output class="level" ref={vRecord(() => level())}>
         Level {level()}
       </output>
@@ -25,13 +27,6 @@ export default function Meter(props: { class?: string; style?: JSX.CSSProperties
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

@@ -1,10 +1,7 @@
 import Panel from "./Panel";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface BoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BoardAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Board({ className, style, ...attributes }: BoardAttributes) {
   const [showA, setShowA] = useState(true);
@@ -20,7 +17,7 @@ export default function Board({ className, style, ...attributes }: BoardAttribut
   }
 
   return (
-    <div className={cx("board", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("board", className)} style={style} {...attributes}>
       {showA ? <Panel name="a" onClosed={record} /> : null}
       {showB ? <Panel name="b" onClosed={record} /> : null}
       <button
@@ -59,13 +56,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

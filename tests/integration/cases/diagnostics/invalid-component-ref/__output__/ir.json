@@ -5,8 +5,8 @@
     {
       "name": "Hint",
       "span": {
-        "start": 164,
-        "end": 254
+        "start": 235,
+        "end": 325
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 196,
-              "end": 202
+              "start": 267,
+              "end": 273
             }
           },
-          "binding": "text@180",
+          "binding": "text@251",
           "span": {
-            "start": 190,
-            "end": 202
+            "start": 261,
+            "end": 273
           }
         }
       ],
@@ -31,24 +31,24 @@
         "type": {
           "code": "{ text: string }",
           "span": {
-            "start": 188,
-            "end": 204
+            "start": 259,
+            "end": 275
           }
         },
         "span": {
-          "start": 178,
-          "end": 204
+          "start": 249,
+          "end": 275
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "text@180",
+          "id": "text@251",
           "name": "text",
           "kind": "prop",
           "span": {
-            "start": 180,
-            "end": 184
+            "start": 251,
+            "end": 255
           }
         }
       ],
@@ -62,8 +62,8 @@
             "name": "class",
             "value": "hint",
             "span": {
-              "start": 224,
-              "end": 236
+              "start": 295,
+              "end": 307
             }
           }
         ],
@@ -73,29 +73,29 @@
             "value": {
               "code": "text",
               "span": {
-                "start": 238,
-                "end": 242
+                "start": 309,
+                "end": 313
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "text@180",
+                  "binding": "text@251",
                   "span": {
-                    "start": 238,
-                    "end": 242
+                    "start": 309,
+                    "end": 313
                   }
                 }
               ]
             },
             "span": {
-              "start": 237,
-              "end": 243
+              "start": 308,
+              "end": 314
             }
           }
         ],
         "span": {
-          "start": 217,
-          "end": 251
+          "start": 288,
+          "end": 322
         }
       }
     }

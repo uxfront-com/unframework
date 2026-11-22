@@ -1,10 +1,7 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "./Card.uf.tsx.css";
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"section">, "title" | "children">;
 
 export default function Card({
   title,
@@ -13,12 +10,7 @@ export default function Card({
   ...attributes
 }: { title: string } & CardAttributes) {
   return (
-    <section
-      className={cx("card", className)}
-      style={style}
-      data-uf-bb60e985=""
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("card", className)} style={style} data-uf-bb60e985="" {...attributes}>
       <h2 className="title" data-uf-bb60e985="">
         {title}
       </h2>
@@ -39,13 +31,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -183,8 +183,10 @@ function statefulElement(element: ElementNode): boolean {
         case "Event":
         case "Ref":
         case "Model":
-        // A directive keeps its state on the element (ADR-0099).
+        // A directive keeps its state on the element (ADR-0099), and the props' rest may hold a
+        // consumer's listeners and `ref` (ADR-0118).
         case "Directive":
+        case "Rest":
           return true;
         case "Static":
         case "Bound":

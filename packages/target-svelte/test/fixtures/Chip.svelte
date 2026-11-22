@@ -1,32 +1,32 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLButtonAttributes } from "svelte/elements";
 
   interface ChipProps {
     label: string;
   }
 
-  type Props = ChipProps & {
+  type Props = Omit<HTMLButtonAttributes, "label" | "onremove" | "children" | "class" | "style" | "ref"> & ChipProps & {
     onremove?: (label: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["button"] | null;
   };
 
-  let { class: className, style, ...props }: Props = $props();
+  let { class: className, style, ref = $bindable(null), onclick, ...props }: Props = $props();
 
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { label: _label, onremove: _onremove, ...attributes } = $derived(props);
 </script>
 
 <button
   type="button"
-  onclick={() => props.onremove?.(props.label)}
+  onclick={(event) => {
+    props.onremove?.(props.label);
+    onclick?.(event);
+  }}
   class={className}
   {style}
-  {...scopeAttributes(props)}
+  bind:this={ref}
+  {...attributes}
 >{props.label}</button>

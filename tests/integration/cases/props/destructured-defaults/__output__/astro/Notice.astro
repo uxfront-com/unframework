@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface NoticeProps {
   message: string;
   title?: string;
@@ -9,7 +11,13 @@ export interface NoticeProps {
   author?: { name: string };
 }
 
-interface Props extends NoticeProps {
+interface Props
+  extends
+    NoticeProps,
+    Omit<
+      HTMLAttributes<"section">,
+      "message" | "title" | "tone" | "priority" | "expanded" | "tags" | "author"
+    > {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
@@ -24,22 +32,18 @@ const {
   author = { name: "System" },
   class: className,
   style,
+  "aria-label": ariaLabel,
+  "data-tone": dataTone,
+  ...attrs
 } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
 ---
 
 <section
   class:list={["notice", className]}
-  aria-label={title}
-  data-tone={tone}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
+  data-tone={"data-tone" in Astro.props ? dataTone : tone}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{title}</h2>
   <p>{message}</p>

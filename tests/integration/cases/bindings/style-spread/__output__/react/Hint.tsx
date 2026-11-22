@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 
 interface HintAttributes {
   id: string;
@@ -10,10 +10,7 @@ export interface HintProps {
   attrs: HintAttributes;
 }
 
-export interface HintAttributes_1 {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HintAttributes_1 = Omit<ComponentPropsWithRef<"small">, "text" | "attrs" | "children">;
 
 export default function Hint({
   text,
@@ -27,7 +24,7 @@ export default function Hint({
       id={attrs.id}
       style={{ ...styleObject(attrs.style), ...style }}
       className={className}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {text}
     </small>
@@ -50,13 +47,4 @@ function styleObject(style: object | string | null | undefined): CSSProperties |
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
   return object as CSSProperties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

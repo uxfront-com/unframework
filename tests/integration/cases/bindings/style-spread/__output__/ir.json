@@ -456,7 +456,13 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "small"
+            "rootTag": "small",
+            "fallthroughTag": "small",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
+            "refTag": "small"
           }
         ],
         "keys": []

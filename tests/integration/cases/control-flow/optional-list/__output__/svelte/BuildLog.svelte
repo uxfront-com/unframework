@@ -15,25 +15,36 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = BuildLogProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "target" | "failed" | "lines" | "warnings" | "children" | "class" | "style" | "ref"
+  > &
+    BuildLogProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { target, failed, lines, warnings, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    target,
+    failed,
+    lines,
+    warnings,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <section
   class={["build-log", className]}
   aria-label="Build log"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <pre>$ make {target}{#if failed}<strong>{" (failed)"}</strong>{/if}
 {#each lines ?? [] as line (line.id)}<code>{line.text}{"\n"}</code>{/each}</pre

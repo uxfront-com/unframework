@@ -1,12 +1,14 @@
-import { type JSX, createSignal, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, onCleanup, splitProps } from "solid-js";
 
 export interface ListenersEvents {
   onLogged?: (entries: string[]) => void;
 }
 
 export default function Listeners(
-  props: ListenersEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ListenersEvents & Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onLogged"]);
+
   const [log, setLog] = createSignal<string[]>([]);
   const [volume, setVolume] = createSignal(0);
   let field: HTMLInputElement | null = null;
@@ -25,12 +27,7 @@ export default function Listeners(
   }
 
   return (
-    <section
-      aria-label="Listeners"
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Listeners" {...others}>
       <div
         role="presentation"
         ref={(element) =>
@@ -104,11 +101,4 @@ export default function Listeners(
       <p>{log().join(", ")}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

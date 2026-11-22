@@ -1,14 +1,11 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface StepListProps {
   title: string;
   steps: string[];
 }
 
-export interface StepListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepListAttributes = Omit<ComponentPropsWithRef<"ol">, "title" | "steps" | "children">;
 
 export default function StepList({
   title,
@@ -18,12 +15,7 @@ export default function StepList({
   ...attributes
 }: StepListProps & StepListAttributes) {
   return (
-    <ol
-      className={cx("step-list", className)}
-      aria-label={title}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <ol className={cx("step-list", className)} aria-label={title} style={style} {...attributes}>
       {steps.map((step, index) => (
         <li key={index} data-step={index + 1}>
           Step {index + 1}: {step}
@@ -46,13 +38,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

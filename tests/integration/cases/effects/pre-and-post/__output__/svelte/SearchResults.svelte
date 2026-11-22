@@ -2,17 +2,29 @@
 
 <script lang="ts">
   import { onMount, tick, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onready" | "onrendered" | "onshown" | "children" | "class" | "style" | "ref"
+  > & {
     onready?: (text: string) => void;
     onrendered?: (count: number) => void;
     onshown?: (text: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { onready, onrendered, onshown, class: className, style, ...attributes }: Props = $props();
+  let {
+    onready,
+    onrendered,
+    onshown,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let status = $state("Loading");
   let query = $state("");
@@ -63,20 +75,14 @@
     await tick();
     onshown?.(total?.textContent ?? "");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["search-results", className]}
   aria-label="Search"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p bind:this={banner}>{status}</p
   ><label>Query<input

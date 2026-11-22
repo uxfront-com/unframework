@@ -1,6 +1,18 @@
-import { type JSX, Match, Show, Switch, createSignal } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Match,
+  Show,
+  Switch,
+  createSignal,
+  splitProps,
+} from "solid-js";
 
-export default function FilterPanel(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function FilterPanel(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [open, setOpen] = createSignal(false);
   const [colour, setColour] = createSignal<string | null>(null);
   const [note, setNote] = createSignal<string | null>(null);
@@ -9,8 +21,7 @@ export default function FilterPanel(props: { class?: string; style?: JSX.CSSProp
     <section
       class={props.class ? `filter-panel ${props.class}` : "filter-panel"}
       aria-label="Filters"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Show
         when={open()}
@@ -78,11 +89,4 @@ export default function FilterPanel(props: { class?: string; style?: JSX.CSSProp
       </Switch>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

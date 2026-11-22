@@ -1713,6 +1713,10 @@ function checkComponentAttributes(
       }
       seen.add(`${field} ${value}`);
     };
+    const once = (key: string, path: string) => {
+      if (seen.has(key)) errors.push({ path, message: "must be set once" });
+      seen.add(key);
+    };
     switch (attribute.kind) {
       case "Prop":
         name("props", attribute.name, "a prop", "name");
@@ -1735,13 +1739,33 @@ function checkComponentAttributes(
       case "Ref":
         checkRef(attribute, at, place, walk);
         break;
+      // What falls through is checked against the child's fallthrough element by the analyser,
+      // which has the child's API (ADR-0118): here, each name once and what it reads in scope.
+      // A tag candidate's are `checkDynamic`'s.
       case "Static":
+        once(`attribute ${attribute.name}`, `${at}/name`);
+        break;
       case "Bound":
+        once(`attribute ${attribute.name}`, `${at}/name`);
+        checkExpression(attribute.value, `${at}/value`, place.scope, walk);
+        break;
+      case "Event": {
+        const option = attribute.capture
+          ? "capture"
+          : attribute.once
+            ? "once"
+            : attribute.passive
+              ? "passive"
+              : "";
+        once(`listener ${attribute.event} ${option}`, at);
+        checkListener(attribute, at, place, walk);
+        break;
+      }
       case "Spread":
-      case "Event":
       case "Model":
       case "RawHtml":
       case "Directive":
+      case "Rest":
         break;
       default:
         unreachable(attribute);
@@ -2536,6 +2560,17 @@ function checkAttributes(
         if (!isFunctionValue(attribute.value, walk)) {
           checkExpression(attribute.value, `${at}/value`, place.scope, walk, true);
         }
+        break;
+      case "Rest":
+        // The props' rest holds what falls through only where nothing falls through to the
+        // root (ADR-0118).
+        if (walk.component.inheritAttrs !== false) {
+          errors.push({
+            path: at,
+            message: "must be in a component with `inheritAttrs: false` (ADR-0118)",
+          });
+        }
+        claim("...rest", at, false);
         break;
       default:
         unreachable(attribute);

@@ -1,35 +1,26 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, omit, untrack } from "solid-js";
 
 export interface ListSlots {
   item?: (props: { item: string; index: number }) => JSX.Element;
 }
 
 export default function List(
-  props: { items: string[]; label: string } & ListSlots & {
+  props: { items: string[]; label: string } & ListSlots &
+    Omit<ComponentProps<"ul">, "items" | "label" | "item" | "class" | "style"> & {
       class?: string;
       style?: JSX.CSSProperties;
     },
 ) {
+  const others = omit(props, "items", "label", "item");
+
   return (
-    <ul
-      aria-label={props.label}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <ul aria-label={props.label} {...others}>
       <KeyedFor each={props.items} by={(item) => item}>
         {(item) => <li>{props.item?.({ item: item.value, index: item.index })}</li>}
       </KeyedFor>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

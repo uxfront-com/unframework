@@ -1,4 +1,4 @@
-import { type JSX, createSignal, untrack } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, splitProps, untrack } from "solid-js";
 
 export interface Profile {
   name: string;
@@ -11,8 +11,11 @@ export interface ProfileCardProps {
 }
 
 export default function ProfileCard(
-  props: ProfileCardProps & { class?: string; style?: JSX.CSSProperties },
+  props: ProfileCardProps &
+    Omit<ComponentProps<"article">, "initial" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["initial", "class"]);
+
   const [profile, setProfile] = createSignal(untrack(() => props.initial));
 
   function rename(name: string) {
@@ -27,8 +30,7 @@ export default function ProfileCard(
     <article
       class={props.class ? `profile-card ${props.class}` : "profile-card"}
       aria-label="Profile"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{profile().name}</h2>
       <p>{profile().title}</p>
@@ -41,11 +43,4 @@ export default function ProfileCard(
       </button>
     </article>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

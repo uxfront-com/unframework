@@ -1,5 +1,15 @@
 import { vSelectable } from "./vSelectable";
-import { type JSX, Show, createEffect, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+  untrack,
+} from "solid-js";
 import { isServer } from "solid-js/web";
 
 interface User {
@@ -44,7 +54,11 @@ function vMark(getValue: () => string): (element: HTMLElement) => void {
   };
 }
 
-export default function Profile(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Profile(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [user, setUser] = createSignal<User | null>({ name: "Ada" });
   const [note, setNote] = createSignal("Hello");
   const [label, setLabel] = createSignal<string | number>("Lovelace");
@@ -56,8 +70,7 @@ export default function Profile(props: { class?: string; style?: JSX.CSSProperti
     <section
       class={props.class ? `profile ${props.class}` : "profile"}
       aria-label="Profile"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Show when={user()}>{(user) => <p ref={vMark(() => user().name)}>{user().name}</p>}</Show>
       <Show when={((label) => (typeof label === "string" ? { label } : undefined))(label())}>
@@ -89,13 +102,6 @@ export default function Profile(props: { class?: string; style?: JSX.CSSProperti
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Puts a field's caret after its text, as setting the text of an empty field leaves it. */

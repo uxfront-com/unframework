@@ -1,20 +1,17 @@
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, useRef, useState } from "react";
 
 export interface RowsSlots {
   row?: ReactNode;
 }
 
-export interface RowsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RowsAttributes = Omit<ComponentPropsWithRef<"div">, "row" | "children">;
 
 export default function Rows({ row, className, style, ...attributes }: RowsSlots & RowsAttributes) {
   const [items, setItems] = useState([1, 2]);
   const itemsRef = useRef(items);
 
   return (
-    <div className={cx("rows", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("rows", className)} style={style} {...attributes}>
       <ul>
         {items.map((item) => (
           <li key={item}>{row}</li>
@@ -55,13 +52,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

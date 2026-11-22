@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface NameSorterEvents {
   onStarted?: (text: string) => void;
@@ -7,10 +7,10 @@ export interface NameSorterEvents {
   onTotal?: (letters: number) => void;
 }
 
-export interface NameSorterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NameSorterAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onStarted" | "onFirstSeen" | "onSecondSeen" | "onTotal" | "children"
+>;
 
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -94,7 +94,7 @@ export default function NameSorter({
       className={cx("name-sorter", className)}
       aria-label="Names"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>Names: {names.join(", ")}</p>
       <p>Added: {count}</p>
@@ -121,13 +121,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

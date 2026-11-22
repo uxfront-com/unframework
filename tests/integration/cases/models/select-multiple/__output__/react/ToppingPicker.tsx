@@ -1,9 +1,6 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ToppingPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ToppingPickerAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ToppingPicker({
   className,
@@ -14,12 +11,7 @@ export default function ToppingPicker({
   const toppingsRef = useRef(toppings);
 
   return (
-    <section
-      aria-label="Pizza"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Pizza" className={className} style={style} {...attributes}>
       <label>
         Toppings{" "}
         <select
@@ -50,13 +42,4 @@ export default function ToppingPicker({
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

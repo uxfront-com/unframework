@@ -318,7 +318,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ol"
+            "rootTag": "ol",
+            "fallthroughTag": "ol",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "aria-label",
+                  "value": "People"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "ol"
           }
         ],
         "keys": []

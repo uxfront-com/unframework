@@ -408,7 +408,7 @@ targets do is the analyser's to reject (ADR-0033).
 | `next-tick`                                    | emulated: `nextTick`                                                                                         |
 | `class-binding`                                | emulated: `cx`, which reads an array's entries where a part may be an array or an object (ADR-0065)          |
 | `style-binding`                                | emulated: `styleProperties`, a style bound to a value as an object with kebab-case keys (ADR-0065)           |
-| `child-root-scope`                             | emulated: `scopeAttributes`, the props' `data-uf-*` keys, spread on the root nodes                           |
+| `child-root-scope`                             | emulated: `scopeAttributes`, the props' `data-uf-*` keys, spread on the root nodes, and `restAttributes`     |
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
 | `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
@@ -420,30 +420,32 @@ targets do is the analyser's to reject (ADR-0033).
 
 Everything a parent passes is a prop, read through the props object (`src/composition.ts`):
 
-| Source                                      | Solid                                                                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `import Field from "./Field.uf.tsx"`        | `import Field from "./Field"`; a component that renders itself calls its own function                         |
-| `<Field label="Name" tone={tone.value} />`  | `<Field label="Name" tone={tone()} />`                                                                        |
-| `onClear={clear}` on a component            | `onClear={clear}`, the handler taking the event's payload                                                     |
-| a component as a `.map` root                | `<KeyedFor>`, as an element                                                                                   |
-| `defineSlots<{ … }>()`                      | an interface of props: `children?: JSX.Element`, `title?: JSX.Element`, `item?: (props: P) => JSX.Element`    |
-| `{slots.default?.()}`, `{slots.title?.()}`  | `{props.children}`, `{props.title}`; `{props.item?.({ item })}` for a scoped slot                             |
-| `{slots.title?.() ?? <em>None</em>}`        | `{props.title ?? <em>None</em>}`                                                                              |
-| `slots.title` as a condition                | `props.title`                                                                                                 |
-| a fill, `{{ title: () => <h2 />, item }}`   | `title={<h2 />}`, `item={({ item }) => …}`; the default slot's fill is the children, or `children={…}`        |
-| forwarding, `{{ title: slots.title }}`      | `title={props.title}`, `children={props.children}`                                                            |
-| `defineModel<number>("value", { default })` | `value?` and `onValueChange?` props; a local signal while `props.value === undefined`                         |
-| `value.value = x`                           | `setValue(x)`: writes the local signal and calls `props.onValueChange?.(x)`                                   |
-| `v-model:value={count.value}`               | `value={count()} onValueChange={setCount}`                                                                    |
-| `class` and `style` on a component          | merged into its root: ``class={props.class ? `card ${props.class}` : "card"}``, `style={props.style}`         |
-| `defineOptions({ inheritAttrs: false })`    | no `class` or `style` prop                                                                                    |
-| `defineExpose({ focus })`                   | a `ref` prop, `untrack(() => props.ref?.({ focus }))`                                                         |
-| `ref={field}` on a component                | `let field: T \| null = null`, set by the `ref` callback and emptied on cleanup, as an element's              |
-| `InjectionKey<Theme> = Symbol("…")`         | `export const ThemeKey = createContext<Theme>()` in the output of its module's main component                 |
-| `provide(ThemeKey, value)`                  | `<ThemeKey.Provider value={…}>` around the template, the value read once in `untrack` where it reads a prop   |
-| `inject(ThemeKey, fallback)`                | `useContext(ThemeKey) ?? fallback`                                                                            |
-| a provided ref, `provide(CountKey, count)`  | `{ get value() { return count(); } }` (`refObject`); the key is `createContext<{ readonly value: number }>()` |
-| `<component is={…}>`                        | `<Dynamic component={…}>`                                                                                     |
+| Source                                       | Solid                                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `import Field from "./Field.uf.tsx"`         | `import Field from "./Field"`; a component that renders itself calls its own function                         |
+| `<Field label="Name" tone={tone.value} />`   | `<Field label="Name" tone={tone()} />`                                                                        |
+| `onClear={clear}` on a component             | `onClear={clear}`, the handler taking the event's payload                                                     |
+| a component as a `.map` root                 | `<KeyedFor>`, as an element                                                                                   |
+| `defineSlots<{ … }>()`                       | an interface of props: `children?: JSX.Element`, `title?: JSX.Element`, `item?: (props: P) => JSX.Element`    |
+| `{slots.default?.()}`, `{slots.title?.()}`   | `{props.children}`, `{props.title}`; `{props.item?.({ item })}` for a scoped slot                             |
+| `{slots.title?.() ?? <em>None</em>}`         | `{props.title ?? <em>None</em>}`                                                                              |
+| `slots.title` as a condition                 | `props.title`                                                                                                 |
+| a fill, `{{ title: () => <h2 />, item }}`    | `title={<h2 />}`, `item={({ item }) => …}`; the default slot's fill is the children, or `children={…}`        |
+| forwarding, `{{ title: slots.title }}`       | `title={props.title}`, `children={props.children}`                                                            |
+| `defineModel<number>("value", { default })`  | `value?` and `onValueChange?` props; a local signal while `props.value === undefined`                         |
+| `value.value = x`                            | `setValue(x)`: writes the local signal and calls `props.onValueChange?.(x)`                                   |
+| `v-model:value={count.value}`                | `value={count()} onValueChange={setCount}`                                                                    |
+| `class` and `style` on a component           | merged into its root: ``class={props.class ? `card ${props.class}` : "card"}``, `style={props.style}`         |
+| `id`, `aria-*`, `onClick` on a component     | `const [, others] = splitProps(props, ["title"]);` and `{...others}` on its root, after its own attributes    |
+| `{ label, ...rest }` and `<input {...rest}>` | `const [, rest] = splitProps(props, ["label", "ref"]);`, `{...restAttributes(rest)}` last on the `<input>`    |
+| `defineOptions({ inheritAttrs: false })`     | nothing falls through but to the rest's element; the root takes the consumer's `ref`                          |
+| `defineExpose({ focus })`                    | a `ref` prop, `untrack(() => props.ref?.({ focus }))`                                                         |
+| `ref={field}` on a component                 | `let field: T \| null = null`, set by the `ref` callback and emptied on cleanup, as an element's              |
+| `InjectionKey<Theme> = Symbol("…")`          | `export const ThemeKey = createContext<Theme>()` in the output of its module's main component                 |
+| `provide(ThemeKey, value)`                   | `<ThemeKey.Provider value={…}>` around the template, the value read once in `untrack` where it reads a prop   |
+| `inject(ThemeKey, fallback)`                 | `useContext(ThemeKey) ?? fallback`                                                                            |
+| a provided ref, `provide(CountKey, count)`   | `{ get value() { return count(); } }` (`refObject`); the key is `createContext<{ readonly value: number }>()` |
+| `<component is={…}>`                         | `<Dynamic component={…}>`                                                                                     |
 
 `v-model` on a form control is the control's state and Vue's event for it (`src/models.ts`):
 
@@ -507,9 +509,26 @@ A component that imports a stylesheet imports the sheet `compile()` scoped for i
 other imports: `import "./Badge.uf.tsx.css";` (ADR-0063). The shared JSX builder prints
 `data-uf-<id>=""` on each element it renders, the parent's attribute on a child's tag, and the
 child's `-s` on the content filled into a child whose sheet uses `:slotted()`. A component also
-takes the scope attributes of its styled parents: `{...scopeAttributes(props)}` on each root node: its root element, component or `<component is>`, or each branch of a root conditional that renders one alone (`scopeRoots`, where Vue's fallthrough reaches). The inline helper reads the props' names alone, keeps
-the `data-uf-*` ones, and so runs no getter. The spread makes Solid's compiler set the root's
-attributes through `spread` and `mergeProps`, and render it on the server with `ssrElement`.
+takes the scope attributes of its styled parents: a root element or component that takes what falls
+through takes them with it, and any other root node, a `<component is>` or each branch of a root
+conditional that renders one alone (`scopeRoots`, where Vue's fallthrough reaches), takes
+`{...scopeAttributes(props)}`. The inline helper reads the props' names alone, keeps the `data-uf-*`
+ones, and so runs no getter. Where the props' rest is spread on an element other than the root, the
+root keeps them, and `restAttributes` leaves them out of the rest. A spread makes Solid's compiler
+set the element's attributes through `spread` and `mergeProps`, and render it on the server with
+`ssrElement`.
+
+What a component does not declare falls through (ADR-0118, `src/fallthrough.ts`). Solid passes it
+all as props, so `splitProps` takes out the names the component declares (its props, events,
+slots and models) and those its root merges itself, and the root spreads the others after its own
+attributes, so a consumer's `type="submit"` wins over its `type="button"`. Its `class` and `style`
+merge as before. A listener of its own that Solid writes as an event prop calls the consumer's of
+the same event after it, `onClick={(event) => { save(); props.onClick?.(event); }}`, whose type is
+the function Solid's union holds (`Extract<ComponentProps<"button">["onClick"], …>`). The props type
+takes the root's attributes, `Omit<ComponentProps<"button">, "title" | …>`, or a root component's
+props, `ComponentProps<typeof Base>`, but for the names the component declares. A consumer's `ref`
+on a component that exposes nothing holds the root element: Solid's spread hands it the element
+beside the root's own `ref` callback, and with `inheritAttrs: false` the root takes it itself.
 
 ## Toolchain
 

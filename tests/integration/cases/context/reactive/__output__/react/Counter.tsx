@@ -1,10 +1,7 @@
 import Display from "./Display";
-import { type CSSProperties, createContext, useRef, useState } from "react";
+import { type ComponentPropsWithRef, createContext, useRef, useState } from "react";
 
-export interface CounterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CounterAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export const CountKey = createContext<{ readonly value: number } | undefined>(undefined);
 
@@ -15,12 +12,7 @@ export default function Counter({ className, style, ...attributes }: CounterAttr
 
   return (
     <CountKey value={countValue}>
-      <section
-        aria-label="Counter"
-        className={className}
-        style={style}
-        {...scopeAttributes(attributes)}
-      >
+      <section aria-label="Counter" className={className} style={style} {...attributes}>
         <Display />
         <button
           type="button"
@@ -34,15 +26,6 @@ export default function Counter({ className, style, ...attributes }: CounterAttr
       </section>
     </CountKey>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** A provided ref as its consumers read it: a `value` getter over the state. */

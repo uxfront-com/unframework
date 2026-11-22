@@ -59,10 +59,13 @@ const ATTRIBUTE_CAPABILITIES: Readonly<Record<Attribute["kind"], CapabilityName>
   Model: "two-way-binding",
   RawHtml: "raw-html",
   Directive: "directive",
+  // The props' rest takes what a consumer passes (ADR-0118).
+  Rest: "fallthrough",
 };
 /**
- * What each kind of a component's attribute needs (ADR-0055): a prop only the component, a
- * `class` or a `style` fallthrough, a `ref` what the child exposes.
+ * What each kind of a component's attribute needs (ADR-0055, ADR-0118): a prop only the
+ * component, a `class`, a `style`, an attribute or a native listener fallthrough, a `ref` what
+ * the child exposes or its root element.
  */
 const COMPONENT_ATTRIBUTE_CAPABILITIES: Readonly<
   Record<ComponentAttribute["kind"], CapabilityName>
@@ -73,6 +76,9 @@ const COMPONENT_ATTRIBUTE_CAPABILITIES: Readonly<
   Class: "fallthrough",
   Style: "fallthrough",
   Ref: "expose",
+  Static: "fallthrough",
+  Bound: "fallthrough",
+  Event: "fallthrough",
 };
 /**
  * The attributes that also need `interactivity` at their span, as a listener and a template ref
@@ -445,12 +451,23 @@ function componentAttribute(
       break;
     case "Static":
     case "Bound":
+      use(
+        onComponent
+          ? COMPONENT_ATTRIBUTE_CAPABILITIES[attribute.kind]
+          : ATTRIBUTE_CAPABILITIES[attribute.kind],
+        attribute.span,
+      );
+      break;
     case "Spread":
     case "RawHtml":
     case "Directive":
+    case "Rest":
       use(ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
       break;
     case "Event":
+      // A native listener on a component falls through to its root (ADR-0118), and still needs
+      // code running in the browser.
+      if (onComponent) use(COMPONENT_ATTRIBUTE_CAPABILITIES.Event, attribute.span);
       use(ATTRIBUTE_CAPABILITIES.Event, attribute.span);
       use("event-semantics", attribute.span);
       for (const option of ["capture", "once", "passive"] as const) {

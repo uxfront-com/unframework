@@ -1,0 +1,24 @@
+---
+import Bio from "./Bio.astro";
+import NameField from "./NameField.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"form"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
+---
+
+<form
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Profile"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
+  <NameField label="Name" />
+  <button type="button">Edit name</button>
+  <Bio label="Bio" />
+  <button type="button">Edit bio</button>
+</form>

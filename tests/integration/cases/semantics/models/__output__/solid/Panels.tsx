@@ -1,16 +1,13 @@
 import Disclosure from "./Disclosure";
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal } from "solid-js";
 
-export default function Panels(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Panels(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
   const [shipping, setShipping] = createSignal(true);
 
   return (
-    <section
-      aria-label="Panels"
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Panels" {...props}>
       <Disclosure title="Shipping" open={shipping()} onOpenChange={setShipping} />
       <Disclosure title="Returns" />
       <output>Shipping is {shipping() ? "open" : "closed"}</output>
@@ -19,11 +16,4 @@ export default function Panels(props: { class?: string; style?: JSX.CSSPropertie
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

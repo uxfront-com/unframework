@@ -1,7 +1,7 @@
 import Card from "./Card";
 import Tip from "./Tip";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type ReactNode,
   type ReactPortal,
   useRef,
@@ -15,10 +15,7 @@ interface Row {
   label: string;
 }
 
-export interface BoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BoardAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Board({ className, style, ...attributes }: BoardAttributes) {
   const [rows, setRows] = useState<Row[]>([
@@ -36,12 +33,7 @@ export default function Board({ className, style, ...attributes }: BoardAttribut
   );
 
   return (
-    <section
-      className={cx("board", className)}
-      aria-label="Board"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("board", className)} aria-label="Board" style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {
@@ -100,15 +92,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** Subscribes to nothing: whether the component has mounted never changes once it has. */

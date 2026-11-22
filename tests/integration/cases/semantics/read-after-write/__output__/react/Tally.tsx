@@ -1,4 +1,4 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface TallyEvents {
   onTotal?: (value: number) => void;
@@ -6,10 +6,10 @@ export interface TallyEvents {
   onLogged?: (entries: string[]) => void;
 }
 
-export interface TallyAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TallyAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onTotal" | "onSteps" | "onLogged" | "children"
+>;
 
 export default function Tally({
   onTotal,
@@ -70,12 +70,7 @@ export default function Tally({
   }
 
   return (
-    <section
-      className={cx("tally", className)}
-      aria-label="Tally"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("tally", className)} aria-label="Tally" style={style} {...attributes}>
       <p role="status">Count: {count}</p>
       <button type="button" onClick={addTwice}>
         Add two
@@ -110,13 +105,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

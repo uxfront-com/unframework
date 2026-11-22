@@ -1,4 +1,4 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export interface AccountSettingsProps {
   charset: string;
@@ -10,7 +10,21 @@ export interface AccountSettingsProps {
   helpOrder: number;
 }
 
-export default component$<AccountSettingsProps & { class?: ClassList; style?: CSSProperties }>(
+export default component$<
+  AccountSettingsProps &
+    Omit<
+      PropsOf<"div">,
+      | "charset"
+      | "bioId"
+      | "bioLimit"
+      | "locked"
+      | "bannerCors"
+      | "seatColumns"
+      | "helpOrder"
+      | "class"
+      | "style"
+    > & { class?: ClassList; style?: CSSProperties }
+>(
   ({
     charset,
     bioId,
@@ -24,7 +38,7 @@ export default component$<AccountSettingsProps & { class?: ClassList; style?: CS
     ...attributes
   }) => {
     return (
-      <div class={["account-settings", className]} {...scopeAttributes(attributes)} style={style}>
+      <div class={["account-settings", className]} style={style} {...attributes}>
         <form accept-charset="utf-8" aria-label="Profile">
           <img
             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"
@@ -76,12 +90,3 @@ export default component$<AccountSettingsProps & { class?: ClassList; style?: CS
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

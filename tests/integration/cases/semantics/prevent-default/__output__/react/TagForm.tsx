@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type InputEvent,
   type KeyboardEvent,
   type MouseEvent,
@@ -12,10 +12,7 @@ export interface TagFormEvents {
   onTagsChange?: (tags: string[]) => void;
 }
 
-export interface TagFormAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagFormAttributes = Omit<ComponentPropsWithRef<"form">, "onTagsChange" | "children">;
 
 function blockComma(event: KeyboardEvent) {
   if (event.key === ",") event.preventDefault();
@@ -25,6 +22,7 @@ export default function TagForm({
   onTagsChange,
   className,
   style,
+  onSubmit,
   ...attributes
 }: TagFormEvents & TagFormAttributes) {
   const [tags, setTags] = useState<string[]>([]);
@@ -63,9 +61,12 @@ export default function TagForm({
     <form
       className={cx("tag-form", className)}
       aria-label="Tags"
-      onSubmit={addTag}
+      onSubmit={(event) => {
+        addTag(event);
+        onSubmit?.(event);
+      }}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         New tag
@@ -98,13 +99,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

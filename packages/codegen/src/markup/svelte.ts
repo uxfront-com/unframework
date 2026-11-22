@@ -142,6 +142,8 @@ const hasSpread = (element: ElementNode) =>
       case "RawHtml":
       // An attachment, `{@attach vFocusTrap(() => open)}`, never an attribute (ADR-0099).
       case "Directive":
+      // The props' rest, spread as it is (ADR-0118).
+      case "Rest":
         return false;
       default:
         return unreachable(attribute);

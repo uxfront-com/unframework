@@ -3,20 +3,18 @@
 <script lang="ts">
   import Badge from "./Badge.svelte";
   import Tag from "./Pill.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { state: string; class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["p"], "state" | "children" | "class" | "style" | "ref"> & {
+    state: string;
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["p"] | null;
+  };
 
-  let { state, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { state, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<p class={["status", className]} {style} {...scopeAttributes(attributes)}>
+<p class={["status", className]} {style} bind:this={ref} {...attributes}>
   <Badge text="Build" /><Tag text={state} />
 </p>

@@ -1,14 +1,14 @@
 import { useControllableState } from "./useControllableState";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface RatingEvents {
   onChange?: (value: number) => void;
 }
 
-export interface RatingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RatingAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "value" | "onChange" | "children"
+>;
 
 export default function Rating({
   value,
@@ -24,12 +24,7 @@ export default function Rating({
   );
 
   return (
-    <section
-      className={cx("rating", className)}
-      aria-label="Rating"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("rating", className)} aria-label="Rating" style={style} {...attributes}>
       <p role="status">Rated {current} of 3</p>
       <button type="button" onClick={() => set(2)}>
         Two
@@ -54,13 +49,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

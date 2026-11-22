@@ -1,31 +1,37 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLButtonAttributes } from "svelte/elements";
   import { button } from "virtual:styleframe";
   import "virtual:styleframe.css";
 
-  type Props = {
+  type Props = Omit<
+    HTMLButtonAttributes,
+    "label" | "size" | "tone" | "children" | "class" | "style" | "ref"
+  > & {
     label: string;
     size?: "sm" | "lg";
     tone?: "neutral" | "primary";
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["button"] | null;
   };
 
-  let { label, size, tone, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    label,
+    size,
+    tone,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <button
   type="button"
   class={[button({ size, tone }), className]}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{label}</button>

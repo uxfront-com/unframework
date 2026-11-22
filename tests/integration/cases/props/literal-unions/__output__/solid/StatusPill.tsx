@@ -1,4 +1,4 @@
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 
 export interface StatusPillProps {
   status: "active" | "paused" | "archived";
@@ -7,12 +7,17 @@ export interface StatusPillProps {
 }
 
 export default function StatusPill(
-  rawProps: StatusPillProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: StatusPillProps &
+    Omit<ComponentProps<"span">, "status" | "size" | "level" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = mergeProps(
     { size: "small", level: 1 } satisfies Partial<StatusPillProps>,
     rawProps,
   );
+  const [, others] = splitProps(props, ["status", "size", "level", "class"]);
+
   return (
     <span
       class={cx(
@@ -22,8 +27,7 @@ export default function StatusPill(
         `pill-level-${props.level}`,
         props.class,
       )}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.status === "active" ? "Active" : props.status === "paused" ? "Paused" : "Archived"}
       {props.level === 3 ? " (critical)" : ""}
@@ -41,11 +45,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

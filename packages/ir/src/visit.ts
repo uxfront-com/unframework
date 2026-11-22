@@ -53,6 +53,7 @@ const attributeKinds = {
   ModelBinding: true,
   RawHtml: true,
   Directive: true,
+  Rest: true,
 } satisfies Record<AnyAttribute["kind"], true>;
 const bindingKinds = {
   prop: true,
@@ -422,6 +423,7 @@ function attributeExpressions(
     case "Event":
     case "Ref":
     case "Listener":
+    case "Rest":
       return;
     default:
       unreachable(attribute);
@@ -914,6 +916,7 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
     case "ModelBinding":
     case "RawHtml":
     case "Directive":
+    case "Rest":
       return;
     case "Class":
       for (const [item, { span }] of attribute.items.entries()) {

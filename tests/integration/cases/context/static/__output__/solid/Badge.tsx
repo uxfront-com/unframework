@@ -1,17 +1,17 @@
 import { ThemeKey } from "./ThemeProvider";
-import { type JSX, useContext } from "solid-js";
+import { type ComponentProps, type JSX, splitProps, useContext } from "solid-js";
 
 export default function Badge(
-  props: { text: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { text: string } & Omit<ComponentProps<"span">, "text" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["text", "class"]);
+
   const theme = useContext(ThemeKey);
 
   return (
-    <span
-      class={cx("badge", theme?.accent, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <span class={cx("badge", theme?.accent, props.class)} {...others}>
       {props.text} in {theme?.label ?? "no theme"}
     </span>
   );
@@ -27,11 +27,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

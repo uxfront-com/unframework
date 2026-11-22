@@ -1,10 +1,10 @@
 import { loadUser } from "./api";
-import { type CSSProperties, Suspense, use, useEffect, useState } from "react";
+import { type ComponentPropsWithRef, Suspense, use, useEffect, useState } from "react";
 
-export interface GreetingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type GreetingAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "id" | "prefix" | "children"
+>;
 
 async function greetingSetup({ id, prefix }: { id: string; prefix: string }) {
   const user = await loadUser(prefix + id);
@@ -26,6 +26,7 @@ function GreetingResolved({
   id,
   className,
   style,
+  prefix: _prefix,
   setup,
   settled: _settled,
   ...attributes
@@ -40,7 +41,7 @@ function GreetingResolved({
       className={cx("greeting", className)}
       aria-label="Greeting"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>Hello, {user.name}</h2>
       <p>Signed in as {id}</p>
@@ -61,15 +62,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

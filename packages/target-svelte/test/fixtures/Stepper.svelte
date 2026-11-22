@@ -9,16 +9,17 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = StepperProps & {
+  type Props = Omit<SvelteHTMLElements["div"], "initial" | "step" | "onchange" | "oncleared" | "children" | "class" | "style" | "ref"> & StepperProps & {
     onchange?: (value: number, changes: number) => void;
     oncleared?: () => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["div"] | null;
   };
 
-  let { initial = 0, step = 1, onchange, oncleared, class: className, style, ...attributes }: Props = $props();
+  let { initial = 0, step = 1, onchange, oncleared, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   const limits = { low: 0, high: 10 };
   let count = $state(untrack(() => initial));
@@ -43,16 +44,9 @@
     count = limits.low;
     oncleared?.();
   };
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<div class={["stepper", className]} data-parity={parity} {style} {...scopeAttributes(attributes)}>
+<div class={["stepper", className]} data-parity={parity} {style} bind:this={ref} {...attributes}>
   <output>{count}</output
   >{#if doubled > limits.high}
     <span>Big</span>

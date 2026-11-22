@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 interface Team {
   name: string;
 }
@@ -25,26 +27,36 @@ export interface AccountSummaryProps {
   seats: (Seat | null)[];
 }
 
-interface Props extends AccountSummaryProps {
+interface Props
+  extends
+    AccountSummaryProps,
+    Omit<
+      HTMLAttributes<"section">,
+      "loading" | "member" | "uptime" | "storage" | "plan" | "seats"
+    > {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { loading, member, uptime, storage, plan, seats, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  loading,
+  member,
+  uptime,
+  storage,
+  plan,
+  seats,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <section
   class:list={["account-summary", className]}
-  aria-label="Account"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Account"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   {loading ? (
     <p>Loading the account</p>

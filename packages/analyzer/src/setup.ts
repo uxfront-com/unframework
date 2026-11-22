@@ -69,6 +69,7 @@ import { parseModule, visitorKeys } from "@unframework.dev/parser";
 
 import { inheritAttrsOption, withReferences } from "./api.ts";
 import type { AuthoringApi } from "./authoring.ts";
+import { passesListener } from "./components.ts";
 import { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, checkType, closure } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
@@ -79,6 +80,7 @@ import { isStatic } from "./props.ts";
 import type { PropsAnalysis } from "./props.ts";
 import type {
   ComponentFunction,
+  ComponentInfo,
   EventParameter,
   EventPayload,
   RenderContext,
@@ -121,6 +123,11 @@ export interface SetupContext {
   /** The module's authoring imports, by the identifier that declares each. */
   readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;
   readonly component: ComponentFunction;
+  /**
+   * The components in scope, by what declares each name, so a native listener a component
+   * passes through to its root (ADR-0118) is read as an element's.
+   */
+  readonly components?: ReadonlyMap<object, ComponentInfo | undefined>;
   readonly props: PropsAnalysis;
   /** The statements of the body before its return. */
   readonly statements: readonly (AST.Directive | AST.Statement)[];
@@ -2874,7 +2881,21 @@ function findEventParameters(
       node.name.type === "JSXIdentifier" &&
       /^[A-Z]/.test(node.name.name)
     ) {
-      for (const attribute of node.attributes) componentAttributes.add(attribute);
+      const resolution = context.scopes.resolve(node.name as unknown as AST.IdentifierReference);
+      const api =
+        resolution.kind === "import" || resolution.kind === "variable"
+          ? context.components?.get(resolution.declaration)?.api
+          : undefined;
+      for (const attribute of node.attributes) {
+        // A native listener that falls through to the child's root is an element's (ADR-0118).
+        const passed =
+          api &&
+          attribute.type === "JSXAttribute" &&
+          attribute.name.type === "JSXIdentifier" &&
+          /^on[A-Z]/.test(attribute.name.name) &&
+          passesListener(attribute.name.name, api);
+        if (!passed) componentAttributes.add(attribute);
+      }
     }
     if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") return;
     if (componentAttributes.has(node)) return;

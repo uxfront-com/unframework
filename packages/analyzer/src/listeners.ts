@@ -83,6 +83,14 @@ function eventOf(name: string): string {
   return REACT_EVENTS.get(lower) ?? lower;
 }
 
+/**
+ * Whether an event is one an element's listener may name (`./listeners.ts` reports what it does
+ * not support), so a listener of it on a component falls through to its root (ADR-0118).
+ */
+export function isElementEvent(event: string): boolean {
+  return known(event);
+}
+
 /** Whether a DOM event of any kind has the name: one an element, the window or HTML knows. */
 function known(event: string): boolean {
   return DOM_EVENTS.has(event) || WINDOW_EVENTS.has(event) || UNSUPPORTED_EVENTS.has(event);

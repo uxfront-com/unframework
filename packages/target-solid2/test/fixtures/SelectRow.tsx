@@ -1,18 +1,17 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export function SelectRow(
-  props: { value: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { value: string } & Omit<ComponentProps<"option">, "value" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "value");
+
   return (
-    <option value={props.value} class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <option value={props.value} {...others}>
       {props.value}
     </option>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

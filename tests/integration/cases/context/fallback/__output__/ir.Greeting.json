@@ -229,7 +229,17 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "lang"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "div"
           }
         ],
         "keys": [

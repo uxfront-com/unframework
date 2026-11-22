@@ -2,32 +2,36 @@
 
 <script lang="ts">
   import { useControllableState } from "./useControllableState.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "value" | "onchange" | "children" | "class" | "style" | "ref"
+  > & {
     value?: number;
     onchange?: (value: number) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { value, onchange, class: className, style, ...attributes }: Props = $props();
+  let {
+    value,
+    onchange,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   const controllableState = useControllableState(
     () => value,
     1,
     (next) => onchange?.(next),
   );
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={["rating", className]} aria-label="Rating" {style} {...scopeAttributes(attributes)}>
+<section class={["rating", className]} aria-label="Rating" {style} bind:this={ref} {...attributes}>
   <p role="status">Rated {controllableState.current} of 3</p
   ><button type="button" onclick={() => controllableState.set(2)}>Two</button
   ><button type="button" onclick={() => controllableState.set(3)}>Three</button>

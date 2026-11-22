@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver, merge, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, merge, omit, untrack } from "solid-js";
 
 export interface CounterProps {
   initial?: number;
@@ -11,7 +11,12 @@ export interface CounterEvents {
 }
 
 export default function Counter(
-  rawProps: CounterProps & CounterEvents & { class?: string; style?: JSX.CSSProperties },
+  rawProps: CounterProps &
+    CounterEvents &
+    Omit<ComponentProps<"div">, "initial" | "step" | "onChange" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = merge(rawProps, {
     get initial() {
@@ -21,6 +26,8 @@ export default function Counter(
       return rawProps.step === undefined ? 1 : rawProps.step;
     },
   });
+  const others = omit(props, "initial", "step", "onChange", "class");
+
   const [count, setCount] = createState(untrack(() => props.initial));
   const doubled = () => count() * 2;
 
@@ -30,11 +37,7 @@ export default function Counter(
   }
 
   return (
-    <div
-      class={props.class ? `counter ${props.class}` : "counter"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `counter ${props.class}` : "counter"} {...others}>
       <output>{count()}</output>
       <Show when={doubled() > 10}>
         <span>Big</span>
@@ -44,13 +47,6 @@ export default function Counter(
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

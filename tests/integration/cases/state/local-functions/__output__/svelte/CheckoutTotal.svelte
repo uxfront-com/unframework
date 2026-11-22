@@ -10,15 +10,27 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = CheckoutTotalProps & {
-    onshippingchange?: (method: ShippingMethod) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "subtotal" | "onshippingchange" | "children" | "class" | "style" | "ref"
+  > &
+    CheckoutTotalProps & {
+      onshippingchange?: (method: ShippingMethod) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { subtotal, onshippingchange, class: className, style, ...attributes }: Props = $props();
+  let {
+    subtotal,
+    onshippingchange,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   const rates = { standard: 0, express: 1200 };
 
@@ -42,20 +54,14 @@
   function chooseStandard() {
     choose("standard");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["checkout-total", className]}
   aria-label="Order total"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p>Subtotal: {formatCents(subtotal)}</p
   ><p>Shipping: {formatCents(shipping)}</p

@@ -90,6 +90,7 @@ import type {
   DirectiveHook,
   UfDirective,
   RefAttribute,
+  RestAttribute,
   RefType,
   Reference,
   RefSource,
@@ -968,6 +969,11 @@ export function createFunctionHandler(binding: BindingId, at: Span): FunctionHan
 /** Builds a handler written in place: `onClick={() => count.value++}`. */
 export function createInlineHandler(fn: FunctionCode, at: Span): InlineHandler {
   return { kind: "Inline", function: fn, span: at };
+}
+
+/** Builds `{...rest}`, the props' rest spread on an element (ADR-0118). */
+export function createRestAttribute(at: Span): RestAttribute {
+  return { kind: "Rest", span: at };
 }
 
 /** Builds `ref={input}`, which attaches the element to a `templateRef` binding. */

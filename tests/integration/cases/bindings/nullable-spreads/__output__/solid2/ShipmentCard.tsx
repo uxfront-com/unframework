@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, Show, createMemo, merge, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, Show, createMemo, merge, omit, untrack } from "solid-js";
 
 interface LabelAttributes {
   id: string;
@@ -24,19 +24,44 @@ export interface ShipmentCardProps {
 }
 
 export default function ShipmentCard(
-  rawProps: ShipmentCardProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: ShipmentCardProps &
+    Omit<
+      ComponentProps<"section">,
+      | "reference"
+      | "carrier"
+      | "eta"
+      | "parcel"
+      | "tracked"
+      | "tracking"
+      | "stops"
+      | "signature"
+      | "class"
+      | "style"
+    > & { class?: string; style?: JSX.CSSProperties },
 ) {
   const props = merge(rawProps, {
     get eta() {
       return rawProps.eta === undefined ? null : rawProps.eta;
     },
   });
+  const others = omit(
+    props,
+    "reference",
+    "carrier",
+    "eta",
+    "parcel",
+    "tracked",
+    "tracking",
+    "stops",
+    "signature",
+    "class",
+  );
+
   return (
     <section
       class={props.class ? `shipment-card ${props.class}` : "shipment-card"}
       aria-label={props.reference}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p id={props.carrier?.id} title={props.carrier?.title}>
         Carrier
@@ -78,13 +103,6 @@ export default function ShipmentCard(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

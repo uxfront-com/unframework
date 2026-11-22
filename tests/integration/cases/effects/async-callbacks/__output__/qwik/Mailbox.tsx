@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -21,7 +22,12 @@ export interface MailboxEvents {
 }
 
 export default component$<
-  MailboxProps & MailboxEvents & { class?: ClassList; style?: CSSProperties }
+  MailboxProps &
+    MailboxEvents &
+    Omit<
+      PropsOf<"section">,
+      "folder" | "onLoaded$" | "onProgress$" | "onSeen$" | "onNoted$" | "class" | "style"
+    > & { class?: ClassList; style?: CSSProperties }
 >(
   ({
     folder,
@@ -154,12 +160,7 @@ export default component$<
     );
 
     return (
-      <section
-        class={["mailbox", className]}
-        aria-label="Mailbox"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
+      <section class={["mailbox", className]} aria-label="Mailbox" style={style} {...attributes}>
         <h2>{name.value}</h2>
         <p role="status">{summary.value}</p>
         <p>Status: {status.value}</p>
@@ -186,13 +187,4 @@ export default component$<
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

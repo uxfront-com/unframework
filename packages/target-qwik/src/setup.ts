@@ -315,11 +315,24 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
     }
     case "TemplateRef": {
       const name = bindingName(plan, item.binding);
-      return [
+      const statements = [
         declaration(
           `const ${name} = ${names.core("useSignal")}<${item.type?.code ?? "Element"}>();`,
         ),
       ];
+      // On a root component that takes the consumer's ref in its place (./fallthrough.ts), it
+      // holds the element the consumer's does, before the component's own visible tasks run.
+      const { passed } = plan.composition;
+      if (passed?.forwarded === item) {
+        const ref = passed.ref();
+        statements.push(
+          block(
+            `${names.core("useVisibleTask$")}(({ track }) => {\nif (${ref}) ${name}.value = track(${ref});\n}, { strategy: "document-ready" });`,
+          ),
+          declaration(`const ${passed.rootSignal()} = ${ref} ?? ${name};`),
+        );
+      }
+      return statements;
     }
     case "Id":
       return [

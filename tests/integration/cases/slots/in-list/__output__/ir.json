@@ -181,7 +181,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ol"
+            "rootTag": "ol",
+            "fallthroughTag": "ol",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "steps"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "ol"
           }
         ],
         "keys": []

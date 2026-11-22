@@ -12,21 +12,19 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ChecklistProps & { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["ul"], "entries" | "children" | "class" | "style" | "ref"> &
+    ChecklistProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["ul"] | null;
+    };
 
-  let { entries, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { entries, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<ul class={["checklist", className]} {style} {...scopeAttributes(attributes)}>
+<ul class={["checklist", className]} {style} bind:this={ref} {...attributes}>
   {#each entries as entry (entry.id)}
     <li>
       <label>{entry.label}<input name={`note-${entry.id}`} aria-label={`Note for ${entry.label}`} /></label>

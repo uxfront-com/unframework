@@ -1,12 +1,16 @@
 import { useCart } from "./useCart";
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export interface CartEvents {
   onTotal?: (items: number) => void;
   onCleared?: (empty: boolean) => void;
 }
 
-export default function Cart(props: CartEvents & { class?: string; style?: JSX.CSSProperties }) {
+export default function Cart(
+  props: CartEvents & Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["onTotal", "onCleared", "class"]);
+
   const { items, empty, add, clear } = useCart();
 
   function addTwiceAndReport() {
@@ -21,12 +25,7 @@ export default function Cart(props: CartEvents & { class?: string; style?: JSX.C
   }
 
   return (
-    <section
-      class={props.class ? `cart ${props.class}` : "cart"}
-      aria-label="Cart"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `cart ${props.class}` : "cart"} aria-label="Cart" {...others}>
       <p role="status">Items: {items()}</p>
       <button type="button" onClick={addTwiceAndReport}>
         Add three
@@ -36,11 +35,4 @@ export default function Cart(props: CartEvents & { class?: string; style?: JSX.C
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

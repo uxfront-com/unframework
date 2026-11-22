@@ -167,7 +167,7 @@ async function typecheck(
   const contents = blankStrings ? file!.contents.replace(/="x"/g, "={undefined}") : file!.contents;
   const formatted = (await formatOutput({ ...file!, contents })).file.contents;
   // Each element sits on its own line, in order, after the `<div>` line.
-  const first = formatted.split("\n").findIndex((line) => line.trim().startsWith("<div>")) + 2;
+  const first = formatted.split("\n").findIndex((line) => line.trim().startsWith("<div")) + 2;
   return failingLines(formatted, first);
 }
 

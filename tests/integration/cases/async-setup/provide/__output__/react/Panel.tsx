@@ -1,15 +1,19 @@
 import Badge, { ToneKey } from "./Badge";
 import { loadUser } from "./api";
-import { type CSSProperties, type ReactNode, Suspense, use, useEffect, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type ReactNode,
+  Suspense,
+  use,
+  useEffect,
+  useState,
+} from "react";
 
 export interface PanelSlots {
   children?: ReactNode;
 }
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<ComponentPropsWithRef<"section">, "id" | "children">;
 
 async function panelSetup({ id }: { id: string }) {
   const user = await loadUser(id);
@@ -31,6 +35,7 @@ function PanelResolved({
   children,
   className,
   style,
+  id: _id,
   setup,
   settled: _settled,
   ...attributes
@@ -46,7 +51,7 @@ function PanelResolved({
         className={cx("panel", className)}
         aria-label={user.name}
         style={style}
-        {...scopeAttributes(attributes)}
+        {...attributes}
       >
         <Badge />
         {children}
@@ -68,15 +73,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

@@ -8,6 +8,7 @@ import {
   canonicalNumber,
   CHILDLESS_ATTRIBUTES,
   createBoundAttribute,
+  createRestAttribute,
   createSpreadAttribute,
   createSpreadKey,
   createStaticAttribute,
@@ -24,7 +25,14 @@ import {
   unanalysableUrl,
   unbindableAttribute,
 } from "@unframework.dev/ir";
-import type { Attribute, Namespace, NumberKind, Span, SpreadKey } from "@unframework.dev/ir";
+import type {
+  Attribute,
+  Namespace,
+  NumberKind,
+  Span,
+  SpreadKey,
+  ApiFallthroughOwn,
+} from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
 import { handlerProblems } from "./a11y.ts";
@@ -78,6 +86,12 @@ export interface ElementContext {
   /** Whether the element is the one a list's `.map` renders: its `key` is the list's. */
   listBody: boolean;
   render: RenderContext;
+  /**
+   * Set where the attributes fall through a component to its fallthrough element (ADR-0118):
+   * that element's own attributes and listeners, where the child's API gives them, which the
+   * handler check reads with the consumer's.
+   */
+  fallthrough?: { own: ApiFallthroughOwn | undefined };
 }
 
 /** An element's attributes, lowered. */
@@ -311,8 +325,52 @@ export function lowerAttributes(
       entry.form.kind === "static" &&
       (entry.form.value?.includes("{{") ?? false),
   )?.node;
-  checkHandlers(opening, entries, element);
+  // What falls through is checked with the fallthrough element's own attributes and listeners,
+  // which the child's API gives (ADR-0118). The element's own handlers are its own compile's to
+  // check, so a parent checks only where it passes a listener of its own.
+  if (!element.fallthrough) checkHandlers(opening, entries, element);
+  else if (element.fallthrough.own) {
+    checkHandlers(opening, entries, element, element.fallthrough.own);
+  }
   return { attributes: checkAgainstElement(entries, element), key, binds, braces };
+}
+
+/**
+ * `{...rest}`, the props' rest spread on an element (ADR-0118): once, on an element that renders
+ * at most once, since what a consumer passes lands on one element. A rest the setup rejects
+ * (UF2001, without `inheritAttrs: false`) renders nothing more.
+ */
+function restSpread(item: AST.JSXSpreadAttribute, element: ElementContext): Attribute | undefined {
+  const { render } = element;
+  const rest = render.restProps!;
+  const report = (message: string, related?: { span: Span; message: string }) => {
+    render.reporter.report("UF2001", item, message, {
+      help: `Spread \`${rest.name}\` on one element outside any list.`,
+      ...(related ? { related: [related] } : {}),
+    });
+    return undefined;
+  };
+  if (render.enclosing.length) {
+    return report(
+      `\`${rest.name}\` is spread inside a list: what a consumer passes lands on one element, and a list renders many.`,
+    );
+  }
+  if (render.fill) {
+    return report(
+      `\`${rest.name}\` is spread inside a slot's fill: what a consumer passes lands on one element, and the child may render a fill many times.`,
+    );
+  }
+  if (rest.spread) {
+    return report(
+      `\`${rest.name}\` is spread twice: what a consumer passes lands on one element.`,
+      {
+        span: rest.spread,
+        message: "First spread here",
+      },
+    );
+  }
+  rest.spread = span(item);
+  return rest.accepted ? createRestAttribute(span(item)) : undefined;
 }
 
 /**
@@ -323,9 +381,12 @@ function checkHandlers(
   opening: AST.JSXOpeningElement,
   entries: readonly (Read | SpreadRead | OwnRead)[],
   element: ElementContext,
+  own?: ApiFallthroughOwn,
 ): void {
   const handlers = new Set<string>();
-  const attributes = new Map<string, A11yValue>();
+  const attributes = new Map<string, A11yValue>(
+    own?.attributes.map(({ name, value }) => [name, value ?? null]) ?? [],
+  );
   for (const entry of entries) {
     if ("own" in entry) {
       const event = entry.own === "listener" ? listenerName(entry.nameNode.name)?.event : undefined;
@@ -341,6 +402,9 @@ function checkHandlers(
       for (const { name } of entry.keys) attributes.set(name, null);
     }
   }
+  // A parent that passes no listener changes nothing the element's own compile checked.
+  if (own && !handlers.size) return;
+  for (const event of own?.listeners ?? []) handlers.add(event);
   for (const problem of handlerProblems(element.tag, attributes, handlers)) {
     element.render.reporter.report(
       "UF3030",
@@ -638,6 +702,15 @@ function readSpread(
       (property) => property.type !== "Property" || !isStaticString(property.value),
     );
     return { node: item, binds, attribute: undefined, keys: [] };
+  }
+  if (argument.type === "Identifier" && render.restProps) {
+    const resolution = render.scopes.resolve(argument);
+    if (
+      resolution.kind === "parameter" &&
+      resolution.declaration === render.restProps.declaration
+    ) {
+      return { node: item, binds: true, attribute: restSpread(item, element), keys: [] };
+    }
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);

@@ -1,4 +1,13 @@
-import { type JSX, Show, createSignal, createUniqueId, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  createSignal,
+  createUniqueId,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface LifecycleProps {
   title: string;
@@ -18,8 +27,12 @@ function format(value: number): string {
 }
 
 export default function Lifecycle(
-  props: LifecycleProps & LifecycleEvents & { class?: string; style?: JSX.CSSProperties },
+  props: LifecycleProps &
+    LifecycleEvents &
+    Omit<ComponentProps<"section">, "title" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["title", "onReady", "onTicked", "onToggled", "onSaved"]);
+
   const id = `uf-id-${createUniqueId()}`;
   let heading: HTMLHeadingElement | null = null;
   let details: HTMLUListElement | null = null;
@@ -68,12 +81,7 @@ export default function Lifecycle(
   );
 
   return (
-    <section
-      aria-labelledby={id}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-labelledby={id} {...others}>
       <h2
         id={id}
         ref={(element) => {
@@ -109,13 +117,6 @@ export default function Lifecycle(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

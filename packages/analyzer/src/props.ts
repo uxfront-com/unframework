@@ -71,10 +71,22 @@ export interface PropsAnalysis {
   byDeclaration: Map<object, PropBinding>;
   object: { declaration: object; name: string } | undefined;
   /**
+   * The rest of a destructured pattern, `{ label, ...rest }` (ADR-0118): what declares it, its
+   * name and the rest element. The setup accepts it only with `inheritAttrs: false`.
+   */
+  rest: RestProps | undefined;
+  /**
    * Whether the props have a problem: one in a type the component shares with another is
    * reported once, so the reporter alone cannot tell.
    */
   failed: boolean;
+}
+
+/** The rest of a destructured props pattern (ADR-0118). */
+export interface RestProps {
+  declaration: object;
+  name: string;
+  span: { start: number; end: number };
 }
 
 /** A member of the props type, as the props are built from it. */
@@ -111,6 +123,7 @@ export function analyzeProps(
     byName: new Map(),
     byDeclaration: new Map(),
     object: undefined,
+    rest: undefined,
     failed: false,
   };
   const mark = reporter.diagnostics.length;
@@ -190,7 +203,9 @@ export function analyzeProps(
   );
 
   const pattern =
-    parameter.type === "ObjectPattern" ? destructured(parameter, members, reporter) : undefined;
+    parameter.type === "ObjectPattern"
+      ? destructured(parameter, members, reporter, (rest) => (result.rest = rest))
+      : undefined;
   const at = object
     ? { start: parameter.start, end: parameter.start + parameter.name.length }
     : undefined;
@@ -1638,15 +1653,25 @@ function destructured(
   pattern: AST.ObjectPattern,
   members: readonly PropMember[],
   reporter: Reporter,
+  restFound: (rest: RestProps) => void,
 ): Map<string, AST.BindingProperty> {
   const properties = new Map<string, AST.BindingProperty>();
   for (const property of pattern.properties) {
     if (property.type === "RestElement") {
+      // What falls through, which the setup accepts with `inheritAttrs: false` (ADR-0118).
+      if (property.argument.type === "Identifier") {
+        restFound({
+          declaration: property.argument,
+          name: property.argument.name,
+          span: { start: property.start, end: property.end },
+        });
+        continue;
+      }
       reporter.report(
         "UF2001",
         property,
-        "Rest props (`...rest`) are not props: a component's fallthrough is its `class` and `style`, which merge into its root (ADR-0054).",
-        { help: "Destructure each prop by its name." },
+        "The props' rest is one name, `...rest`: it holds what a consumer passes that the component does not declare (ADR-0118).",
+        { help: "Write `...rest`, and spread it on one element: `<input {...rest} />`." },
       );
       continue;
     }

@@ -1,0 +1,4 @@
+{
+  "description": "A consumer's undeclared attributes land on a child's root element: an id, ARIA and data attributes, a bound one that changes with state, and a native one that wins over the root's own. A declared prop named like an attribute does not fall through.",
+  "main": "Editor.uf.tsx"
+}

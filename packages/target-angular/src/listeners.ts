@@ -31,6 +31,7 @@ import type {
   BindingId,
   Code,
   CodeReference,
+  ComponentNode,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -42,10 +43,11 @@ import type { ApiEvent } from "@unframework.dev/ir";
 
 import { childEvent } from "./composition.ts";
 import type { DirectiveSpec } from "./directives.ts";
+import { LISTENERS_INPUT } from "./fallthrough.ts";
 import { assertedCode, assertedFunction } from "./narrowing.ts";
 import { bindingById, formOf, isLoopVariable, resultApi, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";
-import { classRules, statementRead, statementRules } from "./rules.ts";
+import { classRead, classRules, statementRead, statementRules } from "./rules.ts";
 import { bodyStatements, returnsValue } from "./statements.ts";
 
 /** A handler moved to a method of the class. */
@@ -96,6 +98,8 @@ export function planListeners(
   plan: Plan,
   nextTick: string | undefined,
   writes: ReadonlyMap<EventAttribute, string>,
+  /** The root component that takes the component's own consumer's listeners, if one does. */
+  forwards?: ComponentNode,
 ): Listeners {
   const { component } = plan;
   const statements = new Map<EventAttribute, string>();
@@ -154,6 +158,7 @@ export function planListeners(
           const event = childEvent(plan, child, attribute.event);
           outputs.set(attribute, outputStatement(plan, attribute, event, methods, collected));
         }
+        if (node.kind === "Component") onComponent(node);
         return;
       }
       // `<component is>` over tags takes an element's listeners, on each candidate alike.
@@ -173,6 +178,35 @@ export function planListeners(
       onElement(element);
     },
   });
+  /**
+   * A child's native listeners, which fall through to its element (ADR-0118): each is a template
+   * statement the child's `ufListeners` record runs in an arrow, written as an element's is. On
+   * the root component of a component that passes its own consumer's listeners on, each calls a
+   * method that runs it and then the consumer's listener of its event (`chainStatement`).
+   */
+  function onComponent(node: ComponentNode): void {
+    const element: ElementNode = {
+      kind: "Element",
+      tag: node.component,
+      attributes: node.attributes.filter((attribute) => attribute.kind === "Static"),
+      children: [],
+      span: node.span,
+    };
+    const chains =
+      forwards !== undefined &&
+      forwards.span.start === node.span.start &&
+      forwards.span.end === node.span.end;
+    for (const attribute of node.attributes) {
+      if (attribute.kind !== "Event") continue;
+      const name = () => handlerName(plan, element, attribute.event, undefined);
+      if (chains) {
+        statements.set(attribute, chainStatement(plan, attribute, name(), methods, collected));
+        continue;
+      }
+      const { code, valued } = listenerStatement(plan, attribute, name, methods, collected);
+      statements.set(attribute, valued ? `void ${code}` : code);
+    }
+  }
   function onElement(node: ElementNode): void {
     const groups = orderedGroups(node, writes);
     for (const attribute of node.attributes) {
@@ -360,6 +394,62 @@ function listenerStatement(
       );
       methods.push(hoisted(name, fn, attribute.event, body));
       return { code: `${name}(${event === undefined ? "" : "$event"})`, valued: false };
+    }
+    default:
+      return unreachable(handler);
+  }
+}
+
+/**
+ * The statement of a native listener a component passes its root component, where its own
+ * consumer's listeners pass on to that component too (ADR-0118): a call of a method that runs
+ * the listener's handler, then the consumer's listener of its event, as Vue's merge runs them
+ * (`onBaseClick($event)`). A handler that awaits or destructures its event is a method of its
+ * own, which the chain calls, so the consumer's still runs as the handler's first await starts.
+ */
+function chainStatement(
+  plan: Plan,
+  attribute: EventAttribute,
+  name: string,
+  methods: HandlerMethod[],
+  collected: StatementReads,
+): string {
+  const { handler, event } = attribute;
+  const type = DOM_EVENTS.get(event) ?? "Event";
+  const key = /^[A-Za-z_$][\w$]*$/.test(event) ? `.${event}` : `.[${JSON.stringify(event)}]`;
+  const consumer = (parameter: string) => `this.${LISTENERS_INPUT}()?${key}?.(${parameter});`;
+  const chain = (parameter: string, own: string, typed = `${parameter}: ${type}`) => {
+    methods.push({
+      name,
+      parameters: [typed],
+      async: false,
+      body: `${own}\n${consumer(parameter)}`,
+    });
+    return `${name}($event)`;
+  };
+  switch (handler.kind) {
+    case "Function": {
+      const fn = functionOf(plan.component, handler.binding);
+      const parameter = plan.locals.claim("event");
+      const call = `${classRead(plan, bindingById(plan, handler.binding))}(${fn.parameters[0]?.event === undefined ? "" : parameter})`;
+      return chain(parameter, `${fn.async ? "void " : ""}${call};`);
+    }
+    case "Inline": {
+      const fn = handler.function;
+      const [first] = fn.parameters;
+      const body = bodyStatements(
+        assertedFunction(fn, () => true),
+        plan,
+        classRules(plan, collected.nextTick),
+      );
+      if (!fn.async && (first === undefined || first.name !== undefined)) {
+        if (first?.name === undefined) return chain(plan.locals.claim("event"), body);
+        return chain(first.name, body, first.type ? parameterText(first) : undefined);
+      }
+      const own = plan.members.claim(`${name}Handler`);
+      methods.push(hoisted(own, fn, event, body));
+      const parameter = plan.locals.claim("event");
+      return chain(parameter, `void this.${own}(${first === undefined ? "" : parameter});`);
     }
     default:
       return unreachable(handler);

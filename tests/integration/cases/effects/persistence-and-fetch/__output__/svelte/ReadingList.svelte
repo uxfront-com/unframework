@@ -8,18 +8,33 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ReadingListProps & {
-    onrequested?: (url: string) => void;
-    oncancelled?: (query: string) => void;
-    onfound?: (query: string, count: number) => void;
-    onstarted?: () => void;
-    onchecked?: (count: number) => void;
-    onrefreshed?: (total: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "shelves"
+    | "onrequested"
+    | "oncancelled"
+    | "onfound"
+    | "onstarted"
+    | "onchecked"
+    | "onrefreshed"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    ReadingListProps & {
+      onrequested?: (url: string) => void;
+      oncancelled?: (query: string) => void;
+      onfound?: (query: string, count: number) => void;
+      onstarted?: () => void;
+      onchecked?: (count: number) => void;
+      onrefreshed?: (total: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     shelves,
@@ -31,6 +46,7 @@
     onrefreshed,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -130,20 +146,14 @@
     refreshing = false;
     onrefreshed?.(shelves.reduce((total, name) => total + (counts[name] ?? 0), 0));
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["reading-list", className]}
   aria-label="Reading list"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <label>Search<input
     type="search"

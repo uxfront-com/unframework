@@ -1,4 +1,4 @@
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 
 export interface ActionButtonProps {
   label: string;
@@ -9,9 +9,14 @@ export interface ActionButtonProps {
 }
 
 export default function ActionButton(
-  rawProps: ActionButtonProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: ActionButtonProps &
+    Omit<ComponentProps<"button">, "label" | "size" | "primary" | "busy" | "badge" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = mergeProps({ busy: false } satisfies Partial<ActionButtonProps>, rawProps);
+  const [, others] = splitProps(props, ["label", "size", "primary", "busy", "badge", "class"]);
+
   return (
     <button
       type="button"
@@ -27,8 +32,7 @@ export default function ActionButton(
         props.primary ? "solid" : "outline",
         props.class,
       )}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.label}
     </button>
@@ -45,11 +49,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

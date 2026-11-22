@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -16,7 +17,12 @@ export interface StepperEvents {
 }
 
 export default component$<
-  StepperProps & StepperEvents & { class?: ClassList; style?: CSSProperties }
+  StepperProps &
+    StepperEvents &
+    Omit<PropsOf<"div">, "start" | "onChange$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ start = 0, onChange$, class: className, style, ...attributes }) => {
   const count = useSignal(start);
 
@@ -26,7 +32,7 @@ export default component$<
   });
 
   return (
-    <div class={["stepper", className]} {...scopeAttributes(attributes)} style={style}>
+    <div class={["stepper", className]} style={style} {...attributes}>
       <output>{count.value}</output>
       <button type="button" onClick$={add}>
         Add one
@@ -34,12 +40,3 @@ export default component$<
     </div>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

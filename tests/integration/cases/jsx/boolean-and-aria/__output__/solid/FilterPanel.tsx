@@ -1,4 +1,4 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export interface FilterPanelProps {
   heading: string;
@@ -14,16 +14,43 @@ export interface FilterPanelProps {
 }
 
 export default function FilterPanel(
-  props: FilterPanelProps & { class?: string; style?: JSX.CSSProperties },
+  props: FilterPanelProps &
+    Omit<
+      ComponentProps<"section">,
+      | "heading"
+      | "hint"
+      | "category"
+      | "expanded"
+      | "inStockOnly"
+      | "locked"
+      | "mandatory"
+      | "loading"
+      | "invalid"
+      | "current"
+      | "style"
+    > & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, [
+    "heading",
+    "hint",
+    "category",
+    "expanded",
+    "inStockOnly",
+    "locked",
+    "mandatory",
+    "loading",
+    "invalid",
+    "current",
+    "class",
+  ]);
+
   return (
     <section
       class={props.class ? `filter-panel ${props.class}` : "filter-panel"}
       aria-label={props.heading}
       data-category={props.category}
       data-layout="stacked"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-expanded={props.expanded} aria-describedby="filter-panel-hint">
         Price filters
@@ -55,11 +82,4 @@ export default function FilterPanel(
       </p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

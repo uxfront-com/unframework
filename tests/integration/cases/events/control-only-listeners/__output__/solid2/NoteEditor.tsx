@@ -1,13 +1,20 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 export interface NoteEditorEvents {
   onSaved?: (title: string, bold: boolean) => void;
 }
 
 export default function NoteEditor(
-  props: NoteEditorEvents & { class?: string; style?: JSX.CSSProperties },
+  props: NoteEditorEvents &
+    Omit<ComponentProps<"form">, "class" | "style" | "onSubmit"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+      onSubmit?: Extract<ComponentProps<"form">["onSubmit"], (event: never) => void>;
+    },
 ) {
+  const others = omit(props, "onSaved", "class", "onSubmit");
+
   const [title, setTitle] = createState("");
   const [bold, setBold] = createState(false);
   const [saves, setSaves] = createState(0);
@@ -21,9 +28,11 @@ export default function NoteEditor(
     <form
       class={props.class ? `note-editor ${props.class}` : "note-editor"}
       aria-label="Note"
-      onSubmit={(event) => event.preventDefault()}
-      style={props.style}
-      {...scopeAttributes(props)}
+      onSubmit={(event) => {
+        event.preventDefault();
+        props.onSubmit?.(event);
+      }}
+      {...others}
     >
       <label>
         Title
@@ -57,13 +66,6 @@ export default function NoteEditor(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

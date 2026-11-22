@@ -1,12 +1,23 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface ProfileFieldsEvents {
   onFirstNickname?: (nickname: string) => void;
 }
 
 export default function ProfileFields(
-  props: ProfileFieldsEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ProfileFieldsEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onFirstNickname", "class"]);
+
   const [log, setLog] = createSignal<string[]>([]);
   const [nickname, setNickname] = createSignal("");
   const [cardFocuses, setCardFocuses] = createSignal(0);
@@ -25,8 +36,7 @@ export default function ProfileFields(
     <section
       class={props.class ? `profile-fields ${props.class}` : "profile-fields"}
       aria-label="Profile"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <div
         class="name-group"
@@ -101,13 +111,6 @@ export default function ProfileFields(
       </ol>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

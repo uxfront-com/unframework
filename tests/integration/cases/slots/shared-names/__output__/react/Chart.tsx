@@ -1,10 +1,7 @@
 import Legend from "./Legend";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ChartAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChartAttributes = Omit<ComponentPropsWithRef<"div">, "series" | "children">;
 
 export default function Chart({
   series,
@@ -13,7 +10,7 @@ export default function Chart({
   ...attributes
 }: { series: string[] } & ChartAttributes) {
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <Legend
         items={series}
         label="Series"
@@ -27,13 +24,4 @@ export default function Chart({
       />
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

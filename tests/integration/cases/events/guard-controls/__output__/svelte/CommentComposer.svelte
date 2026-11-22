@@ -1,18 +1,30 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import { on } from "svelte/events";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onsent" | "onsaved" | "onfirstsave" | "children" | "class" | "style" | "ref"
+  > & {
     onsent?: (text: string) => void;
     onsaved?: (count: number) => void;
     onfirstsave?: () => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { onsent, onsaved, onfirstsave, class: className, style, ...attributes }: Props = $props();
+  let {
+    onsent,
+    onsaved,
+    onfirstsave,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let tags = $state.raw<string[]>([]);
   let query = $state("");
@@ -61,20 +73,14 @@
       handler(event);
     };
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["comment-composer", className]}
   aria-label="Composer"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <label>Comment<textarea name="comment" onkeydown={send}></textarea></label
   ><form

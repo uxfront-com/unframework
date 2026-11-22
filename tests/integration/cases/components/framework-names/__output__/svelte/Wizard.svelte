@@ -4,20 +4,17 @@
   import KeepAlive from "./KeepAlive.svelte";
   import Transition from "./Transition.svelte";
   import TransitionComponent from "./TransitionComponent.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<section aria-label="Wizard" class={className} {style} {...scopeAttributes(attributes)}>
+<section aria-label="Wizard" class={className} {style} bind:this={ref} {...attributes}>
   <Transition step="details" /><TransitionComponent /><KeepAlive level={2} />
 </section>

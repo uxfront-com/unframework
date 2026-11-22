@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, omit, untrack } from "solid-js";
 
 export interface WelcomeBannerProps {
   name: string;
@@ -8,16 +8,21 @@ export interface WelcomeBannerProps {
 const tips = ["Set up your profile", "Invite your team"];
 
 export default function WelcomeBanner(
-  props: WelcomeBannerProps & { class?: string; style?: JSX.CSSProperties },
+  props: WelcomeBannerProps &
+    Omit<ComponentProps<"section">, "name" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "name", "class");
+
   const greeting = untrack(() => `Welcome, ${props.name}`);
 
   return (
     <section
       class={props.class ? `welcome-banner ${props.class}` : "welcome-banner"}
       aria-label="Welcome"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{greeting}</h2>
       <p>Signed in as {props.name}</p>
@@ -28,13 +33,6 @@ export default function WelcomeBanner(
       </ul>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface MailboxProps {
   folder: string;
 }
 
-interface Props extends MailboxProps {
+interface Props extends MailboxProps, Omit<HTMLAttributes<"section">, "folder"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { folder: _folder, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const name = "Loading" as string;
 const status = "idle" as string;
@@ -24,9 +19,9 @@ const summary = "No messages" as string;
 
 <section
   class:list={["mailbox", className]}
-  aria-label="Mailbox"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Mailbox"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{name}</h2>
   <p role="status">{summary}</p>

@@ -42,6 +42,7 @@ import type {
 
 import { isUntyped, untypedAttribute } from "./attributes.ts";
 import type { SolidComposition } from "./composition.ts";
+import { holdsElement, REST_HELPER } from "./fallthrough.ts";
 import type { SolidListeners } from "./listeners.ts";
 import { modelAttribute } from "./models.ts";
 import type { ModelHelpers } from "./models.ts";
@@ -99,6 +100,11 @@ export interface SolidCompose {
   object: string | undefined;
   /** The inline helpers the file's `v-model`s call. */
   models: ModelHelpers;
+  /**
+   * What `splitProps` leaves of the props for the element that takes what falls through
+   * (`others`, or the props themselves where nothing is split out), with its plan (ADR-0118).
+   */
+  others: string | undefined;
 }
 
 /**
@@ -127,13 +133,50 @@ export function solidJsx(
   const styleValue = (value: AstExpression): AstExpression =>
     js.callExpression(js.identifier((styleHelper ??= imports.claim(STYLE_HELPER))), [value]);
   const flow: Flow = { imports, narrowings, falsy: declaresFalsyLiteral(types) };
-  const { code, composition, object, models } = compose;
+  const { code, composition, object, models, others } = compose;
+  const { plan } = composition;
+  let restHelper: string | undefined;
   // What falls through to the root (ADR-0054), merged into its own `class` and `style`, or
-  // added after them where it has none.
+  // added after them where it has none. Where the component spreads what falls through
+  // (ADR-0118), the element that spreads it merges them: the root, or the rest's element.
   const root = composition.fallthrough;
   const printed = { class: false, style: false };
   const pending = new Set(composition.scopeRoots);
-  const isRoot = (element: ElementNode) => isSpan(root, element.span);
+  const isRoot = (element: ElementNode) =>
+    plan ? isSpan(plan.target?.span, element.span) : isSpan(root, element.span);
+  const isTarget = (element: ElementNode) => isSpan(plan?.target?.span, element.span);
+  /** Whether the spread and the root's `ref` are printed already. */
+  const spreaded = { target: false, root: false };
+  /** The spread of what falls through: the others, without the scope attributes off the root. */
+  const spread = (context: JsxContext): JsxAttributeItem => {
+    const text = plan!.unscoped
+      ? `${(restHelper ??= imports.claim(REST_HELPER))}(${others!})`
+      : others!;
+    return js.jsxSpreadAttribute(context.placeholders.expression(text, "argument"));
+  };
+  /** The consumer's `ref`, which the root takes where the spread does not hand it (ADR-0118). */
+  const forwardsRef = (element: ElementNode) => isSpan(plan?.root?.span, element.span);
+  /**
+   * Whether the root's own `ref` callback hands the consumer's the element: an element's that
+   * prints one (a template ref, a listener it adds), a root component's template ref.
+   */
+  const holdsOwnRef = (element: ElementNode): boolean =>
+    plan?.root?.kind === "Component"
+      ? plan.root.attributes.some((attribute) => attribute.kind === "Ref")
+      : listeners.carries(element);
+  /** `ref={props.ref}`: the consumer's, on a root without a `ref` callback of its own. */
+  const forwardedRef = (context: JsxContext): JsxAttributeItem =>
+    js.jsxAttribute(
+      "ref",
+      js.jsxExpressionContainer(context.placeholders.expression(`${object!}.ref`)),
+    );
+  /** The scope attributes of the styled parents, picked out of the props for the root. */
+  const scopeSpread = (context: JsxContext): JsxAttributeItem => {
+    scopeHelper ??= imports.claim(SCOPE_HELPER);
+    return js.jsxSpreadAttribute(
+      context.placeholders.expression(`${scopeHelper}(${object!})`, "argument"),
+    );
+  };
   const passed = (name: "class" | "style", context: JsxContext): AstExpression =>
     context.placeholders.expression(`${object!}.${name}`, "argument");
   // `class={props.class ? \`card ${props.class}\` : "card"}` for static names: no helper, which
@@ -245,14 +288,29 @@ export function solidJsx(
       printed.style = true;
       return [styleAttribute(attribute, context, () => passed("style", context))];
     },
-    eventAttribute: (attribute, element, context) =>
-      listeners.eventAttribute(attribute, element, context),
+    eventAttribute(attribute, element, context) {
+      // A listener of the element that takes what falls through calls the consumer's after its
+      // own (ADR-0118).
+      const prop = isTarget(element) ? plan!.composed.get(attribute) : undefined;
+      return prop
+        ? listeners.composedEventAttribute(attribute, element, prop, `${object!}.${prop}`)
+        : listeners.eventAttribute(attribute, element, context);
+    },
     directiveAttribute: (attribute, element, context) =>
       listeners.directiveAttribute(attribute, element, context),
-    refAttribute: (attribute, element, context) =>
-      isComponentTag(element.tag)
-        ? listeners.componentRef(attribute)
-        : listeners.refAttribute(attribute, element, context),
+    refAttribute(attribute, element, context) {
+      if (!isComponentTag(element.tag)) return listeners.refAttribute(attribute, element, context);
+      // A ref on a child that exposes nothing holds its root element (ADR-0118).
+      const held = holdsElement(composition.module, element.tag);
+      return listeners.componentRef(
+        attribute,
+        held,
+        forwardsRef(element) ? `${object!}.ref` : undefined,
+      );
+    },
+    // The props' rest is spread after the element's own attributes, so the consumer's wins as
+    // it does on a root (ADR-0118): see `scopeRootAttributes`.
+    restAttribute: () => [],
     componentEvent: (attribute) => listeners.componentEvent(attribute),
     // A slot's fill is a prop named like it: the default slot's is `children`, which a scoped or
     // forwarded fill passes as a prop too.
@@ -277,8 +335,41 @@ export function solidJsx(
       if (!node.fallback.length) return value;
       return js.logicalExpression("??", value, jsxBranch(node.fallback, context));
     },
-    modelAttribute: (attribute, element, context) =>
-      modelAttribute(attribute, element, context, code, models, listeners.carries(element)),
+    modelAttribute(attribute, element, context) {
+      const own = modelAttribute(
+        attribute,
+        element,
+        context,
+        code,
+        models,
+        listeners.carries(element),
+      );
+      if (!isTarget(element) || !plan!.models.size) return own;
+      // The element's `v-model` listens with an event prop the consumer's listener would
+      // replace: it calls the consumer's after its own (ADR-0118).
+      return own.map((item) => {
+        if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") return item;
+        const prop = item.name.name;
+        const value = item.value?.type === "JSXExpressionContainer" ? item.value.expression : null;
+        if (!plan!.models.has(prop) || value?.type !== "ArrowFunctionExpression") return item;
+        const [first] = value.params;
+        const event = first?.type === "Identifier" ? first.name : models.event();
+        const body =
+          value.body.type === "BlockStatement"
+            ? value.body.body
+            : [js.expressionStatement(value.body)];
+        const then = context.placeholders.expression(`${object!}.${prop}?.(${event})`);
+        return js.jsxAttribute(
+          prop,
+          js.jsxExpressionContainer(
+            js.arrowFunction(
+              [js.bindingIdentifier(event)],
+              [...body, js.expressionStatement(then)],
+            ),
+          ),
+        );
+      });
+    },
     modelBinding(attribute, _node, context) {
       const setter = code.setter(bindingOfValue(attribute.value)!)!;
       return [
@@ -303,7 +394,24 @@ export function solidJsx(
     // Each root takes them once: the first node printed with its span, which is the root
     // itself, printed before what it holds.
     scopeRootAttributes(element, context) {
-      if (!pending.delete(`${element.span.start}:${element.span.end}`)) return [];
+      const key = `${element.span.start}:${element.span.end}`;
+      // Each takes them once, as a scope root does: the first node printed with its span.
+      const target = isTarget(element) && !spreaded.target;
+      const ref = forwardsRef(element) && !spreaded.root;
+      if (target || ref) {
+        // What falls through, spread after the element's own attributes, so the consumer's wins
+        // (ADR-0118): the scope attributes too, on the root. The root that takes them apart from
+        // it picks them out of the props, and takes the consumer's `ref`.
+        pending.delete(key);
+        spreaded.target ||= target;
+        spreaded.root ||= ref;
+        return [
+          ...(ref && plan!.rootScope ? [scopeSpread(context)] : []),
+          ...(ref && !holdsOwnRef(element) ? [forwardedRef(context)] : []),
+          ...(target ? [spread(context)] : []),
+        ];
+      }
+      if (!pending.delete(key)) return [];
       const fallthrough = isRoot(element)
         ? (["class", "style"] as const)
             .filter((name) => !printed[name])
@@ -320,6 +428,7 @@ export function solidJsx(
       ...(helper ? [classHelperCode(helper, collections)] : []),
       ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
       ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
+      ...(restHelper ? [restHelperCode(restHelper)] : []),
       ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
       ...(teleportHelper ? [teleportHelperCode(teleportHelper, imports)] : []),
       ...(transitionHelper ? [transitionHelperCode(transitionHelper, imports)] : []),
@@ -760,13 +869,15 @@ function hasTypedProps(element: ElementNode): boolean {
       case "Spread":
         return attribute.keys.some((key) => !isUntyped(element.tag, key.name));
       // `class`, `style`, a listener, `ref` and `innerHTML` are props every element's type
-      // declares, and a directive is a `ref` (ADR-0099).
+      // declares, a directive is a `ref` (ADR-0099), and the props' rest is typed by the
+      // element's own attributes (ADR-0118).
       case "Class":
       case "Style":
       case "Event":
       case "Ref":
       case "RawHtml":
       case "Directive":
+      case "Rest":
         return true;
       case "Model":
         return false;
@@ -1263,5 +1374,22 @@ function ${name}(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}`;
+}
+
+/**
+ * The inline rest helper (ADR-0118), printed after the component: what the props' rest holds but
+ * the styled parents' `data-uf-*` attributes, which stay on the root (ADR-0063), for the element
+ * that spreads the rest. Solid's compiler makes a spread of a call a function of what it reads,
+ * so the element takes each change of the rest.
+ */
+function restHelperCode(name: string): string {
+  return `/** What the consumer passes, but the scope attributes of the styled parents, which the root keeps. */
+function ${name}(rest: object): Record<string, unknown> {
+  const attributes: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(rest)) {
+    if (!name.startsWith("data-uf-")) attributes[name] = value;
+  }
+  return attributes;
 }`;
 }

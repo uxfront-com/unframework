@@ -1,0 +1,31 @@
+---
+import Field from "./Field.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"form"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
+
+const focuses = 0 as number;
+---
+
+<form
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Sign up"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
+  <p id="email-hint">We never share it.</p>
+  <Field
+    label="Email"
+    id="email"
+    aria-describedby="email-hint"
+    placeholder="you@example.com"
+    class="wide"
+    style={{ marginTop: "4px" }}
+  />
+  <p>Focuses: {focuses}</p>
+</form>

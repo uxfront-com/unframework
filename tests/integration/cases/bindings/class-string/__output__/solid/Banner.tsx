@@ -1,4 +1,4 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export interface BannerProps {
   message: string;
@@ -6,14 +6,16 @@ export interface BannerProps {
   emphasis?: string | null;
 }
 
-export default function Banner(props: BannerProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Banner(
+  props: BannerProps &
+    Omit<ComponentProps<"div">, "message" | "tone" | "emphasis" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
+) {
+  const [, others] = splitProps(props, ["message", "tone", "emphasis", "class"]);
+
   return (
-    <div
-      class={cx("banner", props.tone, props.class)}
-      role="note"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={cx("banner", props.tone, props.class)} role="note" {...others}>
       <p class={cx(props.emphasis)}>{props.message}</p>
       <p class={`banner-footer banner-footer-${props.tone}`}>Shown to every visitor.</p>
     </div>
@@ -30,11 +32,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

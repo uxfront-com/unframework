@@ -169,7 +169,7 @@ describe("react frameworkCompile (L3)", () => {
       errors: [
         {
           message: "Expected corresponding JSX closing tag for <p>.",
-          line: 12,
+          line: 9,
           column: 5,
           code: "MissingClosingTagElement",
         },

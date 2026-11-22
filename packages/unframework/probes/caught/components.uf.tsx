@@ -35,9 +35,14 @@ export function LowercaseHandler() {
   return <Counter onchange={() => {}} />;
 }
 
-export function UndeclaredGlobalAttribute() {
-  // @ts-expect-error TS2322 only class and style fall through untyped; `id` must be declared
-  return <Counter id="c1" />;
+export function FallthroughAttributeWrongType() {
+  // @ts-expect-error TS2322 what falls through is typed as the elements that take it: `disabled` is a boolean
+  return <Counter disabled={{}} />;
+}
+
+export function DeclaredPropKeepsItsType() {
+  // @ts-expect-error TS2322 Button's own `size` is "sm" | "md" | "lg", though an <input>'s `size` is a number
+  return <Button size={2} />;
 }
 
 export function SlotObjectMixedWithText() {

@@ -1,13 +1,17 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import type { TransitionConfig } from "svelte/transition";
   import "./Menu.uf.tsx.css";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["nav"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["nav"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let open = $state(true);
   let refreshes = $state(0);
@@ -18,13 +22,6 @@
     setTimeout(() => {
       open = true;
     }, 80);
-  }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
   }
 
   /** The stop of the classes each element runs now, which its next phase stops first. */
@@ -96,7 +93,8 @@
   aria-label="Account"
   {style}
   data-uf-e688a71a=""
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <button type="button" aria-expanded={open} onclick={refresh} data-uf-e688a71a="">Refresh</button
   ><p role="status" data-uf-e688a71a="">Refreshes: {refreshes}</p

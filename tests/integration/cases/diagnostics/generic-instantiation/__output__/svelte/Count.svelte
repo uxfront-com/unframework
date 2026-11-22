@@ -1,7 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
   interface Fruit {
     id: string;
@@ -9,16 +9,14 @@
     children: Fruit[];
   }
 
-  type Props = { items: Fruit[]; class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["p"], "items" | "children" | "class" | "style" | "ref"> & {
+    items: Fruit[];
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["p"] | null;
+  };
 
-  let { items, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { items, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<p class={className} {style} {...scopeAttributes(attributes)}>{items.length} fruits</p>
+<p class={className} {style} bind:this={ref} {...attributes}>{items.length} fruits</p>

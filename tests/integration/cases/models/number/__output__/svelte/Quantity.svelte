@@ -2,12 +2,16 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import { on } from "svelte/events";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let count = $state(2);
   let volume = $state(5);
@@ -46,16 +50,9 @@
       };
     };
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section aria-label="Order" class={className} {style} {...scopeAttributes(attributes)}>
+<section aria-label="Order" class={className} {style} bind:this={ref} {...attributes}>
   <input
     type="number"
     aria-label="Count"

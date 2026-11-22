@@ -1,9 +1,6 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ContactFormAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ContactFormAttributes = Omit<ComponentPropsWithRef<"form">, "children">;
 
 export default function ContactForm({ className, style, ...attributes }: ContactFormAttributes) {
   const [name, setName] = useState("Ada");
@@ -11,7 +8,7 @@ export default function ContactForm({ className, style, ...attributes }: Contact
   const [email, setEmail] = useState("");
 
   return (
-    <form aria-label="Contact" className={className} style={style} {...scopeAttributes(attributes)}>
+    <form aria-label="Contact" className={className} style={style} {...attributes}>
       <label>
         Name{" "}
         <input
@@ -40,13 +37,4 @@ export default function ContactForm({ className, style, ...attributes }: Contact
       </button>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,0 +1,4 @@
+- region "Picker":
+  - button "Ada"
+  - list "Log":
+    - listitem: focus on button

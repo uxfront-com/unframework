@@ -1,0 +1,6 @@
+- form "Sign up":
+  - paragraph: We never share it.
+  - text: Email
+  - textbox "Email":
+    - /placeholder: you@example.com
+  - paragraph: "Focuses: 0"

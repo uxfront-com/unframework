@@ -1,4 +1,4 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   For,
   Show,
@@ -8,6 +8,7 @@ import {
   createSignal,
   flush,
   getObserver,
+  omit,
   onCleanup,
   onSettled,
   runWithOwner,
@@ -22,8 +23,14 @@ export interface DraftPanelEvents {
 }
 
 export default function DraftPanel(
-  props: DraftPanelEvents & { class?: string; style?: JSX.CSSProperties },
+  props: DraftPanelEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onSave", "onStatus", "onClosed", "onKey", "class");
+
   const [open, setOpen] = createState(false);
   const [status, setStatus] = createState("draft");
   const [saves, setSaves] = createState(0);
@@ -86,8 +93,7 @@ export default function DraftPanel(
     <section
       class={props.class ? `draft-panel ${props.class}` : "draft-panel"}
       aria-label="Draft"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-expanded={enumeratedValue(open())} onClick={show}>
         Options
@@ -136,13 +142,6 @@ export default function DraftPanel(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

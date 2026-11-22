@@ -1,0 +1,25 @@
+---
+import SaveAction from "./SaveAction.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"div"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, role, "aria-label": ariaLabel, ...attrs } = Astro.props;
+
+const clicks = 0 as number;
+---
+
+<div
+  role={"role" in Astro.props ? role : "toolbar"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Actions"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
+  <SaveAction text="Save" id="save" aria-label="Save draft" />
+  <button type="button">Focus save</button>
+  <p>Clicks: {clicks}</p>
+</div>

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface SummaryProps {
   name: string;
@@ -6,10 +6,10 @@ export interface SummaryProps {
   seats: number;
 }
 
-export interface SummaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SummaryAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "name" | "plan" | "seats" | "children"
+>;
 
 export default function Summary({
   name,
@@ -23,7 +23,7 @@ export default function Summary({
     <div
       className={cx("summary", className)}
       style={{ display: "table", borderSpacing: "8px 4px", ...style }}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <div style={{ display: "table-caption", fontWeight: "700" }}>Account</div>
       <div style={{ display: "table-row" }}>
@@ -56,13 +56,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,4 +1,4 @@
-import { type JSX, createContext, useContext } from "solid-js";
+import { type ComponentProps, type JSX, createContext, splitProps, useContext } from "solid-js";
 
 export interface LevelSlots {
   children?: JSX.Element;
@@ -7,18 +7,16 @@ export interface LevelSlots {
 export const DepthKey = createContext<number>();
 
 export default function Level(
-  props: { title: string } & LevelSlots & { class?: string; style?: JSX.CSSProperties },
+  props: { title: string } & LevelSlots &
+    Omit<ComponentProps<"section">, "title" | "children" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["title", "children"]);
+
   const depth = useContext(DepthKey) ?? 0;
 
   return (
     <DepthKey.Provider value={depth + 1}>
-      <section
-        aria-label={props.title}
-        class={props.class}
-        style={props.style}
-        {...scopeAttributes(props)}
-      >
+      <section aria-label={props.title} {...others}>
         <h2>
           {props.title} at depth {depth}
         </h2>
@@ -26,11 +24,4 @@ export default function Level(
       </section>
     </DepthKey.Provider>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

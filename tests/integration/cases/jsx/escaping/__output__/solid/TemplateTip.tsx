@@ -1,4 +1,4 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export interface TemplateTipProps {
   example: string;
@@ -7,14 +7,15 @@ export interface TemplateTipProps {
 }
 
 export default function TemplateTip(
-  props: TemplateTipProps & { class?: string; style?: JSX.CSSProperties },
+  props: TemplateTipProps &
+    Omit<ComponentProps<"figure">, "example" | "note" | "path" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["example", "note", "path", "class"]);
+
   return (
-    <figure
-      class={props.class ? `template-tip ${props.class}` : "template-tip"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <figure class={props.class ? `template-tip ${props.class}` : "template-tip"} {...others}>
       <figcaption title={"Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) & JSX {name}"}>
         Template syntax &amp; escaping
       </figcaption>
@@ -33,11 +34,4 @@ export default function TemplateTip(
       <p>Done &amp;check;</p>
     </figure>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

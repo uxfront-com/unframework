@@ -12,27 +12,37 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TagListProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    "label" | "tags" | "states" | "extra" | "children" | "class" | "style" | "ref"
+  > &
+    TagListProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["div"] | null;
+    };
 
-  let { label, tags, states, extra, class: className, style, ...attributes }: Props = $props();
+  let {
+    label,
+    tags,
+    states,
+    extra,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let expanded = $state(false);
 
   function expand() {
     expanded = !expanded;
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<div class={["tag-list", className]} {style} {...scopeAttributes(attributes)}>
+<div class={["tag-list", className]} {style} bind:this={ref} {...attributes}>
   <span class={["tag", tags, states, { "tag-open": expanded }]}>{label}</span
   ><span class={tags}>Plain</span
   ><span class={[extra, expanded ? ["tag-wide", "tag-tall"] : []]}>Extra</span

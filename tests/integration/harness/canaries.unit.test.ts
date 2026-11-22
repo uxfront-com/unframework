@@ -805,10 +805,10 @@ describe("canaries", () => {
       /\.\.\.attributes\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
-      /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
+      /function TaskList\(\n {2}rawProps: TaskListProps &\n {4}Omit<ComponentProps<"section">, [^\n]*> & \{\n {6}style\?: JSX\.CSSProperties;\n {4}\},\n\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
-      /component\$<TaskListProps & \{ class\?: ClassList; style\?: CSSProperties \}>\(\n {2}\(\{\n[\s\S]*?\n {4}\.\.\.attributes\n {2}\}\) => \{\n {4}console\.warn/,
+      /component\$<\n {2}TaskListProps &\n {4}Omit<PropsOf<"section">, [^\n]*> & \{\n {6}class\?: ClassList;\n {6}style\?: CSSProperties;\n {4}\}\n>\(\n {2}\(\{\n[\s\S]*?\n {4}\.\.\.attributes\n {2}\}\) => \{\n {4}console\.warn/,
     );
     expect(contents("vue")).toMatch(/<script setup lang="ts">\nconsole\.warn/);
     expect(contents("svelte")).toMatch(/<script lang="ts">\n {2}console\.warn/);
@@ -816,7 +816,7 @@ describe("canaries", () => {
       /export default class TaskList \{\n {2}constructor\(\) \{\n {4}console\.warn/,
     );
     expect(contents("astro")).toMatch(
-      /^---\nconsole\.warn\("\[uf canary\] L13 in astro"\);\nexport interface Task \{/,
+      /^---\nconsole\.warn\("\[uf canary\] L13 in astro"\);\nimport type \{ HTMLAttributes \} from "astro\/types";\n\nexport interface Task \{/,
     );
     const debug = await compileWith("L5-debugger");
     for (const target of TARGET_NAMES) {
@@ -841,11 +841,18 @@ describe("canaries", () => {
       "});",
       "",
     ].join("\n");
-    // The import names what the leaf calls; the leaf follows the component, which renders it
-    // after its root, in a fragment.
-    expect(contents).toMatch(
-      /^import \{ type CSSProperties, type ClassList, component\$, \$, useOnDocument \} from "@qwik\.dev\/core";$/m,
-    );
+    // The import names what the leaf calls, after the names it had; the leaf follows the
+    // component, which renders it after its root, in a fragment.
+    const qwikImport = /^import \{[^}]*\} from "@qwik\.dev\/core";$/m;
+    const names = (code: string) =>
+      qwikImport
+        .exec(code)![0]
+        .replace(/^import \{|\} from[\s\S]*$/g, "")
+        .split(",")
+        .map((name) => name.trim())
+        .filter(Boolean);
+    const cleanQwik = clean.outputs.qwik![0]!.contents;
+    expect(names(contents)).toEqual([...names(cleanQwik), "$", "useOnDocument"]);
     expect(contents.endsWith(`\n\n${leaf}`)).toBe(true);
     expect(contents).toMatch(
       /return \(\n {6}<>\n {8}<section\b[\s\S]*<\/section>\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n {4}\);/,
@@ -855,11 +862,11 @@ describe("canaries", () => {
       trimmedLines(
         contents
           .replace(`\n${leaf}`, "")
-          .replace(", $, useOnDocument", "")
+          .replace(qwikImport, qwikImport.exec(cleanQwik)![0])
           .replace(/\n {6}<>\n/, "\n")
           .replace(/\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n/, "\n"),
       ),
-    ).toEqual(trimmedLines(clean.outputs.qwik![0]!.contents));
+    ).toEqual(trimmedLines(cleanQwik));
     expect(canaryPlugins("L13-qwik-handler-throws", "react")).toEqual([]);
     for (const target of TARGET_NAMES.filter((name) => name !== "qwik")) {
       const other = await compileWith("L13-qwik-handler-throws", target);
@@ -919,16 +926,51 @@ describe("canaries", () => {
     // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
     expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
-    // The scope directive's input too, which no consumer binds (ADR-0063).
+    // The scope and fallthrough directives' inputs too, which no consumer binds (ADR-0063,
+    // ADR-0118), and the fallthrough inputs a parent binds on the host.
     expect(lines("angular")).toEqual([
       "  readonly ufScope = input.required<any>();",
+      "  readonly ufFallthrough = input.required<any>();",
       '  readonly title = input<any>("Tasks (today)", {',
       "  readonly tasks = input.required<any>();",
       "  readonly done = input.required<any>();",
       '  readonly tone = input<any>("info", {',
       "  readonly class = input<any>();",
       "  readonly style = input<any>();",
+      "  readonly ufAttributes = input<any>();",
+      "  readonly ufListeners = input<any>();",
     ]);
+  });
+
+  it("L4-consumer turns off the attributes Vue's checker types from the root, or a `$attrs` element", async () => {
+    // vue-tsc's `fallthroughAttributes` would check a declared prop the root also takes, and a
+    // misspelt one, against the root's attributes (ADR-0118).
+    const vue = async (input: string) =>
+      (await compileWith("L4-consumer", "vue", input)).outputs.vue![0]!.contents;
+    const card = await vue(source);
+    expect(card).toMatch(
+      /^<script setup lang="ts">\ndefineOptions\(\{ inheritAttrs: false \}\);$/m,
+    );
+    expect(card.match(/defineOptions/g)).toHaveLength(1);
+    // Options it already declares take it, once.
+    const recursive = await vue(
+      "export default function TaskList({ depth }: { depth: number }) {\n  return <ul>{depth > 0 ? <TaskList depth={depth - 1} /> : <li>Leaf</li>}</ul>;\n}\n",
+    );
+    expect(recursive).toContain('defineOptions({ inheritAttrs: false, name: "TaskList" });');
+    expect(recursive.match(/defineOptions/g)).toHaveLength(1);
+    // A rest spread on the root binds `$attrs`, which vue-tsc types from as from a root, and
+    // already turns fallthrough off.
+    const rest = await vue(
+      'import { defineOptions } from "@uxfront/unframework";\n\nexport default function TaskList({ label, ...rest }: { label: string }) {\n  defineOptions({ inheritAttrs: false });\n  return <input aria-label={label} {...rest} />;\n}\n',
+    );
+    expect(rest).toContain('v-bind="{ ...$attrs }"');
+    expect(rest).not.toContain('v-bind="$attrs"');
+    expect(rest.match(/inheritAttrs: false/g)).toHaveLength(1);
+    // An output it widens nothing in stays as it is.
+    const plain = "export default function A() {\n  return <p>Hello</p>;\n}\n";
+    expect(await vue(plain)).toBe(
+      (await compileWith(null, "vue", plain)).outputs.vue![0]!.contents,
+    );
   });
 
   it("L4-consumer types each target's events `any` too, on a case whose consumers misuse one", async () => {
@@ -962,10 +1004,13 @@ describe("canaries", () => {
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
       "  readonly ufScope = input.required<any>();",
+      "  readonly ufFallthrough = input.required<any>();",
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",
       "  readonly class = input<any>();",
       "  readonly style = input<any>();",
+      "  readonly ufAttributes = input<any>();",
+      "  readonly ufListeners = input<any>();",
       "  readonly refresh = output<any>();",
       "  readonly open = output<any>();",
       "  readonly move = output<any>();",
@@ -1203,6 +1248,23 @@ describe("canaries", () => {
       const branches =
         "export default function State({ on }: { on: boolean }) {\n  return <>{on ? <b>On</b> : <i>Off</i>}</>;\n}\n";
       expect(await markedElements(branches)).toEqual(["b", "i"]);
+    });
+
+    it("leave a component that renders no text at all to the component that renders it", async () => {
+      const field =
+        "export default function Field({ label }: { label: string }) {\n  return <input aria-label={label} />;\n}\n";
+      for (const id of ["L6-wrong-text", "L7-wrong-text", "L12-client-text"]) {
+        const { diagnostics, outputs } = await compileWith(id, "vue", field);
+        expect(diagnostics, id).toEqual([]);
+        expect(outputs.vue![0]!.contents, id).not.toContain("(canary)");
+      }
+      // Text beside it, or in a branch, may render: the canary must find it, or fail.
+      const labelled =
+        "export default function Field({ label }: { label: string }) {\n  return (\n    <>\n      <input />\n      {label}\n    </>\n  );\n}\n";
+      const { diagnostics } = await compileWith("L6-wrong-text", "vue", labelled);
+      expect(diagnostics.map(({ code, message }) => [code, message])).toEqual([
+        ["UF8001", expect.stringMatching(/Field renders no element that can hold text/)],
+      ]);
     });
 
     it("merge with the text the element ends with, so no two texts are adjacent", async () => {

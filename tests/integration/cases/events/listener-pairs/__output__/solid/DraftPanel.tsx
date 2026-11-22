@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   Show,
@@ -7,6 +8,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
@@ -18,8 +20,11 @@ export interface DraftPanelEvents {
 }
 
 export default function DraftPanel(
-  props: DraftPanelEvents & { class?: string; style?: JSX.CSSProperties },
+  props: DraftPanelEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onSave", "onStatus", "onClosed", "onKey", "class"]);
+
   const [open, setOpen] = createSignal(false);
   const [status, setStatus] = createSignal("draft");
   const [saves, setSaves] = createSignal(0);
@@ -82,8 +87,7 @@ export default function DraftPanel(
     <section
       class={props.class ? `draft-panel ${props.class}` : "draft-panel"}
       aria-label="Draft"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-expanded={open()} onClick={show}>
         Options
@@ -125,13 +129,6 @@ export default function DraftPanel(
       </ol>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

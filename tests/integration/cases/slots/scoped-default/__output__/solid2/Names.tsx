@@ -1,27 +1,26 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, omit, untrack } from "solid-js";
 
 export interface NamesSlots {
   children?: (props: { item: string }) => JSX.Element;
 }
 
 export default function Names(
-  props: { names: string[] } & NamesSlots & { class?: string; style?: JSX.CSSProperties },
+  props: { names: string[] } & NamesSlots &
+    Omit<ComponentProps<"ul">, "names" | "children" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "names", "children");
+
   return (
-    <ul aria-label="Names" class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <ul aria-label="Names" {...others}>
       <KeyedFor each={props.names} by={(item) => item}>
         {(item) => <li>{props.children?.({ item: item.value })}</li>}
       </KeyedFor>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

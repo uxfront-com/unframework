@@ -4,11 +4,15 @@
   import Picker from "./Picker.svelte";
   import { vMark } from "./vMark.svelte";
   import { vTrace } from "./vTrace.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let items = $state.raw<{ id: string; label: string; note?: string }[]>([
     { id: "a", label: "Alpha", note: "First" },
@@ -18,16 +22,9 @@
 
   let prefix = $state("Open");
   let focused = $state(0);
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={["menu", className]} aria-label="Menu" {style} {...scopeAttributes(attributes)}>
+<section class={["menu", className]} aria-label="Menu" {style} bind:this={ref} {...attributes}>
   <ul aria-label="Items">
     {#each items as item (item.id)}
       <li

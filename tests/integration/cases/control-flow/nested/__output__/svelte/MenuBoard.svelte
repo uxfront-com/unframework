@@ -21,21 +21,29 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = MenuBoardProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    "courses" | "closed" | "children" | "class" | "style" | "ref"
+  > &
+    MenuBoardProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["div"] | null;
+    };
 
-  let { courses, closed, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    courses,
+    closed,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<div class={["menu-board", className]} {style} {...scopeAttributes(attributes)}>
+<div class={["menu-board", className]} {style} bind:this={ref} {...attributes}>
   {#if closed}
     <p>The kitchen is closed.</p>
   {:else}

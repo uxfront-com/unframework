@@ -1,6 +1,6 @@
 import Badge from "./Badge";
 import Tag from "./Tag";
-import { type CSSProperties, useRef, useState } from "react";
+import { type CSSProperties, type ComponentPropsWithRef, useRef, useState } from "react";
 
 type NoticeLook = {
   color?: string;
@@ -18,10 +18,10 @@ export interface NoticeProps {
   vars?: NoticeVars;
 }
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "title" | "look" | "declarations" | "vars" | "children"
+>;
 
 export default function Notice({
   title,
@@ -43,7 +43,7 @@ export default function Notice({
   const Tag_1 = quiet ? Tag : Badge;
 
   return (
-    <div className={cx("notice", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("notice", className)} style={style} {...attributes}>
       <p style={styleObject(look)}>{title}</p>
       <Badge
         label="Permanent"
@@ -99,13 +99,4 @@ function styleObject(style: object | string | null | undefined): CSSProperties |
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
   return object as CSSProperties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

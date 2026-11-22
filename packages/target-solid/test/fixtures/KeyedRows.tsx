@@ -1,4 +1,4 @@
-import { For, type JSX, createMemo, untrack } from "solid-js";
+import { type ComponentProps, For, type JSX, createMemo, splitProps, untrack } from "solid-js";
 
 export interface Row {
   id: number;
@@ -6,22 +6,19 @@ export interface Row {
 }
 
 export default function KeyedRows(
-  props: { rows: Row[] } & { class?: string; style?: JSX.CSSProperties },
+  props: { rows: Row[] } & Omit<ComponentProps<"ul">, "rows" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["rows"]);
+
   return (
-    <ul class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <ul {...others}>
       <KeyedFor each={props.rows} by={(row) => row.id}>
         {(row) => <li data-index={row.index}>{row.value.label}</li>}
       </KeyedFor>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

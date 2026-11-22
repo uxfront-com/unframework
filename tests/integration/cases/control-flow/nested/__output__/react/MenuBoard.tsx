@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface MenuDish {
   id: string;
@@ -18,10 +18,10 @@ export interface MenuBoardProps {
   closed: boolean;
 }
 
-export interface MenuBoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MenuBoardAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "courses" | "closed" | "children"
+>;
 
 export default function MenuBoard({
   courses,
@@ -31,7 +31,7 @@ export default function MenuBoard({
   ...attributes
 }: MenuBoardProps & MenuBoardAttributes) {
   return (
-    <div className={cx("menu-board", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("menu-board", className)} style={style} {...attributes}>
       {closed ? (
         <p>The kitchen is closed.</p>
       ) : (
@@ -66,13 +66,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

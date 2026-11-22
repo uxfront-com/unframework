@@ -1,4 +1,4 @@
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 
 export interface StatusIconProps {
   label: string;
@@ -7,12 +7,17 @@ export interface StatusIconProps {
 }
 
 export default function StatusIcon(
-  rawProps: StatusIconProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: StatusIconProps &
+    Omit<ComponentProps<"svg">, "label" | "size" | "colour" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = mergeProps(
     { size: 24, colour: "#1f6feb" } satisfies Partial<StatusIconProps>,
     rawProps,
   );
+  const [, others] = splitProps(props, ["label", "size", "colour", "class"]);
+
   return (
     <svg
       class={props.class ? `status-icon ${props.class}` : "status-icon"}
@@ -21,8 +26,7 @@ export default function StatusIcon(
       width={props.size}
       height={props.size}
       fill="none"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <title>{props.label}</title>
       <defs>
@@ -41,11 +45,4 @@ export default function StatusIcon(
       />
     </svg>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

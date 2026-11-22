@@ -1,11 +1,8 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export type Tone = "info" | "warning";
 
-export interface TagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagAttributes = Omit<ComponentPropsWithRef<"span">, "tone" | "children">;
 
 export default function Tag({
   tone,
@@ -14,7 +11,7 @@ export default function Tag({
   ...attributes
 }: { tone: Tone } & TagAttributes) {
   return (
-    <span className={cx("tag", tone, className)} style={style} {...scopeAttributes(attributes)}>
+    <span className={cx("tag", tone, className)} style={style} {...attributes}>
       {tone}
     </span>
   );
@@ -33,13 +30,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

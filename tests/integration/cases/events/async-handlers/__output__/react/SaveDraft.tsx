@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useLayoutEffect,
   useReducer,
@@ -11,10 +11,7 @@ export interface SaveDraftEvents {
   onSaved?: (attempt: number, status: string) => void;
 }
 
-export interface SaveDraftAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SaveDraftAttributes = Omit<ComponentPropsWithRef<"section">, "onSaved" | "children">;
 
 export default function SaveDraft({
   onSaved,
@@ -52,7 +49,7 @@ export default function SaveDraft({
       className={cx("save-draft", className)}
       aria-label="Draft"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">{status}</p>
       <button type="button" onClick={save}>
@@ -126,13 +123,4 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

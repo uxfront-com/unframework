@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
@@ -10,7 +11,11 @@ import {
 } from "@qwik.dev/core";
 
 export default component$<
-  { start: number } & { class?: ClassList; style?: CSSProperties; ref?: Signal<object | undefined> }
+  { start: number } & Omit<PropsOf<"output">, "start" | "class" | "style" | "ref"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+      ref?: Signal<object | undefined>;
+    }
 >(({ start, class: className, style, ref, ...attributes }) => {
   const count = useSignal(start);
 
@@ -33,7 +38,7 @@ export default component$<
   );
 
   return (
-    <output class={["count", className]} {...scopeAttributes(attributes)} style={style}>
+    <output class={["count", className]} style={style} {...attributes}>
       {count.value}
     </output>
   );
@@ -45,13 +50,4 @@ export default component$<
  */
 function exposeRef(ref: Signal<object | undefined> | undefined, exposed: object | undefined): void {
   if (ref) ref.value = exposed;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

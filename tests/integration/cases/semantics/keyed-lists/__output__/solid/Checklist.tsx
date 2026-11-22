@@ -1,4 +1,4 @@
-import { For, type JSX, createMemo, untrack } from "solid-js";
+import { type ComponentProps, For, type JSX, createMemo, splitProps, untrack } from "solid-js";
 
 export interface Entry {
   id: string;
@@ -10,14 +10,13 @@ export interface ChecklistProps {
 }
 
 export default function Checklist(
-  props: ChecklistProps & { class?: string; style?: JSX.CSSProperties },
+  props: ChecklistProps &
+    Omit<ComponentProps<"ul">, "entries" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["entries", "class"]);
+
   return (
-    <ul
-      class={props.class ? `checklist ${props.class}` : "checklist"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <ul class={props.class ? `checklist ${props.class}` : "checklist"} {...others}>
       <KeyedFor each={props.entries} by={(entry) => entry.id}>
         {(entry) => (
           <li>
@@ -30,13 +29,6 @@ export default function Checklist(
       </KeyedFor>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

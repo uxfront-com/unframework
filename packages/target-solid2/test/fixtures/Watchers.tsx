@@ -1,10 +1,11 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
   untrack,
@@ -25,8 +26,25 @@ export interface WatchersEvents {
 }
 
 export default function Watchers(
-  props: WatchersProps & WatchersEvents & { class?: string; style?: JSX.CSSProperties },
+  props: WatchersProps &
+    WatchersEvents &
+    Omit<ComponentProps<"section">, "label" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(
+    props,
+    "label",
+    "onQueryRun",
+    "onPageRun",
+    "onLeft",
+    "onSpan",
+    "onLabelled",
+    "onEffect",
+    "onReleased",
+  );
+
   const [query, setQuery] = createState("");
   const [page, setPage] = createState(1);
   const [low, setLow] = createState(10);
@@ -87,12 +105,7 @@ export default function Watchers(
   }
 
   return (
-    <section
-      aria-label="Watchers"
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Watchers" {...others}>
       <p role="status">
         {query()} {page()} {low()}-{high()}
       </p>
@@ -110,13 +123,6 @@ export default function Watchers(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

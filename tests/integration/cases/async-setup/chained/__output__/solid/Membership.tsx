@@ -1,9 +1,19 @@
 import { loadTeam, loadUser } from "./api";
-import { type JSX, Show, Suspense, createMemo, createResource } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  Suspense,
+  createMemo,
+  createResource,
+  splitProps,
+} from "solid-js";
 
 export default function Membership(
-  props: { id: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { id: string } & Omit<ComponentProps<"p">, "id" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["id", "class"]);
+
   const [awaited] = createResource(async () => {
     const user = await loadUser(props.id);
     const team = await loadTeam(user.teamId);
@@ -21,8 +31,7 @@ export default function Membership(
             <p
               class={props.class ? `membership ${props.class}` : "membership"}
               role="status"
-              style={props.style}
-              {...scopeAttributes(props)}
+              {...others}
             >
               {summary()}
             </p>
@@ -31,11 +40,4 @@ export default function Membership(
       </Show>
     </Suspense>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

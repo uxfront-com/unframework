@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -19,10 +19,10 @@ export interface MailboxEvents {
   onNoted?: (text: string) => void;
 }
 
-export interface MailboxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MailboxAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "folder" | "onLoaded" | "onProgress" | "onSeen" | "onNoted" | "children"
+>;
 
 export default function Mailbox({
   folder,
@@ -177,7 +177,7 @@ export default function Mailbox({
       className={cx("mailbox", className)}
       aria-label="Mailbox"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{name}</h2>
       <p role="status">{summary}</p>
@@ -262,13 +262,4 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

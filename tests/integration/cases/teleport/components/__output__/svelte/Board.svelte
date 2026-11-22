@@ -4,16 +4,20 @@
   import Card from "./Card.svelte";
   import Tip from "./Tip.svelte";
   import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
   interface Row {
     id: number;
     label: string;
   }
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let rows = $state.raw<Row[]>([
     { id: 1, label: "Alpha" },
@@ -28,13 +32,6 @@
   onMount(() => {
     mounted = true;
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 
   /** Moves the element into the element `to` selects, and removes it on teardown. */
   function teleport(to: string): (element: HTMLElement) => () => void {
@@ -52,7 +49,7 @@
   }
 </script>
 
-<section class={["board", className]} aria-label="Board" {style} {...scopeAttributes(attributes)}>
+<section class={["board", className]} aria-label="Board" {style} bind:this={ref} {...attributes}>
   <button type="button" onclick={() => (rows = [...rows].reverse())}>Reverse tips</button
   ><button type="button" onclick={() => (late = true)}>Show late</button
   >{#each rows as row (row.id)}

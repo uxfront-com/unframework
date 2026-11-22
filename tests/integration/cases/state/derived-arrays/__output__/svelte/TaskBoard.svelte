@@ -21,11 +21,19 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TaskBoardProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "initial" | "children" | "class" | "style" | "ref"
+  > &
+    TaskBoardProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { initial, class: className, style, ...attributes }: Props = $props();
+  let { initial, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let tasks = $state.raw(untrack(() => initial));
   let filters = $state.raw<Filters>({ query: "", tags: [] });
@@ -104,20 +112,14 @@
     area.style.height = `${Math.max(lines, 2) * 1.5}em`;
     area.classList.toggle("tall", lines > 3);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["task-board", className]}
   aria-label="Tasks"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <ol aria-label="Open">
     {#each open as task (task.id)}

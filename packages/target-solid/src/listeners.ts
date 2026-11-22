@@ -21,7 +21,7 @@
 // - A template ref is a `let` the element's `ref` callback sets, and clears when the element is
 //   removed (`onCleanup` in the callback runs when its branch is disposed): empty again, as the
 //   other targets' refs are (ADR-0049).
-import { jsxExpression, js, rewriteCode } from "@unframework.dev/codegen";
+import { jsxExpression, js, parseStatementsSource, rewriteCode } from "@unframework.dev/codegen";
 import type { ImportSet, JsxContext, Placeholders } from "@unframework.dev/codegen";
 import type {
   DirectiveAttribute,
@@ -218,11 +218,27 @@ export interface SolidListeners {
   /** A listener of a child's event, `onClear={clear}`: the handler takes its payload. */
   componentEvent(attribute: ListenerAttribute): JsxAttributeItem[];
   /**
-   * A component ref (ADR-0054): a `let` the `ref` callback sets to what the child exposes, and
-   * clears when the child is disposed, as an element's (ADR-0049).
+   * A component ref (ADR-0054): a `let` the `ref` callback sets to what the child exposes, or to
+   * its root element where it exposes nothing (`element`, ADR-0118), and clears when the child
+   * is disposed, as an element's (ADR-0049).
    */
-  componentRef(attribute: RefAttribute): JsxAttributeItem[];
+  componentRef(attribute: RefAttribute, element: boolean, forwarded?: string): JsxAttributeItem[];
+  /**
+   * A listener of the element that takes what falls through, which calls the consumer's of the
+   * same event after its own (ADR-0118): `onClick={(event) => { save(); props.onClick?.(event);
+   * }}`. `passed` reads the consumer's, `props.onClick`, which the split leaves out of the
+   * others, so it does not replace this one.
+   */
+  composedEventAttribute(
+    attribute: EventAttribute,
+    element: ElementNode,
+    prop: string,
+    passed: string,
+  ): JsxAttributeItem[];
 }
+
+/** What a `ref` callback does besides the element's own: hand the element to the consumer's. */
+export type ForwardedRef = (element: ElementNode) => string | undefined;
 
 /** Listeners and template refs as Solid writes them (see the module comment). */
 export function solidListeners(
@@ -234,6 +250,7 @@ export function solidListeners(
     element: ElementNode,
     context: JsxContext,
   ) => ((parameter: string) => string) | undefined,
+  forwardedRef: ForwardedRef = () => undefined,
 ): SolidListeners {
   const native = nativeEvents(code.component);
   const plans = new WeakMap<ElementNode, ElementPlan>();
@@ -290,13 +307,27 @@ export function solidListeners(
       const value = rewriteCode(directive.value, code.component, code.rules, "pure");
       statements.push(`${directive.name}(() => ${value})(${parameter});`);
     }
+    // The consumer's `ref`, where the element takes it beside its own (ADR-0118): Solid's props
+    // type it the element or a callback, and a consumer's JSX always passes a callback.
+    const forwarded = forwardedRef(element);
+    if (forwarded) {
+      statements.push(`if (typeof ${forwarded} === "function") ${forwarded}(${parameter});`);
+    }
     const [only] = statements;
     const body =
-      statements.length === 1 && !ref ? only!.slice(0, -1) : `{\n${statements.join("\n")}\n}`;
+      statements.length === 1 && !ref && !forwarded
+        ? only!.slice(0, -1)
+        : `{\n${statements.join("\n")}\n}`;
     return js.jsxAttribute("ref", expression(`(${parameter}) => ${body}`));
   };
   return {
     eventAttribute(attribute, element, context) {
+      // A native listener on a component falls through to its root (ADR-0118): the event prop
+      // Solid's types give the element it lands on, which its spread listens with.
+      if (isComponentTag(element.tag)) {
+        const prop = SOLID_EVENT_PROPS.get(attribute.event) ?? `on:${attribute.event}`;
+        return [js.jsxAttribute(prop, expression(handler(attribute)))];
+      }
       const plan = planOf(element);
       if (plan.added.includes(attribute)) {
         return plan.carrier === attribute ? [refCallback(element, context)] : [];
@@ -322,7 +353,7 @@ export function solidListeners(
       if (plan.carrier !== attribute) return [];
       // The element's one ref is the factory's callback itself, unless a `v-model`'s helper or
       // another directive needs the element too: then one callback calls each.
-      if (plan.directives.length === 1 && !modelRef(element, context)) {
+      if (plan.directives.length === 1 && !modelRef(element, context) && !forwardedRef(element)) {
         const value = jsxExpression(attribute.value, context);
         return [
           js.jsxAttribute(
@@ -339,13 +370,129 @@ export function solidListeners(
     componentEvent(attribute) {
       return [js.jsxAttribute(eventProp(attribute.event), expression(handler(attribute)))];
     },
-    componentRef(attribute) {
-      api ??= imports.claim("api");
+    componentRef(attribute, element, forwarded) {
+      const held = element
+        ? (parameter ??= imports.claim("element"))
+        : (api ??= imports.claim("api"));
       const { name } = code.component.bindings.find((binding) => binding.id === attribute.binding)!;
-      const body = `${name} = ${api};\n${code.solid("onCleanup")}(() => {\n${name} = null;\n});`;
-      return [js.jsxAttribute("ref", expression(`(${api}) => {\n${body}\n}`))];
+      const statements = [
+        `${name} = ${held};`,
+        `${code.solid("onCleanup")}(() => {\n${name} = null;\n});`,
+        ...(forwarded ? [`if (typeof ${forwarded} === "function") ${forwarded}(${held});`] : []),
+      ];
+      return [js.jsxAttribute("ref", expression(`(${held}) => {\n${statements.join("\n")}\n}`))];
+    },
+    composedEventAttribute(attribute, _element, prop, passed) {
+      return [js.jsxAttribute(prop, expression(composedHandler(attribute, passed)))];
     },
   };
+
+  /**
+   * The handler that runs a listener's own, then the consumer's, as Vue chains them (ADR-0118).
+   * An inline handler's statements come first, then the call: in a `finally` where they may
+   * return early, and an async one, whose statements after an `await` run later, is called as it
+   * is.
+   */
+  function composedHandler(attribute: EventAttribute, passed: string): string {
+    const written = attribute.handler;
+    const then = (event: string) => `${passed}?.(${event});`;
+    switch (written.kind) {
+      case "Function": {
+        const { name } = code.component.bindings.find((entry) => entry.id === written.binding)!;
+        const fn = code.component.setup.find(
+          (item): item is FunctionItem =>
+            item.kind === "Function" && item.binding === written.binding,
+        )?.function;
+        const event = eventName([name]);
+        const argument = fn && fn.parameters.length === 0 ? "" : event;
+        return `(${event}) => {\n${name}(${argument});\n${then(event)}\n}`;
+      }
+      case "Inline": {
+        const fn = narrowings.client(written.function);
+        const [first, ...others] = fn.parameters;
+        const simple =
+          !fn.async &&
+          others.length === 0 &&
+          (first === undefined || (first.name !== undefined && !first.rest && !first.default));
+        const body = code.body(fn, true);
+        if (simple) {
+          const event = first?.name ?? eventName([body]);
+          // Untyped, so Solid types it as the consumer's listener takes it, which the own
+          // listener's type, Solid's or the DOM's, takes too.
+          if (fn.expression) {
+            return `(${event}) => {\n${statementExpression(body)};\n${then(event)}\n}`;
+          }
+          const statements = body.slice(1, -1).trim();
+          return returnsEarly(body)
+            ? `(${event}) => {\ntry {\n${statements}\n} finally {\n${then(event)}\n}\n}`
+            : `(${event}) => {\n${statements}\n${then(event)}\n}`;
+        }
+        const own = code.client(fn, undefined, true);
+        const event = eventName([own]);
+        return `(${event}) => {\n(${own})(${fn.parameters.length ? event : ""});\n${then(event)}\n}`;
+      }
+      default:
+        return unreachable(written);
+    }
+  }
+
+  /** The composed handler's parameter: `event`, unless the code it holds reads that name. */
+  function eventName(texts: readonly string[]): string {
+    return texts.some((text) => /(?<![\w$.])event(?![\w$])/.test(text))
+      ? imports.claim("event")
+      : "event";
+  }
+}
+
+/** An expression as a statement: one that would read as a block or a declaration is wrapped. */
+function statementExpression(code: string): string {
+  return /^\s*(?:\{|function\b|class\b|let\s*\[)/.test(code) ? `(${code})` : code;
+}
+
+/** Whether a block body returns before its end: a `return` outside the functions it holds. */
+function returnsEarly(body: string): boolean {
+  return holdsReturn(parseStatementsSource(body.slice(1, -1)).statements);
+}
+
+/** Whether part of an AST holds a `return` of its own function: not one of a function it holds. */
+function holdsReturn(node: unknown): boolean {
+  if (Array.isArray(node)) return node.some(holdsReturn);
+  if (!node || typeof node !== "object") return false;
+  const { type } = node as { type?: unknown };
+  if (type === "ReturnStatement") return true;
+  if (
+    type === "FunctionDeclaration" ||
+    type === "FunctionExpression" ||
+    type === "ArrowFunctionExpression" ||
+    type === "ClassDeclaration" ||
+    type === "ClassExpression"
+  ) {
+    return false;
+  }
+  return Object.entries(node).some(([key, value]) => key !== "parent" && holdsReturn(value));
+}
+
+/** Whether a tag names a component (`Field`, Solid's `Dynamic`): an element's is lower case. */
+function isComponentTag(tag: string): boolean {
+  return /^[A-Z]/.test(tag);
+}
+
+/**
+ * The element's own listeners Solid writes as event props (`onClick`): not one its `ref`
+ * callback adds, one with an option, or one of an event its listeners take natively
+ * (`on:click`).
+ */
+export function eventProps(element: ElementNode, component: UfComponent): EventAttribute[] {
+  const native = nativeEvents(component);
+  const { added } = elementPlan(element, component);
+  return element.attributes.filter(
+    (attribute): attribute is EventAttribute =>
+      attribute.kind === "Event" &&
+      !added.includes(attribute) &&
+      options(attribute) === undefined &&
+      SOLID_EVENT_PROPS.has(attribute.event) &&
+      !native.has(attribute.event),
+  );
 }
 
 /**

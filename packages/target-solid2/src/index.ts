@@ -21,7 +21,7 @@ import {
   typeExportsCode,
 } from "@unframework.dev/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.dev/codegen";
-import type { TypeDeclaration, UfComponent, UfModule } from "@unframework.dev/ir";
+import type { Span, TypeDeclaration, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import {
   addComposableImports,
@@ -149,8 +149,13 @@ export const solid2: Target = defineTarget({
       helper: "modelText",
       note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
     },
+    // Solid 2's `omit` leaves what a component declares out of its props, and its root spreads
+    // the others after its own attributes, its own listeners calling the consumer's (ADR-0118,
+    // src/fallthrough.ts).
     fallthrough: { support: "native" },
     "contextual-root": { support: "native" },
+    // `props.ref?.(api)` in `untrack`, and on a component that exposes nothing, the root element:
+    // Solid passes `ref` as a prop, which the root's spread hands the element (ADR-0118).
     expose: { support: "native" },
     context: { support: "native" },
     "reactive-context": {
@@ -165,7 +170,7 @@ export const solid2: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass, so a root that takes what falls through takes them with it, and an inline helper picks them out of its props by name for any other root: each branch of a root conditional, a root <component is>, and the root of a component that spreads the props' rest on another element, whose rest leaves them out by rule with Solid 2's `omit`, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -275,15 +280,50 @@ export const solid2: Target = defineTarget({
       new BindingTypes(component, context.module.types),
     );
     const models = new ModelHelpers(imports);
-    const listeners = solidListeners(code, imports, placeholders, narrowings, (element, context) =>
-      modelRef(element, context, code, models),
+    // What falls through (ADR-0118): the props but what the component declares and what the
+    // element that takes them merges itself, `const others = omit(props, "title");`.
+    const { plan } = composition;
+    const split = plan?.target && (plan.split.length || plan.unscoped) ? plan.split : undefined;
+    // The elements that spread what falls through render through `ssrElement`.
+    const spreads = [
+      ...(plan?.target ? [plan.target.span] : []),
+      ...(plan?.root && plan.rootScope ? [plan.root.span] : []),
+    ];
+    const others = split ? imports.claim(plan!.rest ? "rest" : "others") : props.object;
+    // Where the rest's element is not the root, it leaves out the styled parents' scope
+    // attributes too, by rule: no name lists them (ADR-0063). `solid/reactivity` reads a view
+    // `omit` returns only through a variable.
+    const omit = () => code.solid("omit");
+    const named = split?.length
+      ? `${omit()}(${props.object!}, ${split.map((name) => JSON.stringify(name)).join(", ")})`
+      : props.object!;
+    const splitStatements = split
+      ? [
+          placeholders.statements(
+            `const ${others} = ${plan!.unscoped ? `${omit()}(${named}, (name) => String(name).startsWith("data-uf-"))` : named};\n`,
+          ),
+        ]
+      : [];
+    const listeners = solidListeners(
+      code,
+      imports,
+      placeholders,
+      narrowings,
+      (element, context) => modelRef(element, context, code, models),
+      // A root element that takes the consumer's `ref` beside its own callback (ADR-0118).
+      (element) =>
+        plan?.root?.kind === "Element" &&
+        plan.root.span.start === element.span.start &&
+        plan.root.span.end === element.span.end
+          ? `${props.object!}.ref`
+          : undefined,
     );
     const { dialect, helpers } = solidJsx(
       imports,
       narrowings,
       [component.propsParameter?.type.code ?? "", ...types.map((declaration) => declaration.code)],
       listeners,
-      { code, composition, object: props.object, models },
+      { code, composition, object: props.object, models, others },
     );
     const jsx = jsxContext({
       component,
@@ -299,11 +339,12 @@ export const solid2: Target = defineTarget({
       ...composition.statements(object).map((text) => placeholders.statements(text)),
       ...setup.statements,
       ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
-      js.returnStatement(rendered(component, code, narrowings.types, jsx)),
+      js.returnStatement(rendered(component, code, narrowings.types, jsx, spreads)),
     ];
     const { resource } = setup;
     const fn = js.functionDeclaration(component.name, props.parameters, [
       ...props.statements,
+      ...splitStatements,
       ...(resource
         ? [...resource.statements, js.returnStatement(pending(resource, body, code))]
         : body),
@@ -375,8 +416,9 @@ function rendered(
   code: SolidCode,
   types: BindingTypes,
   context: JsxContext,
+  spreads: readonly Span[],
 ): JsxExpression {
-  const render = forSolid(component, code.rules, types);
+  const render = forSolid(component, code.rules, types, spreads);
   const [only] = render.children;
   const root =
     render.kind === "Fragment" &&

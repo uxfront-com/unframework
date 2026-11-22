@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -15,93 +16,97 @@ export interface SearchResultsEvents {
   onShown$?: QRL<(text: string) => void>;
 }
 
-export default component$<SearchResultsEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onReady$, onRendered$, onShown$, class: className, style, ...attributes }) => {
-    const status = useSignal("Loading");
-    const query = useSignal("");
-    const results = useSignal<string[]>([]);
-    const count = useSignal(0);
-    const doubled = useSignal(0);
-    const banner = useSignal<HTMLParagraphElement>();
-    const list = useSignal<HTMLUListElement>();
-    const total = useSignal<HTMLOutputElement>();
+export default component$<
+  SearchResultsEvents &
+    Omit<PropsOf<"section">, "onReady$" | "onRendered$" | "onShown$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ onReady$, onRendered$, onShown$, class: className, style, ...attributes }) => {
+  const status = useSignal("Loading");
+  const query = useSignal("");
+  const results = useSignal<string[]>([]);
+  const count = useSignal(0);
+  const doubled = useSignal(0);
+  const banner = useSignal<HTMLParagraphElement>();
+  const list = useSignal<HTMLUListElement>();
+  const total = useSignal<HTMLOutputElement>();
 
-    const previousQuery = useSignal(() => query.value);
-    useTask$(
-      ({ track }) => {
-        const value = track(query);
-        if (Object.is(value, previousQuery.value)) return;
-        previousQuery.value = value;
-        results.value = value === "" ? [] : [value, `${value} docs`];
-      },
-      { deferUpdates: false },
-    );
+  const previousQuery = useSignal(() => query.value);
+  useTask$(
+    ({ track }) => {
+      const value = track(query);
+      if (Object.is(value, previousQuery.value)) return;
+      previousQuery.value = value;
+      results.value = value === "" ? [] : [value, `${value} docs`];
+    },
+    { deferUpdates: false },
+  );
 
-    const previousQuery_1 = useSignal(() => query.value);
-    useVisibleTask$(
-      ({ track }) => {
-        const value = track(query);
-        if (Object.is(value, previousQuery_1.value)) return;
-        previousQuery_1.value = value;
-        onRendered$?.(list.value?.childElementCount ?? -1);
-      },
-      { strategy: "document-ready" },
-    );
+  const previousQuery_1 = useSignal(() => query.value);
+  useVisibleTask$(
+    ({ track }) => {
+      const value = track(query);
+      if (Object.is(value, previousQuery_1.value)) return;
+      previousQuery_1.value = value;
+      onRendered$?.(list.value?.childElementCount ?? -1);
+    },
+    { strategy: "document-ready" },
+  );
 
-    const previousCount = useSignal(() => count.value);
-    useTask$(
-      ({ track }) => {
-        const value = track(count);
-        if (Object.is(value, previousCount.value)) return;
-        previousCount.value = value;
-        doubled.value = value * 2;
-      },
-      { deferUpdates: false },
-    );
+  const previousCount = useSignal(() => count.value);
+  useTask$(
+    ({ track }) => {
+      const value = track(count);
+      if (Object.is(value, previousCount.value)) return;
+      previousCount.value = value;
+      doubled.value = value * 2;
+    },
+    { deferUpdates: false },
+  );
 
-    useVisibleTask$(
-      async () => {
-        status.value = "Ready";
-        await nextTick();
-        onReady$?.(banner.value?.textContent ?? "");
-      },
-      { strategy: "document-ready" },
-    );
-
-    const addOne = $(async () => {
-      count.value += 1;
+  useVisibleTask$(
+    async () => {
+      status.value = "Ready";
       await nextTick();
-      onShown$?.(total.value?.textContent ?? "");
-    });
+      onReady$?.(banner.value?.textContent ?? "");
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["search-results", className]}
-        aria-label="Search"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <p ref={banner}>{status.value}</p>
-        <label>
-          Query
-          <input
-            name="query"
-            onInput$={(_, element) => (query.value = (element as HTMLInputElement).value)}
-          />
-        </label>
-        <ul ref={list} aria-label="Results">
-          {results.value.map((result) => (
-            <li key={result}>{result}</li>
-          ))}
-        </ul>
-        <output ref={total}>{doubled.value}</output>
-        <button type="button" onClick$={addOne}>
-          Add one
-        </button>
-      </section>
-    );
-  },
-);
+  const addOne = $(async () => {
+    count.value += 1;
+    await nextTick();
+    onShown$?.(total.value?.textContent ?? "");
+  });
+
+  return (
+    <section
+      class={["search-results", className]}
+      aria-label="Search"
+      style={style}
+      {...attributes}
+    >
+      <p ref={banner}>{status.value}</p>
+      <label>
+        Query
+        <input
+          name="query"
+          onInput$={(_, element) => (query.value = (element as HTMLInputElement).value)}
+        />
+      </label>
+      <ul ref={list} aria-label="Results">
+        {results.value.map((result) => (
+          <li key={result}>{result}</li>
+        ))}
+      </ul>
+      <output ref={total}>{doubled.value}</output>
+      <button type="button" onClick$={addOne}>
+        Add one
+      </button>
+    </section>
+  );
+});
 
 /**
  * Resolves once Qwik has rendered the writes made before it: Qwik renders them in a microtask,
@@ -109,13 +114,4 @@ export default component$<SearchResultsEvents & { class?: ClassList; style?: CSS
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

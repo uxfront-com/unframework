@@ -1,15 +1,18 @@
 import { useToggle } from "./useToggle";
-import { type JSX, Show } from "solid-js";
+import { type ComponentProps, type JSX, Show, splitProps } from "solid-js";
 
-export default function Disclosure(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Disclosure(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const { on, toggle, close } = useToggle(false);
 
   return (
     <section
       class={props.class ? `disclosure ${props.class}` : "disclosure"}
       aria-label="Shipping"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-expanded={on()} onClick={() => toggle()}>
         Shipping details
@@ -24,11 +27,4 @@ export default function Disclosure(props: { class?: string; style?: JSX.CSSPrope
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

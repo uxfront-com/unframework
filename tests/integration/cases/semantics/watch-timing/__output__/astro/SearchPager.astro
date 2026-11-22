@@ -1,17 +1,12 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const query = "" as string;
 const page = 1 as number;
@@ -19,9 +14,9 @@ const page = 1 as number;
 
 <section
   class:list={["search-pager", className]}
-  aria-label="Search"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Search"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p role="status">{query === "" ? "All results" : `Results for ${query}`}, page {page}</p>
   <button type="button">Search boots</button>

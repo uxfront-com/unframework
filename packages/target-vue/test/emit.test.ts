@@ -1190,6 +1190,102 @@ export default function Page() { return <p><${first} /><${second} /></p>; }`);
       expect(files["Page.vue"]).toContain('import TransitionComponent_1 from "./Transition.vue";');
     });
   });
+  describe("fallthrough (ADR-0118)", () => {
+    it("binds the props' rest last on its element, and keeps the scope attributes on the root", async () => {
+      const files = await emittedFiles(`
+import { defineEmits, defineOptions } from "@uxfront/unframework";
+
+export default function Field({ label, ...rest }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  const emit = defineEmits<{ change: [value: string] }>();
+  return (
+    <label class="field">
+      {label} <input {...rest} onFocus={() => emit("change", label)} name={label} />
+    </label>
+  );
+}`);
+      const field = files["Field.vue"]!;
+      // The element's attributes from rest declare the input's attributes, but for the declared
+      // names, as a type alone: no runtime prop takes them from `$attrs`.
+      expect(field).toContain('import type { IntrinsicElementAttributes } from "vue";');
+      expect(field).toContain(
+        [
+          "const { label } = defineProps<",
+          "  { label: string } & /* @vue-ignore */ (Omit<",
+          '    IntrinsicElementAttributes["input"],',
+          '    "label" | "onChange" | "autocomplete"',
+          "  > &",
+          '    Partial<Record<"autocomplete", string>>)',
+          ">();",
+        ].join("\n"),
+      );
+      expect(field).toContain('    class="field"\n    v-bind="scopeAttrs($attrs)"\n  >');
+      // After the element's own listener, so the consumer's runs second, as on a root.
+      expect(field).toContain('@focus="emit(\'change\', label)" v-bind="restAttrs($attrs)" />');
+      expect(field).toContain('.filter(([name]) => name.startsWith("data-uf-"))');
+      expect(field).toContain('.filter(([name]) => !name.startsWith("data-uf-"))');
+    });
+
+    it("binds `$attrs` as it is where the rest is the root's", async () => {
+      const field = await emitSource(`
+import { defineOptions } from "@uxfront/unframework";
+
+export default function Field({ label, ...rest }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  return <input {...rest} aria-label={label} />;
+}`);
+      expect(field).toContain('<input :aria-label="label" v-bind="$attrs" />');
+      expect(field).not.toContain("@vue-ignore");
+      expect(field).not.toContain("scopeAttrs");
+    });
+
+    it("reads the root element of a child that exposes nothing through its instance's `$el`", async () => {
+      const files = await emittedFiles(`
+import { defineExpose, useTemplateRef } from "@uxfront/unframework";
+
+function Save({ text }: { text: string }) {
+  return <button type="button">{text}</button>;
+}
+
+function Search() {
+  const input = useTemplateRef<HTMLInputElement>();
+  function focus() {
+    input.value?.focus();
+  }
+  defineExpose({ focus });
+  return <input ref={input} aria-label="Search" />;
+}
+
+export default function Bar() {
+  const save = useTemplateRef<HTMLButtonElement>();
+  const search = useTemplateRef<{ focus(): void }>();
+  function go() {
+    save.value?.focus();
+    search.value?.focus();
+  }
+  return (
+    <div>
+      <Save ref={save} text="Save" />
+      <Search ref={search} />
+      <button type="button" onClick={go}>Go</button>
+    </div>
+  );
+}`);
+      const bar = files["Bar.vue"]!;
+      expect(bar).toContain(
+        [
+          'const saveComponent = useTemplateRef<{ $el: HTMLButtonElement }>("saveComponent");',
+          "const save = computed(() => saveComponent.value?.$el ?? null);",
+        ].join("\n"),
+      );
+      expect(bar).toContain('<Save ref="saveComponent" text="Save" />');
+      // A child that exposes something keeps Vue's own ref, to what it exposes.
+      expect(bar).toContain('const search = useTemplateRef<{ focus(): void }>("search");');
+      expect(bar).toContain('<Search ref="search" />');
+      expect(bar).toContain("save.value?.focus();");
+    });
+  });
+
   describe("models, context and <component is> (ADR-0054)", () => {
     async function emitAll(source: string): Promise<Record<string, string>> {
       const files = await emitFormatted(lower(source));
@@ -1317,3 +1413,9 @@ export default function Frame() {
     });
   });
 });
+
+/** Every file a source emits, formatted, by path. */
+async function emittedFiles(source: string): Promise<Record<string, string>> {
+  const files = await emitFormatted(lower(source));
+  return Object.fromEntries(files.map((file) => [file.path, file.contents]));
+}

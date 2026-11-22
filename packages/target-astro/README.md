@@ -115,6 +115,20 @@ per component (ADR-0034, ADR-0046):
     `style?: Record<string, string | number | undefined>`, and the root merges them,
     `class:list={["field", className]}` and `style={{ padding: "2px", ...style }}`. Astro passes a
     component's `class:list` as `class`; a consumer passes a style as an object;
+  - the other attributes a consumer passes that the component does not declare fall through as
+    the rest of its props (ADR-0118, `src/fallthrough.ts`): `Props` extends the root element's
+    `HTMLAttributes<"button">` from `astro/types`, the names it declares omitted, the frontmatter
+    reads `const { title, class: className, style, type, ...attrs } = Astro.props;`, and the
+    root spreads `{...attrs}`. Astro writes every attribute it is given, a spread's included,
+    and the browser keeps the first of two, so the root reads each of its own attributes from
+    the props whenever the consumer passes the key, even `undefined`, which removes it as on Vue:
+    `type={"type" in Astro.props ? type : "button"}`. The consumer's wins. Every declared name is
+    destructured, `_name` where nothing reads it, so none falls through. A listener that falls
+    through is dropped (`interactivity`, inert);
+  - with `inheritAttrs` off, the props' rest, `{...rest}`, is the same `attrs` on its element,
+    which merges the consumer's `class` and `style` and reads its own attributes first as a root
+    does. On an element other than the root it spreads `withoutScope(attrs)`, and the root keeps
+    the styled parents' scope attributes, `{...scopeAttributes(Astro.props)}` (ADR-0063);
   - `inject` is its fallback, or `undefined`, cast to the key's value type, which the output of
     the key's main component exports under the key's name (`export type ThemeKey = Theme;`), and
     an injecting component imports (`const theme = undefined as ThemeKey | undefined;`);
@@ -132,7 +146,8 @@ per component (ADR-0034, ADR-0046):
 - **Styles** (ADR-0063): a component with a stylesheet imports the sheet `compile()` scoped in
   its frontmatter, `import "./Card.uf.tsx.css";`, after its children's imports, and every element
   of its markup carries `data-uf-<id>=""`. Its root spreads the `data-uf-*` props of the styled
-  parents that render it, picked out of `Astro.props` by an inline helper,
+  parents that render it: with the rest of its props where its root takes what falls through
+  (`{...attrs}`), and otherwise picked out of `Astro.props` by an inline helper,
   `{...scopeAttributes(Astro.props)}` (`child-root-scope`, emulated), on each node Vue's
   fallthrough reaches. Content filled into a child whose sheet uses `:slotted()`, a scoped
   fill's render prop included, carries the child's `-s`.

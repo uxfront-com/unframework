@@ -98,6 +98,14 @@ Everything `@unframework.dev/target-solid`'s README says holds here, but for wha
   `clearedRef`, `modelText` and `selectOptions` are factories that return the callback, and an
   element with several is `ref={[…]}`. A directive's factory runs on the server too, where its
   primitives only take their hydration keys.
+- **Fallthrough (ADR-0118).** Solid 2 has no `splitProps`: `const others = omit(props, "title")`
+  leaves the declared names out of what the root spreads. Where the props' rest is spread on an
+  element other than the root, `omit` leaves the styled parents' scope attributes out of it by
+  rule, `omit(omit(props, "label", "ref"), (name) => String(name).startsWith("data-uf-"))`, with
+  no helper. An element's `class` is typed a string, since Solid 2 types it any `ClassValue`,
+  which the root merges as one string. A root with a `ref` of its own and the consumer's takes
+  them as one `ref` array, and a ref on a child that exposes nothing goes through `clearedRef`:
+  the child's spread hands it the element from a `ref` callback.
 - **Teleport and transition.** `Teleport` renders Solid 2's `<Portal>`, which inserts no wrapper,
   once the component has mounted, the teleports in the order they rendered. `Transition` resolves
   its child on the server too.

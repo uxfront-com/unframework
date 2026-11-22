@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 type TagStates = { selected?: boolean; muted?: boolean };
 
@@ -11,8 +11,14 @@ export interface TagListProps {
 }
 
 export default function TagList(
-  props: TagListProps & { class?: string; style?: JSX.CSSProperties },
+  props: TagListProps &
+    Omit<ComponentProps<"div">, "label" | "tags" | "states" | "extra" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "label", "tags", "states", "extra", "class");
+
   const [expanded, setExpanded] = createState(false);
 
   function expand() {
@@ -20,11 +26,7 @@ export default function TagList(
   }
 
   return (
-    <div
-      class={props.class ? `tag-list ${props.class}` : "tag-list"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `tag-list ${props.class}` : "tag-list"} {...others}>
       <span class={cx("tag", props.tags, props.states, { "tag-open": expanded() })}>
         {props.label}
       </span>
@@ -50,13 +52,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

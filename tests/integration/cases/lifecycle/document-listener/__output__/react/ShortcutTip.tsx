@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -12,10 +12,10 @@ export interface ShortcutTipEvents {
   onShortcut?: (key: string, count: number) => void;
 }
 
-export interface ShortcutTipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShortcutTipAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onDismissed" | "onShortcut" | "children"
+>;
 
 export default function ShortcutTip({
   onDismissed,
@@ -92,7 +92,7 @@ export default function ShortcutTip({
       className={cx("shortcut-tip", className)}
       aria-label="Shortcuts"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p>
       <button type="button" aria-pressed={enabled} onClick={toggle}>
@@ -116,13 +116,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

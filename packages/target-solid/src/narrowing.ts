@@ -191,6 +191,7 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
               }
               break;
             case "Ref":
+            case "Rest":
               break;
             // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
             case "Model":

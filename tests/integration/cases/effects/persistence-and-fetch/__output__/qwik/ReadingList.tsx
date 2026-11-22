@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   noSerialize,
@@ -25,7 +26,20 @@ export interface ReadingListEvents {
 }
 
 export default component$<
-  ReadingListProps & ReadingListEvents & { class?: ClassList; style?: CSSProperties }
+  ReadingListProps &
+    ReadingListEvents &
+    Omit<
+      PropsOf<"section">,
+      | "shelves"
+      | "onRequested$"
+      | "onCancelled$"
+      | "onFound$"
+      | "onStarted$"
+      | "onChecked$"
+      | "onRefreshed$"
+      | "class"
+      | "style"
+    > & { class?: ClassList; style?: CSSProperties }
 >(
   ({
     shelves,
@@ -156,8 +170,8 @@ export default component$<
       <section
         class={["reading-list", className]}
         aria-label="Reading list"
-        {...scopeAttributes(attributes)}
         style={style}
+        {...attributes}
       >
         <label>
           Search
@@ -215,12 +229,3 @@ export default component$<
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

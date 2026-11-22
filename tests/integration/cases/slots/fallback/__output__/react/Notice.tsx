@@ -1,14 +1,11 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface NoticeSlots {
   children?: ReactNode;
   action?: ReactNode;
 }
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<ComponentPropsWithRef<"div">, "label" | "children" | "action">;
 
 export default function Notice({
   label,
@@ -24,7 +21,7 @@ export default function Notice({
       aria-label={label}
       className={cx("notice", className)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>{children ?? <em>Nothing to report.</em>}</p>
       {action ?? <span className="muted">No action</span>}
@@ -45,13 +42,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

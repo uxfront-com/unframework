@@ -2,6 +2,7 @@ import { vSelectable } from "./vSelectable";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
@@ -28,196 +29,182 @@ const vMark = {
   unmounted() {},
 };
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const user = useSignal<User | null>({ name: "Ada" });
-    const note = useSignal("Hello");
-    const label = useSignal<string | number>("Lovelace");
-    const nick = useSignal<string | undefined>("Al");
-    const track = useSignal("Trail");
-    const cleanup = useSignal<string | null>("Tidy");
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  const user = useSignal<User | null>({ name: "Ada" });
+  const note = useSignal("Hello");
+  const label = useSignal<string | number>("Lovelace");
+  const nick = useSignal<string | undefined>("Al");
+  const track = useSignal("Trail");
+  const cleanup = useSignal<string | null>("Tidy");
 
-    const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
+  const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
 
-    useVisibleTask$(
-      ({ track: track_1, cleanup: cleanup_1 }) => {
-        if (track_1(markElements).some((element_1) => element_1.isConnected)) {
-          const value = track_1(() => user.value!.name);
-          for (const element_1 of track_1(markElements)) {
-            cleanup_1(
-              runDirective(vMark, element_1, value, {
-                leave: (left) => forgetElement(markElements, left),
-                back: (kept) => collectElement(markElements, kept),
-              }),
-            );
-          }
-        } else {
-          for (const element_1 of markElements.value) {
-            cleanup_1(waitForDocument(element_1, () => markElements.trigger()));
-          }
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const markElements_1 = useSignal<DirectiveElement<typeof vMark>[]>([]);
-
-    useVisibleTask$(
-      ({ track: track_1, cleanup: cleanup_1 }) => {
-        if (track_1(markElements_1).some((element_1) => element_1.isConnected)) {
-          const value = track_1(() => label.value);
-          for (const element_1 of track_1(markElements_1)) {
-            cleanup_1(
-              runDirective(vMark, element_1, value, {
-                leave: (left) => forgetElement(markElements_1, left),
-                back: (kept) => collectElement(markElements_1, kept),
-              }),
-            );
-          }
-        } else {
-          for (const element_1 of markElements_1.value) {
-            cleanup_1(waitForDocument(element_1, () => markElements_1.trigger()));
-          }
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const markElements_2 = useSignal<DirectiveElement<typeof vMark>[]>([]);
-
-    useVisibleTask$(
-      ({ track: track_1, cleanup: cleanup_1 }) => {
-        if (track_1(markElements_2).some((element_1) => element_1.isConnected)) {
-          const value = track_1(() => nick.value);
-          for (const element_1 of track_1(markElements_2)) {
-            cleanup_1(
-              runDirective(vMark, element_1, value, {
-                leave: (left) => forgetElement(markElements_2, left),
-                back: (kept) => collectElement(markElements_2, kept),
-              }),
-            );
-          }
-        } else {
-          for (const element_1 of markElements_2.value) {
-            cleanup_1(waitForDocument(element_1, () => markElements_2.trigger()));
-          }
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const markElements_3 = useSignal<DirectiveElement<typeof vMark>[]>([]);
-
-    useVisibleTask$(
-      ({ track: track_1, cleanup: cleanup_1 }) => {
-        if (track_1(markElements_3).some((element_1) => element_1.isConnected)) {
-          const value = track_1(() => cleanup.value! + track.value);
-          for (const element_1 of track_1(markElements_3)) {
-            cleanup_1(
-              runDirective(vMark, element_1, value, {
-                leave: (left) => forgetElement(markElements_3, left),
-                back: (kept) => collectElement(markElements_3, kept),
-              }),
-            );
-          }
-        } else {
-          for (const element_1 of markElements_3.value) {
-            cleanup_1(waitForDocument(element_1, () => markElements_3.trigger()));
-          }
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const markElements_4 = useSignal<DirectiveElement<typeof vMark>[]>([]);
-
-    useVisibleTask$(
-      ({ track: track_1, cleanup: cleanup_1 }) => {
-        const value = track_1(() => note.value);
-        for (const element_1 of track_1(markElements_4)) {
+  useVisibleTask$(
+    ({ track: track_1, cleanup: cleanup_1 }) => {
+      if (track_1(markElements).some((element_1) => element_1.isConnected)) {
+        const value = track_1(() => user.value!.name);
+        for (const element_1 of track_1(markElements)) {
           cleanup_1(
             runDirective(vMark, element_1, value, {
-              leave: (left) => forgetElement(markElements_4, left),
-              back: (kept) => collectElement(markElements_4, kept),
+              leave: (left) => forgetElement(markElements, left),
+              back: (kept) => collectElement(markElements, kept),
             }),
           );
         }
-      },
-      { strategy: "document-ready" },
-    );
+      } else {
+        for (const element_1 of markElements.value) {
+          cleanup_1(waitForDocument(element_1, () => markElements.trigger()));
+        }
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    useVisibleTask$(
-      ({ track: track_1, cleanup: cleanup_1 }) => {
-        const value = true;
-        for (const element_1 of track_1(markElements_4)) {
+  const markElements_1 = useSignal<DirectiveElement<typeof vMark>[]>([]);
+
+  useVisibleTask$(
+    ({ track: track_1, cleanup: cleanup_1 }) => {
+      if (track_1(markElements_1).some((element_1) => element_1.isConnected)) {
+        const value = track_1(() => label.value);
+        for (const element_1 of track_1(markElements_1)) {
           cleanup_1(
-            runDirective(vSelectable, element_1, value, {
-              leave: (left) => forgetElement(markElements_4, left),
-              back: (kept) => collectElement(markElements_4, kept),
+            runDirective(vMark, element_1, value, {
+              leave: (left) => forgetElement(markElements_1, left),
+              back: (kept) => collectElement(markElements_1, kept),
             }),
           );
         }
-      },
-      { strategy: "document-ready" },
-    );
+      } else {
+        for (const element_1 of markElements_1.value) {
+          cleanup_1(waitForDocument(element_1, () => markElements_1.trigger()));
+        }
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    const currentNote = note.value;
+  const markElements_2 = useSignal<DirectiveElement<typeof vMark>[]>([]);
 
-    return (
-      <section
-        class={["profile", className]}
-        aria-label="Profile"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <>
-          {user.value ? (
-            <p ref={(element) => collectElement(markElements, element)}>{user.value.name}</p>
-          ) : null}
-        </>
-        <>
-          {typeof label.value === "string" ? (
-            <b ref={(element) => collectElement(markElements_1, element)}>{label.value}</b>
-          ) : null}
-        </>
-        <>
-          {nick.value ? (
-            <i ref={(element) => collectElement(markElements_2, element)}>{nick.value}</i>
-          ) : null}
-        </>
-        <>
-          {cleanup.value ? (
-            <s ref={(element) => collectElement(markElements_3, element)}>{cleanup.value}</s>
-          ) : null}
-        </>
-        <textarea
-          aria-label="Note"
-          value={currentNote}
-          onInput$={(_, element) => (note.value = element.value)}
-          ref={(element) => collectElement(markElements_4, element)}
-        />
-        <button type="button" onClick$={() => (user.value = user.value ? null : { name: "Grace" })}>
-          Toggle
-        </button>
-        <button type="button" onClick$={() => (label.value = 1)}>
-          Count
-        </button>
-        <button type="button" onClick$={() => (nick.value = undefined)}>
-          Forget
-        </button>
-      </section>
-    );
-  },
-);
+  useVisibleTask$(
+    ({ track: track_1, cleanup: cleanup_1 }) => {
+      if (track_1(markElements_2).some((element_1) => element_1.isConnected)) {
+        const value = track_1(() => nick.value);
+        for (const element_1 of track_1(markElements_2)) {
+          cleanup_1(
+            runDirective(vMark, element_1, value, {
+              leave: (left) => forgetElement(markElements_2, left),
+              back: (kept) => collectElement(markElements_2, kept),
+            }),
+          );
+        }
+      } else {
+        for (const element_1 of markElements_2.value) {
+          cleanup_1(waitForDocument(element_1, () => markElements_2.trigger()));
+        }
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  const markElements_3 = useSignal<DirectiveElement<typeof vMark>[]>([]);
+
+  useVisibleTask$(
+    ({ track: track_1, cleanup: cleanup_1 }) => {
+      if (track_1(markElements_3).some((element_1) => element_1.isConnected)) {
+        const value = track_1(() => cleanup.value! + track.value);
+        for (const element_1 of track_1(markElements_3)) {
+          cleanup_1(
+            runDirective(vMark, element_1, value, {
+              leave: (left) => forgetElement(markElements_3, left),
+              back: (kept) => collectElement(markElements_3, kept),
+            }),
+          );
+        }
+      } else {
+        for (const element_1 of markElements_3.value) {
+          cleanup_1(waitForDocument(element_1, () => markElements_3.trigger()));
+        }
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const markElements_4 = useSignal<DirectiveElement<typeof vMark>[]>([]);
+
+  useVisibleTask$(
+    ({ track: track_1, cleanup: cleanup_1 }) => {
+      const value = track_1(() => note.value);
+      for (const element_1 of track_1(markElements_4)) {
+        cleanup_1(
+          runDirective(vMark, element_1, value, {
+            leave: (left) => forgetElement(markElements_4, left),
+            back: (kept) => collectElement(markElements_4, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  useVisibleTask$(
+    ({ track: track_1, cleanup: cleanup_1 }) => {
+      const value = true;
+      for (const element_1 of track_1(markElements_4)) {
+        cleanup_1(
+          runDirective(vSelectable, element_1, value, {
+            leave: (left) => forgetElement(markElements_4, left),
+            back: (kept) => collectElement(markElements_4, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const currentNote = note.value;
+
+  return (
+    <section class={["profile", className]} aria-label="Profile" style={style} {...attributes}>
+      <>
+        {user.value ? (
+          <p ref={(element) => collectElement(markElements, element)}>{user.value.name}</p>
+        ) : null}
+      </>
+      <>
+        {typeof label.value === "string" ? (
+          <b ref={(element) => collectElement(markElements_1, element)}>{label.value}</b>
+        ) : null}
+      </>
+      <>
+        {nick.value ? (
+          <i ref={(element) => collectElement(markElements_2, element)}>{nick.value}</i>
+        ) : null}
+      </>
+      <>
+        {cleanup.value ? (
+          <s ref={(element) => collectElement(markElements_3, element)}>{cleanup.value}</s>
+        ) : null}
+      </>
+      <textarea
+        aria-label="Note"
+        value={currentNote}
+        onInput$={(_, element) => (note.value = element.value)}
+        ref={(element) => collectElement(markElements_4, element)}
+      />
+      <button type="button" onClick$={() => (user.value = user.value ? null : { name: "Grace" })}>
+        Toggle
+      </button>
+      <button type="button" onClick$={() => (label.value = 1)}>
+        Count
+      </button>
+      <button type="button" onClick$={() => (nick.value = undefined)}>
+        Forget
+      </button>
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

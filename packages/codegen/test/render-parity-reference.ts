@@ -243,6 +243,9 @@ class Evaluator {
         // server HTML and DOM layers check it.
         case "RawHtml":
           throw new Error("raw HTML is not rendered by the reference (ADR-0097)");
+        // What a consumer passes, which a lone component never has (ADR-0118).
+        case "Rest":
+          throw new Error("the props' rest is not rendered by the reference (ADR-0118)");
         default:
           throw new Error(`unknown attribute ${(attribute satisfies never as Attribute).kind}`);
       }

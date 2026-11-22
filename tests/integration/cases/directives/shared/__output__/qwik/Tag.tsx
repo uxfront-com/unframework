@@ -2,6 +2,7 @@ import { vMark } from "./vMark";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
@@ -12,46 +13,45 @@ export interface TagProps {
   name: string;
 }
 
-export default component$<TagProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ name, class: className, style, ...attributes }) => {
-    const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
+export default component$<
+  TagProps &
+    Omit<PropsOf<"em">, "name" | "class" | "style" | "ref"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+      ref?: Signal<Element | undefined>;
+    }
+>(({ name, class: className, style, ref, ...attributes }) => {
+  const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = track(() => `tag ${name}`);
-        for (const element of track(markElements)) {
-          cleanup(
-            runDirective(vMark, element, value, {
-              leave: (left) => forgetElement(markElements, left),
-              back: (kept) => collectElement(markElements, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = track(() => `tag ${name}`);
+      for (const element of track(markElements)) {
+        cleanup(
+          runDirective(vMark, element, value, {
+            leave: (left) => forgetElement(markElements, left),
+            back: (kept) => collectElement(markElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <em
-        class={["tag", className]}
-        ref={(element) => collectElement(markElements, element)}
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        #{name}
-      </em>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <em
+      class={["tag", className]}
+      ref={(element) => {
+        if (ref) ref.value = element;
+        collectElement(markElements, element);
+      }}
+      style={style}
+      {...attributes}
+    >
+      #{name}
+    </em>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

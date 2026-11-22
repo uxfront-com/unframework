@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface Contact {
   id: string;
   name: string;
@@ -8,19 +10,12 @@ export interface ContactListProps {
   initial: Contact[];
 }
 
-interface Props extends ContactListProps {
+interface Props extends ContactListProps, Omit<HTMLAttributes<"section">, "initial"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { initial, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { initial, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const contacts = initial;
 const chosen = undefined as string | undefined;
@@ -28,9 +23,9 @@ const chosen = undefined as string | undefined;
 
 <section
   class:list={["contact-list", className]}
-  aria-label="Contacts"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Contacts"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <ul>
     {contacts.map((contact) => (

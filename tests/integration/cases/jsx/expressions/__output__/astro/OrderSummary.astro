@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface OrderSummaryProps {
   customer: string;
   orderNumber: number;
@@ -8,7 +10,13 @@ export interface OrderSummaryProps {
   coupon?: string;
 }
 
-interface Props extends OrderSummaryProps {
+interface Props
+  extends
+    OrderSummaryProps,
+    Omit<
+      HTMLAttributes<"section">,
+      "customer" | "orderNumber" | "unitPrice" | "quantity" | "discount" | "coupon"
+    > {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
@@ -22,21 +30,16 @@ const {
   coupon,
   class: className,
   style,
+  "aria-label": ariaLabel,
+  ...attrs
 } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
 ---
 
 <section
   class:list={["order-summary", className]}
-  aria-label="Order summary"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Order summary"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>Order {String(orderNumber).padStart(6, "0")}</h2>
   <p>Customer: {customer.trim().toUpperCase()}</p>

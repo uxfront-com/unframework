@@ -1,11 +1,19 @@
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 
 export interface ChoiceModels {
   picked?: string;
   onPickedChange?: (value: string) => void;
 }
 
-export function Choice(props: ChoiceModels & { class?: string; style?: JSX.CSSProperties }) {
+export function Choice(
+  props: ChoiceModels &
+    Omit<ComponentProps<"button">, "picked" | "style" | "onClick"> & {
+      style?: JSX.CSSProperties;
+      onClick?: Extract<ComponentProps<"button">["onClick"], (event: never) => void>;
+    },
+) {
+  const [, others] = splitProps(props, ["picked", "onPickedChange", "onClick"]);
+
   const [localPicked, setLocalPicked] = createSignal<string>("");
   const picked = () => (props.picked === undefined ? localPicked() : props.picked);
 
@@ -17,19 +25,13 @@ export function Choice(props: ChoiceModels & { class?: string; style?: JSX.CSSPr
   return (
     <button
       type="button"
-      onClick={() => setPicked("yes")}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
+      onClick={(event) => {
+        setPicked("yes");
+        props.onClick?.(event);
+      }}
+      {...others}
     >
       Yes ({picked()})
     </button>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

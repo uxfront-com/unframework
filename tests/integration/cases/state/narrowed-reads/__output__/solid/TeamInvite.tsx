@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   Show,
@@ -6,6 +7,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
@@ -37,8 +39,23 @@ export interface TeamInviteEvents {
 }
 
 export default function TeamInvite(
-  props: TeamInviteProps & TeamInviteEvents & { class?: string; style?: JSX.CSSProperties },
+  props: TeamInviteProps &
+    TeamInviteEvents &
+    Omit<ComponentProps<"section">, "inviter" | "members" | "onSelect" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, [
+    "inviter",
+    "members",
+    "onSelect",
+    "onRemoved",
+    "onSubmitted",
+    "onTagged",
+    "onMoved",
+    "class",
+  ]);
+
   const greeting = createMemo(() =>
     props.inviter ? `Invite as ${props.inviter.name}` : "Invite as a guest",
   );
@@ -105,8 +122,7 @@ export default function TeamInvite(
     <section
       class={props.class ? `team-invite ${props.class}` : "team-invite"}
       aria-label="Invite"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{greeting()}</h2>
       <ul aria-label="Members">
@@ -199,13 +215,6 @@ export default function TeamInvite(
       <p>Seconds: {seconds()}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

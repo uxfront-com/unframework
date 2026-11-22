@@ -24,6 +24,7 @@ import { keyOf } from "./composition.ts";
 import type { SlotDirective } from "./composition.ts";
 import { arrow, lifecycleCode, watchEffectCode, watcherCode } from "./effects.ts";
 import type { EffectCode, EffectNames } from "./effects.ts";
+import { ATTRIBUTES_INPUT, ELEMENT_MEMBER, ELEMENT_REF, LISTENERS_INPUT } from "./fallthrough.ts";
 import type { HandlerMethod } from "./listeners.ts";
 import type { ModelHelper } from "./models.ts";
 import { outputName } from "./outputs.ts";
@@ -72,8 +73,17 @@ export interface MemberContext {
   nextId?: string;
   /** The component's own slot directives, whose templates it queries (./composition.ts). */
   slots: readonly SlotDirective[];
-  /** Whether the component takes `class` and `style` inputs it merges into its root (ADR-0056). */
-  fallthrough: boolean;
+  /**
+   * What the component takes from its consumer (ADR-0056, ADR-0118): the `class` and `style`
+   * inputs it merges into its root, and, where it `passes` them on, the records of attributes and
+   * listeners, the latter typed by `listeners`.
+   */
+  fallthrough?: { passes: boolean; listeners: string };
+  /**
+   * The element a ref on the component holds, where it exposes nothing (ADR-0118): a query of its
+   * root element, typed by its DOM interface, or of its root component, whose own it reads.
+   */
+  rootElement?: { type?: string; component?: { className: string; query: string } };
   /** The local name of each injection key the setup names. */
   keyNames: ReadonlyMap<string, string>;
   /** The `refObject` helper's name, when a key of a ref is provided or injected with a fallback. */
@@ -108,7 +118,7 @@ export function classMembers(context: MemberContext): {
   const members: Member[] = component.props.map((prop) =>
     inputMember(prop, component, core("input"), placeholders, context.declarations),
   );
-  if (context.fallthrough) {
+  if (context.fallthrough !== undefined) {
     // The consumer's `class` and `style`, which the root merges (ADR-0056): inputs, so a static
     // `class` and a bound one both reach them, and the host keeps neither.
     members.push(
@@ -127,6 +137,30 @@ export function classMembers(context: MemberContext): {
         { readonly: true },
       ),
     );
+    if (context.fallthrough.passes) {
+      // What else the consumer passes (ADR-0118): its attributes by name, and its native
+      // listeners by event, which the element that takes them gets through the directive.
+      members.push(
+        js.propertyDefinition(
+          ATTRIBUTES_INPUT,
+          js.callExpression(
+            js.identifier(core("input")),
+            [],
+            [placeholders.type("Record<string, unknown>")],
+          ),
+          { readonly: true },
+        ),
+        js.propertyDefinition(
+          LISTENERS_INPUT,
+          js.callExpression(
+            js.identifier(core("input")),
+            [],
+            [placeholders.type(context.fallthrough.listeners)],
+          ),
+          { readonly: true },
+        ),
+      );
+    }
   }
   // A model is a signal input the component writes (`model()`), declared with the inputs. Its
   // binding names the member; the model's own name is the public one (`value` and
@@ -209,6 +243,30 @@ export function classMembers(context: MemberContext): {
       continue;
     }
     const element = `${core("ElementRef")}<${item.type?.code ?? "unknown"}>`;
+    const child = plan.elementRefs.get(item.binding);
+    if (child !== undefined) {
+      // A ref on a child that exposes nothing holds its root element (ADR-0118), which the
+      // child's `ufElement` holds: read from the child, typed as the source types the element,
+      // which the child's own type must match.
+      const instance = plan.members.claim(`${name}Component`);
+      members.push(
+        js.propertyDefinition(
+          instance,
+          placeholders.expression(
+            `${core("viewChild")}(${JSON.stringify(name)}, { read: ${child} })`,
+          ),
+          { accessibility: "private", readonly: true },
+        ),
+        js.propertyDefinition(
+          name,
+          placeholders.expression(
+            `${core("computed")}<${element} | undefined>(() => this.${instance}()?.${ELEMENT_MEMBER}())`,
+          ),
+          { accessibility: "private", readonly: true },
+        ),
+      );
+      continue;
+    }
     members.push(
       js.propertyDefinition(
         name,
@@ -218,6 +276,38 @@ export function classMembers(context: MemberContext): {
           [placeholders.type(element)],
         ),
         { accessibility: "private", readonly: true },
+      ),
+    );
+  }
+  // The element a ref on this component holds, where it exposes nothing (ADR-0118): its root
+  // element, which the root's template ref names, or its root component's own.
+  const { rootElement } = context;
+  if (rootElement?.component) {
+    const { className, query } = rootElement.component;
+    members.push(
+      js.propertyDefinition(
+        query,
+        placeholders.expression(
+          `${core("viewChild")}(${JSON.stringify(ELEMENT_REF)}, { read: ${className} })`,
+        ),
+        { accessibility: "private", readonly: true },
+      ),
+      js.propertyDefinition(
+        ELEMENT_MEMBER,
+        placeholders.expression(`${core("computed")}(() => this.${query}()?.${ELEMENT_MEMBER}())`),
+        { readonly: true },
+      ),
+    );
+  } else if (rootElement?.type !== undefined) {
+    members.push(
+      js.propertyDefinition(
+        ELEMENT_MEMBER,
+        js.callExpression(
+          js.identifier(core("viewChild")),
+          [js.stringLiteral(ELEMENT_REF)],
+          [placeholders.type(`${core("ElementRef")}<${rootElement.type}>`)],
+        ),
+        { readonly: true },
       ),
     );
   }

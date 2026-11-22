@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, Show, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, Show, createMemo, omit, untrack } from "solid-js";
 
 export interface MenuDish {
   id: string;
@@ -20,14 +20,16 @@ export interface MenuBoardProps {
 }
 
 export default function MenuBoard(
-  props: MenuBoardProps & { class?: string; style?: JSX.CSSProperties },
+  props: MenuBoardProps &
+    Omit<ComponentProps<"div">, "courses" | "closed" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "courses", "closed", "class");
+
   return (
-    <div
-      class={props.class ? `menu-board ${props.class}` : "menu-board"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `menu-board ${props.class}` : "menu-board"} {...others}>
       <Show
         when={props.closed}
         fallback={
@@ -61,13 +63,6 @@ export default function MenuBoard(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

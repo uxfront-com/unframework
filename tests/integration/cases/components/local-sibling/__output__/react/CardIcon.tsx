@@ -1,9 +1,6 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface CardIconAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardIconAttributes = Omit<ComponentPropsWithRef<"span">, "symbol" | "children">;
 
 export function CardIcon({
   symbol,
@@ -12,12 +9,7 @@ export function CardIcon({
   ...attributes
 }: { symbol: string } & CardIconAttributes) {
   return (
-    <span
-      className={cx("icon", className)}
-      aria-hidden="true"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <span className={cx("icon", className)} aria-hidden="true" style={style} {...attributes}>
       {symbol}
     </span>
   );
@@ -36,13 +28,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -61,6 +61,20 @@ export function Consumers() {
           data-id={item.id}
         />
       ))}
+
+      {/* What falls through to the root (ADR-0118): global and native attributes, a DOM listener. */}
+      {items.value.map((item) => (
+        <Counter
+          key={item.id}
+          id={`counter-${item.id}`}
+          title={item.name}
+          role="group"
+          tabindex={0}
+          type="button"
+          hidden={false}
+          onClick={() => {}}
+        />
+      ))}
     </section>
   );
 }

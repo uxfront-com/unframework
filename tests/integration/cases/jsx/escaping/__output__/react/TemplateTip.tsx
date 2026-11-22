@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface TemplateTipProps {
   example: string;
@@ -6,10 +6,10 @@ export interface TemplateTipProps {
   path: string;
 }
 
-export interface TemplateTipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TemplateTipAttributes = Omit<
+  ComponentPropsWithRef<"figure">,
+  "example" | "note" | "path" | "children"
+>;
 
 export default function TemplateTip({
   example,
@@ -20,11 +20,7 @@ export default function TemplateTip({
   ...attributes
 }: TemplateTipProps & TemplateTipAttributes) {
   return (
-    <figure
-      className={cx("template-tip", className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <figure className={cx("template-tip", className)} style={style} {...attributes}>
       <figcaption title={"Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) & JSX {name}"}>
         Template syntax &amp; escaping
       </figcaption>
@@ -58,13 +54,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

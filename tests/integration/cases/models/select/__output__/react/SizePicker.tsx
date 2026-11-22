@@ -1,16 +1,13 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface SizePickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SizePickerAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function SizePicker({ className, style, ...attributes }: SizePickerAttributes) {
   const [size, setSize] = useState("m");
   const sizeRef = useRef(size);
 
   return (
-    <section aria-label="Size" className={className} style={style} {...scopeAttributes(attributes)}>
+    <section aria-label="Size" className={className} style={style} {...attributes}>
       <label>
         Size{" "}
         <select
@@ -37,13 +34,4 @@ export default function SizePicker({ className, style, ...attributes }: SizePick
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

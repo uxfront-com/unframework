@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type KeyboardEvent,
   useEffect,
   useEffectEvent,
@@ -16,10 +16,10 @@ export interface ConfirmDialogEvents {
   onClose?: () => void;
 }
 
-export interface ConfirmDialogAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ConfirmDialogAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "title" | "onConfirm" | "onClose" | "children"
+>;
 
 export default function ConfirmDialog({
   title,
@@ -27,6 +27,7 @@ export default function ConfirmDialog({
   onClose,
   className,
   style,
+  onKeyDown,
   ...attributes
 }: ConfirmDialogProps & ConfirmDialogEvents & ConfirmDialogAttributes) {
   const titleId = `uf-id-${useId()}`;
@@ -50,9 +51,12 @@ export default function ConfirmDialog({
       aria-labelledby={titleId}
       tabIndex={-1}
       className={cx("dialog", className)}
-      onKeyDown={onKeydown}
+      onKeyDown={(event) => {
+        onKeydown(event);
+        onKeyDown?.(event);
+      }}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2 id={titleId}>{title}</h2>
       <button type="button" ref={cancel} onClick={() => onClose?.()}>
@@ -78,13 +82,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

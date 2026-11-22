@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface CalloutProps {
   heading: string;
@@ -6,8 +7,14 @@ export interface CalloutProps {
 }
 
 export default function Callout(
-  props: CalloutProps & { class?: string; style?: JSX.CSSProperties },
+  props: CalloutProps &
+    Omit<ComponentProps<"aside">, "heading" | "body" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "heading", "body", "class", "style");
+
   return (
     <aside
       class={props.class ? `callout ${props.class}` : "callout"}
@@ -21,17 +28,10 @@ export default function Callout(
         },
         ...props.style,
       }}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p style={{ margin: "0", "font-weight": "700" }}>{props.heading}</p>
       <p style={{ margin: "4px 0 0" }}>{props.body}</p>
     </aside>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,14 +1,14 @@
 import { useTeardown } from "./useTeardown";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface PanelEvents {
   onClosed?: (entry: string) => void;
 }
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "name" | "onClosed" | "children"
+>;
 
 export default function Panel({
   name,
@@ -23,12 +23,7 @@ export default function Panel({
   );
 
   return (
-    <section
-      className={cx("panel", className)}
-      aria-label={title}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("panel", className)} aria-label={title} style={style} {...attributes}>
       <h2>{title}</h2>
     </section>
   );
@@ -47,13 +42,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

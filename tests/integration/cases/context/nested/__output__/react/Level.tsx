@@ -1,13 +1,10 @@
-import { type CSSProperties, type ReactNode, createContext, use, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, createContext, use, useState } from "react";
 
 export interface LevelSlots {
   children?: ReactNode;
 }
 
-export interface LevelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LevelAttributes = Omit<ComponentPropsWithRef<"section">, "title" | "children">;
 
 export const DepthKey = createContext<number | undefined>(undefined);
 
@@ -23,12 +20,7 @@ export default function Level({
 
   return (
     <DepthKey value={depthValue}>
-      <section
-        aria-label={title}
-        className={className}
-        style={style}
-        {...scopeAttributes(attributes)}
-      >
+      <section aria-label={title} className={className} style={style} {...attributes}>
         <h2>
           {title} at depth {depth}
         </h2>
@@ -36,13 +28,4 @@ export default function Level({
       </section>
     </DepthKey>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

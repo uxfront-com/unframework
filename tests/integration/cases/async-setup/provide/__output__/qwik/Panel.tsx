@@ -3,6 +3,7 @@ import { loadUser } from "./api";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   Slot,
   component$,
   untrack,
@@ -10,32 +11,21 @@ import {
   useContextProvider,
 } from "@qwik.dev/core";
 
-export default component$<{ id: string } & { class?: ClassList; style?: CSSProperties }>(
-  ({ id, class: className, style, ...attributes }) => {
-    const userLoad = useComputed$(() => untrack(() => loadUser(id)));
-    const user = userLoad.value;
+export default component$<
+  { id: string } & Omit<PropsOf<"section">, "id" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ id, class: className, style, ...attributes }) => {
+  const userLoad = useComputed$(() => untrack(() => loadUser(id)));
+  const user = userLoad.value;
 
-    useContextProvider(ToneKey, "calm");
+  useContextProvider(ToneKey, "calm");
 
-    return (
-      <section
-        class={["panel", className]}
-        aria-label={user.name}
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <Badge />
-        <Slot />
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["panel", className]} aria-label={user.name} style={style} {...attributes}>
+      <Badge />
+      <Slot />
+    </section>
+  );
+});

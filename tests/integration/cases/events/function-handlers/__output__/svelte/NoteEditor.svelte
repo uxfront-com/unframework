@@ -1,16 +1,27 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onsaved" | "ontagged" | "children" | "class" | "style" | "ref"
+  > & {
     onsaved?: (count: number) => void;
     ontagged?: (tag: string, via: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { onsaved, ontagged, class: className, style, ...attributes }: Props = $props();
+  let {
+    onsaved,
+    ontagged,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let saves = $state(0);
   let lastKey = $state("none");
@@ -38,20 +49,14 @@
   function onTagKeydown(event: KeyboardEvent) {
     if (event.key === "Enter") addTag(event);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["note-editor", className]}
   aria-label="Note"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <button type="button" onclick={save}>Save</button
   ><label>Title<input name="title" onkeydown={recordKey} /></label

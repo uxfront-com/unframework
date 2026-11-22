@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, onCleanup, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, omit, onCleanup, untrack } from "solid-js";
 
 export interface Task {
   id: number;
@@ -26,8 +26,14 @@ function sizeSummary(event: Event) {
 }
 
 export default function TaskBoard(
-  props: TaskBoardProps & { class?: string; style?: JSX.CSSProperties },
+  props: TaskBoardProps &
+    Omit<ComponentProps<"section">, "initial" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "initial", "class");
+
   const [tasks, setTasks] = createState(untrack(() => props.initial));
   const [filters, setFilters] = createState<Filters>({ query: "", tags: [] });
   let notes: HTMLTextAreaElement | null = null;
@@ -100,8 +106,7 @@ export default function TaskBoard(
     <section
       class={props.class ? `task-board ${props.class}` : "task-board"}
       aria-label="Tasks"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ol aria-label="Open">
         <KeyedFor each={open()} by={(task) => task.id}>
@@ -164,13 +169,6 @@ export default function TaskBoard(
       </label>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

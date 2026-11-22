@@ -1,4 +1,4 @@
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface SeatPickerProps {
   pricePerSeat: number;
@@ -8,10 +8,10 @@ export interface SeatPickerEvents {
   onQuote?: (seats: number, total: number, summary: string) => void;
 }
 
-export interface SeatPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SeatPickerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "pricePerSeat" | "onQuote" | "children"
+>;
 
 export default function SeatPicker({
   pricePerSeat,
@@ -63,7 +63,7 @@ export default function SeatPicker({
       className={cx("seat-picker", className)}
       aria-label="Seats"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">{summary}</p>
       <button type="button" onClick={addSeat}>
@@ -89,13 +89,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -23,17 +23,32 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TeamInviteProps & {
-    onselect?: (member: Member) => void;
-    onremoved?: (name: string) => void;
-    onsubmitted?: (email: string) => void;
-    ontagged?: (count: number) => void;
-    onmoved?: (page: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "inviter"
+    | "members"
+    | "onselect"
+    | "onremoved"
+    | "onsubmitted"
+    | "ontagged"
+    | "onmoved"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    TeamInviteProps & {
+      onselect?: (member: Member) => void;
+      onremoved?: (name: string) => void;
+      onsubmitted?: (email: string) => void;
+      ontagged?: (count: number) => void;
+      onmoved?: (page: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     inviter,
@@ -45,6 +60,7 @@
     onmoved,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -103,20 +119,14 @@
   onMount(() => () => {
     clearInterval(timer);
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["team-invite", className]}
   aria-label="Invite"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>{greeting}</h2
   ><ul aria-label="Members">

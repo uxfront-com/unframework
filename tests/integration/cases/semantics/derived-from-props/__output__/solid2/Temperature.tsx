@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createReaction, createRoot, flush, onSettled, runWithOwner } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createReaction, createRoot, flush, omit, onSettled, runWithOwner } from "solid-js";
 
 export interface TemperatureProps {
   celsius: number;
@@ -10,8 +10,15 @@ export interface TemperatureEvents {
 }
 
 export default function Temperature(
-  props: TemperatureProps & TemperatureEvents & { class?: string; style?: JSX.CSSProperties },
+  props: TemperatureProps &
+    TemperatureEvents &
+    Omit<ComponentProps<"figure">, "celsius" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "celsius", "onReading", "class");
+
   const fahrenheit = () => Math.round((props.celsius * 9) / 5 + 32);
   const level = () => (props.celsius >= 30 ? "hot" : props.celsius <= 5 ? "cold" : "mild");
 
@@ -26,21 +33,13 @@ export default function Temperature(
     <figure
       class={props.class ? `temperature ${props.class}` : "temperature"}
       data-level={level()}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>{props.celsius} °C</p>
       <p>{fahrenheit()} °F</p>
       <figcaption>Feels {level()}</figcaption>
     </figure>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

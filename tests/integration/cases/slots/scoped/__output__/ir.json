@@ -400,7 +400,17 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ul"
+            "rootTag": "ul",
+            "fallthroughTag": "ul",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "aria-label"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "ul"
           }
         ],
         "keys": []

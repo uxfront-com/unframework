@@ -312,7 +312,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "disclosure"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "div"
           }
         ],
         "keys": []

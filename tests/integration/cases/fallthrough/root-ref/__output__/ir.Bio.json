@@ -1,0 +1,116 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/root-ref/Bio.uf.tsx",
+  "components": [
+    {
+      "name": "Bio",
+      "span": {
+        "start": 143,
+        "end": 296
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 191,
+              "end": 197
+            }
+          },
+          "binding": "label@173",
+          "span": {
+            "start": 184,
+            "end": 197
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 182,
+            "end": 199
+          }
+        },
+        "span": {
+          "start": 171,
+          "end": 199
+        }
+      },
+      "types": [],
+      "inheritAttrs": false,
+      "bindings": [
+        {
+          "id": "label@173",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 173,
+            "end": 178
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "input",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "name",
+            "value": "bio",
+            "span": {
+              "start": 261,
+              "end": 271
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 284,
+                "end": 289
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@173",
+                  "span": {
+                    "start": 284,
+                    "end": 289
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 272,
+              "end": 290
+            }
+          }
+        ],
+        "children": [],
+        "span": {
+          "start": 254,
+          "end": 293
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Bio",
+      "span": {
+        "start": 143,
+        "end": 296
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface CardSlots {
   header?: ReactNode;
@@ -6,10 +6,10 @@ export interface CardSlots {
   footer?: ReactNode;
 }
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "header" | "children" | "footer"
+>;
 
 export default function Card({
   header,
@@ -20,7 +20,7 @@ export default function Card({
   ...attributes
 }: CardSlots & CardAttributes) {
   return (
-    <article className={cx("card", className)} style={style} {...scopeAttributes(attributes)}>
+    <article className={cx("card", className)} style={style} {...attributes}>
       <header>{header}</header>
       <div className="body">{children}</div>
       <footer>{footer}</footer>
@@ -41,13 +41,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

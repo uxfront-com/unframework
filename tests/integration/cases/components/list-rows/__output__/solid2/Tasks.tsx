@@ -1,6 +1,6 @@
 import Row from "./Row";
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
 export interface Task {
   id: number;
@@ -9,8 +9,13 @@ export interface Task {
 }
 
 export default function Tasks(
-  props: { initial: Task[] } & { class?: string; style?: JSX.CSSProperties },
+  props: { initial: Task[] } & Omit<ComponentProps<"div">, "initial" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "initial");
+
   const [tasks, setTasks] = createState(untrack(() => props.initial));
 
   function add() {
@@ -22,7 +27,7 @@ export default function Tasks(
   }
 
   return (
-    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <div {...others}>
       <div role="list" aria-label="Tasks">
         <KeyedFor each={tasks()} by={(task) => task.id}>
           {(task) => <Row name={task.value.name} done={task.value.done} />}
@@ -36,13 +41,6 @@ export default function Tasks(
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

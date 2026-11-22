@@ -23,7 +23,7 @@ import type {
 import type { AST } from "@unframework.dev/parser";
 
 import { lowerAttributes } from "./attributes.ts";
-import { componentOf, lowerComponentAs } from "./components.ts";
+import { componentOf, isRestSpread, lowerComponentAs } from "./components.ts";
 import { Reporter } from "./context.ts";
 import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
 import { checkPlacement } from "./elements.ts";
@@ -69,6 +69,22 @@ export function lowerDynamic(
       "`<component is>` as the element a list renders is not supported: a list renders an element or a component, which takes its `key`.",
       { help: "Wrap it in an element that takes the `key`." },
     );
+    return undefined;
+  }
+  // The props' rest is spread on one element (ADR-0118), and `is` chooses among several: each
+  // tag or candidate would take it, so it is reported once, here.
+  const rest = node.openingElement.attributes.find(
+    (item): item is AST.JSXSpreadAttribute =>
+      item.type === "JSXSpreadAttribute" && isRestSpread(item, render),
+  );
+  if (rest) {
+    reporter.report(
+      "UF2001",
+      rest,
+      `\`${render.restProps!.name}\` is spread on \`<component is>\`: the props' rest is spread whole on one element, and \`is\` chooses among several (ADR-0118).`,
+      { help: `Spread it on an element, \`<input {...${render.restProps!.name}} />\`.` },
+    );
+    lowerChildren(node.children, place, render);
     return undefined;
   }
   const value = isAttribute?.value;

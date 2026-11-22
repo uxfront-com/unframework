@@ -1,10 +1,7 @@
 import { useClock } from "./useClock";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
-export interface ClockAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ClockAttributes = Omit<ComponentPropsWithRef<"p">, "children">;
 
 export default function Clock({ className, style, ...attributes }: ClockAttributes) {
   const [ready, setReady] = useState(false);
@@ -21,7 +18,7 @@ export default function Clock({ className, style, ...attributes }: ClockAttribut
   const { started } = useClock();
 
   return (
-    <p className={cx("clock", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("clock", className)} style={style} {...attributes}>
       {ready ? "Ready" : "Waiting"}, {started ? "started" : "stopped"}
     </p>
   );
@@ -40,13 +37,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

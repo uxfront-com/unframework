@@ -1,4 +1,12 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface UnreadBadgeProps {
   appName: string;
@@ -10,8 +18,12 @@ export interface UnreadBadgeEvents {
 }
 
 export default function UnreadBadge(
-  props: UnreadBadgeProps & UnreadBadgeEvents & { class?: string; style?: JSX.CSSProperties },
+  props: UnreadBadgeProps &
+    UnreadBadgeEvents &
+    Omit<ComponentProps<"section">, "appName" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["appName", "onTitleChange", "onTitleRelease", "class"]);
+
   const [unread, setUnread] = createSignal(0);
 
   createWatchEffect([unread, () => props.appName], (onCleanup) => {
@@ -26,8 +38,7 @@ export default function UnreadBadge(
     <section
       class={props.class ? `unread-badge ${props.class}` : "unread-badge"}
       aria-label="Inbox"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{unread()} unread</p>
       <button type="button" onClick={() => setUnread(unread() + 1)}>
@@ -38,13 +49,6 @@ export default function UnreadBadge(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

@@ -5,6 +5,7 @@
 // setup's values (`./setup.ts`), and each `<component is>` as a constant.
 import {
   addTypeImports,
+  isIdentifier,
   js,
   keyImports,
   keyOwner,
@@ -23,6 +24,7 @@ import type {
   BindingId,
   InjectItem,
   ModelItem,
+  Prop,
   TypeParameter,
   UfComponent,
   UfModule,
@@ -183,6 +185,7 @@ export function frontmatterOf(
       own,
       propsTypeParameters(component, annotation, extras),
     ),
+    propsHeritage(component, render, imports),
   );
   // Exported where the source exports its own `Props` too, under the same name (ADR-0068).
   if (alias !== undefined) {
@@ -197,6 +200,8 @@ export function frontmatterOf(
   if (propsReads.length) sections.push(propsReads);
   for (const helper of helpers) sections.push([helper]);
   if (scope) sections.push([scopeAttributesHelper(scope)]);
+  const scopeless = render.fallthrough?.scopeless;
+  if (scopeless) sections.push([withoutScopeHelper(scopeless)]);
   if (styleObject) sections.push([styleObjectHelper(styleObject)]);
   if (statements.length) sections.push(statements);
   // Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
@@ -289,6 +294,19 @@ function scopeAttributesHelper(name: string): string {
 }
 
 /**
+ * The helper that leaves the scope attributes out of what the props' rest spreads, where it is
+ * not the root's (ADR-0118): the root keeps them, as it would without the rest (ADR-0063).
+ */
+function withoutScopeHelper(name: string): string {
+  return [
+    "/** What the consumer passes, but its styled parents' scope attributes, which the root keeps. */",
+    `function ${name}(rest: object): Record<string, unknown> {`,
+    '  return Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith("data-uf-")));',
+    "}",
+  ].join("\n");
+}
+
+/**
  * The members a consumer passes beside the source's props (ADR-0054): each model, as a prop, a
  * scoped slot as a render prop, and the `class` and `style` that fall through to the root. A
  * consumer's style is an object, which the root spreads after its own declarations.
@@ -318,6 +336,27 @@ function propsExtras(
 }
 
 /**
+ * The attributes a consumer passes beside the props (ADR-0118), which `Props` extends: those of
+ * the element they land on, from Astro's own types, but the names `Props` declares itself,
+ * `Omit<HTMLAttributes<"button">, "title">`. None where that element is not known, or is a custom
+ * element, which Astro's types do not list.
+ */
+function propsHeritage(
+  component: UfComponent,
+  render: AstroRender,
+  imports: ImportSet,
+): string | undefined {
+  const tag = render.fallthrough?.tag;
+  if (tag === undefined || tag.includes("-")) return undefined;
+  const attributes = imports.add("astro/types", "HTMLAttributes", { type: true });
+  const type = `${attributes}<${JSON.stringify(tag)}>`;
+  const { omitted } = render.fallthrough!;
+  return omitted.length
+    ? `Omit<${type}, ${omitted.map((name) => JSON.stringify(name)).join(" | ")}>`
+    : type;
+}
+
+/**
  * The statements that read the props something printed reads from `Astro.props`: none when
  * nothing does. The destructured form lists them in the order the source destructures them,
  * with their defaults, then the models, the render props and the fallthrough; the object form
@@ -332,33 +371,55 @@ function propsRead(
   const statements: string[] = [];
   const parameter = component.propsParameter;
   const names: string[] = [];
+  const { fallthrough } = render;
+  // What falls through is the rest of the props (ADR-0118), so every name `Props` declares is
+  // taken out of it, as `_title` where nothing reads it.
+  const unread = (name: string) => `${name}: ${spelling.scope.claim(`_${name}`)}`;
+  const isLive = (prop: Prop) => prop.binding !== undefined && live.has(prop.binding);
   if (parameter?.form === "object") {
-    if (component.props.some(({ binding }) => binding !== undefined && live.has(binding))) {
+    if (component.props.some(isLive)) {
       statements.push(`const ${spelling.propsObject ?? parameter.name!} = Astro.props;`);
     }
+    if (fallthrough) names.push(...component.props.map(({ name }) => unread(name)));
   } else if (parameter) {
+    // In the order the source destructures them, then the ones it does not, in its type's order.
+    const start = (prop: Prop) =>
+      prop.binding === undefined ? Infinity : bindingStart(component, prop.binding);
     names.push(
       ...component.props
-        .flatMap((prop) =>
-          prop.binding !== undefined && live.has(prop.binding)
-            ? [{ prop, start: bindingStart(component, prop.binding) }]
-            : [],
-        )
-        .toSorted((a, b) => a.start - b.start)
-        .map(({ prop }) => (prop.default ? `${prop.name} = ${prop.default.code}` : prop.name)),
+        .filter((prop) => isLive(prop) || fallthrough)
+        .map((prop) => ({ prop, start: start(prop) }))
+        .toSorted((a, b) => (a.start === b.start ? 0 : a.start < b.start ? -1 : 1))
+        .map(({ prop }) =>
+          !isLive(prop)
+            ? unread(prop.name)
+            : prop.default
+              ? `${prop.name} = ${prop.default.code}`
+              : prop.name,
+        ),
     );
   }
   for (const item of component.setup) {
-    if (item.kind === "Model" && live.has(item.binding)) names.push(modelRead(item, spelling));
+    if (item.kind !== "Model") continue;
+    if (live.has(item.binding)) names.push(modelRead(item, spelling));
+    else if (fallthrough) names.push(unread(item.name));
   }
   const read = renderPropsRead(component);
   for (const [slot, local] of spelling.renderProps) {
     const prop = renderPropName(slot, ownProps(component));
     if (read.has(slot)) names.push(prop === local ? prop : `${prop}: ${local}`);
+    else if (fallthrough) names.push(unread(prop));
   }
-  if (render.fallthrough) {
-    const { className, style } = render.fallthrough;
+  if (fallthrough) {
+    const { className, style, own, attributes } = fallthrough;
     names.push(`class: ${className}`, style === "style" ? style : `style: ${style}`);
+    // The element's own attributes, which the consumer's override wherever it passes them, an
+    // `undefined` included: the markup tests the key, so they take no default here.
+    for (const { attribute, local } of own) {
+      const key = isIdentifier(attribute.name) ? attribute.name : JSON.stringify(attribute.name);
+      names.push(key === local ? local : `${key}: ${local}`);
+    }
+    names.push(`...${attributes}`);
   }
   if (names.length) statements.push(`const { ${names.join(", ")} } = Astro.props;`);
   return statements;
@@ -524,25 +585,33 @@ function propsDeclaration(
   annotation: string | undefined,
   extras: readonly string[],
   generics: string,
+  heritage: string | undefined,
 ): string | undefined {
   // Each member on a line of its own, after the source's members as written: a line break ends
   // a member, and a comment the source ends its last member with.
   const members = extras.map((member) => `\n  ${member};`).join("");
+  const extending = heritage === undefined ? "" : ` extends ${heritage}`;
   if (annotation === undefined) {
-    return extras.length ? `interface Props${generics} {${members}\n}` : undefined;
+    return extras.length || heritage
+      ? `interface Props${generics}${extending} {${members}\n}`
+      : undefined;
   }
   const { type, kind } = unwrapped(annotation);
   if (kind === "TSTypeLiteral") {
     return extras.length
-      ? `interface Props${generics} ${type.slice(0, -1).trimEnd()}${members}\n}`
-      : `interface Props${generics} ${type}`;
+      ? `interface Props${generics}${extending} ${type.slice(0, -1).trimEnd()}${members}\n}`
+      : `interface Props${generics}${extending} ${type}`;
   }
-  if (!extras.length) return type === "Props" ? undefined : `type Props${generics} = ${type};`;
+  if (!extras.length && !heritage) {
+    return type === "Props" ? undefined : `type Props${generics} = ${type};`;
+  }
   if (kind === "TSTypeReference") {
-    return `interface Props${generics} extends ${type} {${members}\n}`;
+    const bases = heritage === undefined ? type : `${type}, ${heritage}`;
+    return `interface Props${generics} extends ${bases} {${members}\n}`;
   }
   const operand = kind === "TSIntersectionType" ? type : `(${type})`;
-  return `type Props${generics} = ${operand} & {${members}\n};`;
+  const intersected = heritage === undefined ? operand : `${operand} & ${heritage}`;
+  return `type Props${generics} = ${intersected} & {${members}\n};`;
 }
 
 /**

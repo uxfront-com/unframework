@@ -1,0 +1,41 @@
+[
+  {
+    "code": "UF2001",
+    "severity": "error",
+    "message": "`...rest` holds what a consumer passes that the component does not declare, which falls through to its root unless `defineOptions({ inheritAttrs: false })` turns that off (ADR-0118).",
+    "file": "diagnostics/rest-props/Field.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 40,
+      "offset": 284
+    },
+    "end": {
+      "line": 4,
+      "column": 47,
+      "offset": 291
+    },
+    "help": "Call `defineOptions({ inheritAttrs: false })` and spread `rest` on one element, or remove the rest.",
+    "fixes": [
+      {
+        "title": "Turn fallthrough off with `defineOptions`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 318,
+              "end": 318
+            },
+            "text": "defineOptions({ inheritAttrs: false });\n  "
+          },
+          {
+            "span": {
+              "start": 0,
+              "end": 0
+            },
+            "text": "import { defineOptions } from \"@uxfront/unframework\";\n"
+          }
+        ]
+      }
+    ]
+  }
+]

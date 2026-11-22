@@ -931,6 +931,10 @@ class Walk {
             this.#wholeProps(node);
             return UNKNOWN;
           }
+          if (context.restProps?.declaration === resolution.declaration) {
+            restUse(node, context);
+            return UNKNOWN;
+          }
           const prop = context.propsByDeclaration.get(resolution.declaration);
           if (prop?.id === undefined) return UNKNOWN;
           if (prop.callback && this.#mode !== "client") {
@@ -5014,6 +5018,10 @@ class Walk {
               this.#wholeProps(node);
               return { kind: "invalid" };
             }
+            if (context.restProps?.declaration === resolution.declaration) {
+              restUse(node, context);
+              return { kind: "invalid" };
+            }
             return invalid(
               node,
               `\`${node.name}\` is a prop, which only the component's parent sets.`,
@@ -6270,4 +6278,20 @@ function indices(text: string): number[] {
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 function unreachable(value: never): never {
   throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+}
+
+/**
+ * A use of the props' rest other than one whole spread on an element (UF2001, ADR-0118): what it
+ * holds differs per target, so nothing reads it, and it lands on one element.
+ */
+export function restUse(node: { start: number; end: number }, context: RenderContext): void {
+  const name = context.restProps!.name;
+  context.reporter.report(
+    "UF2001",
+    node,
+    `\`${name}\` holds what a consumer passes that the component does not declare, and is only spread whole on one element, \`<input {...${name}} />\`: each target holds it its own way (ADR-0118).`,
+    {
+      help: `Spread \`${name}\` on the element that takes what falls through, or declare what you read as a prop.`,
+    },
+  );
 }

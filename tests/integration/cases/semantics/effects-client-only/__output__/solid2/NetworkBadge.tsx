@@ -1,15 +1,23 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
 } from "solid-js";
 
-export default function NetworkBadge(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function NetworkBadge(
+  props: Omit<ComponentProps<"p">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [online, setOnline] = createState<boolean>();
   const [label, setLabel] = createState("Checking the connection");
 
@@ -26,19 +34,11 @@ export default function NetworkBadge(props: { class?: string; style?: JSX.CSSPro
       class={props.class ? `network-badge ${props.class}` : "network-badge"}
       role="status"
       data-checked={online() === undefined ? "no" : "yes"}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {label()}
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

@@ -116,10 +116,26 @@ export interface NextTickHooks {
 }
 
 /**
+ * `fallthrough`: what a consumer passes a component whose props' rest an element other than its
+ * root spreads (ADR-0118), without the styled parents' scope attributes, which the root keeps
+ * (ADR-0063).
+ */
+export function restAttributesHelper(name: string): string {
+  return `/** What the consumer passes, but the scope attributes of its styled parents, which the root keeps. */
+function ${name}<T extends object>(props: T): T {
+  const rest = { ...props };
+  for (const key of Object.keys(rest)) {
+    if (key.startsWith("data-uf-")) Reflect.deleteProperty(rest, key);
+  }
+  return rest;
+}`;
+}
+
+/**
  * `child-root-scope`: the scope attributes a component's styled parents pass it (ADR-0063),
  * which its root carries. Their names are the parents' ids, which the component cannot know, so
- * it picks the props' `data-uf-*` keys by name, each with the empty value the parent passes: a
- * rest spread alone would also pass on the props the output leaves unread.
+ * it picks the props' `data-uf-*` keys by name, each with the empty value the parent passes,
+ * where its root does not spread the props' rest (ADR-0118).
  */
 export function scopeAttributesHelper(name: string): string {
   return `/** The scope attributes of the styled parents that render this component, for its root. */

@@ -1,10 +1,7 @@
 import Disclosure from "./Disclosure";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 const vTrace = {
   mounted(el: HTMLElement, value: string) {
@@ -24,12 +21,7 @@ export default function Card({ className, style, ...attributes }: CardAttributes
   const traceRef_1 = useDirective(vTrace, () => note!.name);
 
   return (
-    <section
-      className={cx("card", className)}
-      aria-label="Card"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("card", className)} aria-label="Card" style={style} {...attributes}>
       <Disclosure>
         <p data-name="body" ref={traceRef}>
           Body
@@ -66,15 +58,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** The hooks of a directive, which `useDirective` runs on its elements. */

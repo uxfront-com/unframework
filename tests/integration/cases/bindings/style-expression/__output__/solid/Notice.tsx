@@ -1,6 +1,6 @@
 import Badge from "./Badge";
 import Tag from "./Tag";
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
 type NoticeLook = {
@@ -19,7 +19,14 @@ export interface NoticeProps {
   vars?: NoticeVars;
 }
 
-export default function Notice(props: NoticeProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Notice(
+  props: NoticeProps &
+    Omit<ComponentProps<"div">, "title" | "look" | "declarations" | "vars" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
+) {
+  const [, others] = splitProps(props, ["title", "look", "declarations", "vars", "class"]);
+
   const [quiet, setQuiet] = createSignal(false);
 
   function toggle() {
@@ -27,11 +34,7 @@ export default function Notice(props: NoticeProps & { class?: string; style?: JS
   }
 
   return (
-    <div
-      class={props.class ? `notice ${props.class}` : "notice"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `notice ${props.class}` : "notice"} {...others}>
       <p style={styleProperties(props.look)}>{props.title}</p>
       <Badge
         label="Permanent"
@@ -86,11 +89,4 @@ function styleProperties(
     properties[key.startsWith("--") ? key : kebab] = String(value);
   }
   return properties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

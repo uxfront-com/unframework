@@ -1,18 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { step: string; class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["p"], "step" | "children" | "class" | "style" | "ref"> & {
+    step: string;
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["p"] | null;
+  };
 
-  let { step, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { step, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<p class={["step", className]} {style} {...scopeAttributes(attributes)}>Step: {step}</p>
+<p class={["step", className]} {style} bind:this={ref} {...attributes}>Step: {step}</p>

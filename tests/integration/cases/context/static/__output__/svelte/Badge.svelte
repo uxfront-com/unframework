@@ -3,24 +3,23 @@
 <script lang="ts">
   import { ThemeKey } from "./ThemeProvider.svelte";
   import { getContext } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { text: string; class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["span"], "text" | "children" | "class" | "style" | "ref"> & {
+    text: string;
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["span"] | null;
+  };
 
-  let { text, class: className, style, ...attributes }: Props = $props();
+  let { text, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   const theme = getContext<(typeof ThemeKey)["__value"] | undefined>(ThemeKey);
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <span
   class={["badge", theme?.accent, className]}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{text} in {theme?.label ?? "no theme"}</span>

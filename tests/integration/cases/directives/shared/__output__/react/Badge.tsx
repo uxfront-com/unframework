@@ -1,30 +1,33 @@
 import { vMark } from "./vMark";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type Ref,
+  type RefCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface BadgeProps {
   label: string;
 }
 
-export interface BadgeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BadgeAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "children">;
 
 export default function Badge({
   label,
   className,
   style,
+  ref,
   ...attributes
 }: BadgeProps & BadgeAttributes) {
   const markRef = useDirective(vMark, () => "badge");
 
+  const rootRef = useMemo(() => mergeRefs(markRef, ref), [markRef, ref]);
+
   return (
-    <span
-      className={cx("badge", className)}
-      ref={markRef}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <span className={cx("badge", className)} ref={rootRef} style={style} {...attributes}>
       {label}
     </span>
   );
@@ -43,15 +46,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** The hooks of a directive, which `useDirective` runs on its elements. */
@@ -171,4 +165,23 @@ function queueHook(
       }
     }
   });
+}
+
+/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+function mergeRefs<E extends Element>(...refs: (Ref<E> | undefined)[]): RefCallback<E> {
+  return (element) => {
+    const cleanups = refs.map((ref) => {
+      if (typeof ref === "function") {
+        const cleanup = ref(element);
+        return typeof cleanup === "function" ? cleanup : () => ref(null);
+      }
+      if (ref) ref.current = element;
+      return () => {
+        if (ref) ref.current = null;
+      };
+    });
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+  };
 }

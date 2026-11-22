@@ -1,4 +1,4 @@
-import { type JSX, Show, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, Show, createSignal, splitProps } from "solid-js";
 
 interface User {
   name: string;
@@ -13,8 +13,12 @@ export interface AccountMenuEvents {
 }
 
 export default function AccountMenu(
-  props: AccountMenuProps & AccountMenuEvents & { class?: string; style?: JSX.CSSProperties },
+  props: AccountMenuProps &
+    AccountMenuEvents &
+    Omit<ComponentProps<"section">, "owner" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["owner", "onGreeted", "class"]);
+
   const [step, setStep] = createSignal("intro");
   const [user, setUser] = createSignal<User | null>(null);
 
@@ -38,8 +42,7 @@ export default function AccountMenu(
     <section
       class={props.class ? `account-menu ${props.class}` : "account-menu"}
       aria-label="Account"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Show
         when={step() === "intro"}
@@ -78,11 +81,4 @@ export default function AccountMenu(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

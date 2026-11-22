@@ -2,20 +2,17 @@
 
 <script lang="ts">
   import Field from "./Field.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLFormAttributes } from "svelte/elements";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<HTMLFormAttributes, "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["form"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<form aria-label="Sign up" class={className} {style} {...scopeAttributes(attributes)}>
+<form aria-label="Sign up" class={className} {style} bind:this={ref} {...attributes}>
   <Field label="Email" /><Field label="Name" />
 </form>

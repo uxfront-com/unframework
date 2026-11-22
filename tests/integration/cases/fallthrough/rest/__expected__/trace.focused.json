@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('textbox', { name: 'Email' })",
+      "dom": [
+        "<form aria-label=\"Sign up\">",
+        "  <p id=\"email-hint\">",
+        "    \"We never share it.\"",
+        "  </p>",
+        "  <label class=\"field\">",
+        "    \"Email \"",
+        "    <input aria-describedby=\"email-hint\" class=\"wide\" id=\"email\" name=\"email\" placeholder=\"you@example.com\" style=\"margin-top: 4px;\" uf:focused=\"\" uf:value=\"\">",
+        "  </label>",
+        "  <p>",
+        "    \"Focuses: 1\"",
+        "  </p>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Sign up\":",
+        "  - paragraph: We never share it.",
+        "  - text: Email",
+        "  - textbox \"Email\":",
+        "    - /placeholder: you@example.com",
+        "  - paragraph: \"Focuses: 1\""
+      ],
+      "events": {}
+    }
+  ]
+}

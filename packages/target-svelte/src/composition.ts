@@ -21,6 +21,8 @@ import type {
   UfModule,
 } from "@unframework.dev/ir";
 
+import { restElement } from "./fallthrough.ts";
+
 /** The local names of a component's fallthrough props, `class` and `style`. */
 export interface Fallthrough {
   className: string;
@@ -47,12 +49,13 @@ export function slotProp(slot: string): string {
 }
 
 /**
- * Whether a component takes a consumer's `class` and `style` (ADR-0054): unless it sets
- * `inheritAttrs: false`, when its root is one element or one component, as `ComponentApi.root`
- * says. A root that is a fragment, a conditional or a list takes neither (UF3045).
+ * Whether a component takes a consumer's `class` and `style` (ADR-0054): when its root is one
+ * element or one component, as `ComponentApi.root` says, and with `inheritAttrs: false` when an
+ * element spreads its props' rest, which takes them (ADR-0118). A root that is a fragment, a
+ * conditional or a list takes neither (UF3045).
  */
 export function takesFallthrough(component: UfComponent): boolean {
-  if (component.inheritAttrs === false) return false;
+  if (component.inheritAttrs === false) return restElement(component) !== undefined;
   const { render } = component;
   if (render.kind === "Element") return true;
   const [only, ...rest] = render.children;
@@ -133,10 +136,13 @@ function chosenComponent(
 }
 
 /**
- * Whether a component's root takes the fallthrough it passes on: an element does, and a
- * component does unless it sets `inheritAttrs: false` (`ComponentApi.inheritAttrs`).
+ * Whether a component's fallthrough element takes the fallthrough it passes on: the element that
+ * spreads the props' rest does (ADR-0118), a root element does, and a root component does unless
+ * it sets `inheritAttrs: false` (`ComponentApi.inheritAttrs`) and spreads no rest
+ * (`ComponentApi.fallthroughTag`).
  */
 export function rootTakesFallthrough(component: UfComponent, module: UfModule): boolean {
+  if (component.inheritAttrs === false) return restElement(component) !== undefined;
   const { render } = component;
   if (render.kind === "Element") return true;
   const [root] = render.children;
@@ -150,18 +156,25 @@ export function rootTakesFallthrough(component: UfComponent, module: UfModule): 
         ? each.export === "default"
         : each.export === "named" && each.name === imported.imported,
     );
-    return api?.inheritAttrs !== false;
+    return api?.inheritAttrs !== false || api.fallthroughTag !== undefined;
   }
-  return module.components.find((each) => each.name === name)?.inheritAttrs !== false;
+  const own = module.components.find((each) => each.name === name);
+  return own?.inheritAttrs !== false || restElement(own) !== undefined;
 }
 
 /**
- * Whether a component's root, an element or a component, has a style of its own: a `style`, or
- * a spread's `style` key (ADR-0065).
+ * Whether a component's fallthrough element, its root element or component or the element that
+ * spreads its props' rest (ADR-0118), has a style of its own: a `style`, or a spread's `style`
+ * key (ADR-0065).
  */
 export function hasOwnStyle(component: UfComponent): boolean {
   const { render } = component;
-  const root = render.kind === "Element" ? render : render.children[0];
+  const root =
+    component.inheritAttrs === false
+      ? restElement(component)
+      : render.kind === "Element"
+        ? render
+        : render.children[0];
   return (
     (root?.kind === "Element" || root?.kind === "Component") &&
     root.attributes.some(
@@ -193,10 +206,13 @@ export function composedRender(
   const candidates = new Map<ComponentNode, readonly string[]>();
   const rewrite = (nodes: readonly RenderNode[]): RenderNode[] =>
     nodes.map((node) => rewriteNode(node));
-  const rewriteElement = (element: ElementNode): ElementNode => ({
-    ...element,
-    children: rewrite(element.children),
-  });
+  const rewriteElement = (element: ElementNode): ElementNode => {
+    const rewritten = { ...element, children: rewrite(element.children) };
+    // The element that spreads the props' rest takes the fallthrough as a root does (ADR-0118).
+    return fallthrough && element.attributes.some((attribute) => attribute.kind === "Rest")
+      ? restSpreading(rootElement(rewritten, fallthrough, code))
+      : rewritten;
+  };
   const rewriteNode = (node: RenderNode): RenderNode => {
     switch (node.kind) {
       case "Element":
@@ -283,16 +299,19 @@ export function composedRender(
   };
 
   const { render } = component;
+  // With `inheritAttrs: false`, the element that spreads the props' rest takes the fallthrough
+  // (`rewriteElement`), and the root nothing.
+  const root = component.inheritAttrs === false ? undefined : fallthrough;
   if (render.kind === "Element") {
     const element = rewriteElement(render);
-    if (!fallthrough) return { render: element, candidates };
-    return { render: rootElement(element, fallthrough, code), candidates };
+    if (!root) return { render: element, candidates };
+    return { render: rootElement(element, root, code), candidates };
   }
   const fragment: FragmentNode = { ...render, children: rewrite(render.children) };
   const [only] = fragment.children;
-  if (!fallthrough || only?.kind !== "Component") return { render: fragment, candidates };
+  if (!root || only?.kind !== "Component") return { render: fragment, candidates };
   return {
-    render: { ...fragment, children: [rootComponent(only, fallthrough, code)] },
+    render: { ...fragment, children: [rootComponent(only, root, code)] },
     candidates,
   };
 }
@@ -385,6 +404,17 @@ function rootElement(
   const style = written(mergedStyle(own, fallthrough, code));
   attributes.push({ kind: "Bound", name: "style", value: style, span: own?.span ?? element.span });
   return { ...element, attributes };
+}
+
+/**
+ * The element that spreads the props' rest, with the spread last, so what the consumer passes
+ * wins over the element's own attributes, as on a root (ADR-0118): in Svelte, a later attribute
+ * wins.
+ */
+function restSpreading(element: ElementNode): ElementNode {
+  const rest = element.attributes.filter((attribute) => attribute.kind === "Rest");
+  const others = element.attributes.filter((attribute) => attribute.kind !== "Rest");
+  return { ...element, attributes: [...others, ...rest] };
 }
 
 /**

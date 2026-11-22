@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -20,10 +20,17 @@ export interface ReadingListEvents {
   onRefreshed?: (total: number) => void;
 }
 
-export interface ReadingListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReadingListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "shelves"
+  | "onRequested"
+  | "onCancelled"
+  | "onFound"
+  | "onStarted"
+  | "onChecked"
+  | "onRefreshed"
+  | "children"
+>;
 
 export default function ReadingList({
   shelves,
@@ -199,7 +206,7 @@ export default function ReadingList({
       className={cx("reading-list", className)}
       aria-label="Reading list"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Search
@@ -282,13 +289,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

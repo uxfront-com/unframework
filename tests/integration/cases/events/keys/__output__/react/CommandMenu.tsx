@@ -1,4 +1,4 @@
-import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef, useState } from "react";
 
 export interface CommandMenuProps {
   commands: string[];
@@ -9,10 +9,10 @@ export interface CommandMenuEvents {
   onDismiss?: () => void;
 }
 
-export interface CommandMenuAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CommandMenuAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "commands" | "onRun" | "onDismiss" | "children"
+>;
 
 export default function CommandMenu({
   commands,
@@ -55,7 +55,7 @@ export default function CommandMenu({
       className={cx("command-menu", className)}
       aria-label="Command menu"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <form role="search" aria-label="Commands">
         <label>
@@ -102,13 +102,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

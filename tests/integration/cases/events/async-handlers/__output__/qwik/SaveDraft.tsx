@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -11,36 +12,35 @@ export interface SaveDraftEvents {
   onSaved$?: QRL<(attempt: number, status: string) => void>;
 }
 
-export default component$<SaveDraftEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onSaved$, class: className, style, ...attributes }) => {
-    const status = useSignal("Not saved");
-    const attempts = useSignal(0);
+export default component$<
+  SaveDraftEvents &
+    Omit<PropsOf<"section">, "onSaved$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ onSaved$, class: className, style, ...attributes }) => {
+  const status = useSignal("Not saved");
+  const attempts = useSignal(0);
 
-    const save = $(async () => {
-      status.value = "Saving";
-      attempts.value += 1;
-      await Promise.resolve();
-      status.value = "Checking";
-      await nextTick();
-      status.value = `Saved, attempt ${attempts.value}`;
-      onSaved$?.(attempts.value, status.value);
-    });
+  const save = $(async () => {
+    status.value = "Saving";
+    attempts.value += 1;
+    await Promise.resolve();
+    status.value = "Checking";
+    await nextTick();
+    status.value = `Saved, attempt ${attempts.value}`;
+    onSaved$?.(attempts.value, status.value);
+  });
 
-    return (
-      <section
-        class={["save-draft", className]}
-        aria-label="Draft"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <p role="status">{status.value}</p>
-        <button type="button" onClick$={save}>
-          Save the draft
-        </button>
-      </section>
-    );
-  },
-);
+  return (
+    <section class={["save-draft", className]} aria-label="Draft" style={style} {...attributes}>
+      <p role="status">{status.value}</p>
+      <button type="button" onClick$={save}>
+        Save the draft
+      </button>
+    </section>
+  );
+});
 
 /**
  * Resolves once Qwik has rendered the writes made before it: Qwik renders them in a microtask,
@@ -48,13 +48,4 @@ export default component$<SaveDraftEvents & { class?: ClassList; style?: CSSProp
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

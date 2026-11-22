@@ -22,7 +22,6 @@ import {
   lower,
   packageDir,
   profileCard,
-  scopeHelper,
   toolchainDir,
 } from "./fixtures.ts";
 import type { Emitted } from "./fixtures.ts";
@@ -166,16 +165,13 @@ describe("react target", () => {
     expect(await formatted(hello(), { name: "Hello" })).toEqual({
       path: "Hello.tsx",
       contents: [
-        'import type { CSSProperties } from "react";',
+        'import type { ComponentPropsWithRef } from "react";',
         "",
-        "export interface HelloAttributes {",
-        "  className?: string;",
-        "  style?: CSSProperties;",
-        "}",
+        'export type HelloAttributes = Omit<ComponentPropsWithRef<"p">, "children">;',
         "",
         "export default function Hello({ className, style, ...attributes }: HelloAttributes) {",
         "  return (",
-        '    <p className={cx("greeting", className)} style={style} {...scopeAttributes(attributes)}>',
+        '    <p className={cx("greeting", className)} style={style} {...attributes}>',
         "      Hello, world!",
         "    </p>",
         "  );",
@@ -196,7 +192,6 @@ describe("react target", () => {
         '  return names.join(" ");',
         "}",
         "",
-        scopeHelper(),
       ].join("\n"),
     });
   });
@@ -205,12 +200,9 @@ describe("react target", () => {
     expect(await formatted(profileCard(), { name: "ProfileCard" })).toEqual({
       path: "ProfileCard.tsx",
       contents: [
-        'import type { CSSProperties } from "react";',
+        'import type { ComponentPropsWithRef } from "react";',
         "",
-        "export interface ProfileCardAttributes {",
-        "  className?: string;",
-        "  style?: CSSProperties;",
-        "}",
+        'export type ProfileCardAttributes = Omit<ComponentPropsWithRef<"article">, "children">;',
         "",
         "export default function ProfileCard({ className, style, ...attributes }: ProfileCardAttributes) {",
         "  return (",
@@ -218,7 +210,7 @@ describe("react target", () => {
         '      className={cx("profile", className)}',
         '      aria-labelledby="profile-name"',
         "      style={style}",
-        "      {...scopeAttributes(attributes)}",
+        "      {...attributes}",
         "    >",
         '      <header className="profile-header">',
         "        <img",
@@ -256,7 +248,6 @@ describe("react target", () => {
         '  return names.join(" ");',
         "}",
         "",
-        scopeHelper(),
       ].join("\n"),
     });
   });
@@ -317,7 +308,7 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
 `;
     expect(await output(source)).toBe(
       [
-        'import type { CSSProperties } from "react";',
+        'import type { ComponentPropsWithRef } from "react";',
         "",
         "interface Size {",
         "  width: number;",
@@ -330,10 +321,10 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
         "  size?: Size;",
         "}",
         "",
-        "export interface BadgeAttributes {",
-        "  className?: string;",
-        "  style?: CSSProperties;",
-        "}",
+        "export type BadgeAttributes = Omit<",
+        '  ComponentPropsWithRef<"p">,',
+        '  "label" | "tone" | "size" | "children"',
+        ">;",
         "",
         "export default function Badge({",
         '  tone = "info",',
@@ -349,52 +340,52 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
         "      data-width={size?.width}",
         "      className={className}",
         "      style={style}",
-        "      {...scopeAttributes(attributes)}",
+        "      {...attributes}",
         "    >",
         "      {label}",
         "    </p>",
         "  );",
         "}",
         "",
-        scopeHelper(),
       ].join("\n"),
     );
   });
 
   // An unused binding fails L5 (oxlint's no-unused-vars), and so does an empty pattern. Each
-  // component takes no `class` or `style` (ADR-0054), so its own props are all it reads.
+  // component takes no `class` or `style` (ADR-0054), and a ref on it holds nothing of its root,
+  // a fragment (ADR-0118), so its own props are all it reads.
   it("leaves out the props nothing reads, defaults included", async () => {
     const props = `import { defineOptions } from "@uxfront/unframework";
 export interface P { label: string; count?: number; tone?: string }\n`;
     expect(
       await output(`${props}export default function A({ label, count = 0, tone }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p title={tone}>Hi</p>;
+  return <><p title={tone}>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A({ tone }: P) {");
     expect(
       await output(`${props}export default function A({ label, count = 0 }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(_props: P) {");
     expect(
       await output(`${props}export default function A(props: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(_props: P) {");
     // A source name `_` and more says it is unused already; oxlint reports a bare `_`.
     expect(
       await output(`${props}export default function A(_props: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(_props: P) {");
     expect(
       await output(`${props}export default function A(_: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(__: P) {");
   });
@@ -408,13 +399,10 @@ export function Plain(props: PlainProps) {
     ).toContain(
       [
         "export function Plain(props: PlainProps & PlainAttributes) {",
+        "  const { className, style, label: _label, title: _title, ...attributes } = props;",
+        "",
         "  return (",
-        "    <p",
-        "      title={props.title}",
-        "      className={props.className}",
-        "      style={props.style}",
-        "      {...scopeAttributes(props)}",
-        "    >",
+        "    <p title={props.title} className={className} style={style} {...attributes}>",
         "      {props.label}",
         "    </p>",
         "  );",
@@ -427,12 +415,9 @@ export function Plain(props: PlainProps) {
 }`),
     ).toBe(
       [
-        'import type { CSSProperties } from "react";',
+        'import type { ComponentPropsWithRef } from "react";',
         "",
-        "export interface InlineAttributes {",
-        "  className?: string;",
-        "  style?: CSSProperties;",
-        "}",
+        'export type InlineAttributes = Omit<ComponentPropsWithRef<"p">, "label" | "children">;',
         "",
         "export default function Inline({",
         "  label,",
@@ -441,13 +426,12 @@ export function Plain(props: PlainProps) {
         "  ...attributes",
         "}: { label: string } & InlineAttributes) {",
         "  return (",
-        "    <p className={className} style={style} {...scopeAttributes(attributes)}>",
+        "    <p className={className} style={style} {...attributes}>",
         "      {label}",
         "    </p>",
         "  );",
         "}",
         "",
-        scopeHelper(),
       ].join("\n"),
     );
   });
@@ -458,7 +442,7 @@ export function Plain(props: PlainProps) {
   return <p title={\`\${amount * 1000} mills\`}>{(amount / 0.50).toFixed(2)}, {amount * 1e3}</p>;
 }`),
     ).toContain(
-      "<p\n      title={`${amount * 1000} mills`}\n      className={className}\n      style={style}\n      {...scopeAttributes(attributes)}\n    >\n      {(amount / 0.5).toFixed(2)}, {amount * 1e3}\n    </p>",
+      "<p title={`${amount * 1000} mills`} className={className} style={style} {...attributes}>\n      {(amount / 0.5).toFixed(2)}, {amount * 1e3}\n    </p>",
     );
   });
 
@@ -476,7 +460,7 @@ export default function Status({ count, label, ready }: P) {
 }`;
     expect(await output(source)).toContain(
       [
-        "    <div className={className} style={style} {...scopeAttributes(attributes)}>",
+        "    <div className={className} style={style} {...attributes}>",
         "      {count ? <b>{count}</b> : null}",
         "      {ready ? (",
         "        <i>Ready</i>",
@@ -539,7 +523,7 @@ export default function Form({ id, locked, order, skip }: P) {
 }`;
     const contents = await output(source);
     for (const expected of [
-      '<form\n      acceptCharset="utf-8"\n      noValidate\n      className={className}\n      style={style}\n      {...scopeAttributes(attributes)}\n    >',
+      '<form acceptCharset="utf-8" noValidate className={className} style={style} {...attributes}>',
       "<label htmlFor={id}>Name</label>",
       "<input id={id} readOnly disabled={locked} tabIndex={order} maxLength={10} />",
       '<button type="submit" formNoValidate={skip}>',
@@ -563,13 +547,7 @@ export default function Form({ id, locked, order, skip }: P) {
 }`),
     ).toContain(
       [
-        "    <svg",
-        '      viewBox="0 0 10 10"',
-        '      role="img"',
-        "      className={className}",
-        "      style={style}",
-        "      {...scopeAttributes(attributes)}",
-        "    >",
+        '    <svg viewBox="0 0 10 10" role="img" className={className} style={style} {...attributes}>',
         "      <title>Done</title>",
         '      <linearGradient id="fade">',
         '        <stop offset="0" stopColor="#fff" />',
@@ -631,7 +609,7 @@ export default function Chip({ tone, active, busy, label }: P) {
 }`;
     expect(await output(source)).toBe(
       [
-        'import type { CSSProperties } from "react";',
+        'import type { ComponentPropsWithRef } from "react";',
         "",
         "export interface P {",
         "  tone: string;",
@@ -640,10 +618,10 @@ export default function Chip({ tone, active, busy, label }: P) {
         "  label: string;",
         "}",
         "",
-        "export interface ChipAttributes {",
-        "  className?: string;",
-        "  style?: CSSProperties;",
-        "}",
+        "export type ChipAttributes = Omit<",
+        '  ComponentPropsWithRef<"p">,',
+        '  "tone" | "active" | "busy" | "label" | "children"',
+        ">;",
         "",
         "export default function Chip({",
         "  tone,",
@@ -655,7 +633,7 @@ export default function Chip({ tone, active, busy, label }: P) {
         "  ...attributes",
         "}: P & ChipAttributes) {",
         "  return (",
-        '    <p className={cx("chip", className)} style={style} {...scopeAttributes(attributes)}>',
+        '    <p className={cx("chip", className)} style={style} {...attributes}>',
         '      <b className={cx("badge", tone, { active, "is-busy": busy, long: label.length > 3 })}>',
         "        {label}",
         "      </b>",
@@ -678,7 +656,6 @@ export default function Chip({ tone, active, busy, label }: P) {
         '  return names.join(" ");',
         "}",
         "",
-        scopeHelper(),
       ].join("\n"),
     );
   });
@@ -688,33 +665,37 @@ export default function Chip({ tone, active, busy, label }: P) {
 export default function A({ cx, CSSProperties }: P) {
   return <p class={[cx]} style={{ "--x": CSSProperties }}>Hi</p>;
 }`);
-    expect(contents).toContain('import type { CSSProperties as CSSProperties_1 } from "react";');
+    expect(contents).toContain(
+      'import type { CSSProperties as CSSProperties_1, ComponentPropsWithRef } from "react";',
+    );
     expect(contents).toContain("className={cx_1(cx, className)}");
     expect(contents).toContain('style={{ "--x": CSSProperties, ...style } as CSSProperties_1}');
     expect(contents).toContain(cxHelper("cx_1"));
     // A type declaration is a name the source declares too. B takes no `class` or `style`
-    // (ADR-0054), so it reads no prop.
+    // (ADR-0054), and no `ref` of its fragment root (ADR-0118), so it reads no
+    // prop.
     expect(
       await output(`import { defineOptions } from "@uxfront/unframework";
 interface _props { label?: string }
 export default function B({ label }: _props) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function B(_props_1: _props) {");
   });
 
   it("writes a style as an object, typed as CSSProperties when it sets a custom property", async () => {
-    // Neither takes a consumer's \`style\` (ADR-0054): its own is the subject.
+    // Neither takes a consumer's \`style\` (ADR-0054), nor a \`ref\` of its fragment root (ADR-0118):
+    // its own style is the subject.
     const source = `import { defineOptions } from "@uxfront/unframework";
 export interface P { gap?: string; size: number }
 export function Plain({ gap }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p style="color: red; margin-top: 4px" />;
+  return <><p style="color: red; margin-top: 4px" /><hr /></>;
 }
 export function Bound({ gap, size }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p style={{ marginTop: gap, lineHeight: size, "--gap": gap }} />;
+  return <><p style={{ marginTop: gap, lineHeight: size, "--gap": gap }} /><hr /></>;
 }`;
     const module = lower(source);
     const plain = (await formattedFile(emitComponent(module, "Plain"))).contents;
@@ -759,7 +740,7 @@ export default function Note() {
   defineOptions({ inheritAttrs: false });
   return <textarea name="note">{"  Hello,\\n  world  "}</textarea>;
 }`),
-    ).toContain('<textarea name="note" defaultValue={"  Hello,\\n  world  "} />');
+    ).toContain('<textarea name="note" defaultValue={"  Hello,\\n  world  "} ref={ref} />');
   });
 });
 
@@ -842,12 +823,9 @@ describe("react async setup (ADR-0101)", () => {
   it("runs the awaits in a setup function the exported component starts, and renders the resolved component in a <Suspense>", async () => {
     expect(await output(`import { computed } from "@uxfront/unframework";\n${CARD}`)).toBe(
       [
-        'import { type CSSProperties, Suspense, use, useEffect, useMemo, useState } from "react";',
+        'import { type ComponentPropsWithRef, Suspense, use, useEffect, useMemo, useState } from "react";',
         "",
-        "export interface CardAttributes {",
-        "  className?: string;",
-        "  style?: CSSProperties;",
-        "}",
+        'export type CardAttributes = Omit<ComponentPropsWithRef<"p">, "id" | "prefix" | "children">;',
         "",
         'const load = async (id: string) => ({ name: id, team: "t" });',
         "",
@@ -872,6 +850,7 @@ describe("react async setup (ADR-0101)", () => {
         "  id,",
         "  className,",
         "  style,",
+        "  prefix: _prefix,",
         "  setup,",
         "  settled: _settled,",
         "  ...attributes",
@@ -884,13 +863,12 @@ describe("react async setup (ADR-0101)", () => {
         "  const label = useMemo(() => team.name + id, [team, id]);",
         "",
         "  return (",
-        "    <p className={className} style={style} {...scopeAttributes(attributes)}>",
+        "    <p className={className} style={style} {...attributes}>",
         "      {label}",
         "    </p>",
         "  );",
         "}",
         "",
-        scopeHelper(),
         setupPending(),
       ].join("\n"),
     );
@@ -914,6 +892,16 @@ describe("react async setup (ADR-0101)", () => {
         "function TagResolved(",
         "  props: TagProps & TagAttributes & { setup: ReturnType<typeof tagSetup>; settled: boolean },",
         ") {",
+        "  const {",
+        "    className,",
+        "    style,",
+        "    id: _id,",
+        "    label: _label,",
+        "    setup: _setup,",
+        "    settled: _settled,",
+        "    ...attributes",
+        "  } = props;",
+        "",
         "  const { user } = use(props.setup);",
       ].join("\n"),
     );

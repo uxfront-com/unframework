@@ -238,11 +238,11 @@ describe("solid renderToString (SSR)", () => {
   it("returns the component's HTML, with Solid's hydration keys", async () => {
     const ProfileCard = await compiled(golden("ProfileCard.tsx"), "ssr");
     const html = await renderToString(ProfileCard, {});
-    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
-    // which writes \`class\` where the key holds nothing, and a space after a class.
+    // A root that spreads what falls through renders through Solid's \`ssrElement\` (ADR-0063,
+    // ADR-0118), which writes a space after a class.
     expect(html.replace(/ data-hk="[^"]*"/g, "")).toBe(
       [
-        '<article class="profile " aria-labelledby="profile-name" style="">',
+        '<article class="profile " aria-labelledby="profile-name">',
         '<header class="profile-header">',
         `<img src="${golden("ProfileCard.tsx").contents.match(/src="([^"]+)"/)![1]}" alt="Ada's avatar" width="48" height="48">`,
         '<h2 id="profile-name">Ada Lovelace</h2>',

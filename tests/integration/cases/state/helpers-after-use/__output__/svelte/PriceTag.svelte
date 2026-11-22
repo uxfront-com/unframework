@@ -9,11 +9,19 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = PriceTagProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "price" | "children" | "class" | "style" | "ref"
+  > &
+    PriceTagProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { price, class: className, style, ...attributes }: Props = $props();
+  let { price, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let quantity = $state(1);
   let unit = $state(untrack(() => formatCents(price)));
@@ -42,20 +50,14 @@
   function describe(): string {
     return `${quantity} at ${formatCents(price)}`;
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["price-tag", className]}
   aria-label="Price"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p>Unit: {unit}</p
   ><p role="status">{summary}</p

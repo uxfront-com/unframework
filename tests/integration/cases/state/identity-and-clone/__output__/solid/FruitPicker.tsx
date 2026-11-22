@@ -1,4 +1,12 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface Fruit {
   name: string;
@@ -14,8 +22,12 @@ export interface FruitPickerEvents {
 }
 
 export default function FruitPicker(
-  props: FruitPickerProps & FruitPickerEvents & { class?: string; style?: JSX.CSSProperties },
+  props: FruitPickerProps &
+    FruitPickerEvents &
+    Omit<ComponentProps<"section">, "fruits" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["fruits", "onKept", "class"]);
+
   const [selected, setSelected] = createSignal<Fruit | null>(null);
   const [basket, setBasket] = createSignal<Fruit[]>([]);
 
@@ -35,8 +47,7 @@ export default function FruitPicker(
     <section
       class={props.class ? `fruit-picker ${props.class}` : "fruit-picker"}
       aria-label="Fruit"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ul aria-label="Fruits">
         <KeyedFor each={props.fruits} by={(fruit) => fruit.name}>
@@ -63,13 +74,6 @@ export default function FruitPicker(
       </ol>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

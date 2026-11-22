@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   Show,
@@ -8,6 +9,7 @@ import {
   getOwner,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 import { insert } from "solid-js/web";
@@ -17,7 +19,11 @@ interface Row {
   label: string;
 }
 
-export default function Panel(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Panel(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [note, setNote] = createSignal(false);
   const [extras, setExtras] = createSignal<string[]>([]);
   const [rows, setRows] = createSignal<Row[]>([
@@ -30,12 +36,7 @@ export default function Panel(props: { class?: string; style?: JSX.CSSProperties
   }
 
   return (
-    <section
-      class={props.class ? `panel ${props.class}` : "panel"}
-      aria-label="Panel"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `panel ${props.class}` : "panel"} aria-label="Panel" {...others}>
       <button type="button" onClick={() => setNote(true)}>
         Show note
       </button>
@@ -77,13 +78,6 @@ export default function Panel(props: { class?: string; style?: JSX.CSSProperties
       </ul>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

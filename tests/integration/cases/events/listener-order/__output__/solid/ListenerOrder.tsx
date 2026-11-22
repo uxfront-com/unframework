@@ -1,6 +1,18 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
-export default function ListenerOrder(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function ListenerOrder(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [log, setLog] = createSignal<string[]>([]);
   const [resets, setResets] = createSignal(0);
 
@@ -12,8 +24,7 @@ export default function ListenerOrder(props: { class?: string; style?: JSX.CSSPr
     <section
       class={props.class ? `listener-order ${props.class}` : "listener-order"}
       aria-label="Listener order"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <div class="toolbar" role="presentation" on:click={() => record("toolbar")}>
         <button
@@ -103,13 +114,6 @@ export default function ListenerOrder(props: { class?: string; style?: JSX.CSSPr
       </ol>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

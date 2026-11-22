@@ -601,7 +601,18 @@
             "inheritAttrs": true,
             "root": "element",
             "async": true,
-            "rootTag": "li"
+            "rootTag": "li",
+            "fallthroughTag": "li",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "member"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "li"
           }
         ],
         "keys": []

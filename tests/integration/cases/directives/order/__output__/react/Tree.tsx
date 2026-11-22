@@ -1,10 +1,15 @@
 import Note from "./Note";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type Ref,
+  type RefCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-export interface TreeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TreeAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 const TRACE = "directive-trace";
 
@@ -18,7 +23,7 @@ const vTrace = {
   },
 };
 
-export default function Tree({ className, style, ...attributes }: TreeAttributes) {
+export default function Tree({ className, style, ref, ...attributes }: TreeAttributes) {
   const [shown, setShown] = useState(true);
   const shownRef = useRef(shown);
   const traceRef = useDirective(vTrace, () => "first");
@@ -28,14 +33,16 @@ export default function Tree({ className, style, ...attributes }: TreeAttributes
   const traceRef_4 = useDirective(vTrace, () => "last");
   const traceRef_5 = useDirective(vTrace, () => "outer");
 
+  const rootRef = useMemo(() => mergeRefs(traceRef_5, ref), [traceRef_5, ref]);
+
   return (
     <section
       className={cx("tree", className)}
       aria-label="Tree"
       data-name="outer"
-      ref={traceRef_5}
+      ref={rootRef}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p data-name="first" ref={traceRef}>
         First
@@ -81,15 +88,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** The hooks of a directive, which `useDirective` runs on its elements. */
@@ -209,4 +207,23 @@ function queueHook(
       }
     }
   });
+}
+
+/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+function mergeRefs<E extends Element>(...refs: (Ref<E> | undefined)[]): RefCallback<E> {
+  return (element) => {
+    const cleanups = refs.map((ref) => {
+      if (typeof ref === "function") {
+        const cleanup = ref(element);
+        return typeof cleanup === "function" ? cleanup : () => ref(null);
+      }
+      if (ref) ref.current = element;
+      return () => {
+        if (ref) ref.current = null;
+      };
+    });
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+  };
 }

@@ -1,6 +1,6 @@
 import { loadUser } from "./api";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   Suspense,
   use,
   useEffect,
@@ -13,10 +13,7 @@ export interface NoteEvents {
   onReady?: (name: string) => void;
 }
 
-export interface NoteAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteAttributes = Omit<ComponentPropsWithRef<"form">, "id" | "onReady" | "children">;
 
 async function noteSetup({ id }: { id: string }) {
   const user = await loadUser(id);
@@ -38,6 +35,7 @@ function NoteResolved({
   onReady,
   className,
   style,
+  id: _id,
   setup,
   settled: _settled,
   ...attributes
@@ -56,12 +54,7 @@ function NoteResolved({
   }, []);
 
   return (
-    <form
-      className={cx("note", className)}
-      aria-label="Note"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <form className={cx("note", className)} aria-label="Note" style={style} {...attributes}>
       <label>
         Note for {user.name} <input ref={input} type="text" />
       </label>
@@ -82,15 +75,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

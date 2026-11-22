@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface Meeting {
   id: number;
   title: string;
@@ -14,19 +16,20 @@ export interface MeetingListProps {
   organiser?: Organiser;
 }
 
-interface Props extends MeetingListProps {
+interface Props
+  extends MeetingListProps, Omit<HTMLAttributes<"section">, "meetings" | "organiser"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { meetings, organiser, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  meetings,
+  organiser,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 
 const rooms = ["Atlas", "Borealis"];
 const log = [] as string[];
@@ -37,9 +40,9 @@ const upcoming = meetings.filter((meeting) => !meeting.done);
 
 <section
   class:list={["meeting-list", className]}
-  aria-label="Meetings"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Meetings"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <ul aria-label="Upcoming">
     {upcoming.map((event) => (

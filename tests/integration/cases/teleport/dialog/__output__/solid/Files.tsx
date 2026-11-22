@@ -1,5 +1,15 @@
 import ConfirmDialog from "./ConfirmDialog";
-import { type JSX, Show, createRoot, createSignal, getOwner, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  createRoot,
+  createSignal,
+  getOwner,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 import { insert } from "solid-js/web";
 
 export interface FilesProps {
@@ -11,8 +21,12 @@ export interface FilesEvents {
 }
 
 export default function Files(
-  props: FilesProps & FilesEvents & { class?: string; style?: JSX.CSSProperties },
+  props: FilesProps &
+    FilesEvents &
+    Omit<ComponentProps<"section">, "file" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["file", "onDelete", "class"]);
+
   const [open, setOpen] = createSignal(false);
 
   function confirm() {
@@ -21,12 +35,7 @@ export default function Files(
   }
 
   return (
-    <section
-      class={props.class ? `files ${props.class}` : "files"}
-      aria-label="Files"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `files ${props.class}` : "files"} aria-label="Files" {...others}>
       <p>{props.file}</p>
       <button type="button" onClick={() => setOpen(true)}>
         Delete {props.file}
@@ -44,13 +53,6 @@ export default function Files(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Mounts `children` into the element `to` selects once the component has mounted, and removes them with it. */

@@ -1,4 +1,15 @@
-import { For, type JSX, Match, Show, Switch, createMemo, mergeProps, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  Match,
+  Show,
+  Switch,
+  createMemo,
+  mergeProps,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface InboxMessage {
   id: string;
@@ -12,19 +23,23 @@ export interface MessageListProps {
 }
 
 export default function MessageList(
-  rawProps: MessageListProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: MessageListProps &
+    Omit<ComponentProps<"section">, "messages" | "archived" | "emptyText" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const defaults: Required<Pick<MessageListProps, "archived" | "emptyText">> = {
     archived: [],
     emptyText: "Nothing here yet.",
   };
   const props = mergeProps(defaults, rawProps);
+  const [, others] = splitProps(props, ["messages", "archived", "emptyText", "class"]);
+
   return (
     <section
       class={props.class ? `message-list ${props.class}` : "message-list"}
       aria-label="Messages"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>Inbox</h2>
       <ul>
@@ -51,13 +66,6 @@ export default function MessageList(
       </Switch>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

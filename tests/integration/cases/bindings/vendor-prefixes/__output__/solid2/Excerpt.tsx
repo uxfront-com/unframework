@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface ExcerptProps {
   title: string;
@@ -8,14 +9,16 @@ export interface ExcerptProps {
 }
 
 export default function Excerpt(
-  props: ExcerptProps & { class?: string; style?: JSX.CSSProperties },
+  props: ExcerptProps &
+    Omit<ComponentProps<"article">, "title" | "text" | "fill" | "stroke" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "title", "text", "fill", "stroke", "class");
+
   return (
-    <article
-      class={props.class ? `excerpt ${props.class}` : "excerpt"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <article class={props.class ? `excerpt ${props.class}` : "excerpt"} {...others}>
       <h2
         style={{
           "-webkit-text-fill-color": props.fill,
@@ -39,11 +42,4 @@ export default function Excerpt(
       </p>
     </article>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

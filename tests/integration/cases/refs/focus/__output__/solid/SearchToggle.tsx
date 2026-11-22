@@ -1,6 +1,10 @@
-import { type JSX, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, onCleanup, splitProps } from "solid-js";
 
-export default function SearchToggle(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function SearchToggle(
+  props: Omit<ComponentProps<"div">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   let field: HTMLInputElement | null = null;
   let trigger: HTMLButtonElement | null = null;
 
@@ -16,8 +20,7 @@ export default function SearchToggle(props: { class?: string; style?: JSX.CSSPro
     <div
       class={props.class ? `search-toggle ${props.class}` : "search-toggle"}
       role="search"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button
         type="button"
@@ -44,11 +47,4 @@ export default function SearchToggle(props: { class?: string; style?: JSX.CSSPro
       />
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

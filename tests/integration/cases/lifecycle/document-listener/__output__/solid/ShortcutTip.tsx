@@ -1,4 +1,12 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface ShortcutTipEvents {
   onDismissed?: () => void;
@@ -6,8 +14,11 @@ export interface ShortcutTipEvents {
 }
 
 export default function ShortcutTip(
-  props: ShortcutTipEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ShortcutTipEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onDismissed", "onShortcut", "class"]);
+
   const [open, setOpen] = createSignal(true);
   const [enabled, setEnabled] = createSignal(false);
   const [count, setCount] = createSignal(0);
@@ -53,8 +64,7 @@ export default function ShortcutTip(
     <section
       class={props.class ? `shortcut-tip ${props.class}` : "shortcut-tip"}
       aria-label="Shortcuts"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>{open() ? "Press Escape to hide this tip." : "Tip hidden."}</p>
       <button type="button" aria-pressed={enabled()} onClick={toggle}>
@@ -63,13 +73,6 @@ export default function ShortcutTip(
       <p role="status">Used: {count()}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

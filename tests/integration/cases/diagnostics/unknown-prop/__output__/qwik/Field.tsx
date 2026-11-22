@@ -1,20 +1,14 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
-export const Field = component$<{ label: string } & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, class: className, style, ...attributes }) => {
-    return (
-      <label {...scopeAttributes(attributes)} class={className} style={style}>
-        {label} <input type="text" />
-      </label>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+export const Field = component$<
+  { label: string } & Omit<PropsOf<"label">, "label" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ label, class: className, style, ...attributes }) => {
+  return (
+    <label class={className} style={style} {...attributes}>
+      {label} <input type="text" />
+    </label>
+  );
+});

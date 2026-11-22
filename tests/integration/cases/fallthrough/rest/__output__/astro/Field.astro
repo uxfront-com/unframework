@@ -1,0 +1,33 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"input">, "label"> {
+  label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, class: className, style, name, ...attrs } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+/** What the consumer passes, but its styled parents' scope attributes, which the root keeps. */
+function withoutScope(rest: object): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith("data-uf-")));
+}
+---
+
+<label
+  class="field"
+  {...scopeAttributes(Astro.props)}
+>{label} <input
+  {...withoutScope(attrs)}
+  name={"name" in Astro.props ? name : label.toLowerCase()}
+  class:list={[className]}
+  style={style}
+/></label>

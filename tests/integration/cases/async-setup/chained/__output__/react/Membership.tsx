@@ -1,10 +1,7 @@
 import { loadTeam, loadUser } from "./api";
-import { type CSSProperties, Suspense, use, useEffect, useMemo, useState } from "react";
+import { type ComponentPropsWithRef, Suspense, use, useEffect, useMemo, useState } from "react";
 
-export interface MembershipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MembershipAttributes = Omit<ComponentPropsWithRef<"p">, "id" | "children">;
 
 async function membershipSetup({ id }: { id: string }) {
   const user = await loadUser(id);
@@ -26,6 +23,7 @@ export default function Membership(props: { id: string } & MembershipAttributes)
 function MembershipResolved({
   className,
   style,
+  id: _id,
   setup,
   settled: _settled,
   ...attributes
@@ -38,12 +36,7 @@ function MembershipResolved({
   const summary = useMemo(() => `${user.name} is in ${team.name}`, [user, team]);
 
   return (
-    <p
-      className={cx("membership", className)}
-      role="status"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <p className={cx("membership", className)} role="status" style={style} {...attributes}>
       {summary}
     </p>
   );
@@ -62,15 +55,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**
