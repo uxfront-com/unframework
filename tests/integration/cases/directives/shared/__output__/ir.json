@@ -200,8 +200,7 @@
                   "value": "tag"
                 },
                 {
-                  "name": "v-mark",
-                  "value": null
+                  "name": "v-mark"
                 }
               ],
               "listeners": []

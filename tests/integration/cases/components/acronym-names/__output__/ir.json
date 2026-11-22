@@ -255,8 +255,7 @@
                   "value": "button"
                 },
                 {
-                  "name": "data-user",
-                  "value": null
+                  "name": "data-user"
                 }
               ],
               "listeners": [

@@ -199,8 +199,7 @@
                   "value": "card"
                 },
                 {
-                  "name": "aria-label",
-                  "value": null
+                  "name": "aria-label"
                 }
               ],
               "listeners": []

@@ -218,14 +218,16 @@ function ownOf(opening: AST.JSXOpeningElement): ApiFallthroughOwn {
     }
     if (written === "key" || written === "ref") continue;
     const { value } = item;
+    // A bound attribute has no value here: the check reads it as present, value unknown.
+    const known =
+      value === null
+        ? true
+        : value.type === "Literal" && typeof value.value === "string"
+          ? value.value
+          : undefined;
     own.attributes.push({
       name: written.toLowerCase(),
-      value:
-        value === null
-          ? true
-          : value.type === "Literal" && typeof value.value === "string"
-            ? value.value
-            : null,
+      ...(known === undefined ? {} : { value: known }),
     });
   }
   return own;

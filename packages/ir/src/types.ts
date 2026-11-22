@@ -553,8 +553,11 @@ export interface ComponentStylesApi {
 
 /** The fallthrough element's own attributes and listeners, as its source writes them. */
 export interface ApiFallthroughOwn {
-  /** Each attribute: its static value, `true` written without one, or `null` where bound. */
-  attributes: { name: string; value: string | true | null }[];
+  /**
+   * Each attribute: its static value, `true` written without one, and no value where bound
+   * (a form `validateModule` checks, as a static attribute's).
+   */
+  attributes: { name: string; value?: string | true }[];
   /** The DOM events its own listeners listen to, in lower case (`keydown`). */
   listeners: string[];
 }

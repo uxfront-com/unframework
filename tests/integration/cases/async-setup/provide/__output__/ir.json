@@ -176,8 +176,7 @@
                   "value": "panel"
                 },
                 {
-                  "name": "aria-label",
-                  "value": null
+                  "name": "aria-label"
                 }
               ],
               "listeners": []

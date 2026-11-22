@@ -234,8 +234,7 @@
             "fallthroughOwn": {
               "attributes": [
                 {
-                  "name": "lang",
-                  "value": null
+                  "name": "lang"
                 }
               ],
               "listeners": []

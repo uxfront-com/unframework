@@ -751,8 +751,7 @@
                   "value": "badge"
                 },
                 {
-                  "name": "style",
-                  "value": null
+                  "name": "style"
                 }
               ],
               "listeners": []

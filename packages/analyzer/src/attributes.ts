@@ -385,7 +385,7 @@ function checkHandlers(
 ): void {
   const handlers = new Set<string>();
   const attributes = new Map<string, A11yValue>(
-    own?.attributes.map(({ name, value }) => [name, value]) ?? [],
+    own?.attributes.map(({ name, value }) => [name, value ?? null]) ?? [],
   );
   for (const entry of entries) {
     if ("own" in entry) {

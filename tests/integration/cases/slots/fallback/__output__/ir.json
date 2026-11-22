@@ -261,8 +261,7 @@
                   "value": "note"
                 },
                 {
-                  "name": "aria-label",
-                  "value": null
+                  "name": "aria-label"
                 },
                 {
                   "name": "class",

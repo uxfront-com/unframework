@@ -616,8 +616,7 @@
                   "value": "true"
                 },
                 {
-                  "name": "aria-labelledby",
-                  "value": null
+                  "name": "aria-labelledby"
                 },
                 {
                   "name": "tabindex",

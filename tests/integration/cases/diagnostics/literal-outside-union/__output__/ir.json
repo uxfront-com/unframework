@@ -169,8 +169,7 @@
             "fallthroughOwn": {
               "attributes": [
                 {
-                  "name": "class",
-                  "value": null
+                  "name": "class"
                 }
               ],
               "listeners": []
