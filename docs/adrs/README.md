@@ -169,6 +169,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0115](./0115-hydrate-canaries-run-in-shards.md)                                  | Canaries whose hydrate specs run are sharded too                                | Accepted                                                                                            | §7.7, §7.9              |
 | [0116](./0116-embedded-examples-take-controls-a-theme-and-report-their-height.md) | Embedded examples take controls, a theme and report their height                | Accepted                                                                                            | §8.6, §9 M7             |
 | [0119](./0119-a-dynamic-root-takes-fallthrough.md)                                | A `<component is>` root takes fallthrough, and each tag its own attributes      | Accepted                                                                                            | §4.3, §4.6, §6, §9 M3   |
+| [0120](./0120-hydrate-projects-run-after-the-browser-followers.md)                | The hydrate projects run after the browser followers                            | Accepted                                                                                            | §7.2 L12, §7.3, §7.6    |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

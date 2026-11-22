@@ -341,7 +341,10 @@ signal, or a hydration it could not finish), `ids` (the raw ids of the server's 
 `trace` or `interactions`.
 
 A hydrate project captures no pixels and writes nothing: it compares with the shared
-expectations, Vue's included, so an update run runs it last. A spec must mount its case's main
+expectations, Vue's included, so an update run runs it last. A live run in Chromium runs the
+hydrate projects after every browser project too, because every page project's browser commands
+go through Vitest's main process, and beside them a follower's test took more than twice as long
+(ADR-0120). A spec must mount its case's main
 component, which the server renders. Qwik resumes instead of hydrating and Astro runs nothing in a
 page, so their `hydration` cells are unsupported and their hydrate projects skip every test.
 
@@ -349,7 +352,8 @@ page, so their `hydration` cells are unsupported and their hydrate projects skip
 running mounted hooks on a page where one threw, and `sourcemaps/mounted-throws` throws on purpose.
 `FRESH_PAGE_PER_FILE` in `harness/projects.ts` lists each such target with its reason. In a live
 `browser:*` run, `browser:vue` runs alone before the followers, so it opens two tester pages per
-CPU, and every other run keeps Vitest's default (`referencePages`).
+CPU. So does CI's `browser:vue` job, which selects it alone. A full run, where it shares its group
+with the node projects, and every other project keep Vitest's default (`referencePages`).
 
 The hydrate projects share their pages on every target, Vue's included: a fresh frame for each
 spec file that a `-t` run skips stalled the tests it kept. The harness's sequencer

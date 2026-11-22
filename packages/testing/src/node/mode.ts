@@ -204,8 +204,11 @@ export type ProjectKind =
  *   other group, and refuses one there beside projects with another worker count;
  * - check with baselines (CI): everything 0, in parallel;
  * - the hydrate projects (L12, ADR-0095) compare the hydrated DOM with the shared expectations
- *   and write nothing, so they run in the last group of an update run, after every writer, and
- *   of a check with live pixels, where the reference's browser project keeps its group alone.
+ *   and write nothing, so they run in the last group of an update run, after every writer. In a
+ *   check with live pixels in Chromium they run in a group of their own, after the browser
+ *   followers (ADR-0120): every page project's browser commands go through Vitest's main process,
+ *   and beside the hydrate projects a follower's test took 30 s or more, against 13 s after them.
+ *   In Firefox and WebKit they run after the last browser project.
  */
 export function groupOrder(
   kind: ProjectKind,
@@ -227,7 +230,7 @@ export function groupOrder(
   }
   if (mode.pixels === "live" && kind === "hydrate") {
     const alone = mode.browser !== undefined && mode.browser !== "chromium";
-    return alone ? 1 + new Set([reference, ...caseReferences, ...targets]).size : 1 + named;
+    return alone ? 1 + new Set([reference, ...caseReferences, ...targets]).size : 2 + named;
   }
   if (mode.pixels === "live" && kind === "browser") {
     if (mode.browser !== undefined && mode.browser !== "chromium") {

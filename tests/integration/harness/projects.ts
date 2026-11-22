@@ -261,7 +261,8 @@ export const MAX_REFERENCE_PAGES = 28;
  * followers wait for it, so it opens more pages. Its files keep a fresh frame each and mostly wait
  * on the browser, so the CPUs have room. Vitest refuses two projects in one `sequence.groupOrder`
  * group with different `maxWorkers`, so the reference takes them only when no other project the
- * run selects shares its group: not in a full run or in CI's baseline mode. An update run and a
+ * run selects shares its group: not in a full run, where it shares group 0 with the node projects.
+ * CI's `browser:vue` job selects it alone, so it takes them there too. An update run and a
  * `--maxWorkers` the caller gives keep their own.
  */
 export function referencePages(
