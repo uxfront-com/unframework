@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { compile, createFileResolver, createSyntacticOracle } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 /**
  * A resolver over in-memory files under `/project`, which counts its reads, and a type oracle over
@@ -171,7 +172,7 @@ describe("compile() with shared modules", () => {
     expect(result.diagnostics).toEqual([]);
     expect(result.dependencies).toEqual(["shared/tones.ts", "src/base.ts", "src/tokens.ts"]);
     for (const target of ["vue", "react", "qwik"]) {
-      expect(result.outputs[target]!.slice(1)).toEqual([
+      expect(ownOutputs(result, target).slice(1)).toEqual([
         { path: "tokens.ts", contents: TOKENS },
         { path: "base.ts", contents: BASE },
         { path: "../shared/tones.ts", contents: TONES },
