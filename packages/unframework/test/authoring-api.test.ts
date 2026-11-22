@@ -40,7 +40,7 @@ describe("the authoring API", () => {
     );
   });
 
-  it("exports `isDev` as a boolean", () => {
+  it("exports `isDev` as `true`, as a development build reads it uncompiled", () => {
     expect(api.isDev).toBe(true);
   });
 

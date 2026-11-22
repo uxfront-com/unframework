@@ -1,4 +1,10 @@
-import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
+import {
+  type CSSProperties,
+  type ClassList,
+  type PropsOf,
+  component$,
+  untrack,
+} from "@qwik.dev/core";
 import { isDev } from "@qwik.dev/core/build";
 
 export default component$<
@@ -7,9 +13,11 @@ export default component$<
       style?: CSSProperties;
     }
 >(({ label, class: className, style, ...attributes }) => {
-  if (isDev) {
-    if (!label) console.warn("IconButton has no accessible name: pass it a `label`.");
-  }
+  untrack(() => {
+    if (isDev) {
+      if (!label) console.warn("IconButton has no accessible name: pass it a `label`.");
+    }
+  });
 
   return (
     <button type="button" aria-label={label} class={className} style={style} {...attributes}>

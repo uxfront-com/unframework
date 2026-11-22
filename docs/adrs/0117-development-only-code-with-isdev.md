@@ -41,8 +41,17 @@ In both places, the test is a `Dev` reference in the IR, which each target respe
 
 **Diagnostics.** One new code, **UF2040 `misplaced-dev-check`** (error): `isDev` read anywhere
 else. That covers an `else`, a negation, a value, a logical expression, a call, a template, a
-getter, and any use in a composable (`.uf.ts`). In the top-level block, pure code's rules hold
-with their own codes:
+getter, and any use in a composable (`.uf.ts`) or a directive's hook. A template, a getter or an
+initial value that calls a local function which tests `isDev`, itself or through what it calls,
+is UF2040 at the call: the render, or the value, would differ in development, and Solid's server
+reads its `isDev` as `false`, so hydration would differ too. Client code may call one.
+
+A component that reads `isDev` declares nothing named `process` or `ngDevMode`: a prop, a
+setup binding, a local or a parameter of that name would shadow the global React, Vue, Svelte
+or Angular's check reads, so it is UF2003. Solid, Solid 2 and Qwik import their flag under a
+free name instead.
+
+In the top-level block, pure code's rules hold with their own codes:
 
 | In the block                                          | Code                                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -52,20 +61,24 @@ with their own codes:
 | A browser global but `console` (`window`, `document`) | UF3020                                                                                      |
 | A `return`                                            | UF2012                                                                                      |
 | An `await`                                            | UF2038 in an `async` component, as at the top level, and a syntax error (UF1001) in another |
+| A read of a binding declared after the block          | UF2023, as for any setup item: the block runs in source order                               |
+
+A `throw` is allowed: a block may fail loudly in development, as an invariant check does, where
+a production build renders on.
 
 **Each target's check.** The test is respelled, and the block placed where the target already
 runs setup-time reads of the props:
 
-| Target  | `if (isDev)`                                                 | The top-level block                                              |
-| ------- | ------------------------------------------------------------ | ---------------------------------------------------------------- |
-| React   | `if (process.env.NODE_ENV !== "production")`                 | The component's body, on every render (R1)                       |
-| Vue     | `if (process.env.NODE_ENV !== "production")`                 | `<script setup>`                                                 |
-| Svelte  | `if (process.env.NODE_ENV !== "production")`                 | The instance script, in `untrack` where it reads a prop or state |
-| Solid   | `import { isDev } from "solid-js/web"`, `if (isDev)`         | The body, in `untrack` where it reads a prop or state            |
-| Solid 2 | `import { isDev } from "@solidjs/web"`, `if (isDev)`         | The body, in `untrack` where it reads a prop or state            |
-| Angular | `if (typeof ngDevMode === "undefined" \|\| ngDevMode)`       | `ngOnInit`, once the inputs are set                              |
-| Qwik    | `import { isDev } from "@qwik.dev/core/build"`, `if (isDev)` | The `component$` body                                            |
-| Astro   | `if (import.meta.env.DEV)`                                   | The frontmatter                                                  |
+| Target  | `if (isDev)`                                                 | The top-level block                                                |
+| ------- | ------------------------------------------------------------ | ------------------------------------------------------------------ |
+| React   | `if (process.env.NODE_ENV !== "production")`                 | The component's body, on every render (R1)                         |
+| Vue     | `if (process.env.NODE_ENV !== "production")`                 | `<script setup>`                                                   |
+| Svelte  | `if (process.env.NODE_ENV !== "production")`                 | The instance script, in `untrack` where it reads a prop or state   |
+| Solid   | `import { isDev } from "solid-js/web"`, `if (isDev)`         | The body, in `untrack` where it reads a prop or state              |
+| Solid 2 | `import { isDev } from "@solidjs/web"`, `if (isDev)`         | The body, in `untrack` where it reads a prop or state              |
+| Angular | `if (typeof ngDevMode === "undefined" \|\| ngDevMode)`       | `ngOnInit`, once the inputs are set                                |
+| Qwik    | `import { isDev } from "@qwik.dev/core/build"`, `if (isDev)` | The `component$` body, in `untrack` where it reads a prop or state |
+| Astro   | `if (import.meta.env.DEV)`                                   | The frontmatter                                                    |
 
 - No capability is added: every target runs the block natively.
 - `isDevMode()` is not Angular's spelling: it calls into `@angular/core`, so no bundler can drop the

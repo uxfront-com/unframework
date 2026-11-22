@@ -42,6 +42,17 @@ function warningOf(source: string): string {
   return match[1]!;
 }
 
+/**
+ * What the component renders whatever the build, its icon's path: the positive control, which
+ * the production bundle must hold, so a missing warning means the build dropped the check, not
+ * the component.
+ */
+function rendered(source: string): string {
+  const match = / d="([^"]+)"/.exec(readFileSync(source, "utf8"));
+  if (!match) throw new Error(`${source} renders no path to look for.`);
+  return match[1]!;
+}
+
 /** Whether the target declares a capability the case needs unsupported: its UF4001. */
 function inert(dir: string): boolean {
   const expected = JSON.parse(
@@ -151,6 +162,10 @@ describe(`dev-only production build › ${target}`, () => {
       const warning = warningOf(info.source);
       const production = await bundled(modules.production, PRODUCTION);
       const development = await bundled(modules.development, DEVELOPMENT);
+      expect(
+        production.includes(rendered(info.source)),
+        "the production bundle holds the component",
+      ).toBe(true);
       expect(production.includes(warning), "the production bundle holds the warning").toBe(false);
       expect(development.includes(warning), "the development bundle holds the warning").toBe(
         !inert(info.dir),
