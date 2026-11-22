@@ -3,8 +3,9 @@
 Unframework compiles one `.uf.tsx` component into native React, Vue, Svelte, Solid, Angular, Qwik
 and Astro components. The source is ordinary TSX with Vue-inspired APIs (`ref`, `computed`,
 `defineEmits`, …) imported from `@uxfront/unframework` and erased at build time. The output has no runtime:
-each file depends only on its framework, and on any module a styling engine's Vite plugin
-registers, which passes through as written. Every output is verified by executed tests, from golden
+each file depends only on its framework, on the helper modules its tree generates in
+`_unframework/` (ADR-0121), and on any module a styling engine's Vite plugin registers, which passes
+through as written. Every output is verified by executed tests, from golden
 files and each framework's own compiler to server HTML, the DOM, the accessibility tree and pixels
 in a real browser.
 
@@ -325,10 +326,12 @@ Generate each of these with its command. The formatter and the linter skip them 
 - **Idiomatic output (G2).** Each output must read as a senior developer of that framework would
   write it. It must pass that framework's compiler, type-checker and lint rules with zero warnings.
 - **Differences are declared (P4, ADR-0033).** Each target declares a cell for every capability:
-  `native`, `emulated` (with the name of its inline helper) or `unsupported` (with a UF4xxx
+  `native`, `emulated` (with the name of its helper) or `unsupported` (with a UF4xxx
   diagnostic). Never let a difference show up only in a test.
 - **No runtime (P7, D11).** An output imports only its framework. If a framework lacks a primitive,
-  emit a small inline helper and declare it `emulated`. The one exception is a module a Vite
+  emit a small helper and declare it `emulated`. A helper lives once per output tree, in a
+  generated module in `_unframework/` that each output imports by a relative path, unless it can't
+  be shared, and then it is printed inline (ADR-0121). The one exception is a module a Vite
   plugin registers, whatever the engine: an import under a `passThrough` prefix (`virtual:` by
   default) reaches every output as written, and that plugin resolves it (§4.4, ADR-0004,
   ADR-0064). Its module may import the engine's own runtime, such as `@styleframe/runtime`. A

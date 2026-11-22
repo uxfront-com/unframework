@@ -173,8 +173,8 @@ From the v1 source, its ADRs and the Inkline monorepo (`~/Workspace/inkline`):
 - **P5. Plain data between stages.** The IR is JSON: versioned, schema-validated and snapshotted.
 - **P6. Targets own their idioms.** Shared layers stay target-agnostic. v1's Angular "collapse" logic
   leaked into shared code.
-- **P7. No runtime by default.** Where a framework lacks a primitive, the helper is emitted inline,
-  kept small, and listed in the capability matrix.
+- **P7. No runtime by default.** Where a framework lacks a primitive, the helper is emitted once per
+  output tree in a generated module, kept small, and listed in the capability matrix (ADR-0121).
 - **P8. Deterministic.** The same input and the same versions give byte-identical output.
 
 ---
@@ -731,7 +731,7 @@ its helper in the capability matrix.
 | `a ? <A /> : <B />`          | ternary                               | `v-if` / `v-else`         | `{#if}`                     | `<Show>`                 | `@if`                                        | ternary                  | ternary                 |
 | `.map` + `key`               | `.map` + `key`                        | `v-for`                   | `{#each … (key)}`           | `<For>`                  | `@for (track)`                               | `.map` + `key`           | `.map`                  |
 | `v-model={x.value}`          | `value` + `onInput` (by input kind)   | `v-model`                 | `bind:value`                | `value` + `onInput`      | `[value]` + `(input)` or a `model()` binding | `bind:value`             | `value` (static)        |
-| `class={[…]}`                | inline merge helper                   | native                    | native (clsx built in)      | inline merge helper      | `[class]`                                    | native                   | `class:list`            |
+| `class={[…]}`                | merge helper (ADR-0121)               | native                    | native (clsx built in)      | merge helper (ADR-0121)  | `[class]`                                    | native                   | `class:list`            |
 | Fallthrough attributes       | `...rest`                             | native                    | `...rest`                   | `splitProps`             | host, or a helper directive (D6)             | `...rest`                | `...rest`               |
 | `import "./Button.css"`      | `import "./Button.css"`               | `<style>`                 | `import "./Button.css"`     | `import "./Button.css"`  | `styleUrl` + `ViewEncapsulation.None`        | `useStyles$`             | `import "./Button.css"` |
 | `<component is>`             | `const Tag = …`                       | `<component :is>`         | `<svelte:element>`          | `<Dynamic>`              | `@switch` over the known tags                | `const Tag = …`          | `const Tag = …`         |
@@ -1444,7 +1444,7 @@ and the plan proceeds on the recommendation unless told otherwise.
 | D8  | Output event and model names      | ADR-0012, Proposed                      | React and Solid `onChange` / `onOpenChange`; Svelte `onchange`; Qwik `onChange$`; Angular `output()` / `model()`                         | camelCase everywhere, including Svelte                                                          |
 | D9  | Visual baselines                  | ADR-0013, Accepted                      | Linux baselines in CI, plus a live cross-target mode                                                                                     | live mode only, as in v1                                                                        |
 | D10 | Reference target for expectations | ADR-0014, Proposed                      | Vue                                                                                                                                      | hand-written expectations only                                                                  |
-| D11 | Runtime                           | ADR-0015, Proposed                      | None. Inline helpers only where a framework lacks a primitive.                                                                           | a tiny `@unframework.dev/runtime-<target>`                                                      |
+| D11 | Runtime                           | ADR-0015, Proposed, amended by ADR-0121 | None. Generated helper modules only where a framework lacks a primitive (ADR-0121).                                                      | a tiny `@unframework.dev/runtime-<target>`                                                      |
 | D12 | Package naming                    | ADR-0090, Accepted                      | `@uxfront/unframework` (the umbrella and the authoring API) plus `@unframework.dev/*`                                                    | the unscoped `unframework` and the `@unframework` scope (ADR-0016), both owned by others on npm |
 | D13 | JSX attribute and event names     | ADR-0017, Proposed                      | HTML and Vue names (`class`, `for`, `onKeydown`), vendored from `@vue/runtime-dom`'s JSX types                                           | React names (`className`, `htmlFor`, `onKeyDown`)                                               |
 
