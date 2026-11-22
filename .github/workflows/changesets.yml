@@ -21,9 +21,6 @@ concurrency:
   group: changesets-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  NODE_VERSION: 24
-
 permissions: {}
 
 jobs:
@@ -52,7 +49,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .node-version
           cache: pnpm
 
       - name: Install dependencies
@@ -84,7 +81,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .node-version
           cache: pnpm
 
       - name: Install dependencies
@@ -121,7 +118,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .node-version
           cache: pnpm
 
       - name: Install dependencies
@@ -165,7 +162,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .node-version
 
       # Only the Changesets CLI is needed here; the tarballs were built in
       # `pack`. Skipping lifecycle scripts keeps dependency code from running
