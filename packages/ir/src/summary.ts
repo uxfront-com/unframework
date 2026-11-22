@@ -21,6 +21,8 @@ export interface CodeSummary {
   emits: ReadonlySet<string>;
   /** Whether it or what it reaches calls `nextTick`. */
   api: boolean;
+  /** Whether it or what it reaches tests `isDev`, so it runs differently in development (ADR-0117). */
+  dev: boolean;
   /** Whether a function it reaches is `async` (and, in a function's summary, the function). */
   async: boolean;
   /** Whether it or what it reaches reads a `templateRef` binding. */
@@ -49,6 +51,7 @@ interface Facts {
   writes: Set<BindingId>;
   emits: Set<string>;
   api: boolean;
+  dev: boolean;
   globals: Set<string>;
 }
 
@@ -60,6 +63,7 @@ function factsOf(refs: readonly CodeReference[]): Facts {
     writes: new Set(),
     emits: new Set(),
     api: false,
+    dev: false,
     globals: new Set(),
   };
   for (const ref of refs) {
@@ -85,8 +89,9 @@ function factsOf(refs: readonly CodeReference[]): Facts {
       case "Event":
       case "Slot":
       case "Import":
-      // `isDev` is the build's, not the component's (ADR-0117).
+      // `isDev` reads no binding: the build's, not the component's (ADR-0117).
       case "Dev":
+        facts.dev = true;
         break;
       default:
         unreachable(ref);
@@ -192,7 +197,7 @@ function close(
   const writes = new Set(facts.writes);
   const emits = new Set(facts.emits);
   const globals = new Set(facts.globals);
-  let { api } = facts;
+  let { api, dev } = facts;
   let async = false;
   const pending = [...facts.calls];
   while (pending.length) {
@@ -209,6 +214,7 @@ function close(
     for (const event of callee.facts.emits) emits.add(event);
     for (const name of callee.facts.globals) globals.add(name);
     api ||= callee.facts.api;
+    dev ||= callee.facts.dev;
     async ||= callee.async;
     pending.push(...callee.facts.calls);
   }
@@ -221,6 +227,7 @@ function close(
     writes,
     emits,
     api,
+    dev,
     async,
     readsTemplateRef: readsKind("templateRef"),
     readsLocalVar: readsKind("localVar"),
@@ -230,7 +237,7 @@ function close(
 
 /**
  * Why code with this summary is not pure, or `undefined` when it is as far as references tell:
- * it writes, emits, calls `nextTick`, awaits, reads a template ref or a setup `let`, or a global
+ * it writes, emits, calls `nextTick`, tests `isDev`, awaits, reads a template ref or a setup `let`, or a global
  * only client code may. A template, an initial value or a getter calls only pure functions
  * (ADR-0045); the analyser also rejects what needs the syntax to see (UF2014).
  */
@@ -240,6 +247,7 @@ export function impurity(summary: CodeSummary): string | undefined {
   const [event] = summary.emits;
   if (event !== undefined) return `it emits "${event}"`;
   if (summary.api) return "it calls `nextTick`";
+  if (summary.dev) return "it tests `isDev`";
   if (summary.async) return "it is asynchronous";
   if (summary.readsTemplateRef) return "it reads a template ref";
   if (summary.readsLocalVar) return "it reads a setup `let`";

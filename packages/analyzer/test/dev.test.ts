@@ -121,4 +121,72 @@ if (isDev) { ${body} }
 return <p>{count.value}</p>; }`;
     expect(problems(source, run(source).diagnostics)).toEqual([problem]);
   });
+
+  // B1: React, Vue and Svelte write `process.env.NODE_ENV`, and Angular tests `ngDevMode`: a
+  // declaration of either name would shadow the global the check reads (ADR-0117).
+  it.each([
+    ["a destructured prop", "{ process }: { process?: string }", "", "{process}", "UF2003 process"],
+    [
+      "a prop of the object form",
+      "props: { process?: string }",
+      "",
+      "{props.process}",
+      "UF2003 process?: string",
+    ],
+    ["a setup constant", "", "const process = 1;\n", "{process}", "UF2003 process"],
+    [
+      "a handler's parameter",
+      "",
+      "",
+      "<button onClick={() => [1].forEach((process) => console.warn(process))}>Go</button>",
+      "UF2003 process",
+    ],
+    ["a local named `ngDevMode`", "", "const ngDevMode = 1;\n", "{ngDevMode}", "UF2003 ngDevMode"],
+  ])(
+    "reports %s named like a target's check where `isDev` is read (UF2003)",
+    (_, parameter, setup, jsx, problem) => {
+      const source = `import { isDev } from "@uxfront/unframework";
+export function A(${parameter}) { ${setup}if (isDev) { console.warn("x"); }
+return <p>${jsx}</p>; }`;
+      expect(problems(source, run(source).diagnostics)).toEqual([problem]);
+    },
+  );
+
+  it("leaves `process` alone where `isDev` is not read", () => {
+    const source = `export function A({ process }: { process?: string }) { return <p>{process}</p>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
+  // B2: the block runs in source order, so it reads only what is declared before it.
+  it("reports a read of a binding declared after the block (UF2023)", () => {
+    const { source, diagnostics } = dev(
+      'if (isDev) { if (count.value < 0) console.warn("x"); }\nconst count = ref(0);\n',
+      "<p>{count.value}</p>",
+    );
+    expect(problems(source, diagnostics)).toContain("UF2023 count.value");
+  });
+
+  // B3: a function that tests `isDev` renders, or computes, otherwise in development.
+  it.each([
+    ["a template", "<p>{mode()}</p>", ""],
+    ["a computed", "<p>{shown.value}</p>", "const shown = computed(() => mode());\n"],
+    [
+      "a template, through another function",
+      "<p>{outer()}</p>",
+      "function outer() { return mode(); }\n",
+    ],
+  ])("is UF2040 where %s calls a function that tests it", (_, jsx, setup) => {
+    const source = `import { computed, isDev } from "@uxfront/unframework";
+export function A() { function mode() { if (isDev) { return "dev"; } return "prod"; }
+${setup}return ${jsx}; }`;
+    expect(codes(run(source).diagnostics)).toEqual(["UF2040"]);
+  });
+
+  it("lets client code call a function that tests it", () => {
+    const source = `import { isDev, onMounted } from "@uxfront/unframework";
+export function A() { function warn() { if (isDev) console.warn("x"); }
+onMounted(() => warn());
+return <button onClick={() => warn()}>Go</button>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
 });
