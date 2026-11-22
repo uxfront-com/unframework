@@ -1269,7 +1269,7 @@ const entries: CatalogueEntry[] = [
     title: "`isDev` is read only as the test of an `if` with no `else`",
     description: [
       "`isDev` marks code that runs only in a development build (ADR-0117). Each target writes its",
-      "framework's own check in its place, `process.env.NODE_ENV !== \"production\"`, `ngDevMode`,",
+      'framework\'s own check in its place, `process.env.NODE_ENV !== "production"`, `ngDevMode`,',
       "Solid's or Qwik's `isDev`, or Astro's `import.meta.env.DEV`, which a production build folds",
       "to `false` and drops with its block. So it is read in one form only: as the whole test of an",
       "`if` with no `else`, at the top level of the setup or in client code (a handler, a watcher's",
@@ -1279,7 +1279,7 @@ const entries: CatalogueEntry[] = [
       "",
       "```tsx",
       "if (isDev) {",
-      "  if (!label) console.warn(\"IconButton has no accessible name.\");",
+      '  if (!label) console.warn("IconButton has no accessible name.");',
       "}",
       "```",
       "",

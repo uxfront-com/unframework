@@ -33,9 +33,9 @@ import type { DirectiveValueCheck, DirectiveValueQuery } from "@unframework.dev/
 import type { ElementContext } from "./attributes.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
-import { misplacedDev } from "./dev.ts";
 import { checkCopiedText, closure } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
+import { misplacedDev } from "./dev.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { SetupBinding } from "./render.ts";
 import type { Scopes } from "./scope.ts";

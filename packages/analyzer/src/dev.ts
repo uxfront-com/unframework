@@ -31,7 +31,11 @@ export function devTest(
 }
 
 /** `isDev` read anywhere but as the test of an `if` with no `else` where code may test it. */
-export function misplacedDev(node: AST.IdentifierReference, reporter: Reporter, why?: string): void {
+export function misplacedDev(
+  node: AST.IdentifierReference,
+  reporter: Reporter,
+  why?: string,
+): void {
   reporter.report(
     "UF2040",
     node,

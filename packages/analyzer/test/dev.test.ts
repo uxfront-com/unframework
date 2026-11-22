@@ -73,7 +73,10 @@ describe("isDev", () => {
     ["a condition of a statement", 'isDev && console.warn("a");\n'],
     ["a call", "isDev();\n"],
     ["a getter", "const on = computed(() => isDev);\n"],
-    ["an `else` in client code", 'onMounted(() => { if (isDev) { console.warn("a"); } else { console.warn("b"); } });\n'],
+    [
+      "an `else` in client code",
+      'onMounted(() => { if (isDev) { console.warn("a"); } else { console.warn("b"); } });\n',
+    ],
     ["a value in client code", "onMounted(() => { const on = isDev; console.warn(on); });\n"],
   ])("is UF2040 as %s", (_, setup) => {
     const source = `import { computed, isDev, onMounted } from "@uxfront/unframework";\nexport function A() { ${setup}return <p />; }`;

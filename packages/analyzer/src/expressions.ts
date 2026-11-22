@@ -4572,7 +4572,10 @@ class Walk {
         // target's own check. A component's only: a composable's is UF2040.
         const dev =
           (this.#mode === "client" || this.#dev) && !this.#context.setup.composable
-            ? devTest(node, { scopes: this.#context.scopes, authoring: this.#context.setup.authoring })
+            ? devTest(node, {
+                scopes: this.#context.scopes,
+                authoring: this.#context.setup.authoring,
+              })
             : undefined;
         if (dev) this.refs.push(createDevReference(span(dev)));
         else this.value(node.test, "value", false);
