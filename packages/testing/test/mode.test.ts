@@ -269,6 +269,42 @@ describe("groupOrder", () => {
 
   const targets = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
 
+  it("runs the hydrate projects after every browser project with live pixels in Chromium", () => {
+    // ADR-0120: beside the browser followers, they slowed them through Vitest's main process.
+    for (const engine of [live, { ...live, browser: "chromium" as const }]) {
+      for (const named of [[], ["react"]]) {
+        const browsers = targets.map((target) =>
+          groupOrder("browser", target, engine, "vue", named, targets),
+        );
+        for (const target of targets) {
+          const hydrate = groupOrder("hydrate", target, engine, "vue", named, targets);
+          expect(hydrate).toBeGreaterThan(Math.max(...browsers));
+        }
+      }
+      expect(groupOrder("browser", "svelte", engine, "vue", [], targets)).toBe(1);
+      expect(groupOrder("hydrate", "vue", engine, "vue", [], targets)).toBe(2);
+      expect(groupOrder("hydrate", "svelte", engine, "vue", [], targets)).toBe(2);
+      expect(groupOrder("browser", "svelte", engine, "vue", ["react"], targets)).toBe(2);
+      expect(groupOrder("hydrate", "react", engine, "vue", ["react"], targets)).toBe(3);
+      expect(groupOrder("hydrate", "vue", engine, "vue", ["react"], targets)).toBe(3);
+    }
+  });
+
+  it("keeps the hydrate projects' groups in update runs, with baselines and outside Chromium", () => {
+    for (const target of targets) {
+      expect(groupOrder("hydrate", target, update, "vue", [], targets)).toBe(2);
+      expect(groupOrder("hydrate", target, update, "vue", ["react"], targets)).toBe(3);
+      // CI: every project at 0, one project per job.
+      expect(groupOrder("hydrate", target, check, "vue", ["react"], targets)).toBe(0);
+      expect(groupOrder("browser", target, check, "vue", ["react"], targets)).toBe(0);
+      for (const browser of ["firefox", "webkit"] as const) {
+        const engine = { ...live, browser };
+        expect(groupOrder("hydrate", target, engine, "vue", ["react"], targets)).toBe(8);
+        expect(groupOrder("hydrate", target, engine, "vue", [], targets)).toBe(8);
+      }
+    }
+  });
+
   it("runs each browser project alone outside Chromium, in the order of the targets", () => {
     for (const browser of ["firefox", "webkit"] as const) {
       const engine: Pick<HarnessMode, "update" | "pixels" | "browser"> = {
