@@ -66,6 +66,9 @@ export function assembleModule(input: AssemblyInput): Assembly {
       error: `${filename} compiles to ${matching.length} ${target} files for one component (${paths}), and a ${extension} file holds one, so they cannot load as one module.`,
     };
   }
+  // A `.gts` module is a script with templates in it, so it keeps the file's exports, but
+  // content-tag must read it before a parser can, so several do not join.
+  if (extension === ".gts") return loaded(matching[0]!, target);
   // M6 decides whether a markup target's module also exports its component by name, for
   // instance through a module that re-exports the framework's default under each name
   // (ADR-0053's open item). Outputs never need it: they import each other's files.

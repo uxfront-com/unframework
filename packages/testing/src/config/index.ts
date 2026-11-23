@@ -273,6 +273,7 @@ const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> =
   angular: () => import("@unframework.dev/target-angular/toolchain"),
   qwik: () => import("@unframework.dev/target-qwik/toolchain"),
   astro: () => import("@unframework.dev/target-astro/toolchain"),
+  ember: () => import("@unframework.dev/target-ember/toolchain"),
 };
 
 /**

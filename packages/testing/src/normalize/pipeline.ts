@@ -6,6 +6,7 @@ import { printTree } from "./print.ts";
 import { unwrapAngularHosts } from "./rules/angular-hosts.ts";
 import { removeComments } from "./rules/comments.ts";
 import {
+  removeEmberEmptyValues,
   removeReactDefaultStates,
   removeServerControlStates,
   removeSettledValues,
@@ -79,6 +80,7 @@ export function normalizeTree(
   canonicalizeClasses(root);
   removeSettledValues(root);
   removeReactDefaultStates(root, target);
+  removeEmberEmptyValues(root, target);
   removeServerControlStates(root, options.hydrated);
   sortAttributes(root);
   collapseWhitespace(root);

@@ -1,0 +1,31 @@
+{
+  "name": "@unframework.dev/toolchain-ember",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The ember test toolchain: Glint and the tsconfig that type-check every case's ember golden output in one run (L4), with TypeScript 6 until Glint moves to TypeScript 7, and the ESLint (eslint-plugin-ember) and oxlint configs that lint it (L5), and the tools the Ember packager resolves from here in the CLI's tests (`build --package`).",
+  "type": "module",
+  "scripts": {
+    "check": "ember-tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@babel/core": "catalog:",
+    "@babel/plugin-proposal-decorators": "catalog:",
+    "@babel/plugin-transform-class-properties": "catalog:",
+    "@babel/plugin-transform-class-static-block": "catalog:",
+    "@babel/plugin-transform-private-methods": "catalog:",
+    "@babel/preset-typescript": "catalog:",
+    "@glimmer/component": "catalog:",
+    "@glint/ember-tsc": "catalog:",
+    "@glint/template": "catalog:",
+    "babel-plugin-ember-template-compilation": "catalog:",
+    "content-tag": "catalog:",
+    "ember-eslint-parser": "catalog:",
+    "ember-source": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-ember": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "npm:typescript@6.0.3",
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:"
+  }
+}

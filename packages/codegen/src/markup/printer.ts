@@ -605,6 +605,11 @@ export interface MarkupOptions {
    */
   scopeRootAttributes?(element: ElementNode): string[];
   /**
+   * The code an element's children are printed between: Ember's `<Provide>`, which gives what
+   * the setup provides to the root's descendants and to no sibling of the root (ADR-0054).
+   */
+  childrenWrapper?(element: ElementNode): { open: string; close: string } | undefined;
+  /**
    * The components a component element stands for, where the target writes a `<component is>`
    * as one (Svelte's `$derived`): its fills take each candidate's `-s`, as they do printed
    * through the dialect's `dynamic` (ADR-0063).
@@ -1330,10 +1335,13 @@ export function printMarkup(
     };
     const raw = element.attributes.find((attribute) => attribute.kind === "RawHtml");
     // The markup is the element's content, which has no children beside it (ADR-0097).
-    const children =
+    const content =
       raw && inner.dialect.rawHtmlContent
         ? [inline(inner.dialect.rawHtmlContent(code(raw.value)))]
         : itemsOf(element.children, element, inner);
+    const wrapper = options.childrenWrapper?.(element);
+    const open: Item[] = wrapper ? [inline(wrapper.open)] : [];
+    const children = wrapper ? open.concat(content, [inline(wrapper.close)]) : content;
     const isVoid = namespace === "html" && isVoidElement(element.tag);
     // A childless SVG element closes itself (ADR-0040): the HTML parser honours `/>` in foreign
     // content, and every template compiler reads it, though one may warn (`selfClosingSvg`).

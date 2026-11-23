@@ -26,6 +26,7 @@ const NAMES: Readonly<Record<TargetName, string>> = {
   solid2: "Solid 2",
   qwik: "Qwik",
   astro: "Astro",
+  ember: "Ember",
 };
 
 /** A cell as the table writes it: `native`, `emulated` and its helper, or `unsupported`. */

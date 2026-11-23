@@ -24,7 +24,7 @@ import { errorState, listCases } from "./cases.ts";
 import { ENGINE_DECLARATIONS } from "./engines.ts";
 import { committedOutputFiles } from "./output-files.ts";
 import { CANARY_DIR, CASES_DIR, ROOT, toolchainDir } from "./paths.ts";
-import { loadToolchain } from "./targets.ts";
+import { loadToolchain, WHOLE_TARGETS } from "./targets.ts";
 
 const budget: CaseCost = { time: 2, sizes: { vue: { raw: 1000, gzip: 500 } } };
 const size = { raw: 1000, gzip: 500 };
@@ -230,7 +230,7 @@ describe("each toolchain's frameworkEmit", () => {
   const corpus = listCases();
   const pick = (id: string) => corpus.find((info) => info.id === id)!;
 
-  it.each(TARGET_NAMES)(
+  it.each(WHOLE_TARGETS)(
     "%s compiles a component, a parent and its child, a composable and a styled component",
     async (target) => {
       const toolchain = await loadToolchain(target);

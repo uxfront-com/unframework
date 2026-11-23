@@ -1,0 +1,18 @@
+.toolbar[data-uf-a33d603f] {
+  display: flex;
+  column-gap: 8px;
+  padding: 8px;
+  background-color: rgb(243, 244, 246);
+}
+
+/* The child's root carries the toolbar's attribute, as Vue's scope id does. */
+.button[data-uf-a33d603f] {
+  padding: 6px 12px;
+  border: 2px solid rgb(17, 24, 39);
+  background-color: rgb(255, 255, 255);
+}
+
+/* The child's own elements do not: its icon keeps its colour. */
+.icon[data-uf-a33d603f] {
+  color: rgb(220, 38, 38);
+}

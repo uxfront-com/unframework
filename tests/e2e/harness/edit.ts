@@ -70,6 +70,24 @@ export function rebuildWatcher(output: Readable): Watcher {
   };
 }
 
+// What a Vite dev server prints once it has sent the clients an update for a write.
+const VITE_UPDATED = /\[vite\] (?:\(\w+\) )?(?:hmr update|page reload) /;
+
+/**
+ * The `Watcher` of a Vite dev server in another process: as {@link rebuildWatcher}, from the
+ * update or the reload Vite reports after each write it acts on.
+ */
+export function viteUpdateWatcher(output: Readable): Watcher {
+  const events = new EventEmitter();
+  createInterface({ input: output }).on("line", (line) => {
+    if (VITE_UPDATED.test(stripVTControlCharacters(line))) events.emit("change", ANY_FILE);
+  });
+  return {
+    on: (event, listener) => events.on(event, listener),
+    off: (event, listener) => events.off(event, listener),
+  };
+}
+
 /** Edits files under `root` for a hot-update test, and remembers what to put back. */
 export function createEditor(root: string, watcher: Watcher, timeout: number = 5000): Editor {
   const originals = new Map<string, string>();

@@ -100,6 +100,8 @@ Each app keeps its files per mode, so that work on one mode leaves the other's f
 
 Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik's `tsconfig.json` also points Vite's dependency scan at Qwik's JSX runtime.
 
+Ember has the plugin mode only so far: the `ember` target's packager exists, but the app's package mode is not wired yet. Its app is the one ember.nvp generates, trimmed to what the e2e app uses. Embroider reads the app from the working directory, so the harness starts Ember's Vite in a process of its own, in the copy, as it starts `ng serve`. `@embroider/vite` replaces no module in place, so its HMR spec expects a page reload after each edit.
+
 Both of Qwik's entries import `@qwik.dev/core/qwikloader.js`. A client-rendered Qwik element keeps its handlers for that loader, so without it a click does nothing.
 
 In plugin mode, an app imports the design system's sources through its `./source/*` export and adds a `Greeting.uf.tsx` of its own, with a stylesheet and a `types.ts`, which its HMR spec edits. Its `tsconfig.uf.json` follows [ADR-0080](../../docs/adrs/0080-jsx-import-source-in-host-apps.md), and its `tsconfig.json` leaves the `.uf.tsx` and `.uf.ts` files out. Check them in the copy:

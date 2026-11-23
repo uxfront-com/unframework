@@ -79,6 +79,22 @@ export function removeReactDefaultStates(root: TreeParent, target?: NormalizeTar
 }
 
 /**
+ * Rule 4e, on Ember: removes an `<input>`'s empty `value` attribute wherever its `uf:value` state
+ * is there. Glimmer writes a bound field's first value as the property, and an empty one as the
+ * attribute too (emberjs/ember.js#19219: a browser does not reflect `value = ""` once the type
+ * changes to a box), which it never updates, where Vue's client writes only the property. The
+ * live value compares in `uf:value`. A non-empty first value, or a server render, keeps it.
+ */
+export function removeEmberEmptyValues(root: TreeParent, target?: NormalizeTarget): void {
+  if (target !== "ember") return;
+  forEachElement(root, (element) => {
+    if (element.namespaceURI !== HTML_NAMESPACE || element.tagName !== "input") return;
+    if (getAttribute(element, "uf:value") === undefined) return;
+    if (getAttribute(element, "value") === "") removeAttribute(element, "value");
+  });
+}
+
+/**
  * Rule 4f: in a hydrated tree only (L12, ADR-0095), removes the markup of a form control's state
  * wherever its live state, a `uf:*` pseudo-attribute, is there, whatever either says: an
  * `<input>`'s `value` and `checked`, an `<option>`'s `selected` and a `<textarea>`'s text. The

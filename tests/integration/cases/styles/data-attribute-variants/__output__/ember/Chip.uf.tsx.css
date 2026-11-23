@@ -1,0 +1,21 @@
+.chip[data-uf-69db3802] {
+  padding: 4px 12px;
+  border: 2px solid rgb(107, 114, 128);
+  border-radius: 16px;
+  background-color: rgb(255, 255, 255);
+  color: rgb(55, 65, 81);
+}
+
+.chip[data-variant="danger"][data-uf-69db3802] {
+  border-color: rgb(185, 28, 28);
+  color: rgb(185, 28, 28);
+}
+
+.chip[data-state="on"][data-uf-69db3802] {
+  background-color: rgb(55, 65, 81);
+  color: rgb(255, 255, 255);
+}
+
+.chip[data-variant="danger"][data-state="on"][data-uf-69db3802] {
+  background-color: rgb(185, 28, 28);
+}

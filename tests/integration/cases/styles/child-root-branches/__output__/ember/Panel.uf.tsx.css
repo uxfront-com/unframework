@@ -1,0 +1,19 @@
+.panel[data-uf-34db6205] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  row-gap: 8px;
+  padding: 8px;
+}
+
+/* Each child's root carries the panel's attribute, whichever branch or tag it renders. */
+.heading[data-uf-34db6205] {
+  margin: 0;
+  color: rgb(29, 78, 216);
+}
+
+.badge[data-uf-34db6205] {
+  padding: 4px 8px;
+  border: 4px solid rgb(220, 38, 38);
+  background-color: rgb(253, 224, 71);
+}

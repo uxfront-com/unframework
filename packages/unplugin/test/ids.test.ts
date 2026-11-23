@@ -89,6 +89,7 @@ describe("ID_SUFFIXES", () => {
       angular: ".ts",
       qwik: "",
       astro: ".astro",
+      ember: ".gts",
     });
     expect(Object.keys(ID_SUFFIXES).toSorted()).toEqual(TARGET_NAMES.toSorted());
   });
@@ -132,6 +133,7 @@ describe("the ids of modules of composables (ADR-0069)", () => {
       angular: ".ts",
       qwik: "",
       astro: "",
+      ember: "",
     });
     expect(Object.keys(COMPOSABLE_ID_SUFFIXES).toSorted()).toEqual(TARGET_NAMES.toSorted());
     expect(composableIdSuffix("svelte")).toBe(".svelte.ts");

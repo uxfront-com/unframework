@@ -1,7 +1,7 @@
 // The coverage gate fails on what the corpus lacks: a kind of every family the IR's records
 // list, on features of its own and through a real compile, and an exemption that is stale or
 // names nothing.
-import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
+import { compile } from "@unframework.dev/compiler";
 import {
   ATTRIBUTE_KINDS,
   BINDING_KINDS,
@@ -15,6 +15,7 @@ import type { ModuleFeatures } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { coverageProblems, kindProblems } from "./coverage.ts";
+import { WHOLE_TARGETS } from "./targets.ts";
 
 /** Every kind of a record, but `left`. */
 const all = <T extends string>(kinds: readonly T[], left?: string) =>
@@ -105,7 +106,7 @@ export default function Clicks() {
 `;
     const result = await compile(source, {
       filename: "fixture/clicks/Clicks.uf.tsx",
-      targets: TARGET_NAMES,
+      targets: WHOLE_TARGETS,
     });
     expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
     const problems = coverageProblems([result]);

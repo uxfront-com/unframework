@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for the Ember target: Glint (`ember-tsc`, TypeScript 6) over every case's golden Ember
+  // output, with the type strictness every target's checker shares (the strictest of the
+  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). The toolchain's
+  // `typecheck` extends this file with an explicit file list, so these options are the contract
+  // for both. `ember-source` publishes its types as ambient modules (`ember-source/types`).
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    // `@tracked` is typed as a legacy decorator, as `@ember/app-tsconfig` compiles it.
+    "experimentalDecorators": true,
+    // `vite/client` types `import.meta.env.SSR`, which the output reads to skip browser-only code.
+    "types": ["ember-source/types", "@glint/ember-tsc/types", "vite/client"],
+    // The outputs sit in tests/integration, where Glint's own modules do not resolve: Glint's
+    // generated code imports its DSL, which this directory installs.
+    "paths": {
+      "@glint/ember-tsc/-private/dsl": [
+        "./node_modules/@glint/ember-tsc/types/-private/dsl/index.d.ts"
+      ],
+      "@glint/ember-tsc/-private/*": ["./node_modules/@glint/ember-tsc/types/-private/*"],
+      "@glint/template": ["./node_modules/@glint/template"],
+      "@glint/template/*": ["./node_modules/@glint/template/*"]
+    }
+  },
+  "include": ["../../integration/cases/**/__output__/ember/**/*.gts", "consumers/**/*.gts"]
+}

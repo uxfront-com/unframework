@@ -1,6 +1,7 @@
 import type { Target } from "@unframework.dev/codegen";
 import angular from "@unframework.dev/target-angular";
 import astro from "@unframework.dev/target-astro";
+import ember from "@unframework.dev/target-ember";
 import qwik from "@unframework.dev/target-qwik";
 import react from "@unframework.dev/target-react";
 import solid from "@unframework.dev/target-solid";
@@ -22,14 +23,16 @@ export const TARGET_NAMES: readonly TargetName[] = [
   "angular",
   "qwik",
   "astro",
+  "ember",
 ];
 
 /**
  * The targets a configuration without `targets` compiles to: every built-in but `solid2`, which
- * is opt-in, since a project that selects both Solid majors needs two Solid installs (ADR-0102).
+ * is opt-in, since a project that selects both Solid majors needs two Solid installs (ADR-0102),
+ * and `ember`, which is opt-in while it emits only part of the language.
  */
 export const DEFAULT_TARGETS: readonly TargetName[] = TARGET_NAMES.filter(
-  (name) => name !== "solid2",
+  (name) => name !== "solid2" && name !== "ember",
 );
 
 /**
@@ -69,6 +72,7 @@ export const builtinTargets: Readonly<Record<TargetName, Target>> = {
   angular,
   qwik,
   astro,
+  ember,
 };
 
 /** Resolves a target selector, or passes a target object through (third-party targets). */

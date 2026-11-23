@@ -1,0 +1,86 @@
+diff --git a/dist/fetch-middleware-Cz-F8clG.js b/dist/fetch-middleware-Cz-F8clG.js
+index d6944c0db542f83093376cf61587da60374b054e..a7f0e29cf6c2cbd46eba349978d472284d88e85e 100644
+--- a/dist/fetch-middleware-Cz-F8clG.js
++++ b/dist/fetch-middleware-Cz-F8clG.js
+@@ -238,6 +238,42 @@ function shoeboxMiddleware(getEntries) {
+ 	};
+ }
+ //#endregion
+-export { restoreGlobals as a, stopImportTracking as c, installGlobals as i, forwardCookieMiddleware as n, buildCssLinks as o, shoeboxMiddleware as r, startImportTracking as s, compose as t };
++//#region src/control-state.ts
++/** evoactivity/vite-ember-ssr#46: a form control's state is part of the serialized HTML. */
++function serializeControlState(win) {
++	const find = (object, property) => {
++		for (let each = object; each; each = Object.getPrototypeOf(each)) {
++			const descriptor = Object.getOwnPropertyDescriptor(each, property);
++			if (descriptor) return descriptor;
++		}
++	};
++	const reflect = (owner, property, write) => {
++		if (!owner) return;
++		const descriptor = find(owner.prototype, property);
++		const set = descriptor?.set;
++		if (!descriptor || !set) return;
++		Object.defineProperty(owner.prototype, property, {
++			...descriptor,
++			set(value) {
++				set.call(this, value);
++				write.call(this, value);
++			}
++		});
++	};
++	reflect(win.HTMLInputElement, "value", function(value) {
++		this.setAttribute("value", value == null ? "" : String(value));
++	});
++	reflect(win.HTMLInputElement, "checked", function(value) {
++		this.toggleAttribute("checked", Boolean(value));
++	});
++	reflect(win.HTMLTextAreaElement, "value", function(value) {
++		this.textContent = value == null ? "" : String(value);
++	});
++	reflect(win.HTMLOptionElement, "selected", function(value) {
++		this.toggleAttribute("selected", Boolean(value));
++	});
++}
++//#endregion
++export { serializeControlState as u, restoreGlobals as a, stopImportTracking as c, installGlobals as i, forwardCookieMiddleware as n, buildCssLinks as o, shoeboxMiddleware as r, startImportTracking as s, compose as t };
+ 
+ //# sourceMappingURL=fetch-middleware-Cz-F8clG.js.map
+\ No newline at end of file
+diff --git a/dist/server.js b/dist/server.js
+index d235ffe0681268dcc391108e6751468a9ed0be25..516ce58bb08e6b14f20d99933f4c0441c1332339 100644
+--- a/dist/server.js
++++ b/dist/server.js
+@@ -1,5 +1,5 @@
+ import { t as CSS_MANIFEST_FILENAME } from "./vite-plugin-DI18TqNQ.js";
+-import { a as restoreGlobals, c as stopImportTracking, i as installGlobals, n as forwardCookieMiddleware, o as buildCssLinks, r as shoeboxMiddleware, s as startImportTracking, t as compose } from "./fetch-middleware-Cz-F8clG.js";
++import { a as restoreGlobals, c as stopImportTracking, i as installGlobals, u as serializeControlState, n as forwardCookieMiddleware, o as buildCssLinks, r as shoeboxMiddleware, s as startImportTracking, t as compose } from "./fetch-middleware-Cz-F8clG.js";
+ import { r as statusCodeFor, t as resetStatusCode } from "./status-code-CUPid5XR.js";
+ import { fileURLToPath, pathToFileURL } from "node:url";
+ import { cpus } from "node:os";
+@@ -68,6 +68,7 @@ function createDevEmberApp(entryPath, devOptions) {
+ 					navigator: { userAgent: "vite-ember-ssr" }
+ 				}
+ 			});
++			serializeControlState(win);
+ 			const savedGlobals = installGlobals(win);
+ 			const realFetch = globalThis.fetch;
+ 			const shoeboxEntries = shoebox ? /* @__PURE__ */ new Map() : null;
+diff --git a/dist/worker.js b/dist/worker.js
+index fa13b0ed89f0f747c5a6e35755b68a3c39e28b9e..98a92488bc229c66422fd8510c1bad0c56a32a95 100644
+--- a/dist/worker.js
++++ b/dist/worker.js
+@@ -1,4 +1,4 @@
+-import { c as stopImportTracking, i as installGlobals, n as forwardCookieMiddleware, o as buildCssLinks, r as shoeboxMiddleware, s as startImportTracking, t as compose } from "./fetch-middleware-Cz-F8clG.js";
++import { c as stopImportTracking, i as installGlobals, u as serializeControlState, n as forwardCookieMiddleware, o as buildCssLinks, r as shoeboxMiddleware, s as startImportTracking, t as compose } from "./fetch-middleware-Cz-F8clG.js";
+ import { r as statusCodeFor, t as resetStatusCode } from "./status-code-CUPid5XR.js";
+ import { Window } from "happy-dom";
+ //#region src/worker.ts
+@@ -32,6 +32,7 @@ const win = new Window({
+ 	}
+ });
+ installGlobals(win);
++serializeControlState(win);
+ let renderErrors = null;
+ function onAsyncError(e) {
+ 	const error = e instanceof Error ? e : new Error(String(e));

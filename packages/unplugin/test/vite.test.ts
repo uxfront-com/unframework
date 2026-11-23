@@ -208,8 +208,10 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
 });
 
 // Every target's output imports the scoped sheet as `./Card.uf.tsx.css`, never the author's
-// `./Card.css` (ADR-0063): the unplugin serves what the target's compile emitted.
-describe.each(TARGET_NAMES)("the scoped sheet on the %s target", (target) => {
+// `./Card.css` (ADR-0063): the unplugin serves what the target's compile emitted. Ember does not
+// emit scoped sheets yet (uxfront-com/unframework#236).
+const STYLED_TARGETS = TARGET_NAMES.filter((name) => name !== "ember");
+describe.each(STYLED_TARGETS)("the scoped sheet on the %s target", (target) => {
   const sheet = () => `${file("Card.uf.tsx")}.css`;
   /** The sheet this target's compile emits, through the same file resolver as the plugin's. */
   const scoped = async () => {

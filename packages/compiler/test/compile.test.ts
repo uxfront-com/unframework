@@ -40,6 +40,7 @@ describe("compile", () => {
       angular: ["hello.ts"],
       qwik: ["Hello.tsx"],
       astro: ["Hello.astro"],
+      ember: ["Hello.gts"],
     });
     expect(result.ir?.components.map((component) => component.name)).toEqual(["Hello"]);
   });

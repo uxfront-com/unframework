@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      // The tests compile sources through the compiler's source, which is no dependency of this
+      // package: its transit node carries it into this hash.
+      "dependsOn": ["$TURBO_EXTENDS$", "@unframework.dev/compiler#transit"]
+    }
+  }
+}

@@ -28,6 +28,7 @@ import {
   sourceMapProblems,
   stylesheetProblems,
 } from "./compile-checks.ts";
+import { WHOLE_TARGETS } from "./targets.ts";
 
 const filename = "fixture/badge/Badge.uf.tsx";
 /** `className` is UF3004, with a safe fix that renames it to `class`. */
@@ -90,6 +91,7 @@ describe("checkFixes (L1)", () => {
     expect(diagnostics.map(({ code, fixes }) => [code, fixes?.length])).toEqual([["UF2007", 1]]);
     const after = await recompile(applyFixes(snapshot, diagnostics[0]!.fixes!));
     expect(after.map(({ code, severity, target }) => [code, severity, target])).toEqual([
+      ["UF4001", "warning", "ember"],
       ["UF4001", "warning", "qwik"],
     ]);
     for (const target of TARGET_NAMES) {
@@ -297,7 +299,7 @@ describe("stylesheetProblems (ADR-0063)", () => {
   it("passes every target's scoped sheet the compiler emits", async () => {
     const result = await compile(CARD, {
       filename: "fixture/badge/Card.uf.tsx",
-      targets: TARGET_NAMES,
+      targets: WHOLE_TARGETS,
       resolve,
     });
     // Only the sheet order Angular and Qwik declare, for information (ADR-0063).
@@ -307,7 +309,7 @@ describe("stylesheetProblems (ADR-0063)", () => {
       ["UF4002", "info", "angular"],
       ["UF4002", "info", "qwik"],
     ]);
-    for (const target of TARGET_NAMES) {
+    for (const target of WHOLE_TARGETS) {
       const outputs = result.outputs[target] ?? [];
       expect(outputs.map((file) => file.path)).toContain("Card.uf.tsx.css");
       expect(stylesheetProblems(target, outputs)).toEqual([]);

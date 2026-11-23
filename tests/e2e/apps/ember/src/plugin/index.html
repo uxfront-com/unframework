@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ember, plugin mode</title>
+  </head>
+  <body>
+    <script type="module">
+      import Application from "#app/app.ts";
+      import environment from "#config";
+
+      Application.create(environment.APP);
+    </script>
+  </body>
+</html>

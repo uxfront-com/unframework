@@ -1,13 +1,13 @@
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import type { AddressInfo } from "node:net";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
 import { pathToFileURL } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 
-import { rebuildWatcher, type Watcher } from "./edit.ts";
+import { rebuildWatcher, viteUpdateWatcher, type Watcher } from "./edit.ts";
 import { HOST } from "./ports.ts";
 
 interface StartedServer {
@@ -69,17 +69,17 @@ async function startAstro(copy: string, mode: string): Promise<StartedServer> {
   return { port: server.address.port, watcher: server.watcher, stop: () => server.stop() };
 }
 
-interface SpawnedNgServe {
+interface SpawnedServer {
   port: number;
   stdout: Readable;
   stop(): Promise<void>;
 }
 
-// Shorter than the fixture's own timeout, so that a slow start reports what `ng serve` printed.
-const NG_READY_MS = 90_000;
-const NG_STOP_MS = 5000;
+// Shorter than the fixture's own timeout, so that a slow start reports what the server printed.
+const SPAWNED_READY_MS = 90_000;
+const SPAWNED_STOP_MS = 5000;
 const NG_ERRORS_MS = 200;
-const NG_OUTPUT_LINES = 40;
+const SPAWNED_OUTPUT_LINES = 40;
 
 /**
  * Starts `ng serve` in its own process group, on a port the system picks, and resolves once it
@@ -89,9 +89,22 @@ const NG_OUTPUT_LINES = 40;
 export function spawnNgServe(
   ng: string,
   cwd: string,
-  readyTimeout: number = NG_READY_MS,
-): Promise<SpawnedNgServe> {
-  const child = spawn(process.execPath, [ng, "serve", "--host", HOST, "--port", "0"], {
+  readyTimeout: number = SPAWNED_READY_MS,
+): Promise<SpawnedServer> {
+  return spawnServer("ng serve", [ng, "serve", "--host", HOST, "--port", "0"], cwd, readyTimeout);
+}
+
+/**
+ * Starts a dev server's CLI, `node <args>` in `cwd`, as {@link spawnNgServe} starts `ng serve`:
+ * for a framework whose tools read the project from the working directory.
+ */
+function spawnServer(
+  name: string,
+  args: readonly string[],
+  cwd: string,
+  readyTimeout: number,
+): Promise<SpawnedServer> {
+  const child = spawn(process.execPath, args, {
     cwd,
     // The group holds the CLI and what it starts, like esbuild's service.
     detached: true,
@@ -117,7 +130,7 @@ export function spawnNgServe(
 
   const stop = async (): Promise<void> => {
     signal("SIGTERM");
-    const timer = setTimeout(killGroup, NG_STOP_MS);
+    const timer = setTimeout(killGroup, SPAWNED_STOP_MS);
     await closed;
     clearTimeout(timer);
     // Anything in the group that let go of the pipes.
@@ -133,7 +146,7 @@ export function spawnNgServe(
       clearTimeout(timer);
       child.off("exit", onExit);
       void stop().then(() => {
-        reject(new Error(`ng serve ${reason}:\n${output.slice(-NG_OUTPUT_LINES).join("\n")}`));
+        reject(new Error(`${name} ${reason}:\n${output.slice(-SPAWNED_OUTPUT_LINES).join("\n")}`));
       });
     };
     const timer = setTimeout(() => fail(`didn't listen within ${readyTimeout}ms`), readyTimeout);
@@ -174,9 +187,30 @@ async function startAngular(copy: string): Promise<StartedServer> {
   };
 }
 
+/**
+ * Ember's dev server, Vite's CLI in its own process: Embroider reads the app from the working
+ * directory, which in this process is the suite's.
+ */
+async function startEmber(copy: string, mode: string): Promise<StartedServer> {
+  const require = createRequire(join(copy, "package.json"));
+  const vite = join(dirname(require.resolve("vite/package.json")), "bin/vite.js");
+  const server = await spawnServer(
+    "vite",
+    [vite, "--config", `vite.config.${mode}.ts`, "--host", HOST, "--port", "0"],
+    copy,
+    SPAWNED_READY_MS,
+  );
+  return {
+    port: server.port,
+    watcher: viteUpdateWatcher(server.stdout),
+    stop: () => server.stop(),
+  };
+}
+
 /** Starts the dev server of one app's mode, from its working copy. */
 export function startDevServer(app: string, mode: string, copy: string): Promise<StartedServer> {
   if (app === "astro") return startAstro(copy, mode);
   if (app === "angular") return startAngular(copy);
+  if (app === "ember") return startEmber(copy, mode);
   return startVite(copy, mode);
 }

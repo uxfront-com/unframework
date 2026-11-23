@@ -75,8 +75,9 @@ jobs:
           - group: svelte, astro
             filter: --filter=@unframework.dev/target-svelte --filter=@unframework.dev/target-astro
           # Solid 2 has a group of its own, so the react, solid and angular group keeps its length.
-          - group: solid2
-            filter: --filter=@unframework.dev/target-solid2
+          # Ember's suite is short, and joins it.
+          - group: solid2, ember
+            filter: --filter=@unframework.dev/target-solid2 --filter=@unframework.dev/target-ember
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
@@ -201,7 +202,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [react, vue, svelte, solid, solid2, angular, qwik, astro]
+        target: [react, vue, svelte, solid, solid2, angular, qwik, astro, ember]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -253,7 +254,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [react, vue, svelte, solid, solid2, angular, qwik, astro]
+        target: [react, vue, svelte, solid, solid2, angular, qwik, astro, ember]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -38,8 +38,9 @@ describe("selectTargets", () => {
       "angular",
       "qwik",
       "astro",
+      "ember",
     ]);
-    expect(selectTargets(" ")).toHaveLength(8);
+    expect(selectTargets(" ")).toHaveLength(9);
   });
 
   it("restricts the run to UF_TARGETS, in the documented order", () => {
@@ -67,7 +68,7 @@ describe("projects", () => {
 
   it("shares each page among spec files in every hydrate project (ADR-0106)", () => {
     const targets = selectTargets(undefined);
-    expect(targets).toHaveLength(8);
+    expect(targets).toHaveLength(9);
     for (const target of targets) expect(isolatesFiles("hydrate", target)).toBe(false);
   });
 

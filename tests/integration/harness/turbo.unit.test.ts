@@ -10,7 +10,7 @@ import { REPO_ROOT, ROOT } from "./paths.ts";
 import { selectTargets } from "./targets.ts";
 
 /** The targets whose toolchain lints with ESLint too: oxlint cannot read their templates. */
-const ESLINT_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro", "angular"]);
+const ESLINT_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro", "angular", "ember"]);
 
 /**
  * The lint hosts a toolchain installs, which run its type-aware rules in ESLint on TypeScript 6

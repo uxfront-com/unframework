@@ -77,6 +77,7 @@ describe("a case of two sources", () => {
       angular: ["field.ts", "form.ts"],
       qwik: ["Field.tsx", "Form.tsx"],
       astro: ["Field.astro", "Form.astro"],
+      ember: ["Field.gts", "Form.gts"],
     });
     expect(caseOutputs(compiles, "vue").files.get("Field.vue")).toBe(
       compiles[0]!.result.outputs.vue![0]!.contents,

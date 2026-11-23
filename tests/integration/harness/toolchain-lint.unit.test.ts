@@ -34,6 +34,7 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
   angular: ["@angular/core", "@angular/common", "@angular/platform-browser"],
   qwik: ["@qwik.dev/core", "@qwik.dev/core/*"],
   astro: ["astro", "astro/*"],
+  ember: ["@ember/**", "@glimmer/*"],
 };
 
 /** What every output may import as written: the `virtual:` modules (plan §4.4, ADR-0064). */
@@ -61,6 +62,7 @@ const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
   svelte: "eslint",
   astro: "eslint",
   angular: "eslint",
+  ember: "eslint",
 };
 
 /**
@@ -90,6 +92,7 @@ const UNUSED_RULE: Record<string, string> = {
   vue: "@typescript-eslint/no-unused-vars",
   svelte: "@typescript-eslint/no-unused-vars",
   astro: "@typescript-eslint/no-unused-vars",
+  ember: "@typescript-eslint/no-unused-vars",
 };
 
 /**
@@ -218,6 +221,18 @@ const PROBES: Record<string, { file: string; contents: string; rules: readonly s
       "",
     ].join("\n"),
     rules: ["@angular-eslint/template/prefer-control-flow"],
+  },
+  ember: {
+    file: "Probe.gts",
+    contents: [
+      "debugger;",
+      'const html = "Hi";',
+      "const unused = 1;",
+      "",
+      '<template><p accesskey="u">{{html}}</p></template>',
+      "",
+    ].join("\n"),
+    rules: ["ember/template-no-accesskey-attribute"],
   },
 };
 

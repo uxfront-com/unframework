@@ -32,7 +32,8 @@ export function moduleIdFilter(suffix: string): RegExp {
  * What each built-in target appends to the absolute `.uf.tsx` path to form its module ids.
  * React, Solid and Qwik keep the `.tsx` id, which their plugins claim. Vue, Svelte and Astro
  * claim `.vue`, `.svelte` and `.astro`. Angular output is TypeScript, and Analog only claims
- * `.ts` (`/\.[cm]?ts(?![a-z])/`), so its ids end in `.uf.tsx.ts`.
+ * `.ts` (`/\.[cm]?ts(?![a-z])/`), so its ids end in `.uf.tsx.ts`. Ember's template-tag plugin
+ * claims `.gts`.
  */
 export const ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
   react: "",
@@ -43,6 +44,7 @@ export const ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
   angular: ".ts",
   qwik: "",
   astro: ".astro",
+  ember: ".gts",
 };
 
 /** The extension of an authored module of composables (ADR-0069). */
@@ -64,6 +66,7 @@ export const COMPOSABLE_ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
   angular: ".ts",
   qwik: "",
   astro: "",
+  ember: "",
 };
 
 /**

@@ -6,6 +6,7 @@ import { printTree } from "../src/normalize/print.ts";
 import { isAngularHost, unwrapAngularHosts } from "../src/normalize/rules/angular-hosts.ts";
 import { removeComments } from "../src/normalize/rules/comments.ts";
 import {
+  removeEmberEmptyValues,
   removeReactDefaultStates,
   removeSettledValues,
 } from "../src/normalize/rules/control-values.ts";
@@ -391,6 +392,29 @@ describe("rule 4e: removeReactDefaultStates", () => {
     ).not.toBe(normalizeHtml('<input type="checkbox" uf:checked="false">', { target: "vue" }));
     const server = '<input type="checkbox" checked><option selected>o</option>';
     expect(apply(server, react)).toBe(apply(server));
+  });
+});
+
+describe("rule 4e: removeEmberEmptyValues", () => {
+  const typed = '<input value="" uf:value="Ada">';
+
+  it("removes Glimmer's empty first value wherever the uf:value state is there", () => {
+    expect(apply(typed, (root) => removeEmberEmptyValues(root, "ember"))).toBe(
+      apply('<input uf:value="Ada">'),
+    );
+    expect(normalizeHtml(typed, { target: "ember" })).toBe(
+      normalizeHtml('<input uf:value="Ada">', { target: "vue" }),
+    );
+  });
+
+  it("does nothing on any other target, to a non-empty value, or to a server render", () => {
+    for (const target of NORMALIZE_TARGETS.filter((each) => each !== "ember")) {
+      expect(apply(typed, (root) => removeEmberEmptyValues(root, target))).toBe(apply(typed));
+    }
+    const kept = '<input value="Ada" uf:value="Grace">';
+    expect(apply(kept, (root) => removeEmberEmptyValues(root, "ember"))).toBe(apply(kept));
+    const server = '<input value="">';
+    expect(apply(server, (root) => removeEmberEmptyValues(root, "ember"))).toBe(apply(server));
   });
 });
 

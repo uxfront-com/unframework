@@ -8,7 +8,8 @@ export const NORMALIZE_TARGETS: readonly [
   "angular",
   "qwik",
   "astro",
-] = ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik", "astro"];
+  "ember",
+] = ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik", "astro", "ember"];
 
 /** A target the normaliser knows the framework noise of. */
 export type NormalizeTarget = (typeof NORMALIZE_TARGETS)[number];

@@ -45,6 +45,7 @@
     "./angular": "./src/targets/angular.ts",
     "./qwik": "./src/targets/qwik.ts",
     "./astro": "./src/targets/astro.ts",
+    "./ember": "./src/targets/ember.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -117,6 +118,10 @@
         "types": "./dist/targets/astro.d.ts",
         "default": "./dist/targets/astro.js"
       },
+      "./ember": {
+        "types": "./dist/targets/ember.d.ts",
+        "default": "./dist/targets/ember.js"
+      },
       "./package.json": "./package.json"
     },
     "access": "public"
@@ -134,6 +139,7 @@
     "@unframework.dev/ir": "workspace:*",
     "@unframework.dev/target-angular": "workspace:*",
     "@unframework.dev/target-astro": "workspace:*",
+    "@unframework.dev/target-ember": "workspace:*",
     "@unframework.dev/target-qwik": "workspace:*",
     "@unframework.dev/target-react": "workspace:*",
     "@unframework.dev/target-solid": "workspace:*",

@@ -66,6 +66,7 @@ const DECLARATIONS: Readonly<Record<string, readonly string[]>> = {
   svelte: ["sheets.d.ts"],
   astro: ["sheets.d.ts"],
   qwik: ["sheets.d.ts"],
+  ember: ["sheets.d.ts"],
 };
 
 /** The tool that decides each layer, as its failure names it. */

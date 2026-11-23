@@ -7,6 +7,12 @@ import { describe, expect, it } from "vitest";
 import { compile, createProject, TARGET_NAMES } from "../src/index.ts";
 import type { CompilerPlugin, TargetName } from "../src/index.ts";
 
+/**
+ * The targets that emit the whole language: Ember emits only part of it so far
+ * (uxfront-com/unframework#236).
+ */
+const WHOLE_TARGETS = TARGET_NAMES.filter((name) => name !== "ember");
+
 const BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /** Decodes `mappings`, by hand, so these tests don't lean on the library that wrote them. */
@@ -101,7 +107,7 @@ describe("compile with sourceMap", () => {
   it("gives every output a V3 map whose runs are identical to their source", async () => {
     const result = await compile(SOURCE, {
       filename: "src/Card.uf.tsx",
-      targets: TARGET_NAMES,
+      targets: WHOLE_TARGETS,
       sourceMap: true,
     });
     expect(result.diagnostics.filter(({ code }) => code.startsWith("UF9"))).toEqual([]);
@@ -138,7 +144,7 @@ describe("compile with sourceMap", () => {
     );
   });
 
-  it.each(TARGET_NAMES.filter((target) => target !== "astro"))(
+  it.each(WHOLE_TARGETS.filter((target) => target !== "astro"))(
     "maps the statement a handler throws from to its line on %s",
     async (target) => {
       const result = await compile(SOURCE, {
@@ -152,7 +158,7 @@ describe("compile with sourceMap", () => {
     },
   );
 
-  it.each(TARGET_NAMES)("maps what the template renders to its line on %s", async (target) => {
+  it.each(WHOLE_TARGETS)("maps what the template renders to its line on %s", async (target) => {
     const result = await compile(SOURCE, {
       filename: "Card.uf.tsx",
       targets: [target],
@@ -162,7 +168,7 @@ describe("compile with sourceMap", () => {
     expect(lineOf(file.contents, file.map!.mappings, "1000")).toBe(12);
   });
 
-  it.each(TARGET_NAMES.filter((target) => target !== "astro"))(
+  it.each(WHOLE_TARGETS.filter((target) => target !== "astro"))(
     "maps a one-line handler's statement on %s",
     async (target) => {
       const source = `export function Tag() {\n  return (\n    <button onClick={() => { throw new Error("boom"); }}>a</button>\n  );\n}\n`;

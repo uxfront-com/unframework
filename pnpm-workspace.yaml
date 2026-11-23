@@ -124,16 +124,26 @@ catalog:
   "@astrojs/check": 0.9.10
   "@astrojs/compiler-rs": 0.5.1
   "@babel/core": 7.29.7
+  "@babel/plugin-proposal-decorators": 7.29.7
+  "@babel/plugin-transform-class-properties": 7.29.7
+  "@babel/plugin-transform-class-static-block": 7.29.14
+  "@babel/plugin-transform-private-methods": 7.29.7
   "@babel/preset-typescript": 7.29.7
   # The wasm runtime Astro's checker loads (`@astrojs/astro2tsx`), pinned in its toolchain: a peer
   # of `@napi-rs/wasm-runtime`, which pnpm would otherwise take from rolldown's wasm binding, a 2.0
   # beta the checker cannot run on.
+  "@embroider/macros": 1.21.4
+  "@embroider/router": 3.0.6
   "@emnapi/core": 1.11.3
   "@emnapi/runtime": 1.11.3
   "@fontsource/inter": ^5.3.0
+  "@glimmer/component": 2.2.1
+  "@glint/ember-tsc": 1.14.4
+  "@glint/template": 1.11.1
   "@jridgewell/gen-mapping": 0.3.13
   "@jridgewell/remapping": 2.3.5
   "@jridgewell/trace-mapping": 0.3.31
+  "@nullvoxpopuli/ember-vite": 1.5.0
   "@oxc-project/types": 0.152.0
   "@playwright/test": 1.63.0
   "@qwik.dev/core": 2.0.0-rc.5
@@ -157,11 +167,18 @@ catalog:
   astro: 7.3.5
   astro-eslint-parser: 3.2.0
   axe-core: 4.13.0
+  babel-plugin-ember-template-compilation: 4.0.1
   babel-plugin-react-compiler: 1.0.0
   babel-preset-solid: 1.9.15
+  content-tag: 4.3.0
   csstype: ^3.2.3
+  decorator-transforms: 2.4.0
+  ember-eslint-parser: 0.16.1
+  ember-source: 7.4.1
+  ember-strict-application-resolver: 0.1.1
   eslint: 10.11.0
   eslint-plugin-astro: 3.2.1
+  eslint-plugin-ember: 13.11.2
   eslint-plugin-qwik: 2.0.0-rc.5
   eslint-plugin-solid: 0.18.0
   eslint-plugin-svelte: 3.23.0
@@ -196,6 +213,7 @@ catalog:
   typescript-eslint: 8.71.0
   unplugin: ^3.4.0
   vite: 8.3.1
+  vite-ember-ssr: 0.7.0
   vite-plugin-solid: 2.11.14
   vitest: 5.0.3
   vue: 3.5.43
@@ -212,7 +230,19 @@ catalogs:
     eslint-plugin-solid: 0.19.0
     solid-js: 2.0.0
 patchedDependencies:
+  # Three of Glimmer's rehydration bugs. It writes a property's value as the server's attribute
+  # text, so a hydrated `disabled` reads `disabled="true"`: the patch sets the property, as a
+  # client render does. A node a template inserts (`{{this.marker}}`) never reaches the page: the
+  # client adopts whatever server node sits there, so the patch has the server bracket the node
+  # with `%glmr%` markers, as it does HTML, and the client put its own node there. And it sets a
+  # textarea's `value` before it removes the server's text, so the caret stays at the start: the
+  # patch removes the text first. Drop it once an ember-source release has the fixes.
+  ember-source@7.4.1: patches/ember-source@7.4.1.patch
   # TypeScript 7.1 reports its self-referencing `Selector` type as infinitely circular
   # (TS5115, microsoft/TypeScript#64605), so codegen's scoper fails check-types. The patch writes
   # out the same nodes as a union. Drop it once TypeScript or the package fixes the type.
   postcss-selector-parser@7.1.6: patches/postcss-selector-parser@7.1.6.patch
+  # A happy-dom render serializes a form control's attributes, not the value, checked and
+  # selected properties Glimmer writes, so a server-rendered field arrives empty. The patch
+  # writes each to its attribute too. Drop it once evoactivity/vite-ember-ssr#46 is released.
+  vite-ember-ssr@0.7.0: patches/vite-ember-ssr@0.7.0.patch

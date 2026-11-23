@@ -1,0 +1,11 @@
+.action[data-uf-6173c12c] {
+  padding: 6px 14px;
+  border: 2px solid rgb(17, 24, 39);
+  background-color: rgb(255, 255, 255);
+  color: rgb(17, 24, 39);
+}
+
+.action[data-uf-6173c12c]:hover {
+  background-color: rgb(17, 24, 39);
+  color: rgb(255, 255, 255);
+}

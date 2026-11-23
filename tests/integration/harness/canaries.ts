@@ -259,6 +259,7 @@ const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
   qwik: { attribute: 'className="uf-canary"', rule: "qwik/no-react-props" },
   // `set:html` is an output's own idiom since ADR-0097, which turned its rule off.
   astro: { attribute: 'set:text="uf-canary"', rule: "astro/no-set-text-directive" },
+  ember: { attribute: 'accesskey="u"', rule: "ember/template-no-accesskey-attribute" },
 };
 
 /** The case L15-slow-compile slows down. */
@@ -1614,10 +1615,10 @@ export function mismatchClosingTag(file: OutputFile): string {
  * target's checker reads the props and events from, the component's props parameter (React,
  * Solid), its `$props()` (Svelte), its `Props` (Astro), the type arguments of `component$` or a
  * generic component's arrow parameter (Qwik), `defineProps`, `defineModel`, `defineEmits` and
- * `defineSlots` (Vue), and `input`, `output` and `model` (Angular); and every exported
- * `interface` and type alias, in any output file, a copied `.ts` module included, so a consumer's
- * misuse of an exported type goes unmet too (ADR-0068). An output with none of them is left as it
- * is.
+ * `defineSlots` (Vue), `input`, `output` and `model` (Angular), and the signature's `Args`
+ * (Ember); and every exported `interface` and type alias, in any output file, a copied `.ts`
+ * module included, so a consumer's misuse of an exported type goes unmet too (ADR-0068). An
+ * output with none of them is left as it is.
  */
 function widenPublicTypes(file: OutputFile, target: string): string {
   return anyExportedTypes(widenProps(file, target));
@@ -1673,6 +1674,8 @@ function widenProps(file: OutputFile, target: string): string {
             "module",
           )
         : contents;
+    case "ember":
+      return contents.replace(/^(\s*Args: )[^\n]*;$/m, "$1any;");
     default:
       throw new Error(`${MARKER} L4: no public types to widen for the target ${target}.`);
   }
@@ -1818,8 +1821,9 @@ export function addRootAttribute(file: OutputFile, attribute: string): string {
 /**
  * Where an output file's template is, in each target's own syntax: after the component's
  * `return` in JSX, inside `template:` in an Angular class, inside the outer `<template>` in Vue,
- * after the options and script blocks in Svelte and after the frontmatter in Astro. Script
- * blocks and frontmatter come first, and their TypeScript has tags of its own (`Array<string>`).
+ * after the options and script blocks in Svelte, after the frontmatter in Astro, and inside the
+ * `<template>` of a `.gts` module (Ember). Script blocks and frontmatter come first, and their
+ * TypeScript has tags of its own (`Array<string>`).
  */
 function templateRange(path: string, contents: string): { start: number; end: number } | undefined {
   const end = contents.length;
@@ -1859,6 +1863,11 @@ function templateRange(path: string, contents: string): { start: number; end: nu
     if (!contents.startsWith("---\n")) return { start: 0, end };
     const start = endOf(/\n---\n/.exec(contents));
     return start === undefined ? undefined : { start, end };
+  }
+  if (path.endsWith(".gts")) {
+    const start = endOf(/<template>/.exec(contents));
+    const close = start === undefined ? -1 : contents.indexOf("</template>", start);
+    return start === undefined || close === -1 ? undefined : { start, end: close };
   }
   return undefined;
 }
@@ -1902,6 +1911,13 @@ export function injectScript(
       : `---\n${statement}\n---\n${contents}`;
   }
   if (where === "module") return `${contents.trimEnd()}\n\nexport ${statement}\n`;
+  if (path.endsWith(".gts")) {
+    // A template-only component has no code of its own: its template calls the statement's
+    // function as a helper, once each time it renders, on the server and in the browser.
+    const range = templateRange(path, contents);
+    if (!range) return fail("template");
+    return `${contents.slice(0, range.start)}{{ufCanaryRender}}${contents.slice(range.start).trimEnd()}\n\nfunction ufCanaryRender(): undefined {\n  ${statement}\n}\n`;
+  }
   if (target === "angular") {
     // The component's class, after its decorator: a directive the file declares before it (a
     // listener's option, the scope directive of ADR-0063) has a class of its own.

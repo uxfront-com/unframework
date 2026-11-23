@@ -106,7 +106,20 @@ async function clientUrl(vite: ViteDevServer, source: string): Promise<string> {
   const client = vite.environments.client;
   const resolved = await client?.pluginContainer.resolveId(source, undefined);
   const served = resolved ? client?.moduleGraph.getModuleById(resolved.id)?.url : undefined;
-  return served ?? moduleUrl(vite.config.root, source);
+  return served ? imported(served) : moduleUrl(vite.config.root, source);
+}
+
+/** The extensions Vite serves as JavaScript, as its `knownJsSrcRE` lists them. */
+const JS = /\.(?:[jt]sx?|m[jt]s|vue|marko|svelte|astro|imba|mdx)(?:$|\?)/;
+
+/**
+ * The URL a page's import of a served module names: Vite marks an import of a module whose
+ * extension it does not serve as JavaScript with `?import` (Ember's `.gts`), and the page's
+ * module map keys the module by that URL, so the identity check imports the same one.
+ */
+function imported(url: string): string {
+  if (JS.test(url)) return url;
+  return url.includes("?") ? url.replace("?", "?import&") : `${url}?import`;
 }
 
 function runnerOf(ssr: DevEnvironment): ModuleRunner {

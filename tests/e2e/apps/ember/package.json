@@ -1,0 +1,31 @@
+{
+  "name": "e2e-app-ember",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#app/*": "./src/plugin/*",
+    "#config": "./src/plugin/config.ts"
+  },
+  "scripts": {
+    "dev:plugin": "vite --config vite.config.plugin.ts"
+  },
+  "dependencies": {
+    "@embroider/router": "3.0.6",
+    "@glimmer/component": "2.2.1",
+    "decorator-transforms": "2.4.0",
+    "ember-source": "7.4.1"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/preset-typescript": "7.29.7",
+    "@embroider/macros": "1.21.4",
+    "@nullvoxpopuli/ember-vite": "1.5.0",
+    "babel-plugin-ember-template-compilation": "4.0.1",
+    "typescript": "7.1.0-beta",
+    "vite": "8.3.1"
+  },
+  "ember": {
+    "edition": "octane"
+  }
+}

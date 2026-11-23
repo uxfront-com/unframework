@@ -499,7 +499,7 @@ describe("resolveConfig", () => {
       const [[code, message] = []] = await problems({ targets: ["flutter"] });
       expect(code).toBe("UF7003");
       expect(message).toContain(
-        "The built-in targets are react, vue, svelte, solid, solid2, angular, qwik, astro, solid@2, solid@1.",
+        "The built-in targets are react, vue, svelte, solid, solid2, angular, qwik, astro, ember, solid@2, solid@1.",
       );
     });
 

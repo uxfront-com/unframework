@@ -540,8 +540,12 @@ async function emitTarget(
         }),
       );
       if ("problem" in emitted) throw new TypeError(`emit returned ${emitted.problem}`);
+      // A component a target emits no file for, one that needs a capability the target leaves
+      // unsupported, takes no sheet either.
       const sheet = sheets.get(component.name);
-      if (sheet !== undefined) emitted.files.push({ path: sheetPath, contents: sheet });
+      if (sheet !== undefined && emitted.files.length) {
+        emitted.files.push({ path: sheetPath, contents: sheet });
+      }
       files = deepFreeze(emitted.files);
     } catch (error) {
       const what = `The ${target.name} target failed on ${component.name}`;

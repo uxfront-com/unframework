@@ -146,6 +146,23 @@ export function useToggle(initial: boolean): { on: Signal<boolean>; toggle: QRL<
 }
 `,
   },
+  ember: {
+    file: "useToggle.ts",
+    contents: `import { trackedObject } from "@ember/reactive/collections";
+
+export function useToggle(initial: boolean): { readonly on: boolean; toggle: () => void } {
+  const state = trackedObject({ on: initial });
+  return {
+    get on() {
+      return state.on;
+    },
+    toggle: () => {
+      state.on = !state.on;
+    },
+  };
+}
+`,
+  },
 };
 
 const TARGETS = selectTargets(undefined);

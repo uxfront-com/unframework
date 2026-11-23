@@ -65,6 +65,9 @@ export interface FormatOutcome {
 export async function formatOutput(file: OutputFile): Promise<FormatOutcome> {
   if (file.path.endsWith(".css")) return { file };
   try {
+    if (file.path.endsWith(".gts")) {
+      return { file: { ...file, contents: await formatTemplateTag(file.contents) } };
+    }
     if (isFormatted(file.path)) {
       const result = await format(file.path, file.contents, OUTPUT_FORMAT);
       if (result.errors.length) return { file, error: formatErrors(result.errors) };
@@ -79,6 +82,35 @@ export async function formatOutput(file: OutputFile): Promise<FormatOutcome> {
 
 function formatErrors(errors: readonly { message: string }[]): string {
   return errors.map((error) => error.message).join("\n");
+}
+
+/** A `<template>` of a `.gts` module: markup, which content-tag reads up to its first close. */
+const TEMPLATE_TAG = /<template>[\s\S]*?<\/template>/g;
+
+/** The name a `.gts` module's template stands in for the formatter under. */
+const templateName = (index: number) => `__ufTemplate${index}__`;
+
+/**
+ * Formats a `.gts` module's TypeScript, its `<template>`s left as printed (ADR-0026): each one
+ * stands in for the formatter as a class member or as an expression, where it sits, and goes
+ * back in its place.
+ */
+async function formatTemplateTag(contents: string): Promise<string> {
+  const templates: string[] = [];
+  const code = contents.replace(TEMPLATE_TAG, (template: string, offset: number) => {
+    const index = templates.push(template) - 1;
+    const member = /[{};]\s*$/.test(contents.slice(0, offset));
+    return member ? `${templateName(index)} = 0;` : templateName(index);
+  });
+  const result = await format("component.ts", code, OUTPUT_FORMAT);
+  if (result.errors.length) throw new Error(formatErrors(result.errors));
+  return templates.reduce(
+    (formatted, template, index) =>
+      formatted
+        .replace(`${templateName(index)} = 0;`, () => template)
+        .replace(templateName(index), () => template),
+    result.code,
+  );
 }
 
 /**
@@ -112,9 +144,9 @@ async function formatBlocks(path: string, contents: string): Promise<string> {
 }
 
 /**
- * Where a markup file's TypeScript is: a `.vue` or `.svelte` file's `<script lang="ts">` blocks and
- * an `.astro` file's frontmatter, each without its tags or fences. None in any other file. Throws
- * on a block with no end.
+ * Where a markup file's TypeScript is: a `.vue` or `.svelte` file's `<script lang="ts">` blocks, an
+ * `.astro` file's frontmatter, each without its tags or fences, and the code around a `.gts`
+ * file's `<template>`s. None in any other file. Throws on a block with no end.
  */
 export function codeBlocks(path: string, contents: string): Span[] {
   if (path.endsWith(".astro")) {
@@ -122,6 +154,17 @@ export function codeBlocks(path: string, contents: string): Span[] {
     const close = FENCE.exec(contents.slice(4));
     if (!close) throw new Error("The frontmatter has no closing `---`.");
     return [{ start: 4, end: 4 + close.index }];
+  }
+  if (path.endsWith(".gts")) {
+    // A `.gts` module is code around its `<template>`s, which formatting keeps as printed.
+    const blocks: Span[] = [];
+    let last = 0;
+    for (const template of contents.matchAll(TEMPLATE_TAG)) {
+      blocks.push({ start: last, end: template.index });
+      last = template.index + template[0].length;
+    }
+    blocks.push({ start: last, end: contents.length });
+    return blocks;
   }
   if (!path.endsWith(".svelte") && !path.endsWith(".vue")) return [];
   const blocks: Span[] = [];

@@ -86,6 +86,10 @@ const PROBES: Record<string, { file: string; contents: string }> = {
     file: "Probe.astro",
     contents: `---\n${PROBE.replace(/^export .*\n/m, "")}---\n\n<p>{first} {width} {pick(true)} {label(0)} {Square}</p>\n`,
   },
+  ember: {
+    file: "Probe.gts",
+    contents: `${PROBE}\n<template><p>{{width}} {{label 0}}</p></template>\n`,
+  },
 };
 
 const TARGETS = selectTargets(undefined);

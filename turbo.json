@@ -56,6 +56,7 @@
         "transit",
         "@unframework.dev/toolchain-angular#transit",
         "@unframework.dev/toolchain-astro#transit",
+        "@unframework.dev/toolchain-ember#transit",
         "@unframework.dev/toolchain-qwik#transit",
         "@unframework.dev/toolchain-react#transit",
         "@unframework.dev/toolchain-solid#transit",

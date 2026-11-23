@@ -416,7 +416,7 @@ describe("parseTestArguments", () => {
 
   it("refuses an unknown target, a missing name and an unknown argument", () => {
     expect(() => parseTestArguments(["--target", "nope"])).toThrow(
-      "unknown target nope. The targets are react, vue, svelte, solid, solid2, angular, qwik, astro, solid@2, solid@1.",
+      "unknown target nope. The targets are react, vue, svelte, solid, solid2, angular, qwik, astro, ember, solid@2, solid@1.",
     );
     expect(() => parseTestArguments(["--target"])).toThrow("--target needs a target's name");
     expect(() => parseTestArguments(["--target", "--update"])).toThrow("--target needs");

@@ -30,6 +30,8 @@ const FRAMEWORK_PLUGINS: Readonly<Record<TargetName, (name: string) => boolean>>
   angular: (name) => name === "@analogjs/vite-plugin-angular",
   qwik: (name) => name === "vite-plugin-qwik",
   astro: (name) => name.startsWith("astro:"),
+  // @embroider/vite's template-tag plugin, which compiles `.gts`, or the Ember toolchain's own.
+  ember: (name) => name === "embroider-template-tag" || name === "unframework:ember",
 };
 
 // A configuration is no source: these have no position to point at.

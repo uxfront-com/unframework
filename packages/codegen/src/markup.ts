@@ -39,7 +39,7 @@ export type {
   StylePart,
   TextPosition,
 } from "./markup/printer.ts";
-export { codeTokens, mapCode } from "./markup/escape.ts";
+export { codeTokens, escapeHtmlAttribute, escapeHtmlText, mapCode } from "./markup/escape.ts";
 export type { CodeMap, CodeToken } from "./markup/escape.ts";
 export { htmlDialect } from "./markup/html.ts";
 export { vueAttributeCode, vueClassValue, vueDialect, vueInterpolationCode } from "./markup/vue.ts";

@@ -20,6 +20,7 @@ import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 
 import { angular } from "./angular.ts";
 import { astro } from "./astro.ts";
+import { ember } from "./ember.ts";
 import type { Packager, SubpathExports } from "./packager.ts";
 import { qwik } from "./qwik.ts";
 import { react } from "./react.ts";
@@ -31,10 +32,14 @@ import { vue } from "./vue.ts";
 /** Where the package goes under `outDir`, which `build` cleans like a target's tree. */
 export const PACKAGE_DIRECTORY = "package";
 
-/** One line per target, in the order Angular, Astro, Qwik, React, Solid, Solid 2, Svelte, Vue. */
+/**
+ * One line per target, in the order Angular, Astro, Ember, Qwik, React, Solid, Solid 2, Svelte,
+ * Vue.
+ */
 const PACKAGERS: Record<TargetName, Packager> = {
   angular,
   astro,
+  ember,
   qwik,
   react,
   solid,

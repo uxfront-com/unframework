@@ -1,0 +1,144 @@
+diff --git a/dist/dev/packages/shared-chunks/rehydrate-builder-B3wE1O5a.js b/dist/dev/packages/shared-chunks/rehydrate-builder-B3wE1O5a.js
+index 547c2a224f23462205a48f69f8a4f220dcaef732..7da0eab1b7bf1396b15aafbe5180e3fafcfe021c 100644
+--- a/dist/dev/packages/shared-chunks/rehydrate-builder-B3wE1O5a.js
++++ b/dist/dev/packages/shared-chunks/rehydrate-builder-B3wE1O5a.js
+@@ -210,6 +210,19 @@ class RehydrateTree extends NewTreeBuilder {
+     }
+   }
+   __appendNode(node) {
++    const candidateBounds = this.markerBounds();
++    if (candidateBounds) {
++      // The server's copy of the node, between the markers it wrote around it, gives way to the
++      // client's own node, which the component may hold.
++      const last = candidateBounds.lastNode();
++      let current = candidateBounds.firstNode();
++      while (current !== last) {
++        current = this.remove(current);
++      }
++      this.candidate = this.remove(last);
++      this.element.insertBefore(node, this.candidate);
++      return node;
++    }
+     const {
+       candidate
+     } = this;
+@@ -336,13 +349,18 @@ class RehydrateTree extends NewTreeBuilder {
+     if (unmatched) {
+       const attr = findByName(unmatched, name);
+       if (attr) {
+-        if (attr.value !== value) {
+-          attr.value = value;
+-        }
++        // A property, not the attribute's text: `disabled` is `true`, never `"true"`. Set as a
++        // client render sets it, which also puts a field's caret after its value.
++        this.constructing[name] = value;
+         unmatched.splice(unmatched.indexOf(attr), 1);
+         return;
+       }
+     }
++    if (name === 'value' && this.constructing.tagName === 'TEXTAREA') {
++      // A server writes a textarea's value as its text, which the template has no child for:
++      // removing it first lets the value change as in a client render, caret and all.
++      this.constructing.textContent = '';
++    }
+     return super.__setProperty(name, value);
+   }
+   __flushElement(parent, constructing) {
+diff --git a/dist/dev/packages/shared-chunks/serialize-builder-v4amW_JS.js b/dist/dev/packages/shared-chunks/serialize-builder-v4amW_JS.js
+index 1a317f5426151ebd81bb0f9d6c68a37e1a5f7ea6..aea8ac16e350cf70423fe1a5dac83554ff7b2067 100644
+--- a/dist/dev/packages/shared-chunks/serialize-builder-v4amW_JS.js
++++ b/dist/dev/packages/shared-chunks/serialize-builder-v4amW_JS.js
+@@ -65,6 +65,21 @@ class SerializeBuilder extends NewTreeBuilder {
+     let last = this.__appendComment('%glmr%');
+     return new ConcreteBounds(this.element, first, last);
+   }
++  __appendNode(node) {
++    let {
++      tagName
++    } = this.element;
++    if (tagName === 'TITLE' || tagName === 'SCRIPT' || tagName === 'STYLE') {
++      return super.__appendNode(node);
++    }
++
++    // As for HTML: the client replaces what the markers hold with its own node, which no
++    // server node can be (an empty text node does not even serialize).
++    this.__appendComment('%glmr%');
++    let inserted = super.__appendNode(node);
++    this.__appendComment('%glmr%');
++    return inserted;
++  }
+   __appendText(string) {
+     let {
+       tagName
+diff --git a/dist/prod/packages/shared-chunks/rehydrate-builder-B9bh-2Dy.js b/dist/prod/packages/shared-chunks/rehydrate-builder-B9bh-2Dy.js
+index d73aaf52a3994cd19591c13fd16a5bf690003e1f..25f7d05c5fe9ac1cd9871fc945be347a8cd89f59 100644
+--- a/dist/prod/packages/shared-chunks/rehydrate-builder-B9bh-2Dy.js
++++ b/dist/prod/packages/shared-chunks/rehydrate-builder-B9bh-2Dy.js
+@@ -210,6 +210,19 @@ class RehydrateTree extends NewTreeBuilder {
+     }
+   }
+   __appendNode(node) {
++    const candidateBounds = this.markerBounds();
++    if (candidateBounds) {
++      // The server's copy of the node, between the markers it wrote around it, gives way to the
++      // client's own node, which the component may hold.
++      const last = candidateBounds.lastNode();
++      let current = candidateBounds.firstNode();
++      while (current !== last) {
++        current = this.remove(current);
++      }
++      this.candidate = this.remove(last);
++      this.element.insertBefore(node, this.candidate);
++      return node;
++    }
+     const {
+       candidate
+     } = this;
+@@ -336,13 +349,18 @@ class RehydrateTree extends NewTreeBuilder {
+     if (unmatched) {
+       const attr = findByName(unmatched, name);
+       if (attr) {
+-        if (attr.value !== value) {
+-          attr.value = value;
+-        }
++        // A property, not the attribute's text: `disabled` is `true`, never `"true"`. Set as a
++        // client render sets it, which also puts a field's caret after its value.
++        this.constructing[name] = value;
+         unmatched.splice(unmatched.indexOf(attr), 1);
+         return;
+       }
+     }
++    if (name === 'value' && this.constructing.tagName === 'TEXTAREA') {
++      // A server writes a textarea's value as its text, which the template has no child for:
++      // removing it first lets the value change as in a client render, caret and all.
++      this.constructing.textContent = '';
++    }
+     return super.__setProperty(name, value);
+   }
+   __flushElement(parent, constructing) {
+diff --git a/dist/prod/packages/shared-chunks/serialize-builder-Du-432zt.js b/dist/prod/packages/shared-chunks/serialize-builder-Du-432zt.js
+index 0149f514b5c616c0a28396753b9f16f0da0f3165..36496767e0cee91777856667c3d43b5853ee150b 100644
+--- a/dist/prod/packages/shared-chunks/serialize-builder-Du-432zt.js
++++ b/dist/prod/packages/shared-chunks/serialize-builder-Du-432zt.js
+@@ -65,6 +65,21 @@ class SerializeBuilder extends NewTreeBuilder {
+     let last = this.__appendComment('%glmr%');
+     return new ConcreteBounds(this.element, first, last);
+   }
++  __appendNode(node) {
++    let {
++      tagName
++    } = this.element;
++    if (tagName === 'TITLE' || tagName === 'SCRIPT' || tagName === 'STYLE') {
++      return super.__appendNode(node);
++    }
++
++    // As for HTML: the client replaces what the markers hold with its own node, which no
++    // server node can be (an empty text node does not even serialize).
++    this.__appendComment('%glmr%');
++    let inserted = super.__appendNode(node);
++    this.__appendComment('%glmr%');
++    return inserted;
++  }
+   __appendText(string) {
+     let {
+       tagName

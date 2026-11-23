@@ -55,7 +55,7 @@ import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks
 import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
 import { caseResolver } from "./sources.ts";
-import { REFERENCE } from "./targets.ts";
+import { REFERENCE, WHOLE_TARGETS } from "./targets.ts";
 
 /** The canary jobs' run line, in ci.yml and nightly.yml alike. */
 const CANARIES_RUN =
@@ -692,7 +692,7 @@ describe("canaries", () => {
     );
     expect(hooked.length).toBeGreaterThan(0);
     for (const canary of hooked) {
-      for (const target of TARGET_NAMES.filter(
+      for (const target of WHOLE_TARGETS.filter(
         (name) => corrupts(canary, name) && !(canary.followersOnly && name === REFERENCE),
       )) {
         const where = `${canary.id} on ${target}`;
@@ -1059,7 +1059,7 @@ describe("canaries", () => {
 
   it("L4-consumer applies to the cases with consumer fixtures, on each target that has them", () => {
     const canary = findCanary("L4-consumer");
-    const [withFixtures, without] = ["events/emit-payloads", "basics/hello"].map((id) =>
+    const [withFixtures, without] = ["types/imported-interface", "basics/hello"].map((id) =>
       canaryCase(listCases().find((info) => info.id === id)!),
     );
     for (const target of TARGET_NAMES) {
@@ -1087,7 +1087,8 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(0\.8\)/g), target).toHaveLength(1);
       // Angular binds the root's style, so that it can merge the consumer's (ADR-0056). React's,
-      // Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054).
+      // Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054), and
+      // Ember's merges its `@style` argument.
       const spread =
         target === "react" || target === "qwik"
           ? ", \\.\\.\\.style"
@@ -1098,7 +1099,7 @@ describe("canaries", () => {
         target === "angular"
           ? /<section\b[^>]*\[style\]="\{ filter: 'invert\(0\.8\)'/
           : new RegExp(
-              `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(0\\.8\\)"|\\{\\{ filter: "invert\\(0\\.8\\)"${spread} \\}\\}|\\{mergeStyle\\(\\{ filter: "invert\\(0\\.8\\)" \\}, style\\)\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(0\\.8\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
+              `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(0\\.8\\)"|\\{\\{ filter: "invert\\(0\\.8\\)"${spread} \\}\\}|\\{mergeStyle\\(\\{ filter: "invert\\(0\\.8\\)" \\}, style\\)\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(0\\.8\\)" \\}, \\.\\.\\.props\\.style \\}\\}|\\{\\{fallthroughStyle "filter: invert\\(0\\.8\\)" @style\\}\\})`,
             ),
       );
     }

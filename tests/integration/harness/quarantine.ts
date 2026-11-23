@@ -10,6 +10,7 @@ import type { LayerName, QuarantineEntry } from "@unframework.dev/testing/node";
 
 import { QUARANTINE as ANGULAR } from "./quarantine/angular.ts";
 import { QUARANTINE as ASTRO } from "./quarantine/astro.ts";
+import { QUARANTINE as EMBER } from "./quarantine/ember.ts";
 import { QUARANTINE as QWIK } from "./quarantine/qwik.ts";
 import { QUARANTINE as REACT } from "./quarantine/react.ts";
 import { QUARANTINE as SOLID } from "./quarantine/solid.ts";
@@ -27,6 +28,7 @@ export const QUARANTINE_FILES: Readonly<Record<TargetName, readonly QuarantineEn
   angular: ANGULAR,
   qwik: QWIK,
   astro: ASTRO,
+  ember: EMBER,
 };
 
 /**

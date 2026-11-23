@@ -22,6 +22,7 @@ const LAYERS: readonly (readonly string[])[] = [
     "@unframework.dev/target-angular",
     "@unframework.dev/target-qwik",
     "@unframework.dev/target-astro",
+    "@unframework.dev/target-ember",
   ],
   ["@unframework.dev/compiler"],
   ["@unframework.dev/unplugin", "@unframework.dev/cli", "@unframework.dev/language-tools"],

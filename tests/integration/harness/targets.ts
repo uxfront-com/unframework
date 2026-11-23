@@ -8,6 +8,12 @@ import type { TargetName } from "@unframework.dev/compiler";
 export const REFERENCE: TargetName = "vue";
 
 /**
+ * The targets that emit the whole source language: every built-in but `ember`, which leaves
+ * part of it unsupported, so a module that needs that part has no Ember output.
+ */
+export const WHOLE_TARGETS: readonly TargetName[] = TARGET_NAMES.filter((name) => name !== "ember");
+
+/**
  * The targets this run verifies: every built-in target, or the comma-separated `UF_TARGETS`
  * (`UF_TARGETS=vue,react`). An unknown name throws, so a typo never verifies nothing.
  */

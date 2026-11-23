@@ -14,7 +14,8 @@ export type TargetName =
   | "solid2"
   | "angular"
   | "qwik"
-  | "astro";
+  | "astro"
+  | "ember";
 
 /**
  * What a configuration, the CLI and `compile()` accept: a target's id, or its framework and major

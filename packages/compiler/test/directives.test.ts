@@ -7,6 +7,12 @@ import { describe, expect, it } from "vitest";
 import { compile, createFileResolver, createSyntacticOracle, TARGET_NAMES } from "../src/index.ts";
 import type { TargetName, TypeOracle } from "../src/index.ts";
 
+/**
+ * The targets that emit the whole language: Ember emits only part of it so far
+ * (uxfront-com/unframework#236).
+ */
+const WHOLE_TARGETS = TARGET_NAMES.filter((name) => name !== "ember");
+
 const TRAP = `import { defineDirective } from "@uxfront/unframework";
 
 const FOCUSABLE = "button";
@@ -40,6 +46,8 @@ const MODULES: Record<TargetName, { path: string; export: string } | undefined> 
   angular: { path: "v-focus-trap.ts", export: "export class VFocusTrap {" },
   qwik: { path: "vFocusTrap.ts", export: "export const vFocusTrap = {" },
   astro: undefined,
+  // Directives are not emitted yet (uxfront-com/unframework#236).
+  ember: undefined,
 };
 
 describe("a module of directives on each target", () => {
@@ -222,7 +230,7 @@ export default function Use() {
 }
 `;
 
-  it.each(TARGET_NAMES)("compiles a directive in it with no diagnostic on %s", async (target) => {
+  it.each(WHOLE_TARGETS)("compiles a directive in it with no diagnostic on %s", async (target) => {
     const result = await compile(USE, {
       filename: "Use.uf.tsx",
       targets: [target],

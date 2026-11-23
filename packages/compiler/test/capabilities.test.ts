@@ -11,6 +11,12 @@ import { everyKind } from "../../ir/test/fixtures.ts";
 import { checkCapabilities } from "../src/capabilities.ts";
 import { compile, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";
 
+/**
+ * The targets that emit the whole language: Ember emits only part of it so far
+ * (uxfront-com/unframework#236).
+ */
+const WHOLE_TARGETS = TARGET_NAMES.filter((name) => name !== "ember");
+
 describe("portability diagnostics", () => {
   it("reports Vue's single-selection list box at its `size`, on Vue alone", async () => {
     const source = [
@@ -25,7 +31,7 @@ describe("portability diagnostics", () => {
       "}",
       "",
     ].join("\n");
-    const result = await compile(source, { filename: "Choice.uf.tsx", targets: TARGET_NAMES });
+    const result = await compile(source, { filename: "Choice.uf.tsx", targets: WHOLE_TARGETS });
     expect(
       result.diagnostics.map(({ code, severity, target, span }) => [
         code,
@@ -37,7 +43,7 @@ describe("portability diagnostics", () => {
     expect(result.diagnostics[0]!.message).toMatch(
       /^The vue target does not support listbox: runtime-dom's `nodeOps.createElement` /,
     );
-    for (const target of TARGET_NAMES) expect(result.outputs[target], target).toHaveLength(1);
+    for (const target of WHOLE_TARGETS) expect(result.outputs[target], target).toHaveLength(1);
   });
 });
 
