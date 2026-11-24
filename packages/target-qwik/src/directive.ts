@@ -7,7 +7,8 @@
 // in the codegen), and the task's cleanup covers the component's own unmount. The hooks stay
 // module-level code, never `$()`, so the optimizer imports them into the task's segment: a
 // `.uf.ts` module's directive is its plain hooks object. Qwik's order is its own, so each hook
-// goes through the inline `queueHook`, which runs them in Vue's order (`emulated`).
+// goes through `queueHook`, shared in `_unframework/` (ADR-0121), which runs them in Vue's order
+// (`emulated`).
 //
 // A directive whose value reads a list's row or a scoped fill's props has a value for each
 // element, which one task can't read (ADR-0108). Its element's `ref` passes them instead: a
@@ -345,11 +346,15 @@ export class QwikDirectives {
     return statements.join("\n\n");
   }
 
-  /** The module's helpers: the hooks' type, the runner the tasks call, and the queue. */
-  helpers(names: OutputNames): string[] {
+  /**
+   * The module's helpers: the hooks' type, the runner the tasks call, and the queue, which
+   * `shared` takes by its local name instead, where the queue is a shared module (ADR-0121).
+   */
+  helpers(names: OutputNames, shared?: Map<string, string>): string[] {
     const helper = this.#helper;
     if (!helper) return [];
     const { run, hooks, element, queue, values, watch, watches, wait, collect, forget } = helper;
+    shared?.set("queueHook", queue);
     const signal = names.core("Signal", { type: true });
     // The plain list's helpers, where an element's directives' values are all the tasks'.
     const plain = [...this.#lists.values()].some((list) => !list.values.length);
@@ -369,7 +374,7 @@ export class QwikDirectives {
       ...(helper.passed ? valuesHelpers(helper.passed, hooks, signal) : []),
       `/** The element a directive's hooks take. */
 type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : never;`,
-      hookQueueCode(queue),
+      ...(shared ? [] : [hookQueueCode(queue)]),
     ];
   }
 }

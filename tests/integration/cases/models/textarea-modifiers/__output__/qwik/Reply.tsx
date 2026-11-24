@@ -1,3 +1,4 @@
+import { modelText } from "./_unframework/modelText";
 import {
   type CSSProperties,
   type ClassList,
@@ -37,40 +38,3 @@ export default component$<
     </form>
   );
 });
-
-/**
- * A text control's `v-model` as Vue's `vModelText` runs it: `read` is what the control's text
- * writes, trimmed with `trim` and cast with `number` as `looseToNumber` does; `shown` is the text
- * the control shows for a value, which keeps the person's own text while it is focused and
- * reads as the value (`trim`, `lazy`), or casts to it.
- */
-const modelText = {
-  read<T>(element: HTMLInputElement | HTMLTextAreaElement, modifiers: TextModifiers): T {
-    const text = modifiers.trim ? element.value.trim() : element.value;
-    const number = Number.parseFloat(text);
-    // The state's type: where the text is no number, Vue writes the text, as here.
-    return (modifiers.number && !Number.isNaN(number) ? number : text) as T;
-  },
-  shown(
-    element: HTMLInputElement | HTMLTextAreaElement | undefined,
-    value: unknown,
-    modifiers: TextModifiers,
-  ): string {
-    const text = value == null ? "" : String(value);
-    if (!element || element.value === text) return text;
-    if (element === document.activeElement && element.type !== "range") {
-      if (modifiers.lazy || (modifiers.trim && element.value.trim() === text)) {
-        return element.value;
-      }
-    }
-    if (modifiers.number && this.read(element, modifiers) === value) return element.value;
-    return text;
-  },
-};
-
-/** The modifiers of a text control's `v-model`. */
-interface TextModifiers {
-  trim?: boolean;
-  lazy?: boolean;
-  number?: boolean;
-}

@@ -28,7 +28,10 @@ interface TransitionLocals {
 export interface QwikTransitions {
   setup(): string;
   jsx: NonNullable<JsxDialect["transition"]>;
+  /** The helpers inline, after the component. */
   helpers(): string;
+  /** The helpers the component imports from the shared module, by name, with its local names. */
+  shared(): Map<string, string>;
 }
 
 /** The transitions of a component, or `undefined` where its template holds none. */
@@ -49,6 +52,7 @@ export function qwikTransitions(
   const stateType = names.once("TransitionState");
   const stops = names.once("transitionStops");
   const stopRun = names.once("stopTransition");
+  const conditionals = nodes.some((node) => node.children[0]?.kind === "If");
   const locals = new Map<number, TransitionLocals>(
     nodes.map((node) => [
       node.span.start,
@@ -164,9 +168,21 @@ export function qwikTransitions(
         stateType,
         stops,
         // Only a conditional's visible task stops a phase from outside it.
-        nodes.some((node) => node.children[0]?.kind === "If") ? stopRun : undefined,
+        conditionals ? stopRun : undefined,
         names.imports.add("@qwik.dev/core/build", "isServer"),
       ),
+    // The shared module holds every helper. Only a conditional's visible task runs or stops a phase.
+    shared: () => {
+      const used = new Map([
+        ["transition", helper],
+        ["TransitionState", stateType],
+      ]);
+      if (conditionals) {
+        used.set("runTransition", run);
+        used.set("stopTransition", stopRun);
+      }
+      return used;
+    },
   };
 }
 
@@ -218,8 +234,11 @@ function withTransitionRef(
   return element;
 }
 
-/** The inline helpers, after the component. */
-function transitionHelpers(
+/**
+ * The helpers, after the component or in their shared module (ADR-0121), which passes every
+ * name: `stopRun` is left out where no visible task stops a phase.
+ */
+export function transitionHelpers(
   helper: string,
   run: string,
   stateType: string,
