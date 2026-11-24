@@ -1081,10 +1081,12 @@ describe("types read through the type oracle (ADR-0067)", () => {
           typeOracle,
         });
         await typeOracle.dispose();
+        // The copies, then the shared helper module (ADR-0121), which the module imports.
         expect(compiled.outputs.angular!.map(({ path }) => path)).toEqual([
           "chip.ts",
           "tones.ts",
           "base.ts",
+          "_unframework/ScopeAttributes.ts",
         ]);
         expect(code).toBe(compiled.outputs.angular![0]!.contents);
         expect(code).not.toContain("BASE");

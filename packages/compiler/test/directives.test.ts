@@ -18,8 +18,14 @@ export const vFocusTrap = defineDirective<boolean>({
 });
 `;
 
-/** What each target names a directive's module, and what the module exports. */
-const MODULES: Record<TargetName, { path: string; export: string } | undefined> = {
+/**
+ * What each target names a directive's module, what the module exports, and the shared helper
+ * modules it imports (ADR-0121).
+ */
+const MODULES: Record<
+  TargetName,
+  { path: string; export: string; helpers?: string[] } | undefined
+> = {
   vue: {
     path: "vFocusTrap.ts",
     export: "export const vFocusTrap: ObjectDirective<HTMLElement, boolean>",
@@ -37,7 +43,11 @@ const MODULES: Record<TargetName, { path: string; export: string } | undefined> 
     path: "vFocusTrap.ts",
     export: "export function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void",
   },
-  angular: { path: "v-focus-trap.ts", export: "export class VFocusTrap {" },
+  angular: {
+    path: "v-focus-trap.ts",
+    export: "export class VFocusTrap {",
+    helpers: ["_unframework/queueHook.ts"],
+  },
   qwik: { path: "vFocusTrap.ts", export: "export const vFocusTrap = {" },
   astro: undefined,
 };
@@ -54,7 +64,8 @@ describe("a module of directives on each target", () => {
         expect(files).toEqual([]);
         return;
       }
-      expect(files.map(({ path }) => path)).toEqual([expected.path]);
+      expect(files.map(({ path }) => path)).toEqual([expected.path, ...(expected.helpers ?? [])]);
+      expect(result.helpers[target] ?? []).toEqual(expected.helpers ?? []);
       expect(files[0]!.contents).toContain(expected.export);
       // The constant its hook reads comes with it, as a composable's does (ADR-0070).
       expect(files[0]!.contents).toContain('const FOCUSABLE = "button";');
