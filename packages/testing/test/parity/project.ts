@@ -8,7 +8,6 @@
 // command's comparisons are unit-tested in Node (test/visual-command.test.ts).
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
 import type { Capabilities, CapabilityCell } from "@unframework.dev/codegen";
@@ -17,7 +16,7 @@ import type { TestProjectInlineConfiguration } from "vitest/config";
 import type { CaseConfig, HarnessContext } from "../../src/harness.ts";
 import { createHarnessRun, parityBrowser, resolveHarnessMode } from "../../src/node/index.ts";
 
-const here = fileURLToPath(new URL(".", import.meta.url));
+const here = import.meta.dirname;
 const casesDir = join(here, "cases");
 /** The testing package, the parity project's root. */
 export const packageRoot: string = join(here, "..", "..");

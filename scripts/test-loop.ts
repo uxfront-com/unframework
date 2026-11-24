@@ -11,11 +11,10 @@
 // failed. It never fetches, and it reads and sets no UF_* variable: turbo.json puts UF_* in the
 // `test` task's hash, so a new one would miss every cache.
 import { spawnSync } from "node:child_process";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 /** The repository's root. */
-const ROOT: string = join(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT: string = join(import.meta.dirname, "..");
 
 /** The integration corpus: its `test` runs every default project, browser ones included. */
 export const INTEGRATION = "@unframework.dev/integration";

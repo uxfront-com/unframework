@@ -13,7 +13,7 @@ const SSR = ["test/render.test.ts", "test/server.test.ts", "test/styles.test.ts"
 
 const context = {
   toolchainDir: fileURLToPath(new URL("../../tests/toolchains/angular", import.meta.url)),
-  root: fileURLToPath(new URL(".", import.meta.url)),
+  root: import.meta.dirname,
 };
 const ssr = await toolchain.vite("ssr", context);
 const browser = await toolchain.vite("browser", context);
