@@ -93,10 +93,13 @@ export interface FallthroughPlan {
  * its own attributes, so the consumer's win.
  */
 export interface PassingPlan {
-  /** The tag of the element it lands on (the child's `fallthroughTag`), which types it. */
-  tag: string;
+  /**
+   * The tags of the element it lands on, which type it: one (the child's `fallthroughTag`), or a
+   * `<component is>` root's, where it lands on whichever renders (ADR-0122).
+   */
+  tags: readonly string[];
   /** The node that spreads it: the {@link FallthroughPlan.root}. */
-  target: ElementNode | ComponentNode;
+  target: ElementNode | ComponentNode | DynamicNode;
   /**
    * Whether the target is the element that spreads the props' rest, inside the root: the root
    * keeps the styled parents' scope attributes, and the `ref` (ADR-0063).
@@ -110,10 +113,10 @@ export interface PassingPlan {
    */
   declared: readonly string[];
   /**
-   * The tag of the element a `ref` on the component holds, where it exposes nothing and has one
-   * (the child's `refTag`).
+   * The tags of the element a `ref` on the component holds, where it exposes nothing and has one
+   * (the child's `refTag`, or a `<component is>` root's `refTags`, ADR-0122).
    */
-  refTag?: string;
+  refTags?: readonly string[];
 }
 
 /**
@@ -153,10 +156,11 @@ export interface CompositionPlan {
   /** What passes through to the fallthrough node, where its tag is known (ADR-0118). */
   readonly passing?: PassingPlan;
   /**
-   * The tag of the root element a consumer's `ref` holds where nothing passes through: fallthrough
-   * is off, no element spreads the props' rest, and the component exposes nothing (ADR-0118).
+   * The tags of the root element a consumer's `ref` holds where nothing passes through:
+   * fallthrough is off, no element spreads the props' rest, and the component exposes nothing
+   * (ADR-0118). Several for a `<component is>` root, whichever renders (ADR-0122).
    */
-  readonly refTag?: string;
+  readonly refTags?: readonly string[];
   readonly scope?: ScopePlan;
   /** The `ref` prop's local and the handle's interface, where the component exposes functions. */
   readonly expose?: { ref: string; handle: string };
@@ -283,7 +287,8 @@ export function planComposition(
   }
 
   const root = fallthroughRoot(component);
-  const tag = root && fallthroughTag(module, root, new Set([component.name]));
+  const tags = root && fallthroughTags(module, root, new Set([component.name]));
+  const tag = tags?.[0];
   // The object form takes what passes through out of its props object with a pattern in its
   // body, whose locals the consumer's `class` and `style` are (ADR-0118).
   const local = (prop: string) =>
@@ -313,21 +318,21 @@ export function planComposition(
           helper: names.claim(SCOPE_HELPER),
         }
       : undefined;
+  const refTags = component.exposes ? undefined : refTagsOf(component, module);
   const passing: PassingPlan | undefined =
-    root && root.kind !== "Dynamic" && tag !== undefined
+    root && tags !== undefined
       ? {
-          tag,
+          tags,
           target: root,
           inner,
           rest: scope?.props ?? names.claim("attributes"),
           declared: declaredProps(component),
-          ...(component.exposes ? {} : refTagOf(component, module)),
+          ...(refTags ? { refTags } : {}),
         }
       : undefined;
   // With fallthrough off and no rest, nothing passes through, but a ref on the component still
   // holds its root element (ADR-0118).
-  const refRoot: { refTag?: string } =
-    passing || component.exposes ? {} : refTagOf(component, module);
+  const refRoot: { refTags?: readonly string[] } = passing || !refTags ? {} : { refTags };
   const expose = component.exposes && {
     ref: propLocal("ref"),
     handle: names.claim(`${component.name}Handle`),
@@ -387,7 +392,7 @@ export function planComposition(
   const interfaces: CompositionPlan["interfaces"] = {};
   if (slots.size) interfaces.slots = names.claim(`${component.name}Slots`);
   if (models.size) interfaces.models = names.claim(`${component.name}Models`);
-  if (fallthrough || expose || refRoot.refTag !== undefined) {
+  if (fallthrough || expose || refRoot.refTags !== undefined) {
     interfaces.attributes = names.claim(`${component.name}Attributes`);
   }
 
@@ -498,33 +503,55 @@ function restElement(component: UfComponent): ElementNode | undefined {
 }
 
 /**
- * The tag of the element what passes through a fallthrough node lands on (ADR-0118): an
- * element's own, none for a `<component is>`, or a component's `fallthroughTag`, as its API gives it or, for one of the
- * module's own components, as its render says (`seen` stops a cycle).
+ * The tags of the element what passes through a fallthrough node lands on (ADR-0118): an
+ * element's own, a `<component is>`'s candidates (ADR-0122), or a component's, as its API gives
+ * them (`fallthroughTag`, or the `rootTags` of a `<component is>` root that keeps `inheritAttrs`)
+ * or, for one of the module's own components, as its render says (`seen` stops a cycle).
  */
-function fallthroughTag(
+function fallthroughTags(
   module: UfModule,
   node: ElementNode | ComponentNode | DynamicNode,
   seen: Set<string>,
-): string | undefined {
-  if (node.kind === "Element") return node.tag;
-  // A `<component is>` takes a consumer's `class` and `style` alone (ADR-0119).
-  if (node.kind === "Dynamic") return undefined;
+): readonly string[] | undefined {
+  if (node.kind === "Element") return [node.tag];
+  if (node.kind === "Dynamic") return candidateTags(node);
   const api = childApi(module, node.component);
-  if (api) return api.fallthroughTag;
+  if (api) return apiFallthroughTags(api);
   const own = module.components.find((each) => each.name === node.component);
   if (!own || seen.has(own.name)) return undefined;
   seen.add(own.name);
   const root = fallthroughRoot(own);
-  return root && fallthroughTag(module, root, seen);
+  return root && fallthroughTags(module, root, seen);
+}
+
+/** The tags what falls through to a component lands on, as its API gives them (ADR-0122). */
+function apiFallthroughTags(api: ComponentApi): readonly string[] | undefined {
+  if (api.fallthroughTag !== undefined) return [api.fallthroughTag];
+  return api.inheritAttrs ? api.rootTags : undefined;
+}
+
+/** The tags a `<component is>` over tags may render, in source order. */
+function candidateTags(node: DynamicNode): string[] {
+  return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
 }
 
 /**
- * The tag of the element what a parent passes a child that it does not declare lands on
- * (ADR-0118), or none where nothing but what it declares may be passed.
+ * The tags of the element what a parent passes a child that it does not declare lands on
+ * (ADR-0118, ADR-0122), or none where nothing but what it declares may be passed.
+ */
+export function componentFallthroughTags(
+  module: UfModule,
+  node: ComponentNode,
+): readonly string[] | undefined {
+  return fallthroughTags(module, node, new Set());
+}
+
+/**
+ * The first of {@link componentFallthroughTags}: the tag the listeners a parent passes a child
+ * are planned on, which every tag checks (ADR-0122).
  */
 export function componentFallthroughTag(module: UfModule, node: ComponentNode): string | undefined {
-  return fallthroughTag(module, node, new Set());
+  return componentFallthroughTags(module, node)?.[0];
 }
 
 /** The API the resolver gives for an imported child, by its local name. */
@@ -542,25 +569,34 @@ export function childApi(module: UfModule, local: string): ComponentApi | undefi
 }
 
 /**
- * The tag of the element a `ref` on a component that exposes nothing holds (ADR-0118): its root
- * element's, or its root component's own, through a chain of root components.
+ * The tags of the element a `ref` on a component that exposes nothing holds (ADR-0118): its root
+ * element's, its `<component is>` root's (ADR-0122), or its root component's own, through a
+ * chain of root components.
  */
-function refTagOf(component: UfComponent, module: UfModule): { refTag?: string } {
+function refTagsOf(component: UfComponent, module: UfModule): readonly string[] | undefined {
   const seen = new Set<string>();
   let current: UfComponent | undefined = component;
   while (current && !seen.has(current.name)) {
     seen.add(current.name);
     const render: UfComponent["render"] = current.render;
-    if (render.kind === "Element") return { refTag: render.tag };
+    if (render.kind === "Element") return [render.tag];
     const only: RenderNode | undefined = render.children[0];
-    if (render.children.length !== 1 || only?.kind !== "Component") return {};
+    if (render.children.length !== 1) return undefined;
+    if (only?.kind === "Dynamic") {
+      const tags = candidateTags(only);
+      return tags.length === only.candidates.length ? tags : undefined;
+    }
+    if (only?.kind !== "Component") return undefined;
     const api = childApi(module, only.component);
-    if (api) return api.exposes.length === 0 && api.refTag ? { refTag: api.refTag } : {};
+    if (api) {
+      if (api.exposes.length) return undefined;
+      return api.refTag !== undefined ? [api.refTag] : api.refTags;
+    }
     const name: string = only.component;
     current = module.components.find((each) => each.name === name);
-    if (current?.exposes) return {};
+    if (current?.exposes) return undefined;
   }
-  return {};
+  return undefined;
 }
 
 /**

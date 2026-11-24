@@ -73,14 +73,18 @@ export function restAttributesType(
   attributes: () => string,
 ): string | undefined {
   const element = restElement(component);
+  // A `<component :is>` root takes `$attrs` natively, but vue-tsc types a consumer's attributes
+  // from no tag of it, so the props declare what every tag takes the same way (ADR-0122).
+  const tags = element ? undefined : dynamicRootTags(component);
+  if (tags) {
+    const declared = declaredNames(component);
+    const type = tags.map((tag) => `${attributes()}[${JSON.stringify(tag)}]`).join(" & ");
+    return declared.length
+      ? `Omit<${type}, ${[...new Set(declared)].map((name) => JSON.stringify(name)).join(" | ")}>`
+      : `(${type})`;
+  }
   if (!element || element === component.render) return undefined;
-  const declared = [
-    ...component.props.map((prop) => prop.name),
-    ...(component.emits?.events ?? []).map((event) => listenerName(event.name)),
-    ...component.setup.flatMap((item) =>
-      item.kind === "Model" ? [item.name, `onUpdate:${item.name}`] : [],
-    ),
-  ];
+  const declared = declaredNames(component);
   // An input's `autocomplete` is Vue's `InputAutoCompleteAttribute`, a union of every autofill
   // token and `string & {}`, which `defineProps` intersects with itself (`LooseRequired`) past
   // what TypeScript represents (TS2590) once a prop is read: `string` takes the same values. Not
@@ -92,6 +96,31 @@ export function restAttributesType(
     ? `Omit<${type}, ${[...new Set(declared)].map((name) => JSON.stringify(name)).join(" | ")}>`
     : type;
   return input ? `(${omitted} & Partial<Record<"autocomplete", string>>)` : omitted;
+}
+
+/** The names the component declares: its props, its events' listeners and its models'. */
+function declaredNames(component: UfComponent): string[] {
+  return [
+    ...component.props.map((prop) => prop.name),
+    ...(component.emits?.events ?? []).map((event) => listenerName(event.name)),
+    ...component.setup.flatMap((item) =>
+      item.kind === "Model" ? [item.name, `onUpdate:${item.name}`] : [],
+    ),
+  ];
+}
+
+/**
+ * The tags of a `<component is>` root over tags that takes `$attrs` (ADR-0119, ADR-0122): the
+ * only node the component renders, with fallthrough on.
+ */
+function dynamicRootTags(component: UfComponent): string[] | undefined {
+  if (component.inheritAttrs === false || component.render.kind === "Element") return undefined;
+  const { render } = component;
+  const [only] = render.children;
+  if (render.children.length !== 1 || only?.kind !== "Dynamic") return undefined;
+  if (only.span.start !== render.span.start || only.span.end !== render.span.end) return undefined;
+  const tags = only.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
+  return tags.length && tags.length === only.candidates.length ? tags : undefined;
 }
 
 /** The prop Vue passes a listener of an event as: `onPick` for `pick`. */
@@ -137,7 +166,8 @@ export function rootElementRefs(
 
 /**
  * Whether a child exposes nothing, so a ref on it holds its root element: an imported child's
- * API says, where it names the element (`refTag`), and one of the module's own components says
+ * API says, where it names the element (`refTag`, or `refTags` for a `<component is>` root,
+ * ADR-0122), and one of the module's own components says
  * through its `defineExpose`. The analyser rejects a ref on a child that holds nothing (UF3046).
  */
 function exposesNothing(module: UfModule, local: string): boolean {
@@ -149,7 +179,11 @@ function exposesNothing(module: UfModule, local: string): boolean {
         ? each.export === "default"
         : each.export === "named" && each.name === imported.imported,
     );
-    return api !== undefined && api.exposes.length === 0 && api.refTag !== undefined;
+    return (
+      api !== undefined &&
+      api.exposes.length === 0 &&
+      (api.refTag !== undefined || api.refTags !== undefined)
+    );
   }
   const own = module.components.find((each) => each.name === local);
   return own !== undefined && !own.exposes?.functions.length;

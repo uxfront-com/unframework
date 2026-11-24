@@ -53,7 +53,7 @@ import type {
   UseItem,
 } from "@unframework.dev/ir";
 
-import { componentFallthroughTag, planComposition } from "./composition.ts";
+import { componentFallthroughTags, planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
 import { directiveRefBase, directivesInPostOrder } from "./directive.ts";
 import { elementInterface } from "./elements.ts";
@@ -1097,13 +1097,15 @@ function listenerModes(
           attribute.kind === "Static" || attribute.kind === "Bound" || attribute.kind === "Event",
       );
       if (!passed.some((attribute) => attribute.kind === "Event")) return;
+      const tags = (module && componentFallthroughTags(module, node)) ?? [""];
       const element: ElementNode = {
         kind: "Element",
-        tag: (module && componentFallthroughTag(module, node)) ?? "",
+        tag: tags[0]!,
         attributes: passed,
         children: [],
         span: node.span,
       };
+      passedTags.set(element, tags);
       for (const attribute of passed) {
         if (attribute.kind === "Event") modes.set(attribute, { element, mode: "synthetic" });
       }
@@ -1247,6 +1249,12 @@ function elementPaths(component: UfComponent): Map<ElementNode, ElementNode[]> {
 }
 
 const tagElements = new WeakMap<DynamicNode, ElementNode>();
+
+/**
+ * The tags of the element what a parent passes a child lands on, by the element its listeners
+ * are planned on: one, or a `<component is>` root's, each of which may render (ADR-0122).
+ */
+export const passedTags: WeakMap<ElementNode, readonly string[]> = new WeakMap();
 
 /**
  * A `<component is>` over tags as the element its listeners are planned on, the same object

@@ -83,13 +83,18 @@ export class ReactComposer {
    * takes it apart from the rest: beside its own ref, or away from the rest's element.
    */
   consumerRef: string | undefined;
-  /** The root's own ref joined with the consumer's, declared once in the body (`rootRef`). */
-  mergedRef: { local: string; own: string } | undefined;
+  /**
+   * The root's own ref joined with the consumer's, declared once in the body (`rootRef`), or the
+   * consumer's alone as a callback, for a `<component is>` root that has none (ADR-0122).
+   */
+  mergedRef: { local: string; own?: string } | undefined;
   /** The fallthrough node, by span, until it spreads the rest; and the root a `ref` holds. */
   #target: string | undefined;
   readonly #refRoot: string | undefined;
   /** Whether the root takes the consumer's `ref` where it prints none of its own. */
   readonly #takesRef: boolean;
+  /** Whether the root a `ref` holds is a `<component is>`, which takes it as a callback. */
+  readonly #dynamicRef: boolean;
   /** Whether the root printed a `ref` of its own. */
   #ownRef = false;
 
@@ -97,14 +102,17 @@ export class ReactComposer {
     this.#plan = plan;
     this.#code = code;
     this.#scopeRoots = new Set(plan.composition.scope?.roots);
-    const { passing, refTag } = plan.composition;
+    const { passing, refTags } = plan.composition;
     if (passing) this.#target = spanKey(passing.target.span);
     const { render } = plan.owner;
     const [only] = render.kind === "Element" ? [render] : render.children;
-    if ((passing?.refTag ?? refTag) !== undefined && only) this.#refRoot = spanKey(only.span);
+    if ((passing?.refTags ?? refTags) !== undefined && only) this.#refRoot = spanKey(only.span);
+    // A `<component is>` root renders one of several elements: a `ref` typed for whichever
+    // renders is no ref of each tag's, so it reaches the root through a callback (ADR-0122).
+    this.#dynamicRef = only?.kind === "Dynamic" && this.#refRoot !== undefined;
     // The root takes the consumer's `ref` apart from the rest where the rest is elsewhere, or
-    // nothing else passes through (ADR-0118).
-    this.#takesRef = passing ? passing.inner : refTag !== undefined;
+    // nothing else passes through (ADR-0118), or the root is a `<component is>` (ADR-0122).
+    this.#takesRef = passing ? passing.inner || this.#dynamicRef : refTags !== undefined;
   }
 
   /**
@@ -213,8 +221,16 @@ export class ReactComposer {
     const items: JsxAttributeItem[] = [];
     if (this.#takesRef && key === this.#refRoot && !this.#ownRef) {
       this.#ownRef = true;
+      const consumer = this.#consumerRef();
+      if (this.#dynamicRef) {
+        this.#plan.helpers.mergeRefs ??= this.#plan.names.claim("mergeRefs");
+        this.mergedRef ??= { local: this.#plan.names.claim("rootRef") };
+      }
       items.push(
-        js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(this.#consumerRef()))),
+        js.jsxAttribute(
+          "ref",
+          js.jsxExpressionContainer(js.identifier(this.mergedRef?.local ?? consumer)),
+        ),
       );
     }
     if (!passing) return items;
