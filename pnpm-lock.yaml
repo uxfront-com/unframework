@@ -196,8 +196,8 @@ catalogs:
       specifier: ^8.0.1
       version: 8.0.1
     pixelmatch:
-      specifier: ^7.2.0
-      version: 7.2.0
+      specifier: ^8.0.0
+      version: 8.0.0
     playwright:
       specifier: 1.63.0
       version: 1.63.0
@@ -1055,7 +1055,7 @@ importers:
         version: 8.0.1
       pixelmatch:
         specifier: 'catalog:'
-        version: 7.2.0
+        version: 8.0.0
       pngjs:
         specifier: 'catalog:'
         version: 7.0.0
@@ -11050,8 +11050,8 @@ packages:
     resolution: {integrity: sha512-vv7l/mM7B9WgrhDaudIqv1x6v4LOBRYYmpWGdWushhpbCmVHp11sUB2v4hj1CAeTGXVxuZFz6xOU1RalAiPKfQ==}
     engines: {node: '>=20.x'}
 
-  pixelmatch@7.2.0:
-    resolution: {integrity: sha512-xhcb4yHu9sM/G7foGzoLtXYcC0zHEaOXXjRKhGup0fw78Nf2Tkiapv4EQyMzrbcmQPsllAI7DbFY2UT7PlI9Pg==}
+  pixelmatch@8.0.0:
+    resolution: {integrity: sha512-cIqOLfh5k52us715qf3B3+kTOxZv+WDv77HN7xokLScYQGYQHi4m/ynoDIPpvF2LvCyUJGyvzY64i0QCXtzu1g==}
     hasBin: true
 
   pkce-challenge@5.0.1:
@@ -24041,7 +24041,7 @@ snapshots:
     optionalDependencies:
       '@napi-rs/nice': 1.1.1
 
-  pixelmatch@7.2.0:
+  pixelmatch@8.0.0:
     dependencies:
       pngjs: 7.0.0
 
