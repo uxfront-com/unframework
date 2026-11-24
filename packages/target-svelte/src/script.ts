@@ -40,11 +40,13 @@ import {
 import type { MarkupOptions, RewriteRules } from "@unframework.dev/codegen";
 import { codeOf, expressionsOf, functionsOf, walk } from "@unframework.dev/ir";
 import type {
+  Attribute,
   Binding,
   BindingId,
   BindingKind,
   Code,
   DerivedItem,
+  ComponentAttribute,
   ComponentNode,
   DynamicNode,
   ElementNode,
@@ -86,11 +88,12 @@ import type { Fallthrough } from "./composition.ts";
 import { attachmentCode, narrowedDirectiveValues } from "./directive.ts";
 import { isAttached } from "./events.ts";
 import {
-  attributesType,
   elementRefs,
   elementType,
-  fallthroughTag,
-  refTag,
+  fallthroughTags,
+  passedType,
+  refTags,
+  rootDynamicNode,
   restAttributesHelper,
   restElement,
   rootComponentNames,
@@ -565,7 +568,9 @@ class ScriptWriter {
    */
   #spread: { rest: string; strip?: string } | undefined;
   /** The `ref` prop's local name and its element's tag, where a ref holds the root element. */
-  #ref: { local: string; tag: string } | undefined;
+  #ref: { local: string; tags: readonly string[] } | undefined;
+  /** The name of the props type the script declares, where it declares one. */
+  #propsType: string | undefined;
   /** The local of each consumer listener the fallthrough element's own handler calls, by key. */
   readonly #consumers = new Map<string, string>();
   /** Each own listener of the fallthrough element, with the consumer's listener it calls. */
@@ -1306,8 +1311,8 @@ class ScriptWriter {
     const scope = this.#names;
     // What a consumer passes that the component does not declare, which its fallthrough element
     // spreads last (ADR-0118): the props' rest, and the element's attributes in the props type.
-    const tag = fallthrough ? fallthroughTag(component, this.#module) : undefined;
-    const spread = tag !== undefined && rootTakesFallthrough(component, this.#module);
+    const tags = fallthrough ? fallthroughTags(component, this.#module) : undefined;
+    const spread = tags !== undefined && rootTakesFallthrough(component, this.#module);
     const restAt = component.inheritAttrs === false ? restElement(component) : undefined;
     const restAtRoot = restAt === undefined || restAt === component.render;
     const singleRoot =
@@ -1323,8 +1328,8 @@ class ScriptWriter {
     };
     // A ref on a component that exposes nothing holds its root element (ADR-0118): a `$bindable`
     // prop, `ref`, which the root binds.
-    const ownRef = refTag(component, this.#module);
-    if (ownRef !== undefined) this.#ref = { local: scope.claim("ref"), tag: ownRef };
+    const ownRef = refTags(component, this.#module);
+    if (ownRef !== undefined) this.#ref = { local: scope.claim("ref"), tags: ownRef };
     if (
       !parameter &&
       !emits &&
@@ -1403,7 +1408,7 @@ class ScriptWriter {
       extras.push(`class: ${className}`, style === "style" ? style : `style: ${style}`);
     }
     if (this.#ref) {
-      const { local, tag: element } = this.#ref;
+      const { local, tags: element } = this.#ref;
       members.push(`ref?: ${elementType(element)} | null;`);
       extras.push(`${local === "ref" ? "ref" : `ref: ${local}`} = $bindable(null)`);
     }
@@ -1427,6 +1432,7 @@ class ScriptWriter {
       const name = scope.scope.has("Props")
         ? scope.claim(`${component.name}Props`)
         : scope.claim("Props");
+      this.#propsType = name;
       const joined = eventsJoined(type, members);
       if (spread) {
         // The fallthrough element's attributes and listeners, but for the names the component
@@ -1444,11 +1450,10 @@ class ScriptWriter {
           ...(this.#ref ? ["ref"] : []),
           ...rootComponentNames(component, this.#module),
         ];
-        const attributes = attributesType(tag, (each) =>
+        const passed = passedType(tags, declared, (each) =>
           scope.import("svelte/elements", each, { type: true }),
         );
-        const omitted = [...new Set(declared)].map((each) => JSON.stringify(each)).join(" | ");
-        pieces.push(`type ${name} = Omit<${attributes}, ${omitted}> & ${joined};`);
+        pieces.push(`type ${name} = ${passed} & ${joined};`);
       } else pieces.push(`type ${name} = ${joined};`);
       type = name;
     }
@@ -2013,7 +2018,10 @@ class ScriptWriter {
   #fallthroughMarkup(): FallthroughMarkup {
     const component = this.#component;
     const { render } = component;
-    const rootNode = render.kind === "Element" ? render : rootComponentNode(component);
+    const rootNode =
+      render.kind === "Element"
+        ? render
+        : (rootComponentNode(component) ?? rootDynamicNode(component));
     const refs = new Map<RefAttribute, string>();
     for (const attribute of this.#elementRefs) {
       refs.set(attribute, bind("ref", this.#name(attribute.binding)));
@@ -2021,8 +2029,9 @@ class ScriptWriter {
     const rootAttributes: string[] = [];
     const ref = this.#ref;
     if (ref && rootNode) {
-      const property = rootNode.kind === "Element" ? "this" : "ref";
-      const own = rootNode.attributes.find(
+      const property = rootNode.kind === "Component" ? "ref" : "this";
+      const attributes: readonly (Attribute | ComponentAttribute)[] = rootNode.attributes;
+      const own = attributes.find(
         (attribute): attribute is RefAttribute => attribute.kind === "Ref",
       );
       if (own) {
@@ -2072,8 +2081,17 @@ class ScriptWriter {
     )
       ? this.#names.claim("event")
       : "event");
-    const lines = (parameter: string, statements: string) =>
-      `${name}={${block(`(${parameter}) => {`, [statements, `${consumer}?.(${parameter});`], "}")}}`;
+    // On a `<component is>` root, Svelte types the listener as each tag's, which no one
+    // parameter type fits: it is checked as the consumer's, which takes the event of whichever
+    // tag renders (ADR-0122).
+    const tags = rootDynamicNode(this.#component)
+      ? fallthroughTags(this.#component, this.#module)
+      : undefined;
+    const typed = tags && tags.length > 1 ? this.#propsType : undefined;
+    const lines = (parameter: string, statements: string) => {
+      const arrow = block(`(${parameter}) => {`, [statements, `${consumer}?.(${parameter});`], "}");
+      return `${name}={${typed ? `(${arrow}) satisfies ${typed}[${JSON.stringify(name)}]` : arrow}}`;
+    };
     if (handler.kind === "Function") {
       const fn = this.#component.setup.find(
         (item): item is FunctionItem =>
@@ -2859,9 +2877,10 @@ function ownListeners(component: UfComponent): EventAttribute[] {
       ? restElement(component)
       : component.render.kind === "Element"
         ? component.render
-        : rootComponentNode(component);
+        : (rootComponentNode(component) ?? rootDynamicNode(component));
   if (!node) return [];
-  return node.attributes.filter(
+  const attributes: readonly (Attribute | ComponentAttribute)[] = node.attributes;
+  return attributes.filter(
     (attribute): attribute is EventAttribute =>
       attribute.kind === "Event" &&
       !attribute.capture &&
