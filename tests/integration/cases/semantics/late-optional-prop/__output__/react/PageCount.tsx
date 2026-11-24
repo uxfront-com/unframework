@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useMemo, useRef } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useMemo, useRef } from "react";
 
 export interface PageCountProps {
   page?: number;
@@ -11,10 +10,10 @@ export interface PageCountEvents {
   onPageChange?: (page: number, previous: number) => void;
 }
 
-export interface PageCountAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PageCountAttributes = Omit<
+  ComponentPropsWithRef<"nav">,
+  "page" | "total" | "onPageChange" | "children"
+>;
 
 export default function PageCount({
   page = 1,
@@ -38,12 +37,7 @@ export default function PageCount({
   }, [page]);
 
   return (
-    <nav
-      className={cx("page-count", className)}
-      aria-label="Pages"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <nav className={cx("page-count", className)} aria-label="Pages" style={style} {...attributes}>
       <p role="status">{label}</p>
       <p>Direct: {page}</p>
     </nav>

@@ -1,13 +1,9 @@
 import Button from "./Button";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "./Toolbar.uf.tsx.css";
 
-export interface ToolbarAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ToolbarAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Toolbar({ className, style, ...attributes }: ToolbarAttributes) {
   return (
@@ -17,7 +13,7 @@ export default function Toolbar({ className, style, ...attributes }: ToolbarAttr
       className={cx("toolbar", className)}
       style={style}
       data-uf-a33d603f=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <Button text="Save" data-uf-a33d603f="" />
       <Button text="Cancel" data-uf-a33d603f="" />

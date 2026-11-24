@@ -67,12 +67,21 @@ export default function Toolbar() {
     expect(html).toMatch(new RegExp(`<button [^>]*data-uf-${id}=""[^>]*>Save</button>`));
   });
 
-  it("passes the scope attributes alone, never another prop the output leaves unread", async () => {
-    const Button = await load(["Button.uf.tsx", BUTTON]);
+  // The root spreads what the component does not declare, the scope attributes among it
+  // (ADR-0118), and never a prop it declares and leaves unread.
+  it("passes the scope attributes on, never a declared prop the output leaves unread", async () => {
+    // Named apart from the earlier `Button`, which the module cache would give back.
+    const Button = await load([
+      "Labelled.uf.tsx",
+      `export default function Labelled({ text }: { text: string; title?: string }) {
+  return <button type="button" class="button">{text}</button>;
+}`,
+    ]);
     const html = await renderToString(Button, {
-      props: { text: "Save", title: "unread", "data-uf-0a1b2c3d": "" },
+      props: { text: "Save", title: "unread", "aria-label": "Save it", "data-uf-0a1b2c3d": "" },
     });
     expect(html).toMatch(/<button [^>]*data-uf-0a1b2c3d=""[^>]*>Save<\/button>/);
+    expect(html).toMatch(/<button [^>]*aria-label="Save it"[^>]*>Save<\/button>/);
     expect(html).not.toMatch(/\btitle=/);
   });
 });

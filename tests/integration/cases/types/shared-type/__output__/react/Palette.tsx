@@ -1,15 +1,11 @@
 import Swatch from "./Swatch";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { Tone } from "./types";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export type { Tone } from "./types";
 
-export interface PaletteAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PaletteAttributes = Omit<ComponentPropsWithRef<"div">, "tone" | "children">;
 
 export default function Palette({
   tone,
@@ -18,7 +14,7 @@ export default function Palette({
   ...attributes
 }: { tone: Tone } & PaletteAttributes) {
   return (
-    <div className={cx("palette", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("palette", className)} style={style} {...attributes}>
       <Swatch tone={tone} />
     </div>
   );

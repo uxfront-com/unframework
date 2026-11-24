@@ -1744,4 +1744,96 @@ export default function RefMarkedSelect() {
   );
 }
 `,
+  // What falls through (ADR-0118): a root with a declared prop named like an attribute, a
+  // declared event named like a DOM one, its own listeners, a template ref and a model's listener;
+  // a rest spread on an inner element with a listener and a class of its own; and a root
+  // without fallthrough whose own `ref` callback hands the consumer's the element too.
+  FallthroughChip: `import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
+
+export default function FallthroughChip({ title, label }: { title: string; label: string }) {
+  const emit = defineEmits<{ click: [label: string]; pick: [] }>();
+  const chip = useTemplateRef<HTMLButtonElement>();
+  const pressed = ref(false);
+  function press() {
+    pressed.value = !pressed.value;
+    chip.value?.focus();
+  }
+  return (
+    <button
+      ref={chip}
+      type="button"
+      class="chip"
+      aria-pressed={pressed.value}
+      onClick={() => emit("click", label)}
+      onKeydown={(event) => {
+        if (event.key !== "Enter") return;
+        press();
+      }}
+      onFocus={press}
+    >
+      {title}
+    </button>
+  );
+}
+`,
+  FallthroughField: `import { defineOptions, ref } from "@uxfront/unframework";
+
+export default function FallthroughField({ label, ...rest }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  const text = ref("");
+  const focused = ref(0);
+  return (
+    <label class="field">
+      {label}
+      <input
+        {...rest}
+        class="control"
+        v-model={text.value}
+        onFocus={() => focused.value++}
+      />
+    </label>
+  );
+}
+`,
+  // A consumer of a child that exposes nothing: its ref holds the child's root, and the
+  // attributes and listeners the child does not declare type-check against that root's.
+  FallthroughForm: `import { ref, useTemplateRef } from "@uxfront/unframework";
+
+export default function FallthroughForm() {
+  const name = useTemplateRef<HTMLInputElement>();
+  const keys = ref(0);
+  return (
+    <form>
+      <FallthroughInput
+        ref={name}
+        label="Name"
+        id="name"
+        aria-describedby="hint"
+        title="Your name"
+        onKeydown={() => keys.value++}
+        onClick={() => name.value?.select()}
+      />
+      <p id="hint">Keys: {keys.value}</p>
+    </form>
+  );
+}
+
+function FallthroughInput({ label }: { label: string }) {
+  return <input aria-label={label} onKeydown={(event) => event.stopPropagation()} />;
+}
+`,
+  // FallthroughForm's child, as its own output file imports it.
+  FallthroughInput: `export function FallthroughInput({ label }: { label: string }) {
+  return <input aria-label={label} onKeydown={(event) => event.stopPropagation()} />;
+}
+`,
+  FallthroughRoot: `import { defineOptions, onMounted, useTemplateRef } from "@uxfront/unframework";
+
+export default function FallthroughRoot({ label }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  const field = useTemplateRef<HTMLInputElement>();
+  onMounted(() => field.value?.select());
+  return <input ref={field} aria-label={label} />;
+}
+`,
 };

@@ -1,14 +1,10 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ItemAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ItemAttributes = Omit<ComponentPropsWithRef<"span">, "children">;
 
 export function Item({ className, style, ...attributes }: ItemAttributes) {
   return (
-    <span className={className} style={style} {...scopeAttributes(attributes)}>
+    <span className={className} style={style} {...attributes}>
       Item
     </span>
   );

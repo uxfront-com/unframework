@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface Book {
   id: number;
@@ -19,10 +18,10 @@ export interface BookShelfEvents {
   onSummed?: (total: number) => void;
 }
 
-export interface BookShelfAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BookShelfAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "books" | "onMoved" | "onCounted" | "onToggled" | "onBusy" | "onSummed" | "children"
+>;
 
 function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);
@@ -146,7 +145,7 @@ export default function BookShelf({
       className={cx("book-shelf", className)}
       aria-label="Books"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul aria-label="Shelf">
         {books.map((book) => (

@@ -1,13 +1,9 @@
 import { SetupPending } from "./_unframework/SetupPending";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { loadUser } from "./api";
-import { type CSSProperties, Suspense, use, useRef, useState } from "react";
+import { type ComponentPropsWithRef, Suspense, use, useRef, useState } from "react";
 
-export interface ProfileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileAttributes = Omit<ComponentPropsWithRef<"p">, "id" | "children">;
 
 async function profileSetup({ id }: { id: string }) {
   const user = await loadUser(id);
@@ -28,6 +24,7 @@ export default function Profile(props: { id: string } & ProfileAttributes) {
 function ProfileResolved({
   className,
   style,
+  id: _id,
   setup,
   settled: _settled,
   ...attributes
@@ -41,7 +38,7 @@ function ProfileResolved({
   const visitsRef = useRef(visits);
 
   return (
-    <p className={cx("profile", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("profile", className)} style={style} {...attributes}>
       {user.name}{" "}
       <button
         type="button"

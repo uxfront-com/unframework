@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useControllableState } from "./useControllableState";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface RatingEvents {
   onChange?: (value: number) => void;
 }
 
-export interface RatingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RatingAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "value" | "onChange" | "children"
+>;
 
 export default function Rating({
   value,
@@ -26,12 +25,7 @@ export default function Rating({
   );
 
   return (
-    <section
-      className={cx("rating", className)}
-      aria-label="Rating"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("rating", className)} aria-label="Rating" style={style} {...attributes}>
       <p role="status">Rated {current} of 3</p>
       <button type="button" onClick={() => set(2)}>
         Two

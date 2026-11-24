@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useMemo, useRef } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useMemo, useRef } from "react";
 
 export interface TemperatureProps {
   celsius: number;
@@ -10,10 +9,10 @@ export interface TemperatureEvents {
   onReading?: (celsius: number, previous: number) => void;
 }
 
-export interface TemperatureAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TemperatureAttributes = Omit<
+  ComponentPropsWithRef<"figure">,
+  "celsius" | "onReading" | "children"
+>;
 
 export default function Temperature({
   celsius,
@@ -41,7 +40,7 @@ export default function Temperature({
       className={cx("temperature", className)}
       data-level={level}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>{celsius} °C</p>
       <p>{fahrenheit} °F</p>

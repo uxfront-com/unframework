@@ -24,6 +24,7 @@ import type {
   UseItem,
 } from "@unframework.dev/ir";
 
+import { childApi, FALLTHROUGH_MEMBERS } from "./fallthrough.ts";
 import { assertedSetup } from "./narrowing.ts";
 import { outputName } from "./outputs.ts";
 
@@ -174,6 +175,11 @@ export interface Plan {
    * once the awaits and the rest of the setup have run, and the template renders behind it.
    */
   resolved?: string;
+  /**
+   * The template refs on a child that exposes nothing, which hold its root element (ADR-0118),
+   * by binding: the local name of the child, whose `ufElement` the ref reads.
+   */
+  elementRefs: ReadonlyMap<BindingId, string>;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
@@ -254,8 +260,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   );
   const composition = new NameScope([
     ...memberNames,
-    "class",
-    "style",
+    ...FALLTHROUGH_MEMBERS,
     ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
   ]);
   const recipes = new Map<string, string>();
@@ -278,8 +283,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   // module name, which class code reads, and the template reads it through another member.
   const declaredMembers = new Set([
     ...[...events.keys()].map(outputName),
-    "class",
-    "style",
+    ...FALLTHROUGH_MEMBERS,
     ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
   ]);
   const moduleMembers = new Map(
@@ -288,7 +292,8 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
       .map(({ id, name, kind }) => [id, claimMember(outputSafeName(name, kind))] as const),
   );
   const bindingNames = new Set(component.bindings.map(({ name }) => name));
-  const { forms, seeded, placements, late } = formsOf(component);
+  const elementRefs = rootElementRefs(component, module);
+  const { forms, seeded, placements, late } = formsOf(component, elementRefs);
   // Each call's result is held by a member named for its composable (`useMediaQuery` →
   // `mediaQuery`), past every name of the class, the fallthrough inputs included (ADR-0069).
   const calls = component.setup.flatMap((item): ComposableCall[] => {
@@ -345,6 +350,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     results,
     moduleMembers,
     late,
+    elementRefs,
     ...(resolved === undefined ? {} : { resolved }),
   };
 }
@@ -380,8 +386,7 @@ function withOutputNames(component: UfComponent, module: UfModule): UfComponent 
   // The members the emitter declares for composition: the `class` and `style` inputs a root
   // takes from its consumer, and each slot's query (ADR-0056).
   const declared = new Set([
-    "class",
-    "style",
+    ...FALLTHROUGH_MEMBERS,
     ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
   ]);
   const clashing = component.bindings.filter(
@@ -455,7 +460,10 @@ function outputSafeName(name: string, kind: BindingKind): string {
  * Each binding's form, and the setup `let`s seeded once the inputs are set: setup items in source
  * order, as a later item may read an earlier one.
  */
-function formsOf(component: UfComponent): {
+function formsOf(
+  component: UfComponent,
+  elementRefs: ReadonlyMap<BindingId, string>,
+): {
   forms: Map<BindingId, MemberForm>;
   seeded: Set<BindingId>;
   placements: Map<UseItem, CallPlacement>;
@@ -521,7 +529,7 @@ function formsOf(component: UfComponent): {
         unreachable(binding.kind);
     }
   }
-  const instances = componentRefs(component);
+  const instances = componentRefs(component, elementRefs);
   const escaping = escapingFunctions(component);
   // Whether the constructor registers a hook or an effect before the item at hand.
   let constructs = false;
@@ -591,6 +599,7 @@ function formsOf(component: UfComponent): {
         break;
       case "Provide":
       case "Inject":
+      case "DevCheck":
         break;
       case "Use": {
         // The composable reads a value, and may call a getter, while it sets up (`ref(name())`):
@@ -638,14 +647,41 @@ function formsOf(component: UfComponent): {
   return { forms, seeded, placements, late };
 }
 
-/** The template refs a `ref` on a component holds, which hold its instance (ADR-0054). */
-function componentRefs(component: UfComponent): Set<BindingId> {
+/**
+ * The template refs a `ref` on a component holds, which hold its instance (ADR-0054): all but
+ * those on a child that exposes nothing, which hold its root element (ADR-0118).
+ */
+function componentRefs(
+  component: UfComponent,
+  elementRefs: ReadonlyMap<BindingId, string>,
+): Set<BindingId> {
   const found = new Set<BindingId>();
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Component" && node.kind !== "Dynamic") return;
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Ref") found.add(attribute.binding);
+        if (attribute.kind === "Ref" && !elementRefs.has(attribute.binding)) {
+          found.add(attribute.binding);
+        }
+      }
+    },
+  });
+  return found;
+}
+
+/**
+ * The template refs on a child that exposes nothing, by binding, with the child's local name: each
+ * holds the child's root element, which the child declares as `ufElement` (ADR-0118).
+ */
+function rootElementRefs(component: UfComponent, module: UfModule): Map<BindingId, string> {
+  const found = new Map<BindingId, string>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component") return;
+      const child = childApi(module, node.component);
+      if (!child || child.exposes || child.refTag === undefined) return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Ref") found.set(attribute.binding, node.component);
       }
     },
   });
@@ -702,6 +738,9 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
           if (argument.kind === "Value") visit(argument.value);
           else visit((argument.kind === "Getter" ? argument.getter : argument.callback).body);
         }
+        break;
+      case "DevCheck":
+        visit(item.code);
         break;
       case "TemplateRef":
       case "Id":

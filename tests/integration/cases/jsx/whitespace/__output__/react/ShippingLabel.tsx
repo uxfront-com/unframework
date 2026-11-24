@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ShippingLabelProps {
   recipient: string;
@@ -9,10 +8,10 @@ export interface ShippingLabelProps {
   postcode: string;
 }
 
-export interface ShippingLabelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShippingLabelAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "recipient" | "street" | "city" | "postcode" | "children"
+>;
 
 export default function ShippingLabel({
   recipient,
@@ -28,7 +27,7 @@ export default function ShippingLabel({
       className={cx("shipping-label", className)}
       aria-label="Shipping label"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>
         <strong>To:</strong> {recipient}

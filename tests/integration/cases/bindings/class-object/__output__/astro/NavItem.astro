@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface NavItemProps {
   label: string;
   href: string;
@@ -7,25 +9,31 @@ export interface NavItemProps {
   danger?: boolean;
 }
 
-interface Props extends NavItemProps {
+interface Props
+  extends
+    NavItemProps,
+    Omit<HTMLAttributes<"a">, "label" | "href" | "active" | "muted" | "danger"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, href, active, muted, danger = false, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  label,
+  href,
+  active,
+  muted,
+  danger = false,
+  class: className,
+  style,
+  "aria-current": ariaCurrent,
+  ...attrs
+} = Astro.props;
 ---
 
 <a
   href={href}
   class:list={[{ active, "nav-item-muted": muted, "nav-item-danger": danger, "text-danger": danger }, className]}
-  aria-current={active ? "page" : undefined}
+  aria-current={"aria-current" in Astro.props ? ariaCurrent : active ? "page" : undefined}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label}</a>

@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface LinkAttributes {
   class?: string;
@@ -21,10 +20,10 @@ export interface TextLinkProps {
   row: RowAttributes;
 }
 
-export interface TextLinkAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TextLinkAttributes = Omit<
+  ComponentPropsWithRef<"p">,
+  "href" | "label" | "strong" | "link" | "row" | "children"
+>;
 
 export default function TextLink({
   href,
@@ -41,7 +40,7 @@ export default function TextLink({
       id={row.id}
       className={cx("link-row", { "link-row-strong": strong }, className, row.class)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <a href={href} className={cx("text-link", link.class)} title={link.title} rel={link.rel}>
         {label}

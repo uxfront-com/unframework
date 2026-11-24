@@ -1,29 +1,24 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export type DepthKey = number;
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"section">, "title"> {
   title: string;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { title, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { title, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const depth = 0 as DepthKey;
 ---
 
 <section
-  aria-label={title}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
   class:list={[className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{title} at depth {depth}</h2>
   <slot />

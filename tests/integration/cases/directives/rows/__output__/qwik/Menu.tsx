@@ -4,253 +4,240 @@ import { vTrace } from "./vTrace";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
   useVisibleTask$,
 } from "@qwik.dev/core";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const items = useSignal<{ id: string; label: string; note?: string }[]>([
-      { id: "a", label: "Alpha", note: "First" },
-      { id: "b", label: "Beta" },
-      { id: "c", label: "Gamma" },
-    ]);
-    const prefix = useSignal("Open");
-    const focused = useSignal(0);
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  const items = useSignal<{ id: string; label: string; note?: string }[]>([
+    { id: "a", label: "Alpha", note: "First" },
+    { id: "b", label: "Beta" },
+    { id: "c", label: "Gamma" },
+  ]);
+  const prefix = useSignal("Open");
+  const focused = useSignal(0);
 
-    const traceElements = useSignal<
-      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
-    >([]);
+  const traceElements = useSignal<
+    { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+  >([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements)) {
-          cleanup(
-            runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements, left),
-              back: collectValues(traceElements, values),
-            }),
-          );
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements)) {
+        cleanup(
+          runDirective(vTrace, element, values[0], {
+            leave: (left) => forgetValues(traceElements, left),
+            back: collectValues(traceElements, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_1 = useSignal<
+    { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+  >([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements_1)) {
+        cleanup(
+          runDirective(vTrace, element, values[0], {
+            leave: (left) => forgetValues(traceElements_1, left),
+            back: collectValues(traceElements_1, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_2 = useSignal<
+    {
+      element: DirectiveElement<typeof vTrace>;
+      values: [DirectiveValue<typeof vTrace>, DirectiveValue<typeof vMark>];
+    }[]
+  >([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements_2)) {
+        cleanup(
+          runDirective(vTrace, element, values[0], {
+            leave: (left) => forgetValues(traceElements_2, left),
+            back: collectValues(traceElements_2, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements_2)) {
+        cleanup(
+          runDirective(vMark, element, values[1], {
+            leave: (left) => forgetValues(traceElements_2, left),
+            back: collectValues(traceElements_2, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_3 = useSignal<
+    { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+  >([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements_3)) {
+        cleanup(
+          runDirective(vTrace, element, values[0], {
+            leave: (left) => forgetValues(traceElements_3, left),
+            back: collectValues(traceElements_3, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_4 = useSignal<
+    { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+  >([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements_4)) {
+        cleanup(
+          runDirective(vTrace, element, values[0], {
+            leave: (left) => forgetValues(traceElements_4, left),
+            back: collectValues(traceElements_4, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_5 = useSignal<
+    { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+  >([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements_5)) {
+        cleanup(
+          runDirective(vTrace, element, values[0], {
+            leave: (left) => forgetValues(traceElements_5, left),
+            back: collectValues(traceElements_5, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  return (
+    <section class={["menu", className]} aria-label="Menu" style={style} {...attributes}>
+      <ul aria-label="Items">
+        {items.value.map((item) => (
+          <li key={item.id} data-name={item.id} ref={collectValues(traceElements, [item.label])}>
+            {item.label}
+            {item.note ? (
+              <b data-name={`note-${item.id}`} ref={collectValues(traceElements_1, [item.note])}>
+                {item.note}
+              </b>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <ul aria-label="Marked">
+        {items.value.map((item) => (
+          <li
+            key={item.id}
+            data-name={`both-${item.id}`}
+            ref={collectValues(traceElements_2, [item.label, item.id])}
+          >
+            {item.label}
+          </li>
+        ))}
+      </ul>
+      <div class="focus">
+        {items.value.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            data-name={`focus-${item.id}`}
+            onFocusIn$={() => focused.value++}
+            ref={collectValues(traceElements_3, [item.label])}
+          >
+            Focus {item.label}
+          </button>
+        ))}
+      </div>
+      <output>{focused.value}</output>
+      <ul aria-label="Prefixed">
+        {items.value.map((item) => (
+          <li
+            key={item.id}
+            data-name={`prefixed-${item.id}`}
+            ref={collectValues(traceElements_4, [`${prefix.value} ${item.label}`])}
+          >
+            {item.label}
+          </li>
+        ))}
+      </ul>
+      <Picker
+        option$={({ option }) => (
+          <span
+            data-name={`option-${option.id}`}
+            ref={collectValues(traceElements_5, [`${prefix.value} ${option.label}`])}
+          >
+            {option.label}
+          </span>
+        )}
+      />
+      <button
+        type="button"
+        onClick$={() =>
+          (items.value = items.value.map((item) =>
+            item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
+          ))
         }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_1 = useSignal<
-      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
-    >([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements_1)) {
-          cleanup(
-            runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements_1, left),
-              back: collectValues(traceElements_1, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_2 = useSignal<
-      {
-        element: DirectiveElement<typeof vTrace>;
-        values: [DirectiveValue<typeof vTrace>, DirectiveValue<typeof vMark>];
-      }[]
-    >([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements_2)) {
-          cleanup(
-            runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements_2, left),
-              back: collectValues(traceElements_2, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements_2)) {
-          cleanup(
-            runDirective(vMark, element, values[1], {
-              leave: (left) => forgetValues(traceElements_2, left),
-              back: collectValues(traceElements_2, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_3 = useSignal<
-      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
-    >([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements_3)) {
-          cleanup(
-            runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements_3, left),
-              back: collectValues(traceElements_3, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_4 = useSignal<
-      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
-    >([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements_4)) {
-          cleanup(
-            runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements_4, left),
-              back: collectValues(traceElements_4, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_5 = useSignal<
-      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
-    >([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements_5)) {
-          cleanup(
-            runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements_5, left),
-              back: collectValues(traceElements_5, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    return (
-      <section
-        class={["menu", className]}
-        aria-label="Menu"
-        {...scopeAttributes(attributes)}
-        style={style}
       >
-        <ul aria-label="Items">
-          {items.value.map((item) => (
-            <li key={item.id} data-name={item.id} ref={collectValues(traceElements, [item.label])}>
-              {item.label}
-              {item.note ? (
-                <b data-name={`note-${item.id}`} ref={collectValues(traceElements_1, [item.note])}>
-                  {item.note}
-                </b>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-        <ul aria-label="Marked">
-          {items.value.map((item) => (
-            <li
-              key={item.id}
-              data-name={`both-${item.id}`}
-              ref={collectValues(traceElements_2, [item.label, item.id])}
-            >
-              {item.label}
-            </li>
-          ))}
-        </ul>
-        <div class="focus">
-          {items.value.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              data-name={`focus-${item.id}`}
-              onFocusIn$={() => focused.value++}
-              ref={collectValues(traceElements_3, [item.label])}
-            >
-              Focus {item.label}
-            </button>
-          ))}
-        </div>
-        <output>{focused.value}</output>
-        <ul aria-label="Prefixed">
-          {items.value.map((item) => (
-            <li
-              key={item.id}
-              data-name={`prefixed-${item.id}`}
-              ref={collectValues(traceElements_4, [`${prefix.value} ${item.label}`])}
-            >
-              {item.label}
-            </li>
-          ))}
-        </ul>
-        <Picker
-          option$={({ option }) => (
-            <span
-              data-name={`option-${option.id}`}
-              ref={collectValues(traceElements_5, [`${prefix.value} ${option.label}`])}
-            >
-              {option.label}
-            </span>
-          )}
-        />
-        <button
-          type="button"
-          onClick$={() =>
-            (items.value = items.value.map((item) =>
-              item.id === "a" ? { id: "a", label: "Alpha 2", note: "First" } : item,
-            ))
-          }
-        >
-          Rename first
-        </button>
-        <button type="button" onClick$={() => (items.value = [...items.value].reverse())}>
-          Reverse
-        </button>
-        <button
-          type="button"
-          onClick$={() => (items.value = items.value.filter((item) => item.id !== "b"))}
-        >
-          Remove second
-        </button>
-        <button
-          type="button"
-          onClick$={() => (items.value = [...items.value, { id: "d", label: "Delta" }])}
-        >
-          Add item
-        </button>
-        <button type="button" onClick$={() => (prefix.value = "Close")}>
-          Change prefix
-        </button>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+        Rename first
+      </button>
+      <button type="button" onClick$={() => (items.value = [...items.value].reverse())}>
+        Reverse
+      </button>
+      <button
+        type="button"
+        onClick$={() => (items.value = items.value.filter((item) => item.id !== "b"))}
+      >
+        Remove second
+      </button>
+      <button
+        type="button"
+        onClick$={() => (items.value = [...items.value, { id: "d", label: "Delta" }])}
+      >
+        Add item
+      </button>
+      <button type="button" onClick$={() => (prefix.value = "Close")}>
+        Change prefix
+      </button>
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

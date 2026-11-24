@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ArticleSkeletonProps {
   title: string;
@@ -8,19 +7,28 @@ export interface ArticleSkeletonProps {
   minutes?: number;
 }
 
-export interface ArticleSkeletonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ArticleSkeletonAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "title" | "summary" | "minutes" | "children"
+>;
 
 export default function ArticleSkeleton(_props: ArticleSkeletonProps & ArticleSkeletonAttributes) {
+  const {
+    className,
+    style,
+    title: _title,
+    summary: _summary,
+    minutes: _minutes,
+    ...attributes
+  } = _props;
+
   return (
     <article
-      className={cx("article-skeleton", _props.className)}
+      className={cx("article-skeleton", className)}
       aria-busy="true"
       aria-label="Loading article"
-      style={_props.style}
-      {...scopeAttributes(_props)}
+      style={style}
+      {...attributes}
     >
       <p>Loading the article</p>
     </article>

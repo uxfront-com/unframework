@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ActionButtonProps {
   label: string;
@@ -10,10 +9,10 @@ export interface ActionButtonProps {
   badge: number;
 }
 
-export interface ActionButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ActionButtonAttributes = Omit<
+  ComponentPropsWithRef<"button">,
+  "label" | "size" | "primary" | "busy" | "badge" | "children"
+>;
 
 export default function ActionButton({
   label,
@@ -36,7 +35,7 @@ export default function ActionButton({
         className,
       )}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </button>

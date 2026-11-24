@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit } from "solid-js";
 
 interface User {
   name: string;
@@ -14,8 +14,15 @@ export interface NarrowedStateEvents {
 }
 
 export default function NarrowedState(
-  props: NarrowedStateProps & NarrowedStateEvents & { class?: string; style?: JSX.CSSProperties },
+  props: NarrowedStateProps &
+    NarrowedStateEvents &
+    Omit<ComponentProps<"div">, "member" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "member", "onPicked");
+
   const [user, setUser] = createState<User | null>(null);
   const [draft, setDraft] = createState<string | null>(null);
 
@@ -25,7 +32,7 @@ export default function NarrowedState(
   }
 
   return (
-    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <div {...others}>
       <Show
         when={((user) => (user !== null ? { user } : undefined))(user())}
         fallback={<p>Nobody</p>}
@@ -47,13 +54,6 @@ export default function NarrowedState(
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

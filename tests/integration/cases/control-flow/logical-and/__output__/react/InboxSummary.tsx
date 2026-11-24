@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface InboxSummaryProps {
   folder: string;
@@ -9,10 +8,10 @@ export interface InboxSummaryProps {
   signature: string;
 }
 
-export interface InboxSummaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type InboxSummaryAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "folder" | "unread" | "flagged" | "signature" | "children"
+>;
 
 export default function InboxSummary({
   folder,
@@ -28,7 +27,7 @@ export default function InboxSummary({
       className={cx("inbox-summary", className)}
       aria-label="Inbox summary"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{folder || "Inbox"}</h2>
       {unread ? <p>{unread} unread</p> : null}

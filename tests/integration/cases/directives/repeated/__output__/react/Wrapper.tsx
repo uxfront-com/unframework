@@ -1,16 +1,12 @@
 import Rows from "./Rows";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface WrapperSlots {
   row?: ReactNode;
 }
 
-export interface WrapperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type WrapperAttributes = Omit<ComponentPropsWithRef<"section">, "row" | "children">;
 
 export default function Wrapper({
   row,
@@ -19,12 +15,7 @@ export default function Wrapper({
   ...attributes
 }: WrapperSlots & WrapperAttributes) {
   return (
-    <section
-      className={cx("wrapper", className)}
-      aria-label="Rows"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("wrapper", className)} aria-label="Rows" style={style} {...attributes}>
       <Rows row={row} />
     </section>
   );

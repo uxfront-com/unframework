@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import "./Mat.uf.tsx.css";
 
 export interface MatSlots {
   children?: ReactNode;
 }
 
-export interface MatAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MatAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Mat({
   children,
@@ -19,12 +15,7 @@ export default function Mat({
   ...attributes
 }: MatSlots & MatAttributes) {
   return (
-    <div
-      className={cx("mat", className)}
-      style={style}
-      data-uf-09929c4a=""
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("mat", className)} style={style} data-uf-09929c4a="" {...attributes}>
       {children}
     </div>
   );

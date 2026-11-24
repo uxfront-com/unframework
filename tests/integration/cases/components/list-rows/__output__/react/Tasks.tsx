@@ -1,6 +1,5 @@
 import Row from "./Row";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface Task {
   id: number;
@@ -8,10 +7,7 @@ export interface Task {
   done: boolean;
 }
 
-export interface TasksAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TasksAttributes = Omit<ComponentPropsWithRef<"div">, "initial" | "children">;
 
 export default function Tasks({
   initial,
@@ -38,7 +34,7 @@ export default function Tasks({
   }
 
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <div role="list" aria-label="Tasks">
         {tasks.map((task) => (
           <Row key={task.id} name={task.name} done={task.done} />

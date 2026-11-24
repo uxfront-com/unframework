@@ -1,21 +1,11 @@
 import Primary from "./Primary";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ToolbarAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ToolbarAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Toolbar({ className, style, ...attributes }: ToolbarAttributes) {
   return (
-    <div
-      role="toolbar"
-      aria-label="Actions"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <div role="toolbar" aria-label="Actions" className={className} style={style} {...attributes}>
       <Primary text="Save" className="wide" />
     </div>
   );

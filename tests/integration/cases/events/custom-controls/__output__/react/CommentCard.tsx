@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type KeyboardEvent,
   type SyntheticEvent,
   type UIEvent,
@@ -13,10 +12,7 @@ export interface CommentCardEvents {
   onLiked?: (liked: boolean, by: string) => void;
 }
 
-export interface CommentCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CommentCardAttributes = Omit<ComponentPropsWithRef<"section">, "onLiked" | "children">;
 
 export default function CommentCard({
   onLiked,
@@ -52,7 +48,7 @@ export default function CommentCard({
       className={cx("comment-card", className)}
       aria-label="Comment"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Comment

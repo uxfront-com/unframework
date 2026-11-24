@@ -1,12 +1,8 @@
 import { Transition } from "./_unframework/Transition";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 import "./Accordion.uf.tsx.css";
 
-export interface AccordionAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AccordionAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Accordion({ className, style, ...attributes }: AccordionAttributes) {
   const [open, setOpen] = useState(true);
@@ -18,7 +14,7 @@ export default function Accordion({ className, style, ...attributes }: Accordion
       className={className}
       style={style}
       data-uf-357b6b1f=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

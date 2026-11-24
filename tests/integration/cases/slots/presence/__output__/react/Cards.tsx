@@ -1,16 +1,12 @@
 import Card from "./Card";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface CardsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardsAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Cards({ className, style, ...attributes }: CardsAttributes) {
   return (
-    <div className={cx("cards", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("cards", className)} style={style} {...attributes}>
       <Card label="Full" title={<h3>Weather</h3>}>
         <p>Sunny, 21°</p>
       </Card>

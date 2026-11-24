@@ -1,13 +1,9 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useDirective } from "./_unframework/useDirective";
 import { vRecord } from "./vRecord";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface MeterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MeterAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Meter({ className, style, ...attributes }: MeterAttributes) {
   const [level, setLevel] = useState(1);
@@ -17,12 +13,7 @@ export default function Meter({ className, style, ...attributes }: MeterAttribut
   const recordRef = useDirective(vRecord, () => level);
 
   return (
-    <section
-      className={cx("meter", className)}
-      aria-label="Meter"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("meter", className)} aria-label="Meter" style={style} {...attributes}>
       <output className="level" ref={recordRef}>
         Level {level}
       </output>

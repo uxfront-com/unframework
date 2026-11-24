@@ -1,7 +1,6 @@
 import {
   addTypeImports,
   angularDialect,
-  candidateAttributes,
   codeNames,
   codeKind,
   defineTarget,
@@ -63,6 +62,15 @@ import {
   trustedHtmlPipeCode,
 } from "./directives.ts";
 import type { ScopeDirectiveNames } from "./directives.ts";
+import {
+  ATTRIBUTES_INPUT,
+  ELEMENT_MEMBER,
+  fallthroughDirectiveCode,
+  LISTENERS_INPUT,
+  planFallthrough,
+  planRootElement,
+} from "./fallthrough.ts";
+import type { FallthroughPlan } from "./fallthrough.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
 import { planModels } from "./models.ts";
@@ -79,7 +87,7 @@ import {
 } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { classRules } from "./rules.ts";
-import { fallthroughRoot, template, templateReads } from "./template.ts";
+import { template, templateReads } from "./template.ts";
 import { declaredTypes } from "./types.ts";
 
 /** The note the emulated cells share: why a listener's option needs a directive. */
@@ -196,8 +204,8 @@ export const angular: Target = defineTarget({
     },
     fallthrough: {
       support: "emulated",
-      helper: "fallthrough",
-      note: "A component that inherits `class` and `style` declares them as inputs, merges them into its root element and clears them from its host, which keeps only `display: contents` (ADR-0056).",
+      helper: "Fallthrough",
+      note: "Angular has no attribute spread, and a host that carries an attribute is not unwrapped. A component that takes what its consumer passes declares it as inputs, which the consumer binds on the host, and clears `class` and `style` from the host, which keeps only `display: contents` (ADR-0056): `class` and `style` merge into the element that takes them, its root or the props' rest's element, and the other attributes and native listeners come as two records, `ufAttributes` and `ufListeners`, which an inline attribute directive, `Fallthrough` (`[ufFallthrough]`), sets on that element through `Renderer2`, the consumer's attribute winning, and listens to in the browser after the element's own listeners. A root component passes them on to its own (ADR-0118). A hand-written consumer's attribute on the host stays on the host.",
     },
     "contextual-root": {
       support: "unsupported",
@@ -206,7 +214,11 @@ export const angular: Target = defineTarget({
       reason:
         "A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).",
     },
-    expose: { support: "native" },
+    expose: {
+      support: "emulated",
+      helper: "ufElement",
+      note: "`defineExpose` makes the functions public members, which a ref on the component, `viewChild`, reads. A component that exposes nothing declares `ufElement`, a `viewChild` of its root element, `ElementRef<HTMLButtonElement>`, or a `computed` of its root component's own, since its host is no element a ref may hold; the parent's ref is a `computed` of the child's `ufElement`, typed as the source types the element (ADR-0118).",
+    },
     context: { support: "native" },
     "reactive-context": {
       support: "emulated",
@@ -328,7 +340,13 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const nextTick = callsNextTick ? plan.members.claim("nextTick") : undefined;
   const rules = classRules(plan, nextTick);
   const closure = componentTypes(component, module);
-  const listeners = planListeners(plan, nextTick, models.writes);
+  // What the consumer passes falls through to the root, or to the rest's element (ADR-0056,
+  // ADR-0118), and a ref on the component holds its root element where it exposes nothing.
+  const fallthrough = planFallthrough(component, module);
+  const rootElement = planRootElement(component, module);
+  const forwards =
+    fallthrough?.passes && fallthrough.target.kind === "Component" ? fallthrough.target : undefined;
+  const listeners = planListeners(plan, nextTick, models.writes, forwards);
   const reads = templateReads(plan, listeners);
   const templateBindings = [...reads.read, ...reads.keyed, ...listeners.members].map((id) =>
     bindingById(plan, id),
@@ -349,30 +367,17 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   for (const method of listeners.methods) templateMembers.add(method.name);
   for (const guard of listeners.guards) templateMembers.add(guard);
   for (const slot of reads.slots) templateMembers.add(slotQuery(slot));
-  // A consumer's `class` and `style` fall through to a root element or component, through
-  // inputs; the host clears both for a component that takes them or opts out (ADR-0056).
-  // A root Angular can bind nothing on (`{{` in an attribute, ADR-0037) takes neither.
-  const root = fallthroughRoot(component.render);
-  const fallthrough =
-    component.inheritAttrs !== false &&
-    root !== undefined &&
-    (root.kind === "Component" ||
-      (root.kind === "Dynamic"
-        ? // Each `@case` is an element of its own tag (ADR-0119).
-          root.candidates.every(
-            (candidate) =>
-              candidate.kind === "Tag" &&
-              angularDialect.literalRegion?.({
-                kind: "Element",
-                tag: candidate.tag,
-                attributes: candidateAttributes(root, candidate.tag),
-                children: root.children,
-                span: root.span,
-              }) === undefined,
-          )
-        : angularDialect.literalRegion?.(root) === undefined));
-  const clearsHost = fallthrough || component.inheritAttrs === false;
-  reportApiClashes(component, composition, fallthrough, context);
+  // A consumer's `class` and `style` fall through to a root element or component, or the
+  // rest's element, through inputs, and so do its other attributes and listeners, through two
+  // records; the host clears `class` and `style` for a component that takes them or opts out
+  // (ADR-0056, ADR-0118). An element Angular can bind nothing on (`{{` in an attribute,
+  // ADR-0037) takes none of them.
+  const clearsHost = fallthrough !== undefined || component.inheritAttrs === false;
+  reportApiClashes(component, composition, fallthrough, rootElement !== undefined, context);
+  // The directive the element that takes the records binds, and their listeners' type.
+  const passes = fallthrough?.passes
+    ? fallthroughNames(component, module, imports, fallthrough.target.kind === "Element")
+    : undefined;
   const usesRefObject = component.setup.some(
     (item) =>
       (item.kind === "Provide" || (item.kind === "Inject" && item.fallback)) &&
@@ -416,7 +421,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   }));
   // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
   // attributes the component's styled parents put on its host.
-  const roots = scopedRoots(component);
+  const roots = scopedRoots(component, fallthrough?.rest === true);
   const scope = roots.size
     ? { ...scopeNames(component, module, imports), host: plan.members.claim("host") }
     : undefined;
@@ -444,7 +449,22 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(nextId === undefined ? {} : { nextId }),
     ...(refObject === undefined ? {} : { refObject }),
     slots: composition.slots,
-    fallthrough,
+    ...(fallthrough === undefined
+      ? {}
+      : { fallthrough: { passes: passes !== undefined, listeners: passes?.listeners ?? "" } }),
+    ...(rootElement === undefined
+      ? {}
+      : {
+          rootElement:
+            rootElement.root.kind === "Component"
+              ? {
+                  component: {
+                    className: rootElement.root.component,
+                    query: plan.members.claim("rootComponent"),
+                  },
+                }
+              : { type: rootElement.type! },
+        }),
     keyNames: composition.keyNames,
     external: provided.external,
     helpers: models.helpers,
@@ -457,6 +477,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(composition.imports.length ||
     directives.length ||
     scope ||
+    passes?.directive !== undefined ||
     models.textCaret ||
     trustedHtml ||
     teleport ||
@@ -471,6 +492,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...composition.imports,
                 ...listeners.directives.map(({ className: name }) => name),
                 ...(scope ? [scope.className] : []),
+                ...(passes?.directive === undefined ? [] : [passes.directive]),
                 ...(models.textCaret === undefined ? [] : [models.textCaret]),
                 ...(trustedHtml === undefined ? [] : [trustedHtml]),
                 ...(teleport === undefined ? [] : [teleport]),
@@ -508,7 +530,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     [
       "template",
       js.templateLiteral(
-        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host }, teleportHost, transition)}\n  `,
+        `\n${template(plan, listeners, reads, composition, models, { ...(fallthrough === undefined ? {} : { plan: fallthrough }), ...(rootElement === undefined ? {} : { rootElement }) }, scope && { roots, host: scope.host }, teleportHost, transition)}\n  `,
       ),
     ],
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own
@@ -590,6 +612,16 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       ),
     ),
     ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
+    ...(passes === undefined
+      ? []
+      : [
+          fallthroughDirectiveCode(
+            passes,
+            fallthrough!.events,
+            (name, type = false) => imports.add("@angular/core", name, { type }),
+            (name) => imports.add("@angular/common", name),
+          ),
+        ]),
     ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
     ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
     ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
@@ -693,10 +725,13 @@ function spanKey({ start, end }: Span): string {
 /**
  * The component's root nodes that take its styled parents' scope attributes (`scopeRoots`, the
  * child-root rule, ADR-0063), by {@link spanKey}: all but an element Angular binds nothing on
- * (`{{` in an attribute, ADR-0037), which takes no fallthrough either.
+ * (`{{` in an attribute, ADR-0037), which takes no fallthrough either. A component that spreads
+ * its props' rest keeps them on its root, as it would without `inheritAttrs: false`: the rest
+ * takes everything else its consumer passes (ADR-0118).
  */
-function scopedRoots(component: UfComponent): Set<string> {
-  const roots = new Set(scopeRoots(component).map(spanKey));
+function scopedRoots(component: UfComponent, rest: boolean): Set<string> {
+  const { inheritAttrs: _, ...inheriting } = component;
+  const roots = new Set(scopeRoots(rest ? inheriting : component).map(spanKey));
   walk(component.render, {
     enter(node) {
       if (node.kind === "Element" && angularDialect.literalRegion?.(node) !== undefined) {
@@ -707,25 +742,50 @@ function scopedRoots(component: UfComponent): Set<string> {
   return roots;
 }
 
-/**
- * The names of the scope directive's code. A source's components are joined into one module
- * where it is loaded (ADR-0053): each claims them from bases of its own (`ScopeAttributes_1`),
- * past the names any other component declares.
- */
+/** The names of the scope directive's code, claimed as {@link helperClaim} does. */
 function scopeNames(
   component: UfComponent,
   module: UfModule,
   imports: ImportSet,
 ): ScopeDirectiveNames {
+  const claim = helperClaim(component, module, imports);
+  return { className: claim("ScopeAttributes"), scopes: claim("scopes") };
+}
+
+/**
+ * The names of the fallthrough directive's code (ADR-0118), claimed as the scope directive's
+ * are: the type of the listeners' record, and the directive, where an element takes the records
+ * (a root component takes them through its own inputs).
+ */
+function fallthroughNames(
+  component: UfComponent,
+  module: UfModule,
+  imports: ImportSet,
+  directive: boolean,
+): { listeners: string; directive?: string } {
+  const claim = helperClaim(component, module, imports);
+  const listeners = claim("Listeners");
+  return directive ? { listeners, directive: claim("Fallthrough") } : { listeners };
+}
+
+/**
+ * Claims a helper's name in the component's file. A source's components are joined into one
+ * module where it is loaded (ADR-0053): each claims from bases of its own (`ScopeAttributes_1`),
+ * past the names any other component declares.
+ */
+function helperClaim(
+  component: UfComponent,
+  module: UfModule,
+  imports: ImportSet,
+): (helper: string) => string {
   const index = module.components.findIndex((each) => each.name === component.name);
   const reserved = module.components.map((each) => sourceNames(each, module));
-  const claim = (helper: string) => {
+  return (helper) => {
     const { base, others } = moduleHelperName(helper, reserved, index);
     imports.reserve(...others);
     imports.scope.rebase(helper, base);
     return imports.claim(helper);
   };
-  return { className: claim("ScopeAttributes"), scopes: claim("scopes") };
 }
 
 /** A name of the component's API on Angular, and what the source names with it. */
@@ -749,7 +809,8 @@ interface ApiName {
 function reportApiClashes(
   component: UfComponent,
   composition: Composition,
-  fallthrough: boolean,
+  fallthrough: FallthroughPlan | undefined,
+  rootElement: boolean,
   context: EmitContext,
 ): void {
   const taken = new Map<string, string>();
@@ -774,6 +835,21 @@ function reportApiClashes(
         { space: "input", name, what },
       ]);
     }
+  }
+  if (fallthrough?.passes) {
+    for (const [name, what] of [
+      [ATTRIBUTES_INPUT, "the input of the consumer's attributes"],
+      [LISTENERS_INPUT, "the input of the consumer's listeners"],
+    ] as const) {
+      declare([
+        { space: "member", name, what },
+        { space: "input", name, what },
+      ]);
+    }
+  }
+  if (rootElement) {
+    const what = "the member that holds the root element a ref on the component holds";
+    declare([{ space: "member", name: ELEMENT_MEMBER, what }]);
   }
   const source: { kind: string; label: string; span: Span; names: ApiName[] }[] = [
     ...component.props.map(({ name, span }) => {

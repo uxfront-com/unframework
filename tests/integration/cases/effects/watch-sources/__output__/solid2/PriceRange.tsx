@@ -1,10 +1,11 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
 } from "solid-js";
@@ -20,8 +21,22 @@ export interface PriceRangeEvents {
 }
 
 export default function PriceRange(
-  props: PriceRangeProps & PriceRangeEvents & { class?: string; style?: JSX.CSSProperties },
+  props: PriceRangeProps &
+    PriceRangeEvents &
+    Omit<ComponentProps<"section">, "currency" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(
+    props,
+    "currency",
+    "onSpanUpdate",
+    "onRangeUpdate",
+    "onCurrencyUpdate",
+    "class",
+  );
+
   const [low, setLow] = createState(10);
   const [high, setHigh] = createState(50);
 
@@ -47,8 +62,7 @@ export default function PriceRange(
     <section
       class={props.class ? `price-range ${props.class}` : "price-range"}
       aria-label="Price range"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">
         {low()} to {high()} {props.currency}
@@ -67,13 +81,6 @@ export default function PriceRange(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

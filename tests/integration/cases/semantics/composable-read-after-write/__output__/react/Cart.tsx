@@ -1,17 +1,16 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useCart } from "./useCart";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface CartEvents {
   onTotal?: (items: number) => void;
   onCleared?: (empty: boolean) => void;
 }
 
-export interface CartAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CartAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onTotal" | "onCleared" | "children"
+>;
 
 export default function Cart({
   onTotal,
@@ -34,12 +33,7 @@ export default function Cart({
   }
 
   return (
-    <section
-      className={cx("cart", className)}
-      aria-label="Cart"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("cart", className)} aria-label="Cart" style={style} {...attributes}>
       <p role="status">Items: {items}</p>
       <button type="button" onClick={addTwiceAndReport}>
         Add three

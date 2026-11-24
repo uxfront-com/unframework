@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface CommentQuoteProps {
   author: string;
   comment: string;
 }
 
-export interface CommentQuoteAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CommentQuoteAttributes = Omit<
+  ComponentPropsWithRef<"figure">,
+  "author" | "comment" | "children"
+>;
 
 export default function CommentQuote({
   author,
@@ -20,11 +19,7 @@ export default function CommentQuote({
   ...attributes
 }: CommentQuoteProps & CommentQuoteAttributes) {
   return (
-    <figure
-      className={cx("comment-quote", className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <figure className={cx("comment-quote", className)} style={style} {...attributes}>
       <blockquote style={{ margin: "0", padding: "0" }}>
         <p dir="auto">{comment}</p>
       </blockquote>

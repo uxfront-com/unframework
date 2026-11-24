@@ -1,4 +1,12 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface ImportQueueProps {
   files: string[];
@@ -9,8 +17,14 @@ export interface ImportQueueEvents {
 }
 
 export default function ImportQueue(
-  props: ImportQueueProps & ImportQueueEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ImportQueueProps &
+    ImportQueueEvents &
+    Omit<ComponentProps<"section">, "files" | "onProgress" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["files", "onProgress", "class"]);
+
   const [status, setStatus] = createSignal("idle");
   const [attempts, setAttempts] = createSignal(0);
 
@@ -32,8 +46,7 @@ export default function ImportQueue(
     <section
       class={props.class ? `import-queue ${props.class}` : "import-queue"}
       aria-label="Import"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={importAll}>
         Import all
@@ -43,13 +56,6 @@ export default function ImportQueue(
       </p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver, merge, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, merge, omit, untrack } from "solid-js";
 
 export interface StepperProps {
   start?: number;
@@ -10,13 +10,20 @@ export interface StepperEvents {
 }
 
 export default function Stepper(
-  rawProps: StepperProps & StepperEvents & { class?: string; style?: JSX.CSSProperties },
+  rawProps: StepperProps &
+    StepperEvents &
+    Omit<ComponentProps<"div">, "start" | "onChange" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = merge(rawProps, {
     get start() {
       return rawProps.start === undefined ? 0 : rawProps.start;
     },
   });
+  const others = omit(props, "start", "onChange", "class");
+
   const [count, setCount] = createState(untrack(() => props.start));
 
   function add() {
@@ -25,24 +32,13 @@ export default function Stepper(
   }
 
   return (
-    <div
-      class={props.class ? `stepper ${props.class}` : "stepper"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `stepper ${props.class}` : "stepper"} {...others}>
       <output>{count()}</output>
       <button type="button" onClick={add}>
         Add one
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

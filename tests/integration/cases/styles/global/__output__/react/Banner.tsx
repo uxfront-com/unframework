@@ -1,13 +1,9 @@
 import Hint from "./Hint";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "./Banner.uf.tsx.css";
 
-export interface BannerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BannerAttributes = Omit<ComponentPropsWithRef<"div">, "tip" | "children">;
 
 export default function Banner({
   tip,
@@ -16,12 +12,7 @@ export default function Banner({
   ...attributes
 }: { tip: string } & BannerAttributes) {
   return (
-    <div
-      className={cx("banner", className)}
-      style={style}
-      data-uf-e25060c2=""
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("banner", className)} style={style} data-uf-e25060c2="" {...attributes}>
       <Hint text={tip} data-uf-e25060c2="" />
     </div>
   );

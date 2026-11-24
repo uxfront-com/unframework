@@ -1,13 +1,9 @@
 import { SetupPending } from "./_unframework/SetupPending";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { loadUser } from "./api";
-import { type CSSProperties, Suspense, use, useState } from "react";
+import { type ComponentPropsWithRef, Suspense, use, useState } from "react";
 
-export interface MemberAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MemberAttributes = Omit<ComponentPropsWithRef<"li">, "id" | "children">;
 
 async function memberSetup({ id }: { id: string }) {
   const user = await loadUser(id);
@@ -28,6 +24,7 @@ export default function Member(props: { id: string } & MemberAttributes) {
 function MemberResolved({
   className,
   style,
+  id: _id,
   setup,
   settled: _settled,
   ...attributes
@@ -38,7 +35,7 @@ function MemberResolved({
   const { user } = use(setup);
 
   return (
-    <li className={cx("member", className)} style={style} {...scopeAttributes(attributes)}>
+    <li className={cx("member", className)} style={style} {...attributes}>
       {user.name}
     </li>
   );

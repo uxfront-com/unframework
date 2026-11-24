@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 interface User {
   name: string;
@@ -14,10 +13,10 @@ export interface AccountMenuEvents {
   onGreeted?: (name: string) => void;
 }
 
-export interface AccountMenuAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AccountMenuAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "owner" | "onGreeted" | "children"
+>;
 
 export default function AccountMenu({
   owner,
@@ -55,7 +54,7 @@ export default function AccountMenu({
       className={cx("account-menu", className)}
       aria-label="Account"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {step === "intro" ? (
         <button key={0} type="button" onClick={start}>

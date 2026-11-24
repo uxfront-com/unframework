@@ -1,23 +1,27 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ChargeButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChargeButtonAttributes = Omit<ComponentPropsWithRef<"button">, "children">;
 
 function charge() {
   throw new Error("The card was declined");
 }
 
-export default function ChargeButton({ className, style, ...attributes }: ChargeButtonAttributes) {
+export default function ChargeButton({
+  className,
+  style,
+  onClick,
+  ...attributes
+}: ChargeButtonAttributes) {
   return (
     <button
       type="button"
-      onClick={charge}
+      onClick={(event) => {
+        charge();
+        onClick?.(event);
+      }}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       Charge
     </button>

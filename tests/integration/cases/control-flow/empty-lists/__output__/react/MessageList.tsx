@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface InboxMessage {
   id: string;
@@ -13,10 +12,10 @@ export interface MessageListProps {
   emptyText?: string;
 }
 
-export interface MessageListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MessageListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "messages" | "archived" | "emptyText" | "children"
+>;
 
 export default function MessageList({
   messages,
@@ -31,7 +30,7 @@ export default function MessageList({
       className={cx("message-list", className)}
       aria-label="Messages"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>Inbox</h2>
       <ul>

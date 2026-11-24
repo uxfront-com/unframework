@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface Team {
   name: string;
@@ -28,10 +27,10 @@ export interface AccountSummaryProps {
   seats: (Seat | null)[];
 }
 
-export interface AccountSummaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AccountSummaryAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "loading" | "member" | "uptime" | "storage" | "plan" | "seats" | "children"
+>;
 
 export default function AccountSummary({
   loading,
@@ -49,7 +48,7 @@ export default function AccountSummary({
       className={cx("account-summary", className)}
       aria-label="Account"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {loading ? <p>Loading the account</p> : !member ? <p>Signed out</p> : <h2>{member.name}</h2>}
       {member ? <p>Signed in as {member.email}</p> : null}

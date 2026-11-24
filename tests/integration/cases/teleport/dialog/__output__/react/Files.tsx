@@ -1,9 +1,8 @@
 import ConfirmDialog from "./ConfirmDialog";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { subscribeNothing } from "./_unframework/subscribeNothing";
 import { teleport } from "./_unframework/teleport";
-import { type CSSProperties, useRef, useState, useSyncExternalStore } from "react";
+import { type ComponentPropsWithRef, useRef, useState, useSyncExternalStore } from "react";
 
 export interface FilesProps {
   file: string;
@@ -13,10 +12,10 @@ export interface FilesEvents {
   onDelete?: (file: string) => void;
 }
 
-export interface FilesAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FilesAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "file" | "onDelete" | "children"
+>;
 
 export default function Files({
   file,
@@ -41,12 +40,7 @@ export default function Files({
   );
 
   return (
-    <section
-      className={cx("files", className)}
-      aria-label="Files"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("files", className)} aria-label="Files" style={style} {...attributes}>
       <p>{file}</p>
       <button
         type="button"

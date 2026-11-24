@@ -1,12 +1,8 @@
 import Base from "./Base";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface PrimaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PrimaryAttributes = Omit<ComponentPropsWithRef<typeof Base>, "text" | "children">;
 
 export default function Primary({
   text,
@@ -14,12 +10,5 @@ export default function Primary({
   style,
   ...attributes
 }: { text: string } & PrimaryAttributes) {
-  return (
-    <Base
-      text={text}
-      className={cx("primary", className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    />
-  );
+  return <Base text={text} className={cx("primary", className)} style={style} {...attributes} />;
 }

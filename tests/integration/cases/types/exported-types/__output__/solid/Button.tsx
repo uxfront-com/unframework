@@ -1,4 +1,4 @@
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 
 export type ButtonTone = "primary" | "secondary";
 
@@ -10,16 +10,14 @@ export interface ButtonProps {
 }
 
 export default function Button(
-  rawProps: ButtonProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: ButtonProps &
+    Omit<ComponentProps<"button">, "label" | "tone" | "style"> & { style?: JSX.CSSProperties },
 ) {
   const props = mergeProps({ tone: "primary" } satisfies Partial<ButtonProps>, rawProps);
+  const [, others] = splitProps(props, ["label", "tone", "class"]);
+
   return (
-    <button
-      type="button"
-      class={cx(`button button-${props.tone}`, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <button type="button" class={cx(`button button-${props.tone}`, props.class)} {...others}>
       {props.label}
     </button>
   );
@@ -35,11 +33,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

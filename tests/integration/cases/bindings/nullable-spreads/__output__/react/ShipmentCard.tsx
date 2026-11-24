@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface LabelAttributes {
   id: string;
@@ -24,10 +23,18 @@ export interface ShipmentCardProps {
   signature?: LabelAttributes;
 }
 
-export interface ShipmentCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShipmentCardAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "reference"
+  | "carrier"
+  | "eta"
+  | "parcel"
+  | "tracked"
+  | "tracking"
+  | "stops"
+  | "signature"
+  | "children"
+>;
 
 export default function ShipmentCard({
   reference,
@@ -47,7 +54,7 @@ export default function ShipmentCard({
       className={cx("shipment-card", className)}
       aria-label={reference}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p id={carrier?.id} title={carrier?.title}>
         Carrier

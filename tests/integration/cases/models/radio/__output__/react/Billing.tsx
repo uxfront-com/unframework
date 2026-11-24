@@ -1,17 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface BillingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BillingAttributes = Omit<ComponentPropsWithRef<"fieldset">, "children">;
 
 export default function Billing({ className, style, ...attributes }: BillingAttributes) {
   const [plan, setPlan] = useState("monthly");
   const planRef = useRef(plan);
 
   return (
-    <fieldset className={className} style={style} {...scopeAttributes(attributes)}>
+    <fieldset className={className} style={style} {...attributes}>
       <legend>Billing</legend>
       <label>
         <input

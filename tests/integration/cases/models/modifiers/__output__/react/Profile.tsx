@@ -1,11 +1,7 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useModelText } from "./_unframework/useModelText";
-import { type CSSProperties, useState } from "react";
+import { type ComponentPropsWithRef, useState } from "react";
 
-export interface ProfileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileAttributes = Omit<ComponentPropsWithRef<"form">, "children">;
 
 export default function Profile({ className, style, ...attributes }: ProfileAttributes) {
   const [name, setName] = useState("");
@@ -16,7 +12,7 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
   const weightField = useModelText(weight, setWeight, { number: true });
 
   return (
-    <form aria-label="Profile" className={className} style={style} {...scopeAttributes(attributes)}>
+    <form aria-label="Profile" className={className} style={style} {...attributes}>
       <label>
         Name <input {...nameField} />
       </label>

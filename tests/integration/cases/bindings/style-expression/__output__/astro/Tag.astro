@@ -1,26 +1,21 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface TagProps {
   label: string;
   tone?: string;
 }
 
-interface Props extends TagProps {
+interface Props extends TagProps, Omit<HTMLAttributes<"em">, "label" | "tone"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, tone: _tone, class: className, style, ...attrs } = Astro.props;
 ---
 
 <em
   class:list={["tag", className]}
   style={{ color: "rgb(120, 30, 30)", padding: "1px 4px", ...style }}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label}</em>

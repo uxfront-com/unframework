@@ -1,5 +1,5 @@
 import { codeOf, expressionsOf, functionsOf } from "@unframework.dev/ir";
-import type { TypeText, UfComponent, UfModule } from "@unframework.dev/ir";
+import type { Code, TypeText, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { parseStatementsSource } from "./parse.ts";
 import { codeKind, codeNames, collectNames, expressionNames } from "./rewrite.ts";
@@ -106,7 +106,9 @@ export function sourceNames(component: UfComponent, module: UfModule): Set<strin
   if (component.propsParameter?.name) names.add(component.propsParameter.name);
   for (const binding of component.bindings) names.add(binding.name);
   for (const { expression } of expressionsOf(component)) add(expressionNames(expression.code));
-  for (const { code } of codeOf(component)) add(codeNames(code.code, codeKind(code, component)));
+  for (const { code } of codeOf(component)) {
+    add(codeNames(withoutDevTests(code), codeKind(code, component)));
+  }
   for (const { function: fn } of functionsOf(component)) {
     for (const parameter of fn.parameters) {
       if (parameter.name !== undefined) names.add(parameter.name);
@@ -142,4 +144,20 @@ export function typeNames(type: TypeText | string): Set<string> {
     collectNames(statement.returnType?.typeAnnotation, names);
   }
   return names;
+}
+
+/**
+ * A piece of code with each `isDev` test (ADR-0117) written as `0`, padded to its length: every
+ * target respells the test, so its name reaches no output, and a target may import its own
+ * framework's `isDev` under that name.
+ */
+function withoutDevTests(code: Code): string {
+  let text = code.code;
+  for (const reference of code.refs) {
+    if (reference.kind !== "Dev") continue;
+    const start = reference.span.start - code.span.start;
+    const end = reference.span.end - code.span.start;
+    text = `${text.slice(0, start)}${"0".padEnd(end - start)}${text.slice(end)}`;
+  }
+  return text;
 }

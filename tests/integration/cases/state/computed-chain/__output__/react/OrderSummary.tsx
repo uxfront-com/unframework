@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface OrderSummaryProps {
   /** The unit price, in cents. */
@@ -8,10 +7,10 @@ export interface OrderSummaryProps {
   taxRate: number;
 }
 
-export interface OrderSummaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type OrderSummaryAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "price" | "taxRate" | "children"
+>;
 
 export default function OrderSummary({
   price,
@@ -36,7 +35,7 @@ export default function OrderSummary({
       aria-label="Order summary"
       data-tier={tier}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">Quantity: {quantity}</p>
       <button

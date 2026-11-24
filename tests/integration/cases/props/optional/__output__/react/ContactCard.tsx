@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ContactCardProps {
   name: string;
@@ -10,10 +9,10 @@ export interface ContactCardProps {
   phone?: string | null;
 }
 
-export interface ContactCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ContactCardAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "name" | "jobTitle" | "team" | "pronouns" | "phone" | "children"
+>;
 
 export default function ContactCard({
   name,
@@ -31,7 +30,7 @@ export default function ContactCard({
       aria-label={name}
       data-team={team}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2 title={pronouns}>{name}</h2>
       <p>{jobTitle}</p>

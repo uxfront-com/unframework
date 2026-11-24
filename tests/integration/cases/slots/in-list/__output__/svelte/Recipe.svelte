@@ -2,21 +2,19 @@
 
 <script lang="ts">
   import Steps from "./Steps.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { steps: string[]; class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["div"], "steps" | "children" | "class" | "style" | "ref"> & {
+    steps: string[];
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["div"] | null;
+  };
 
-  let { steps, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { steps, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<div class={className} {style} {...scopeAttributes(attributes)}>
+<div class={className} {style} bind:this={ref} {...attributes}>
   <Steps {steps}>
     {#snippet marker()}
       <span aria-hidden="true">{"\u003e "}</span>

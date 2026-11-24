@@ -303,6 +303,8 @@ function templateReads(reference: CodeReference, component: UfComponent): boolea
     case "Import":
       return true;
     case "Api":
+    // `process.env.NODE_ENV` is the script's to read, not the template's (ADR-0117).
+    case "Dev":
       return false;
     default:
       return unreachable(reference);

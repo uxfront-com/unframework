@@ -1,16 +1,19 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface PriceTagProps {
   /** The unit price, in cents. */
   price: number;
 }
 
-export interface PriceTagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PriceTagAttributes = Omit<ComponentPropsWithRef<"section">, "price" | "children">;
 
 function formatCents(cents: number): string {
   return `EUR ${(cents / 100).toFixed(2)}`;
@@ -65,7 +68,7 @@ export default function PriceTag({
       className={cx("price-tag", className)}
       aria-label="Price"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>Unit: {unit}</p>
       <p role="status">{summary}</p>

@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useNextTick } from "./_unframework/useNextTick";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface ShippingDetailsEvents {
   onToggled?: (items: number) => void;
 }
 
-export interface ShippingDetailsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShippingDetailsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onToggled" | "children"
+>;
 
 export default function ShippingDetails({
   onToggled,
@@ -40,7 +39,7 @@ export default function ShippingDetails({
       className={cx("shipping-details", className)}
       aria-label="Shipping"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" aria-expanded={open} onClick={toggle}>
         Shipping details

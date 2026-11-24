@@ -231,16 +231,27 @@ export function appliesDirective(node: RenderNode): boolean {
   return found;
 }
 
-/** \`mergeRefs\`: an element's ref callbacks as one, whose cleanup runs each one's (ADR-0108). */
-export function mergeRefsHelper(name: string): string {
-  return `/** Joins an element's ref callbacks into one, whose cleanup runs each one's. */
-function ${name}<E extends Element>(
-  ...refs: ((element: E | null) => (() => void) | void)[]
-): (element: E | null) => () => void {
+/**
+ * \`mergeRefs\`: an element's refs as one ref callback, whose cleanup clears each (ADR-0108,
+ * ADR-0118): a callback's own cleanup, or the callback called with \`null\`, as React does without
+ * one, and a ref object's \`current\`. \`Ref\` and \`RefCallback\` are React's types' locals.
+ */
+export function mergeRefsHelper(name: string, types: { Ref: string; RefCallback: string }): string {
+  return `/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+function ${name}<E extends Element>(...refs: (${types.Ref}<E> | undefined)[]): ${types.RefCallback}<E> {
   return (element) => {
-    const cleanups = refs.map((ref) => ref(element));
+    const cleanups = refs.map((ref) => {
+      if (typeof ref === "function") {
+        const cleanup = ref(element);
+        return typeof cleanup === "function" ? cleanup : () => ref(null);
+      }
+      if (ref) ref.current = element;
+      return () => {
+        if (ref) ref.current = null;
+      };
+    });
     return () => {
-      for (const cleanup of cleanups) cleanup?.();
+      for (const cleanup of cleanups) cleanup();
     };
   };
 }`;

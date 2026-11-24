@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 
 export interface CalloutProps {
   heading: string;
   body: string;
 }
 
-export interface CalloutAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CalloutAttributes = Omit<
+  ComponentPropsWithRef<"aside">,
+  "heading" | "body" | "children"
+>;
 
 export default function Callout({
   heading,
@@ -32,7 +31,7 @@ export default function Callout({
           ...style,
         } as CSSProperties
       }
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p style={{ margin: "0", fontWeight: "700" }}>{heading}</p>
       <p style={{ margin: "4px 0 0" }}>{body}</p>

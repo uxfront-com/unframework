@@ -1,9 +1,13 @@
 import { useTotal } from "./useTotal";
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 
 export default function Basket(
-  props: { price: number } & { class?: string; style?: JSX.CSSProperties },
+  props: { price: number } & Omit<ComponentProps<"section">, "price" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["price", "class"]);
+
   const [quantity, setQuantity] = createSignal(1);
   const { total, label } = useTotal(
     () => props.price,
@@ -14,8 +18,7 @@ export default function Basket(
     <section
       class={props.class ? `basket ${props.class}` : "basket"}
       aria-label="Basket"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">Total: {total()}</p>
       <p>{label()}</p>
@@ -24,11 +27,4 @@ export default function Basket(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

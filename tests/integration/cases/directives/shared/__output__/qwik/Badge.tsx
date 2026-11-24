@@ -2,6 +2,7 @@ import { vMark } from "./vMark";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
@@ -12,46 +13,45 @@ export interface BadgeProps {
   label: string;
 }
 
-export default component$<BadgeProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, class: className, style, ...attributes }) => {
-    const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
+export default component$<
+  BadgeProps &
+    Omit<PropsOf<"span">, "label" | "class" | "style" | "ref"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+      ref?: Signal<Element | undefined>;
+    }
+>(({ label, class: className, style, ref, ...attributes }) => {
+  const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "badge";
-        for (const element of track(markElements)) {
-          cleanup(
-            runDirective(vMark, element, value, {
-              leave: (left) => forgetElement(markElements, left),
-              back: (kept) => collectElement(markElements, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "badge";
+      for (const element of track(markElements)) {
+        cleanup(
+          runDirective(vMark, element, value, {
+            leave: (left) => forgetElement(markElements, left),
+            back: (kept) => collectElement(markElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <span
-        class={["badge", className]}
-        ref={(element) => collectElement(markElements, element)}
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        {label}
-      </span>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <span
+      class={["badge", className]}
+      ref={(element) => {
+        if (ref) ref.value = element;
+        collectElement(markElements, element);
+      }}
+      style={style}
+      {...attributes}
+    >
+      {label}
+    </span>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

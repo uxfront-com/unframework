@@ -1,24 +1,17 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
+import { mergeRefs } from "./_unframework/mergeRefs";
 import { useDirective } from "./_unframework/useDirective";
 import { vNote } from "./vNote";
-import type { CSSProperties } from "react";
+import { type ComponentPropsWithRef, useMemo } from "react";
 
-export interface NoteAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteAttributes = Omit<ComponentPropsWithRef<"em">, "children">;
 
-export default function Note({ className, style, ...attributes }: NoteAttributes) {
+export default function Note({ className, style, ref, ...attributes }: NoteAttributes) {
   const noteRef = useDirective(vNote, () => "note");
 
+  const rootRef = useMemo(() => mergeRefs(noteRef, ref), [noteRef, ref]);
+
   return (
-    <em
-      data-name="note"
-      ref={noteRef}
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <em data-name="note" ref={rootRef} className={className} style={style} {...attributes}>
       Note
     </em>
   );

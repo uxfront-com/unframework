@@ -159,7 +159,7 @@
         "inheritAttrs": {
           "type": "boolean",
           "const": false,
-          "description": "Set by `defineOptions({ inheritAttrs: false })`: no `class` or `style` falls through."
+          "description": "Set by `defineOptions({ inheritAttrs: false })`: nothing falls through to the root. What a consumer passes reaches the element that spreads the props' rest, if one does (ADR-0118)."
         },
         "bindings": {
           "type": "array",
@@ -834,6 +834,9 @@
         },
         {
           "$ref": "#/definitions/UseItem"
+        },
+        {
+          "$ref": "#/definitions/DevCheckItem"
         }
       ],
       "description": "What a component's setup declares or runs, in source order (ADR-0045)."
@@ -921,6 +924,9 @@
         },
         {
           "$ref": "#/definitions/ImportReference"
+        },
+        {
+          "$ref": "#/definitions/DevReference"
         }
       ],
       "description": "A resolved name in setup code."
@@ -1066,6 +1072,25 @@
       ],
       "additionalProperties": false,
       "description": "A use of a handler's event parameter, `event.key` or `event.preventDefault()` (ADR-0047): a member every target's event object has (`PORTABLE_EVENT_MEMBERS`), read or called. The parameter is the one a  {@link  Parameter }  marks with `event`."
+    },
+    "DevReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Dev"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The identifier."
+        }
+      },
+      "required": [
+        "kind",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`isDev`, read as the whole test of an `if` with no `else` (ADR-0117): in client code, or in a  {@link  DevCheckItem } . Each target writes its framework's own development check in its place, which a production build folds to `false`."
     },
     "StateItem": {
       "type": "object",
@@ -1815,6 +1840,29 @@
       "additionalProperties": false,
       "description": "A member a `Use` item destructures: `on`, or `on: open` under another name."
     },
+    "DevCheckItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "DevCheck"
+        },
+        "code": {
+          "$ref": "#/definitions/Code",
+          "description": "The whole statement, `if` to its block's end: its test is a  {@link  DevReference } ."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "code",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`if (isDev) { … }` at the top level of the setup (ADR-0117): code that runs only in a development build, once where the target runs the setup, in source order. It reads what pure code reads, and `console`, and writes nothing the component holds, so a development render and a production one are the same."
+    },
     "ElementNode": {
       "type": "object",
       "properties": {
@@ -1871,6 +1919,9 @@
         },
         {
           "$ref": "#/definitions/SpreadAttribute"
+        },
+        {
+          "$ref": "#/definitions/RestAttribute"
         },
         {
           "$ref": "#/definitions/EventAttribute"
@@ -2221,6 +2272,24 @@
       ],
       "additionalProperties": false,
       "description": "A key a spread's type declares: an attribute the spread renders."
+    },
+    "RestAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Rest"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`{...rest}`, the rest of a destructured props pattern, spread whole on one element of a component that sets `inheritAttrs: false` (ADR-0118): the element takes what its consumer passes that the component does not declare, its `class` and `style` included, as a root takes them where `inheritAttrs` is on."
     },
     "EventAttribute": {
       "type": "object",
@@ -2687,9 +2756,18 @@
         },
         {
           "$ref": "#/definitions/RefAttribute"
+        },
+        {
+          "$ref": "#/definitions/StaticAttribute"
+        },
+        {
+          "$ref": "#/definitions/BoundAttribute"
+        },
+        {
+          "$ref": "#/definitions/EventAttribute"
         }
       ],
-      "description": "An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child declares, a model's binding, or a `class`, a `style` (fallthrough) or a `ref` (what it exposes)."
+      "description": "An attribute on a component (ADR-0053, ADR-0054, ADR-0118): a prop, a listener of an event the child declares, a model's binding, a `ref` (what it exposes, or its root element), or what falls through to the child's fallthrough element: a `class`, a `style`, an attribute of that element (`Static`, `Bound`) or a native listener (`Event`, with no option)."
     },
     "PropAttribute": {
       "type": "object",
@@ -3307,12 +3385,40 @@
           "type": "string",
           "description": "The root element's tag, when the root is an element."
         },
+        "fallthroughTag": {
+          "type": "string",
+          "description": "The tag of the element a consumer's undeclared attributes and listeners land on (ADR-0118): the root element's, the root component's own, or, with `inheritAttrs: false`, the element that spreads the props' rest. A parent checks what falls through against it. Absent where nothing but declared names may be passed."
+        },
+        "fallthroughNamespace": {
+          "type": "string",
+          "const": "svg",
+          "description": "`svg` where the fallthrough element is an SVG one (ADR-0118): an `<svg>`, or an element inside one that spreads the props' rest, whose attributes a parent checks as SVG's. Absent for an HTML element."
+        },
+        "fallthroughOwn": {
+          "$ref": "#/definitions/ApiFallthroughOwn",
+          "description": "The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer passes is checked as that element would be checked with it, its `role`, its `tabindex` and its own key handlers included (UF3030). Absent where nothing falls through."
+        },
+        "rootDeclarations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApiRootDeclaration"
+          },
+          "description": "What the components the root renders declare, through a chain of root components, nearest first (ADR-0118): a name a consumer passes that would fall through reaches that component's own prop, model or event instead, which the targets do not pass alike, so a parent reports it (UF1002). Absent where the root is no component, or nothing falls through to it."
+        },
+        "exposingRoot": {
+          "type": "string",
+          "description": "The root component that exposes functions (ADR-0118), through a chain of root components that expose nothing, where this component exposes nothing either: a ref on it holds neither an element nor those functions, so a parent reports it (UF3046). Absent otherwise."
+        },
+        "refTag": {
+          "type": "string",
+          "description": "The tag of the element a `ref` on the component holds, where the component exposes nothing (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no element."
+        },
         "rootTags": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it places them, and merges its `class` and `style` into whichever renders."
+          "description": "The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it places them, and merges its `class` and `style` into whichever renders. A root component that renders a `dynamic` root, through a chain of root components that keep `inheritAttrs`, takes its tags too, so a parent passes it `class` and `style` alone."
         },
         "rootUnlisted": {
           "type": "boolean",
@@ -3454,6 +3560,79 @@
       ],
       "additionalProperties": false,
       "description": "A slot of a child's API: its name, its optionality and its props' type as written."
+    },
+    "ApiFallthroughOwn": {
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "boolean",
+                    "const": true
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Each attribute: its static value, `true` written without one, and no value where bound (a form `validateModule` checks, as a static attribute's)."
+        },
+        "listeners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The DOM events its own listeners listen to, in lower case (`keydown`)."
+        }
+      },
+      "required": [
+        "attributes",
+        "listeners"
+      ],
+      "additionalProperties": false,
+      "description": "The fallthrough element's own attributes and listeners, as its source writes them."
+    },
+    "ApiRootDeclaration": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The prop's or the model's name, or the event's, as `defineEmits` declares it (`click`)."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "prop",
+            "model",
+            "event"
+          ]
+        },
+        "component": {
+          "type": "string",
+          "description": "The root component that declares it."
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "component"
+      ],
+      "additionalProperties": false,
+      "description": "A prop, a model or an event that a component's root component declares (ADR-0118)."
     },
     "ComponentStylesApi": {
       "type": "object",

@@ -1,15 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface CardSlots {
   title?: ReactNode;
 }
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"div">, "title" | "children">;
 
 export default function Card({
   title,
@@ -18,7 +14,7 @@ export default function Card({
   ...attributes
 }: CardSlots & CardAttributes) {
   return (
-    <div className={cx("card", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("card", className)} style={style} {...attributes}>
       <h3>{title ?? "Untitled"}</h3>
     </div>
   );

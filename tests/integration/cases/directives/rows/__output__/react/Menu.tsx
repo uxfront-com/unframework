@@ -2,16 +2,12 @@ import Picker from "./Picker";
 import { cx } from "./_unframework/cx";
 import { listen } from "./_unframework/listen";
 import { mergeRefs } from "./_unframework/mergeRefs";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useElementDirective } from "./_unframework/useElementDirective";
 import { vMark } from "./vMark";
 import { vTrace } from "./vTrace";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface MenuAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MenuAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Menu({ className, style, ...attributes }: MenuAttributes) {
   const [items, setItems] = useState<{ id: string; label: string; note?: string }[]>([
@@ -33,12 +29,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
   const withTrace_5 = useElementDirective(vTrace);
 
   return (
-    <section
-      className={cx("menu", className)}
-      aria-label="Menu"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("menu", className)} aria-label="Menu" style={style} {...attributes}>
       <ul aria-label="Items">
         {items.map((item) => (
           <li key={item.id} data-name={item.id} ref={withTrace_1(item.label)}>

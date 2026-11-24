@@ -1,7 +1,14 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver, onCleanup } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit, onCleanup } from "solid-js";
 
-export default function ShirtOrder(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function ShirtOrder(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [size, setSize] = createState("M");
   const [quantity, setQuantity] = createState(1);
   const [note, setNote] = createState("");
@@ -11,8 +18,7 @@ export default function ShirtOrder(props: { class?: string; style?: JSX.CSSPrope
     <section
       class={props.class ? `shirt-order ${props.class}` : "shirt-order"}
       aria-label="Shirt order"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{`${quantity()} x size ${size()}`}</p>
       <div role="group" aria-label="Size">
@@ -79,13 +85,6 @@ export default function ShirtOrder(props: { class?: string; style?: JSX.CSSPrope
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */

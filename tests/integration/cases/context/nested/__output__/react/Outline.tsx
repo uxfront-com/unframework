@@ -1,15 +1,11 @@
 import Level from "./Level";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface OutlineAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type OutlineAttributes = Omit<ComponentPropsWithRef<typeof Level>, "children" | "title">;
 
 export default function Outline({ className, style, ...attributes }: OutlineAttributes) {
   return (
-    <Level title="Book" className={className} style={style} {...scopeAttributes(attributes)}>
+    <Level title="Book" className={className} style={style} {...attributes}>
       <Level title="Part">
         <Level title="Chapter" />
       </Level>

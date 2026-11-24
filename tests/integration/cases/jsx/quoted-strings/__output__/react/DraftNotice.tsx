@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface DraftNoticeProps {
   author: string;
   saved: boolean;
 }
 
-export interface DraftNoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DraftNoticeAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "author" | "saved" | "children"
+>;
 
 export default function DraftNotice({
   author,
@@ -24,7 +23,7 @@ export default function DraftNotice({
       className={cx("draft-notice", className)}
       aria-label="Draft"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <img
         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23345'/%3E%3C/svg%3E"

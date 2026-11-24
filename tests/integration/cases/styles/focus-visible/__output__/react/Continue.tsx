@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "./Continue.uf.tsx.css";
 
-export interface ContinueAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ContinueAttributes = Omit<ComponentPropsWithRef<"button">, "text" | "children">;
 
 export default function Continue({
   text,
@@ -20,7 +16,7 @@ export default function Continue({
       className={cx("continue", className)}
       style={style}
       data-uf-bb3adc28=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {text}
     </button>

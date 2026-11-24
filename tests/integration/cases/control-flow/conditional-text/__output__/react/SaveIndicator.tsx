@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface SaveIndicatorProps {
   saving: boolean;
@@ -8,10 +7,10 @@ export interface SaveIndicatorProps {
   savedAt?: string;
 }
 
-export interface SaveIndicatorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SaveIndicatorAttributes = Omit<
+  ComponentPropsWithRef<"p">,
+  "saving" | "changes" | "savedAt" | "children"
+>;
 
 export default function SaveIndicator({
   saving,
@@ -22,12 +21,7 @@ export default function SaveIndicator({
   ...attributes
 }: SaveIndicatorProps & SaveIndicatorAttributes) {
   return (
-    <p
-      className={cx("save-indicator", className)}
-      role="status"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <p className={cx("save-indicator", className)} role="status" style={style} {...attributes}>
       {saving ? <em>Saving</em> : "Saved"}, {changes === 1 ? "1 change" : `${changes} changes`}
       {savedAt ? <time dateTime={savedAt}>{" at " + savedAt}</time> : " just now"}
     </p>

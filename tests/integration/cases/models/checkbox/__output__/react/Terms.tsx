@@ -1,22 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface TermsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TermsAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Terms({ className, style, ...attributes }: TermsAttributes) {
   const [agreed, setAgreed] = useState(false);
   const agreedRef = useRef(agreed);
 
   return (
-    <section
-      aria-label="Terms"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Terms" className={className} style={style} {...attributes}>
       <label>
         <input
           type="checkbox"

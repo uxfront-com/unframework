@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import "./Frame.uf.tsx.css";
 
 export interface FrameSlots {
@@ -8,10 +7,7 @@ export interface FrameSlots {
   renderLabel?: (props: { text: string }) => ReactNode;
 }
 
-export interface FrameAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FrameAttributes = Omit<ComponentPropsWithRef<"figure">, "children" | "renderLabel">;
 
 export default function Frame({
   children,
@@ -21,12 +17,7 @@ export default function Frame({
   ...attributes
 }: FrameSlots & FrameAttributes) {
   return (
-    <figure
-      className={cx("frame", className)}
-      style={style}
-      data-uf-9dc516fd=""
-      {...scopeAttributes(attributes)}
-    >
+    <figure className={cx("frame", className)} style={style} data-uf-9dc516fd="" {...attributes}>
       {children}
       {renderLabel?.({ text: "Harbour at dusk" })}
     </figure>

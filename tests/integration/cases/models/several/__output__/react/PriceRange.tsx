@@ -1,5 +1,4 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface PriceRangeModels {
   min?: number;
@@ -8,10 +7,10 @@ export interface PriceRangeModels {
   onMaxChange?: (value: number) => void;
 }
 
-export interface PriceRangeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PriceRangeAttributes = Omit<
+  ComponentPropsWithRef<"fieldset">,
+  "label" | "min" | "onMinChange" | "max" | "onMaxChange" | "children"
+>;
 
 export default function PriceRange({
   label,
@@ -49,7 +48,7 @@ export default function PriceRange({
   }
 
   return (
-    <fieldset className={className} style={style} {...scopeAttributes(attributes)}>
+    <fieldset className={className} style={style} {...attributes}>
       <legend>{label}</legend>
       <p>
         From {min} to {max}

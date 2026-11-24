@@ -1,15 +1,11 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface FieldProps {
   name: string;
   label: string;
 }
 
-export interface FieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FieldAttributes = Omit<ComponentPropsWithRef<"label">, "name" | "label" | "children">;
 
 export default function Field({
   name,
@@ -19,7 +15,7 @@ export default function Field({
   ...attributes
 }: FieldProps & FieldAttributes) {
   return (
-    <label className={className} style={style} {...scopeAttributes(attributes)}>
+    <label className={className} style={style} {...attributes}>
       {label}
       <input name={name} />
     </label>

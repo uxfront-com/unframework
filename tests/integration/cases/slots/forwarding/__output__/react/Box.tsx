@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface BoxSlots {
   title?: ReactNode;
   children?: ReactNode;
 }
 
-export interface BoxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BoxAttributes = Omit<ComponentPropsWithRef<"div">, "title" | "children">;
 
 export default function Box({
   title,
@@ -20,7 +16,7 @@ export default function Box({
   ...attributes
 }: BoxSlots & BoxAttributes) {
   return (
-    <div className={cx("box", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("box", className)} style={style} {...attributes}>
       <h3>{title ?? "Untitled"}</h3>
       {children ?? <p>No content</p>}
     </div>

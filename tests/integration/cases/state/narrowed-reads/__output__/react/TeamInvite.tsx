@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   Fragment,
   type SubmitEvent,
   useEffect,
@@ -38,10 +37,17 @@ export interface TeamInviteEvents {
   onMoved?: (page: number) => void;
 }
 
-export interface TeamInviteAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TeamInviteAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "inviter"
+  | "members"
+  | "onSelect"
+  | "onRemoved"
+  | "onSubmitted"
+  | "onTagged"
+  | "onMoved"
+  | "children"
+>;
 
 export default function TeamInvite({
   inviter,
@@ -133,7 +139,7 @@ export default function TeamInvite({
       className={cx("team-invite", className)}
       aria-label="Invite"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{greeting}</h2>
       <ul aria-label="Members">

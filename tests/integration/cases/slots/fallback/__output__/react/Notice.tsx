@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface NoticeSlots {
   children?: ReactNode;
   action?: ReactNode;
 }
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<ComponentPropsWithRef<"div">, "label" | "children" | "action">;
 
 export default function Notice({
   label,
@@ -26,7 +22,7 @@ export default function Notice({
       aria-label={label}
       className={cx("notice", className)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>{children ?? <em>Nothing to report.</em>}</p>
       {action ?? <span className="muted">No action</span>}

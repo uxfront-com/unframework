@@ -322,10 +322,14 @@ case's IR. A failure names the declaration's line from its IR span: its `.uf.tsx
 type re-exported from a case's `.ts` module, its line there (`types.ts:2`). A kind a target cannot
 check is declared in `CONSUMER_GAPS`, with its reason, and a directive of that kind fails; so is a
 finer part of one, a slot without props (`named-slot`) or a slot whose props name a type parameter
-of its component (`generic-slot-props`), which leaves the target's other slots checked. The
-`L4-consumer` canary types every output's props, events and slots `any`, and declares every
+of its component (`generic-slot-props`), which leaves the target's other slots checked.
+
+The `L4-consumer` canary types every output's props, events and slots `any`, and declares every
 exported `interface` and type alias, and each name of a type re-export, `any`, so every directive
-must go unmet. `../toolchains/README.md` has the layout and the notes per checker.
+must go unmet. On Vue it also turns `inheritAttrs` off and binds `v-bind="{ ...$attrs }"` for
+`v-bind="$attrs"`, since vue-tsc's `fallthroughAttributes` would still check a declared prop the
+root also takes, or a misspelt one, against the root's attributes (ADR-0118).
+`../toolchains/README.md` has the layout and the notes per checker.
 
 A browser project runs its spec files one after another on each of its tester pages, which keep
 their modules, so the testing setup and the framework load once per page (ADR-0092). The setup file

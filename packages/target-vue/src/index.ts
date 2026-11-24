@@ -73,8 +73,12 @@ export const vue: Target = defineTarget({
     "two-way-binding": { support: "native" },
     "model-array": { support: "native" },
     "model-modifiers": { support: "native" },
+    // Vue's own `$attrs` (ADR-0118): what a consumer passes and a component does not declare falls
+    // through to its root, and the props' rest is `v-bind="$attrs"` on its element, without the
+    // styled parents' scope attributes, which the root keeps.
     fallthrough: { support: "native" },
     "contextual-root": { support: "native" },
+    // `defineExpose`, and on a child that exposes nothing, its instance's `$el`: its root element.
     expose: { support: "native" },
     context: { support: "native" },
     "reactive-context": { support: "native" },
@@ -101,10 +105,8 @@ export const vue: Target = defineTarget({
     "async-setup": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { block, rewrite, listeners, components, keys, textCaret, mounted } = scriptSetup(
-      component,
-      context.module,
-    );
+    const { block, rewrite, listeners, components, keys, textCaret, mounted, instanceRefs, rest } =
+      scriptSetup(component, context.module);
     const root = asyncRootChild(component, context.module);
     /** Each piece of an async child, inside a `<Suspense>` that takes the piece's directives. */
     const suspended = (pieces: readonly MarkupPiece[]): MarkupPiece[] =>
@@ -124,8 +126,37 @@ export const vue: Target = defineTarget({
           content: [{ kind: "component", component: piece.component, directives: attrs }],
         };
       });
+    /** The rest's binding, which sits after the element's own attributes and listeners. */
+    const spread: PrintedAttribute | undefined = rest && {
+      name: "v-bind",
+      text: `v-bind="${rest.element}"`,
+    };
     const dialect: typeof vueDialect = {
       ...vueDialect,
+      // A ref on a child that exposes nothing reads the child's instance, whose `$el` the
+      // source's ref is (ADR-0118).
+      refAttribute: (ref, attributes) => {
+        const instance = instanceRefs.get(ref.attribute.binding);
+        return instance === undefined
+          ? vueDialect.refAttribute(ref, attributes)
+          : [{ name: "ref", text: `ref="${instance}"` }];
+      },
+      // The props' rest is what `$attrs` holds with `inheritAttrs: false` (ADR-0118). Bound last,
+      // it merges as Vue's own fallthrough does on a root: the consumer's attribute wins, its
+      // class and style join the element's, and its listener runs after the element's own.
+      ...(spread === undefined
+        ? {}
+        : {
+            restAttribute: () => [spread],
+            orderAttributes: (attributes) => {
+              const ordered = vueDialect.orderAttributes!(attributes);
+              if (!ordered.includes(spread)) return ordered;
+              const others = ordered.filter((attribute) => attribute !== spread);
+              const content = others.findIndex((attribute) => attribute.name === "v-html");
+              others.splice(content === -1 ? others.length : content, 0, spread);
+              return others;
+            },
+          }),
       // A bound `<textarea>` takes the directive that puts its caret after its text (ADR-0095).
       ...(textCaret === undefined
         ? {}
@@ -184,6 +215,9 @@ export const vue: Target = defineTarget({
       attribute: (attribute) =>
         attribute.kind === "Event" ? listeners.attributes.get(attribute) : undefined,
       componentTag: (name) => components.get(name),
+      // Where the rest sits on another element, the root keeps the styled parents' scope
+      // attributes, as it would without the rest (ADR-0063, ADR-0118).
+      ...(rest?.root === undefined ? {} : { scopeRootAttributes: () => [`v-bind="${rest.root}"`] }),
     });
     // The sheet `compile()` emits beside the source, already scoped, so the block is not
     // `scoped`; plugin-vue resolves its `src` through the unplugin (ADR-0063).

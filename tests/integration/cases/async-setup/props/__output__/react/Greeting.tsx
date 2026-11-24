@@ -1,13 +1,12 @@
 import { SetupPending } from "./_unframework/SetupPending";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { loadUser } from "./api";
-import { type CSSProperties, Suspense, use, useState } from "react";
+import { type ComponentPropsWithRef, Suspense, use, useState } from "react";
 
-export interface GreetingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type GreetingAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "id" | "prefix" | "children"
+>;
 
 async function greetingSetup({ id, prefix }: { id: string; prefix: string }) {
   const user = await loadUser(prefix + id);
@@ -29,6 +28,7 @@ function GreetingResolved({
   id,
   className,
   style,
+  prefix: _prefix,
   setup,
   settled: _settled,
   ...attributes
@@ -43,7 +43,7 @@ function GreetingResolved({
       className={cx("greeting", className)}
       aria-label="Greeting"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>Hello, {user.name}</h2>
       <p>Signed in as {id}</p>

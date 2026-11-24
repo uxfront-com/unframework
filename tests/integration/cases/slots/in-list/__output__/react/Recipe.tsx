@@ -1,11 +1,7 @@
 import Steps from "./Steps";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface RecipeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RecipeAttributes = Omit<ComponentPropsWithRef<"div">, "steps" | "children">;
 
 export default function Recipe({
   steps,
@@ -14,7 +10,7 @@ export default function Recipe({
   ...attributes
 }: { steps: string[] } & RecipeAttributes) {
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <Steps steps={steps} marker={<span aria-hidden="true">&gt; </span>} />
     </div>
   );

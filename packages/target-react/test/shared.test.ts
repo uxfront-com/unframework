@@ -68,10 +68,7 @@ export function Badge(props: { on: boolean }) {
     expect(importsOf(card!.contents)).toContain('import { cx as cx_1 } from "./_unframework/cx";');
     expect(card!.contents).toContain("cx_1(");
     expect(card!.contents).not.toMatch(/^function /m);
-    expect(helpers.map(({ path }) => path)).toEqual([
-      "_unframework/cx.ts",
-      "_unframework/scopeAttributes.ts",
-    ]);
+    expect(helpers.map(({ path }) => path)).toEqual(["_unframework/cx.ts"]);
     expect(helpers[0]!.contents).toBe(sharedModule("cx"));
   });
 
@@ -92,6 +89,35 @@ export default function Picker() {
     expect(files[0]!.contents).toMatch(/^function refObject\b/m);
     expect(files[0]!.contents).toMatch(/^function toggle\b/m);
     expect(helpers.map(({ path }) => path)).not.toContain("_unframework/refObject.ts");
+  });
+
+  it("keeps restAttributes inline beside a shared scopeAttributes", () => {
+    const source = `import { defineOptions } from "@uxfront/unframework";
+
+export default function Field({ label, ...rest }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  return (
+    <label class="field">
+      {label} <input {...rest} name={label.toLowerCase()} />
+    </label>
+  );
+}
+`;
+    const { files, helpers } = emitShared(source);
+    expect(files[0]!.contents).toMatch(/^function restAttributes\b/m);
+    expect(files[0]!.contents).toContain(
+      'import { scopeAttributes } from "./_unframework/scopeAttributes";',
+    );
+    expect(helpers.map(({ path }) => path)).toEqual(["_unframework/scopeAttributes.ts"]);
+  });
+
+  it("shares mergeRefs, typed with React's own Ref and RefCallback", () => {
+    expect(sharedModule("mergeRefs")).toMatch(
+      /^import type \{ Ref, RefCallback \} from "react";\n\n/,
+    );
+    expect(sharedModule("mergeRefs")).toContain(
+      "export function mergeRefs<E extends Element>(...refs: (Ref<E> | undefined)[]): RefCallback<E> {",
+    );
   });
 
   it("shares a composable's useNextTick", () => {

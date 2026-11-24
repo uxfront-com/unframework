@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface StatusIconProps {
   label: string;
@@ -8,10 +7,10 @@ export interface StatusIconProps {
   colour?: string;
 }
 
-export interface StatusIconAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StatusIconAttributes = Omit<
+  ComponentPropsWithRef<"svg">,
+  "label" | "size" | "colour" | "children"
+>;
 
 export default function StatusIcon({
   label,
@@ -30,7 +29,7 @@ export default function StatusIcon({
       height={size}
       fill="none"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <title>{label}</title>
       <defs>

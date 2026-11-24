@@ -1,23 +1,14 @@
 import Disclosure from "./Disclosure";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface PanelsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelsAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Panels({ className, style, ...attributes }: PanelsAttributes) {
   const [shipping, setShipping] = useState(true);
   const shippingRef = useRef(shipping);
 
   return (
-    <section
-      aria-label="Panels"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Panels" className={className} style={style} {...attributes}>
       <Disclosure
         title="Shipping"
         open={shipping}

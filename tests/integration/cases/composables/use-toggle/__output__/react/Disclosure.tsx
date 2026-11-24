@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useToggle } from "./useToggle";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface DisclosureAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DisclosureAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Disclosure({ className, style, ...attributes }: DisclosureAttributes) {
   const { on, toggle, close } = useToggle(false);
@@ -16,7 +12,7 @@ export default function Disclosure({ className, style, ...attributes }: Disclosu
       className={cx("disclosure", className)}
       aria-label="Shipping"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" aria-expanded={on} onClick={() => toggle()}>
         Shipping details

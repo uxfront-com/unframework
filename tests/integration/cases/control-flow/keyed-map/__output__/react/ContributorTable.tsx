@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface Contributor {
   login: string;
@@ -13,10 +12,10 @@ export interface ContributorTableProps {
   contributors: Contributor[];
 }
 
-export interface ContributorTableAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ContributorTableAttributes = Omit<
+  ComponentPropsWithRef<"table">,
+  "caption" | "contributors" | "children"
+>;
 
 export default function ContributorTable({
   caption,
@@ -26,7 +25,7 @@ export default function ContributorTable({
   ...attributes
 }: ContributorTableProps & ContributorTableAttributes) {
   return (
-    <table className={cx("contributors", className)} style={style} {...scopeAttributes(attributes)}>
+    <table className={cx("contributors", className)} style={style} {...attributes}>
       <caption>{caption}</caption>
       <thead>
         <tr>

@@ -9,9 +9,17 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = StatusIconProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["svg"],
+    "label" | "size" | "colour" | "children" | "class" | "style" | "ref"
+  > &
+    StatusIconProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: SVGElementTagNameMap["svg"] | null;
+    };
 
   let {
     label,
@@ -19,15 +27,9 @@
     colour = "#1f6feb",
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <svg
@@ -38,7 +40,8 @@
   height={size}
   fill="none"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <title>{label}</title
   ><defs>

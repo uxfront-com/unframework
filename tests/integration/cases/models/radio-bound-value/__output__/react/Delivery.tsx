@@ -1,15 +1,14 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useState } from "react";
+import { type ComponentPropsWithRef, useState } from "react";
 
 export interface DeliveryProps {
   speeds: string[];
   extras: string[];
 }
 
-export interface DeliveryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DeliveryAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "speeds" | "extras" | "children"
+>;
 
 export default function Delivery({
   speeds,
@@ -22,12 +21,7 @@ export default function Delivery({
   const [chosen, setChosen] = useState<string[]>(["insurance"]);
 
   return (
-    <section
-      aria-label="Delivery"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Delivery" className={className} style={style} {...attributes}>
       <fieldset>
         <legend>Speed</legend>
         {speeds.map((value) => (

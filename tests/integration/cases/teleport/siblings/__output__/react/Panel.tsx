@@ -1,18 +1,14 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { subscribeNothing } from "./_unframework/subscribeNothing";
 import { teleport } from "./_unframework/teleport";
-import { type CSSProperties, useRef, useState, useSyncExternalStore } from "react";
+import { type ComponentPropsWithRef, useRef, useState, useSyncExternalStore } from "react";
 
 interface Row {
   id: number;
   label: string;
 }
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Panel({ className, style, ...attributes }: PanelAttributes) {
   const [note, setNote] = useState(false);
@@ -37,12 +33,7 @@ export default function Panel({ className, style, ...attributes }: PanelAttribut
   );
 
   return (
-    <section
-      className={cx("panel", className)}
-      aria-label="Panel"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("panel", className)} aria-label="Panel" style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {

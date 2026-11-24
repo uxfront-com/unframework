@@ -1,6 +1,6 @@
 # ADR-0022: TypeScript 6 checkers live beside TypeScript 7
 
-- **Status:** Accepted (M0 spike), amended by ADR-0028
+- **Status:** Accepted (M0 spike), amended by ADR-0028 and ADR-0118
 - **Date:** 2026-10-01
 - **Plan:** §9 (M0 spike 5); §5.2, §5.5, §7.2 (L4), §7.3, §7.9, R8, Appendix C
 

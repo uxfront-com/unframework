@@ -2,15 +2,11 @@ import Choice from "./Choice";
 import List from "./List";
 import Wrapper from "./Wrapper";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useDirective } from "./_unframework/useDirective";
 import { vTrace } from "./vTrace";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface PageAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PageAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Page({ className, style, ...attributes }: PageAttributes) {
   const [label, setLabel] = useState("first");
@@ -24,12 +20,7 @@ export default function Page({ className, style, ...attributes }: PageAttributes
   const traceRef_3 = useDirective(vTrace, () => label);
 
   return (
-    <section
-      className={cx("page", className)}
-      aria-label="Page"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("page", className)} aria-label="Page" style={style} {...attributes}>
       <Wrapper
         row={
           <span data-name="row" ref={traceRef}>

@@ -2,20 +2,19 @@ import Choice from "./Choice";
 import List from "./List";
 import Wrapper from "./Wrapper";
 import { vTrace } from "./vTrace";
-import { type JSX, createSignal, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, onCleanup, splitProps } from "solid-js";
 
-export default function Page(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Page(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [label, setLabel] = createSignal("first");
   let note: HTMLParagraphElement | null = null;
   const [noted, setNoted] = createSignal("");
 
   return (
-    <section
-      class={props.class ? `page ${props.class}` : "page"}
-      aria-label="Page"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `page ${props.class}` : "page"} aria-label="Page" {...others}>
       <Wrapper
         row={
           <span data-name="row" ref={vTrace(() => label())}>
@@ -59,11 +58,4 @@ export default function Page(props: { class?: string; style?: JSX.CSSProperties 
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

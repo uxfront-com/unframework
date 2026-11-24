@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "tab",
+      "dom": [
+        "<section aria-label=\"Picker\">",
+        "  <button class=\"chip\" type=\"button\" uf:focused=\"\">",
+        "    \"Ada\"",
+        "  </button>",
+        "  <ol aria-label=\"Log\">",
+        "    <li>",
+        "      \"focus on button\"",
+        "    </li>",
+        "  </ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Picker\":",
+        "  - button \"Ada\"",
+        "  - list \"Log\":",
+        "    - listitem: focus on button"
+      ],
+      "events": {}
+    }
+  ]
+}

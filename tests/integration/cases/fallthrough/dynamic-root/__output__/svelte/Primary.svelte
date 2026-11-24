@@ -27,8 +27,8 @@
   {href}
   {disabled}
   {text}
-  onpress={() => onpress?.()}
   class={["primary", className]}
+  onpress={() => onpress?.()}
   {style}
   {...scopeAttributes(attributes)}
 />

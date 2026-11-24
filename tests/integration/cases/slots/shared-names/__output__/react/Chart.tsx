@@ -1,11 +1,7 @@
 import Legend from "./Legend";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ChartAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChartAttributes = Omit<ComponentPropsWithRef<"div">, "series" | "children">;
 
 export default function Chart({
   series,
@@ -14,7 +10,7 @@ export default function Chart({
   ...attributes
 }: { series: string[] } & ChartAttributes) {
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <Legend
         items={series}
         label="Series"

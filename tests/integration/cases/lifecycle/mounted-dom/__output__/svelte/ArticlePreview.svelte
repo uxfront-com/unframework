@@ -9,15 +9,28 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ArticlePreviewProps & {
-    onready?: (characters: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["article"],
+    "title" | "text" | "onready" | "children" | "class" | "style" | "ref"
+  > &
+    ArticlePreviewProps & {
+      onready?: (characters: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["article"] | null;
+    };
 
-  let { title, text, onready, class: className, style, ...attributes }: Props = $props();
+  let {
+    title,
+    text,
+    onready,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let body: HTMLParagraphElement | null = null;
   let characters = $state(0);
@@ -29,20 +42,14 @@
     counted = true;
     onready?.(length);
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <article
   class={["article-preview", className]}
   aria-label={title}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>{title}</h2
   ><p bind:this={body}>{text}</p

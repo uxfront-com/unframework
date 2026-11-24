@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface MenuDish {
   id: string;
@@ -20,10 +19,10 @@ export interface MenuBoardProps {
   closed: boolean;
 }
 
-export interface MenuBoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MenuBoardAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "courses" | "closed" | "children"
+>;
 
 export default function MenuBoard({
   courses,
@@ -33,7 +32,7 @@ export default function MenuBoard({
   ...attributes
 }: MenuBoardProps & MenuBoardAttributes) {
   return (
-    <div className={cx("menu-board", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("menu-board", className)} style={style} {...attributes}>
       {closed ? (
         <p>The kitchen is closed.</p>
       ) : (

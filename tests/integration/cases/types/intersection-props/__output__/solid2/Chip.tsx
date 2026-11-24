@@ -1,21 +1,25 @@
 import type { Sized, Toned } from "./types";
-import type { JSX } from "@solidjs/web";
-import { merge } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { merge, omit } from "solid-js";
 
 type ChipProps = Sized & Toned & { label: string };
 
-export default function Chip(rawProps: ChipProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Chip(
+  rawProps: ChipProps &
+    Omit<ComponentProps<"span">, "size" | "tone" | "label" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
+) {
   const props = merge(rawProps, {
     get tone() {
       return rawProps.tone === undefined ? "neutral" : rawProps.tone;
     },
   });
+  const others = omit(props, "size", "tone", "label", "class");
+
   return (
-    <span
-      class={cx(`chip chip-${props.size} chip-${props.tone}`, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <span class={cx(`chip chip-${props.size} chip-${props.tone}`, props.class)} {...others}>
       {props.label}
     </span>
   );
@@ -31,11 +35,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

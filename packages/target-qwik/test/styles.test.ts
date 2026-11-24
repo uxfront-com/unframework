@@ -18,20 +18,28 @@ export default function Card() {
     const code = await output(module);
     expect(code.split("\n\n")[0]).toBe(
       [
-        'import { type CSSProperties, type ClassList, component$, useStyles$ } from "@qwik.dev/core";',
+        "import {",
+        "  type CSSProperties,",
+        "  type ClassList,",
+        "  type PropsOf,",
+        "  component$,",
+        "  useStyles$,",
+        '} from "@qwik.dev/core";',
         'import styles from "./Card.uf.tsx.css?inline";',
       ].join("\n"),
     );
-    expect(code).toContain("=> {\n    useStyles$(styles);\n\n    return (");
+    expect(code).toContain("=> {\n  useStyles$(styles);\n\n  return (");
     expect(await output(lowered("Button.uf.tsx", BUTTON).module)).not.toMatch(/useStyles|\.css/);
   });
 
+  // A root that takes what falls through spreads the props' rest, which holds them (ADR-0118).
   it("spreads the scope attributes its styled parents pass on its root", async () => {
     const code = await output(lowered("Button.uf.tsx", BUTTON).module);
     expect(code).toContain("({ text, class: className, style, ...attributes })");
     expect(code).toContain(
-      'class={["button", className]}\n        {...scopeAttributes(attributes)}',
+      '<button type="button" class={["button", className]} style={style} {...attributes}>',
     );
+    expect(code).not.toContain("scopeAttributes");
   });
 
   it("picks them out of the props object in the object form", async () => {
@@ -43,7 +51,19 @@ export default function Card() {
 }`,
       ).module,
     );
-    expect(code).toContain("{...scopeAttributes(props)}");
+    expect(code).toContain(
+      "const { label: _label, class: _class, style: _style, ...attributes } = props;",
+    );
+    expect(code).toContain("{...attributes}");
+    const branches = await output(
+      lowered(
+        "Tag.uf.tsx",
+        `export default function Tag(props: { label: string }) {
+  return <>{props.label ? <span class="tag">{props.label}</span> : <i>None</i>}</>;
+}`,
+      ).module,
+    );
+    expect(branches.match(/\{\.\.\.scopeAttributes\(props\)\}/g)).toHaveLength(2);
   });
 
   it("types the props of a component without any, so the rest destructures", async () => {
@@ -93,11 +113,12 @@ export default function Bare() {
   it("names the helper of each component of a source apart", async () => {
     const { module } = lowered(
       "Two.uf.tsx",
+      // Conditional roots, which take the helper: one root element spreads the rest instead.
       `export function Item({ scopeAttributes }: { scopeAttributes: string }) {
-  return <li>{scopeAttributes}</li>;
+  return <>{scopeAttributes ? <li>{scopeAttributes}</li> : <li>None</li>}</>;
 }
-export default function Two() {
-  return <ul><Item scopeAttributes="a" /></ul>;
+export default function Two({ open }: { open: boolean }) {
+  return <>{open ? <ul><Item scopeAttributes="a" /></ul> : <p>Closed</p>}</>;
 }`,
     );
     const helpers = async (index: number) =>

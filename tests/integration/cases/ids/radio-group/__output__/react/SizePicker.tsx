@@ -1,17 +1,16 @@
 import { cx } from "./_unframework/cx";
 import { listen } from "./_unframework/listen";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useId, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useId, useRef, useState } from "react";
 
 export interface SizePickerProps {
   legend: string;
   sizes: string[];
 }
 
-export interface SizePickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SizePickerAttributes = Omit<
+  ComponentPropsWithRef<"fieldset">,
+  "legend" | "sizes" | "children"
+>;
 
 export default function SizePicker({
   legend,
@@ -35,7 +34,7 @@ export default function SizePicker({
       className={cx("size-picker", className)}
       aria-describedby={hintId}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <legend>{legend}</legend>
       <p id={hintId}>Pick one size.</p>

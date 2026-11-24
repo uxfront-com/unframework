@@ -6,10 +6,17 @@ import { describe, expect, it } from "vitest";
 import { run, tree } from "../helpers.ts";
 import { check, consumer, designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
 
+// A title with a class of its own, so both components import the shared `cx` (ADR-0121).
+const TITLE = `export function CardTitle(props: { label: string }) {
+  return <h2 class="card-title">{props.label}</h2>;
+}
+`;
+
 const packaged = async (under?: string) => {
   const root = designSystem({
     config: { targets: ["react"], package: { resolveFrom: inRepository("packages/target-react") } },
     frameworks: ["react", "@types/react"],
+    files: { "src/CardTitle.uf.tsx": TITLE },
     ...(under ? { under } : {}),
   });
   const { code, stderr } = await run(root, "build", "--package");
@@ -32,7 +39,6 @@ describe("build --package: React", () => {
         "react/CardTitle.js",
         // The shared helper modules the components import (ADR-0121), which no entry exports.
         "react/_unframework/cx.js",
-        "react/_unframework/scopeAttributes.js",
         "react/index.d.ts",
         "react/index.js",
         "react/shared/format.js",
@@ -46,12 +52,10 @@ describe("build --package: React", () => {
     expect(files["react/Card.js"]).toContain('from "./shared/format.js"');
     // Each component imports the helpers from the package's own `_unframework/`, once each.
     for (const component of ["react/Card.js", "react/CardTitle.js"]) {
-      expect(files[component]).toContain('from "./_unframework/scopeAttributes.js"');
-      expect(files[component]).not.toMatch(/function scopeAttributes\b/);
+      expect(files[component]).toContain('from "./_unframework/cx.js"');
+      expect(files[component]).not.toMatch(/function cx\b/);
     }
-    expect(files["react/_unframework/scopeAttributes.js"]).toMatch(
-      /^export \{ scopeAttributes \};$/m,
-    );
+    expect(files["react/_unframework/cx.js"]).toMatch(/^export \{ cx \};$/m);
     expect(JSON.stringify(JSON.parse(files["package.json"] ?? "").exports)).not.toContain(
       "_unframework",
     );

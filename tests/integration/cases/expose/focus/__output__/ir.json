@@ -202,7 +202,17 @@
             ],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "label"
+            "rootTag": "label",
+            "fallthroughTag": "label",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "search"
+                }
+              ],
+              "listeners": []
+            }
           }
         ],
         "keys": []

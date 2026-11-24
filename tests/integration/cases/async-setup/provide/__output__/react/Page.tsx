@@ -1,16 +1,12 @@
 import Badge from "./Badge";
 import Panel from "./Panel";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface PageAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PageAttributes = Omit<ComponentPropsWithRef<"main">, "children">;
 
 export default function Page({ className, style, ...attributes }: PageAttributes) {
   return (
-    <main className={className} style={style} {...scopeAttributes(attributes)}>
+    <main className={className} style={style} {...attributes}>
       <Panel id="ada">
         <Badge />
       </Panel>

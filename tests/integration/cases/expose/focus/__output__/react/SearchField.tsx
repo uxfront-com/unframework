@@ -1,16 +1,14 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type Ref, useImperativeHandle, useRef } from "react";
+import { type ComponentPropsWithoutRef, type Ref, useImperativeHandle, useRef } from "react";
 
 export interface SearchFieldHandle {
   focus(): void;
 }
 
-export interface SearchFieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-  ref?: Ref<SearchFieldHandle>;
-}
+export type SearchFieldAttributes = Omit<
+  ComponentPropsWithoutRef<"label">,
+  "label" | "children"
+> & { ref?: Ref<SearchFieldHandle> };
 
 export default function SearchField({
   label,
@@ -28,7 +26,7 @@ export default function SearchField({
   useImperativeHandle(ref, () => ({ focus }));
 
   return (
-    <label className={cx("search", className)} style={style} {...scopeAttributes(attributes)}>
+    <label className={cx("search", className)} style={style} {...attributes}>
       {label}
       <input ref={input} type="search" />
     </label>

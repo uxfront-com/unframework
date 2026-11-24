@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface Contact {
   id: string;
@@ -16,10 +15,10 @@ export interface ContactListEvents {
   onRemoved?: (name: string) => void;
 }
 
-export interface ContactListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ContactListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "initial" | "onChoose" | "onRemoved" | "children"
+>;
 
 export default function ContactList({
   initial,
@@ -51,7 +50,7 @@ export default function ContactList({
       className={cx("contact-list", className)}
       aria-label="Contacts"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul>
         {contacts.map((contact, index) => (

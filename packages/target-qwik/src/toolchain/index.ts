@@ -53,7 +53,7 @@ export const toolchain: Toolchain = {
 
   frameworkCompile: (files) => compileWithOptimizer(files),
 
-  frameworkEmit: (files) => emitWithOptimizer(files),
+  frameworkEmit: (files, context) => emitWithOptimizer(files, context.mode),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
 

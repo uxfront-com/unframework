@@ -53,7 +53,7 @@ import type {
   UseItem,
 } from "@unframework.dev/ir";
 
-import { planComposition } from "./composition.ts";
+import { componentFallthroughTag, planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
 import { directiveRefBase, directivesInPostOrder } from "./directive.ts";
 import { elementInterface } from "./elements.ts";
@@ -223,6 +223,11 @@ export interface ReactPlan {
      * the row makes its own as the row renders beside another (ADR-0108), claimed as it prints.
      */
     mergeRefs?: string;
+    /**
+     * The inline helper that leaves the styled parents' scope attributes out of the props' rest,
+     * where an element other than the root spreads it (ADR-0118).
+     */
+    restAttributes?: string;
     /** The names a setup that awaits takes (ADR-0101), where it does. */
     async?: AsyncSetupNames;
   };
@@ -273,7 +278,7 @@ export function planComponent(
     composable?.parameters.flatMap(({ kind, binding }) => (kind === "value" ? [] : [binding])),
   );
 
-  const listeners = listenerModes(component);
+  const listeners = listenerModes(component, module);
   const eventModes = eventParameterModes(component, listeners);
   const names = new ImportSet(reservedNames(component, module, listeners, eventModes));
   // A source's components are joined into one module where it is loaded (ADR-0053), and a
@@ -282,7 +287,7 @@ export function planComponent(
   const owners = composable ? (module.composables ?? []).map(setupOwner) : module.components;
   const index = owners.findIndex((each) => each.name === component.name);
   const reserved = owners.map((each) => {
-    const modes = listenerModes(each);
+    const modes = listenerModes(each, module);
     return reservedNames(each, module, modes, eventParameterModes(each, modes));
   });
   for (const helper of HELPER_NAMES) {
@@ -488,6 +493,7 @@ export function planComponent(
           case "Api":
           case "Event":
           case "Slot":
+          case "Dev":
             break;
           default:
             reference satisfies never;
@@ -986,6 +992,7 @@ const HELPER_NAMES = [
   "useModelText",
   "looseToNumber",
   "scopeAttributes",
+  "restAttributes",
   "useDirective",
   "DirectiveHooks",
   "queueHook",
@@ -1044,6 +1051,7 @@ function inside(span: Span, outer: Span): boolean {
  */
 function listenerModes(
   component: UfComponent,
+  module?: UfModule,
 ): Map<EventAttribute, { element: ElementNode; mode: ListenerMode }> {
   const found: [EventAttribute, ElementNode][] = [];
   /** The tags each element may render: one, or a `<component is>`'s candidates. */
@@ -1086,12 +1094,36 @@ function listenerModes(
       grew ||= entry.native;
     }
   }
-  return new Map(
+  const modes = new Map<EventAttribute, { element: ElementNode; mode: ListenerMode }>(
     entries.map(({ listener, element, native }) => [
       listener,
       { element, mode: native ? "native" : "synthetic" },
     ]),
   );
+  // A listener on a component falls through to its fallthrough element (ADR-0118), which takes
+  // it as its prop: it is planned on an element of that tag, which holds what else falls through
+  // there, and `emit` reports one React's prop would not keep the DOM's semantics for (UF1002).
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component") return;
+      const passed = node.attributes.filter(
+        (attribute) =>
+          attribute.kind === "Static" || attribute.kind === "Bound" || attribute.kind === "Event",
+      );
+      if (!passed.some((attribute) => attribute.kind === "Event")) return;
+      const element: ElementNode = {
+        kind: "Element",
+        tag: (module && componentFallthroughTag(module, node)) ?? "",
+        attributes: passed,
+        children: [],
+        span: node.span,
+      };
+      for (const attribute of passed) {
+        if (attribute.kind === "Event") modes.set(attribute, { element, mode: "synthetic" });
+      }
+    },
+  });
+  return modes;
 }
 
 /**
@@ -1463,6 +1495,8 @@ function hoistable(
             case "Global":
             case "Import":
             case "Event":
+            // `process.env.NODE_ENV` reads the same at module scope (ADR-0117).
+            case "Dev":
               return true;
             case "Binding": {
               const kind = kindOf(reference.binding)!;

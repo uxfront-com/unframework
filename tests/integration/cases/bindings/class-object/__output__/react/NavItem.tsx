@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface NavItemProps {
   label: string;
@@ -10,10 +9,10 @@ export interface NavItemProps {
   danger?: boolean;
 }
 
-export interface NavItemAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NavItemAttributes = Omit<
+  ComponentPropsWithRef<"a">,
+  "label" | "href" | "active" | "muted" | "danger" | "children"
+>;
 
 export default function NavItem({
   label,
@@ -34,7 +33,7 @@ export default function NavItem({
       )}
       aria-current={active ? "page" : undefined}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </a>

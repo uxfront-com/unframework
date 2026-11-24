@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface ArticleProps {
   title: string;
@@ -6,24 +7,19 @@ export interface ArticleProps {
 }
 
 export default function Article(
-  props: ArticleProps & { class?: string; style?: JSX.CSSProperties },
+  props: ArticleProps &
+    Omit<ComponentProps<"article">, "title" | "body" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "title", "body", "class");
+
   return (
-    <article
-      class={props.class ? `article ${props.class}` : "article"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <article class={props.class ? `article ${props.class}` : "article"} {...others}>
       <h2>{props.title}</h2>
       <div class="body" innerHTML={props.body} />
       <footer innerHTML={"<small>Filed under <em>News</em></small>"} />
     </article>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

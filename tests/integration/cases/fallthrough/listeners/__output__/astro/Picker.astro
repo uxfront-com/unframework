@@ -1,0 +1,27 @@
+---
+import Chip from "./Chip.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
+
+const log = [] as string[];
+---
+
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Picker"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
+  <Chip label="Ada" />
+  <ol aria-label="Log">
+    {log.map((entry) => (
+      <li>{entry}</li>
+    ))}
+  </ol>
+</section>

@@ -3,6 +3,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   type Signal,
   component$,
@@ -14,73 +15,63 @@ export interface ProfileMenuEvents {
   onClosed$?: QRL<() => void>;
 }
 
-export default component$<ProfileMenuEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onClosed$, class: className, style, ...attributes }) => {
-    const open = useSignal(false);
+export default component$<
+  ProfileMenuEvents &
+    Omit<PropsOf<"section">, "onClosed$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ onClosed$, class: className, style, ...attributes }) => {
+  const open = useSignal(false);
 
-    const close = $(() => {
-      if (!open.value) return;
-      open.value = false;
-      onClosed$?.();
-    });
+  const close = $(() => {
+    if (!open.value) return;
+    open.value = false;
+    onClosed$?.();
+  });
 
-    const clickOutsideElements = useSignal<DirectiveElement<typeof vClickOutside>[]>([]);
+  const clickOutsideElements = useSignal<DirectiveElement<typeof vClickOutside>[]>([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = track(() => close);
-        for (const element of track(clickOutsideElements)) {
-          cleanup(
-            runDirective(vClickOutside, element, value, {
-              leave: (left) => forgetElement(clickOutsideElements, left),
-              back: (kept) => collectElement(clickOutsideElements, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = track(() => close);
+      for (const element of track(clickOutsideElements)) {
+        cleanup(
+          runDirective(vClickOutside, element, value, {
+            leave: (left) => forgetElement(clickOutsideElements, left),
+            back: (kept) => collectElement(clickOutsideElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["profile-menu", className]}
-        aria-label="Profile"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <div class="menu" ref={(element) => collectElement(clickOutsideElements, element)}>
-          <button
-            type="button"
-            aria-expanded={open.value}
-            onClick$={() => (open.value = !open.value)}
-          >
-            Account
-          </button>
-          {open.value ? (
-            <ul aria-label="Account actions">
-              <li>
-                <button type="button">Settings</button>
-              </li>
-              <li>
-                <button type="button">Sign out</button>
-              </li>
-            </ul>
-          ) : null}
-        </div>
-        <p>Outside the menu</p>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["profile-menu", className]} aria-label="Profile" style={style} {...attributes}>
+      <div class="menu" ref={(element) => collectElement(clickOutsideElements, element)}>
+        <button
+          type="button"
+          aria-expanded={open.value}
+          onClick$={() => (open.value = !open.value)}
+        >
+          Account
+        </button>
+        {open.value ? (
+          <ul aria-label="Account actions">
+            <li>
+              <button type="button">Settings</button>
+            </li>
+            <li>
+              <button type="button">Sign out</button>
+            </li>
+          </ul>
+        ) : null}
+      </div>
+      <p>Outside the menu</p>
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

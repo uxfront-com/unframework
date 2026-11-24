@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
 export interface StarRatingEvents {
   onPreview?: (stars: number) => void;
@@ -10,8 +10,11 @@ export interface StarRatingEvents {
 const choices = [1, 2, 3, 4, 5];
 
 export default function StarRating(
-  props: StarRatingEvents & { class?: string; style?: JSX.CSSProperties },
+  props: StarRatingEvents &
+    Omit<ComponentProps<"div">, "class" | "style"> & { class?: string; style?: JSX.CSSProperties },
 ) {
+  const others = omit(props, "onPreview", "onRate", "onCleared", "class");
+
   const [stars, setStars] = createState(0);
 
   function choose(next: number) {
@@ -34,8 +37,7 @@ export default function StarRating(
       class={props.class ? `star-rating ${props.class}` : "star-rating"}
       role="group"
       aria-label="Rating"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ul>
         <KeyedFor each={choices} by={(choice) => choice}>
@@ -63,13 +65,6 @@ export default function StarRating(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

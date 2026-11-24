@@ -31,6 +31,7 @@ import type {
   InterpolationNode,
   RenderNode,
   SlotFill,
+  Span,
   UfComponent,
 } from "@unframework.dev/ir";
 
@@ -60,10 +61,14 @@ export function forSolid(
   component: UfComponent,
   rules: RewriteRules,
   types: BindingTypes,
+  spreads: readonly Span[] = [],
 ): UfComponent["render"] {
-  // A root that spreads its styled parents' scope attributes renders through Solid's
-  // `ssrElement`, which writes its JSX text decoded and unescaped (ADR-0063).
-  const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
+  // A root that spreads its styled parents' scope attributes, or an element that spreads what
+  // falls through (`spreads`, ADR-0118), renders through Solid's `ssrElement`, which writes its
+  // JSX text decoded and unescaped (ADR-0063).
+  const roots = new Set(
+    [...scopeRoots(component), ...spreads].map(({ start, end }) => `${start}:${end}`),
+  );
   const element = <T extends ElementNode | FragmentNode>(node: T): T => {
     const model =
       node.kind === "Element"

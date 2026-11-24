@@ -1,20 +1,16 @@
 import Card from "./Card";
 import Tip from "./Tip";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { subscribeNothing } from "./_unframework/subscribeNothing";
 import { teleport } from "./_unframework/teleport";
-import { type CSSProperties, useRef, useState, useSyncExternalStore } from "react";
+import { type ComponentPropsWithRef, useRef, useState, useSyncExternalStore } from "react";
 
 interface Row {
   id: number;
   label: string;
 }
 
-export interface BoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BoardAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Board({ className, style, ...attributes }: BoardAttributes) {
   const [rows, setRows] = useState<Row[]>([
@@ -32,12 +28,7 @@ export default function Board({ className, style, ...attributes }: BoardAttribut
   );
 
   return (
-    <section
-      className={cx("board", className)}
-      aria-label="Board"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("board", className)} aria-label="Board" style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {

@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface TallyEvents {
   onTotal?: (value: number) => void;
@@ -8,10 +7,10 @@ export interface TallyEvents {
   onLogged?: (entries: string[]) => void;
 }
 
-export interface TallyAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TallyAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onTotal" | "onSteps" | "onLogged" | "children"
+>;
 
 export default function Tally({
   onTotal,
@@ -72,12 +71,7 @@ export default function Tally({
   }
 
   return (
-    <section
-      className={cx("tally", className)}
-      aria-label="Tally"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("tally", className)} aria-label="Tally" style={style} {...attributes}>
       <p role="status">Count: {count}</p>
       <button type="button" onClick={addTwice}>
         Add two

@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 export type ShippingMethod = "standard" | "express";
 
@@ -19,8 +19,15 @@ function formatCents(cents: number): string {
 }
 
 export default function CheckoutTotal(
-  props: CheckoutTotalProps & CheckoutTotalEvents & { class?: string; style?: JSX.CSSProperties },
+  props: CheckoutTotalProps &
+    CheckoutTotalEvents &
+    Omit<ComponentProps<"section">, "subtotal" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "subtotal", "onShippingChange", "class");
+
   const [method, setMethod] = createState<ShippingMethod>("standard");
   const shipping = () => rates[method()];
   const total = () => formatCents(props.subtotal + shipping());
@@ -42,8 +49,7 @@ export default function CheckoutTotal(
     <section
       class={props.class ? `checkout-total ${props.class}` : "checkout-total"}
       aria-label="Order total"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>Subtotal: {formatCents(props.subtotal)}</p>
       <p>Shipping: {formatCents(shipping())}</p>
@@ -69,13 +75,6 @@ export default function CheckoutTotal(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

@@ -1,5 +1,4 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useState } from "react";
+import { type ComponentPropsWithRef, useState } from "react";
 
 export interface SelectProps<T extends string> {
   label: string;
@@ -11,10 +10,10 @@ export interface SelectModels<T extends string> {
   onValueChange?: (value: T) => void;
 }
 
-export interface SelectAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SelectAttributes = Omit<
+  ComponentPropsWithRef<"label">,
+  "label" | "options" | "value" | "onValueChange" | "children"
+>;
 
 export default function Select<T extends string>({
   label,
@@ -28,7 +27,7 @@ export default function Select<T extends string>({
   const [, setLocalValue] = useState({ value: value });
 
   return (
-    <label className={className} style={style} {...scopeAttributes(attributes)}>
+    <label className={className} style={style} {...attributes}>
       {label}{" "}
       <select
         value={value}

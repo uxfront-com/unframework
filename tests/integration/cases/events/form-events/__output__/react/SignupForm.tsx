@@ -1,21 +1,18 @@
 import { cx } from "./_unframework/cx";
 import { listen } from "./_unframework/listen";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type SubmitEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type SubmitEvent, useRef, useState } from "react";
 
 export interface SignupFormEvents {
   onSignup?: (fullName: string, email: string, plan: string, newsletter: boolean) => void;
 }
 
-export interface SignupFormAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SignupFormAttributes = Omit<ComponentPropsWithRef<"form">, "onSignup" | "children">;
 
 export default function SignupForm({
   onSignup,
   className,
   style,
+  onSubmit,
   ...attributes
 }: SignupFormEvents & SignupFormAttributes) {
   const [fullName, setFullName] = useState("");
@@ -54,9 +51,12 @@ export default function SignupForm({
     <form
       className={cx("signup-form", className)}
       aria-label="Sign up"
-      onSubmit={submit}
+      onSubmit={(event) => {
+        submit(event);
+        onSubmit?.(event);
+      }}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Name

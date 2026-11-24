@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useNextTick } from "./_unframework/useNextTick";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface SaveDraftEvents {
   onSaved?: (attempt: number, status: string) => void;
 }
 
-export interface SaveDraftAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SaveDraftAttributes = Omit<ComponentPropsWithRef<"section">, "onSaved" | "children">;
 
 export default function SaveDraft({
   onSaved,
@@ -48,7 +44,7 @@ export default function SaveDraft({
       className={cx("save-draft", className)}
       aria-label="Draft"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">{status}</p>
       <button type="button" onClick={save}>

@@ -59,6 +59,7 @@ import type {
   ModelItem,
   Parameter,
   ProvideItem,
+  RefAttribute,
   RefType,
   RenderNode,
   SetupItem,
@@ -84,6 +85,17 @@ import {
 import type { Fallthrough } from "./composition.ts";
 import { attachmentCode, narrowedDirectiveValues } from "./directive.ts";
 import { isAttached } from "./events.ts";
+import {
+  attributesType,
+  elementRefs,
+  elementType,
+  fallthroughTag,
+  refTag,
+  restAttributesHelper,
+  restElement,
+  rootComponentNames,
+  rootComponentNode,
+} from "./fallthrough.ts";
 import { handlerTypes } from "./handlers.ts";
 import {
   constantsCode,
@@ -122,6 +134,8 @@ export interface InstanceScript {
   >;
   /** The render tree the markup prints (`composition.ts`). */
   render: ElementNode | FragmentNode;
+  /** What the markup writes for what falls through (ADR-0118), which the dialect prints. */
+  fallthrough: Pick<FallthroughMarkup, "refs" | "listeners" | "rest">;
   /** The `styleText` helper's name, where a style is bound to one value (ADR-0065). */
   styleText?: string;
   /**
@@ -135,6 +149,20 @@ export interface InstanceScript {
    * enter and leave classes, which the elements' `in:` and `out:` name.
    */
   transition?: { enter?: string; leave?: string };
+}
+
+/** What the markup writes for what falls through a component (ADR-0118). */
+export interface FallthroughMarkup {
+  /** The root element or component, where a single one is the root. */
+  root?: Span;
+  /** What the root binds after its own attributes: the `ref` prop. */
+  rootAttributes: string[];
+  /** The text of each template ref the markup writes otherwise: `bind:ref={save}`. */
+  refs: ReadonlyMap<RefAttribute, string>;
+  /** The text of each own listener of the fallthrough element that calls the consumer's. */
+  listeners: ReadonlyMap<EventAttribute, string>;
+  /** What the element that spreads the props' rest spreads: `rest`, `restAttributes(rest)`. */
+  rest?: string;
 }
 
 /** The modules a script imports from, in the order it prints them. */
@@ -513,8 +541,13 @@ class ScriptWriter {
   readonly rules: RewriteRules;
   /** The bindings the output names apart from the source (`snippetNames`). */
   readonly #renamed = new Map<string, string>();
-  /** The template refs attached to an element or a component a condition renders. */
+  /**
+   * The template refs attached to an element or a component a condition renders, and to a
+   * child's `ref` prop.
+   */
   readonly #conditionalRefs: ReadonlySet<string>;
+  /** The template refs on a child that exposes nothing, which bind its `ref` prop (ADR-0118). */
+  readonly #elementRefs: ReadonlySet<RefAttribute>;
   /** The id `$props.id()` gives, once the first `useId()` claimed it, and the next id's suffix. */
   #id: { local: string; count: number } | undefined;
   /** The local names of the fallthrough `class` and `style`, when the component takes them. */
@@ -526,6 +559,19 @@ class ScriptWriter {
    * takes its styled parents' scope attributes (`scopeRoots`, ADR-0063).
    */
   #scope: { helper: string; props: string } | undefined;
+  /**
+   * The props' rest, which the fallthrough element spreads (ADR-0118), and the `restAttributes`
+   * helper's name where that element is not the root, which keeps the scope attributes.
+   */
+  #spread: { rest: string; strip?: string } | undefined;
+  /** The `ref` prop's local name and its element's tag, where a ref holds the root element. */
+  #ref: { local: string; tag: string } | undefined;
+  /** The local of each consumer listener the fallthrough element's own handler calls, by key. */
+  readonly #consumers = new Map<string, string>();
+  /** Each own listener of the fallthrough element, with the consumer's listener it calls. */
+  readonly #listeners = new Map<EventAttribute, string>();
+  /** The event parameter of the handlers that call a consumer's listener (`#composedListener`). */
+  #eventParameter: string | undefined;
   /** The variable of each `<component is>` over components (`$derived`), by its node. */
   readonly #dynamic = new Map<RenderNode, string>();
   /** Each slot's snippet variable, where it is not the slot's prop name (`children`, `title`). */
@@ -576,7 +622,13 @@ class ScriptWriter {
     component = this.#component;
     this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
     this.#functions = handlerTypes(component);
-    this.#conditionalRefs = conditionalRefs(component);
+    // A ref bound to a child's `ref` prop (`bind:ref`) is written after the first render, as one
+    // a condition renders is.
+    this.#elementRefs = elementRefs(component, module);
+    this.#conditionalRefs = new Set([
+      ...conditionalRefs(component),
+      ...[...this.#elementRefs].map(({ binding }) => binding),
+    ]);
     // The composables it calls keep their local names, which no result takes (ADR-0069).
     const uses = component.setup.filter((item): item is UseItem => item.kind === "Use");
     this.#names.scope.reserve(...uses.map((item) => item.composable));
@@ -591,6 +643,8 @@ class ScriptWriter {
         `${this.#callback(emit.event)}?.(${parts.arguments.join(", ")})`,
       // `nextTick()` is only awaited (UF2025): Svelte's `tick()` is the same promise.
       api: () => this.#names.import("svelte", "tick"),
+      // Svelte has no public flag a library may import, so a bundler's own check (ADR-0117).
+      dev: () => 'process.env.NODE_ENV !== "production"',
       // A slot's presence is its snippet's (ADR-0054).
       slot: (reference) => this.#slotLocal(reference.slot),
     };
@@ -697,6 +751,7 @@ class ScriptWriter {
       ...(this.#fallthrough?.mergeStyle ? [mergeStyleHelper(this.#fallthrough.mergeStyle)] : []),
       ...(styleText ? [styleTextHelper(styleText)] : []),
       ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
+      ...(this.#spread?.strip ? [restAttributesHelper(this.#spread.strip)] : []),
       ...(teleport ? [teleportHelper(teleport.helper)] : []),
       ...(transition ? transitionHelpers(transition) : []),
       ...(attachments ? directives.map((directive) => attachmentCode(directive, attachments)) : []),
@@ -740,7 +795,13 @@ class ScriptWriter {
         reindent(piece, INDENT),
       ),
     ];
-    const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
+    const fallthrough = this.#fallthroughMarkup();
+    const roots = new Set(
+      [
+        ...scopeRoots(component),
+        ...(this.#spread?.strip && fallthrough.root ? [fallthrough.root] : []),
+      ].map(({ start, end }) => `${start}:${end}`),
+    );
     const composed = composedRender(
       component,
       this.#fallthrough && styleText ? { ...this.#fallthrough, styleText } : this.#fallthrough,
@@ -770,13 +831,24 @@ class ScriptWriter {
         ? { componentTag: (name: string) => this.#componentTags.get(name) }
         : {}),
       // Each node Vue's fallthrough reaches spreads the `data-uf-*` props of the styled parents
-      // that render the component, picked by name: they are the parents' (ADR-0063).
-      ...(this.#scope
+      // that render the component, picked by name: they are the parents' (ADR-0063). The root
+      // that spreads the props' rest takes them with it, last, so what the consumer passes wins
+      // (ADR-0118), and binds the `ref` prop, where a ref holds it.
+      ...(this.#scope || fallthrough.root
         ? {
-            scopeRootAttributes: ({ span }: ElementNode) =>
-              roots.has(`${span.start}:${span.end}`)
-                ? [`{...${this.#scope!.helper}(${this.#scope!.props})}`]
-                : [],
+            scopeRootAttributes: ({ span }: ElementNode) => {
+              const at = (each: Span | undefined) =>
+                each !== undefined && each.start === span.start && each.end === span.end;
+              return [
+                ...(at(fallthrough.root) ? fallthrough.rootAttributes : []),
+                ...(this.#scope && roots.has(`${span.start}:${span.end}`)
+                  ? [`{...${this.#scope.helper}(${this.#scope.props})}`]
+                  : []),
+                ...(at(fallthrough.root) && this.#spread && !this.#spread.strip && !fallthrough.rest
+                  ? [`{...${this.#spread.rest}}`]
+                  : []),
+              ];
+            },
           }
         : {}),
       ...(composed.candidates.size
@@ -794,6 +866,11 @@ class ScriptWriter {
       component,
       markup,
       render: composed.render,
+      fallthrough: {
+        refs: fallthrough.refs,
+        listeners: fallthrough.listeners,
+        ...(fallthrough.rest === undefined ? {} : { rest: fallthrough.rest }),
+      },
       ...(styleText ? { styleText } : {}),
       ...(teleport ? { teleport } : {}),
       ...(transition
@@ -1227,15 +1304,35 @@ class ScriptWriter {
     const declaredSlots = component.slots?.slots ?? [];
     const fallthrough = takesFallthrough(component);
     const scope = this.#names;
+    // What a consumer passes that the component does not declare, which its fallthrough element
+    // spreads last (ADR-0118): the props' rest, and the element's attributes in the props type.
+    const tag = fallthrough ? fallthroughTag(component, this.#module) : undefined;
+    const spread = tag !== undefined && rootTakesFallthrough(component, this.#module);
+    const restAt = component.inheritAttrs === false ? restElement(component) : undefined;
+    const restAtRoot = restAt === undefined || restAt === component.render;
+    const singleRoot =
+      component.render.kind === "Element" || rootComponentNode(component) !== undefined;
     // A root that takes its styled parents' scope attributes reads them from the props
-    // (ADR-0063): the rest of the pattern, or the props object.
-    const scoped = scopeRoots(component).length > 0;
+    // (ADR-0063): the rest of the pattern, or the props object. A root that spreads the props'
+    // rest takes them with it, and where the rest is another element's, the root picks them out.
+    const scoped = spread ? !restAtRoot && singleRoot : scopeRoots(component).length > 0;
     const helper = scoped ? scope.claim("scopeAttributes") : undefined;
     const scopeFrom = (props: string) => {
       if (helper) this.#scope = { helper, props };
       return props;
     };
-    if (!parameter && !emits && !models.length && !declaredSlots.length && !fallthrough) {
+    // A ref on a component that exposes nothing holds its root element (ADR-0118): a `$bindable`
+    // prop, `ref`, which the root binds.
+    const ownRef = refTag(component, this.#module);
+    if (ownRef !== undefined) this.#ref = { local: scope.claim("ref"), tag: ownRef };
+    if (
+      !parameter &&
+      !emits &&
+      !models.length &&
+      !declaredSlots.length &&
+      !fallthrough &&
+      !this.#ref
+    ) {
       if (!scoped) return [];
       // No props of its own: the props object is the parents' attributes, unchecked.
       return [`let ${scopeFrom(scope.claim("attributes"))}: object = $props();`];
@@ -1257,6 +1354,10 @@ class ScriptWriter {
     // The members the props type adds to the source's, and what the pattern binds of them.
     const members = [...this.#events.values()].map(({ key, type: each }) => `${key}?: ${each};`);
     const extras: string[] = [];
+    // Where the fallthrough element spreads the rest, every name the component declares is bound
+    // apart from it, so none falls through (ADR-0118): those nothing reads under a name starting
+    // with `_`, which `no-unused-vars` leaves alone.
+    const unread: string[] = [];
     for (const model of models) {
       const local = this.#name(model.binding);
       const optional = model.required ? "" : "?";
@@ -1270,7 +1371,11 @@ class ScriptWriter {
       for (const slot of declaredSlots) {
         const prop = slotProp(slot.name);
         members.push(`${prop}?: ${snippet}${slot.props ? `<[${slot.props.code}]>` : ""};`);
-        if (!used.has(slot.name)) continue;
+        if (!used.has(slot.name)) {
+          // Left out of the rest, which the fallthrough element spreads.
+          if (spread) unread.push(`${prop}: ${scope.claim(`_${prop}`)}`);
+          continue;
+        }
         // A source name the prop's would capture (a list's `item`) leaves it to the snippet.
         if (scope.scope.has(prop)) {
           const local = scope.claim(`${prop}Snippet`);
@@ -1297,14 +1402,64 @@ class ScriptWriter {
       const { className, style } = this.#fallthrough;
       extras.push(`class: ${className}`, style === "style" ? style : `style: ${style}`);
     }
+    if (this.#ref) {
+      const { local, tag: element } = this.#ref;
+      members.push(`ref?: ${elementType(element)} | null;`);
+      extras.push(`${local === "ref" ? "ref" : `ref: ${local}`} = $bindable(null)`);
+    }
+    // The consumer's listener of an event the fallthrough element listens to itself, which the
+    // element's own handler calls after its own code: a spread `onclick` would replace it.
+    if (spread) {
+      for (const attribute of ownListeners(component)) {
+        const key = `on${attribute.event}`;
+        if ([...this.#events.values()].some((each) => each.key === key)) continue;
+        const local = this.#consumers.get(key) ?? scope.claim(key);
+        if (!this.#consumers.has(key)) {
+          this.#consumers.set(key, local);
+          extras.push(local === key ? key : `${key}: ${local}`);
+        }
+        this.#listeners.set(attribute, local);
+      }
+    }
     const pieces: string[] = [];
     let type = parameter?.type.code;
     if (members.length) {
       const name = scope.scope.has("Props")
         ? scope.claim(`${component.name}Props`)
         : scope.claim("Props");
-      pieces.push(`type ${name} = ${eventsJoined(type, members)};`);
+      const joined = eventsJoined(type, members);
+      if (spread) {
+        // The fallthrough element's attributes and listeners, but for the names the component
+        // declares, which would intersect (ADR-0054 Evidence, TS2322), Svelte's `children`
+        // snippet, which only a declared default slot takes, and the names a root component
+        // declares, which the rest it is passed must not carry.
+        const declared = [
+          ...component.props.map((prop) => prop.name),
+          ...[...this.#events.values()].map(({ key }) => key),
+          ...models.map((model) => model.name),
+          ...declaredSlots.map((slot) => slotProp(slot.name)),
+          "children",
+          "class",
+          "style",
+          ...(this.#ref ? ["ref"] : []),
+          ...rootComponentNames(component, this.#module),
+        ];
+        const attributes = attributesType(tag, (each) =>
+          scope.import("svelte/elements", each, { type: true }),
+        );
+        const omitted = [...new Set(declared)].map((each) => JSON.stringify(each)).join(" | ");
+        pieces.push(`type ${name} = Omit<${attributes}, ${omitted}> & ${joined};`);
+      } else pieces.push(`type ${name} = ${joined};`);
       type = name;
+    }
+    // The props' rest, which the fallthrough element spreads: `rest`, as the source names it on
+    // the element that spreads it, or the root's `attributes`.
+    const rest = spread ? scope.claim(restAt ? "rest" : "attributes") : undefined;
+    if (rest !== undefined) {
+      this.#spread = {
+        rest,
+        ...(restAtRoot ? {} : { strip: scope.claim("restAttributes") }),
+      };
     }
     let pattern: string;
     if (parameter?.form === "object") {
@@ -1312,7 +1467,8 @@ class ScriptWriter {
       const reads =
         component.bindings.some(({ id, kind }) => kind === "prop" && read.has(id)) ||
         emitted.size > 0 ||
-        scoped;
+        scoped ||
+        rest !== undefined;
       if (!reads) {
         // An object nothing reads still declares the props, whose type is the component's API,
         // under a name starting with `_`: an unused binding fails L5 (`no-unused-vars`), which
@@ -1330,25 +1486,53 @@ class ScriptWriter {
       // the props, which a component that reads none of its own leaves out.
       if (!extras.length) pattern = local;
       else pattern = `{ ${[...extras, ...(reads ? [`...${local}`] : [])].join(", ")} }`;
-      scopeFrom(local);
+      if (rest === undefined) scopeFrom(local);
+      else {
+        // The object keeps the props the setup reads as `props.label`: the rest is what it holds
+        // but the names the component declares, a value derived from it.
+        for (const prop of component.props) {
+          unread.push(`${prop.name}: ${scope.claim(`_${prop.name}`)}`);
+        }
+        for (const { key } of this.#events.values()) {
+          unread.push(`${key}: ${scope.claim(`_${key}`)}`);
+        }
+        pieces.push(`let ${pattern}: ${type!} = $props();`);
+        pieces.push(
+          `let { ${[...unread, `...${scopeFrom(rest)}`].join(", ")} } = $derived(${local});`,
+        );
+        return pieces;
+      }
     } else {
       const props = new Map(component.props.map((prop) => [prop.binding, prop]));
       const entries = component.bindings.flatMap(({ id, kind }) => {
-        const prop = kind === "prop" && read.has(id) ? props.get(id) : undefined;
+        const prop = kind === "prop" ? props.get(id) : undefined;
         if (!prop) return [];
+        if (!read.has(id)) {
+          return rest === undefined ? [] : [`${prop.name}: ${scope.claim(`_${prop.name}`)}`];
+        }
         const local = this.#name(id);
         const bound = local === prop.name ? prop.name : `${prop.name}: ${local}`;
         return [prop.default ? `${bound} = ${prop.default.code}` : bound];
       });
+      // A prop the source's pattern leaves out has no binding: it is bound apart from the rest
+      // all the same.
+      if (rest !== undefined) {
+        for (const prop of component.props) {
+          if (prop.binding !== undefined && this.#bindings.has(prop.binding)) continue;
+          entries.push(`${prop.name}: ${scope.claim(`_${prop.name}`)}`);
+        }
+      }
       for (const { key, local } of this.#events.values()) {
         if (local !== undefined) entries.push(local === key ? key : `${key}: ${local}`);
+        else if (rest !== undefined) entries.push(`${key}: ${scope.claim(`_${key}`)}`);
       }
-      entries.push(...extras);
+      entries.push(...extras, ...unread);
       // A component that reads none of its props still declares them, under the object form:
       // the props type is its API, and an empty pattern (`let {}`) is `no-empty-pattern`. The
       // object is named `_props`, as nothing reads it (`no-unused-vars`), or `attributes` where
       // its root reads the scope attributes from it.
-      if (!entries.length)
+      if (rest !== undefined) pattern = `{ ${[...entries, `...${scopeFrom(rest)}`].join(", ")} }`;
+      else if (!entries.length)
         pattern = scoped ? scopeFrom(scope.claim("attributes")) : scope.claim("_props");
       else if (scoped)
         pattern = `{ ${[...entries, `...${scopeFrom(scope.claim("attributes"))}`].join(", ")} }`;
@@ -1459,6 +1643,19 @@ class ScriptWriter {
         return "";
       case "Use":
         return this.#use(item);
+      // In the instance script, which runs once per instance, untracked as the setup's other
+      // reads are (ADR-0117).
+      case "DevCheck": {
+        const text = rewriteCode(item.code, this.#component, this.rules, "pure");
+        // Statements, so any reactive read: one in a callback it calls runs at once too.
+        const reads = item.code.refs.some((reference) => {
+          if (reference.kind !== "Binding") return false;
+          const binding = this.#bindings.get(reference.binding);
+          return binding !== undefined && isReactive(binding.kind);
+        });
+        if (!reads) return text;
+        return `${this.#names.import("svelte", "untrack")}(() => {\n${text}\n});`;
+      }
       default:
         return unreachable(item);
     }
@@ -1806,6 +2003,103 @@ class ScriptWriter {
 
   // --- Listeners -----------------------------------------------------------------------------
 
+  /**
+   * What the markup writes for what falls through (ADR-0118): on the root, what it binds after
+   * its own attributes (the `ref` prop, `bind:this={ref}`); the props' rest spread on the
+   * element that spreads it; each template ref a parent binds to a child's `ref` prop
+   * (`bind:ref={save}`), and the root's own, which sets the `ref` prop too; and the fallthrough
+   * element's own listeners, which call the consumer's after their own code.
+   */
+  #fallthroughMarkup(): FallthroughMarkup {
+    const component = this.#component;
+    const { render } = component;
+    const rootNode = render.kind === "Element" ? render : rootComponentNode(component);
+    const refs = new Map<RefAttribute, string>();
+    for (const attribute of this.#elementRefs) {
+      refs.set(attribute, bind("ref", this.#name(attribute.binding)));
+    }
+    const rootAttributes: string[] = [];
+    const ref = this.#ref;
+    if (ref && rootNode) {
+      const property = rootNode.kind === "Element" ? "this" : "ref";
+      const own = rootNode.attributes.find(
+        (attribute): attribute is RefAttribute => attribute.kind === "Ref",
+      );
+      if (own) {
+        // The root's own template ref and the `ref` prop both hold the element: a function
+        // binding sets both.
+        const local = this.#name(own.binding);
+        const element = this.#names.claim("element");
+        refs.set(
+          own,
+          `bind:${property}={() => ${local}, (${element}) => {\n  ${local} = ${element};\n  ${ref.local} = ${element};\n}}`,
+        );
+      } else rootAttributes.push(bind(property, ref.local));
+    }
+    const listeners = new Map<EventAttribute, string>();
+    for (const [attribute, consumer] of this.#listeners) {
+      listeners.set(attribute, this.#composedListener(attribute, consumer));
+    }
+    const spread = this.#spread;
+    const restAt = restElement(component);
+    return {
+      ...(rootNode ? { root: rootNode.span } : {}),
+      rootAttributes,
+      refs,
+      listeners,
+      ...(spread && restAt
+        ? {
+            rest: spread.strip ? `${spread.strip}(${spread.rest})` : spread.rest,
+          }
+        : {}),
+    };
+  }
+
+  /**
+   * The fallthrough element's own listener of an event the consumer may listen to too, which
+   * calls the consumer's after its own code, as Vue runs a root's own listener first (ADR-0118):
+   * `(event) => { onpick?.(label); onclick?.(event); }`. A handler whose code cannot take the
+   * call at its end (one that returns early, awaits, or names its event parameter's type or
+   * pattern) is called with the event first.
+   */
+  #composedListener(attribute: EventAttribute, consumer: string): string {
+    const name = `on${attribute.event}`;
+    const { handler } = attribute;
+    // The parameter hides only a binding of the component named like it, which the handler's
+    // code may read: then it takes a name of its own.
+    const event = (this.#eventParameter ??= this.#component.bindings.some(
+      (binding) => binding.name === "event",
+    )
+      ? this.#names.claim("event")
+      : "event");
+    const lines = (parameter: string, statements: string) =>
+      `${name}={${block(`(${parameter}) => {`, [statements, `${consumer}?.(${parameter});`], "}")}}`;
+    if (handler.kind === "Function") {
+      const fn = this.#component.setup.find(
+        (item): item is FunctionItem =>
+          item.kind === "Function" && item.binding === handler.binding,
+      )?.function;
+      const local = this.#name(handler.binding);
+      return lines(event, `${local}(${fn?.parameters.length === 0 ? "" : event});`);
+    }
+    const fn = this.#functions.get(handler.function) ?? handler.function;
+    const [first, ...others] = fn.parameters;
+    const simple =
+      !fn.async &&
+      !fn.returnType &&
+      others.length === 0 &&
+      (first === undefined ||
+        (first.name !== undefined && !first.type && !first.default && !first.rest));
+    const body = simple
+      ? functionBodyText(fn, this.#component, this.rules, "client", { discard: true })
+      : undefined;
+    if (body !== undefined && !(!fn.expression && /\breturn\b/.test(body))) {
+      return lines(first?.name ?? event, fn.expression ? statementOf(body) : body);
+    }
+    const own = functionText(fn, this.#component, this.rules, "client");
+    return lines(event, `(${own})(${fn.parameters.length ? event : ""});`);
+  }
+
   /** An inline handler whose parameter's type Svelte's event types need changed, or `undefined`. */
   #inlineHandler(attribute: EventAttribute): string | undefined {
     const { handler } = attribute;
@@ -1999,6 +2293,7 @@ function isDeclaration(item: SetupItem): boolean {
     case "WatchEffect":
     case "Lifecycle":
     case "Provide":
+    case "DevCheck":
       return false;
     default:
       return unreachable(item);
@@ -2024,7 +2319,8 @@ function typeScriptInMarkup(component: UfComponent, rules: RewriteRules): boolea
   let found = false;
   walk(component.render, {
     enter(node) {
-      if (found || node.kind !== "Element") return;
+      // A component's listener falls through to the child's element (ADR-0118).
+      if (found || (node.kind !== "Element" && node.kind !== "Component")) return;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
         const code = functionText(attribute.handler.function, component, rules, "client");
@@ -2549,6 +2845,58 @@ function modelTextHelper(name: string, on: string): string {
     "  };",
     "}",
   ].join("\n");
+}
+
+/**
+ * The own listeners of a component's fallthrough element (ADR-0118), its root element or
+ * component or the element that spreads its props' rest, which a consumer's listener of the same
+ * event in the spread would replace: the attributes Svelte writes `on<event>`, but in the capture
+ * phase (`on<event>capture`, another attribute) and those written as attachments.
+ */
+function ownListeners(component: UfComponent): EventAttribute[] {
+  const node =
+    component.inheritAttrs === false
+      ? restElement(component)
+      : component.render.kind === "Element"
+        ? component.render
+        : rootComponentNode(component);
+  if (!node) return [];
+  return node.attributes.filter(
+    (attribute): attribute is EventAttribute =>
+      attribute.kind === "Event" &&
+      !attribute.capture &&
+      (node.kind !== "Element" || !isAttached(attribute, node)),
+  );
+}
+
+/** A binding of `property`: `bind:ref`, Svelte's shorthand, where the variable is named like it. */
+function bind(property: string, local: string): string {
+  return local === property ? `bind:${property}` : `bind:${property}={${local}}`;
+}
+
+/**
+ * An arrow's expression body as a statement, without the parentheses an arrow needs around an
+ * assignment it returns (`() => (query += "a")`): `query += "a";`.
+ */
+function statementOf(statement: string): string {
+  const code = statement.replace(/;$/, "");
+  try {
+    // The parser leaves the parentheses out: the expression is the code between them.
+    const expression = parseExpression(code);
+    if (
+      code.startsWith("(") &&
+      code.endsWith(")") &&
+      expression.start === 1 &&
+      expression.end === code.length - 1
+    ) {
+      const inner = code.slice(1, -1);
+      // A statement that starts like a block or a declaration keeps them.
+      if (!/^(?:\{|function\b|class\b|async\s+function\b|let\s*\[)/.test(inner)) return `${inner};`;
+    }
+  } catch {
+    return statement;
+  }
+  return statement;
 }
 
 /** The listeners the markup writes as attachments. */

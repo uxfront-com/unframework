@@ -1,15 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, useRef, useState } from "react";
 
 export interface ChoiceSlots {
   body?: ReactNode;
 }
 
-export interface ChoiceAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChoiceAttributes = Omit<ComponentPropsWithRef<"div">, "body" | "children">;
 
 export default function Choice({
   body,
@@ -21,7 +17,7 @@ export default function Choice({
   const firstRef = useRef(first);
 
   return (
-    <div className={cx("choice", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("choice", className)} style={style} {...attributes}>
       {first ? <b>{body}</b> : <i>{body}</i>}
       <button
         type="button"

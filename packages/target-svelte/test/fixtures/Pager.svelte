@@ -2,9 +2,9 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<SvelteHTMLElements["section"], "size" | "onturn" | "onleft" | "onspan" | "onrange" | "onresize" | "children" | "class" | "style" | "ref"> & {
     size: number;
     onturn?: (value: number, previous: number) => void;
     onleft?: (page: number) => void;
@@ -13,9 +13,10 @@
     onresize?: (value: number, previous?: number) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { size, onturn, onleft, onspan, onrange, onresize, class: className, style, ...attributes }: Props = $props();
+  let { size, onturn, onleft, onspan, onrange, onresize, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let page = $state(1);
   let low = $state(0);
@@ -79,16 +80,9 @@
       onresize?.(value, previous);
     });
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section aria-label="Pager" class={className} {style} {...scopeAttributes(attributes)}>
+<section aria-label="Pager" class={className} {style} bind:this={ref} {...attributes}>
   <p>Page {page}, {low} to {high} of {size}</p
   ><button type="button" onclick={() => page++}>Next</button
   ><button

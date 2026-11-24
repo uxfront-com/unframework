@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useOnce } from "./_unframework/useOnce";
-import { type CSSProperties, type WheelEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type WheelEvent, useRef, useState } from "react";
 
-export interface EventLogAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type EventLogAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function EventLog({ className, style, ...attributes }: EventLogAttributes) {
   const [log, setLog] = useState<string[]>([]);
@@ -37,7 +33,7 @@ export default function EventLog({ className, style, ...attributes }: EventLogAt
       className={cx("event-log", className)}
       aria-label="Event options"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <div
         className="panel"

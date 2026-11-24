@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface CardIconAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardIconAttributes = Omit<ComponentPropsWithRef<"span">, "symbol" | "children">;
 
 export function CardIcon({
   symbol,
@@ -14,12 +10,7 @@ export function CardIcon({
   ...attributes
 }: { symbol: string } & CardIconAttributes) {
   return (
-    <span
-      className={cx("icon", className)}
-      aria-hidden="true"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <span className={cx("icon", className)} aria-hidden="true" style={style} {...attributes}>
       {symbol}
     </span>
   );

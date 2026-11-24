@@ -1,23 +1,23 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export interface BadgeProps {
   label: string;
   tone?: string;
 }
 
-export default component$<BadgeProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, tone, class: className, style, ...attributes }) => {
-    return (
-      <span
-        class={["badge", className]}
-        style={{ ...styleObject(tone), ...style }}
-        {...scopeAttributes(attributes)}
-      >
-        {label}
-      </span>
-    );
-  },
-);
+export default component$<
+  BadgeProps &
+    Omit<PropsOf<"span">, "label" | "tone" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ label, tone, class: className, style, ...attributes }) => {
+  return (
+    <span class={["badge", className]} style={{ ...styleObject(tone), ...style }} {...attributes}>
+      {label}
+    </span>
+  );
+});
 
 /**
  * A style bound to a value as an object, which a merge spreads: a declaration list splits as
@@ -38,13 +38,4 @@ function styleObject(style: object | string | null | undefined): Record<string, 
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
   return object;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

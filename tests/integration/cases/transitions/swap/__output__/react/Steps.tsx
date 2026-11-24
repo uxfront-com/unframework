@@ -1,13 +1,9 @@
 import { Transition } from "./_unframework/Transition";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 import "./Steps.uf.tsx.css";
 
-export interface StepsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepsAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Steps({ className, style, ...attributes }: StepsAttributes) {
   const [first, setFirst] = useState(true);
@@ -21,7 +17,7 @@ export default function Steps({ className, style, ...attributes }: StepsAttribut
       aria-label="Checkout"
       style={style}
       data-uf-84fe8ccf=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

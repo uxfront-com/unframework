@@ -1,4 +1,13 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface AsyncRunsEvents {
   onPair?: (low: number, high: number) => void;
@@ -7,8 +16,10 @@ export interface AsyncRunsEvents {
 }
 
 export default function AsyncRuns(
-  props: AsyncRunsEvents & { class?: string; style?: JSX.CSSProperties },
+  props: AsyncRunsEvents & Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onPair", "onGone", "onStopped"]);
+
   const [low, setLow] = createSignal(0);
   const [high, setHigh] = createSignal(0);
   const [limit] = createSignal(3);
@@ -105,12 +116,7 @@ export default function AsyncRuns(
   }
 
   return (
-    <section
-      aria-label="Async runs"
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Async runs" {...others}>
       <p role="status">
         {low()}/{high()}
       </p>
@@ -143,13 +149,6 @@ export default function AsyncRuns(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

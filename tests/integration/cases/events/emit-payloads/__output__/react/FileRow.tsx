@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface FileInfo {
   path: string;
@@ -20,10 +19,10 @@ export interface FileRowEvents {
   onShare?: (path: string, note?: string) => void;
 }
 
-export interface FileRowAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FileRowAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "path" | "size" | "onRefresh" | "onOpen" | "onMove" | "onPick" | "onShare" | "children"
+>;
 
 export default function FileRow({
   path,
@@ -48,7 +47,7 @@ export default function FileRow({
       role="group"
       aria-label={path}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <span>
         {path} ({size} bytes)

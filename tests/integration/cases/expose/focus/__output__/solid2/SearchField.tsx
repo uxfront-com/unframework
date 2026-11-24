@@ -1,13 +1,15 @@
-import type { JSX } from "@solidjs/web";
-import { onCleanup, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit, onCleanup, untrack } from "solid-js";
 
 export default function SearchField(
-  props: { label: string } & {
-    class?: string;
-    style?: JSX.CSSProperties;
-    ref?: (api: { focus: () => void }) => void;
-  },
+  props: { label: string } & Omit<ComponentProps<"label">, "label" | "ref" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+      ref?: (api: { focus: () => void }) => void;
+    },
 ) {
+  const others = omit(props, "label", "ref", "class");
+
   let input: HTMLInputElement | null = null;
 
   function focus() {
@@ -17,11 +19,7 @@ export default function SearchField(
   untrack(() => props.ref?.({ focus }));
 
   return (
-    <label
-      class={props.class ? `search ${props.class}` : "search"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <label class={props.class ? `search ${props.class}` : "search"} {...others}>
       {props.label}
       <input
         ref={clearedRef(
@@ -36,13 +34,6 @@ export default function SearchField(
       />
     </label>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */

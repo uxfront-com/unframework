@@ -1,12 +1,8 @@
 import { Transition } from "./_unframework/Transition";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 import "./Drawer.uf.tsx.css";
 
-export interface DrawerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DrawerAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Drawer({ className, style, ...attributes }: DrawerAttributes) {
   const [shown, setShown] = useState(true);
@@ -20,7 +16,7 @@ export default function Drawer({ className, style, ...attributes }: DrawerAttrib
       className={className}
       style={style}
       data-uf-54e3e959=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

@@ -1,10 +1,6 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent } from "react";
 
-export interface ChartAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChartAttributes = Omit<ComponentPropsWithRef<"p">, "children">;
 
 export default function Chart({ className, style, ...attributes }: ChartAttributes) {
   const onMount = useEffectEvent(() => {
@@ -15,7 +11,7 @@ export default function Chart({ className, style, ...attributes }: ChartAttribut
   }, []);
 
   return (
-    <p className={className} style={style} {...scopeAttributes(attributes)}>
+    <p className={className} style={style} {...attributes}>
       Chart
     </p>
   );

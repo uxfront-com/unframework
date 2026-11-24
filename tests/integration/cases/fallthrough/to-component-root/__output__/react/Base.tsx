@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface BaseAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BaseAttributes = Omit<ComponentPropsWithRef<"button">, "text" | "children">;
 
 export default function Base({
   text,
@@ -14,12 +10,7 @@ export default function Base({
   ...attributes
 }: { text: string } & BaseAttributes) {
   return (
-    <button
-      type="button"
-      className={cx("base", className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <button type="button" className={cx("base", className)} style={style} {...attributes}>
       {text}
     </button>
   );

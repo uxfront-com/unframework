@@ -1,4 +1,12 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface ChannelPickerEvents {
   onJoin?: (channel: string) => void;
@@ -6,8 +14,11 @@ export interface ChannelPickerEvents {
 }
 
 export default function ChannelPicker(
-  props: ChannelPickerEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ChannelPickerEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onJoin", "onLeave", "class"]);
+
   const [channel, setChannel] = createSignal("general");
 
   createWatcher(
@@ -25,8 +36,7 @@ export default function ChannelPicker(
     <section
       class={props.class ? `channel-picker ${props.class}` : "channel-picker"}
       aria-label="Channels"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">Channel: #{channel()}</p>
       <button type="button" onClick={() => setChannel("random")}>
@@ -37,13 +47,6 @@ export default function ChannelPicker(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

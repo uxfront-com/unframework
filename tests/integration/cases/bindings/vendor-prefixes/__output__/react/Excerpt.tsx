@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ExcerptProps {
   title: string;
@@ -9,10 +8,10 @@ export interface ExcerptProps {
   stroke: string;
 }
 
-export interface ExcerptAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ExcerptAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "title" | "text" | "fill" | "stroke" | "children"
+>;
 
 export default function Excerpt({
   title,
@@ -24,7 +23,7 @@ export default function Excerpt({
   ...attributes
 }: ExcerptProps & ExcerptAttributes) {
   return (
-    <article className={cx("excerpt", className)} style={style} {...scopeAttributes(attributes)}>
+    <article className={cx("excerpt", className)} style={style} {...attributes}>
       <h2
         style={{
           WebkitTextFillColor: fill,

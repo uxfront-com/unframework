@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ArticleTeaserProps {
   title: string;
@@ -13,10 +12,18 @@ export interface ArticleTeaserProps {
   layout?: "row" | "column";
 }
 
-export interface ArticleTeaserAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ArticleTeaserAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  | "title"
+  | "summary"
+  | "author"
+  | "minutes"
+  | "featured"
+  | "category"
+  | "pinned"
+  | "layout"
+  | "children"
+>;
 
 export default function ArticleTeaser({
   title,
@@ -24,6 +31,11 @@ export default function ArticleTeaser({
   minutes = 5,
   className,
   style,
+  author: _author,
+  featured: _featured,
+  category: _category,
+  pinned: _pinned,
+  layout: _layout,
   ...attributes
 }: ArticleTeaserProps & ArticleTeaserAttributes) {
   return (
@@ -31,7 +43,7 @@ export default function ArticleTeaser({
       className={cx("article-teaser", className)}
       aria-label={title}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{title}</h2>
       <p>{summary}</p>

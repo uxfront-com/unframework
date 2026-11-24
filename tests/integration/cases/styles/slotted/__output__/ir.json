@@ -392,6 +392,17 @@
             "inheritAttrs": true,
             "root": "element",
             "rootTag": "figure",
+            "fallthroughTag": "figure",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "frame"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "figure",
             "styles": {
               "scopeId": "9dc516fd",
               "slotted": true
@@ -438,6 +449,17 @@
             "inheritAttrs": true,
             "root": "element",
             "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "mat"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "div",
             "styles": {
               "scopeId": "09929c4a",
               "slotted": true

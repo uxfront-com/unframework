@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface Fruit {
   name: string;
@@ -15,10 +14,10 @@ export interface FruitPickerEvents {
   onKept?: (name: string, colour: string) => void;
 }
 
-export interface FruitPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FruitPickerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "fruits" | "onKept" | "children"
+>;
 
 export default function FruitPicker({
   fruits,
@@ -51,7 +50,7 @@ export default function FruitPicker({
       className={cx("fruit-picker", className)}
       aria-label="Fruit"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul aria-label="Fruits">
         {fruits.map((fruit) => (

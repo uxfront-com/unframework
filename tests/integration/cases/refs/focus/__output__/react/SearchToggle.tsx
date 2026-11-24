@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type KeyboardEvent, useRef } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef } from "react";
 
-export interface SearchToggleAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchToggleAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function SearchToggle({ className, style, ...attributes }: SearchToggleAttributes) {
   const field = useRef<HTMLInputElement>(null);
@@ -20,12 +16,7 @@ export default function SearchToggle({ className, style, ...attributes }: Search
   }
 
   return (
-    <div
-      className={cx("search-toggle", className)}
-      role="search"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("search-toggle", className)} role="search" style={style} {...attributes}>
       <button type="button" ref={trigger} onClick={focusField}>
         Search
       </button>

@@ -1,15 +1,11 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface LayoutSlots {
   title?: ReactNode;
   children?: ReactNode;
 }
 
-export interface LayoutAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LayoutAttributes = Omit<ComponentPropsWithRef<"main">, "title" | "children">;
 
 export function Layout({
   title,
@@ -19,7 +15,7 @@ export function Layout({
   ...attributes
 }: LayoutSlots & LayoutAttributes) {
   return (
-    <main className={className} style={style} {...scopeAttributes(attributes)}>
+    <main className={className} style={style} {...attributes}>
       <h1>{title}</h1>
       {children}
     </main>

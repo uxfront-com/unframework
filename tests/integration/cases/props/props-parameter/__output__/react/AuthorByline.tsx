@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface AuthorBylineProps {
   author: string;
@@ -9,14 +8,24 @@ export interface AuthorBylineProps {
   affiliation?: string;
 }
 
-export interface AuthorBylineAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AuthorBylineAttributes = Omit<
+  ComponentPropsWithRef<"p">,
+  "author" | "published" | "minutes" | "affiliation" | "children"
+>;
 
 export default function AuthorByline(props: AuthorBylineProps & AuthorBylineAttributes) {
+  const {
+    className,
+    style,
+    author: _author,
+    published: _published,
+    minutes: _minutes,
+    affiliation: _affiliation,
+    ...attributes
+  } = props;
+
   return (
-    <p className={cx("byline", props.className)} style={props.style} {...scopeAttributes(props)}>
+    <p className={cx("byline", className)} style={style} {...attributes}>
       By {props.author}, {props.affiliation ?? "independent"}
       <br />
       <time dateTime={props.published}>{props.published}</time> · {props.minutes} min read

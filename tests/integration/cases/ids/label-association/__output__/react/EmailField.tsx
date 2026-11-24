@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useId } from "react";
+import { type ComponentPropsWithRef, useId } from "react";
 
 export interface EmailFieldProps {
   label: string;
   hint: string;
 }
 
-export interface EmailFieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type EmailFieldAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "hint" | "children"
+>;
 
 export default function EmailField({
   label,
@@ -23,7 +22,7 @@ export default function EmailField({
   const hintId = `uf-id-${useId()}`;
 
   return (
-    <div className={cx("email-field", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("email-field", className)} style={style} {...attributes}>
       <label htmlFor={inputId}>{label}</label>
       <input id={inputId} name="email" type="email" aria-describedby={hintId} />
       <p id={hintId}>{hint}</p>

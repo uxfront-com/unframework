@@ -1,17 +1,16 @@
 import Box from "./Box";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface FrameSlots {
   title?: ReactNode;
   children?: ReactNode;
 }
 
-export interface FrameAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FrameAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "label" | "title" | "children"
+>;
 
 export default function Frame({
   label,
@@ -22,12 +21,7 @@ export default function Frame({
   ...attributes
 }: { label: string } & FrameSlots & FrameAttributes) {
   return (
-    <section
-      className={cx("frame", className)}
-      aria-label={label}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("frame", className)} aria-label={label} style={style} {...attributes}>
       <Box title={title}>{children}</Box>
     </section>
   );

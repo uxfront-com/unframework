@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { merge } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { merge, omit } from "solid-js";
 
 export interface NoticeProps {
   message: string;
@@ -12,7 +12,11 @@ export interface NoticeProps {
 }
 
 export default function Notice(
-  rawProps: NoticeProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: NoticeProps &
+    Omit<
+      ComponentProps<"section">,
+      "message" | "title" | "tone" | "priority" | "expanded" | "tags" | "author" | "class" | "style"
+    > & { class?: string; style?: JSX.CSSProperties },
 ) {
   const defaults: Required<
     Pick<NoticeProps, "title" | "tone" | "priority" | "expanded" | "tags" | "author">
@@ -44,13 +48,24 @@ export default function Notice(
       return rawProps.author === undefined ? defaults.author : rawProps.author;
     },
   });
+  const others = omit(
+    props,
+    "message",
+    "title",
+    "tone",
+    "priority",
+    "expanded",
+    "tags",
+    "author",
+    "class",
+  );
+
   return (
     <section
       class={props.class ? `notice ${props.class}` : "notice"}
       aria-label={props.title}
       data-tone={props.tone}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{props.title}</h2>
       <p>{props.message}</p>
@@ -62,11 +77,4 @@ export default function Notice(
       </details>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

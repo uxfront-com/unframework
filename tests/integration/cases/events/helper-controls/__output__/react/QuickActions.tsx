@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useOnce } from "./_unframework/useOnce";
-import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef, useState } from "react";
 
 export interface QuickActionsProps {
   actions: string[];
@@ -13,10 +12,10 @@ export interface QuickActionsEvents {
   onChosen?: (action: string, scope: string) => void;
 }
 
-export interface QuickActionsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type QuickActionsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "actions" | "onWelcomed" | "onSubscribed" | "onChosen" | "children"
+>;
 
 export default function QuickActions({
   actions,
@@ -65,7 +64,7 @@ export default function QuickActions({
       className={cx("quick-actions", className)}
       aria-label="Quick actions"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Search

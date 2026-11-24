@@ -1,14 +1,10 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface InvoiceTotalProps {
   quantity: number;
 }
 
-export interface InvoiceTotalAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type InvoiceTotalAttributes = Omit<ComponentPropsWithRef<"div">, "quantity" | "children">;
 
 export default function InvoiceTotal({
   quantity,
@@ -32,7 +28,7 @@ export default function InvoiceTotal({
   }
 
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <output>{`${total} after ${refunded} refunded`}</output>
       <button type="button" onClick={refund}>
         Refund

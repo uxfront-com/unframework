@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { Tone } from "./types";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface SwatchAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SwatchAttributes = Omit<ComponentPropsWithRef<"span">, "tone" | "children">;
 
 export default function Swatch({
   tone,
@@ -15,11 +11,7 @@ export default function Swatch({
   ...attributes
 }: { tone: Tone } & SwatchAttributes) {
   return (
-    <span
-      className={cx(`swatch swatch-${tone}`, className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <span className={cx(`swatch swatch-${tone}`, className)} style={style} {...attributes}>
       {tone}
     </span>
   );

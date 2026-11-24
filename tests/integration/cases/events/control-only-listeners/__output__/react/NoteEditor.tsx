@@ -1,20 +1,17 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface NoteEditorEvents {
   onSaved?: (title: string, bold: boolean) => void;
 }
 
-export interface NoteEditorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteEditorAttributes = Omit<ComponentPropsWithRef<"form">, "onSaved" | "children">;
 
 export default function NoteEditor({
   onSaved,
   className,
   style,
+  onSubmit,
   ...attributes
 }: NoteEditorEvents & NoteEditorAttributes) {
   const [title, setTitle] = useState("");
@@ -34,9 +31,12 @@ export default function NoteEditor({
     <form
       className={cx("note-editor", className)}
       aria-label="Note"
-      onSubmit={(event) => event.preventDefault()}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit?.(event);
+      }}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Title

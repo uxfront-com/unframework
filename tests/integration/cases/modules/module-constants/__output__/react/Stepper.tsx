@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface StepperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepperAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 const STEPS = [1, 5, 10] as const;
 const LIMITS = Object.freeze({ min: 0, max: 20 });
@@ -26,7 +22,7 @@ export default function Stepper({ className, style, ...attributes }: StepperAttr
       className={cx("stepper", className)}
       aria-label="Stepper"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">{caption(value)}</p>
       <ul>

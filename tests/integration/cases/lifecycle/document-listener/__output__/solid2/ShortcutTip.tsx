@@ -1,10 +1,11 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
 } from "solid-js";
@@ -15,8 +16,14 @@ export interface ShortcutTipEvents {
 }
 
 export default function ShortcutTip(
-  props: ShortcutTipEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ShortcutTipEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onDismissed", "onShortcut", "class");
+
   const [open, setOpen] = createState(true);
   const [enabled, setEnabled] = createState(false);
   const [count, setCount] = createState(0);
@@ -60,8 +67,7 @@ export default function ShortcutTip(
     <section
       class={props.class ? `shortcut-tip ${props.class}` : "shortcut-tip"}
       aria-label="Shortcuts"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>{open() ? "Press Escape to hide this tip." : "Tip hidden."}</p>
       <button type="button" aria-pressed={enumeratedValue(enabled())} onClick={toggle}>
@@ -75,13 +81,6 @@ export default function ShortcutTip(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

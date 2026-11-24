@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -18,10 +17,16 @@ export interface SearchSessionEvents {
   onSummary?: (text: string) => void;
 }
 
-export interface SearchSessionAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchSessionAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "onUnmounted"
+  | "onEffectCleaned"
+  | "onWatchCleaned"
+  | "onSearched"
+  | "onSearchCleaned"
+  | "onSummary"
+  | "children"
+>;
 
 export default function SearchSession({
   onUnmounted,
@@ -167,7 +172,7 @@ export default function SearchSession({
       className={cx("search-session", className)}
       aria-label="Search"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Query

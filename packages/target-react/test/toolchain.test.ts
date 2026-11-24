@@ -31,6 +31,8 @@ import { M2_SHAPES } from "./lint-probes.ts";
 const context: ToolchainContext = { toolchainDir, root: packageDir };
 /** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
 const SHEETS = join(toolchainDir, "sheets.d.ts");
+/** `process.env.NODE_ENV`, which an output's `isDev` check reads and an app declares (ADR-0117). */
+const ENVIRONMENT = join(toolchainDir, "environment.d.ts");
 /** The declarations of the styling engines' modules, which the styled goldens import (ADR-0064). */
 const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts");
@@ -169,8 +171,8 @@ describe("react frameworkCompile (L3)", () => {
       errors: [
         {
           message: "Expected corresponding JSX closing tag for <p>.",
-          // After the imports of its two shared helpers (ADR-0121).
-          line: 14,
+          // After the import of its shared helper (ADR-0121).
+          line: 10,
           column: 5,
           code: "MissingClosingTagElement",
         },
@@ -466,7 +468,13 @@ describe("react typecheck (L4)", () => {
 
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output in one run", async () => {
-    const files = [...reactGoldens().map((file) => file.path), SHEETS, STYLEFRAME, FIXTURE_ENGINE];
+    const files = [
+      ...reactGoldens().map((file) => file.path),
+      SHEETS,
+      ENVIRONMENT,
+      STYLEFRAME,
+      FIXTURE_ENGINE,
+    ];
     const results = await toolchain.typecheck(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -578,6 +586,7 @@ describe("react typecheck (L4)", () => {
     const goldenFiles = [
       ...reactGoldens().map((file) => file.path),
       SHEETS,
+      ENVIRONMENT,
       STYLEFRAME,
       FIXTURE_ENGINE,
     ];

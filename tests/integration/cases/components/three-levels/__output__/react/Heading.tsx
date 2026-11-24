@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface HeadingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HeadingAttributes = Omit<ComponentPropsWithRef<"h3">, "text" | "children">;
 
 export default function Heading({
   text,
@@ -14,7 +10,7 @@ export default function Heading({
   ...attributes
 }: { text: string } & HeadingAttributes) {
   return (
-    <h3 className={cx("heading", className)} style={style} {...scopeAttributes(attributes)}>
+    <h3 className={cx("heading", className)} style={style} {...attributes}>
       {text}
     </h3>
   );

@@ -1,4 +1,13 @@
-import { type JSX, Show, createMemo, createSignal, mergeProps, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  createMemo,
+  createSignal,
+  mergeProps,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface CounterProps {
   initial?: number;
@@ -10,9 +19,15 @@ export interface CounterEvents {
 }
 
 export default function Counter(
-  rawProps: CounterProps & CounterEvents & { class?: string; style?: JSX.CSSProperties },
+  rawProps: CounterProps &
+    CounterEvents &
+    Omit<ComponentProps<"div">, "initial" | "step" | "onChange" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = mergeProps({ initial: 0, step: 1 } satisfies Partial<CounterProps>, rawProps);
+  const [, others] = splitProps(props, ["initial", "step", "onChange", "class"]);
+
   const [count, setCount] = createSignal(untrack(() => props.initial));
   const doubled = createMemo(() => count() * 2);
 
@@ -22,11 +37,7 @@ export default function Counter(
   }
 
   return (
-    <div
-      class={props.class ? `counter ${props.class}` : "counter"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `counter ${props.class}` : "counter"} {...others}>
       <output>{count()}</output>
       <Show when={doubled() > 10}>
         <span>Big</span>
@@ -36,11 +47,4 @@ export default function Counter(
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

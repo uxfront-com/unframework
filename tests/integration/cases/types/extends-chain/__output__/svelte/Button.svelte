@@ -2,18 +2,27 @@
 
 <script lang="ts">
   import type { ButtonProps } from "./types";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLButtonAttributes } from "svelte/elements";
 
-  type Props = ButtonProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    HTMLButtonAttributes,
+    "disabled" | "label" | "id" | "children" | "class" | "style" | "ref"
+  > &
+    ButtonProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["button"] | null;
+    };
 
-  let { id, label, disabled = false, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    id,
+    label,
+    disabled = false,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <button
@@ -22,5 +31,6 @@
   {disabled}
   class={className}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{label}</button>

@@ -48,8 +48,8 @@ export class ScopeAttributes implements OnInit {
       [href]="href"
       [disabled]="disabled"
       [text]="text"
-      (press)="press.emit()"
       [class]="['primary', this.class()].join(' ')"
+      (press)="press.emit()"
       [style]="this.style()"
       [ufScope]="this.host"
     />

@@ -1,15 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface HeaderAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HeaderAttributes = Omit<ComponentPropsWithRef<"header">, "children">;
 
 export function Header({ className, style, ...attributes }: HeaderAttributes) {
   return (
-    <header className={cx("header", className)} style={style} {...scopeAttributes(attributes)}>
+    <header className={cx("header", className)} style={style} {...attributes}>
       Site
     </header>
   );

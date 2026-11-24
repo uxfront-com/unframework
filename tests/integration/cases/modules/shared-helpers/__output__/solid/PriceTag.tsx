@@ -1,13 +1,16 @@
 import { formatPrice, pluralise } from "./format";
-import { type JSX, createMemo, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createMemo, createSignal, splitProps } from "solid-js";
 
 export interface PriceTagEvents {
   onOrder?: (summary: string) => void;
 }
 
 export default function PriceTag(
-  props: { cents: number } & PriceTagEvents & { class?: string; style?: JSX.CSSProperties },
+  props: { cents: number } & PriceTagEvents &
+    Omit<ComponentProps<"section">, "cents" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["cents", "onOrder", "class"]);
+
   const [quantity, setQuantity] = createSignal(1);
   const total = createMemo(() => formatPrice(props.cents * quantity()));
 
@@ -19,8 +22,7 @@ export default function PriceTag(
     <section
       class={props.class ? `price-tag ${props.class}` : "price-tag"}
       aria-label="Price"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>Each: {formatPrice(props.cents)}</p>
       <p role="status">
@@ -34,11 +36,4 @@ export default function PriceTag(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

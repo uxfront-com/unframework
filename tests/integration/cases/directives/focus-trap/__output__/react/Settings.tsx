@@ -1,13 +1,9 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useDirective } from "./_unframework/useDirective";
 import { vFocusTrap } from "./vFocusTrap";
-import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef, useState } from "react";
 
-export interface SettingsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SettingsAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Settings({ className, style, ...attributes }: SettingsAttributes) {
   const [open, setOpen] = useState(false);
@@ -29,7 +25,7 @@ export default function Settings({ className, style, ...attributes }: SettingsAt
       className={cx("settings", className)}
       aria-label="Settings"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

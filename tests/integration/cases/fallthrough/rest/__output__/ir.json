@@ -1,0 +1,339 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/rest/SignUp.uf.tsx",
+  "components": [
+    {
+      "name": "SignUp",
+      "span": {
+        "start": 82,
+        "end": 522
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "focuses@125",
+          "name": "focuses",
+          "kind": "state",
+          "span": {
+            "start": 125,
+            "end": 132
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "focuses@125",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 139,
+              "end": 140
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 119,
+            "end": 142
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Sign up",
+            "span": {
+              "start": 164,
+              "end": 184
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "id",
+                "value": "email-hint",
+                "span": {
+                  "start": 195,
+                  "end": 210
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "We never share it.",
+                "span": {
+                  "start": 211,
+                  "end": 229
+                }
+              }
+            ],
+            "span": {
+              "start": 192,
+              "end": 233
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Email\"",
+                  "span": {
+                    "start": 261,
+                    "end": 268
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 255,
+                  "end": 268
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "id",
+                "value": "email",
+                "span": {
+                  "start": 277,
+                  "end": 287
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-describedby",
+                "value": "email-hint",
+                "span": {
+                  "start": 296,
+                  "end": 325
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "placeholder",
+                "value": "you@example.com",
+                "span": {
+                  "start": 334,
+                  "end": 363
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "wide",
+                    "span": {
+                      "start": 372,
+                      "end": 384
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 372,
+                  "end": 384
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "margin-top",
+                    "value": "4px",
+                    "span": {
+                      "start": 400,
+                      "end": 415
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 393,
+                  "end": 416
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "focus",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "focuses.value++",
+                      "span": {
+                        "start": 440,
+                        "end": 455
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "focuses@125",
+                          "operator": "++",
+                          "span": {
+                            "start": 440,
+                            "end": 455
+                          },
+                          "target": {
+                            "start": 440,
+                            "end": 453
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 434,
+                      "end": 455
+                    }
+                  },
+                  "span": {
+                    "start": 434,
+                    "end": 455
+                  }
+                },
+                "span": {
+                  "start": 425,
+                  "end": 456
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 240,
+              "end": 465
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Focuses: ",
+                "span": {
+                  "start": 475,
+                  "end": 484
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "focuses.value",
+                  "span": {
+                    "start": 485,
+                    "end": 498
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "focuses@125",
+                      "span": {
+                        "start": 485,
+                        "end": 498
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 484,
+                  "end": 499
+                }
+              }
+            ],
+            "span": {
+              "start": 472,
+              "end": 503
+            }
+          }
+        ],
+        "span": {
+          "start": 158,
+          "end": 515
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SignUp",
+      "span": {
+        "start": 82,
+        "end": 522
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Field.uf.tsx",
+      "file": "Field.uf.tsx",
+      "api": {
+        "file": "Field.uf.tsx",
+        "components": [
+          {
+            "name": "Field",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": false,
+            "root": "element",
+            "rootTag": "label",
+            "fallthroughTag": "input",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "name"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "label"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Field",
+          "span": {
+            "start": 52,
+            "end": 57
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 80
+      }
+    }
+  ]
+}

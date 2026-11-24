@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, omit, untrack } from "solid-js";
 
 export interface ListProps<T> {
   label: string;
@@ -8,15 +8,16 @@ export interface ListProps<T> {
 }
 
 export default function List<T>(
-  props: ListProps<T> & { class?: string; style?: JSX.CSSProperties },
+  props: ListProps<T> &
+    Omit<ComponentProps<"ul">, "label" | "items" | "selected" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "label", "items", "selected");
+
   return (
-    <ul
-      aria-label={props.label}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <ul aria-label={props.label} {...others}>
       <KeyedFor each={props.items} by={(item, index) => index}>
         {(item) => (
           <li aria-current={enumeratedValue(item.value === props.selected ? "true" : undefined)}>
@@ -31,13 +32,6 @@ export default function List<T>(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

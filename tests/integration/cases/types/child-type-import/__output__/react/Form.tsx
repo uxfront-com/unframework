@@ -1,11 +1,7 @@
 import Field, { type FieldProps } from "./Field";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface FormAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FormAttributes = Omit<ComponentPropsWithRef<"form">, "field" | "children">;
 
 export default function Form({
   field,
@@ -14,7 +10,7 @@ export default function Form({
   ...attributes
 }: { field: FieldProps } & FormAttributes) {
   return (
-    <form aria-label="Sign up" className={className} style={style} {...scopeAttributes(attributes)}>
+    <form aria-label="Sign up" className={className} style={style} {...attributes}>
       <Field name={field.name} label={field.label} />
     </form>
   );

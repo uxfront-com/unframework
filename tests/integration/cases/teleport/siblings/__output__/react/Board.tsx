@@ -1,19 +1,15 @@
 import Panel from "./Panel";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface BoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BoardAttributes = Omit<ComponentPropsWithRef<"main">, "children">;
 
 export default function Board({ className, style, ...attributes }: BoardAttributes) {
   const [shown, setShown] = useState(true);
   const shownRef = useRef(shown);
 
   return (
-    <main className={cx("board", className)} style={style} {...scopeAttributes(attributes)}>
+    <main className={cx("board", className)} style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {

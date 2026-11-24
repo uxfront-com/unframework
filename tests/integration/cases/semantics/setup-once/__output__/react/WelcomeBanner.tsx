@@ -1,15 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useState } from "react";
+import { type ComponentPropsWithRef, useState } from "react";
 
 export interface WelcomeBannerProps {
   name: string;
 }
 
-export interface WelcomeBannerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type WelcomeBannerAttributes = Omit<ComponentPropsWithRef<"section">, "name" | "children">;
 
 const tips = ["Set up your profile", "Invite your team"];
 
@@ -26,7 +22,7 @@ export default function WelcomeBanner({
       className={cx("welcome-banner", className)}
       aria-label="Welcome"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{greeting}</h2>
       <p>Signed in as {name}</p>

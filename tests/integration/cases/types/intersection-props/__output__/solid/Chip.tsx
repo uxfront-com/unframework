@@ -1,16 +1,19 @@
 import type { Sized, Toned } from "./types";
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 
 type ChipProps = Sized & Toned & { label: string };
 
-export default function Chip(rawProps: ChipProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Chip(
+  rawProps: ChipProps &
+    Omit<ComponentProps<"span">, "size" | "tone" | "label" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
+) {
   const props = mergeProps({ tone: "neutral" } satisfies Partial<ChipProps>, rawProps);
+  const [, others] = splitProps(props, ["size", "tone", "label", "class"]);
+
   return (
-    <span
-      class={cx(`chip chip-${props.size} chip-${props.tone}`, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <span class={cx(`chip chip-${props.size} chip-${props.tone}`, props.class)} {...others}>
       {props.label}
     </span>
   );
@@ -26,11 +29,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

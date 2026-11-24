@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface CardSlots {
   title?: ReactNode;
   children?: ReactNode;
 }
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"section">, "label" | "title" | "children">;
 
 export default function Card({
   label,
@@ -21,12 +17,7 @@ export default function Card({
   ...attributes
 }: { label: string } & CardSlots & CardAttributes) {
   return (
-    <section
-      className={cx("card", className)}
-      aria-label={label}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("card", className)} aria-label={label} style={style} {...attributes}>
       {title != null ? <header className="title">{title}</header> : null}
       {children != null ? <div className="body">{children}</div> : <p>Empty card</p>}
     </section>

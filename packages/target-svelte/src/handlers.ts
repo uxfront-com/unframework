@@ -8,7 +8,14 @@
 // of a setup function takes the nearest interface of what it receives.
 import { codeKind, parseCodeSource } from "@unframework.dev/codegen";
 import { EVENT_INTERFACES, extendsEventInterface, walk } from "@unframework.dev/ir";
-import type { BindingId, FunctionCode, Handler, Parameter, UfComponent } from "@unframework.dev/ir";
+import type {
+  BindingId,
+  ElementNode,
+  FunctionCode,
+  Handler,
+  Parameter,
+  UfComponent,
+} from "@unframework.dev/ir";
 
 import { visit } from "./ast.ts";
 import { commonInterface, handlerInterface } from "./events.ts";
@@ -41,11 +48,17 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
   };
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element" && node.kind !== "Component") return;
+      // A listener on a component falls through to the child's element (ADR-0118), whose types
+      // hand it what an element's attribute hands its handler: it takes no option.
+      const element: ElementNode =
+        node.kind === "Element"
+          ? node
+          : { kind: "Element", tag: node.component, attributes: [], children: [], span: node.span };
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
         const fn = handlerFunction(attribute.handler, functions);
-        if (fn?.parameters.length) receive(fn, 0, [handlerInterface(attribute, node)]);
+        if (fn?.parameters.length) receive(fn, 0, [handlerInterface(attribute, element)]);
       }
     },
   });

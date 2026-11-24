@@ -1,8 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useNextTick } from "./_unframework/useNextTick";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -21,10 +20,10 @@ export interface MailboxEvents {
   onNoted?: (text: string) => void;
 }
 
-export interface MailboxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MailboxAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "folder" | "onLoaded" | "onProgress" | "onSeen" | "onNoted" | "children"
+>;
 
 export default function Mailbox({
   folder,
@@ -179,7 +178,7 @@ export default function Mailbox({
       className={cx("mailbox", className)}
       aria-label="Mailbox"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{name}</h2>
       <p role="status">{summary}</p>

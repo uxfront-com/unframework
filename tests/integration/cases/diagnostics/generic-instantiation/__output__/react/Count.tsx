@@ -1,5 +1,4 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface Fruit {
   id: string;
@@ -7,10 +6,7 @@ interface Fruit {
   children: Fruit[];
 }
 
-export interface CountAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CountAttributes = Omit<ComponentPropsWithRef<"p">, "items" | "children">;
 
 export function Count({
   items,
@@ -19,7 +15,7 @@ export function Count({
   ...attributes
 }: { items: Fruit[] } & CountAttributes) {
   return (
-    <p className={className} style={style} {...scopeAttributes(attributes)}>
+    <p className={className} style={style} {...attributes}>
       {items.length} fruits
     </p>
   );

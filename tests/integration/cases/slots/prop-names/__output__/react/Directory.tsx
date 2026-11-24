@@ -1,16 +1,15 @@
 import Table from "./Table";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface Person {
   id: string;
   name: string;
 }
 
-export interface DirectoryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DirectoryAttributes = Omit<
+  ComponentPropsWithRef<typeof Table>,
+  "people" | "children" | "renderRow"
+>;
 
 export default function Directory({
   people,
@@ -23,7 +22,7 @@ export default function Directory({
       people={people}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
       renderRow={({ name, "data-id": id, index }) => (
         <span>
           {index + 1}: {name} ({id})

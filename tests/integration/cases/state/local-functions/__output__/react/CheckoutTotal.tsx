@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export type ShippingMethod = "standard" | "express";
 
@@ -13,10 +12,10 @@ export interface CheckoutTotalEvents {
   onShippingChange?: (method: ShippingMethod) => void;
 }
 
-export interface CheckoutTotalAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CheckoutTotalAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "subtotal" | "onShippingChange" | "children"
+>;
 
 const rates = { standard: 0, express: 1200 };
 
@@ -55,7 +54,7 @@ export default function CheckoutTotal({
       className={cx("checkout-total", className)}
       aria-label="Order total"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>Subtotal: {formatCents(subtotal)}</p>
       <p>Shipping: {formatCents(shipping)}</p>

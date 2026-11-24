@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -18,10 +17,10 @@ export interface AutoRefreshEvents {
   onRefresh?: (count: number) => void;
 }
 
-export interface AutoRefreshAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AutoRefreshAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "interval" | "onRefresh" | "children"
+>;
 
 export default function AutoRefresh({
   interval,
@@ -67,7 +66,7 @@ export default function AutoRefresh({
       className={cx("auto-refresh", className)}
       aria-label="Auto-refresh"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" aria-pressed={enabled} onClick={toggle}>
         Auto-refresh

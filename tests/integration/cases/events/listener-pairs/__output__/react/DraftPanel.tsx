@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -16,10 +15,10 @@ export interface DraftPanelEvents {
   onKey?: (key: string) => void;
 }
 
-export interface DraftPanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DraftPanelAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onSave" | "onStatus" | "onClosed" | "onKey" | "children"
+>;
 
 export default function DraftPanel({
   onSave,
@@ -124,7 +123,7 @@ export default function DraftPanel({
       className={cx("draft-panel", className)}
       aria-label="Draft"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" aria-expanded={open} onClick={show}>
         Options

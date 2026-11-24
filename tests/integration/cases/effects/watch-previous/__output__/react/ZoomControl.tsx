@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
-export interface ZoomControlAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ZoomControlAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ZoomControl({ className, style, ...attributes }: ZoomControlAttributes) {
   const [zoom, setZoom] = useState(100);
@@ -30,7 +26,7 @@ export default function ZoomControl({ className, style, ...attributes }: ZoomCon
       className={cx("zoom-control", className)}
       aria-label="Zoom"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <output>{zoom}%</output>
       <button

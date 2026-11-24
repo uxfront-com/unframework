@@ -1,11 +1,7 @@
 import Chart from "./Chart";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ReportPanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReportPanelAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ReportPanel({ className, style, ...attributes }: ReportPanelAttributes) {
   const [open, setOpen] = useState(false);
@@ -17,12 +13,7 @@ export default function ReportPanel({ className, style, ...attributes }: ReportP
   }
 
   return (
-    <section
-      aria-label="Report"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Report" className={className} style={style} {...attributes}>
       <button type="button" onClick={show}>
         Show the chart
       </button>

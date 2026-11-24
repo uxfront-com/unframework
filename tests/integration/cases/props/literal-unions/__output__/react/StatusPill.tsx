@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface StatusPillProps {
   status: "active" | "paused" | "archived";
@@ -8,10 +7,10 @@ export interface StatusPillProps {
   level?: 1 | 2 | 3;
 }
 
-export interface StatusPillAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StatusPillAttributes = Omit<
+  ComponentPropsWithRef<"span">,
+  "status" | "size" | "level" | "children"
+>;
 
 export default function StatusPill({
   status,
@@ -25,7 +24,7 @@ export default function StatusPill({
     <span
       className={cx("pill", `pill-${status}`, `pill-${size}`, `pill-level-${level}`, className)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {status === "active" ? "Active" : status === "paused" ? "Paused" : "Archived"}
       {level === 3 ? " (critical)" : ""}

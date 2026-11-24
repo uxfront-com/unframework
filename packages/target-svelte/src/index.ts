@@ -4,7 +4,11 @@ import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type { ElementNode, UfComponent, UfComposable } from "@unframework.dev/ir";
 
 import { emitDirective } from "./directive.ts";
+import { SVELTE_EVENT_INTERFACES } from "./events.ts";
 import { composableModule, instanceScript, lateProvides } from "./script.ts";
+
+/** Whether a tag is a component's, which Svelte reads from a capitalised tag or one with a dot. */
+const isComponentTag = (tag: string) => /^[A-Z]/.test(tag) || tag.includes(".");
 
 /**
  * The options every component declares, so that it compiles the same whatever the consumer's
@@ -60,12 +64,16 @@ export const svelte: Target = defineTarget({
       helper: "modelText",
       note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
     },
+    // What a component does not declare is its props' rest, which its fallthrough element spreads
+    // last (ADR-0118); only a style merges through a helper.
     fallthrough: {
       support: "emulated",
       helper: "mergeStyle",
-      note: "A component takes a consumer's `style` as a string, merged over its root's own declarations through an inline helper, `mergeStyle`, where a consumer's nullish value removes the root's declaration, as an object merge does (ADR-0054).",
+      note: "A component takes a consumer's `style` as a string, merged over its root's own declarations through an inline helper, `mergeStyle`, where a consumer's nullish value removes the root's declaration, as an object merge does (ADR-0054). The attributes and listeners it does not declare are its props' rest, natively: its props type declares its root element's attributes from `svelte/elements` but for its own names, and the root, or the element that spreads the source's `...rest`, spreads the rest last, so the consumer's attribute wins; where that element listens to an event itself, its handler calls the consumer's listener after its own code (ADR-0118).",
     },
     "contextual-root": { support: "native" },
+    // `bind:this` holds what a child exports, and on a child that exposes nothing its `ref` prop,
+    // `$bindable`, which its root binds: the parent binds it, `bind:ref={save}` (ADR-0118).
     expose: { support: "native" },
     context: { support: "native" },
     "reactive-context": {
@@ -80,7 +88,7 @@ export const svelte: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: "scopeAttributes",
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them. A root that spreads the props' rest takes them with it; where the source's `...rest` is another element's, the root picks them out of it, and that element spreads the rest without them, through a second helper, `restAttributes` (ADR-0118).",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -147,9 +155,48 @@ export const svelte: Target = defineTarget({
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const { styleText, teleport, transition } = script;
+    const { styleText, teleport, transition, fallthrough } = script;
     const dialect: MarkupDialect = {
       ...svelteDialect,
+      // An element with the props' rest is spread, as the root that spreads it: Svelte's server
+      // renders its attributes through its runtime, which the static values' form must follow.
+      attribute: (name, value, tag, where) =>
+        svelteDialect.attribute(
+          name,
+          value,
+          tag,
+          where && where.element.attributes.some((attribute) => attribute.kind === "Rest")
+            ? { ...where, spreads: true }
+            : where,
+        ),
+      // The fallthrough element's own listener, which calls the consumer's too (ADR-0118), and a
+      // listener passed to a component of an event Svelte's element types declare no attribute
+      // for, in an object spread svelte-check does not check, as an element's attribute is
+      // (`DECLARED_ONLY_ON`): the child's spread listens to it all the same.
+      eventAttribute: (event, attributeContext) => {
+        const composed = fallthrough.listeners.get(event.attribute);
+        if (composed !== undefined) return [{ name: `on${event.attribute.event}`, text: composed }];
+        const name = `on${event.attribute.event}`;
+        if (
+          isComponentTag(attributeContext.element.tag) &&
+          SVELTE_EVENT_INTERFACES.get(event.attribute.event) === undefined
+        ) {
+          return [{ name, text: `{...{ ${name}: ${event.statement ?? event.handler} }}` }];
+        }
+        return svelteDialect.eventAttribute(event, attributeContext);
+      },
+      // A ref on a child that exposes nothing binds its `ref` prop, and the root's own ref sets
+      // the component's `ref` prop too (ADR-0118).
+      refAttribute: (ref, attributeContext) => {
+        const text = fallthrough.refs.get(ref.attribute);
+        return text === undefined
+          ? svelteDialect.refAttribute(ref, attributeContext)
+          : [{ name: "bind:this", text }];
+      },
+      // The props' rest, last on its element, so the consumer's attribute wins (ADR-0118).
+      ...(fallthrough.rest === undefined
+        ? {}
+        : { restAttribute: () => [{ name: "", text: `{...${fallthrough.rest}}` }] }),
       // A style bound to one value is the declaration list `styleText` writes (ADR-0065).
       ...(styleText
         ? {

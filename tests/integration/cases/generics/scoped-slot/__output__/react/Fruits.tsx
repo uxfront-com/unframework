@@ -1,16 +1,15 @@
 import Picker from "./Picker";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface Fruit {
   name: string;
   count: number;
 }
 
-export interface FruitsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FruitsAttributes = Omit<
+  ComponentPropsWithRef<typeof Picker>,
+  "fruits" | "children" | "items" | "renderItem"
+>;
 
 export default function Fruits({
   fruits,
@@ -23,7 +22,7 @@ export default function Fruits({
       items={fruits}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
       renderItem={({ item }) => (
         <span>
           {item.name} × {item.count}

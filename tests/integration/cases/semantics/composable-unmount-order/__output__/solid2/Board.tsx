@@ -1,8 +1,15 @@
 import Panel from "./Panel";
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit } from "solid-js";
 
-export default function Board(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Board(
+  props: Omit<ComponentProps<"div">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [showA, setShowA] = createState(true);
   const [showB, setShowB] = createState(true);
   const [entries, setEntries] = createState<string[]>([]);
@@ -12,11 +19,7 @@ export default function Board(props: { class?: string; style?: JSX.CSSProperties
   }
 
   return (
-    <div
-      class={props.class ? `board ${props.class}` : "board"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `board ${props.class}` : "board"} {...others}>
       <Show when={showA()}>
         <Panel name="a" onClosed={record} />
       </Show>
@@ -32,13 +35,6 @@ export default function Board(props: { class?: string; style?: JSX.CSSProperties
       <output>{entries().join(", ")}</output>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

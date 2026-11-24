@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface DeleteFileProps {
   fileName: string;
@@ -10,10 +9,10 @@ export interface DeleteFileEvents {
   onDeleted?: (fileName: string, copies: number) => void;
 }
 
-export interface DeleteFileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DeleteFileAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "fileName" | "onDeleted" | "children"
+>;
 
 export default function DeleteFile({
   fileName,
@@ -60,7 +59,7 @@ export default function DeleteFile({
       className={cx("delete-file", className)}
       aria-label="File"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>
         {fileName}, {copies} {copies === 1 ? "copy" : "copies"}

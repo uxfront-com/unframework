@@ -1,12 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "./Chip.uf.tsx.css";
 
-export interface ChipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChipAttributes = Omit<
+  ComponentPropsWithRef<"button">,
+  "label" | "variant" | "pressed" | "children"
+>;
 
 export default function Chip({
   label,
@@ -25,7 +24,7 @@ export default function Chip({
       aria-pressed={pressed ? "true" : "false"}
       style={style}
       data-uf-69db3802=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </button>

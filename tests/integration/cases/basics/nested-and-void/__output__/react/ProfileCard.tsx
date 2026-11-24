@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ProfileCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileCardAttributes = Omit<ComponentPropsWithRef<"article">, "children">;
 
 export default function ProfileCard({ className, style, ...attributes }: ProfileCardAttributes) {
   return (
@@ -13,7 +9,7 @@ export default function ProfileCard({ className, style, ...attributes }: Profile
       className={cx("profile", className)}
       aria-labelledby="profile-name"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <header className="profile-header">
         <img

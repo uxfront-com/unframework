@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver, onCleanup } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit, onCleanup } from "solid-js";
 
 export interface NoteEditorEvents {
   onSaved?: (count: number) => void;
@@ -7,8 +7,14 @@ export interface NoteEditorEvents {
 }
 
 export default function NoteEditor(
-  props: NoteEditorEvents & { class?: string; style?: JSX.CSSProperties },
+  props: NoteEditorEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onSaved", "onTagged", "class");
+
   const [saves, setSaves] = createState(0);
   const [lastKey, setLastKey] = createState("none");
   const [tags, setTags] = createState<string[]>([]);
@@ -40,8 +46,7 @@ export default function NoteEditor(
     <section
       class={props.class ? `note-editor ${props.class}` : "note-editor"}
       aria-label="Note"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={save}>
         Save
@@ -82,13 +87,6 @@ export default function NoteEditor(
       <p>Tags: {tags().join(", ")}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */

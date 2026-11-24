@@ -1,14 +1,13 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { Sized, Toned } from "./types";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 type ChipProps = Sized & Toned & { label: string };
 
-export interface ChipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChipAttributes = Omit<
+  ComponentPropsWithRef<"span">,
+  "size" | "tone" | "label" | "children"
+>;
 
 export default function Chip({
   size,
@@ -19,11 +18,7 @@ export default function Chip({
   ...attributes
 }: ChipProps & ChipAttributes) {
   return (
-    <span
-      className={cx(`chip chip-${size} chip-${tone}`, className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <span className={cx(`chip chip-${size} chip-${tone}`, className)} style={style} {...attributes}>
       {label}
     </span>
   );

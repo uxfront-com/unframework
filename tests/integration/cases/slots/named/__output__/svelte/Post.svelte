@@ -2,21 +2,22 @@
 
 <script lang="ts">
   import Card from "./Card.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { author: string; class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["article"],
+    "author" | "children" | "class" | "style" | "ref" | "header" | "footer"
+  > & {
+    author: string;
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["article"] | null;
+  };
 
-  let { author, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { author, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<Card class={className} {style} {...scopeAttributes(attributes)}>
+<Card class={className} {style} bind:ref {...attributes}>
   <p>Slots arrive in M3.</p
   >{#snippet header()}
     <h2>Release notes</h2>

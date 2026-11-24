@@ -1,10 +1,6 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface NoteEditorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteEditorAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function NoteEditor({ className, style, ...attributes }: NoteEditorAttributes) {
   const [note, setNote] = useState("Buy milk");
@@ -19,7 +15,7 @@ export default function NoteEditor({ className, style, ...attributes }: NoteEdit
   });
 
   return (
-    <section aria-label="Note" className={className} style={style} {...scopeAttributes(attributes)}>
+    <section aria-label="Note" className={className} style={style} {...attributes}>
       <textarea
         aria-label="Text"
         value={note}

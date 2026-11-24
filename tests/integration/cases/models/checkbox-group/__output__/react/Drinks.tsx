@@ -1,17 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface DrinksAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DrinksAttributes = Omit<ComponentPropsWithRef<"fieldset">, "children">;
 
 export default function Drinks({ className, style, ...attributes }: DrinksAttributes) {
   const [drinks, setDrinks] = useState<string[]>(["tea"]);
   const drinksRef = useRef(drinks);
 
   return (
-    <fieldset className={className} style={style} {...scopeAttributes(attributes)}>
+    <fieldset className={className} style={style} {...attributes}>
       <legend>Drinks</legend>
       <label>
         <input

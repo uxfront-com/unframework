@@ -1,7 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useOnce } from "./_unframework/useOnce";
-import { type CSSProperties, type KeyboardEvent, type MouseEvent, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type KeyboardEvent,
+  type MouseEvent,
+  useRef,
+  useState,
+} from "react";
 
 export interface CommentComposerEvents {
   onSent?: (text: string) => void;
@@ -9,10 +14,10 @@ export interface CommentComposerEvents {
   onFirstSave?: () => void;
 }
 
-export interface CommentComposerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CommentComposerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onSent" | "onSaved" | "onFirstSave" | "children"
+>;
 
 export default function CommentComposer({
   onSent,
@@ -80,7 +85,7 @@ export default function CommentComposer({
       className={cx("comment-composer", className)}
       aria-label="Composer"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Comment

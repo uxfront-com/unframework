@@ -1,14 +1,20 @@
 import { loadUser } from "./api";
-import type { JSX } from "@solidjs/web";
-import { Loading, Show, createMemo, onCleanup, onSettled, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Loading, Show, createMemo, omit, onCleanup, onSettled, untrack } from "solid-js";
 
 export interface NoteEvents {
   onReady?: (name: string) => void;
 }
 
 export default function Note(
-  props: { id: string } & NoteEvents & { class?: string; style?: JSX.CSSProperties },
+  props: { id: string } & NoteEvents &
+    Omit<ComponentProps<"form">, "id" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "id", "onReady", "class");
+
   const awaited = createMemo(async () => {
     const user = await untrack(() => loadUser(props.id));
     return { user };
@@ -30,8 +36,7 @@ export default function Note(
             <form
               class={props.class ? `note ${props.class}` : "note"}
               aria-label="Note"
-              style={props.style}
-              {...scopeAttributes(props)}
+              {...others}
             >
               <label>
                 Note for {user.name}{" "}
@@ -53,13 +58,6 @@ export default function Note(
       </Show>
     </Loading>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */

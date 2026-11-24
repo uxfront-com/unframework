@@ -31,6 +31,7 @@ import type {
   ComponentNode,
   DynamicNode,
   ElementNode,
+  EventAttribute,
   Expression,
   FragmentNode,
   FunctionCode,
@@ -44,6 +45,7 @@ import type {
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
+import { walk } from "@unframework.dev/ir";
 
 import {
   outerComponent,
@@ -58,14 +60,23 @@ import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
 import { emitComposable } from "./composable.ts";
 import { ReactComposer } from "./compose.ts";
-import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
+import {
+  exposedType,
+  refValueType,
+  rootComponentProps,
+  SCOPE_HELPER,
+  slotProp,
+} from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
 import { emitDirective, hooksCode, mergeRefsHelper, useDirectiveHelper } from "./directive.ts";
+import { elementInterface } from "./elements.ts";
+import { synthetic } from "./events.ts";
 import {
   modelTextHelper,
   nextTickHelper,
   refObjectHelper,
+  restAttributesHelper,
   scopeAttributesHelper,
   toggleHelper,
 } from "./helpers.ts";
@@ -160,8 +171,14 @@ export const react: Target = defineTarget({
       helper: "modelText",
       note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
     },
+    // The props' rest, spread on the root after its own attributes, so the consumer's win
+    // (ADR-0118): its listeners run after the root's own of the same prop, and its `ref` is
+    // joined with the root's own through an inline `mergeRefs`. A rest the source spreads on
+    // another element leaves the styled parents' scope attributes to the root (`restAttributes`).
     fallthrough: { support: "native" },
     "contextual-root": { support: "native" },
+    // React 19's `ref` prop: the handle `useImperativeHandle` gives it, or, where the component
+    // exposes nothing, its root element, which takes the prop (ADR-0118).
     expose: { support: "native" },
     context: { support: "native" },
     "reactive-context": {
@@ -172,11 +189,12 @@ export const react: Target = defineTarget({
     "dynamic-component": { support: "native" },
     "scoped-styles": { support: "native" },
     // The child's root picks its styled parents' `data-uf-*` attributes out of its props
-    // (ADR-0063): their names are the parents', which the child cannot know.
+    // (ADR-0063): their names are the parents', which the child cannot know. A root that spreads
+    // the props' rest passes them with it (ADR-0118).
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so a shared helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass, so where its root does not spread its props' rest, a shared helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional, on a root <component is>, and on the root beside an element that spreads the rest, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -235,6 +253,21 @@ export const react: Target = defineTarget({
     // With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
     const plan = planComponent(component, module, undefined, context.helper !== undefined);
     const { composition } = plan;
+    // A listener that falls through is the child's prop (ADR-0118): where React's synthetic event
+    // differs from the DOM's on the element it lands on, only a native listener the child adds
+    // keeps the DOM's semantics, and nothing passes the child one yet.
+    const passed = passedListeners(component);
+    for (const [listener, { element }] of plan.listeners) {
+      if (passed.has(listener) && !synthetic(listener, element)) {
+        context.report({
+          code: "UF1002",
+          severity: "error",
+          message: `The react target does not pass a \`${listener.event}\` listener through to a component yet: React's prop for it would not keep the DOM's semantics on its <${element.tag}>. Listen to the event on an element instead.`,
+          span: listener.span,
+        });
+        return [];
+      }
+    }
     const code = reactCode(plan);
     const names: ReactNames = {
       imports: plan.names,
@@ -291,12 +324,18 @@ export const react: Target = defineTarget({
       ...composer.fields,
     ].map((text, index) => ({ text, group: -100 - index, compact: true }));
     const handle = exposeHandle(plan);
+    // What passes through, out of the props object (ADR-0118), and the root's own ref joined
+    // with the consumer's, once for each pair, after the callbacks it may name.
+    const passedOut = passedDeclaration(plan, composer);
+    const merged = composer.mergedRef && mergedRefDeclaration(plan, composer);
     const body = [
+      ...(passedOut ? [{ text: passedOut, group: -400, compact: false }] : []),
       ...(outer ? [{ text: useSetup(plan, jsx), group: -300, compact: false }] : []),
       ...setup.body,
       ...hooks,
       ...directives,
       ...callbacks,
+      ...(merged ? [{ text: merged, group: -50, compact: false }] : []),
       ...rendered,
       ...(handle ? [{ text: handle, group: -200, compact: false }] : []),
     ];
@@ -304,7 +343,7 @@ export const react: Target = defineTarget({
       ...body.map(({ text }) => ({ code: text, kind: "statements" as const })),
       { code: jsx.placeholders.print(() => printExpression(tree)), kind: "expression" },
     ]);
-    const parameters = propsParameters(component, jsx, plan);
+    const parameters = propsParameters(component, jsx, plan, composer);
     // Every read is printed now: each composable's call destructures only what they read.
     const resolved = resolveUses(plan, body);
     // A blank line between groups, unless both are one-line declarations, and before the return.
@@ -380,7 +419,14 @@ export const react: Target = defineTarget({
                 hookQueueCode(plan.helpers.directive.queue),
               ]
             : []),
-          ...(plan.helpers.mergeRefs ? [mergeRefsHelper(plan.helpers.mergeRefs)] : []),
+          ...(plan.helpers.mergeRefs
+            ? [
+                mergeRefsHelper(plan.helpers.mergeRefs, {
+                  Ref: plan.names.add("react", "Ref", { type: true }),
+                  RefCallback: plan.names.add("react", "RefCallback", { type: true }),
+                }),
+              ]
+            : []),
           ...(outer
             ? [setupPendingHelper(outer.pending, plan.names.add("react", "useEffect"))]
             : []),
@@ -420,6 +466,20 @@ export const react: Target = defineTarget({
     ];
   },
 });
+
+/** The listeners on the template's components, which fall through to them (ADR-0118). */
+function passedListeners(component: UfComponent): Set<EventAttribute> {
+  const found = new Set<EventAttribute>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Event") found.add(attribute);
+      }
+    },
+  });
+  return found;
+}
 
 /** Whether a directive's value is a setup function by its name alone (ADR-0099). */
 function isFunctionValue(attribute: DirectiveAttribute, plan: ReactPlan): boolean {
@@ -505,8 +565,16 @@ function keyDeclarations(plan: ReactPlan): string[] {
 }
 
 /**
+ * The element of each planned component that spreads the props' rest inside the root, with its
+ * attributes and what they take from a consumer, which {@link forReact} gives it as it reaches it
+ * (ADR-0118).
+ */
+const restTargets = new WeakMap<ReactPlan, { node: ElementNode; attributes: Attribute[] }>();
+
+/**
  * The root with what it takes from a consumer (ADR-0054): the `className` prop joined to its
- * `class`, and the `style` prop spread after its own declarations, so the consumer's win.
+ * `class`, and the `style` prop spread after its own declarations, so the consumer's win. With
+ * `inheritAttrs: false`, the element that spreads the props' rest takes them instead (ADR-0118).
  */
 function withFallthrough(
   root: ElementNode | FragmentNode,
@@ -517,6 +585,13 @@ function withFallthrough(
   if (!fallthrough) return root;
   const target = fallthrough.root;
   const consumer: Expression = { code: fallthrough.className, span: target.span, refs: [] };
+  if (target.kind === "Element" && target !== root) {
+    restTargets.set(plan, {
+      node: target,
+      attributes: fallthroughAttributes(target, consumer, composer),
+    });
+    return root;
+  }
   if (target.kind === "Element") {
     return { ...target, attributes: fallthroughAttributes(target, consumer, composer) };
   }
@@ -693,7 +768,57 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
       generic.expose?.declared,
     );
   }
-  if (interfaces.attributes) {
+  const { passing } = composition;
+  if (interfaces.attributes && passing) {
+    // The fallthrough element's own props but those the component declares (ADR-0118), with
+    // the `ref` its root element or its handle takes where that is another's. A root component's
+    // own props type it (`ComponentProps<typeof Base>`), which hold its root's attributes, but
+    // those its element sets itself: one it declares (`value: number`) is no attribute.
+    const handle =
+      composition.expose && `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
+    const own = handle === undefined && passing.refTag === passing.tag;
+    const props = type(own ? "ComponentPropsWithRef" : "ComponentPropsWithoutRef");
+    const { target } = passing;
+    const rootComponent = target.kind === "Component" && !passing.inner;
+    const omitted = [
+      ...new Set([
+        ...passing.declared,
+        ...(rootComponent
+          ? rootComponentProps(target, (child, slot) => composition.scoped(child, slot))
+          : []),
+      ]),
+    ]
+      .map((name) => JSON.stringify(name))
+      .join(" | ");
+    const ref =
+      handle ??
+      (passing.refTag === undefined || own ? undefined : elementInterface(passing.refTag));
+    const base = rootComponent ? `typeof ${target.component}` : JSON.stringify(passing.tag);
+    const parts = [
+      `Omit<${props}<${base}>, ${omitted}>`,
+      ...(ref === undefined ? [] : [`{ ref?: ${type("Ref")}<${ref}> }`]),
+    ];
+    const parameters = generic.expose?.declared ?? "";
+    declarations.push({
+      name: interfaces.attributes,
+      exported: true,
+      code: `type ${interfaces.attributes}${parameters} = ${parts.join(" & ")};`,
+      span: component.span,
+    });
+  } else if (
+    interfaces.attributes &&
+    !composition.fallthrough &&
+    composition.refTag !== undefined
+  ) {
+    // Nothing passes through, but a ref holds the root element (ADR-0118).
+    const props = type("ComponentPropsWithRef");
+    declarations.push({
+      name: interfaces.attributes,
+      exported: true,
+      code: `type ${interfaces.attributes} = Pick<${props}<${JSON.stringify(composition.refTag)}>, "ref">;`,
+      span: component.span,
+    });
+  } else if (interfaces.attributes) {
     const members: string[] = [];
     if (composition.fallthrough) {
       members.push("className?: string;", `style?: ${type("CSSProperties")};`);
@@ -701,6 +826,8 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
     if (composition.expose) {
       const handle = `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
       members.push(`ref?: ${type("Ref")}<${handle}>;`);
+    } else if (composition.refTag !== undefined) {
+      members.push(`ref?: ${type("Ref")}<${elementInterface(composition.refTag)}>;`);
     }
     // The handle is the attributes' one member a type parameter may type.
     declare(interfaces.attributes, members, generic.expose?.declared);
@@ -758,10 +885,14 @@ function shareHelpers(
   return [];
 }
 
-/** The helpers composition keeps inline beside shared ones (R4, ADR-0121). */
+/**
+ * The helpers composition keeps inline beside shared ones (R4, ADR-0121). `restAttributes` stays
+ * inline too, until its sharing is decided.
+ */
 function inlineCompositionHelpers(plan: ReactPlan): string[] {
   const { helpers } = plan;
   return [
+    ...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
     ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
     ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
   ];
@@ -772,6 +903,7 @@ function compositionHelpers(plan: ReactPlan): string[] {
   const { helpers, names } = plan;
   return [
     ...(plan.composition.scope ? [scopeAttributesHelper(plan.composition.scope.helper)] : []),
+    ...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
     ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
     ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
     ...(helpers.modelText
@@ -929,6 +1061,7 @@ function propsParameters(
   component: UfComponent,
   context: JsxContext,
   plan: ReactPlan,
+  composer: ReactComposer,
 ): Parameter[] {
   const parameter = component.propsParameter;
   const { names, composition } = plan;
@@ -958,12 +1091,24 @@ function propsParameters(
   for (const slot of composition.slots.values()) {
     if (slot.read) composed.push([slot.prop, slot.local]);
   }
-  const { fallthrough, expose } = composition;
+  const { fallthrough, expose, passing } = composition;
   if (fallthrough)
     composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
   if (expose) composed.push(["ref", expose.ref]);
-  // The rest the roots pick their styled parents' scope attributes out of (ADR-0063).
-  const rest = scope && parameter?.form !== "object" ? scope.props : undefined;
+  // The consumer's `ref` the root takes where nothing passes through (ADR-0118).
+  if (!passing && composer.consumerRef !== undefined) composed.push(["ref", composer.consumerRef]);
+  if (passing && parameter?.form !== "object") {
+    const taken = new Set([
+      ...read.map((prop) => prop.name),
+      ...[...plan.events.values()].filter((event) => event.emitted).map((event) => event.prop),
+      ...composed.map(([prop]) => prop),
+    ]);
+    composed.push(...passedProps(plan, composer, taken));
+  }
+  // The rest the roots pick their styled parents' scope attributes out of (ADR-0063), or what
+  // passes through to the fallthrough node (ADR-0118).
+  const rest =
+    parameter?.form === "object" ? undefined : (passing?.rest ?? (scope ? scope.props : undefined));
   if (parameter?.form === "object") {
     // A name `_` and more says it is unused already: it stays the source's (oxlint still
     // reports a bare `_`). The resolved component of an async setup reads its promise off it.
@@ -999,6 +1144,96 @@ function propsParameters(
   }
   if (!properties.length) return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
   return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
+}
+
+/**
+ * What the props pattern takes out of the rest besides what code reads, so it passes through
+ * (ADR-0118), each as `[prop, local]`: the props, events, models and slots the component
+ * declares that are not `taken` already, under `_` names nothing reads; the value a `v-model`
+ * on the fallthrough element holds, which the model's own state wins over, as Vue's directive
+ * does; the consumer's listeners the node runs after its own; and the consumer's `ref` where the
+ * root takes it apart from the rest.
+ */
+function passedProps(
+  plan: ReactPlan,
+  composer: ReactComposer,
+  taken: ReadonlySet<string>,
+): [string, string][] {
+  const { passing, slots } = plan.composition;
+  if (!passing) return [];
+  // `children` is never passed but as a slot's: the type leaves it out.
+  const children = [...slots.values()].some((slot) => slot.prop === "children");
+  const unread = new Set(passing.declared.filter((name) => name !== "children" || children));
+  const { target } = passing;
+  if (target.kind === "Element") {
+    for (const attribute of target.attributes) {
+      if (attribute.kind !== "Model") continue;
+      const box = ["checkbox", "checkbox-group", "radio"].includes(attribute.control);
+      unread.add(box ? "checked" : "value");
+    }
+  }
+  const unused: [string, string][] = [...unread]
+    .filter((name) => !taken.has(name) && !composer.consumerListeners.has(name))
+    .map((name) => [name, plan.names.claim(`_${name}`)]);
+  return [
+    ...unused,
+    ...composer.consumerListeners,
+    ...(composer.consumerRef === undefined
+      ? []
+      : [["ref", composer.consumerRef] as [string, string]]),
+  ];
+}
+
+/**
+ * `const rootRef = useMemo(() => mergeRefs(input, ref), [input, ref]);`: the root's own ref and
+ * its consumer's as one callback, made again only when either changes, so React neither sets
+ * them again nor adds the root's native listeners again as it renders (ADR-0118).
+ */
+function mergedRefDeclaration(plan: ReactPlan, composer: ReactComposer): string {
+  const { local, own } = composer.mergedRef!;
+  const consumer = composer.consumerRef!;
+  const useMemo = plan.names.add("react", "useMemo");
+  const merge = plan.helpers.mergeRefs!;
+  return `const ${local} = ${useMemo}(() => ${merge}(${own}, ${consumer}), [${own}, ${consumer}]);`;
+}
+
+/**
+ * The object form's pattern that takes what passes through out of its props object, as the
+ * first statement of its body (ADR-0118): what it declares under `_` names, since code reads it
+ * off the object, and the locals of the consumer's `class`, `style`, listeners and `ref`.
+ */
+function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | undefined {
+  const { passing, fallthrough, expose } = plan.composition;
+  const parameter = plan.owner.propsParameter;
+  if (parameter?.form !== "object") return undefined;
+  // Where nothing else passes, the consumer's `ref` alone: React Compiler reads `props.ref` as
+  // a ref's value read during render.
+  if (!passing) {
+    const ref = composer.consumerRef;
+    return ref === undefined
+      ? undefined
+      : `const { ${ref === "ref" ? ref : `ref: ${ref}`} } = ${parameter.name!};`;
+  }
+  const entries: [string, string][] = [
+    ...(fallthrough
+      ? ([
+          ["className", fallthrough.className],
+          ["style", fallthrough.style],
+        ] as [string, string][])
+      : []),
+    ...passedProps(plan, composer, new Set(["className", "style"])),
+  ];
+  if (expose) entries.push(["ref", plan.names.claim("_ref")]);
+  // The setup's promise and the flag the resolved component of an async setup takes (ADR-0101).
+  const outer = plan.helpers.async;
+  if (outer) {
+    entries.push(
+      [outer.promise, plan.names.claim(`_${outer.promise}`)],
+      [outer.settled, plan.names.claim(`_${outer.settled}`)],
+    );
+  }
+  const pattern = entries.map(([prop, local]) => (prop === local ? prop : `${prop}: ${local}`));
+  return `const { ${[...pattern, `...${passing.rest}`].join(", ")} } = ${parameter.name!};`;
 }
 
 /**
@@ -1178,7 +1413,9 @@ function fillForReact(
  * and the target throws on one rather than drop it (a target that throws is reported by the
  * compiler).
  */
-function forReact(node: ElementNode, context: JsxContext, plan: ReactPlan): ElementNode {
+function forReact(original: ElementNode, context: JsxContext, plan: ReactPlan): ElementNode {
+  const rest = restTargets.get(plan);
+  const node = rest?.node === original ? { ...original, attributes: rest.attributes } : original;
   if (node.tag === "title") return { ...node, children: titleChildren(node.children, context) };
   if (node.tag !== "textarea" || node.children.length === 0) {
     return {

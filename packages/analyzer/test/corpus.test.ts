@@ -58,6 +58,8 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
   "raw-html-component": "UF3035",
   // `innerHTML` on `<component is>`, which Vue writes as a component (ADR-0097).
   "raw-html-dynamic": "UF1002",
+  // The props' rest without `inheritAttrs: false` (ADR-0118).
+  "rest-props": "UF2001",
 };
 
 /**
@@ -185,20 +187,33 @@ async function analyzeCase(file: string, root = CASES) {
   const parsed = parseModule(file, readFileSync(join(root, file), "utf8"));
   const directory = file.slice(0, file.lastIndexOf("/"));
   const oracle = caseOracle(root, directory);
-  const imports = new Map<string, ModuleApi | undefined>();
-  for (const specifier of componentImports(parsed)) {
-    const child = join(directory, specifier);
-    let source: string;
-    try {
-      source = readFileSync(join(root, child), "utf8");
-    } catch {
-      imports.set(specifier, undefined);
-      continue;
+  // Each child is read with its own children, as the resolver reads it, so a root component's
+  // fallthrough and ref tags reach the parent (ADR-0118). `reading` stops a cycle.
+  const reading = new Set<string>();
+  const importsOf = async (of: ParsedModule) => {
+    const imports = new Map<string, ModuleApi | undefined>();
+    for (const specifier of componentImports(of)) {
+      const child = join(directory, specifier);
+      let source: string;
+      try {
+        if (reading.has(child)) throw new Error("cycle");
+        source = readFileSync(join(root, child), "utf8");
+      } catch {
+        imports.set(specifier, undefined);
+        continue;
+      }
+      reading.add(child);
+      const childParsed = parseModule(child, source);
+      const api = analyze(childParsed, {
+        shapes: await shapesOf(childParsed, oracle),
+        imports: await importsOf(childParsed),
+      }).api;
+      reading.delete(child);
+      imports.set(specifier, api && { ...api, file: specifier.slice(2) });
     }
-    const childParsed = parseModule(child, source);
-    const api = analyze(childParsed, { shapes: await shapesOf(childParsed, oracle) }).api;
-    imports.set(specifier, api && { ...api, file: specifier.slice(2) });
-  }
+    return imports;
+  };
+  const imports = await importsOf(parsed);
   const stylesheets = new Map<string, StylesheetSource | undefined>();
   for (const specifier of stylesheetImports(parsed)) {
     const sheet = join(directory, specifier);

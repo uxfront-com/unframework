@@ -1,18 +1,14 @@
 import SearchField from "./SearchField";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef } from "react";
+import { type ComponentPropsWithRef, useRef } from "react";
 
-export interface HeaderAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HeaderAttributes = Omit<ComponentPropsWithRef<"header">, "children">;
 
 export default function Header({ className, style, ...attributes }: HeaderAttributes) {
   const search = useRef<{ focus(): void }>(null);
 
   return (
-    <header className={cx("header", className)} style={style} {...scopeAttributes(attributes)}>
+    <header className={cx("header", className)} style={style} {...attributes}>
       <SearchField ref={search} label="Find" />
       <button type="button" onClick={() => search.current?.focus()}>
         Search

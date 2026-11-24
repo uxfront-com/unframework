@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useRef } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef } from "react";
 
 export interface SectionHeadingProps {
   title: string;
@@ -11,10 +10,10 @@ export interface SectionHeadingEvents {
   onReady?: () => void;
 }
 
-export interface SectionHeadingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SectionHeadingAttributes = Omit<
+  ComponentPropsWithRef<"h2">,
+  "title" | "onChange" | "onReady" | "children"
+>;
 
 export default function SectionHeading({
   title,
@@ -44,7 +43,7 @@ export default function SectionHeading({
   }, []);
 
   return (
-    <h2 className={cx("section-heading", className)} style={style} {...scopeAttributes(attributes)}>
+    <h2 className={cx("section-heading", className)} style={style} {...attributes}>
       {title}
     </h2>
   );

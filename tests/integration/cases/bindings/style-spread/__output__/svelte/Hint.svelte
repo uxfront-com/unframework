@@ -13,11 +13,22 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = HintProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["small"],
+    "text" | "attrs" | "children" | "class" | "style" | "ref"
+  > &
+    HintProps & { class?: ClassValue; style?: string; ref?: HTMLElementTagNameMap["small"] | null };
 
-  let { text, attrs, class: className, style, ...attributes }: Props = $props();
+  let {
+    text,
+    attrs,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -69,18 +80,12 @@
       })
       .join("; ");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <small
   id={attrs.id}
   class={className}
   style={mergeStyle({}, [styleText(attrs.style), style].join("; "))}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{text}</small>

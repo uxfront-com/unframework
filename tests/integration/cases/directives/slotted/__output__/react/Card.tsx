@@ -1,13 +1,9 @@
 import Disclosure from "./Disclosure";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useDirective } from "./_unframework/useDirective";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 const vTrace = {
   mounted(el: HTMLElement, value: string) {
@@ -27,12 +23,7 @@ export default function Card({ className, style, ...attributes }: CardAttributes
   const traceRef_1 = useDirective(vTrace, () => note!.name);
 
   return (
-    <section
-      className={cx("card", className)}
-      aria-label="Card"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("card", className)} aria-label="Card" style={style} {...attributes}>
       <Disclosure>
         <p data-name="body" ref={traceRef}>
           Body

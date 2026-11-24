@@ -19,6 +19,7 @@ import { codeOf, walk } from "@unframework.dev/ir";
 import type {
   BindingId,
   Code,
+  ComponentApi,
   ComponentNode,
   DynamicNode,
   ElementNode,
@@ -77,12 +78,42 @@ export interface ModelPlan {
 /** What the component's root takes of a consumer's `class` and `style` (ADR-0054). */
 export interface FallthroughPlan {
   /**
-   * The root they merge into: the render root's element, its one component, or its one
-   * `<component is>` over tags (ADR-0119).
+   * The node they merge into: the render root's element, its one component, or its one
+   * `<component is>` over tags (ADR-0119), or with `inheritAttrs: false` the element that spreads
+   * the props' rest (ADR-0118).
    */
   root: ElementNode | ComponentNode | DynamicNode;
   className: string;
   style: string;
+}
+
+/**
+ * What a consumer passes that the component does not declare (ADR-0118): its attributes, its
+ * listeners and its `ref`, which the props' rest holds and the fallthrough node spreads after
+ * its own attributes, so the consumer's win.
+ */
+export interface PassingPlan {
+  /** The tag of the element it lands on (the child's `fallthroughTag`), which types it. */
+  tag: string;
+  /** The node that spreads it: the {@link FallthroughPlan.root}. */
+  target: ElementNode | ComponentNode;
+  /**
+   * Whether the target is the element that spreads the props' rest, inside the root: the root
+   * keeps the styled parents' scope attributes, and the `ref` (ADR-0063).
+   */
+  inner: boolean;
+  /** The rest's local: `attributes`. */
+  rest: string;
+  /**
+   * The names a consumer passes the component's own props by (its props, its events' and its
+   * models' callbacks, its slots, and `children`): none of them passes through.
+   */
+  declared: readonly string[];
+  /**
+   * The tag of the element a `ref` on the component holds, where it exposes nothing and has one
+   * (the child's `refTag`).
+   */
+  refTag?: string;
 }
 
 /**
@@ -119,6 +150,13 @@ export interface CompositionPlan {
   /** The models, by binding, in source order. */
   readonly models: ReadonlyMap<BindingId, ModelPlan>;
   readonly fallthrough?: FallthroughPlan;
+  /** What passes through to the fallthrough node, where its tag is known (ADR-0118). */
+  readonly passing?: PassingPlan;
+  /**
+   * The tag of the root element a consumer's `ref` holds where nothing passes through: fallthrough
+   * is off, no element spreads the props' rest, and the component exposes nothing (ADR-0118).
+   */
+  readonly refTag?: string;
   readonly scope?: ScopePlan;
   /** The `ref` prop's local and the handle's interface, where the component exposes functions. */
   readonly expose?: { ref: string; handle: string };
@@ -245,19 +283,51 @@ export function planComposition(
   }
 
   const root = fallthroughRoot(component);
+  const tag = root && fallthroughTag(module, root, new Set([component.name]));
+  // The object form takes what passes through out of its props object with a pattern in its
+  // body, whose locals the consumer's `class` and `style` are (ADR-0118).
+  const local = (prop: string) =>
+    tag !== undefined && object ? names.claim(prop) : propLocal(prop);
   const fallthrough: FallthroughPlan | undefined = root && {
     root,
-    className: propLocal("className"),
-    style: propLocal("style"),
+    className: local("className"),
+    style: local("style"),
   };
-  const roots = scopeRoots(component);
-  const scope: ScopePlan | undefined = roots.length
-    ? {
-        roots: new Set(roots.map(spanKey)),
-        props: object || names.claim("attributes"),
-        helper: names.claim(SCOPE_HELPER),
-      }
-    : undefined;
+  const inner = root !== undefined && component.inheritAttrs === false;
+  // Beside the props' rest on another element, the root keeps the styled parents' scope
+  // attributes, as it would without the rest, where it is one element or component (ADR-0118).
+  const single =
+    component.render.kind === "Element"
+      ? component.render
+      : component.render.children.length === 1 && component.render.children[0]!.kind === "Component"
+        ? component.render.children[0]!
+        : undefined;
+  const roots = inner ? (single ? [single.span] : []) : scopeRoots(component);
+  // The root that spreads the rest passes the styled parents' scope attributes with it, and the
+  // rest's own element leaves them to the root, which picks them out (ADR-0063, ADR-0118).
+  const scope: ScopePlan | undefined =
+    roots.length && (tag === undefined || inner)
+      ? {
+          roots: new Set(roots.map(spanKey)),
+          props: object && tag === undefined ? object : names.claim("attributes"),
+          helper: names.claim(SCOPE_HELPER),
+        }
+      : undefined;
+  const passing: PassingPlan | undefined =
+    root && root.kind !== "Dynamic" && tag !== undefined
+      ? {
+          tag,
+          target: root,
+          inner,
+          rest: scope?.props ?? names.claim("attributes"),
+          declared: declaredProps(component),
+          ...(component.exposes ? {} : refTagOf(component, module)),
+        }
+      : undefined;
+  // With fallthrough off and no rest, nothing passes through, but a ref on the component still
+  // holds its root element (ADR-0118).
+  const refRoot: { refTag?: string } =
+    passing || component.exposes ? {} : refTagOf(component, module);
   const expose = component.exposes && {
     ref: propLocal("ref"),
     handle: names.claim(`${component.name}Handle`),
@@ -317,7 +387,9 @@ export function planComposition(
   const interfaces: CompositionPlan["interfaces"] = {};
   if (slots.size) interfaces.slots = names.claim(`${component.name}Slots`);
   if (models.size) interfaces.models = names.claim(`${component.name}Models`);
-  if (fallthrough || expose) interfaces.attributes = names.claim(`${component.name}Attributes`);
+  if (fallthrough || expose || refRoot.refTag !== undefined) {
+    interfaces.attributes = names.claim(`${component.name}Attributes`);
+  }
 
   // The slots each child declares: its module's own components, or the resolver's API.
   const childSlots = new Map<string, Set<string>>();
@@ -342,6 +414,8 @@ export function planComposition(
     slots,
     models,
     ...(fallthrough ? { fallthrough } : {}),
+    ...(passing ? { passing } : {}),
+    ...refRoot,
     ...(scope ? { scope } : {}),
     ...(expose ? { expose } : {}),
     provided,
@@ -391,14 +465,16 @@ function readSlots(component: UfComponent): Set<string> {
 }
 
 /**
- * The root a consumer's `class` and `style` merge into (ADR-0054): the render root's element, or
- * the one component or `<component is>` over tags a fragment holds (ADR-0119). None where
- * `inheritAttrs` is off, or the root is anything else, where a consumer's `class` is UF3045.
+ * The node a consumer's `class` and `style` merge into (ADR-0054): the render root's element, or
+ * the one component or `<component is>` over tags a fragment holds (ADR-0119), and where
+ * `inheritAttrs` is off the element that spreads the props' rest (ADR-0118). None where the root
+ * is anything else, or `inheritAttrs` is off and no element spreads the rest, where a consumer's
+ * `class` is UF3045.
  */
 function fallthroughRoot(
   component: UfComponent,
 ): ElementNode | ComponentNode | DynamicNode | undefined {
-  if (component.inheritAttrs === false) return undefined;
+  if (component.inheritAttrs === false) return restElement(component);
   const { render } = component;
   if (render.kind === "Element") return render;
   const [only] = render.children;
@@ -407,6 +483,127 @@ function fallthroughRoot(
   return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
     ? only
     : undefined;
+}
+
+/** The element that spreads the props' rest, `<input {...rest} />`: one at most (ADR-0118). */
+function restElement(component: UfComponent): ElementNode | undefined {
+  let found: ElementNode | undefined;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element" || found) return;
+      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+    },
+  });
+  return found;
+}
+
+/**
+ * The tag of the element what passes through a fallthrough node lands on (ADR-0118): an
+ * element's own, none for a `<component is>`, or a component's `fallthroughTag`, as its API gives it or, for one of the
+ * module's own components, as its render says (`seen` stops a cycle).
+ */
+function fallthroughTag(
+  module: UfModule,
+  node: ElementNode | ComponentNode | DynamicNode,
+  seen: Set<string>,
+): string | undefined {
+  if (node.kind === "Element") return node.tag;
+  // A `<component is>` takes a consumer's `class` and `style` alone (ADR-0119).
+  if (node.kind === "Dynamic") return undefined;
+  const api = childApi(module, node.component);
+  if (api) return api.fallthroughTag;
+  const own = module.components.find((each) => each.name === node.component);
+  if (!own || seen.has(own.name)) return undefined;
+  seen.add(own.name);
+  const root = fallthroughRoot(own);
+  return root && fallthroughTag(module, root, seen);
+}
+
+/**
+ * The tag of the element what a parent passes a child that it does not declare lands on
+ * (ADR-0118), or none where nothing but what it declares may be passed.
+ */
+export function componentFallthroughTag(module: UfModule, node: ComponentNode): string | undefined {
+  return fallthroughTag(module, node, new Set());
+}
+
+/** The API the resolver gives for an imported child, by its local name. */
+export function childApi(module: UfModule, local: string): ComponentApi | undefined {
+  for (const entry of module.imports ?? []) {
+    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+    if (!imported) continue;
+    return entry.api.components.find((each) =>
+      imported.imported === "default"
+        ? each.export === "default"
+        : each.export === "named" && each.name === imported.imported,
+    );
+  }
+  return undefined;
+}
+
+/**
+ * The tag of the element a `ref` on a component that exposes nothing holds (ADR-0118): its root
+ * element's, or its root component's own, through a chain of root components.
+ */
+function refTagOf(component: UfComponent, module: UfModule): { refTag?: string } {
+  const seen = new Set<string>();
+  let current: UfComponent | undefined = component;
+  while (current && !seen.has(current.name)) {
+    seen.add(current.name);
+    const render: UfComponent["render"] = current.render;
+    if (render.kind === "Element") return { refTag: render.tag };
+    const only: RenderNode | undefined = render.children[0];
+    if (render.children.length !== 1 || only?.kind !== "Component") return {};
+    const api = childApi(module, only.component);
+    if (api) return api.exposes.length === 0 && api.refTag ? { refTag: api.refTag } : {};
+    const name: string = only.component;
+    current = module.components.find((each) => each.name === name);
+    if (current?.exposes) return {};
+  }
+  return {};
+}
+
+/**
+ * The names a consumer passes the component's own props by (ADR-0118): its props, its events'
+ * callbacks (`onPick`), its models' values and callbacks, its slots, and `children` always,
+ * which is content, never an attribute.
+ */
+function declaredProps(component: UfComponent): string[] {
+  const names = new Set<string>(component.props.map((prop) => prop.name));
+  for (const event of component.emits?.events ?? []) names.add(`on${pascalCase(event.name)}`);
+  for (const item of component.setup) {
+    if (item.kind !== "Model") continue;
+    names.add(item.name);
+    names.add(`on${pascalCase(item.name)}Change`);
+  }
+  for (const slot of component.slots?.slots ?? []) {
+    names.add(slotProp(slot.name, slot.props !== undefined));
+  }
+  names.add("children");
+  return [...names];
+}
+
+/**
+ * The props a root component's element sets on it itself (ADR-0118): the props it declares, its
+ * events' and models' callbacks, and its slots' fills. They are not the consumer's to pass, and
+ * the component's own value has a type of its own (`value: number`), which no attribute's is. The
+ * attributes and listeners that fall through to its root are the consumer's still: theirs win.
+ */
+export function rootComponentProps(
+  node: ComponentNode,
+  scoped: (child: string, slot: string) => boolean,
+): string[] {
+  const names = new Set<string>();
+  for (const attribute of node.attributes) {
+    if (attribute.kind === "Prop") names.add(attribute.name);
+    else if (attribute.kind === "Listener") names.add(`on${pascalCase(attribute.event)}`);
+    else if (attribute.kind === "ModelBinding") {
+      names.add(attribute.model);
+      names.add(`on${pascalCase(attribute.model)}Change`);
+    }
+  }
+  for (const fill of node.fills) names.add(slotProp(fill.slot, scoped(node.component, fill.slot)));
+  return [...names];
 }
 
 /** The authoring type of the ref a key holds, by the local name the setup uses. */

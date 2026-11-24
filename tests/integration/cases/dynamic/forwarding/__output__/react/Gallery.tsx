@@ -1,15 +1,11 @@
 import Frame from "./Frame";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface GalleryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type GalleryAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Gallery({ className, style, ...attributes }: GalleryAttributes) {
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <Frame label="Card" wide={false} title="Sunset" />
       <Frame label="Panel" wide={true} title="Dawn" />
       <Frame label="Empty" wide={true} />

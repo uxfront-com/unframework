@@ -1,23 +1,20 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLFieldsetAttributes } from "svelte/elements";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<HTMLFieldsetAttributes, "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["fieldset"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let plan = $state("monthly");
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<fieldset class={className} {style} {...scopeAttributes(attributes)}>
+<fieldset class={className} {style} bind:this={ref} {...attributes}>
   <legend>Billing</legend
   ><label><input type="radio" name="plan" value="monthly" bind:group={plan} /> Monthly</label
   ><label><input type="radio" name="plan" value="yearly" bind:group={plan} /> Yearly</label

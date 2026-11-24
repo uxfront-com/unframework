@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface StepperModels {
   value?: number;
   onValueChange?: (value: number) => void;
 }
 
-export interface StepperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepperAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "value" | "onValueChange" | "children"
+>;
 
 export default function Stepper({
   label,
@@ -29,7 +28,7 @@ export default function Stepper({
   });
 
   return (
-    <div className={cx("stepper", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("stepper", className)} style={style} {...attributes}>
       <button
         type="button"
         aria-label={`Fewer ${label}`}

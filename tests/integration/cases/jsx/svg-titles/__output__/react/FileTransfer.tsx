@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface FileTransferProps {
   fileName: string;
@@ -9,10 +8,10 @@ export interface FileTransferProps {
   eta?: string;
 }
 
-export interface FileTransferAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FileTransferAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "fileName" | "percent" | "paused" | "eta" | "children"
+>;
 
 export default function FileTransfer({
   fileName,
@@ -24,7 +23,7 @@ export default function FileTransfer({
   ...attributes
 }: FileTransferProps & FileTransferAttributes) {
   return (
-    <div className={cx("file-transfer", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("file-transfer", className)} style={style} {...attributes}>
       <svg className="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
         <title>{`${fileName}: ${percent}% sent. ${eta ?? ""}`}</title>
         <circle cx="18" cy="18" r="16" fill="none" stroke="#0969da" strokeWidth="4" />

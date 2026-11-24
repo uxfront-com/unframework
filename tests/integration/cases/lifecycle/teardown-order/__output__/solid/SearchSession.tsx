@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   createMemo,
@@ -6,6 +7,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
@@ -19,8 +21,19 @@ export interface SearchSessionEvents {
 }
 
 export default function SearchSession(
-  props: SearchSessionEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SearchSessionEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, [
+    "onUnmounted",
+    "onEffectCleaned",
+    "onWatchCleaned",
+    "onSearched",
+    "onSearchCleaned",
+    "onSummary",
+    "class",
+  ]);
+
   const [query, setQuery] = createSignal("");
   const [results, setResults] = createSignal<string[]>([]);
 
@@ -70,8 +83,7 @@ export default function SearchSession(
     <section
       class={props.class ? `search-session ${props.class}` : "search-session"}
       aria-label="Search"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <label>
         Query
@@ -90,13 +102,6 @@ export default function SearchSession(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useNextTick } from "./_unframework/useNextTick";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface PickerEvents {
   onDone?: (step: number, status: string) => void;
 }
 
-export interface PickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PickerAttributes = Omit<ComponentPropsWithRef<"section">, "onDone" | "children">;
 
 export default function Picker({
   onDone,
@@ -76,12 +72,7 @@ export default function Picker({
   }
 
   return (
-    <section
-      className={cx("picker", className)}
-      aria-label="Picker"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("picker", className)} aria-label="Picker" style={style} {...attributes}>
       <div className="choices" role="presentation" onClick={report}>
         <button type="button" onClick={() => pick("alpha")}>
           Alpha

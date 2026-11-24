@@ -1,4 +1,4 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   For,
   createMemo,
@@ -7,6 +7,7 @@ import {
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
   untrack,
@@ -34,8 +35,24 @@ function sum(values: number[]): number {
 }
 
 export default function BookShelf(
-  props: BookShelfProps & BookShelfEvents & { class?: string; style?: JSX.CSSProperties },
+  props: BookShelfProps &
+    BookShelfEvents &
+    Omit<ComponentProps<"section">, "books" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(
+    props,
+    "books",
+    "onMoved",
+    "onCounted",
+    "onToggled",
+    "onBusy",
+    "onSummed",
+    "class",
+  );
+
   const [focused, setFocused] = createState<Book | null>(null);
   const [reads, setReads] = createState(new Map<number, number>());
   const [open, setOpen] = createState(false);
@@ -99,8 +116,7 @@ export default function BookShelf(
     <section
       class={props.class ? `book-shelf ${props.class}` : "book-shelf"}
       aria-label="Books"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ul aria-label="Shelf">
         <KeyedFor each={props.books} by={(book) => book.id}>
@@ -154,13 +170,6 @@ export default function BookShelf(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

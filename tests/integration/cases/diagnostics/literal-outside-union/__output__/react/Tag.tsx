@@ -1,13 +1,9 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export type Tone = "info" | "warning";
 
-export interface TagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagAttributes = Omit<ComponentPropsWithRef<"span">, "tone" | "children">;
 
 export default function Tag({
   tone,
@@ -16,7 +12,7 @@ export default function Tag({
   ...attributes
 }: { tone: Tone } & TagAttributes) {
   return (
-    <span className={cx("tag", tone, className)} style={style} {...scopeAttributes(attributes)}>
+    <span className={cx("tag", tone, className)} style={style} {...attributes}>
       {tone}
     </span>
   );

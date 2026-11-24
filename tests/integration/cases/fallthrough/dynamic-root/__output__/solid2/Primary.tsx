@@ -16,8 +16,8 @@ export default function Primary(
       href={props.href}
       disabled={props.disabled}
       text={props.text}
-      onPress={() => props.onPress?.()}
       class={props.class ? `primary ${props.class}` : "primary"}
+      onPress={() => props.onPress?.()}
       style={props.style}
       {...scopeAttributes(props)}
     />

@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface TemplateTipProps {
   example: string;
@@ -8,10 +7,10 @@ export interface TemplateTipProps {
   path: string;
 }
 
-export interface TemplateTipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TemplateTipAttributes = Omit<
+  ComponentPropsWithRef<"figure">,
+  "example" | "note" | "path" | "children"
+>;
 
 export default function TemplateTip({
   example,
@@ -22,11 +21,7 @@ export default function TemplateTip({
   ...attributes
 }: TemplateTipProps & TemplateTipAttributes) {
   return (
-    <figure
-      className={cx("template-tip", className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <figure className={cx("template-tip", className)} style={style} {...attributes}>
       <figcaption title={"Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) & JSX {name}"}>
         Template syntax &amp; escaping
       </figcaption>

@@ -1,4 +1,12 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface DeliveryProps {
   speeds: string[];
@@ -6,18 +14,16 @@ export interface DeliveryProps {
 }
 
 export default function Delivery(
-  props: DeliveryProps & { class?: string; style?: JSX.CSSProperties },
+  props: DeliveryProps &
+    Omit<ComponentProps<"section">, "speeds" | "extras" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["speeds", "extras"]);
+
   const [speed, setSpeed] = createSignal("express");
   const [chosen, setChosen] = createSignal<string[]>(["insurance"]);
 
   return (
-    <section
-      aria-label="Delivery"
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Delivery" {...others}>
       <fieldset>
         <legend>Speed</legend>
         <KeyedFor each={props.speeds} by={(value) => value}>
@@ -58,13 +64,6 @@ export default function Delivery(
       </output>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

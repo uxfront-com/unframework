@@ -1,11 +1,7 @@
 import Item from "./Item";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface MenuAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MenuAttributes = Omit<ComponentPropsWithRef<"ul">, "entries" | "children">;
 
 export default function Menu({
   entries,
@@ -14,7 +10,7 @@ export default function Menu({
   ...attributes
 }: { entries: string[] } & MenuAttributes) {
   return (
-    <ul aria-label="Menu" className={className} style={style} {...scopeAttributes(attributes)}>
+    <ul aria-label="Menu" className={className} style={style} {...attributes}>
       {entries.map((entry) => (
         <Item key={entry} label={entry} />
       ))}

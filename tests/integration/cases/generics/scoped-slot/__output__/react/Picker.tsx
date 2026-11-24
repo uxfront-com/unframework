@@ -1,5 +1,4 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface PickerProps<T> {
   items: T[];
@@ -9,10 +8,10 @@ export interface PickerSlots<T> {
   renderItem?: (props: { item: T }) => ReactNode;
 }
 
-export interface PickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PickerAttributes = Omit<
+  ComponentPropsWithRef<"ul">,
+  "items" | "renderItem" | "children"
+>;
 
 export default function Picker<T>({
   items,
@@ -22,7 +21,7 @@ export default function Picker<T>({
   ...attributes
 }: PickerProps<T> & PickerSlots<T> & PickerAttributes) {
   return (
-    <ul className={className} style={style} {...scopeAttributes(attributes)}>
+    <ul className={className} style={style} {...attributes}>
       {items.map((item, index) => (
         <li key={index}>{renderItem?.({ item })}</li>
       ))}

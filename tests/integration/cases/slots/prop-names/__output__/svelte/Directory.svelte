@@ -9,21 +9,19 @@
 
 <script lang="ts">
   import Table from "./Table.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLOlAttributes } from "svelte/elements";
 
-  type Props = { people: Person[]; class?: ClassValue; style?: string };
+  type Props = Omit<HTMLOlAttributes, "people" | "children" | "class" | "style" | "ref" | "row"> & {
+    people: Person[];
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["ol"] | null;
+  };
 
-  let { people, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { people, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<Table {people} class={className} {style} {...scopeAttributes(attributes)}>
+<Table {people} class={className} {style} bind:ref {...attributes}>
   {#snippet row({ name, "data-id": id, index })}
     <span>{index + 1}: {name} ({id})</span>
   {/snippet}

@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface StepListProps {
   title: string;
   steps: string[];
 }
 
-export interface StepListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepListAttributes = Omit<ComponentPropsWithRef<"ol">, "title" | "steps" | "children">;
 
 export default function StepList({
   title,
@@ -20,12 +16,7 @@ export default function StepList({
   ...attributes
 }: StepListProps & StepListAttributes) {
   return (
-    <ol
-      className={cx("step-list", className)}
-      aria-label={title}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <ol className={cx("step-list", className)} aria-label={title} style={style} {...attributes}>
       {steps.map((step, index) => (
         <li key={index} data-step={index + 1}>
           Step {index + 1}: {step}

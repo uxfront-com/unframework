@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface Entry {
   id: string;
@@ -11,10 +10,7 @@ export interface ChecklistProps {
   entries: Entry[];
 }
 
-export interface ChecklistAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChecklistAttributes = Omit<ComponentPropsWithRef<"ul">, "entries" | "children">;
 
 export default function Checklist({
   entries,
@@ -23,7 +19,7 @@ export default function Checklist({
   ...attributes
 }: ChecklistProps & ChecklistAttributes) {
   return (
-    <ul className={cx("checklist", className)} style={style} {...scopeAttributes(attributes)}>
+    <ul className={cx("checklist", className)} style={style} {...attributes}>
       {entries.map((entry) => (
         <li key={entry.id}>
           <label>

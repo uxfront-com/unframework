@@ -1,23 +1,17 @@
 ---
 import Card from "./Card.astro";
+import type { HTMLAttributes } from "astro/types";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"article">, "author"> {
   author: string;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { author, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { author, class: className, style, ...attrs } = Astro.props;
 ---
 
-<Card class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<Card class:list={[className]} style={style} {...attrs}>
   <p>Slots arrive in M3.</p>
   <Fragment slot="header">
     <h2>Release notes</h2>

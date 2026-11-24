@@ -1,5 +1,13 @@
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, createUniqueId, getObserver, onCleanup, onSettled } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import {
+  Show,
+  createSignal,
+  createUniqueId,
+  getObserver,
+  omit,
+  onCleanup,
+  onSettled,
+} from "solid-js";
 
 export interface LifecycleProps {
   title: string;
@@ -19,8 +27,15 @@ function format(value: number): string {
 }
 
 export default function Lifecycle(
-  props: LifecycleProps & LifecycleEvents & { class?: string; style?: JSX.CSSProperties },
+  props: LifecycleProps &
+    LifecycleEvents &
+    Omit<ComponentProps<"section">, "title" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "title", "onReady", "onTicked", "onToggled", "onSaved");
+
   const id = `uf-id-${createUniqueId()}`;
   let heading: HTMLHeadingElement | null = null;
   let details: HTMLUListElement | null = null;
@@ -67,12 +82,7 @@ export default function Lifecycle(
   });
 
   return (
-    <section
-      aria-labelledby={enumeratedValue(id)}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-labelledby={enumeratedValue(id)} {...others}>
       <h2
         id={id}
         ref={clearedRef(
@@ -117,13 +127,6 @@ export default function Lifecycle(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

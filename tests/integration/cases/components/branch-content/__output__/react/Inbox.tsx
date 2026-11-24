@@ -1,12 +1,8 @@
 import Notice from "./Notice";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface InboxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type InboxAttributes = Omit<ComponentPropsWithRef<"div">, "unread" | "children">;
 
 export default function Inbox({
   unread,
@@ -18,7 +14,7 @@ export default function Inbox({
   const countRef = useRef(count);
 
   return (
-    <div className={cx("inbox", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("inbox", className)} style={style} {...attributes}>
       {count > 0 ? (
         <Notice text={`${count} unread`} tone="info" />
       ) : (

@@ -1,25 +1,20 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"input">, "query"> {
   query?: string;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { query, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { query, class: className, style, type, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
 <input
-  type="search"
-  aria-label="Search"
+  type={"type" in Astro.props ? type : "search"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Search"}
   value={query}
   class:list={[className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 />

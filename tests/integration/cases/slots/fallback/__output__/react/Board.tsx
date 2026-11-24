@@ -1,11 +1,7 @@
 import Notice from "./Notice";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface BoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BoardAttributes = Omit<ComponentPropsWithRef<"div">, "build" | "children">;
 
 export default function Board({
   build,
@@ -14,7 +10,7 @@ export default function Board({
   ...attributes
 }: { build: string } & BoardAttributes) {
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <Notice label="Build" action={<a href="#logs">See the logs</a>}>
         Build {build} failed.
       </Notice>

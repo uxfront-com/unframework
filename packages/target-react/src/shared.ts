@@ -128,7 +128,14 @@ export const SHARED_HELPERS: Readonly<Record<string, SharedHelper>> = {
   },
   mergeRefs: {
     file: "mergeRefs.ts",
-    code: () => exported(mergeRefsHelper("mergeRefs"), "mergeRefs"),
+    code: (imports) =>
+      exported(
+        mergeRefsHelper("mergeRefs", {
+          Ref: reactType(imports)("Ref"),
+          RefCallback: reactType(imports)("RefCallback"),
+        }),
+        "mergeRefs",
+      ),
   },
   SetupPending: {
     file: "SetupPending.ts",

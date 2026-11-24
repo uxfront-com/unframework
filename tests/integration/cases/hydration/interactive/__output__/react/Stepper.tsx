@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface StepperProps {
   start?: number;
@@ -10,10 +9,10 @@ export interface StepperEvents {
   onChange?: (value: number) => void;
 }
 
-export interface StepperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepperAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "start" | "onChange" | "children"
+>;
 
 export default function Stepper({
   start = 0,
@@ -32,7 +31,7 @@ export default function Stepper({
   }
 
   return (
-    <div className={cx("stepper", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("stepper", className)} style={style} {...attributes}>
       <output>{count}</output>
       <button type="button" onClick={add}>
         Add one

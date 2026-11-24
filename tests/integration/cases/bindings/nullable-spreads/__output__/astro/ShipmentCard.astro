@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 interface LabelAttributes {
   id: string;
   title?: string;
@@ -21,7 +23,13 @@ export interface ShipmentCardProps {
   signature?: LabelAttributes;
 }
 
-interface Props extends ShipmentCardProps {
+interface Props
+  extends
+    ShipmentCardProps,
+    Omit<
+      HTMLAttributes<"section">,
+      "reference" | "carrier" | "eta" | "parcel" | "tracked" | "tracking" | "stops" | "signature"
+    > {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
@@ -37,21 +45,16 @@ const {
   signature,
   class: className,
   style,
+  "aria-label": ariaLabel,
+  ...attrs
 } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
 ---
 
 <section
   class:list={["shipment-card", className]}
-  aria-label={reference}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : reference}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p id={carrier?.id} title={carrier?.title}>Carrier</p>
   <p id={eta?.id} title={eta?.title}>Estimated delivery</p>

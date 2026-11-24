@@ -1,11 +1,7 @@
 import { LocaleKey } from "./LocaleProvider";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, use } from "react";
+import { type ComponentPropsWithRef, use } from "react";
 
-export interface GreetingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type GreetingAttributes = Omit<ComponentPropsWithRef<"p">, "name" | "children">;
 
 export default function Greeting({
   name,
@@ -16,7 +12,7 @@ export default function Greeting({
   const locale = use(LocaleKey) ?? "en";
 
   return (
-    <p className={className} style={style} {...scopeAttributes(attributes)}>
+    <p className={className} style={style} {...attributes}>
       {locale === "pt" ? "Olá" : "Hello"}, {name} ({locale})
     </p>
   );

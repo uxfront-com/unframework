@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -15,10 +14,10 @@ export interface ChannelPickerEvents {
   onLeave?: (channel: string) => void;
 }
 
-export interface ChannelPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChannelPickerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onJoin" | "onLeave" | "children"
+>;
 
 export default function ChannelPicker({
   onJoin,
@@ -64,7 +63,7 @@ export default function ChannelPicker({
       className={cx("channel-picker", className)}
       aria-label="Channels"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">Channel: #{channel}</p>
       <button

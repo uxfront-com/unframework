@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ShirtOrderAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShirtOrderAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ShirtOrder({ className, style, ...attributes }: ShirtOrderAttributes) {
   const [size, setSize] = useState("M");
@@ -21,7 +17,7 @@ export default function ShirtOrder({ className, style, ...attributes }: ShirtOrd
       className={cx("shirt-order", className)}
       aria-label="Shirt order"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">{`${quantity} x size ${size}`}</p>
       <div role="group" aria-label="Size">

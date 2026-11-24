@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface TransitionComponentAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TransitionComponentAttributes = Omit<ComponentPropsWithRef<"p">, "children">;
 
 export default function TransitionComponent({
   className,
@@ -13,7 +9,7 @@ export default function TransitionComponent({
   ...attributes
 }: TransitionComponentAttributes) {
   return (
-    <p className={cx("note", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("note", className)} style={style} {...attributes}>
       Plain child
     </p>
   );

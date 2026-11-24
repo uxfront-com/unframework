@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<ComponentPropsWithRef<"p">, "text" | "tone" | "children">;
 
 export default function Notice({
   text,
@@ -15,12 +11,7 @@ export default function Notice({
   ...attributes
 }: { text: string; tone: "info" | "quiet" } & NoticeAttributes) {
   return (
-    <p
-      role="status"
-      className={cx("notice", tone, className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <p role="status" className={cx("notice", tone, className)} style={style} {...attributes}>
       {text}
     </p>
   );

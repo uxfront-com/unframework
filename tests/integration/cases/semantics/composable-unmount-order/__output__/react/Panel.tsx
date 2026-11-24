@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useTeardown } from "./useTeardown";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface PanelEvents {
   onClosed?: (entry: string) => void;
 }
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "name" | "onClosed" | "children"
+>;
 
 export default function Panel({
   name,
@@ -25,12 +24,7 @@ export default function Panel({
   );
 
   return (
-    <section
-      className={cx("panel", className)}
-      aria-label={title}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("panel", className)} aria-label={title} style={style} {...attributes}>
       <h2>{title}</h2>
     </section>
   );

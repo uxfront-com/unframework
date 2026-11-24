@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface Track {
   id: number;
@@ -12,10 +11,7 @@ export interface PlaylistProps {
   initial: Track[];
 }
 
-export interface PlaylistAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PlaylistAttributes = Omit<ComponentPropsWithRef<"section">, "initial" | "children">;
 
 export default function Playlist({
   initial,
@@ -39,7 +35,7 @@ export default function Playlist({
   }
 
   return (
-    <section className={cx("playlist", className)} style={style} {...scopeAttributes(attributes)}>
+    <section className={cx("playlist", className)} style={style} {...attributes}>
       <ol aria-label="Playlist">
         {tracks.map((track) => (
           <li key={track.id}>

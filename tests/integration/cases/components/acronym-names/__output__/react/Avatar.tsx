@@ -1,14 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface AvatarEvents {
   onPickedURL?: (url: string) => void;
 }
 
-export interface AvatarAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AvatarAttributes = Omit<
+  ComponentPropsWithRef<"button">,
+  "imageURL" | "userID" | "onPickedURL" | "children"
+>;
 
 export default function Avatar({
   imageURL,
@@ -16,16 +15,20 @@ export default function Avatar({
   onPickedURL,
   className,
   style,
+  onClick,
   ...attributes
 }: { imageURL: string; userID: number } & AvatarEvents & AvatarAttributes) {
   return (
     <button
       type="button"
       data-user={userID}
-      onClick={() => onPickedURL?.(imageURL)}
+      onClick={(event) => {
+        onPickedURL?.(imageURL);
+        onClick?.(event);
+      }}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       User {userID}: {imageURL}
     </button>

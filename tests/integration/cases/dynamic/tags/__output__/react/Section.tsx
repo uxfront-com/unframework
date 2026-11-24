@@ -1,10 +1,6 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface SectionAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SectionAttributes = Omit<ComponentPropsWithRef<"article">, "title" | "children">;
 
 export default function Section({
   title,
@@ -17,7 +13,7 @@ export default function Section({
   const Tag = nested ? "h3" : "h2";
 
   return (
-    <article className={className} style={style} {...scopeAttributes(attributes)}>
+    <article className={className} style={style} {...attributes}>
       <Tag className="title">{title}</Tag>
       <button
         type="button"

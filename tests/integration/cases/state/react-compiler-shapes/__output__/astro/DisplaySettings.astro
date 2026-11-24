@@ -1,22 +1,17 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface Settings {
   theme: string;
   size: number;
 }
 
-interface Props {
+interface Props extends HTMLAttributes<"section"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const settings = { theme: "light", size: 14 } as Settings;
 const saving = false as boolean;
@@ -26,9 +21,9 @@ const failure = "" as string;
 
 <section
   class:list={["display-settings", className]}
-  aria-label="Display"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Display"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p role="status">Theme {settings.theme}, size {settings.size}</p>
   <button type="button">Dark</button>

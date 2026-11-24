@@ -264,7 +264,13 @@
             "typeParameters": [
               "T"
             ],
-            "rootTag": "ul"
+            "rootTag": "ul",
+            "fallthroughTag": "ul",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
+            "refTag": "ul"
           }
         ],
         "keys": []

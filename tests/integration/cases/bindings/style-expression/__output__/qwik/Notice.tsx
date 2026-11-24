@@ -1,6 +1,13 @@
 import Badge from "./Badge";
 import Tag from "./Tag";
-import { $, type CSSProperties, type ClassList, component$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type PropsOf,
+  component$,
+  useSignal,
+} from "@qwik.dev/core";
 
 type NoticeLook = {
   color?: string;
@@ -18,44 +25,48 @@ export interface NoticeProps {
   vars?: NoticeVars;
 }
 
-export default component$<NoticeProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ title, look, declarations, vars, class: className, style, ...attributes }) => {
-    const quiet = useSignal(false);
+export default component$<
+  NoticeProps &
+    Omit<PropsOf<"div">, "title" | "look" | "declarations" | "vars" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ title, look, declarations, vars, class: className, style, ...attributes }) => {
+  const quiet = useSignal(false);
 
-    const toggle = $(() => {
-      quiet.value = !quiet.value;
-    });
+  const toggle = $(() => {
+    quiet.value = !quiet.value;
+  });
 
-    const Tag_1 = quiet.value ? Tag : Badge;
+  const Tag_1 = quiet.value ? Tag : Badge;
 
-    return (
-      <div class={["notice", className]} {...scopeAttributes(attributes)} style={style}>
-        <p style={look}>{title}</p>
-        <Badge
-          label="Permanent"
-          tone="padding: 2px 6px; color: rgb(120, 30, 30); outline: 1px solid"
-          style={styleObject(look)}
-        />
-        <p style={declarations}>Read the details before you continue.</p>
-        <>
-          <Tag_1 label="Optional" tone="font-weight: 700" style={styleObject(declarations)} />
-        </>
-        <p
-          style={
-            quiet.value
-              ? { color: "rgb(90, 90, 90)" }
-              : { color: "var(--notice-accent, rgb(160, 40, 40))", fontWeight: "700" }
-          }
-        >
-          This cannot be undone.
-        </p>
-        <button type="button" style={vars} onClick$={toggle}>
-          {quiet.value ? "Emphasise" : "Quieten"}
-        </button>
-      </div>
-    );
-  },
-);
+  return (
+    <div class={["notice", className]} style={style} {...attributes}>
+      <p style={look}>{title}</p>
+      <Badge
+        label="Permanent"
+        tone="padding: 2px 6px; color: rgb(120, 30, 30); outline: 1px solid"
+        style={styleObject(look)}
+      />
+      <p style={declarations}>Read the details before you continue.</p>
+      <>
+        <Tag_1 label="Optional" tone="font-weight: 700" style={styleObject(declarations)} />
+      </>
+      <p
+        style={
+          quiet.value
+            ? { color: "rgb(90, 90, 90)" }
+            : { color: "var(--notice-accent, rgb(160, 40, 40))", fontWeight: "700" }
+        }
+      >
+        This cannot be undone.
+      </p>
+      <button type="button" style={vars} onClick$={toggle}>
+        {quiet.value ? "Emphasise" : "Quieten"}
+      </button>
+    </div>
+  );
+});
 
 /**
  * A style bound to a value as an object, which a merge spreads: a declaration list splits as
@@ -76,13 +87,4 @@ function styleObject(style: object | string | null | undefined): Record<string, 
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
   return object;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

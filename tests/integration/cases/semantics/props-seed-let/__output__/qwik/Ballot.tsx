@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -27,7 +28,20 @@ function isAnswer(value: string): value is "yes" | "no" {
 }
 
 export default component$<
-  BallotProps & BallotEvents & { class?: ClassList; style?: CSSProperties }
+  BallotProps &
+    BallotEvents &
+    Omit<
+      PropsOf<"section">,
+      | "limit"
+      | "label"
+      | "choices"
+      | "onVoted$"
+      | "onMoved$"
+      | "onReport$"
+      | "onCounted$"
+      | "class"
+      | "style"
+    > & { class?: ClassList; style?: CSSProperties }
 >(
   ({
     limit,
@@ -96,12 +110,7 @@ export default component$<
     });
 
     return (
-      <section
-        class={["ballot", className]}
-        aria-label={label}
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
+      <section class={["ballot", className]} aria-label={label} style={style} {...attributes}>
         <p role="status">{votes.value} votes left</p>
         <p>Picked: {picked.value}</p>
         <ul aria-label="Choices">
@@ -120,12 +129,3 @@ export default component$<
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

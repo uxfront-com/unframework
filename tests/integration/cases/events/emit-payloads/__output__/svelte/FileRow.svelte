@@ -13,17 +13,32 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = FileRowProps & {
-    onrefresh?: () => void;
-    onopen?: (path: string) => void;
-    onmove?: (from: string, to: string) => void;
-    onpick?: (file: FileInfo) => void;
-    onshare?: (path: string, note?: string) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    | "path"
+    | "size"
+    | "onrefresh"
+    | "onopen"
+    | "onmove"
+    | "onpick"
+    | "onshare"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    FileRowProps & {
+      onrefresh?: () => void;
+      onopen?: (path: string) => void;
+      onmove?: (from: string, to: string) => void;
+      onpick?: (file: FileInfo) => void;
+      onshare?: (path: string, note?: string) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["div"] | null;
+    };
 
   let {
     path,
@@ -35,19 +50,13 @@
     onshare,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
   function archive() {
     onmove?.(path, `archive/${path}`);
     onrefresh?.();
-  }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
   }
 </script>
 
@@ -56,7 +65,8 @@
   role="group"
   aria-label={path}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <span>{path} ({size} bytes)</span
   ><button type="button" onclick={() => onrefresh?.()}>Refresh</button

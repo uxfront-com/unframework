@@ -1,15 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface PillAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PillAttributes = Omit<ComponentPropsWithRef<"span">, "text" | "children">;
 
 export function Pill({ text, className, style, ...attributes }: { text: string } & PillAttributes) {
   return (
-    <span className={cx("pill", className)} style={style} {...scopeAttributes(attributes)}>
+    <span className={cx("pill", className)} style={style} {...attributes}>
       {text}
     </span>
   );

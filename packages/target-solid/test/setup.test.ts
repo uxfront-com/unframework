@@ -216,7 +216,7 @@ describe("solid setup items (src/setup.ts)", () => {
       ),
     );
     expect(output).toContain(
-      'const units = ["s", "ms"];\n\nfunction format(value: number): string {\n  return `${value}${units[0]}`;\n}\n\nconst twice = (value: number) => format(value * 2);\n\nexport default function Probe(props: { class?: string; style?: JSX.CSSProperties }) {',
+      'const units = ["s", "ms"];\n\nfunction format(value: number): string {\n  return `${value}${units[0]}`;\n}\n\nconst twice = (value: number) => format(value * 2);\n\nexport default function Probe(\n  props: Omit<ComponentProps<"p">, "style"> & { style?: JSX.CSSProperties },\n) {',
     );
     expect(component(output)).toContain("  function show() {\n    return format(count());\n  }");
   });
@@ -772,10 +772,13 @@ describe("solid nextTick and names the output takes", () => {
     expect(emits).toContain(
       "export interface ProbeEvents {\n  onDone?: () => void;\n  onMoved?: (from: string, to?: string) => void;\n}",
     );
+    // The root's own listener calls a consumer's of the same event after it (ADR-0118).
     expect(emits).toContain(
-      "export default function Probe(props: ProbeEvents & { class?: string; style?: JSX.CSSProperties }) {",
+      'export default function Probe(\n  props: ProbeEvents &\n    Omit<ComponentProps<"button">, "style" | "onClick"> & {',
     );
-    expect(emits).toContain("onClick={() => props.onDone?.()}");
+    expect(emits).toContain(
+      "onClick={(event) => {\n        props.onDone?.();\n        props.onClick?.(event);\n      }}",
+    );
     const silent = await emitSource(
       probe("defineEmits", "  const emit = defineEmits<{ done: [] }>();\n  void emit;", "<p>x</p>"),
     ).catch(() => undefined);

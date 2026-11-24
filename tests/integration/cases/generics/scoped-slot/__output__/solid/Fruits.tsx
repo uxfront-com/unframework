@@ -1,5 +1,5 @@
 import Picker from "./Picker";
-import type { JSX } from "solid-js";
+import { type ComponentProps, splitProps } from "solid-js";
 
 interface Fruit {
   name: string;
@@ -7,14 +7,14 @@ interface Fruit {
 }
 
 export default function Fruits(
-  props: { fruits: Fruit[] } & { class?: string; style?: JSX.CSSProperties },
+  props: { fruits: Fruit[] } & Omit<ComponentProps<typeof Picker>, "fruits" | "item" | "items">,
 ) {
+  const [, others] = splitProps(props, ["fruits"]);
+
   return (
     <Picker
       items={props.fruits}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
       item={({ item }) => (
         <span>
           {item.name} × {item.count}
@@ -22,11 +22,4 @@ export default function Fruits(
       )}
     />
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

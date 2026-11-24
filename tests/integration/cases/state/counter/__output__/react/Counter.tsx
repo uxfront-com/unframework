@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface CounterProps {
   initial?: number;
@@ -11,10 +10,10 @@ export interface CounterEvents {
   onChange?: (value: number) => void;
 }
 
-export interface CounterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CounterAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "initial" | "step" | "onChange" | "children"
+>;
 
 export default function Counter({
   initial = 0,
@@ -35,7 +34,7 @@ export default function Counter({
   }
 
   return (
-    <div className={cx("counter", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("counter", className)} style={style} {...attributes}>
       <output>{count}</output>
       {doubled > 10 ? <span>Big</span> : null}
       <button type="button" onClick={increment}>

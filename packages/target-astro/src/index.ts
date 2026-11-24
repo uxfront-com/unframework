@@ -3,14 +3,14 @@ import {
   childImports,
   defineTarget,
   ImportSet,
-  scopeRoots,
   mergesWholeStyle,
 } from "@unframework.dev/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework.dev/codegen";
 import type { UfComponent } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
-import { astroRender, takesFallthrough } from "./composition.ts";
+import { astroRender } from "./composition.ts";
+import { planFallthrough, scopeRootsOf } from "./fallthrough.ts";
 import { childTags, frontmatterOf } from "./frontmatter.ts";
 import { printComponentMarkup } from "./markup.ts";
 import { UNIQUE_ID } from "./setup.ts";
@@ -90,8 +90,13 @@ export const astro: Target = defineTarget({
     "two-way-binding": inert("A `v-model` renders its initial state and is inert"),
     "model-array": inert("A `v-model` of an array is inert"),
     "model-modifiers": inert("A `v-model`'s modifiers are inert"),
+    // The rest of `Astro.props` (ADR-0118): what a consumer passes and a component does not
+    // declare is spread on its root, or on the element that spreads the props' rest, which reads
+    // each of its own attributes from the props first, so the consumer's wins. A listener that
+    // falls through needs `interactivity`, which reports it (UF4001, info).
     fallthrough: { support: "native" },
     "contextual-root": { support: "native" },
+    // A ref on a component, whether it holds what the child exposes or its root element.
     expose: inert("What a component exposes is never called"),
     context: {
       support: "unsupported",
@@ -114,7 +119,7 @@ export const astro: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: "scopeAttributes",
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass. A root that takes the fallthrough spreads them with the rest of its props; elsewhere an inline helper picks them out of its props by name and spreads them on each branch of a root conditional, on a root <component is>, and on the root of a component whose props' rest sits on another element, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -161,13 +166,12 @@ export const astro: Target = defineTarget({
       childImports(component, module, (name) => `${name}.astro`),
       imports,
     );
-    const fallthrough = takesFallthrough(component)
-      ? { className: spelling.scope.claim("className"), style: spelling.scope.claim("style") }
-      : undefined;
+    const fallthrough = planFallthrough(component, module, spelling);
     const render = astroRender(component, module, spelling, fallthrough);
     // A root that takes its styled parents' scope attributes picks them out of `Astro.props`
-    // (ADR-0063).
-    const roots = scopeRoots(component);
+    // (ADR-0063): one that takes what falls through spreads them with the rest of it, and where
+    // the props' rest sits on another element, the root keeps them, as it would without it.
+    const roots = scopeRootsOf(component, fallthrough);
     const scope = roots.length ? spelling.scope.claim("scopeAttributes") : undefined;
     // A style bound to a value that an object spread merges is an object first (ADR-0065).
     const styleObject = mergesWholeStyle(component)
@@ -180,6 +184,7 @@ export const astro: Target = defineTarget({
       module,
       ...(scope ? { scope: { helper: scope, roots } } : {}),
       ...(styleObject ? { styleObject } : {}),
+      ...(fallthrough ? { fallthrough } : {}),
     });
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a

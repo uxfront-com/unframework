@@ -219,6 +219,23 @@
                 }
               },
               {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "primary",
+                    "span": {
+                      "start": 449,
+                      "end": 464
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 449,
+                  "end": 464
+                }
+              },
+              {
                 "kind": "Listener",
                 "event": "press",
                 "handler": {
@@ -258,23 +275,6 @@
                 "span": {
                   "start": 471,
                   "end": 500
-                }
-              },
-              {
-                "kind": "Class",
-                "items": [
-                  {
-                    "kind": "Static",
-                    "value": "primary",
-                    "span": {
-                      "start": 449,
-                      "end": 464
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 449,
-                  "end": 464
                 }
               }
             ],

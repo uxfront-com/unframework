@@ -183,6 +183,8 @@ export function reactCode(plan: ReactPlan): ReactCode {
       return `${callee}?.(${parts.arguments.join(", ")})`;
     },
     api: () => plan.nextTick!,
+    // React's own check, which a bundler replaces in client code (ADR-0117).
+    dev: () => 'process.env.NODE_ENV !== "production"',
     // Whether the parent passed the slot: a prop that holds a node (ADR-0054).
     slot: (reference) => `(${plan.composition.slots.get(reference.slot)!.local} != null)`,
   };

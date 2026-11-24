@@ -1,8 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useNextTick } from "./_unframework/useNextTick";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -16,10 +15,10 @@ export interface SearchResultsEvents {
   onShown?: (text: string) => void;
 }
 
-export interface SearchResultsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchResultsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onReady" | "onRendered" | "onShown" | "children"
+>;
 
 export default function SearchResults({
   onReady,
@@ -118,7 +117,7 @@ export default function SearchResults({
       className={cx("search-results", className)}
       aria-label="Search"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p ref={banner}>{status}</p>
       <label>

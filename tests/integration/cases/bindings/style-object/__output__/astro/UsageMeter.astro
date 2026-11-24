@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface UsageMeterProps {
   label: string;
   percent: number;
@@ -6,22 +8,18 @@ export interface UsageMeterProps {
   thickness: number;
 }
 
-interface Props extends UsageMeterProps {
+interface Props
+  extends
+    UsageMeterProps,
+    Omit<HTMLAttributes<"div">, "label" | "percent" | "colour" | "thickness"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, percent, colour, thickness, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, percent, colour, thickness, class: className, style, ...attrs } = Astro.props;
 ---
 
-<div class:list={["usage-meter", className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={["usage-meter", className]} style={style} {...attrs}>
   <p
     style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}
   >{label}: {percent}%</p>

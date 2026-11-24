@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface FieldProps {
   label: string;
@@ -11,10 +10,10 @@ export interface FieldEvents {
   onClear?: (label: string) => void;
 }
 
-export interface FieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FieldAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "tone" | "onClear" | "children"
+>;
 
 export default function Field({
   label,
@@ -25,7 +24,7 @@ export default function Field({
   ...attributes
 }: FieldProps & FieldEvents & FieldAttributes) {
   return (
-    <div className={cx("field", tone, className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("field", tone, className)} style={style} {...attributes}>
       <span>{label}</span>
       <button type="button" onClick={() => onClear?.(label)}>
         Clear {label}

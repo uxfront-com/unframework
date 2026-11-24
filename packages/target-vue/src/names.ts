@@ -56,6 +56,9 @@ export const VUE_RESERVED: ReadonlySet<string> = new Set([
   ...VUE_TEMPLATE_GLOBALS,
 ]);
 
+/** `isDev` on Vue: the check Vue's own bundler build reads (ADR-0117). */
+const DEV_CHECK = 'process.env.NODE_ENV !== "production"';
+
 /** A component's names in its Vue output: the scope the script claims from, and the renames. */
 export class VueNames {
   /** The output's names: the source's, Vue's reserved ones, and every name the target claims. */
@@ -265,6 +268,8 @@ export class VueNames {
             return unreachable(reference.api);
         }
       },
+      // Vue's own check, which a bundler replaces as Vue's build does (ADR-0117).
+      dev: () => DEV_CHECK,
     };
   }
 

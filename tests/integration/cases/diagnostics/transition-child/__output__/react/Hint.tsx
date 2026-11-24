@@ -1,14 +1,10 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface HintAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HintAttributes = Omit<ComponentPropsWithRef<"p">, "children">;
 
 export function Hint({ className, style, ...attributes }: HintAttributes) {
   return (
-    <p className={className} style={style} {...scopeAttributes(attributes)}>
+    <p className={className} style={style} {...attributes}>
       Hint
     </p>
   );

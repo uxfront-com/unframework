@@ -1,15 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface StepsSlots {
   marker?: ReactNode;
 }
 
-export interface StepsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepsAttributes = Omit<ComponentPropsWithRef<"ol">, "steps" | "marker" | "children">;
 
 export default function Steps({
   steps,
@@ -19,7 +15,7 @@ export default function Steps({
   ...attributes
 }: { steps: string[] } & StepsSlots & StepsAttributes) {
   return (
-    <ol className={cx("steps", className)} style={style} {...scopeAttributes(attributes)}>
+    <ol className={cx("steps", className)} style={style} {...attributes}>
       {steps.map((step) => (
         <li key={step}>
           {marker}

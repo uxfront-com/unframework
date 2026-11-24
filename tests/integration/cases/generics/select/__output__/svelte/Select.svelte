@@ -8,9 +8,18 @@
 </script>
 
 <script lang="ts" generics="T extends string">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLLabelAttributes } from "svelte/elements";
 
-  type Props = SelectProps<T> & { value: T; class?: ClassValue; style?: string };
+  type Props = Omit<
+    HTMLLabelAttributes,
+    "label" | "options" | "value" | "children" | "class" | "style" | "ref"
+  > &
+    SelectProps<T> & {
+      value: T;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["label"] | null;
+    };
 
   let {
     label,
@@ -18,21 +27,16 @@
     value = $bindable(),
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <label
   class={className}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{label} <select
   bind:value
 >{#each options as option (option)}<option value={option}>{option}</option>{/each}</select></label>

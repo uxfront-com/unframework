@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { formatPrice, pluralise } from "./format";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface PriceTagEvents {
   onOrder?: (summary: string) => void;
 }
 
-export interface PriceTagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PriceTagAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "cents" | "onOrder" | "children"
+>;
 
 export default function PriceTag({
   cents,
@@ -36,7 +35,7 @@ export default function PriceTag({
       className={cx("price-tag", className)}
       aria-label="Price"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>Each: {formatPrice(cents)}</p>
       <p role="status">

@@ -1,11 +1,7 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useModelText } from "./_unframework/useModelText";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface QuantityAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type QuantityAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Quantity({ className, style, ...attributes }: QuantityAttributes) {
   const [count, setCount] = useState(2);
@@ -22,12 +18,7 @@ export default function Quantity({ className, style, ...attributes }: QuantityAt
   const volumeField = useModelText(volume, setVolume, { number: true });
 
   return (
-    <section
-      aria-label="Order"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Order" className={className} style={style} {...attributes}>
       <input type="number" aria-label="Count" min="0" {...countField} />
       <input type="range" aria-label="Volume" min="0" max="10" {...volumeField} />
       <output>

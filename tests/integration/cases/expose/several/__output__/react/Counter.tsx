@@ -1,17 +1,20 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type Ref, useImperativeHandle, useRef, useState } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  type Ref,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 
 export interface CounterHandle {
   increment(): void;
   reset(): void;
 }
 
-export interface CounterAttributes {
-  className?: string;
-  style?: CSSProperties;
+export type CounterAttributes = Omit<ComponentPropsWithoutRef<"output">, "start" | "children"> & {
   ref?: Ref<CounterHandle>;
-}
+};
 
 export default function Counter({
   start,
@@ -36,7 +39,7 @@ export default function Counter({
   useImperativeHandle(ref, () => ({ increment, reset }));
 
   return (
-    <output className={cx("count", className)} style={style} {...scopeAttributes(attributes)}>
+    <output className={cx("count", className)} style={style} {...attributes}>
       {count}
     </output>
   );

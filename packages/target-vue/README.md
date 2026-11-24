@@ -68,6 +68,7 @@ Item">` (ADR-0068). An attribute cannot hold its own quote, so each string liter
    | `watch(source, callback, options)`        | the same; a prop or a `shallowRef` by a getter                 |
    | `watchEffect(effect)`                     | `watchPostEffect(effect)`: after the render, never on a server |
    | `onMounted`, `onUnmounted`, `nextTick`    | the same                                                       |
+   | `if (isDev) { … }`                        | `if (process.env.NODE_ENV !== "production") { … }` (ADR-0117)  |
    | `const { on, toggle } = useToggle(false)` | the same: getters and callbacks as written (ADR-0069)          |
 
    State is replaced whole (ADR-0008, UF2004), so a state not known to hold a primitive
@@ -181,8 +182,17 @@ Components, slots, fallthrough and `defineExpose` (ADR-0053, ADR-0054) are Vue's
   key, the fallback as its content; fills are the children, or `<template #title>` and
   `<template #item="{ item }">`, and a forwarded slot is the parent's own `<slot>` in a template
   under its presence, `<template v-if="slots.title" #title>`;
-- `class` and `style` fall through as Vue makes them, `defineOptions({ inheritAttrs: false })`
-  turns it off, and `defineExpose({ … })` comes last, once every function it names is declared.
+- `class`, `style`, the other attributes and the DOM listeners a component does not declare fall
+  through as Vue makes them (ADR-0118), `defineOptions({ inheritAttrs: false })` turns it off,
+  and `defineExpose({ … })` comes last, once every function it names is declared;
+- the props' rest, `{...rest}`, is `v-bind="$attrs"` bound last on its element, so it merges as a
+  root's fallthrough does. On an element other than the root, it binds `restAttrs($attrs)` and
+  the root `scopeAttrs($attrs)`, so the styled parents' `data-uf-*` attributes stay on the root
+  (ADR-0063), and the props type declares the element's attributes behind `/* @vue-ignore */`,
+  since vue-tsc infers them only from a root or a bare `$attrs`;
+- a ref on a child that exposes nothing holds its root element: the child's instance is a
+  template ref of its own, `useTemplateRef<{ $el: HTMLButtonElement }>("saveComponent")`, and
+  the source's ref a `computed` of its `$el`.
 
 Models, context and `<component is>` (ADR-0054) are Vue's own as well:
 
@@ -215,7 +225,8 @@ For tests and tooling (the target's main entry never loads it):
     transform instead.
   - L4 runs vue-tsc with `strictTemplates`, from the toolchain directory, once over every file.
     `tests/toolchains/vue/tsconfig.json` allows `data-*` and the few HTML attributes Vue's
-    element types lack.
+    element types lack, and sets `fallthroughAttributes`, so a component takes its root's
+    attributes and listeners (ADR-0118).
   - L5 (ADR-0042) runs oxlint's shared baseline over the script block and ESLint with
     eslint-plugin-vue over the whole file, with typescript-eslint's `no-unused-vars`, which
     oxlint does not run on a `.vue` file. No rule is off for M2. A `.ts` module is oxlint's

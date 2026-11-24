@@ -1,6 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type KeyboardEvent, useId, useMemo, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type KeyboardEvent,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface CityPickerProps {
   cities: string[];
@@ -11,10 +17,10 @@ export interface CityPickerEvents {
   onNoted?: (text: string) => void;
 }
 
-export interface CityPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CityPickerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "cities" | "onChose" | "onNoted" | "children"
+>;
 
 export default function CityPicker({
   cities,
@@ -100,7 +106,7 @@ export default function CityPicker({
       className={cx("city-picker", className)}
       aria-label="Trip"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <form role="search" aria-label="Destination" onSubmit={(event) => event.preventDefault()}>
         <label>

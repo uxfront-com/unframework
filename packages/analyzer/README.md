@@ -285,7 +285,9 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   ADR-0046), writes of state as statements of their own (`Write`; a type assertion on the
   written target is UF1002, with a likely fix that removes it;
   UF2011: an arrow passed to a call writes in a block body, but for an `onCleanup` callback,
-  with a fix), emits of declared events (`Emit`, UF2017), `await nextTick()` (`Api`; a callback
+  with a fix), emits of declared events (`Emit`, UF2017), `if (isDev)` (`Dev`, ADR-0117: a
+  top-level one is a `DevCheck` item, pure code that may read `console`; any other read of
+  `isDev` is UF2040), `await nextTick()` (`Api`; a callback
   is UF2025, judged with the rules, and so are `nextTick` used as a value and a call of it through
   parentheses, an assertion or type arguments, written bare by a safe fix), the event parameter's
   members (`Event`) and the leading `preventDefault()` and `stopPropagation()` calls, which Vue's

@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 type LookupResult = { ok: true; match: string } | { ok: false; error: string };
 
@@ -10,10 +9,10 @@ export interface FilterSummaryProps {
   result: LookupResult;
 }
 
-export interface FilterSummaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FilterSummaryAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "tags" | "limit" | "result" | "children"
+>;
 
 export default function FilterSummary({
   tags,
@@ -28,7 +27,7 @@ export default function FilterSummary({
       className={cx("filter-summary", className)}
       aria-label="Filters"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>Tags: {Array.isArray(tags) ? tags.join(", ") : tags}</p>
       <p>Limit: {typeof limit === "number" ? limit.toFixed(0) : limit.toLowerCase()}</p>

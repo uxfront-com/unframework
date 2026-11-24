@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface GlossaryProps {
   terms: string[];
   definitions: string[];
 }
 
-export interface GlossaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type GlossaryAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "terms" | "definitions" | "children"
+>;
 
 export default function Glossary({
   terms,
@@ -33,7 +32,7 @@ export default function Glossary({
       className={cx("glossary", className)}
       aria-label="Glossary"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{terms[index]}</h2>
       <div className="definition" dangerouslySetInnerHTML={{ __html: definition }} />

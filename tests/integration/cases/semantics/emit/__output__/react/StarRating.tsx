@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface StarRatingEvents {
   onPreview?: (stars: number) => void;
@@ -8,10 +7,10 @@ export interface StarRatingEvents {
   onCleared?: () => void;
 }
 
-export interface StarRatingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StarRatingAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "onPreview" | "onRate" | "onCleared" | "children"
+>;
 
 const choices = [1, 2, 3, 4, 5];
 
@@ -49,7 +48,7 @@ export default function StarRating({
       role="group"
       aria-label="Rating"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul>
         {choices.map((choice) => (

@@ -75,30 +75,22 @@ async function withServer<T>(
 
 /**
  * Astro's output for `Hello.uf.tsx`: its root takes a consumer's `class` and `style` (ADR-0054),
- * and its styled parents' scope attributes (ADR-0063).
+ * and every other attribute, its styled parents' scope attributes included, falls through to it
+ * (ADR-0063, ADR-0118).
  */
 const ASTRO_HELLO = [
   "---",
-  "interface Props {",
+  'import type { HTMLAttributes } from "astro/types";',
+  "",
+  'interface Props extends HTMLAttributes<"p"> {',
   "  class?: string;",
   "  style?: Record<string, string | number | undefined>;",
   "}",
   "",
-  "const { class: className, style } = Astro.props;",
-  "",
-  "/** The scope attributes of the styled parents that render this component, for its root. */",
-  'function scopeAttributes(props: object): Record<string, ""> {',
-  '  const scope: Record<string, ""> = {};',
-  '  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
-  "  return scope;",
-  "}",
+  "const { class: className, style, ...attrs } = Astro.props;",
   "---",
   "",
-  "<p",
-  '  class:list={["greeting", className]}',
-  "  style={style}",
-  "  {...scopeAttributes(Astro.props)}",
-  ">Hello, world!</p>",
+  '<p class:list={["greeting", className]} style={style} {...attrs}>Hello, world!</p>',
   "",
 ].join("\n");
 

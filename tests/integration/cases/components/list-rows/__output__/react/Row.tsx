@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface RowAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RowAttributes = Omit<ComponentPropsWithRef<"div">, "name" | "done" | "children">;
 
 export default function Row({
   name,
@@ -15,12 +11,7 @@ export default function Row({
   ...attributes
 }: { name: string; done: boolean } & RowAttributes) {
   return (
-    <div
-      role="listitem"
-      className={cx("row", { done }, className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <div role="listitem" className={cx("row", { done }, className)} style={style} {...attributes}>
       {name}
       {done ? " (done)" : ""}
     </div>

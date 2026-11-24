@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { merge } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { merge, omit } from "solid-js";
 
 export interface ArticleTeaserProps {
   title: string;
@@ -13,30 +13,48 @@ export interface ArticleTeaserProps {
 }
 
 export default function ArticleTeaser(
-  rawProps: ArticleTeaserProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: ArticleTeaserProps &
+    Omit<
+      ComponentProps<"article">,
+      | "title"
+      | "summary"
+      | "author"
+      | "minutes"
+      | "featured"
+      | "category"
+      | "pinned"
+      | "layout"
+      | "class"
+      | "style"
+    > & { class?: string; style?: JSX.CSSProperties },
 ) {
   const props = merge(rawProps, {
     get minutes() {
       return rawProps.minutes === undefined ? 5 : rawProps.minutes;
     },
   });
+  const others = omit(
+    props,
+    "title",
+    "summary",
+    "author",
+    "minutes",
+    "featured",
+    "category",
+    "pinned",
+    "layout",
+    "class",
+  );
+
   return (
     <article
       class={props.class ? `article-teaser ${props.class}` : "article-teaser"}
       aria-label={props.title}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{props.title}</h2>
       <p>{props.summary}</p>
       <p class="article-teaser-meta">{props.minutes} min read</p>
     </article>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

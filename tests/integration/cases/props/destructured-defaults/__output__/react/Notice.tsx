@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface NoticeProps {
   message: string;
@@ -12,10 +11,10 @@ export interface NoticeProps {
   author?: { name: string };
 }
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "message" | "title" | "tone" | "priority" | "expanded" | "tags" | "author" | "children"
+>;
 
 export default function Notice({
   message,
@@ -35,7 +34,7 @@ export default function Notice({
       aria-label={title}
       data-tone={tone}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{title}</h2>
       <p>{message}</p>

@@ -138,7 +138,17 @@
             "inheritAttrs": true,
             "root": "element",
             "async": true,
-            "rootTag": "article"
+            "rootTag": "article",
+            "fallthroughTag": "article",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "member"
+                }
+              ],
+              "listeners": []
+            }
           }
         ],
         "keys": []

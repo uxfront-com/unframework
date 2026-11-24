@@ -1,17 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface SizePickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SizePickerAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function SizePicker({ className, style, ...attributes }: SizePickerAttributes) {
   const [size, setSize] = useState("m");
   const sizeRef = useRef(size);
 
   return (
-    <section aria-label="Size" className={className} style={style} {...scopeAttributes(attributes)}>
+    <section aria-label="Size" className={className} style={style} {...attributes}>
       <label>
         Size{" "}
         <select

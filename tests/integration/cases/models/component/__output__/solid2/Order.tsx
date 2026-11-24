@@ -1,12 +1,17 @@
 import Stepper from "./Stepper";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import { createSignal, getObserver } from "solid-js";
 
-export default function Order(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Order(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
   const [cups, setCups] = createState(2);
 
   return (
-    <section aria-label="Order" class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <section aria-label="Order" {...props}>
       <Stepper label="Cups" value={cups()} onValueChange={setCups} />
       <output>Ordered: {cups()}</output>
       <button type="button" onClick={() => setCups(0)}>
@@ -14,13 +19,6 @@ export default function Order(props: { class?: string; style?: JSX.CSSProperties
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

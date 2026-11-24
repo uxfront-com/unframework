@@ -36,14 +36,8 @@ describe("compile() with shared helper modules", () => {
   it("puts them in _unframework/ beside the source by default, after the components", async () => {
     const result = await compile(CARD, { filename: "src/ui/Card.uf.tsx", targets: ["react"] });
     expect(result.diagnostics).toEqual([]);
-    expect(paths(result.outputs.react)).toEqual([
-      "Card.tsx",
-      "_unframework/cx.ts",
-      "_unframework/scopeAttributes.ts",
-    ]);
-    expect(result.helpers).toEqual({
-      react: ["_unframework/cx.ts", "_unframework/scopeAttributes.ts"],
-    });
+    expect(paths(result.outputs.react)).toEqual(["Card.tsx", "_unframework/cx.ts"]);
+    expect(result.helpers).toEqual({ react: ["_unframework/cx.ts"] });
     expect(result.owners.react).toEqual({ "Card.tsx": "Card" });
     expect(result.outputs.react![0]!.contents).toContain('import { cx } from "./_unframework/cx";');
   });
@@ -61,10 +55,7 @@ describe("compile() with shared helper modules", () => {
       helperRoot,
     });
     expect(result.outputs.react![0]!.contents).toContain(`import { cx } from "${specifier}";`);
-    expect(result.helpers.react).toEqual([
-      `${specifier}.ts`.replace(/^\.\//, ""),
-      `${specifier.replace("cx", "scopeAttributes")}.ts`.replace(/^\.\//, ""),
-    ]);
+    expect(result.helpers.react).toEqual([`${specifier}.ts`.replace(/^\.\//, "")]);
   });
 
   it.each(["other", "src/u", "src/ui/Card", "/src", "../src", "src/ui/more"])(
@@ -223,6 +214,7 @@ export function K() {
     ]);
     // Vue shares no helper, so its tree holds the copy.
     expect(paths(result.outputs.vue)).toEqual(["Card.vue", "_unframework/cx.ts"]);
-    expect(result.helpers.react).toEqual(["_unframework/scopeAttributes.ts"]);
+    // The copy takes `cx`'s place, so React lists no helper module of its own.
+    expect(result.helpers.react).toEqual([]);
   });
 });

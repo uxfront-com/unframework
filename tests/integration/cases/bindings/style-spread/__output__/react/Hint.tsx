@@ -1,6 +1,5 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { styleObject } from "./_unframework/styleObject";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface HintAttributes {
   id: string;
@@ -12,10 +11,7 @@ export interface HintProps {
   attrs: HintAttributes;
 }
 
-export interface HintAttributes_1 {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HintAttributes_1 = Omit<ComponentPropsWithRef<"small">, "text" | "attrs" | "children">;
 
 export default function Hint({
   text,
@@ -29,7 +25,7 @@ export default function Hint({
       id={attrs.id}
       style={{ ...styleObject(attrs.style), ...style }}
       className={className}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {text}
     </small>

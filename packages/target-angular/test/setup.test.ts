@@ -190,7 +190,7 @@ describe("listeners (ADR-0047)", () => {
       ),
     );
     expect(contents).toContain(
-      "imports: [ClickCapture, ClickOnce, TouchstartPassive, ScopeAttributes],",
+      "imports: [ClickCapture, ClickOnce, TouchstartPassive, ScopeAttributes, Fallthrough],",
     );
     expect(contents).toContain(
       '<button type="button" (ufClickOnce)="note(row)">{{ row }}</button>',
@@ -640,7 +640,9 @@ describe("outputs named like a setup binding (ADR-0047)", () => {
         '      (submit)="onSave($event)"',
         '      [class]="this.class()"',
         '      [style]="this.style()"',
+        '      [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"',
         '      [ufScope]="this.host"',
+        "      #ufElement",
         "    >",
       ),
     );

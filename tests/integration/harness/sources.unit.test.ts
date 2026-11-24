@@ -15,7 +15,7 @@ import type { SourceCompile } from "./sources.ts";
 
 const FORM = [
   "export default function Form() {",
-  '  return <form aria-label="Sign in"><button type="submit">Send</button></form>;',
+  '  return <form class="form" aria-label="Sign in"><button type="submit">Send</button></form>;',
   "}",
   "",
 ].join("\n");
@@ -71,7 +71,7 @@ describe("a case of two sources", () => {
     );
     expect(paths).toEqual({
       // One module of each helper, which both sources write (ADR-0121).
-      react: ["Field.tsx", "_unframework/cx.ts", "_unframework/scopeAttributes.ts", "Form.tsx"],
+      react: ["Field.tsx", "_unframework/cx.ts", "Form.tsx"],
       vue: ["Field.vue", "Form.vue"],
       svelte: ["Field.svelte", "Form.svelte"],
       solid: ["Field.tsx", "Form.tsx"],
@@ -80,10 +80,10 @@ describe("a case of two sources", () => {
       qwik: ["Field.tsx", "Form.tsx"],
       astro: ["Field.astro", "Form.astro"],
     });
-    // Both sources write `scopeAttributes`, which the tree holds once.
+    // Both sources write `cx`, which the tree holds once.
     expect(compiles.map(({ result }) => result.helpers.react)).toEqual([
-      ["_unframework/cx.ts", "_unframework/scopeAttributes.ts"],
-      ["_unframework/scopeAttributes.ts"],
+      ["_unframework/cx.ts"],
+      ["_unframework/cx.ts"],
     ]);
     expect(caseOutputs(compiles, "vue").files.get("Field.vue")).toBe(
       compiles[0]!.result.outputs.vue![0]!.contents,

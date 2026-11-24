@@ -1,13 +1,9 @@
 import { Transition } from "./_unframework/Transition";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 import "./Menu.uf.tsx.css";
 
-export interface MenuAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MenuAttributes = Omit<ComponentPropsWithRef<"nav">, "children">;
 
 export default function Menu({ className, style, ...attributes }: MenuAttributes) {
   const [open, setOpen] = useState(true);
@@ -19,7 +15,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
       aria-label="Account"
       style={style}
       data-uf-e688a71a=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

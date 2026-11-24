@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useOnce } from "./_unframework/useOnce";
-import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef, useState } from "react";
 
-export interface ReplyBoxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReplyBoxAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ReplyBox({ className, style, ...attributes }: ReplyBoxAttributes) {
   const [started, setStarted] = useState(false);
@@ -31,7 +27,7 @@ export default function ReplyBox({ className, style, ...attributes }: ReplyBoxAt
       className={cx("reply-box", className)}
       aria-label="Reply"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Message

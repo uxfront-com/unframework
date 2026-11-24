@@ -1,14 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface ListSlots {
   renderItem?: (props: { item: string; index: number }) => ReactNode;
 }
 
-export interface ListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ListAttributes = Omit<
+  ComponentPropsWithRef<"ul">,
+  "items" | "label" | "renderItem" | "children"
+>;
 
 export default function List({
   items,
@@ -19,7 +18,7 @@ export default function List({
   ...attributes
 }: { items: string[]; label: string } & ListSlots & ListAttributes) {
   return (
-    <ul aria-label={label} className={className} style={style} {...scopeAttributes(attributes)}>
+    <ul aria-label={label} className={className} style={style} {...attributes}>
       {items.map((item, index) => (
         <li key={item}>{renderItem?.({ item, index })}</li>
       ))}

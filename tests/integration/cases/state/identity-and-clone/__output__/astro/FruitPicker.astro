@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface Fruit {
   name: string;
   colour: string;
@@ -8,19 +10,12 @@ export interface FruitPickerProps {
   fruits: Fruit[];
 }
 
-interface Props extends FruitPickerProps {
+interface Props extends FruitPickerProps, Omit<HTMLAttributes<"section">, "fruits"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { fruits, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { fruits, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const selected = null as Fruit | null;
 const basket = [] as Fruit[];
@@ -28,9 +23,9 @@ const basket = [] as Fruit[];
 
 <section
   class:list={["fruit-picker", className]}
-  aria-label="Fruit"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Fruit"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <ul aria-label="Fruits">
     {fruits.map((fruit) => (

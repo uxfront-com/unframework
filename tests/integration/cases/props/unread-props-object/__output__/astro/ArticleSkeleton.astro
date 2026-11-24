@@ -1,31 +1,36 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface ArticleSkeletonProps {
   title: string;
   summary?: string;
   minutes?: number;
 }
 
-interface Props extends ArticleSkeletonProps {
+interface Props
+  extends ArticleSkeletonProps, Omit<HTMLAttributes<"article">, "title" | "summary" | "minutes"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  title: _title,
+  summary: _summary,
+  minutes: _minutes,
+  class: className,
+  style,
+  "aria-busy": ariaBusy,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <article
   class:list={["article-skeleton", className]}
-  aria-busy="true"
-  aria-label="Loading article"
+  aria-busy={"aria-busy" in Astro.props ? ariaBusy : "true"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Loading article"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p>Loading the article</p>
 </article>

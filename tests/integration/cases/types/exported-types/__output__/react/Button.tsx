@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export type ButtonTone = "primary" | "secondary";
 
@@ -11,10 +10,7 @@ export interface ButtonProps {
   tone?: ButtonTone;
 }
 
-export interface ButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ButtonAttributes = Omit<ComponentPropsWithRef<"button">, "label" | "tone" | "children">;
 
 export default function Button({
   label,
@@ -28,7 +24,7 @@ export default function Button({
       type="button"
       className={cx(`button button-${tone}`, className)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </button>

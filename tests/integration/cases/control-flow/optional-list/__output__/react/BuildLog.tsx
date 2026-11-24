@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface LogLine {
   id: string;
@@ -14,10 +13,10 @@ export interface BuildLogProps {
   warnings?: string[];
 }
 
-export interface BuildLogAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BuildLogAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "target" | "failed" | "lines" | "warnings" | "children"
+>;
 
 export default function BuildLog({
   target,
@@ -33,7 +32,7 @@ export default function BuildLog({
       className={cx("build-log", className)}
       aria-label="Build log"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <pre>
         $ make {target}

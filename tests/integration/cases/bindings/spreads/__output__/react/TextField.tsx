@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface FieldAttributes {
   name: string;
@@ -24,10 +23,10 @@ export interface TextFieldProps {
   hint?: HintAttributes;
 }
 
-export interface TextFieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TextFieldAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "inputId" | "hintText" | "field" | "hint" | "children"
+>;
 
 export default function TextField({
   label,
@@ -40,7 +39,7 @@ export default function TextField({
   ...attributes
 }: TextFieldProps & TextFieldAttributes) {
   return (
-    <div className={cx("text-field", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("text-field", className)} style={style} {...attributes}>
       <label htmlFor={inputId}>{label}</label>
       <input
         id={inputId}

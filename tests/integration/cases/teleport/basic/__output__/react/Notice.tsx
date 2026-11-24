@@ -1,17 +1,13 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { subscribeNothing } from "./_unframework/subscribeNothing";
 import { teleport } from "./_unframework/teleport";
-import { type CSSProperties, useRef, useState, useSyncExternalStore } from "react";
+import { type ComponentPropsWithRef, useRef, useState, useSyncExternalStore } from "react";
 
 export interface NoticeProps {
   message: string;
 }
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<ComponentPropsWithRef<"section">, "message" | "children">;
 
 export default function Notice({
   message,
@@ -28,12 +24,7 @@ export default function Notice({
   );
 
   return (
-    <section
-      className={cx("inbox", className)}
-      aria-label="Inbox"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("inbox", className)} aria-label="Inbox" style={style} {...attributes}>
       <p>Dismissed {dismissed} times</p>
       {mounted
         ? teleport(

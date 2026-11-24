@@ -1,14 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface NamesSlots {
   renderDefault?: (props: { item: string }) => ReactNode;
 }
 
-export interface NamesAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NamesAttributes = Omit<
+  ComponentPropsWithRef<"ul">,
+  "names" | "renderDefault" | "children"
+>;
 
 export default function Names({
   names,
@@ -18,7 +17,7 @@ export default function Names({
   ...attributes
 }: { names: string[] } & NamesSlots & NamesAttributes) {
   return (
-    <ul aria-label="Names" className={className} style={style} {...scopeAttributes(attributes)}>
+    <ul aria-label="Names" className={className} style={style} {...attributes}>
       {names.map((item) => (
         <li key={item}>{renderDefault?.({ item })}</li>
       ))}

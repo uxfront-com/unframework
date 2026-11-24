@@ -1,14 +1,10 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type ReactNode, createContext, use, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, createContext, use, useState } from "react";
 
 export interface LevelSlots {
   children?: ReactNode;
 }
 
-export interface LevelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LevelAttributes = Omit<ComponentPropsWithRef<"section">, "title" | "children">;
 
 export const DepthKey = createContext<number | undefined>(undefined);
 
@@ -24,12 +20,7 @@ export default function Level({
 
   return (
     <DepthKey value={depthValue}>
-      <section
-        aria-label={title}
-        className={className}
-        style={style}
-        {...scopeAttributes(attributes)}
-      >
+      <section aria-label={title} className={className} style={style} {...attributes}>
         <h2>
           {title} at depth {depth}
         </h2>

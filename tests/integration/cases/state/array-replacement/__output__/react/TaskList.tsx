@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface Task {
   id: string;
@@ -11,10 +10,7 @@ export interface TaskListProps {
   initial: Task[];
 }
 
-export interface TaskListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TaskListAttributes = Omit<ComponentPropsWithRef<"section">, "initial" | "children">;
 
 export default function TaskList({
   initial,
@@ -62,7 +58,7 @@ export default function TaskList({
       className={cx("task-list", className)}
       aria-label="Tasks"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {tasks.length === 0 ? (
         <p>No tasks yet.</p>

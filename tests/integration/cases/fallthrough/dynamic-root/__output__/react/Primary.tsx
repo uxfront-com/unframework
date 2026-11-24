@@ -26,8 +26,8 @@ export default function Primary({
       href={href}
       disabled={disabled}
       text={text}
-      onPress={() => onPress?.()}
       className={cx("primary", className)}
+      onPress={() => onPress?.()}
       style={style}
       {...scopeAttributes(attributes)}
     />

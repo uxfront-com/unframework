@@ -1,4 +1,4 @@
-import { type JSX, isServer } from "@solidjs/web";
+import { type ComponentProps, type JSX, isServer } from "@solidjs/web";
 import {
   Show,
   children,
@@ -11,17 +11,16 @@ import {
 } from "solid-js";
 import "./Accordion.uf.tsx.css";
 
-export default function Accordion(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Accordion(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
   const [open, setOpen] = createState(true);
 
   return (
-    <section
-      aria-label="Shipping"
-      data-uf-357b6b1f=""
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Shipping" data-uf-357b6b1f="" {...props}>
       <button
         type="button"
         aria-expanded={enumeratedValue(open())}
@@ -48,13 +47,6 @@ export default function Accordion(props: { class?: string; style?: JSX.CSSProper
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Runs Vue's transition classes of `name` on the element `children` renders as it enters and leaves. */

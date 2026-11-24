@@ -69,8 +69,8 @@ export default function Card() {
   it("binds the scope directive on each root node, and on nothing else", async () => {
     const binds = (code: string) => code.match(/\[ufScope\]="this\.host"/g)?.length ?? 0;
     const button = await output(lowered("Button.uf.tsx", BUTTON).module);
-    expect(button).toContain('[ufScope]="this.host"\n    >{{ text }}</button>');
-    expect(button).toContain("imports: [ScopeAttributes],");
+    expect(button).toMatch(/\[ufScope\]="this\.host"\s+#ufElement\s+>\{\{ text \}\}<\/button>/);
+    expect(button).toContain("imports: [ScopeAttributes, Fallthrough],");
     expect(button).toContain(
       "protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;",
     );

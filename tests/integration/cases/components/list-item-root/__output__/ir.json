@@ -198,7 +198,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "li"
+            "rootTag": "li",
+            "fallthroughTag": "li",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "item"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "li"
           }
         ],
         "keys": []

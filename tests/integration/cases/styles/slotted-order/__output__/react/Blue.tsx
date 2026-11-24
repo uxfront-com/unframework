@@ -1,16 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import "./Blue.uf.tsx.css";
 
 export interface BlueSlots {
   children?: ReactNode;
 }
 
-export interface BlueAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BlueAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Blue({
   children,
@@ -19,12 +15,7 @@ export default function Blue({
   ...attributes
 }: BlueSlots & BlueAttributes) {
   return (
-    <div
-      className={cx("blue", className)}
-      style={style}
-      data-uf-721c504a=""
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("blue", className)} style={style} data-uf-721c504a="" {...attributes}>
       {children}
     </div>
   );

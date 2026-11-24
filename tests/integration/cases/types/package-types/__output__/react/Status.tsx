@@ -1,14 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { Labelled } from "./types";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import type { TimeInterval } from "rxjs";
 
 type StatusProps = TimeInterval<string> & Labelled;
 
-export interface StatusAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StatusAttributes = Omit<
+  ComponentPropsWithRef<"p">,
+  "value" | "interval" | "label" | "children"
+>;
 
 export default function Status({
   value,
@@ -19,7 +18,7 @@ export default function Status({
   ...attributes
 }: StatusProps & StatusAttributes) {
   return (
-    <p className={className} style={style} {...scopeAttributes(attributes)}>
+    <p className={className} style={style} {...attributes}>
       {label}: {value} after {interval} ms
     </p>
   );

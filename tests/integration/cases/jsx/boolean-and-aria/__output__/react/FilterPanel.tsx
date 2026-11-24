@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface FilterPanelProps {
   heading: string;
@@ -15,10 +14,20 @@ export interface FilterPanelProps {
   current?: "page" | "step";
 }
 
-export interface FilterPanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FilterPanelAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "heading"
+  | "hint"
+  | "category"
+  | "expanded"
+  | "inStockOnly"
+  | "locked"
+  | "mandatory"
+  | "loading"
+  | "invalid"
+  | "current"
+  | "children"
+>;
 
 export default function FilterPanel({
   heading,
@@ -42,7 +51,7 @@ export default function FilterPanel({
       data-category={category}
       data-layout="stacked"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" aria-expanded={expanded} aria-describedby="filter-panel-hint">
         Price filters

@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "./Card.uf.tsx.css";
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"section">, "title" | "children">;
 
 export default function Card({
   title,
@@ -15,12 +11,7 @@ export default function Card({
   ...attributes
 }: { title: string } & CardAttributes) {
   return (
-    <section
-      className={cx("card", className)}
-      style={style}
-      data-uf-bb60e985=""
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("card", className)} style={style} data-uf-bb60e985="" {...attributes}>
       <h2 className="title" data-uf-bb60e985="">
         {title}
       </h2>

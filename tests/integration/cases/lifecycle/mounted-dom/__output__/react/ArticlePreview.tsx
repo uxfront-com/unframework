@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface ArticlePreviewProps {
   title: string;
@@ -11,10 +10,10 @@ export interface ArticlePreviewEvents {
   onReady?: (characters: number) => void;
 }
 
-export interface ArticlePreviewAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ArticlePreviewAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "title" | "text" | "onReady" | "children"
+>;
 
 export default function ArticlePreview({
   title,
@@ -47,7 +46,7 @@ export default function ArticlePreview({
       className={cx("article-preview", className)}
       aria-label={title}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{title}</h2>
       <p ref={body}>{text}</p>

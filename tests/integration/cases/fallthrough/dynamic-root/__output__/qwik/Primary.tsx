@@ -17,8 +17,8 @@ export default component$<
         href={href}
         disabled={disabled}
         text={text}
-        onPress$={() => onPress$?.()}
         class={["primary", className]}
+        onPress$={() => onPress$?.()}
         {...scopeAttributes(attributes)}
         style={style}
       />

@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, type SyntheticEvent, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type SyntheticEvent, useMemo, useRef, useState } from "react";
 
 export interface Task {
   id: number;
@@ -19,10 +18,7 @@ export interface TaskBoardProps {
   initial: Task[];
 }
 
-export interface TaskBoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TaskBoardAttributes = Omit<ComponentPropsWithRef<"section">, "initial" | "children">;
 
 function sizeSummary(event: SyntheticEvent) {
   const area = event.currentTarget as HTMLTextAreaElement;
@@ -124,7 +120,7 @@ export default function TaskBoard({
       className={cx("task-board", className)}
       aria-label="Tasks"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ol aria-label="Open">
         {open.map((task) => (

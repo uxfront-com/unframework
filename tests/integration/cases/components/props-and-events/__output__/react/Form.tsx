@@ -1,11 +1,7 @@
 import Field from "./Field";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface FormAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FormAttributes = Omit<ComponentPropsWithRef<"section">, "city" | "children">;
 
 export default function Form({
   city,
@@ -22,12 +18,7 @@ export default function Form({
   }
 
   return (
-    <section
-      aria-label="Address"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Address" className={className} style={style} {...attributes}>
       <Field label="Street" onClear={clear} />
       <Field label={city} tone="warn" onClear={(label) => clear(label.toUpperCase())} />
       <output>Cleared: {cleared}</output>

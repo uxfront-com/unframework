@@ -1,23 +1,25 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface TagProps {
   label: string;
   tone?: string;
 }
 
-export interface TagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagAttributes = Omit<ComponentPropsWithRef<"em">, "label" | "tone" | "children">;
 
-export default function Tag({ label, className, style, ...attributes }: TagProps & TagAttributes) {
+export default function Tag({
+  label,
+  className,
+  style,
+  tone: _tone,
+  ...attributes
+}: TagProps & TagAttributes) {
   return (
     <em
       className={cx("tag", className)}
       style={{ color: "rgb(120, 30, 30)", padding: "1px 4px", ...style }}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </em>

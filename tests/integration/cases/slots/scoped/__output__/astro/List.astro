@@ -1,5 +1,7 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"ul">, "items" | "label" | "item"> {
   items: string[];
   label: string;
   item?: (props: { item: string; index: number }) => unknown;
@@ -7,17 +9,23 @@ interface Props {
   style?: Record<string, string | number | undefined>;
 }
 
-const { items, label, item: item_1, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  items,
+  label,
+  item: item_1,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
-<ul aria-label={label} class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<ul
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   {items.map((item, index) => (
     <li>{item_1?.({ item, index })}</li>
   ))}

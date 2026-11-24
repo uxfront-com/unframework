@@ -1,13 +1,9 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { chip } from "virtual:fixture-engine";
 import "virtual:fixture-engine.css";
 
-export interface ChipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChipAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "tone" | "children">;
 
 export default function Chip({
   label,
@@ -17,7 +13,7 @@ export default function Chip({
   ...attributes
 }: { label: string; tone?: "plain" | "accent" } & ChipAttributes) {
   return (
-    <span className={cx(chip(tone), className)} style={style} {...scopeAttributes(attributes)}>
+    <span className={cx(chip(tone), className)} style={style} {...attributes}>
       {label}
     </span>
   );

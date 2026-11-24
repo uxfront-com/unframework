@@ -292,13 +292,7 @@ export { Card };
       "Directory.uf.ts/kept.txt": "a directory named like a source is no source",
     });
     expect(await run(root, "build")).toMatchObject({ code: 0 });
-    expect(Object.keys(tree(join(root, "out/react")))).toEqual([
-      "A.tsx",
-      "A.tsx.map",
-      "_unframework/scopeAttributes.ts",
-      "_unframework/scopeAttributes.ts.map",
-      "index.ts",
-    ]);
+    expect(Object.keys(tree(join(root, "out/react")))).toEqual(["A.tsx", "A.tsx.map", "index.ts"]);
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 

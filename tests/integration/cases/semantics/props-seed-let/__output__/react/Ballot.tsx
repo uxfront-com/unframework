@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface BallotProps {
   limit: number;
@@ -15,10 +14,10 @@ export interface BallotEvents {
   onCounted?: (answers: number) => void;
 }
 
-export interface BallotAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BallotAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "limit" | "label" | "choices" | "onVoted" | "onMoved" | "onReport" | "onCounted" | "children"
+>;
 
 function isAnswer(value: string): value is "yes" | "no" {
   return value === "yes" || value === "no";
@@ -90,12 +89,7 @@ export default function Ballot({
   }
 
   return (
-    <section
-      className={cx("ballot", className)}
-      aria-label={label}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("ballot", className)} aria-label={label} style={style} {...attributes}>
       <p role="status">{votes} votes left</p>
       <p>Picked: {picked}</p>
       <ul aria-label="Choices">

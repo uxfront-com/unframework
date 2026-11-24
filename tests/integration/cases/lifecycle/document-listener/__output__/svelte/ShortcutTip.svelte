@@ -2,16 +2,27 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "ondismissed" | "onshortcut" | "children" | "class" | "style" | "ref"
+  > & {
     ondismissed?: () => void;
     onshortcut?: (key: string, count: number) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { ondismissed, onshortcut, class: className, style, ...attributes }: Props = $props();
+  let {
+    ondismissed,
+    onshortcut,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let open = $state(true);
   let enabled = $state(false);
@@ -57,20 +68,14 @@
     document.removeEventListener("keydown", onEscape);
     document.removeEventListener("keydown", onShortcut);
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["shortcut-tip", className]}
   aria-label="Shortcuts"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p
   ><button type="button" aria-pressed={enabled} onclick={toggle}>Shortcut K</button

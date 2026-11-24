@@ -1,13 +1,9 @@
 import { Badge } from "./Badge";
 import { Pill as Tag } from "./Pill";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface StatusAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StatusAttributes = Omit<ComponentPropsWithRef<"p">, "state" | "children">;
 
 export default function Status({
   state,
@@ -16,7 +12,7 @@ export default function Status({
   ...attributes
 }: { state: string } & StatusAttributes) {
   return (
-    <p className={cx("status", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("status", className)} style={style} {...attributes}>
       <Badge text="Build" />
       <Tag text={state} />
     </p>

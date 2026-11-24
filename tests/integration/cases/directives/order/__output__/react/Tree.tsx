@@ -1,13 +1,10 @@
 import Note from "./Note";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
+import { mergeRefs } from "./_unframework/mergeRefs";
 import { useDirective } from "./_unframework/useDirective";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
-export interface TreeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TreeAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 const TRACE = "directive-trace";
 
@@ -21,7 +18,7 @@ const vTrace = {
   },
 };
 
-export default function Tree({ className, style, ...attributes }: TreeAttributes) {
+export default function Tree({ className, style, ref, ...attributes }: TreeAttributes) {
   const [shown, setShown] = useState(true);
   const shownRef = useRef(shown);
   const traceRef = useDirective(vTrace, () => "first");
@@ -31,14 +28,16 @@ export default function Tree({ className, style, ...attributes }: TreeAttributes
   const traceRef_4 = useDirective(vTrace, () => "last");
   const traceRef_5 = useDirective(vTrace, () => "outer");
 
+  const rootRef = useMemo(() => mergeRefs(traceRef_5, ref), [traceRef_5, ref]);
+
   return (
     <section
       className={cx("tree", className)}
       aria-label="Tree"
       data-name="outer"
-      ref={traceRef_5}
+      ref={rootRef}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p data-name="first" ref={traceRef}>
         First

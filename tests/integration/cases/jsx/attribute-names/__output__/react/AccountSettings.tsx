@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface AccountSettingsProps {
   charset: string;
@@ -12,10 +11,17 @@ export interface AccountSettingsProps {
   helpOrder: number;
 }
 
-export interface AccountSettingsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AccountSettingsAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  | "charset"
+  | "bioId"
+  | "bioLimit"
+  | "locked"
+  | "bannerCors"
+  | "seatColumns"
+  | "helpOrder"
+  | "children"
+>;
 
 export default function AccountSettings({
   charset,
@@ -30,11 +36,7 @@ export default function AccountSettings({
   ...attributes
 }: AccountSettingsProps & AccountSettingsAttributes) {
   return (
-    <div
-      className={cx("account-settings", className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("account-settings", className)} style={style} {...attributes}>
       <form acceptCharset="utf-8" aria-label="Profile">
         <img
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"

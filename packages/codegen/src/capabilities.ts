@@ -59,10 +59,13 @@ const ATTRIBUTE_CAPABILITIES: Readonly<Record<Attribute["kind"], CapabilityName>
   Model: "two-way-binding",
   RawHtml: "raw-html",
   Directive: "directive",
+  // The props' rest takes what a consumer passes (ADR-0118).
+  Rest: "fallthrough",
 };
 /**
- * What each kind of a component's attribute needs (ADR-0055): a prop only the component, a
- * `class` or a `style` fallthrough, a `ref` what the child exposes.
+ * What each kind of a component's attribute needs (ADR-0055, ADR-0118): a prop only the
+ * component, a `class`, a `style`, an attribute or a native listener fallthrough, a `ref` what
+ * the child exposes or its root element.
  */
 const COMPONENT_ATTRIBUTE_CAPABILITIES: Readonly<
   Record<ComponentAttribute["kind"], CapabilityName>
@@ -73,6 +76,9 @@ const COMPONENT_ATTRIBUTE_CAPABILITIES: Readonly<
   Class: "fallthrough",
   Style: "fallthrough",
   Ref: "expose",
+  Static: "fallthrough",
+  Bound: "fallthrough",
+  Event: "fallthrough",
 };
 /**
  * The attributes that also need `interactivity` at their span, as a listener and a template ref
@@ -110,6 +116,8 @@ const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly Capab
   // One whose composable runs code in the browser also needs `composable-effect-order`
   // (ADR-0069), added at the same span.
   Use: ["composables"],
+  // Every target checks its build natively (ADR-0117).
+  DevCheck: [],
 };
 /**
  * What each kind of reference in code needs: `nextTick` its own capability, and the others
@@ -122,6 +130,7 @@ const REFERENCE_CAPABILITIES: Readonly<Record<CodeReference["kind"], CapabilityN
     Global: undefined,
     Write: undefined,
     Emit: undefined,
+    Dev: undefined,
     Api: "next-tick",
     Event: undefined,
     Slot: undefined,
@@ -445,12 +454,23 @@ function componentAttribute(
       break;
     case "Static":
     case "Bound":
+      use(
+        onComponent
+          ? COMPONENT_ATTRIBUTE_CAPABILITIES[attribute.kind]
+          : ATTRIBUTE_CAPABILITIES[attribute.kind],
+        attribute.span,
+      );
+      break;
     case "Spread":
     case "RawHtml":
     case "Directive":
+    case "Rest":
       use(ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
       break;
     case "Event":
+      // A native listener on a component falls through to its root (ADR-0118), and still needs
+      // code running in the browser.
+      if (onComponent) use(COMPONENT_ATTRIBUTE_CAPABILITIES.Event, attribute.span);
       use(ATTRIBUTE_CAPABILITIES.Event, attribute.span);
       use("event-semantics", attribute.span);
       for (const option of ["capture", "once", "passive"] as const) {
@@ -523,6 +543,7 @@ function trackedCode(item: SetupItem): Code[] {
       return [item.effect.body];
     // A composable's getter argument is the composable's to track (ADR-0069): its lane decides.
     case "Use":
+    case "DevCheck":
     case "Await":
     case "State":
     case "Variable":
@@ -586,6 +607,8 @@ function itemCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
+    case "DevCheck":
+      return [item.code];
     case "Use":
       return item.arguments.flatMap((argument) => {
         switch (argument.kind) {

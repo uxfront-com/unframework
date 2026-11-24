@@ -1,14 +1,10 @@
 import { Transition } from "./_unframework/Transition";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useDirective } from "./_unframework/useDirective";
 import { vMark } from "./vMark";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 import "./Banner.uf.tsx.css";
 
-export interface BannerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BannerAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Banner({ className, style, ...attributes }: BannerAttributes) {
   const [shown, setShown] = useState(true);
@@ -21,7 +17,7 @@ export default function Banner({ className, style, ...attributes }: BannerAttrib
       className={className}
       style={style}
       data-uf-53025c4a=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

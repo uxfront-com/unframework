@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 
 export interface UsageMeterProps {
   label: string;
@@ -9,10 +8,10 @@ export interface UsageMeterProps {
   thickness: number;
 }
 
-export interface UsageMeterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type UsageMeterAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "percent" | "colour" | "thickness" | "children"
+>;
 
 export default function UsageMeter({
   label,
@@ -24,7 +23,7 @@ export default function UsageMeter({
   ...attributes
 }: UsageMeterProps & UsageMeterAttributes) {
   return (
-    <div className={cx("usage-meter", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("usage-meter", className)} style={style} {...attributes}>
       <p style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}>
         {label}: {percent}%
       </p>

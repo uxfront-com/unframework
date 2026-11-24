@@ -1,13 +1,9 @@
 import { Transition } from "./_unframework/Transition";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 import "./Panel.uf.tsx.css";
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Panel({ className, style, ...attributes }: PanelAttributes) {
   const [open, setOpen] = useState(false);
@@ -19,7 +15,7 @@ export default function Panel({ className, style, ...attributes }: PanelAttribut
       aria-label="Delivery"
       style={style}
       data-uf-eab7eeb4=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

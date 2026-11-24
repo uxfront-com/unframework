@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface Settings {
   theme: string;
@@ -17,10 +16,10 @@ export interface DisplaySettingsEvents {
   onSaved?: (id: number) => void;
 }
 
-export interface DisplaySettingsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DisplaySettingsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onApplied" | "onSaved" | "children"
+>;
 
 export default function DisplaySettings({
   onApplied,
@@ -89,7 +88,7 @@ export default function DisplaySettings({
       className={cx("display-settings", className)}
       aria-label="Display"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">
         Theme {settings.theme}, size {settings.size}

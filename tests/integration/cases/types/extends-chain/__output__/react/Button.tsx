@@ -1,11 +1,10 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { ButtonProps } from "./types";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ButtonAttributes = Omit<
+  ComponentPropsWithRef<"button">,
+  "disabled" | "label" | "id" | "children"
+>;
 
 export default function Button({
   id,
@@ -22,7 +21,7 @@ export default function Button({
       disabled={disabled}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </button>

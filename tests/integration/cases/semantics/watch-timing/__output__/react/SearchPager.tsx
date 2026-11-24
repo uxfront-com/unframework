@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -15,10 +14,10 @@ export interface SearchPagerEvents {
   onCleanedUp?: (watcher: string) => void;
 }
 
-export interface SearchPagerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchPagerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onQueryRun" | "onPageRun" | "onCleanedUp" | "children"
+>;
 
 export default function SearchPager({
   onQueryRun,
@@ -95,7 +94,7 @@ export default function SearchPager({
       className={cx("search-pager", className)}
       aria-label="Search"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">
         {query === "" ? "All results" : `Results for ${query}`}, page {page}

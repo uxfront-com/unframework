@@ -1,11 +1,10 @@
 import Card from "./Card";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface PostAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PostAttributes = Omit<
+  ComponentPropsWithRef<typeof Card>,
+  "author" | "children" | "header" | "footer"
+>;
 
 export default function Post({
   author,
@@ -17,7 +16,7 @@ export default function Post({
     <Card
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
       header={<h2>Release notes</h2>}
       footer={<small>By {author}</small>}
     >

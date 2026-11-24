@@ -1,11 +1,7 @@
 import Member from "./Member";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 
-export interface LeadAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LeadAttributes = Omit<ComponentPropsWithoutRef<typeof Member>, "id" | "children">;
 
 export default function Lead({
   id,
@@ -13,5 +9,5 @@ export default function Lead({
   style,
   ...attributes
 }: { id: string } & LeadAttributes) {
-  return <Member id={id} className={className} style={style} {...scopeAttributes(attributes)} />;
+  return <Member id={id} className={className} style={style} {...attributes} />;
 }

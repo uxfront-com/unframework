@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface PriceRangeProps {
   currency: string;
 }
 
-interface Props extends PriceRangeProps {
+interface Props extends PriceRangeProps, Omit<HTMLAttributes<"section">, "currency"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { currency, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { currency, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const low = 10 as number;
 const high = 50 as number;
@@ -23,9 +18,9 @@ const high = 50 as number;
 
 <section
   class:list={["price-range", className]}
-  aria-label="Price range"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Price range"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p role="status">{low} to {high} {currency}</p>
   <button type="button">Shift up</button>

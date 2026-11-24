@@ -8,25 +8,30 @@
 
 <script lang="ts" generics="T">
   import type { Snippet } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = PickerProps<T> & {
-    item?: Snippet<[{ item: T }]>;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["ul"],
+    "items" | "item" | "children" | "class" | "style" | "ref"
+  > &
+    PickerProps<T> & {
+      item?: Snippet<[{ item: T }]>;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["ul"] | null;
+    };
 
-  let { items, item: itemSnippet, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    items,
+    item: itemSnippet,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<ul class={className} {style} {...scopeAttributes(attributes)}>
+<ul class={className} {style} bind:this={ref} {...attributes}>
   {#each items as item, index (index)}
     <li>{@render itemSnippet?.({ item })}</li>
   {/each}

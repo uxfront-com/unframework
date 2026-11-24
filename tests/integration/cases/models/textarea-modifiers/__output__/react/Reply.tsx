@@ -1,11 +1,7 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useModelText } from "./_unframework/useModelText";
-import { type CSSProperties, useState } from "react";
+import { type ComponentPropsWithRef, useState } from "react";
 
-export interface ReplyAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReplyAttributes = Omit<ComponentPropsWithRef<"form">, "children">;
 
 export default function Reply({ className, style, ...attributes }: ReplyAttributes) {
   const [message, setMessage] = useState("Thanks, see you soon");
@@ -31,7 +27,7 @@ export default function Reply({ className, style, ...attributes }: ReplyAttribut
   const signatureField = useModelText(signature, setSignature, { lazy: true });
 
   return (
-    <form aria-label="Reply" className={className} style={style} {...scopeAttributes(attributes)}>
+    <form aria-label="Reply" className={className} style={style} {...attributes}>
       <textarea aria-label="Message" {...messageField} ref={messageCaret} />
       <textarea aria-label="Signature" {...signatureField} ref={signatureCaret} />
       <output>

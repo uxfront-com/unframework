@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useTotal } from "./useTotal";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface BasketAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BasketAttributes = Omit<ComponentPropsWithRef<"section">, "price" | "children">;
 
 export default function Basket({
   price,
@@ -22,12 +18,7 @@ export default function Basket({
   );
 
   return (
-    <section
-      className={cx("basket", className)}
-      aria-label="Basket"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("basket", className)} aria-label="Basket" style={style} {...attributes}>
       <p role="status">Total: {total}</p>
       <p>{label}</p>
       <button

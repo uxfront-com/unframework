@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 interface User {
   name: string;
 }
@@ -7,19 +9,12 @@ export interface AccountMenuProps {
   owner?: User;
 }
 
-interface Props extends AccountMenuProps {
+interface Props extends AccountMenuProps, Omit<HTMLAttributes<"section">, "owner"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { owner, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { owner, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const step = "intro" as string;
 const user = null as User | null;
@@ -27,9 +22,9 @@ const user = null as User | null;
 
 <section
   class:list={["account-menu", className]}
-  aria-label="Account"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Account"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   {step === "intro" ? (
     <button type="button">Start</button>

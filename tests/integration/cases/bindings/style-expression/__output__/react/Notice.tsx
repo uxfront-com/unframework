@@ -1,9 +1,8 @@
 import Badge from "./Badge";
 import Tag from "./Tag";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { styleObject } from "./_unframework/styleObject";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 type NoticeLook = {
   color?: string;
@@ -21,10 +20,10 @@ export interface NoticeProps {
   vars?: NoticeVars;
 }
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "title" | "look" | "declarations" | "vars" | "children"
+>;
 
 export default function Notice({
   title,
@@ -46,7 +45,7 @@ export default function Notice({
   const Tag_1 = quiet ? Tag : Badge;
 
   return (
-    <div className={cx("notice", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("notice", className)} style={style} {...attributes}>
       <p style={styleObject(look)}>{title}</p>
       <Badge
         label="Permanent"

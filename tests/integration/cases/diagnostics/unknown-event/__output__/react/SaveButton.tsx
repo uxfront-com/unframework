@@ -1,28 +1,28 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface SaveButtonEvents {
   onSave?: () => void;
 }
 
-export interface SaveButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SaveButtonAttributes = Omit<ComponentPropsWithRef<"button">, "onSave" | "children">;
 
 export function SaveButton({
   onSave,
   className,
   style,
+  onClick,
   ...attributes
 }: SaveButtonEvents & SaveButtonAttributes) {
   return (
     <button
       type="button"
-      onClick={() => onSave?.()}
+      onClick={(event) => {
+        onSave?.();
+        onClick?.(event);
+      }}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       Save
     </button>

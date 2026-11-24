@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 type TagStates = { selected?: boolean; muted?: boolean };
 
@@ -11,10 +10,10 @@ export interface TagListProps {
   extra?: string[];
 }
 
-export interface TagListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagListAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "tags" | "states" | "extra" | "children"
+>;
 
 export default function TagList({
   label,
@@ -34,7 +33,7 @@ export default function TagList({
   }
 
   return (
-    <div className={cx("tag-list", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("tag-list", className)} style={style} {...attributes}>
       <span className={cx("tag", tags, states, { "tag-open": expanded })}>{label}</span>
       <span className={cx(tags)}>Plain</span>
       <span className={cx(extra, expanded ? ["tag-wide", "tag-tall"] : [])}>Extra</span>

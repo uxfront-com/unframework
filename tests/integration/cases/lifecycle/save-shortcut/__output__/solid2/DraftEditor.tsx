@@ -1,13 +1,19 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver, onSettled } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit, onSettled } from "solid-js";
 
 export interface DraftEditorEvents {
   onSaved?: (count: number) => void;
 }
 
 export default function DraftEditor(
-  props: DraftEditorEvents & { class?: string; style?: JSX.CSSProperties },
+  props: DraftEditorEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onSaved", "class");
+
   const [saves, setSaves] = createState(0);
 
   function onShortcut(event: KeyboardEvent) {
@@ -29,8 +35,7 @@ export default function DraftEditor(
     <section
       class={props.class ? `draft-editor ${props.class}` : "draft-editor"}
       aria-label="Draft"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <label>
         Draft
@@ -39,13 +44,6 @@ export default function DraftEditor(
       <p role="status">Saved: {saves()}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

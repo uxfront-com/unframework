@@ -1,17 +1,22 @@
 import { cx } from "./_unframework/cx";
 import { listen } from "./_unframework/listen";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useOnce } from "./_unframework/useOnce";
-import { type CSSProperties, type MouseEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type MouseEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface ProfileFieldsEvents {
   onFirstNickname?: (nickname: string) => void;
 }
 
-export interface ProfileFieldsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileFieldsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onFirstNickname" | "children"
+>;
 
 export default function ProfileFields({
   onFirstNickname,
@@ -89,7 +94,7 @@ export default function ProfileFields({
       className={cx("profile-fields", className)}
       aria-label="Profile"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <div className="name-group" role="group" aria-label="Name fields" ref={nameFieldsListeners}>
         <label>

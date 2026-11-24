@@ -1,11 +1,10 @@
 import Names from "./Names";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface RosterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RosterAttributes = Omit<
+  ComponentPropsWithRef<typeof Names>,
+  "names" | "children" | "renderDefault"
+>;
 
 export default function Roster({
   names,
@@ -18,7 +17,7 @@ export default function Roster({
       names={names}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
       renderDefault={({ item }) => <b>{item}!</b>}
     />
   );

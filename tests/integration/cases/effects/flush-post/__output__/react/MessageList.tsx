@@ -1,15 +1,14 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface MessageListEvents {
   onRendered?: (count: number) => void;
 }
 
-export interface MessageListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MessageListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onRendered" | "children"
+>;
 
 export default function MessageList({
   onRendered,
@@ -42,7 +41,7 @@ export default function MessageList({
       className={cx("message-list", className)}
       aria-label="Messages"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul ref={list}>
         {messages.map((message) => (

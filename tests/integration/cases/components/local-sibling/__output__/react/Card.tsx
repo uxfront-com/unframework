@@ -1,12 +1,8 @@
 import { CardIcon } from "./CardIcon";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"div">, "title" | "children">;
 
 export default function Card({
   title,
@@ -15,7 +11,7 @@ export default function Card({
   ...attributes
 }: { title: string } & CardAttributes) {
   return (
-    <div className={cx("card", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("card", className)} style={style} {...attributes}>
       <CardIcon symbol="+" />
       <h3>{title}</h3>
       <CardIcon symbol="-" />

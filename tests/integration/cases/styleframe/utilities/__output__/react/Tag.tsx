@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "virtual:styleframe.css";
 
-export interface TagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "children">;
 
 export default function Tag({
   label,
@@ -21,7 +17,7 @@ export default function Tag({
         className,
       )}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </span>

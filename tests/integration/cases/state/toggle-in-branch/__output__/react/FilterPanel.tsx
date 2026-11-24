@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface FilterPanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FilterPanelAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function FilterPanel({ className, style, ...attributes }: FilterPanelAttributes) {
   const [open, setOpen] = useState(false);
@@ -20,7 +16,7 @@ export default function FilterPanel({ className, style, ...attributes }: FilterP
       className={cx("filter-panel", className)}
       aria-label="Filters"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {open ? (
         <button

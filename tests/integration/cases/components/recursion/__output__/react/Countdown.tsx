@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface CountdownAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CountdownAttributes = Omit<ComponentPropsWithRef<"div">, "from" | "children">;
 
 export default function Countdown({
   from,
@@ -14,7 +10,7 @@ export default function Countdown({
   ...attributes
 }: { from: number } & CountdownAttributes) {
   return (
-    <div className={cx("level", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("level", className)} style={style} {...attributes}>
       <span>{from}</span>
       {from > 0 ? <Countdown from={from - 1} /> : <strong>Liftoff</strong>}
     </div>

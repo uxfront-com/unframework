@@ -1,11 +1,7 @@
 import List from "./List";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface RankingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RankingAttributes = Omit<ComponentPropsWithRef<"div">, "names" | "children">;
 
 export default function Ranking({
   names,
@@ -14,7 +10,7 @@ export default function Ranking({
   ...attributes
 }: { names: string[] } & RankingAttributes) {
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <List
         items={names}
         label="Podium"

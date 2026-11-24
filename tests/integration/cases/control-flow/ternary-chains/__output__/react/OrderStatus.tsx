@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface OrderStatusProps {
   status: "pending" | "shipped" | "delivered" | "cancelled";
@@ -8,10 +7,10 @@ export interface OrderStatusProps {
   eta?: string;
 }
 
-export interface OrderStatusAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type OrderStatusAttributes = Omit<
+  ComponentPropsWithRef<"p">,
+  "status" | "carrier" | "eta" | "children"
+>;
 
 export default function OrderStatus({
   status,
@@ -22,7 +21,7 @@ export default function OrderStatus({
   ...attributes
 }: OrderStatusProps & OrderStatusAttributes) {
   return (
-    <p className={cx("order-status", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("order-status", className)} style={style} {...attributes}>
       {status === "pending" ? (
         "Waiting for payment."
       ) : status === "shipped" ? (

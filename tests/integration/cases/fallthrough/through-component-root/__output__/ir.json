@@ -1,0 +1,387 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/through-component-root/Toolbar.uf.tsx",
+  "components": [
+    {
+      "name": "Toolbar",
+      "span": {
+        "start": 108,
+        "end": 586
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "clicks@152",
+          "name": "clicks",
+          "kind": "state",
+          "span": {
+            "start": 152,
+            "end": 158
+          }
+        },
+        {
+          "id": "save@177",
+          "name": "save",
+          "kind": "templateRef",
+          "span": {
+            "start": 177,
+            "end": 181
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "clicks@152",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 165,
+              "end": 166
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 146,
+            "end": 168
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "save@177",
+          "type": {
+            "code": "HTMLButtonElement",
+            "span": {
+              "start": 199,
+              "end": 216
+            }
+          },
+          "span": {
+            "start": 171,
+            "end": 220
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "toolbar",
+            "span": {
+              "start": 241,
+              "end": 255
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Actions",
+            "span": {
+              "start": 256,
+              "end": 276
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "SaveAction",
+            "attributes": [
+              {
+                "kind": "Ref",
+                "binding": "save@177",
+                "span": {
+                  "start": 304,
+                  "end": 314
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Save\"",
+                  "span": {
+                    "start": 328,
+                    "end": 334
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 323,
+                  "end": 334
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "id",
+                "value": "save",
+                "span": {
+                  "start": 343,
+                  "end": 352
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Save draft",
+                "span": {
+                  "start": 361,
+                  "end": 384
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "clicks.value++",
+                      "span": {
+                        "start": 408,
+                        "end": 422
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "clicks@152",
+                          "operator": "++",
+                          "span": {
+                            "start": 408,
+                            "end": 422
+                          },
+                          "target": {
+                            "start": 408,
+                            "end": 420
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 402,
+                      "end": 422
+                    }
+                  },
+                  "span": {
+                    "start": 402,
+                    "end": 422
+                  }
+                },
+                "span": {
+                  "start": 393,
+                  "end": 423
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 284,
+              "end": 432
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 447,
+                  "end": 460
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "save.value?.focus()",
+                      "span": {
+                        "start": 476,
+                        "end": 495
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "save@177",
+                          "span": {
+                            "start": 476,
+                            "end": 486
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 470,
+                      "end": 495
+                    }
+                  },
+                  "span": {
+                    "start": 470,
+                    "end": 495
+                  }
+                },
+                "span": {
+                  "start": 461,
+                  "end": 496
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Focus save",
+                "span": {
+                  "start": 497,
+                  "end": 523
+                }
+              }
+            ],
+            "span": {
+              "start": 439,
+              "end": 532
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Clicks: ",
+                "span": {
+                  "start": 542,
+                  "end": 550
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "clicks.value",
+                  "span": {
+                    "start": 551,
+                    "end": 563
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "clicks@152",
+                      "span": {
+                        "start": 551,
+                        "end": 563
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 550,
+                  "end": 564
+                }
+              }
+            ],
+            "span": {
+              "start": 539,
+              "end": 568
+            }
+          }
+        ],
+        "span": {
+          "start": 236,
+          "end": 579
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Toolbar",
+      "span": {
+        "start": 108,
+        "end": 586
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./SaveAction.uf.tsx",
+      "file": "SaveAction.uf.tsx",
+      "api": {
+        "file": "SaveAction.uf.tsx",
+        "components": [
+          {
+            "name": "SaveAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "component",
+            "fallthroughTag": "button",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "type",
+                  "value": "button"
+                },
+                {
+                  "name": "class",
+                  "value": "pressable"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "button",
+            "rootDeclarations": [
+              {
+                "name": "text",
+                "kind": "prop",
+                "component": "Pressable"
+              }
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "SaveAction",
+          "span": {
+            "start": 68,
+            "end": 78
+          }
+        }
+      ],
+      "span": {
+        "start": 61,
+        "end": 106
+      }
+    }
+  ]
+}

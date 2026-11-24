@@ -1,23 +1,17 @@
 ---
 import Steps from "./Steps.astro";
+import type { HTMLAttributes } from "astro/types";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"div">, "steps"> {
   steps: string[];
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { steps, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { steps, class: className, style, ...attrs } = Astro.props;
 ---
 
-<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={[className]} style={style} {...attrs}>
   <Steps steps={steps}>
     <Fragment slot="marker">
       <span aria-hidden="true">&gt; </span>

@@ -1,5 +1,4 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface Person {
   id: string;
@@ -10,10 +9,10 @@ export interface TableSlots {
   renderRow?: (props: { name: string; "data-id": string; index: number }) => ReactNode;
 }
 
-export interface TableAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TableAttributes = Omit<
+  ComponentPropsWithRef<"ol">,
+  "people" | "renderRow" | "children"
+>;
 
 export default function Table({
   people,
@@ -23,7 +22,7 @@ export default function Table({
   ...attributes
 }: { people: Person[] } & TableSlots & TableAttributes) {
   return (
-    <ol aria-label="People" className={className} style={style} {...scopeAttributes(attributes)}>
+    <ol aria-label="People" className={className} style={style} {...attributes}>
       {people.map((person, index) => (
         <li key={person.id}>{renderRow?.({ name: person.name, "data-id": person.id, index })}</li>
       ))}

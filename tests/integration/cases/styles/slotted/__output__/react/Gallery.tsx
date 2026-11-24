@@ -1,12 +1,8 @@
 import Frame from "./Frame";
 import Mat from "./Mat";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface GalleryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type GalleryAttributes = Omit<ComponentPropsWithRef<"section">, "matted" | "children">;
 
 export default function Gallery({
   matted = true,
@@ -17,7 +13,7 @@ export default function Gallery({
   const Tag = matted ? Mat : Frame;
 
   return (
-    <section className={className} style={style} {...scopeAttributes(attributes)}>
+    <section className={className} style={style} {...attributes}>
       <Frame>
         <p className="caption" data-uf-9dc516fd-s="">
           A quiet harbour

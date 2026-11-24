@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface SeatPickerProps {
   pricePerSeat: number;
@@ -10,10 +9,10 @@ export interface SeatPickerEvents {
   onQuote?: (seats: number, total: number, summary: string) => void;
 }
 
-export interface SeatPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SeatPickerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "pricePerSeat" | "onQuote" | "children"
+>;
 
 export default function SeatPicker({
   pricePerSeat,
@@ -65,7 +64,7 @@ export default function SeatPicker({
       className={cx("seat-picker", className)}
       aria-label="Seats"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">{summary}</p>
       <button type="button" onClick={addSeat}>

@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useClock } from "./useClock";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
-export interface ClockAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ClockAttributes = Omit<ComponentPropsWithRef<"p">, "children">;
 
 export default function Clock({ className, style, ...attributes }: ClockAttributes) {
   const [ready, setReady] = useState(false);
@@ -23,7 +19,7 @@ export default function Clock({ className, style, ...attributes }: ClockAttribut
   const { started } = useClock();
 
   return (
-    <p className={cx("clock", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("clock", className)} style={style} {...attributes}>
       {ready ? "Ready" : "Waiting"}, {started ? "started" : "stopped"}
     </p>
   );

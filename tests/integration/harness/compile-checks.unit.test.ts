@@ -356,7 +356,7 @@ describe("moduleCopyProblems (L2, ADR-0070)", () => {
 describe("sourceMapProblems (L14)", () => {
   const card = `export default function Card({ label }: { label: string }) {
   const shout = () => label.toUpperCase();
-  return <button onClick={shout}>{label}</button>;
+  return <button class="card" onClick={shout}>{label}</button>;
 }
 `;
   const source = { filename: "fixture/card/Card.uf.tsx", text: card };
@@ -386,10 +386,10 @@ describe("sourceMapProblems (L14)", () => {
   it("maps a helper module onto itself, and fails one taken for the component's", async () => {
     const files = await mapped();
     const helper = files.find((file) => file.path.startsWith("_unframework/"))!;
-    expect(helper.path).toBe("_unframework/scopeAttributes.ts");
+    expect(helper.path).toBe("_unframework/cx.ts");
     expect(sourceMapProblems("react", [helper], source, await helpers())).toEqual([]);
     expect(sourceMapProblems("react", [helper], source, none)).toEqual([
-      'react/_unframework/scopeAttributes.ts\'s map names ["scopeAttributes.ts"], not its source Card.uf.tsx.',
+      'react/_unframework/cx.ts\'s map names ["cx.ts"], not its source Card.uf.tsx.',
     ]);
   });
 

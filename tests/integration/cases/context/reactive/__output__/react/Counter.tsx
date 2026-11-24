@@ -1,11 +1,7 @@
 import Display from "./Display";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, createContext, useRef, useState } from "react";
+import { type ComponentPropsWithRef, createContext, useRef, useState } from "react";
 
-export interface CounterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CounterAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export const CountKey = createContext<{ readonly value: number } | undefined>(undefined);
 
@@ -16,12 +12,7 @@ export default function Counter({ className, style, ...attributes }: CounterAttr
 
   return (
     <CountKey value={countValue}>
-      <section
-        aria-label="Counter"
-        className={className}
-        style={style}
-        {...scopeAttributes(attributes)}
-      >
+      <section aria-label="Counter" className={className} style={style} {...attributes}>
         <Display />
         <button
           type="button"

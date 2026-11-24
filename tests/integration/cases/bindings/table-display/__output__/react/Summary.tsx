@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface SummaryProps {
   name: string;
@@ -8,10 +7,10 @@ export interface SummaryProps {
   seats: number;
 }
 
-export interface SummaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SummaryAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "name" | "plan" | "seats" | "children"
+>;
 
 export default function Summary({
   name,
@@ -25,7 +24,7 @@ export default function Summary({
     <div
       className={cx("summary", className)}
       style={{ display: "table", borderSpacing: "8px 4px", ...style }}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <div style={{ display: "table-caption", fontWeight: "700" }}>Account</div>
       <div style={{ display: "table-row" }}>

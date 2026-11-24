@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   type JSX,
   Show,
   children,
@@ -6,12 +7,17 @@ import {
   createSignal,
   onCleanup,
   sharedConfig,
+  splitProps,
   untrack,
 } from "solid-js";
 import { isServer } from "solid-js/web";
 import "./Panel.uf.tsx.css";
 
-export default function Panel(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Panel(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [open, setOpen] = createSignal(false);
 
   return (
@@ -19,8 +25,7 @@ export default function Panel(props: { class?: string; style?: JSX.CSSProperties
       class={props.class ? `panel ${props.class}` : "panel"}
       aria-label="Delivery"
       data-uf-eab7eeb4=""
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button
         type="button"
@@ -39,13 +44,6 @@ export default function Panel(props: { class?: string; style?: JSX.CSSProperties
       </Transition>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Runs Vue's transition classes of `name` on the element `children` renders as it enters and leaves. */

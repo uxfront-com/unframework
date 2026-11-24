@@ -1,10 +1,6 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ToppingPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ToppingPickerAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ToppingPicker({
   className,
@@ -15,12 +11,7 @@ export default function ToppingPicker({
   const toppingsRef = useRef(toppings);
 
   return (
-    <section
-      aria-label="Pizza"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Pizza" className={className} style={style} {...attributes}>
       <label>
         Toppings{" "}
         <select

@@ -1,12 +1,8 @@
 import Member from "./Member";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, Fragment, useRef, useState } from "react";
+import { type ComponentPropsWithRef, Fragment, useRef, useState } from "react";
 
-export interface RosterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RosterAttributes = Omit<ComponentPropsWithRef<"section">, "ids" | "children">;
 
 export default function Roster({
   ids,
@@ -20,12 +16,7 @@ export default function Roster({
   const guestRef = useRef(guest);
 
   return (
-    <section
-      className={cx("roster", className)}
-      aria-label="Roster"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("roster", className)} aria-label="Roster" style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {

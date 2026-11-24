@@ -1,11 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface NoteAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteAttributes = Omit<ComponentPropsWithRef<"div">, "text" | "children">;
 
 export default function Note({
   text,
@@ -14,7 +10,7 @@ export default function Note({
   ...attributes
 }: { text: string } & NoteAttributes) {
   return (
-    <div className={cx("note-box", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("note-box", className)} style={style} {...attributes}>
       <p className="note">{text}</p>
     </div>
   );

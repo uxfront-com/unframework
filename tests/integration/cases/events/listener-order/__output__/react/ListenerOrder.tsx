@@ -1,13 +1,9 @@
 import { cx } from "./_unframework/cx";
 import { listen } from "./_unframework/listen";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useOnce } from "./_unframework/useOnce";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ListenerOrderAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ListenerOrderAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ListenerOrder({
   className,
@@ -43,7 +39,7 @@ export default function ListenerOrder({
       className={cx("listener-order", className)}
       aria-label="Listener order"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <div className="toolbar" role="presentation" onClick={() => record("toolbar")}>
         <button

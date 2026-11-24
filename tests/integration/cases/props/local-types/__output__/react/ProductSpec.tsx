@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 type Availability = "in-stock" | "backorder" | "discontinued";
 
@@ -16,10 +15,10 @@ export interface ProductSpecProps {
   finishes: Finish[];
 }
 
-export interface ProductSpecAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProductSpecAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "name" | "availability" | "size" | "finishes" | "children"
+>;
 
 export default function ProductSpec({
   name,
@@ -35,7 +34,7 @@ export default function ProductSpec({
       className={cx("product-spec", className)}
       aria-label={name}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{name}</h2>
       <dl>

@@ -1,8 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useNextTick } from "./_unframework/useNextTick";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -20,10 +19,17 @@ export interface InboxLookupEvents {
   onCounted?: (count: number) => void;
 }
 
-export interface InboxLookupAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type InboxLookupAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "onLooked"
+  | "onDropped"
+  | "onSorted"
+  | "onScaled"
+  | "onBusy"
+  | "onFailed"
+  | "onCounted"
+  | "children"
+>;
 
 export default function InboxLookup({
   onLooked,
@@ -238,7 +244,7 @@ export default function InboxLookup({
       className={cx("inbox-lookup", className)}
       aria-label="Inbox"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"

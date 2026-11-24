@@ -1,18 +1,26 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface RowsSlots {
   row?: JSX.Element;
 }
 
-export default function Rows(props: RowsSlots & { class?: string; style?: JSX.CSSProperties }) {
+export default function Rows(
+  props: RowsSlots & Omit<ComponentProps<"div">, "row" | "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["row", "class"]);
+
   const [items, setItems] = createSignal([1, 2]);
 
   return (
-    <div
-      class={props.class ? `rows ${props.class}` : "rows"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `rows ${props.class}` : "rows"} {...others}>
       <ul>
         <KeyedFor each={items()} by={(item) => item}>
           {() => <li>{props.row}</li>}
@@ -26,13 +34,6 @@ export default function Rows(props: RowsSlots & { class?: string; style?: JSX.CS
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

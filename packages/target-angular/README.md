@@ -109,6 +109,7 @@ the template itself, which reads through `@let`, and a template statement's inpu
 | `const { on, toggle } = useToggle(false)` | `protected readonly toggle_1 = useToggle(false)`, read as `this.toggle_1.on()` and `@let on = this.toggle_1.on();` (below)     |
 | `emit("change", value)`                   | `this.change.emit(value)`, by the payload rule                                                                                 |
 | `nextTick()`                              | `this.nextTick()`, a private method that renders in a microtask with `ApplicationRef.tick()` (emulated, `next-tick`)           |
+| `if (isDev) { … }`                        | `if (typeof ngDevMode === "undefined" \|\| ngDevMode) { … }`, at the top level in `ngOnInit` (ADR-0117)                        |
 | `watch(source, callback, options)`        | an `effect()` created in `ngOnInit`; `afterRenderEffect()` with `flush: "post"` (below)                                        |
 | `watchEffect(effect)`                     | `afterRenderEffect(effect)` in the constructor: after the render, in the browser only                                          |
 | `onMounted(callback)`                     | `afterNextRender(callback)` in the constructor: in the browser, once the view is in the document                               |
@@ -255,7 +256,7 @@ parent, so the composable's effects stay the component's view effects.
 | `defineModel("value", { default: 0 })`          | `readonly value = model<number>(0)`, read and written as a signal; `model<number>(0, { alias: "value" })` where its binding has another name                                                                                                                                                                                  |
 | `v-model:value={cups.value}`                    | `[(value)]="this.cups"`, on the signal                                                                                                                                                                                                                                                                                        |
 | `v-model` on a control                          | `#nameField [value]="this.name()" (input)="this.name.set(nameField.value)"`, `[checked]` and `(change)` for a box, `[selected]` on a select's options, and a bound `<textarea>` the `TextCaret` directive, which puts a hydrated field's caret after its text (ADR-0095)                                                      |
-| `class` and `style` on a component              | `[class]`, `[style]`: the child's `class` and `style` inputs, merged into its root; the host clears both                                                                                                                                                                                                                      |
+| `class` and `style` on a component              | `[class]`, `[style]`: the child's `class` and `style` inputs, merged into its root; the host clears both; any other attribute and DOM listener in `[ufAttributes]` and `[ufListeners]` (ADR-0118)                                                                                                                             |
 | `defineExpose({ focus })`, `ref={search}`       | `focus` public; `viewChild<{ focus(): void }>("search")`, read as `this.search()?.focus()`                                                                                                                                                                                                                                    |
 | `export const LocaleKey: InjectionKey<T>`       | `export const LocaleKey = new InjectionToken<T>("…")` in the module's main component's file                                                                                                                                                                                                                                   |
 | `provide(LocaleKey, locale)`                    | `providers: [{ provide: LocaleKey, useFactory: () => inject(LocaleProvider).locale() }]`; `useValue` for a constant                                                                                                                                                                                                           |
@@ -287,7 +288,12 @@ parent, so the composable's effects stay the component's view effects.
   `inheritAttrs: false`, declares `class` and `style` inputs and merges them into its root: the
   class among its parts, the style in one map after the root's own, so a property the consumer
   leaves `undefined` removes the root's, as Vue's merge does. The host clears both with
-  `[attr.class]` and `[attr.style]` bindings, keeping only `display: contents`.
+  `[attr.class]` and `[attr.style]` bindings, keeping only `display: contents`. Its other
+  attributes and DOM listeners a consumer passes arrive in two more inputs, `ufAttributes` and
+  `ufListeners`, which the inline `Fallthrough` directive on its fallthrough element (its root, or
+  the element that spreads the props' rest) sets through `Renderer2`, the consumer's value winning
+  and the root's own listener running first (ADR-0118). A ref on a component that exposes nothing
+  reads its `ufElement`, a `viewChild` of its root, which a root component forwards.
 - **Context.** An injected value is read once the inputs are set, from the injector the class
   holds: a consumer projected into its provider is created before the provider's inputs are set,
   which a provided value may read (NG0950). A key of a ref (`InjectionKey<Ref<number>>`) holds
@@ -384,7 +390,7 @@ object), `style-binding` (emulated, `styleObject`, for a style bound to a value 
 spreads; ADR-0065), `raw-html` (emulated, `TrustedHtmlPipe`, a pure pipe that marks `innerHTML`'s
 markup trusted, so Angular's sanitiser keeps it as written; ADR-0097) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
-(`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
+(`toggle`), `model-modifiers` (`modelText`), `fallthrough` (the inline `Fallthrough` directive), `expose` (`ufElement`, where a component exposes nothing), `reactive-context`
 (`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and
 `contextual-root`, unsupported (UF4001, errors), `child-root-scope` and `sheet-order`,
 unsupported (UF4003 and UF4002, info), and `generic-slot-props`, unsupported (UF4004, info): slot

@@ -122,7 +122,29 @@
             "slots": [],
             "exposes": [],
             "inheritAttrs": true,
-            "root": "component"
+            "root": "component",
+            "fallthroughTag": "button",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "type",
+                  "value": "button"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "button",
+            "rootDeclarations": [
+              {
+                "name": "text",
+                "kind": "prop",
+                "component": "Base"
+              }
+            ]
           }
         ],
         "keys": []

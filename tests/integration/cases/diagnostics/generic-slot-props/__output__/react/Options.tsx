@@ -1,14 +1,13 @@
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface OptionsSlots<T extends { value: string }> {
   renderOption?: (props: { option: T }) => ReactNode;
 }
 
-export interface OptionsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type OptionsAttributes = Omit<
+  ComponentPropsWithRef<"ul">,
+  "options" | "renderOption" | "children"
+>;
 
 export default function Options<T extends { value: string }>({
   options,
@@ -18,7 +17,7 @@ export default function Options<T extends { value: string }>({
   ...attributes
 }: { options: T[] } & OptionsSlots<T> & OptionsAttributes) {
   return (
-    <ul className={className} style={style} {...scopeAttributes(attributes)}>
+    <ul className={className} style={style} {...attributes}>
       {options.map((option) => (
         <li key={option.value}>{renderOption?.({ option })}</li>
       ))}

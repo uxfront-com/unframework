@@ -1,17 +1,13 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { styleObject } from "./_unframework/styleObject";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface BadgeProps {
   label: string;
   tone?: string;
 }
 
-export interface BadgeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BadgeAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "tone" | "children">;
 
 export default function Badge({
   label,
@@ -24,7 +20,7 @@ export default function Badge({
     <span
       className={cx("badge", className)}
       style={{ ...styleObject(tone), ...style }}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </span>

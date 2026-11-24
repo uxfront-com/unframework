@@ -1,0 +1,5 @@
+- form "Profile":
+  - textbox "Name"
+  - button "Edit name"
+  - textbox "Bio"
+  - button "Edit bio"

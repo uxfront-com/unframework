@@ -1,8 +1,9 @@
 // The golden test of shared helper modules (ADR-0121): two components in two directories, each
-// using a class binding (`cx`), a styled parent's scope attributes (`scopeAttributes`), a
-// `<Transition>` and a directive, built into one tree per target. A target that shares its
-// helpers writes each once, in `_unframework/` at the root of its tree, and every component
-// imports it; a target that doesn't yet prints them inline. Each target's test file builds it once.
+// using a class binding (`cx`), a styled parent's scope attributes on a root conditional, which
+// spreads no rest (`scopeAttributes`, ADR-0118), a `<Transition>` and a directive, built into one
+// tree per target. A target that shares its helpers writes each once, in `_unframework/` at the
+// root of its tree, and every component imports it; a target that doesn't yet prints them inline.
+// Each target's test file builds it once.
 import { join } from "node:path";
 
 import { expect } from "vitest";
@@ -19,12 +20,18 @@ import { vMark } from "../mark.uf.ts";
 export default function ${name}(props: { tone: string; active: boolean }) {
   const open = ref(false);
   return (
-    <section class={["${name.toLowerCase()}", props.tone, { active: props.active }]}>
-      <button type="button" v-mark="${mark}" onClick={() => (open.value = !open.value)}>
-        Toggle
-      </button>
-      <Transition name="fade">{open.value && <p>Details</p>}</Transition>
-    </section>
+    <>
+      {props.active ? (
+        <section class={["${name.toLowerCase()}", props.tone, { open: open.value }]}>
+          <button type="button" v-mark="${mark}" onClick={() => (open.value = !open.value)}>
+            Toggle
+          </button>
+          <Transition name="fade">{open.value && <p>Details</p>}</Transition>
+        </section>
+      ) : (
+        <p class="${name.toLowerCase()}">Inactive</p>
+      )}
+    </>
   );
 }
 `;

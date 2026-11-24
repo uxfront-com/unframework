@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -13,10 +12,7 @@ export interface DraftEditorEvents {
   onSaved?: (count: number) => void;
 }
 
-export interface DraftEditorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DraftEditorAttributes = Omit<ComponentPropsWithRef<"section">, "onSaved" | "children">;
 
 export default function DraftEditor({
   onSaved,
@@ -57,7 +53,7 @@ export default function DraftEditor({
       className={cx("draft-editor", className)}
       aria-label="Draft"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Draft

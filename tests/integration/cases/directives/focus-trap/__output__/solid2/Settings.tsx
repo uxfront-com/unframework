@@ -1,8 +1,15 @@
 import { vFocusTrap } from "./vFocusTrap";
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit } from "solid-js";
 
-export default function Settings(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Settings(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [open, setOpen] = createState(false);
 
   function close() {
@@ -17,8 +24,7 @@ export default function Settings(props: { class?: string; style?: JSX.CSSPropert
     <section
       class={props.class ? `settings ${props.class}` : "settings"}
       aria-label="Settings"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={() => setOpen(true)}>
         Open
@@ -41,13 +47,6 @@ export default function Settings(props: { class?: string; style?: JSX.CSSPropert
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

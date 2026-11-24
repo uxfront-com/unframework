@@ -1,18 +1,14 @@
 import { CountKey } from "./Counter";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, use, useState } from "react";
+import { type ComponentPropsWithRef, use, useState } from "react";
 
-export interface DisplayAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DisplayAttributes = Omit<ComponentPropsWithRef<"output">, "children">;
 
 export default function Display({ className, style, ...attributes }: DisplayAttributes) {
   const [none] = useState(0);
   const count = use(CountKey) ?? refObject(none);
 
   return (
-    <output className={className} style={style} {...scopeAttributes(attributes)}>
+    <output className={className} style={style} {...attributes}>
       Count: {count.value}
     </output>
   );

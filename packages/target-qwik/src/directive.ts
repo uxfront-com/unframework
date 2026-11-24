@@ -206,24 +206,31 @@ export class QwikDirectives {
   attribute(
     attribute: DirectiveAttribute,
     context: JsxContext,
+    passedRef?: string,
   ): ReturnType<typeof js.jsxAttribute>[] {
     const ref = this.#refs.get(attribute);
     const helper = this.#helper;
     if (ref === undefined || !helper) return [];
+    // What the element's ref fills besides the directive's list: its template ref, and on the
+    // root, a consumer's ref (ADR-0118).
+    const fills = [
+      ...(ref.templateRef ? [`${ref.templateRef}.value = element;`] : []),
+      ...(passedRef === undefined ? [] : [`if (${passedRef}) ${passedRef}.value = element;`]),
+    ];
     if (ref.values.length && helper.passed) {
       // Read as the row renders, where what a branch around it narrows still holds (ADR-0108).
       const values = ref.values.map((each) => expressionCode(each.value, context));
       const collect = `${helper.passed.collect}(${ref.list}, [${values.join(", ")}])`;
-      const code = ref.templateRef
-        ? `${helper.passed.collect}(${ref.list}, [${values.join(", ")}], (element) => {\n  ${ref.templateRef}.value = element;\n})`
+      const code = fills.length
+        ? `${helper.passed.collect}(${ref.list}, [${values.join(", ")}], (element) => {\n  ${fills.join("\n  ")}\n})`
         : collect;
       return [
         js.jsxAttribute("ref", js.jsxExpressionContainer(context.placeholders.expression(code))),
       ];
     }
     const collect = `${helper.collect}(${ref.list}, element)`;
-    const code = ref.templateRef
-      ? `(element) => {\n  ${ref.templateRef}.value = element;\n  ${collect};\n}`
+    const code = fills.length
+      ? `(element) => {\n  ${fills.join("\n  ")}\n  ${collect};\n}`
       : `(element) => ${collect}`;
     return [
       js.jsxAttribute("ref", js.jsxExpressionContainer(context.placeholders.expression(code))),

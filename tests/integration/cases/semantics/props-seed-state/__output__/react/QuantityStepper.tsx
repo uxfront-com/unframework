@@ -1,16 +1,15 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface QuantityStepperProps {
   initial: number;
   label: string;
 }
 
-export interface QuantityStepperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type QuantityStepperAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "initial" | "label" | "children"
+>;
 
 export default function QuantityStepper({
   initial,
@@ -28,7 +27,7 @@ export default function QuantityStepper({
       role="group"
       aria-label={label}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <output>{quantity}</output>
       <button

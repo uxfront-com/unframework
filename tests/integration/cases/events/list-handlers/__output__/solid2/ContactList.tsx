@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
 export interface Contact {
   id: string;
@@ -16,8 +16,15 @@ export interface ContactListEvents {
 }
 
 export default function ContactList(
-  props: ContactListProps & ContactListEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ContactListProps &
+    ContactListEvents &
+    Omit<ComponentProps<"section">, "initial" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "initial", "onChoose", "onRemoved", "class");
+
   const [contacts, setContacts] = createState(untrack(() => props.initial));
   const [chosen, setChosen] = createState<string>();
 
@@ -35,8 +42,7 @@ export default function ContactList(
     <section
       class={props.class ? `contact-list ${props.class}` : "contact-list"}
       aria-label="Contacts"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ul>
         <KeyedFor each={contacts()} by={(contact) => contact.id}>
@@ -68,13 +74,6 @@ export default function ContactList(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface NameSorterEvents {
   onStarted?: (text: string) => void;
@@ -9,10 +8,10 @@ export interface NameSorterEvents {
   onTotal?: (letters: number) => void;
 }
 
-export interface NameSorterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NameSorterAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onStarted" | "onFirstSeen" | "onSecondSeen" | "onTotal" | "children"
+>;
 
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -96,7 +95,7 @@ export default function NameSorter({
       className={cx("name-sorter", className)}
       aria-label="Names"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>Names: {names.join(", ")}</p>
       <p>Added: {count}</p>

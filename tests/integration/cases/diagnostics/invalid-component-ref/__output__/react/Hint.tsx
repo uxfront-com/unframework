@@ -1,15 +1,11 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface HintAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HintAttributes = Omit<ComponentPropsWithRef<"small">, "text" | "children">;
 
 export function Hint({ text, className, style, ...attributes }: { text: string } & HintAttributes) {
   return (
-    <small className={cx("hint", className)} style={style} {...scopeAttributes(attributes)}>
+    <small className={cx("hint", className)} style={style} {...attributes}>
       {text}
     </small>
   );

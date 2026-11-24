@@ -1,11 +1,7 @@
 import PriceRange from "./PriceRange";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface SearchAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Search({ className, style, ...attributes }: SearchAttributes) {
   const [low, setLow] = useState(20);
@@ -13,12 +9,7 @@ export default function Search({ className, style, ...attributes }: SearchAttrib
   const highRef = useRef(high);
 
   return (
-    <section
-      aria-label="Search"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Search" className={className} style={style} {...attributes}>
       <PriceRange
         label="Price"
         min={low}

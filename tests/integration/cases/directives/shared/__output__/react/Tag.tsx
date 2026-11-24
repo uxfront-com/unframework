@@ -1,28 +1,28 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
+import { mergeRefs } from "./_unframework/mergeRefs";
 import { useDirective } from "./_unframework/useDirective";
 import { vMark } from "./vMark";
-import type { CSSProperties } from "react";
+import { type ComponentPropsWithRef, useMemo } from "react";
 
 export interface TagProps {
   name: string;
 }
 
-export interface TagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagAttributes = Omit<ComponentPropsWithRef<"em">, "name" | "children">;
 
-export default function Tag({ name, className, style, ...attributes }: TagProps & TagAttributes) {
+export default function Tag({
+  name,
+  className,
+  style,
+  ref,
+  ...attributes
+}: TagProps & TagAttributes) {
   const markRef = useDirective(vMark, () => `tag ${name}`);
 
+  const rootRef = useMemo(() => mergeRefs(markRef, ref), [markRef, ref]);
+
   return (
-    <em
-      className={cx("tag", className)}
-      ref={markRef}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <em className={cx("tag", className)} ref={rootRef} style={style} {...attributes}>
       #{name}
     </em>
   );

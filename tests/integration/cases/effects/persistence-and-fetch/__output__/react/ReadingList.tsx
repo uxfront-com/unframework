@@ -1,7 +1,6 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -22,10 +21,17 @@ export interface ReadingListEvents {
   onRefreshed?: (total: number) => void;
 }
 
-export interface ReadingListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReadingListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "shelves"
+  | "onRequested"
+  | "onCancelled"
+  | "onFound"
+  | "onStarted"
+  | "onChecked"
+  | "onRefreshed"
+  | "children"
+>;
 
 export default function ReadingList({
   shelves,
@@ -201,7 +207,7 @@ export default function ReadingList({
       className={cx("reading-list", className)}
       aria-label="Reading list"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Search

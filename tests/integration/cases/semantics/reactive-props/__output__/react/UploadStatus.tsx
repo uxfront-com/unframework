@@ -1,6 +1,5 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 
 export interface UploadStep {
   id: string;
@@ -15,10 +14,10 @@ export interface UploadStatusProps {
   error?: string;
 }
 
-export interface UploadStatusAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type UploadStatusAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "fileName" | "state" | "percent" | "steps" | "error" | "children"
+>;
 
 export default function UploadStatus({
   fileName,
@@ -41,7 +40,7 @@ export default function UploadStatus({
           ...style,
         } as CSSProperties
       }
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{fileName}</h2>
       <div

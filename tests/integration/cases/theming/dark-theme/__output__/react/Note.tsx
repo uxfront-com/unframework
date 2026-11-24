@@ -1,12 +1,8 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "virtual:styleframe.css";
 
-export interface NoteAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteAttributes = Omit<ComponentPropsWithRef<"p">, "text" | "children">;
 
 export default function Note({
   text,
@@ -18,7 +14,7 @@ export default function Note({
     <p
       className={cx("_padding:md _background-color:surface _color:text", className)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {text}
     </p>

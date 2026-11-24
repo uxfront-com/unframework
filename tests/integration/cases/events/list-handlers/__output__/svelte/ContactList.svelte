@@ -13,16 +13,29 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ContactListProps & {
-    onchoose?: (id: string, position: number) => void;
-    onremoved?: (name: string) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "initial" | "onchoose" | "onremoved" | "children" | "class" | "style" | "ref"
+  > &
+    ContactListProps & {
+      onchoose?: (id: string, position: number) => void;
+      onremoved?: (name: string) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { initial, onchoose, onremoved, class: className, style, ...attributes }: Props = $props();
+  let {
+    initial,
+    onchoose,
+    onremoved,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let contacts = $state.raw(untrack(() => initial));
   let chosen = $state<string>();
@@ -36,20 +49,14 @@
     contacts = contacts.filter((other) => other.id !== entry.id);
     onremoved?.(entry.name);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["contact-list", className]}
   aria-label="Contacts"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <ul>
     {#each contacts as contact, index (contact.id)}

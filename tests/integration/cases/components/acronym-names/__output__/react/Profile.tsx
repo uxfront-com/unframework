@@ -1,18 +1,14 @@
 import Avatar from "./Avatar";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ProfileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Profile({ className, style, ...attributes }: ProfileAttributes) {
   const [picked, setPicked] = useState("none");
   const pickedRef = useRef(picked);
 
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <Avatar
         imageURL="/a.png"
         userID={7}

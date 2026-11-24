@@ -1,17 +1,13 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useDirective } from "./_unframework/useDirective";
 import { vSelectable } from "./vSelectable";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 interface User {
   name: string;
 }
 
-export interface ProfileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 const hooks = "data-hooks";
 const element = "data-element";
@@ -63,7 +59,7 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
       className={cx("profile", className)}
       aria-label="Profile"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {user ? <p ref={markRef}>{user.name}</p> : null}
       {typeof label === "string" ? <b ref={markRef_1}>{label}</b> : null}

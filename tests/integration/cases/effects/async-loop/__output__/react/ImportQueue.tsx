@@ -1,8 +1,7 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { useNextTick } from "./_unframework/useNextTick";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -18,10 +17,10 @@ export interface ImportQueueEvents {
   onProgress?: (status: string, attempts: number) => void;
 }
 
-export interface ImportQueueAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ImportQueueAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "files" | "onProgress" | "children"
+>;
 
 export default function ImportQueue({
   files,
@@ -73,7 +72,7 @@ export default function ImportQueue({
       className={cx("import-queue", className)}
       aria-label="Import"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" onClick={importAll}>
         Import all

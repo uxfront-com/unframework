@@ -1,0 +1,27 @@
+---
+import SaveButton from "./SaveButton.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"div"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, ...attrs } = Astro.props;
+
+const pressed = false as boolean;
+---
+
+<div class:list={["editor", className]} style={style} {...attrs}>
+  <p id="save-hint">Saves the draft.</p>
+  <SaveButton
+    title="Save"
+    id="save"
+    aria-describedby="save-hint"
+    aria-pressed={pressed}
+    data-testid="save-button"
+    type="submit"
+    class="primary"
+  />
+  <button type="button">Toggle</button>
+</div>

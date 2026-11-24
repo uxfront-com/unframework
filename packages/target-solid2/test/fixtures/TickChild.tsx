@@ -1,30 +1,25 @@
-import type { JSX } from "@solidjs/web";
-import { createReaction, createRoot, flush, onSettled, runWithOwner } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createReaction, createRoot, flush, omit, onSettled, runWithOwner } from "solid-js";
 
 export interface TickChildEvents {
   onSeen?: (value: number) => void;
 }
 
 export function TickChild(
-  props: { count: number } & TickChildEvents & { class?: string; style?: JSX.CSSProperties },
+  props: { count: number } & TickChildEvents &
+    Omit<ComponentProps<"output">, "count" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "count", "onSeen");
+
   createWatcher(
     () => props.count,
     (value) => props.onSeen?.(value),
   );
 
-  return (
-    <output class={props.class} style={props.style} {...scopeAttributes(props)}>
-      {props.count}
-    </output>
-  );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
+  return <output {...others}>{props.count}</output>;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

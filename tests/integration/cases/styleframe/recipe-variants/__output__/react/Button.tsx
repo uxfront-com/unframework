@@ -1,13 +1,12 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { button } from "virtual:styleframe";
 import "virtual:styleframe.css";
 
-export interface ButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ButtonAttributes = Omit<
+  ComponentPropsWithRef<"button">,
+  "label" | "size" | "tone" | "children"
+>;
 
 export default function Button({
   label,
@@ -22,7 +21,7 @@ export default function Button({
       type="button"
       className={cx(button({ size, tone }), className)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </button>
