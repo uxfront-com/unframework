@@ -1,6 +1,6 @@
 import Card from "./Card";
 import Tip from "./Tip";
-import { type JSX, Portal } from "@solidjs/web";
+import { type ComponentProps, type JSX, Portal } from "@solidjs/web";
 import {
   For,
   Show,
@@ -8,6 +8,7 @@ import {
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   untrack,
 } from "solid-js";
@@ -17,7 +18,14 @@ interface Row {
   label: string;
 }
 
-export default function Board(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Board(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [rows, setRows] = createState<Row[]>([
     { id: 1, label: "Alpha" },
     { id: 2, label: "Beta" },
@@ -26,12 +34,7 @@ export default function Board(props: { class?: string; style?: JSX.CSSProperties
   const [late, setLate] = createState(false);
 
   return (
-    <section
-      class={props.class ? `board ${props.class}` : "board"}
-      aria-label="Board"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `board ${props.class}` : "board"} aria-label="Board" {...others}>
       <button type="button" onClick={() => setRows([...rows()].reverse())}>
         Reverse tips
       </button>
@@ -57,13 +60,6 @@ export default function Board(props: { class?: string; style?: JSX.CSSProperties
       </Card>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

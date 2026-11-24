@@ -179,7 +179,8 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     listeners of the events it declares (`onClear`, a local function or an arrow whose parameters
     are the payload; an option suffix is UF3043, with a safe fix), `class` and `style`, which fall
     through to its root (UF3045 where it renders neither: `inheritAttrs: false`, or a root that is
-    not one element or one component), `key` in a list, and a `ref` that holds what it exposes
+    not one element, one component or one `<component is>` over tags whose tags the API reads,
+    ADR-0119), `key` in a list, and a `ref` that holds what it exposes
     (UF3046 where it exposes nothing). Its children fill its default slot, or one slot object
     fills its slots with arrow functions that return JSX (UF3040), a scoped fill's parameter
     binding `slotScope` names; `slots.title` in a slot object, or `{slots.default?.()}` as the
@@ -228,7 +229,8 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   `model` binding by its name, injected with a fallback ref, and read as `count.value`.
 - **Dynamic components** (`dynamic.ts`, ADR-0054): `<component is={…}>` over a literal, a
   conditional of literals or of components, or a value typed as a union of tags; the leaves are
-  all tags (whose attributes and children each tag must take, checked per tag) or all components
+  all tags (whose children each tag must take, and whose attributes at least one must, each
+  rendering only on the tags that take it, `DynamicNode.only`, ADR-0119) or all components
   (whose attributes and fills each must declare), each a `component` binding. Anything else is
   UF3044.
 - **Stylesheets** (`styles.ts`, ADR-0063): a relative `.css` side-effect import, `import
@@ -283,7 +285,9 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   ADR-0046), writes of state as statements of their own (`Write`; a type assertion on the
   written target is UF1002, with a likely fix that removes it;
   UF2011: an arrow passed to a call writes in a block body, but for an `onCleanup` callback,
-  with a fix), emits of declared events (`Emit`, UF2017), `await nextTick()` (`Api`; a callback
+  with a fix), emits of declared events (`Emit`, UF2017), `if (isDev)` (`Dev`, ADR-0117: a
+  top-level one is a `DevCheck` item, pure code that may read `console`; any other read of
+  `isDev` is UF2040), `await nextTick()` (`Api`; a callback
   is UF2025, judged with the rules, and so are `nextTick` used as a value and a call of it through
   parentheses, an assertion or type arguments, written bare by a safe fix), the event parameter's
   members (`Event`) and the leading `preventDefault()` and `stopPropagation()` calls, which Vue's

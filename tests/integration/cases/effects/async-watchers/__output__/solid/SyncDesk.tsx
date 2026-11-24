@@ -1,4 +1,13 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 interface Waiting {
   resolve: (text: string) => void;
@@ -28,8 +37,28 @@ async function validate(value: string): Promise<boolean> {
 }
 
 export default function SyncDesk(
-  props: SyncDeskProps & SyncDeskEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SyncDeskProps &
+    SyncDeskEvents &
+    Omit<ComponentProps<"section">, "files" | "onProgress" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, [
+    "files",
+    "onChecked",
+    "onSummary",
+    "onFocused",
+    "onProgress",
+    "onSaveState",
+    "onSavedName",
+    "onImportState",
+    "onSettled",
+    "onSending",
+    "onSent",
+    "onClamped",
+    "class",
+  ]);
+
   let waiting: Waiting[] = [];
 
   function ask(): Promise<string> {
@@ -208,8 +237,7 @@ export default function SyncDesk(
     <section
       class={props.class ? `sync-desk ${props.class}` : "sync-desk"}
       aria-label="Sync desk"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={suggest}>
         Suggest
@@ -279,13 +307,6 @@ export default function SyncDesk(
       </div>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

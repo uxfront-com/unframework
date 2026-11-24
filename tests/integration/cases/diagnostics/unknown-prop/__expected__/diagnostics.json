@@ -2,19 +2,19 @@
   {
     "code": "UF3035",
     "severity": "error",
-    "message": "Field declares no prop `lable`: a component takes its props, `class`, `style`, `key`, `ref`, its events' listeners and its slots. Did you mean `label`?",
+    "message": "Field declares no prop `lable`, and it is no attribute of <label>, where what Field does not declare lands: a component takes its props, `key`, `ref`, its events' listeners, its slots and, falling through, `class`, `style`, attributes and DOM listeners. Did you mean `label`?",
     "file": "diagnostics/unknown-prop/Form.uf.tsx",
     "start": {
-      "line": 14,
+      "line": 15,
       "column": 14,
-      "offset": 344
+      "offset": 444
     },
     "end": {
-      "line": 14,
+      "line": 15,
       "column": 19,
-      "offset": 349
+      "offset": 449
     },
-    "help": "Pass a prop Field declares, or declare `lable` in its props.",
+    "help": "Pass a prop Field declares or an attribute of <label>, or declare `lable` in its props.",
     "fixes": [
       {
         "title": "Write `label`",
@@ -22,8 +22,8 @@
         "edits": [
           {
             "span": {
-              "start": 344,
-              "end": 349
+              "start": 444,
+              "end": 449
             },
             "text": "label"
           }

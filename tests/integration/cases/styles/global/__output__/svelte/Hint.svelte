@@ -1,22 +1,21 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { text: string; class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["p"], "text" | "children" | "class" | "style" | "ref"> & {
+    text: string;
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["p"] | null;
+  };
 
-  let { text, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { text, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
 <p
   class={["hint", className]}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >Tip: <span class="uf-highlight">{text}</span></p>

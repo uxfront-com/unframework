@@ -1,12 +1,23 @@
-import { type JSX, Show, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface ProfileMenuEvents {
   onClosed?: () => void;
 }
 
 export default function ProfileMenu(
-  props: ProfileMenuEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ProfileMenuEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onClosed", "class"]);
+
   const [open, setOpen] = createSignal(false);
   let menu: HTMLDivElement | null = null;
 
@@ -32,8 +43,7 @@ export default function ProfileMenu(
     <section
       class={props.class ? `profile-menu ${props.class}` : "profile-menu"}
       aria-label="Profile"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <div
         class="menu"
@@ -61,11 +71,4 @@ export default function ProfileMenu(
       <p>Outside the menu</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

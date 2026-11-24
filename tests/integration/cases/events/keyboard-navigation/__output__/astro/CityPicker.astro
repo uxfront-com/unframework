@@ -1,26 +1,21 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface CityPickerProps {
   cities: string[];
 }
 
-interface Props extends CityPickerProps {
+interface Props extends CityPickerProps, Omit<HTMLAttributes<"section">, "cities"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { cities, class: className, style } = Astro.props;
+const { cities, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 function uniqueId(): string {
   const locals = Astro.locals as { ufIdCount?: number };
   locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;
   return `uf-id-${locals.ufIdCount}`;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 const listId = uniqueId();
@@ -34,9 +29,9 @@ const matches = cities.filter((city) => city.toLowerCase().startsWith(query.toLo
 
 <section
   class:list={["city-picker", className]}
-  aria-label="Trip"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Trip"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <form role="search" aria-label="Destination">
     <label>City<input

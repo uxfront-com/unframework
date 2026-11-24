@@ -128,10 +128,15 @@ describe("qwik target", () => {
   it("emits a default export as `export default component$`", async () => {
     expect(await emitted(greeting)).toBe(
       [
-        `import { component$ } from "@qwik.dev/core";`,
+        `import { type Signal, component$ } from "@qwik.dev/core";`,
         ``,
-        `export default component$(() => {`,
-        `  return <p class="greeting">Hello, world!</p>;`,
+        // A ref on it holds its root element (ADR-0118).
+        `export default component$<{ ref?: Signal<Element | undefined> }>(({ ref }) => {`,
+        `  return (`,
+        `    <p class="greeting" ref={ref}>`,
+        `      Hello, world!`,
+        `    </p>`,
+        `  );`,
         `});`,
         ``,
       ].join("\n"),
@@ -140,7 +145,7 @@ describe("qwik target", () => {
 
   it("declares a same-named export in place", async () => {
     expect(await emitted(greeting, [named("Hello")])).toContain(
-      `export const Hello = component$(() => {`,
+      `export const Hello = component$<{ ref?: Signal<Element | undefined> }>(({ ref }) => {`,
     );
   });
 
@@ -150,7 +155,9 @@ describe("qwik target", () => {
       named("Hello"),
       createExport("default", "Hello", at),
     ]);
-    expect(contents).toContain(`\nconst Hello = component$(() => {`);
+    expect(contents).toContain(
+      `\nconst Hello = component$<{ ref?: Signal<Element | undefined> }>(({ ref }) => {`,
+    );
     expect(contents).toMatch(/\nexport \{ Hello as Greeting, Hello, Hello as default \};\n$/);
   });
 
@@ -158,7 +165,9 @@ describe("qwik target", () => {
   // components import by its name (ADR-0053).
   it("exports a component the module does not export by its name", async () => {
     const contents = await emitted(greeting, []);
-    expect(contents).toContain(`\nexport const Hello = component$(() => {`);
+    expect(contents).toContain(
+      `\nexport const Hello = component$<{ ref?: Signal<Element | undefined> }>(({ ref }) => {`,
+    );
     expect(contents).not.toContain("export default");
   });
 
@@ -169,7 +178,7 @@ describe("qwik target", () => {
         element("input", { id: "x", readonly: true, maxlength: "3", "aria-label": "X" }),
       ]),
     );
-    expect(contents).toContain(`<form noValidate class="f">`);
+    expect(contents).toContain(`<form noValidate class="f" ref={ref}>`);
     expect(contents).toContain(`<label for="x" accessKey="n">`);
     expect(contents).toContain(`<input id="x" readOnly maxLength={3} aria-label="X" />`);
   });
@@ -183,7 +192,7 @@ describe("qwik target", () => {
         element("math", { tabindex: "0" }),
       ]),
     );
-    expect(contents).toContain(`<div tabIndex={0}>`);
+    expect(contents).toContain(`<div tabIndex={0} ref={ref}>`);
     expect(contents).toContain(`<svg viewBox="0 0 1 1" tabindex={0}>`);
     expect(contents).toContain(`<foreignObject width="1">`);
     expect(contents).toContain(`<p tabIndex={1} />`);
@@ -195,7 +204,7 @@ describe("qwik target", () => {
     const contents = await emitted(
       element("details", { open: true, "data-state": true, hidden: true, title: true }),
     );
-    expect(contents).toContain(`<details open data-state="" hidden title="" />`);
+    expect(contents).toContain(`<details open data-state="" hidden title="" ref={ref} />`);
   });
 
   it("writes a boolean attribute bare whatever its value, as HTML reads it", async () => {
@@ -227,7 +236,7 @@ describe("qwik target", () => {
 
   it("reads HTML attribute names case-insensitively, as HTML does", async () => {
     const contents = await emitted(element("input", { readOnly: true, TabIndex: "0" }));
-    expect(contents).toContain(`<input readOnly tabIndex={0} />`);
+    expect(contents).toContain(`<input readOnly tabIndex={0} ref={ref} />`);
   });
 
   it("keys its tables by lower-case HTML names", () => {
@@ -284,7 +293,7 @@ describe("qwik target: props and expressions", () => {
     );
     expect(contents).toBe(
       [
-        'import { component$ } from "@qwik.dev/core";',
+        'import { type Signal, component$ } from "@qwik.dev/core";',
         "",
         "export interface BadgeProps {",
         "  /** Shown in the badge. */",
@@ -293,13 +302,15 @@ describe("qwik target: props and expressions", () => {
         "  pill?: boolean;",
         "}",
         "",
-        'export default component$<BadgeProps>(({ tone = "info", label, pill = false }) => {',
-        "  return (",
-        "    <p class={{ pill }} data-tone={tone}>",
-        "      {label}",
-        "    </p>",
-        "  );",
-        "});",
+        "export default component$<BadgeProps & { ref?: Signal<Element | undefined> }>(",
+        '  ({ tone = "info", label, pill = false, ref }) => {',
+        "    return (",
+        "      <p class={{ pill }} data-tone={tone} ref={ref}>",
+        "        {label}",
+        "      </p>",
+        "    );",
+        "  },",
+        ");",
         "",
       ].join("\n"),
     );
@@ -310,25 +321,31 @@ describe("qwik target: props and expressions", () => {
     const some = await emitSource(
       "export function Card({ label, title }: { label: string; title?: string }) { return <p>{label}</p>; }",
     );
-    expect(some).toContain(
-      "export const Card = component$<{ label: string; title?: string }>(({ label }) => {",
+    expect(lines(some)).toContain(
+      lines(`export const Card = component$<
+        { label: string; title?: string } & { ref?: Signal<Element | undefined> }
+      >(({ label, ref }) => {`),
     );
+    // Two root elements, which no ref holds (ADR-0118): a single root takes a consumer's ref.
     const none = await emitSource(
-      "interface CardProps { label: string }\nexport function Card({ label }: CardProps) { return <p>Card</p>; }",
+      "interface CardProps { label: string }\nexport function Card({ label }: CardProps) { return <><p>Card</p><hr /></>; }",
     );
     expect(none).toContain("export const Card = component$<CardProps>(() => {");
   });
 
   it("keeps the `props` object as written, and leaves it out when nothing reads it", async () => {
-    expect(await emitSource(plain("<p title={props.title}>{props.label}</p>"))).toContain(
-      [
-        "export const Plain = component$<PlainProps>((props) => {",
-        "  return <p title={props.title}>{props.label}</p>;",
-        "});",
-      ].join("\n"),
-    );
-    expect(await emitSource(plain("<p>Plain</p>"))).toContain(
+    expect(
+      await emitSource(plain("<><p title={props.title}>{props.label}</p><hr /></>")),
+    ).toContain("export const Plain = component$<PlainProps>((props) => {");
+    expect(await emitSource(plain("<><p>Plain</p><hr /></>"))).toContain(
       "export const Plain = component$<PlainProps>(() => {",
+    );
+    // A single root takes a consumer's ref (ADR-0118), which the object form reads first.
+    expect(lines(await emitSource(plain("<p title={props.title}>{props.label}</p>")))).toContain(
+      lines(`export const Plain = component$<PlainProps & { ref?: Signal<Element | undefined> }>((props) => {
+        const { ref } = props;
+        return (
+          <p title={props.title} ref={ref}>`),
     );
   });
 
@@ -380,9 +397,11 @@ describe("qwik target: props and expressions", () => {
     const contents = await emitSource(
       'export function Tags({ tags }: { tags: string[] }) { return <p>{tags.filter((component$) => component$ !== "").join()}</p>; }',
     );
-    expect(contents).toContain('import { component$ as component$_1 } from "@qwik.dev/core";');
     expect(contents).toContain(
-      "export const Tags = component$_1<{ tags: string[] }>(({ tags }) => {",
+      'import { type Signal, component$ as component$_1 } from "@qwik.dev/core";',
+    );
+    expect(contents).toContain(
+      "export const Tags = component$_1<{ tags: string[] } & { ref?: Signal<Element | undefined> }>(",
     );
   });
 });
@@ -404,7 +423,7 @@ describe("qwik target: attributes", () => {
       ].join("\n"),
     );
     // Qwik types these as numbers and booleans: their static strings fail L4.
-    expect(contents).toContain("<div tabIndex={-1} spellcheck={false} draggable={true}>");
+    expect(contents).toContain("<div tabIndex={-1} spellcheck={false} draggable={true} ref={ref}>");
     expect(contents).toContain("<label for={id}>Name</label>");
     expect(contents).toContain(
       "<input id={id} tabIndex={order} readOnly={locked} maxLength={40} />",
@@ -471,7 +490,7 @@ describe("qwik target: attributes", () => {
     const parsed = await emitSource(
       'export function Box() { return <div style="margin-top: 4px; color: red" />; }',
     );
-    expect(parsed).toContain('<div style={{ marginTop: "4px", color: "red" }} />');
+    expect(parsed).toContain('<div style={{ marginTop: "4px", color: "red" }} ref={ref} />');
   });
 
   it("writes an attribute Qwik's types declare under no name as an object spread", async () => {
@@ -646,18 +665,14 @@ describe("qwik target: async setup", () => {
       ].join("\n"),
     );
     expect(contents).toContain(
-      ['import { component$, untrack, useComputed$, useSignal } from "@qwik.dev/core";', ""].join(
-        "\n",
-      ),
+      'import { type Signal, component$, untrack, useComputed$, useSignal } from "@qwik.dev/core";\n',
     );
-    expect(contents).toContain(
-      [
-        "export const Profile = component$<{ id: string }>(({ id }) => {",
-        "  const userLoad = useComputed$(() => untrack(() => loadUser(id)));",
-        "  const user = userLoad.value;",
-        "  const visits = useSignal(user.visits);",
-        "",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(`export const Profile = component$<{ id: string } & { ref?: Signal<Element | undefined> }>(
+        ({ id, ref }) => {
+          const userLoad = useComputed$(() => untrack(() => loadUser(id)));
+          const user = userLoad.value;
+          const visits = useSignal(user.visits);`),
     );
   });
 
@@ -675,13 +690,11 @@ describe("qwik target: async setup", () => {
     );
     expect(contents).not.toMatch(/useComputed\$\([^;]*\)\.value/);
     // The second await reads only the first's value, which no prop change reaches: no `untrack`.
-    expect(contents).toContain(
-      [
-        "  const userLoad = useComputed$(() => untrack(() => loadUser(id)));",
-        "  const user = userLoad.value;",
-        "  const teamLoad = useComputed$(() => loadTeam(user.teamId));",
-        "  const team = teamLoad.value;",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(`const userLoad = useComputed$(() => untrack(() => loadUser(id)));
+        const user = userLoad.value;
+        const teamLoad = useComputed$(() => loadTeam(user.teamId));
+        const team = teamLoad.value;`),
     );
   });
 
@@ -695,12 +708,10 @@ describe("qwik target: async setup", () => {
         "}",
       ].join("\n"),
     );
-    expect(contents).toContain(
-      [
-        "export const Theme = component$(() => {",
-        "  const configLoad = useComputed$(() => loadConfig());",
-        "  const config = configLoad.value;",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(`export const Theme = component$<{ ref?: Signal<Element | undefined> }>(({ ref }) => {
+        const configLoad = useComputed$(() => loadConfig());
+        const config = configLoad.value;`),
     );
     expect(contents).not.toContain("untrack");
   });
@@ -725,3 +736,12 @@ describe("qwik target: async setup", () => {
     );
   });
 });
+
+/** Code's lines without their indentation, and without blank ones. */
+function lines(code: string): string {
+  return code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}

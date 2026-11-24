@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface WelcomeBannerProps {
   name: string;
 }
 
-interface Props extends WelcomeBannerProps {
+interface Props extends WelcomeBannerProps, Omit<HTMLAttributes<"section">, "name"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { name, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { name, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const greeting = `Welcome, ${name}`;
 const tips = ["Set up your profile", "Invite your team"];
@@ -23,9 +18,9 @@ const tips = ["Set up your profile", "Invite your team"];
 
 <section
   class:list={["welcome-banner", className]}
-  aria-label="Welcome"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Welcome"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{greeting}</h2>
   <p>Signed in as {name}</p>

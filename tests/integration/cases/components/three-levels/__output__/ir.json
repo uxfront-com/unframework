@@ -220,7 +220,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "section"
+            "rootTag": "section",
+            "fallthroughTag": "section",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "section"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "section"
           }
         ],
         "keys": []

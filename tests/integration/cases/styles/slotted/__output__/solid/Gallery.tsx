@@ -1,14 +1,18 @@
 import Frame from "./Frame";
 import Mat from "./Mat";
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
 export default function Gallery(
-  rawProps: { matted?: boolean } & { class?: string; style?: JSX.CSSProperties },
+  rawProps: { matted?: boolean } & Omit<ComponentProps<"section">, "matted" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = mergeProps({ matted: true } satisfies Partial<{ matted?: boolean }>, rawProps);
+  const [, others] = splitProps(props, ["matted"]);
+
   return (
-    <section class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <section {...others}>
       <Frame>
         <p class="caption" data-uf-9dc516fd-s="">
           A quiet harbour
@@ -29,11 +33,4 @@ export default function Gallery(
       <p class="caption">Outside the frame</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

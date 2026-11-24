@@ -1360,8 +1360,10 @@ function wrongText(): CompilerPlugin {
       const copy = structuredClone(module);
       for (const { name, render } of copy.components) {
         // A component whose roots are components renders its text in them, and their own
-        // compiles mark it (ADR-0053).
-        if (!markText(render) && !rendersComponents(render)) {
+        // compiles mark it (ADR-0053). One that renders no text at all, a lone `<input>`, has
+        // none to mark: the component that renders it shows the marker in its own text, and
+        // the corpus check fails a case whose main component changes nothing.
+        if (!markText(render) && !rendersComponents(render) && !rendersNoText(render)) {
           throw new Error(`${MARKER} ${name} renders no element that can hold text.`);
         }
       }
@@ -1438,6 +1440,29 @@ function markText(render: ElementNode | FragmentNode): boolean {
     }
   }
   return marked;
+}
+
+/**
+ * Whether a component renders no text in any render: its roots are elements whose descendants
+ * are all elements, and none of them can hold text (void and text-free elements). Text, an
+ * interpolation, a branch, a list, a slot or a child component anywhere in it may render text,
+ * so the canary must find it.
+ */
+function rendersNoText(render: ElementNode | FragmentNode): boolean {
+  return render.kind === "Element"
+    ? textFree(render)
+    : render.children.length > 0 && render.children.every(textFree);
+}
+
+/** Whether a node is an element tree, elements only, in which no element can hold text. */
+function textFree(node: RenderNode): boolean {
+  // `textHolder` reads each element in its namespace, through every descendant.
+  return elementsOnly(node) && textHolder(node, "html") === undefined;
+}
+
+/** Whether a node is an element whose descendants are all elements. */
+function elementsOnly(node: RenderNode): node is ElementNode {
+  return node.kind === "Element" && node.children.every(elementsOnly);
 }
 
 /**
@@ -1643,9 +1668,9 @@ function widenProps(file: OutputFile, target: string): string {
     }
     case "qwik":
       return anyTypeArguments(anyGenericArrowProps(contents), /\bcomponent\$</g);
-    case "vue":
+    case "vue": {
       // `defineProps<any>()` declares no props to vue-tsc: each key takes anything instead.
-      return anyTypeArguments(
+      const widened = anyTypeArguments(
         anyTypeArguments(
           anyTypeArguments(
             anyTypeArguments(contents, /\bdefineProps</g, "Record<string, any>"),
@@ -1657,6 +1682,10 @@ function widenProps(file: OutputFile, target: string): string {
         /\bdefineSlots</g,
         "Record<string, (props: any) => any>",
       );
+      return widened === contents
+        ? contents
+        : withoutTypedFallthrough({ ...file, contents: widened });
+    }
     case "angular":
       return anyTypeArguments(contents, /\b(?:input|output|model)(?:\.required)?</g);
     case "svelte":
@@ -1676,6 +1705,25 @@ function widenProps(file: OutputFile, target: string): string {
     default:
       throw new Error(`${MARKER} L4: no public types to widen for the target ${target}.`);
   }
+}
+
+/**
+ * A Vue output whose consumers' checker types no fallthrough attribute (ADR-0118): vue-tsc's
+ * `fallthroughAttributes` adds the attributes of the root, and of an element that binds
+ * `v-bind="$attrs"`, to what a consumer may pass, and the props type it builds from them drops
+ * the widened props' index signature. A declared prop that the root also takes (`title`), or a
+ * misspelt one (`titel`), would then still be checked. `inheritAttrs: false` turns the root's
+ * off, and `v-bind="{ ...$attrs }"` binds what `$attrs` binds, as an expression vue-tsc does not
+ * type from.
+ */
+function withoutTypedFallthrough(file: OutputFile): string {
+  const contents = file.contents.replaceAll('v-bind="$attrs"', 'v-bind="{ ...$attrs }"');
+  if (/\bdefineOptions\(\{[^}]*\binheritAttrs: false\b/.test(contents)) return contents;
+  // The script declares its options once: a second `defineOptions` is a compile error.
+  return (
+    insertAfter(contents, /\bdefineOptions\(\{ /, "inheritAttrs: false, ") ??
+    injectScript({ ...file, contents }, "vue", "defineOptions({ inheritAttrs: false });", "module")
+  );
 }
 
 /**

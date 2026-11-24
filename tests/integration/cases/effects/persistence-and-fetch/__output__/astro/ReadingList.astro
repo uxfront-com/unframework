@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface ReadingListProps {
   shelves: string[];
 }
 
-interface Props extends ReadingListProps {
+interface Props extends ReadingListProps, Omit<HTMLAttributes<"section">, "shelves"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { shelves, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { shelves, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const books = [] as string[];
 const searching = false as boolean;
@@ -29,9 +24,9 @@ const refreshing = false as boolean;
 
 <section
   class:list={["reading-list", className]}
-  aria-label="Reading list"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Reading list"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <label>Search<input type="search" name="query" /></label>
   <p

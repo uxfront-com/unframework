@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   createMemo,
@@ -6,6 +7,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
@@ -20,8 +22,12 @@ export interface RunsEvents {
 }
 
 export default function Runs(
-  props: RunsProps & RunsEvents & { class?: string; style?: JSX.CSSProperties },
+  props: RunsProps &
+    RunsEvents &
+    Omit<ComponentProps<"section">, "label" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["label", "onMoved", "onRendered", "onSaved"]);
+
   const [low, setLow] = createSignal(0);
   const [high, setHigh] = createSignal(10);
   const [query, setQuery] = createSignal("");
@@ -97,7 +103,7 @@ export default function Runs(
   }
 
   return (
-    <section aria-label="Runs" class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <section aria-label="Runs" {...others}>
       <p role="status">
         {low()}-{high()}
       </p>
@@ -130,13 +136,6 @@ export default function Runs(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

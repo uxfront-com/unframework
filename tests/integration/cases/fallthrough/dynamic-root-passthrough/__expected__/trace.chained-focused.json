@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Focus chained' })",
+      "dom": [
+        "<section aria-label=\"Page\">",
+        "  <a aria-label=\"Direct\" class=\"base\" data-testid=\"direct\" href=\"#direct\" id=\"direct\" title=\"Go\">",
+        "    \"Direct\"",
+        "  </a>",
+        "  <a aria-label=\"Chained\" class=\"base primary\" data-testid=\"chained\" href=\"#chained\" id=\"chained\" title=\"Base\" uf:focused=\"\">",
+        "    \"Chained\"",
+        "  </a>",
+        "  <button type=\"button\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Focus direct\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Focus chained\"",
+        "  </button>",
+        "  <ol aria-label=\"Log\"></ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Page\":",
+        "  - link \"Direct\":",
+        "    - /url: \"#direct\"",
+        "  - link \"Chained\":",
+        "    - /url: \"#chained\"",
+        "  - button \"Toggle\"",
+        "  - button \"Focus direct\"",
+        "  - button \"Focus chained\"",
+        "  - list \"Log\""
+      ],
+      "events": {}
+    }
+  ]
+}

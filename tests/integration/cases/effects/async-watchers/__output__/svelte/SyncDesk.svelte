@@ -13,23 +13,43 @@
 
 <script lang="ts">
   import { tick, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = SyncDeskProps & {
-    onchecked?: (email: string) => void;
-    onsummary?: (text: string) => void;
-    onfocused?: (name: string) => void;
-    onprogress?: (step: string, owner: string) => void;
-    onsavestate?: (error: string, name: string) => void;
-    onsavedname?: (name: string) => void;
-    onimportstate?: (status: string, count: number) => void;
-    onsettled?: (note: string) => void;
-    onsending?: (busy: boolean, outcome: string) => void;
-    onsent?: (count: number) => void;
-    onclamped?: (level: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "files"
+    | "onchecked"
+    | "onsummary"
+    | "onfocused"
+    | "onprogress"
+    | "onsavestate"
+    | "onsavedname"
+    | "onimportstate"
+    | "onsettled"
+    | "onsending"
+    | "onsent"
+    | "onclamped"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    SyncDeskProps & {
+      onchecked?: (email: string) => void;
+      onsummary?: (text: string) => void;
+      onfocused?: (name: string) => void;
+      onprogress?: (step: string, owner: string) => void;
+      onsavestate?: (error: string, name: string) => void;
+      onsavedname?: (name: string) => void;
+      onimportstate?: (status: string, count: number) => void;
+      onsettled?: (note: string) => void;
+      onsending?: (busy: boolean, outcome: string) => void;
+      onsent?: (count: number) => void;
+      onclamped?: (level: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     files,
@@ -46,6 +66,7 @@
     onclamped,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -269,20 +290,14 @@
       apply(next * 2);
     });
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["sync-desk", className]}
   aria-label="Sync desk"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <button type="button" onclick={suggest}>Suggest</button
   ><button type="button" bind:this={confirm}>Use this email</button

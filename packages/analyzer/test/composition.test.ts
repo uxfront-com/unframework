@@ -86,6 +86,10 @@ describe("the module's components", () => {
         inheritAttrs: true,
         root: "element",
         rootTag: "div",
+        // What a consumer passes lands on the root; a ref holds what it exposes (ADR-0118).
+        fallthroughTag: "div",
+        // The root's own attributes, which a consumer's listener is checked with (UF3030).
+        fallthroughOwn: { attributes: [{ name: "class" }], listeners: [] },
       },
       expect.objectContaining({ name: "Form", export: "named" }),
     ]);
@@ -120,16 +124,17 @@ describe("component elements", () => {
     expect(diagnostics).toEqual([]);
     const node = componentNode(module!.components[1]!.render);
     expect(node.component).toBe("Field");
+    // In source order, what falls through among the rest (ADR-0118).
     expect(node.attributes.map((attribute) => attribute.kind)).toEqual([
       "Ref",
       "Prop",
       "Prop",
-      "Listener",
       "Class",
       "Style",
+      "Listener",
     ]);
     expect(node.attributes[1]).toMatchObject({ name: "label", value: { code: '"Name"' } });
-    expect(node.attributes[3]).toMatchObject({ event: "clear", handler: { kind: "Inline" } });
+    expect(node.attributes[5]).toMatchObject({ event: "clear", handler: { kind: "Inline" } });
   });
 
   it("reports what the component does not declare, with the name it may mean", () => {
@@ -658,5 +663,227 @@ export function A() { return <Box><tr><td>a</td></tr></Box>; }`;
     expect(problem!.help).toBe(
       "Write the <thead>, <tbody> or <tfoot> it belongs in around it, in this template.",
     );
+  });
+});
+
+describe("a <component is> root over tags (ADR-0119)", () => {
+  /** The API of the source's component named `name`. */
+  function apiOf(source: string, name = "Child") {
+    return analyze(parseModule("Test.uf.tsx", source)).api!.components.find(
+      (each) => each.name === name,
+    )!;
+  }
+
+  it.each([
+    ['<component is="a" href="/" />', ["a"]],
+    ["<component is={`button`} />", ["button"]],
+    ['<component is={on ? "a" : "button"} />', ["a", "button"]],
+    ['<component is={on ? "a" : wide ? "section" : "a"} />', ["a", "section"]],
+    ["<component is={tag} />", ["h2", "h3"]],
+    ["<component is={props.tag} />", ["h2", "h3"]],
+  ])("lists the tags of %s", (root, tags) => {
+    const parameter = root.includes("props.")
+      ? "props: { on: boolean; wide: boolean; tag: 'h2' | 'h3' }"
+      : '{ on, wide, tag }: { on: boolean; wide: boolean; tag: "h2" | "h3" }';
+    const api = apiOf(`export function Child(${parameter}) { return ${root}; }`);
+    expect(api.root).toBe("dynamic");
+    expect(api.rootTags).toEqual(tags);
+    expect(api.rootUnlisted).toBeUndefined();
+  });
+
+  it("reads a capitalised prop typed as tags as tags, not as a component", () => {
+    const api = apiOf(
+      'export function Child({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }',
+    );
+    expect(api.root).toBe("dynamic");
+    expect(api.rootTags).toEqual(["a", "button"]);
+    const source = `function A3({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }
+export function P() { return <p><A3 Tag="a" text="3" class="c3" /></p>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
+  it("reads a prop renamed in the pattern, and one typed through an alias", () => {
+    const renamed = apiOf(
+      'export function Child({ tag: t }: { tag: "h2" | "h3" }) { return <component is={t} />; }',
+    );
+    expect(renamed.rootTags).toEqual(["h2", "h3"]);
+    const aliased = apiOf(
+      'type Level = "h2" | "h3";\nexport function Child({ tag }: { tag: Level }) { return <component is={tag} />; }',
+    );
+    expect(aliased.rootTags).toEqual(["h2", "h3"]);
+  });
+
+  it("is other over components, and unlisted where `is` reads a value it can't list", () => {
+    const components = apiOf(
+      "function B() { return <p />; }\nfunction C() { return <p />; }\nexport function Child({ on }: { on: boolean }) { return <component is={on ? B : C} />; }",
+    );
+    expect(components.root).toBe("other");
+    expect(components.rootUnlisted).toBeUndefined();
+    const value = apiOf(
+      `${API}export function Child() { const tag = ref<"a" | "b">("a"); return <component is={tag.value} />; }`,
+    );
+    expect(value.root).toBe("other");
+    expect(value.rootUnlisted).toBe(true);
+    expect(value.rootTags).toBeUndefined();
+  });
+
+  it("is other inside a fragment or a conditional", () => {
+    for (const root of [
+      '<><component is={on ? "a" : "button"} /></>',
+      'on ? <component is="a" /> : <button />',
+    ]) {
+      const api = apiOf(`export function Child({ on }: { on: boolean }) { return ${root}; }`);
+      expect(api.root, root).toBe("other");
+    }
+  });
+
+  it("takes a class and a style, through a component root too", () => {
+    const source = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
+function Outer() { return <Child />; }
+export function A() { const tone = "red"; return <div><Child class="x" style={{ color: tone }} /><Outer class={["y", { z: tone === "red" }]} /></div>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
+  // What every tag takes falls through to a `<component is>` root, and every listener; a name
+  // only some tags take is "not yet", not dropped (ADR-0122).
+  const DYNAMIC = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
+function Outer() { return <Child />; }
+`;
+
+  it("passes it what every tag takes, through a component root too", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child id="x" class="c" aria-label="Go" data-x="1" onClick={() => {}} onFocus={() => {}} /><Outer id="y" aria-label="y" data-x="2" style="color: red" onClick={() => {}} /></div>; }`;
+    const { diagnostics, module } = run(source);
+    expect(codes(diagnostics)).toEqual([]);
+    const passed = componentNode(module!.components.find((each) => each.name === "A")!.render);
+    expect(passed.attributes.map((each) => each.kind)).toEqual([
+      "Static",
+      "Class",
+      "Static",
+      "Static",
+      "Event",
+      "Event",
+    ]);
+  });
+
+  it("reports a name only some tags take, naming those that don't, through a component root too (UF1002)", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child disabled={true} /><Outer download="x" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF1002 disabled", "UF1002 download"]);
+    expect(diagnostics[0]!.message).toBe(
+      "`disabled` falls through to Child's `<component is>` root only where every tag takes it, and <a> doesn't.",
+    );
+    expect(diagnostics[0]!.help).toContain("Declare it as a prop of Child");
+    expect(diagnostics[1]!.message).toContain("and <button> doesn't");
+  });
+
+  it("reports a name no tag takes as UF3035, naming every tag", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child colspan="2" /><Outer titl="x" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF3035 colspan", "UF3035 titl"]);
+    expect(diagnostics[0]!.message).toContain("no attribute of <a> or <button>");
+    // The name it may mean is one every tag takes.
+    expect(diagnostics[1]!.message).toContain("Did you mean `title`?");
+  });
+
+  it("reports a listener option, as on an element root (UF1002)", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child onClickOnce={() => {}} /></div>; }`;
+    expect(codes(run(source).diagnostics)).toEqual(["UF1002"]);
+  });
+
+  it("checks what falls through as each tag's own, and reports a problem once", () => {
+    // `<a type>` takes a MIME type and `<button type>` a keyword: only the later tag's check
+    // finds it, and an ARIA value both find is reported once.
+    const source = `${DYNAMIC}export function A() { return <div><Child type="nope" /><Child aria-pressed="maybe" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF3008 type", "UF3008 aria-pressed"]);
+  });
+  it("holds the element that renders in a ref typed as the tags' union, in any order", () => {
+    for (const type of [
+      "HTMLAnchorElement | HTMLButtonElement",
+      "HTMLButtonElement | HTMLAnchorElement",
+    ]) {
+      const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef<${type}>(); const b = useTemplateRef<${type}>(); return <div><Child ref={a} /><Outer ref={b} /></div>; }`;
+      expect(codes(run(source).diagnostics), type).toEqual([]);
+    }
+    expect(
+      apiOf(`${DYNAMIC}export function Child2() { return <Outer />; }`, "Outer").refTags,
+    ).toEqual(["a", "button"]);
+  });
+
+  it("reports a ref typed as one tag, a supertype or nothing, naming the union (UF3046)", () => {
+    for (const type of [
+      "<HTMLButtonElement>",
+      "<HTMLElement>",
+      "<HTMLAnchorElement | HTMLButtonElement | HTMLDivElement>",
+      "<HTMLAnchorElement | HTMLAnchorElement>",
+      "",
+    ]) {
+      const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef${type}(); return <div><Outer ref={a} /></div>; }`;
+      const { diagnostics } = run(source);
+      expect(problems(source, diagnostics), type).toEqual(["UF3046 ref={a}"]);
+      expect(diagnostics[0]!.message).toContain("`HTMLAnchorElement | HTMLButtonElement`");
+      expect(diagnostics[0]!.message).toContain(
+        "a supertype such as `HTMLElement` is not accepted",
+      );
+      expect(diagnostics[0]!.help).toBe(
+        "Type it as the elements the root may render: `useTemplateRef<HTMLAnchorElement | HTMLButtonElement>()`.",
+      );
+    }
+  });
+
+  it("types a ref as one interface where the tags share it", () => {
+    const source = `${API}function Heading({ tag }: { tag: "h2" | "h3" }) { return <component is={tag}>x</component>; }
+export function A() { const a = useTemplateRef<HTMLHeadingElement>(); return <div><Heading tag="h2" ref={a} /></div>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
+  it("holds no element where the component exposes functions", () => {
+    const api = apiOf(
+      `${API}export function Child() { function focus() {} defineExpose({ focus }); return <component is="a" />; }`,
+    );
+    expect(api.refTags).toBeUndefined();
+  });
+
+  it("takes what falls through on the element that spreads the rest, with inheritAttrs off", () => {
+    const source = `${API}function Child({ href, ...rest }: { href?: string }) {
+  defineOptions({ inheritAttrs: false });
+  return <component is={href ? "a" : "button"} href={href}><img alt="" {...rest} /></component>;
+}
+export function A() { return <div><Child id="x" onLoad={() => {}} /></div>; }`;
+    const result = run(source);
+    expect(codes(result.diagnostics)).toEqual([]);
+    const api = result.api!.components.find((each) => each.name === "Child")!;
+    expect(api.fallthroughTag).toBe("img");
+    expect(api.rootTags).toEqual(["a", "button"]);
+  });
+
+  it("still reports UF3045 for a root over components, a fragment, a conditional and a list", () => {
+    for (const root of [
+      "<component is={on ? B : C} />",
+      "<><p /><p /></>",
+      "<>{on ? <p /> : <span />}</>",
+      "<>{[1, 2].map((n) => <p key={n}>{n}</p>)}</>",
+    ]) {
+      const source = `function B() { return <p />; }
+function C() { return <p />; }
+function Child({ on }: { on: boolean }) { return ${root}; }
+export function A() { return <div><Child on={true} class="x" /></div>; }`;
+      expect(problems(source, run(source).diagnostics), root).toEqual(["UF3045 class"]);
+    }
+  });
+
+  it("says why where the API can't list the tags of `is`", () => {
+    const source = `${API}function Child() { const tag = ref<"a" | "button">("a"); return <component is={tag.value} />; }
+export function A() { return <div><Child class="x" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(codes(diagnostics)).toEqual(["UF3045"]);
+    expect(diagnostics[0]!.message).toContain("can't list the tags of");
+    expect(diagnostics[0]!.help).toContain('is={href ? "a" : "button"}');
+  });
+
+  it("places every tag where the component sits (UF3003)", () => {
+    const source = `function Child({ on }: { on: boolean }) { return <component is={on ? "div" : "li"}>x</component>; }
+export function A() { return <p><Child on={true} /></p>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Child", "UF3003 Child"]);
   });
 });

@@ -2,6 +2,7 @@ import { loadUser } from "./api";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   untrack,
@@ -15,7 +16,11 @@ export interface NoteEvents {
 }
 
 export default component$<
-  { id: string } & NoteEvents & { class?: ClassList; style?: CSSProperties }
+  { id: string } & NoteEvents &
+    Omit<PropsOf<"form">, "id" | "onReady$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ id, onReady$, class: className, style, ...attributes }) => {
   const userLoad = useComputed$(() => untrack(() => loadUser(id)));
   const user = userLoad.value;
@@ -30,24 +35,10 @@ export default component$<
   );
 
   return (
-    <form
-      class={["note", className]}
-      aria-label="Note"
-      {...scopeAttributes(attributes)}
-      style={style}
-    >
+    <form class={["note", className]} aria-label="Note" style={style} {...attributes}>
       <label>
         Note for {user.name} <input ref={input} type="text" />
       </label>
     </form>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

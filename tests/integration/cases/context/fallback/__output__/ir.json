@@ -151,7 +151,13 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "p"
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
+            "refTag": "p"
           }
         ],
         "keys": []
@@ -199,7 +205,17 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "lang"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "div"
           }
         ],
         "keys": [

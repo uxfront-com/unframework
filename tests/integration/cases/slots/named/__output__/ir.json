@@ -225,7 +225,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "article"
+            "rootTag": "article",
+            "fallthroughTag": "article",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "card"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "article"
           }
         ],
         "keys": []

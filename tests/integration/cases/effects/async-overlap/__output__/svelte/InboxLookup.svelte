@@ -2,9 +2,22 @@
 
 <script lang="ts">
   import { onMount, tick, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "onlooked"
+    | "ondropped"
+    | "onsorted"
+    | "onscaled"
+    | "onbusy"
+    | "onfailed"
+    | "oncounted"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > & {
     onlooked?: (sender: string) => void;
     ondropped?: (sender: string) => void;
     onsorted?: (order: string) => void;
@@ -14,6 +27,7 @@
     oncounted?: (count: number) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
   let {
@@ -26,6 +40,7 @@
     oncounted,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -179,20 +194,14 @@
     bump();
     bump();
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["inbox-lookup", className]}
   aria-label="Inbox"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <button type="button" onclick={() => (sender = "Ann")}>Find Ann</button
   ><button type="button" onclick={() => (sender = "Anna")}>Find Anna</button

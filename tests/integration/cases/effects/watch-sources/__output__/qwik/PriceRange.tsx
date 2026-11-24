@@ -1,6 +1,7 @@
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useComputed$,
@@ -19,7 +20,12 @@ export interface PriceRangeEvents {
 }
 
 export default component$<
-  PriceRangeProps & PriceRangeEvents & { class?: ClassList; style?: CSSProperties }
+  PriceRangeProps &
+    PriceRangeEvents &
+    Omit<
+      PropsOf<"section">,
+      "currency" | "onSpanUpdate$" | "onRangeUpdate$" | "onCurrencyUpdate$" | "class" | "style"
+    > & { class?: ClassList; style?: CSSProperties }
 >(
   ({
     currency,
@@ -75,8 +81,8 @@ export default component$<
       <section
         class={["price-range", className]}
         aria-label="Price range"
-        {...scopeAttributes(attributes)}
         style={style}
+        {...attributes}
       >
         <p role="status">
           {low.value} to {high.value} {currency}
@@ -97,12 +103,3 @@ export default component$<
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

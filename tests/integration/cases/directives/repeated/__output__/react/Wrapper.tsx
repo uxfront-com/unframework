@@ -1,14 +1,11 @@
 import Rows from "./Rows";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface WrapperSlots {
   row?: ReactNode;
 }
 
-export interface WrapperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type WrapperAttributes = Omit<ComponentPropsWithRef<"section">, "row" | "children">;
 
 export default function Wrapper({
   row,
@@ -17,12 +14,7 @@ export default function Wrapper({
   ...attributes
 }: WrapperSlots & WrapperAttributes) {
   return (
-    <section
-      className={cx("wrapper", className)}
-      aria-label="Rows"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("wrapper", className)} aria-label="Rows" style={style} {...attributes}>
       <Rows row={row} />
     </section>
   );
@@ -41,13 +33,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

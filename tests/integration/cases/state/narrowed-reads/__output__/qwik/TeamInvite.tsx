@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useComputed$,
@@ -37,7 +38,20 @@ export interface TeamInviteEvents {
 }
 
 export default component$<
-  TeamInviteProps & TeamInviteEvents & { class?: ClassList; style?: CSSProperties }
+  TeamInviteProps &
+    TeamInviteEvents &
+    Omit<
+      PropsOf<"section">,
+      | "inviter"
+      | "members"
+      | "onSelect$"
+      | "onRemoved$"
+      | "onSubmitted$"
+      | "onTagged$"
+      | "onMoved$"
+      | "class"
+      | "style"
+    > & { class?: ClassList; style?: CSSProperties }
 >(
   ({
     inviter,
@@ -114,12 +128,7 @@ export default component$<
     );
 
     return (
-      <section
-        class={["team-invite", className]}
-        aria-label="Invite"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
+      <section class={["team-invite", className]} aria-label="Invite" style={style} {...attributes}>
         <h2>{greeting.value}</h2>
         <ul aria-label="Members">
           {visible.value.map((member) => (
@@ -212,12 +221,3 @@ export default component$<
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

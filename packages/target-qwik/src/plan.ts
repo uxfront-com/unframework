@@ -31,9 +31,10 @@ import type {
   UseItem,
 } from "@unframework.dev/ir";
 
-import { fillExpressions, planComposition } from "./composition.ts";
+import { declaredProps, fillExpressions, planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
-import { qwikEventProp } from "./events.ts";
+import { qwikEventProp, qwikListenerProp } from "./events.ts";
+import { fallthroughTarget } from "./fallthrough.ts";
 import { typedByParameters } from "./generics.ts";
 import { elementParameter, handlerOnlyFunctions, splitHandler, usedFunctions } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
@@ -131,6 +132,12 @@ export interface ListenerPlan {
   readonly mixedPassive: ReadonlySet<string>;
   /** Each listener's group. */
   readonly groups: ReadonlyMap<EventAttribute, ListenerGroup>;
+  /**
+   * The components with native listeners, which fall through to their fallthrough element
+   * (ADR-0118), by `start:end` of their spans: each as an element of those listeners, which the
+   * listeners are grouped and printed on, as a prop of the component.
+   */
+  readonly components: ReadonlyMap<string, ElementNode>;
 }
 
 /** The names and imports of one output file, shared by the planner and the printers. */
@@ -283,7 +290,7 @@ export function planSetup(
       : (eventLocals.get(event) ?? qwikEventProp(event));
   const conditionalRefs = refsInConditionals(component);
   const { planned: eventFunctions, empty: emptyFunctions } = planEventFunctions(component, names);
-  const listeners = planListeners(component);
+  const listeners = planListeners(component, module);
   const qrlFunctions = new Map<string, BindingId>();
   for (const [id, fnPlan] of functions) {
     if (fnPlan.form !== "qrl" && fnPlan.form !== "both") continue;
@@ -353,7 +360,7 @@ function planEventFunctions(
   const removed = new Set([...splits.values()].flatMap((split) => split.removedCalls));
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
         const split = splitHandler(attribute.handler.function, component, empty);
@@ -710,21 +717,35 @@ export function inlinedAt(fn: FunctionCode, site: CallSite, synchronous: boolean
 }
 
 /** Groups the listeners and decides how each group runs (see {@link ListenerPlan}). */
-function planListeners(component: UfComponent): ListenerPlan {
+function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
   const windowEvents = new Set<string>();
   const passive = new Map<string, Set<boolean>>();
+  // A consumer's listener of an event the element that spreads the props' rest listens to runs
+  // in that element's prop (./fallthrough.ts), as a plain one: it must not join a capture or a
+  // passive group of the element's own, so the element listens in both phases, and both
+  // passively and not (ADR-0118).
+  const target = fallthroughTarget(component, module);
+  const declared = target?.kind === "Element" ? declaredProps(component) : undefined;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       const phases = new Map<string, Set<boolean>>();
+      const add = (event: string, capture: boolean, passively: boolean) => {
+        const seen = phases.get(event) ?? new Set<boolean>();
+        seen.add(capture);
+        phases.set(event, seen);
+        const kinds = passive.get(event) ?? new Set<boolean>();
+        kinds.add(passively);
+        passive.set(event, kinds);
+      };
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
-        const seen = phases.get(attribute.event) ?? new Set<boolean>();
-        seen.add(attribute.capture === true);
-        phases.set(attribute.event, seen);
-        const kinds = passive.get(attribute.event) ?? new Set<boolean>();
-        kinds.add(attribute.passive === true);
-        passive.set(attribute.event, kinds);
+        add(attribute.event, attribute.capture === true, attribute.passive === true);
+      }
+      if (declared && node === target) {
+        for (const event of phases.keys()) {
+          if (!declared.has(qwikListenerProp(event))) add(event, false, false);
+        }
       }
       for (const [event, seen] of phases) if (seen.size === 2) windowEvents.add(event);
     },
@@ -735,6 +756,7 @@ function planListeners(component: UfComponent): ListenerPlan {
     path: readonly ElementNode[];
   }
   const entries: Entry[] = [];
+  const components = new Map<string, ElementNode>();
   const visit = (node: RenderNode, path: readonly ElementNode[]): void => {
     switch (node.kind) {
       case "Element": {
@@ -775,10 +797,27 @@ function planListeners(component: UfComponent): ListenerPlan {
       case "Interpolation":
         return;
       // What a component's fills render sits in the child's elements, which the component cannot
-      // see: its listeners are ordered as the component's own around it.
-      case "Component":
-        for (const fill of node.fills) for (const child of fill.children) visit(child, path);
+      // see: its listeners are ordered as the component's own around it. Its native listeners
+      // fall through to its fallthrough element (ADR-0118), which holds what the fills render.
+      case "Component": {
+        const passed = node.attributes.filter(
+          (attribute): attribute is EventAttribute => attribute.kind === "Event",
+        );
+        if (!passed.length) {
+          for (const fill of node.fills) for (const child of fill.children) visit(child, path);
+          return;
+        }
+        const element: ElementNode = {
+          kind: "Element",
+          tag: node.component,
+          attributes: passed,
+          children: node.fills.flatMap((fill) => fill.children),
+          span: node.span,
+        };
+        components.set(`${node.span.start}:${node.span.end}`, element);
+        visit(element, path);
         return;
+      }
       case "SlotOutlet":
         for (const child of node.fallback) visit(child, path);
         return;
@@ -832,7 +871,7 @@ function planListeners(component: UfComponent): ListenerPlan {
   const mixedPassive = new Set(
     [...passive].flatMap(([event, kinds]) => (kinds.size === 2 ? [event] : [])),
   );
-  return { windowEvents, mixedPassive, groups };
+  return { windowEvents, mixedPassive, groups, components };
 }
 
 /**
@@ -966,6 +1005,8 @@ function declaredQrls(
       case "Model":
       case "Provide":
       case "Inject":
+      // A development-only block calls no setup function (UF2014, ADR-0117).
+      case "DevCheck":
         break;
       // A composable's callback argument is a QRL its hook calls, as a child calls a listener:
       // its calls are awaited (ADR-0069).
@@ -1077,6 +1118,11 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
     api() {
       return names.once("nextTick");
     },
+    // Qwik's own flag: its `./build` export resolves to `true` in development and `false` in
+    // production, by export condition (ADR-0117).
+    dev() {
+      return names.imports.add("@qwik.dev/core/build", "isDev");
+    },
     event(reference) {
       if (reference.member === "currentTarget") return names.once("element");
       if (event === undefined) {
@@ -1106,6 +1152,7 @@ export function referencedIds(refs: readonly CodeReference[]): Set<BindingId> {
       case "Api":
       case "Event":
       case "Slot":
+      case "Dev":
         break;
       default:
         unreachable(reference);
@@ -1155,6 +1202,9 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
         break;
       case "Inject":
         if (item.fallback) codes.push(item.fallback);
+        break;
+      case "DevCheck":
+        codes.push(item.code);
         break;
       case "Use":
         for (const argument of item.arguments) {
@@ -1368,6 +1418,8 @@ function hoistable(
           case "Import":
           case "Api":
           case "Event":
+          // An import, which a QRL reads at module scope (ADR-0117).
+          case "Dev":
             return false;
           default:
             return unreachable(reference);
@@ -1453,6 +1505,10 @@ function planFunctions(
       case "Inject":
         if (item.fallback) mark(render, item.fallback.refs);
         break;
+      // Runs where the body does, as render code reads (ADR-0117).
+      case "DevCheck":
+        mark(render, item.code.refs);
+        break;
       case "Function":
       case "TemplateRef":
       case "Id":
@@ -1473,7 +1529,7 @@ function planFunctions(
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
         if (attribute.handler.kind === "Function") client.add(attribute.handler.binding);
@@ -1695,6 +1751,8 @@ function emittedEvents(component: UfComponent): Set<string> {
       case "Model":
       case "Provide":
       case "Inject":
+      // A development-only block emits nothing (UF2017, ADR-0117).
+      case "DevCheck":
         break;
       // A composable's callback argument may emit (ADR-0069).
       case "Use":
@@ -1708,7 +1766,7 @@ function emittedEvents(component: UfComponent): Set<string> {
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
           visit(attribute.handler.function.body.refs);

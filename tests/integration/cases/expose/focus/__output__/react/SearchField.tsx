@@ -1,14 +1,13 @@
-import { type CSSProperties, type Ref, useImperativeHandle, useRef } from "react";
+import { type ComponentPropsWithoutRef, type Ref, useImperativeHandle, useRef } from "react";
 
 export interface SearchFieldHandle {
   focus(): void;
 }
 
-export interface SearchFieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-  ref?: Ref<SearchFieldHandle>;
-}
+export type SearchFieldAttributes = Omit<
+  ComponentPropsWithoutRef<"label">,
+  "label" | "children"
+> & { ref?: Ref<SearchFieldHandle> };
 
 export default function SearchField({
   label,
@@ -26,7 +25,7 @@ export default function SearchField({
   useImperativeHandle(ref, () => ({ focus }));
 
   return (
-    <label className={cx("search", className)} style={style} {...scopeAttributes(attributes)}>
+    <label className={cx("search", className)} style={style} {...attributes}>
       {label}
       <input ref={input} type="search" />
     </label>
@@ -46,13 +45,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

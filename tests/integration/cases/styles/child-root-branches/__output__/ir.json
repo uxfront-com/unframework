@@ -257,7 +257,24 @@
             "slots": [],
             "exposes": [],
             "inheritAttrs": true,
-            "root": "other"
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "heading"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "h2",
+              "h3"
+            ],
+            "rootTags": [
+              "h2",
+              "h3"
+            ]
           }
         ],
         "keys": []

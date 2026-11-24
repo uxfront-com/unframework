@@ -7,16 +7,18 @@ import {
   printMarkup,
   spreadStyleExpression,
   staticClassValue,
+  test,
   vueClassValue,
 } from "@unframework.dev/codegen";
-import type { ClassPart, MarkupDialect } from "@unframework.dev/codegen";
-import { expressionsOf, walk } from "@unframework.dev/ir";
+import type { ClassPart, MarkupDialect, PrintedAttribute } from "@unframework.dev/codegen";
+import { BINDABLE_BOOLEAN_ATTRIBUTES, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
   Attribute,
   BindingId,
   ClassItem,
   ComponentAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   Expression,
   FragmentNode,
@@ -33,6 +35,14 @@ import {
   TRANSITION_BRANCH_INPUT,
   TRANSITION_REGION_ATTRIBUTE,
 } from "./directives.ts";
+import {
+  ATTRIBUTES_INPUT,
+  childApi,
+  ELEMENT_REF,
+  FALLTHROUGH_ATTRIBUTE,
+  LISTENERS_INPUT,
+} from "./fallthrough.ts";
+import type { FallthroughPlan, RootElementPlan } from "./fallthrough.ts";
 import type { Listeners } from "./listeners.ts";
 import type { Models } from "./models.ts";
 import { outputName } from "./outputs.ts";
@@ -42,6 +52,9 @@ import { readThroughLet, templateRules } from "./rules.ts";
 
 /** The consumer's `style`, which the root merges over its own (ADR-0056). */
 const CONSUMER_STYLE = "this.style()";
+/** The consumer's attributes and listeners, which the root takes (ADR-0118). */
+const CONSUMER_ATTRIBUTES = `this.${ATTRIBUTES_INPUT}()`;
+const CONSUMER_LISTENERS = `this.${LISTENERS_INPUT}()`;
 
 /** The template's indentation: two levels, inside the decorator's object. */
 const INDENT = "  ";
@@ -84,7 +97,7 @@ export function template(
   reads: TemplateReads,
   composition: Composition,
   models: Models,
-  fallthrough: boolean,
+  fallthrough: { plan?: FallthroughPlan; rootElement?: RootElementPlan },
   scope?: { roots: ReadonlySet<string>; host: string },
   teleportHost?: string,
   transition?: { ref: string },
@@ -191,6 +204,26 @@ export function template(
       return [{ name, text: `${name}="${angularCode(statement, "event")}"` }];
     },
     modelAttribute: ({ attribute }) => models.attributes.get(attribute)!,
+    // The element that takes what the consumer passes binds the directive that puts it there
+    // (ADR-0118): the rest's element, or the root, which `withFallthrough` gives a `Rest`.
+    restAttribute: () => [
+      {
+        name: `[${FALLTHROUGH_ATTRIBUTE}]`,
+        text: `[${FALLTHROUGH_ATTRIBUTE}]="{ attributes: ${CONSUMER_ATTRIBUTES}, listeners: ${CONSUMER_LISTENERS} }"`,
+      },
+    ],
+    // The element that takes the consumer's attributes, which binds the directive (its `Rest`),
+    // binds its own of a name the consumer passes to the consumer's value (ADR-0118): the
+    // directive writes the record only as it changes, and Angular writes the element's own
+    // binding each time its value does, which would otherwise override the consumer's.
+    boundAttribute: (name, code, context) =>
+      context.element.attributes.some((attribute) => attribute.kind === "Rest")
+        ? consumerFirst(name, code, context)
+        : angularDialect.boundAttribute(name, code, context),
+    // What a child does not declare goes into its records (ADR-0118), on the host, which so
+    // carries no attribute and is unwrapped (ADR-0010).
+    fallthroughAttributes: (passed, context) =>
+      fallthroughRecords(passed, context, plan, fallthrough.plan),
     // A class part that may be an array or an object goes through `classNames` (ADR-0065).
     classAttribute: (written, context) => {
       const { classNames } = models;
@@ -226,7 +259,9 @@ export function template(
       return angularDialect.styleAttribute(parts, context);
     },
   };
-  const render = fallthrough ? withFallthrough(models.render) : models.render;
+  const render = fallthrough.plan
+    ? withFallthrough(models.render, fallthrough.plan)
+    : models.render;
   const markup = printMarkup(render, dialect, {
     indent: INDENT,
     level,
@@ -240,8 +275,14 @@ export function template(
         : models.options.get(attribute),
     // The child-root rule (ADR-0063): every root node, each candidate of a `<component is>`
     // included, binds the directive that gives it the scope attributes on the host.
-    scopeRootAttributes: ({ span }) =>
-      scope?.roots.has(`${span.start}:${span.end}`) ? [`[ufScope]="this.${scope.host}"`] : [],
+    // And the root a ref on the component holds, where it exposes nothing (ADR-0118), carries the
+    // template ref its `ufElement` query reads.
+    scopeRootAttributes: ({ span }) => [
+      ...(scope?.roots.has(`${span.start}:${span.end}`) ? [`[ufScope]="this.${scope.host}"`] : []),
+      ...(fallthrough.rootElement && sameSpan(fallthrough.rootElement.root.span, span)
+        ? [`#${ELEMENT_REF}`]
+        : []),
+    ],
   });
   // A slot's templates are projected here, so none counts as the default slot's content
   // (ADR-0056); an `<ng-template>` renders nothing where it is projected.
@@ -259,26 +300,32 @@ export function template(
 }
 
 /**
- * The component's root (an element, or a fragment of one element or component), which a
- * consumer's `class` and `style` fall through to (ADR-0054), or none.
+ * The render tree with what the consumer passes merged into the node that takes it (ADR-0056,
+ * ADR-0118), the root or the rest's element: `this.class()` among its class's parts,
+ * `this.style()` as its whole style, whose own declarations it overrides as Vue's merge does,
+ * and the records of attributes and listeners, which an element takes through the fallthrough
+ * directive, written where its `Rest` is, and a root component through its own inputs, merged
+ * with the ones the component passes it itself (`fallthroughAttributes`).
  */
-export function fallthroughRoot(
+function withFallthrough(
   render: ElementNode | FragmentNode,
-): ElementNode | ComponentNode | undefined {
-  if (render.kind === "Element") return render;
-  const [only] = render.children;
-  return render.children.length === 1 && (only?.kind === "Element" || only?.kind === "Component")
-    ? only
-    : undefined;
+  fallthrough: FallthroughPlan,
+): ElementNode | FragmentNode {
+  const { target } = fallthrough;
+  return mapNodes(render, (node) =>
+    node.kind === target.kind &&
+    node.span.start === target.span.start &&
+    node.span.end === target.span.end
+      ? takingPassed(node, fallthrough)
+      : undefined,
+  );
 }
 
-/**
- * The render tree with the consumer's `class` and `style` inputs merged into the root
- * (ADR-0056): `this.class()` among its class's parts, and `this.style()` as its whole style,
- * whose own declarations it overrides as Vue's merge does.
- */
-function withFallthrough(render: ElementNode | FragmentNode): ElementNode | FragmentNode {
-  const root = fallthroughRoot(render)!;
+/** The node that takes what the consumer passes, with it merged in (see `withFallthrough`). */
+function takingPassed(
+  root: ElementNode | ComponentNode | DynamicNode,
+  fallthrough: FallthroughPlan,
+): ElementNode | ComponentNode | DynamicNode {
   const span = root.span;
   const expression = (code: string): Expression => ({ code, span, refs: [] });
   const attributes: (Attribute | ComponentAttribute)[] = [...root.attributes];
@@ -317,9 +364,168 @@ function withFallthrough(render: ElementNode | FragmentNode): ElementNode | Frag
   } else if (style?.kind === "Style") {
     attributes[styleAt] = { ...style, declarations: [...style.declarations, declaration] };
   } else attributes.push({ kind: "Style", declarations: [declaration], span });
-  const merged = { ...root, attributes } as ElementNode | ComponentNode;
-  if (render.kind === "Element") return merged as ElementNode;
-  return { ...render, children: [merged] };
+  if (fallthrough.passes && root.kind !== "Component" && !fallthrough.rest) {
+    // The root takes the records as the rest's element does: through the directive, on the
+    // element of each `@case` of a `<component is>` root (ADR-0122).
+    attributes.push({ kind: "Rest", span });
+  }
+  if (fallthrough.passes && root.kind === "Component") {
+    // A root component takes the consumer's records whole where the component passes it none
+    // of its own, which `fallthroughAttributes` merges with them.
+    const has = (...kinds: string[]) => attributes.some(({ kind }) => kinds.includes(kind));
+    const prop = (name: string, code: string): ComponentAttribute => ({
+      kind: "Prop",
+      name,
+      value: expression(code),
+      span,
+    });
+    if (!has("Static", "Bound")) attributes.push(prop(ATTRIBUTES_INPUT, CONSUMER_ATTRIBUTES));
+    if (!has("Event")) attributes.push(prop(LISTENERS_INPUT, CONSUMER_LISTENERS));
+  }
+  return { ...root, attributes } as ElementNode | ComponentNode | DynamicNode;
+}
+
+/**
+ * A tree with each element, component or `<component is>` node `replace` gives another for
+ * replaced, and every object on the way to it copied: the others, attributes included, are the
+ * tree's own, which the listeners' and models' plans name.
+ */
+function mapNodes<T>(
+  value: T,
+  replace: (
+    node: ElementNode | ComponentNode | DynamicNode,
+  ) => ElementNode | ComponentNode | DynamicNode | undefined,
+): T {
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item: unknown) => {
+      const mapped = mapNodes(item, replace);
+      if (mapped !== item) changed = true;
+      return mapped;
+    });
+    return changed ? (next as T) : value;
+  }
+  if (value === null || typeof value !== "object") return value;
+  const { kind } = value as { kind?: unknown };
+  if (kind === "Element" || kind === "Component" || kind === "Dynamic") {
+    const replaced = replace(value as unknown as ElementNode | ComponentNode | DynamicNode);
+    if (replaced) return replaced as unknown as T;
+  }
+  let changed = false;
+  const next: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    const mapped = key === "attributes" || key === "span" ? child : mapNodes(child, replace);
+    if (mapped !== child) changed = true;
+    next[key] = mapped;
+  }
+  return changed ? (next as T) : value;
+}
+
+/** What a component element passes through it, and the element's context (`MarkupDialect`). */
+type FallthroughHook = Parameters<NonNullable<MarkupDialect["fallthroughAttributes"]>>;
+
+/** Whether two spans are one. */
+function sameSpan(a: { start: number; end: number }, b: { start: number; end: number }): boolean {
+  return a.start === b.start && a.end === b.end;
+}
+
+/**
+ * The records a component element binds for what falls through it (ADR-0118):
+ * `[ufAttributes]="{ id: 'save', 'aria-pressed': pressed }"`, each attribute's value as
+ * `[attr.name]` would bind it (a boolean attribute's `''` or `null`), and
+ * `[ufListeners]="{ click: () => onSave() }"`, each listener's template statement in an arrow
+ * whose parameter is `$event`. On the root component of a component that takes its own
+ * consumer's, they merge with the consumer's: its attributes win, and its listener of an event
+ * runs after the component's own, which the method the statement calls chains (./listeners.ts).
+ */
+function fallthroughRecords(
+  passed: FallthroughHook[0],
+  context: FallthroughHook[1],
+  plan: Plan,
+  own: FallthroughPlan | undefined,
+): PrintedAttribute[] {
+  const forwards =
+    own !== undefined &&
+    own.passes &&
+    own.target.kind === "Component" &&
+    sameSpan(own.target.span, context.component.span);
+  const svg = childApi(plan.module, context.component.component)?.fallthroughTag === "svg";
+  const attributes: string[] = [];
+  const listeners: string[] = [];
+  for (const entry of passed) {
+    switch (entry.kind) {
+      case "Static": {
+        const { name, value } = entry.attribute;
+        attributes.push(`${recordKey(name)}: ${JSON.stringify(value === true ? "" : value)}`);
+        break;
+      }
+      case "Bound": {
+        const { name } = entry.attribute;
+        const value =
+          !svg && BINDABLE_BOOLEAN_ATTRIBUTES.has(name)
+            ? `${test(entry.code)} ? "" : null`
+            : entry.code;
+        attributes.push(`${recordKey(name)}: ${value}`);
+        break;
+      }
+      case "Event": {
+        const { attribute, statement } = entry.event;
+        if (statement === undefined) {
+          throw new Error(`The \`${attribute.event}\` listener has no template statement.`);
+        }
+        const parameter = statement.includes("$event") ? "$event" : "";
+        listeners.push(`${recordKey(attribute.event)}: (${parameter}) => ${statement}`);
+        break;
+      }
+      default:
+        unreachable(entry);
+    }
+  }
+  const printed: PrintedAttribute[] = [];
+  const record = (input: string, entries: string[], consumer: string) => {
+    if (!entries.length) return;
+    // The consumer's attributes win over the component's own; the own listeners' methods run
+    // the consumer's after them.
+    const all = !forwards
+      ? entries
+      : input === ATTRIBUTES_INPUT
+        ? [...entries, `...${consumer}`]
+        : [`...${consumer}`, ...entries];
+    printed.push({
+      name: `[${input}]`,
+      text: `[${input}]="${angularCode(`{ ${all.join(", ")} }`, "attribute")}"`,
+    });
+  };
+  record(ATTRIBUTES_INPUT, attributes, CONSUMER_ATTRIBUTES);
+  record(LISTENERS_INPUT, listeners, CONSUMER_LISTENERS);
+  return printed;
+}
+
+/**
+ * An attribute the element that takes the consumer's binds itself, merged as Vue merges `$attrs`
+ * on each render (ADR-0118): the consumer's value where its record has the name, even a nullish
+ * one, which removes the attribute, and the element's own otherwise,
+ * `[attr.type]="'type' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['type'] : kind"`.
+ * The record holds a boolean attribute's value as `[attr.name]` binds it already
+ * (`fallthroughRecords`), so only the element's own is tested.
+ */
+function consumerFirst(
+  name: string,
+  code: string,
+  { namespace }: Parameters<MarkupDialect["boundAttribute"]>[2],
+): string {
+  const own =
+    namespace === "html" && BINDABLE_BOOLEAN_ATTRIBUTES.has(name)
+      ? `${test(code)} ? "" : null`
+      : code;
+  const key = JSON.stringify(name);
+  const merged = `${key} in (${CONSUMER_ATTRIBUTES} ?? {}) ? ${CONSUMER_ATTRIBUTES}?.[${key}] : ${own}`;
+  return `[attr.${name}]="${angularCode(merged, "attribute")}"`;
+}
+
+/** A record's key: the name itself where it is an identifier, quoted otherwise. */
+function recordKey(name: string): string {
+  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
 }
 
 /**

@@ -17,6 +17,11 @@ function packageExports(): { values: Set<string>; types: Set<string> } {
     const { declaration } = statement;
     if (declaration?.type === "FunctionDeclaration" || declaration?.type === "TSDeclareFunction") {
       values.add(declaration.id!.name);
+    } else if (declaration?.type === "VariableDeclaration") {
+      // `isDev`, a constant (ADR-0117).
+      for (const declarator of declaration.declarations) {
+        if (declarator.id.type === "Identifier") values.add(declarator.id.name);
+      }
     } else if (
       declaration?.type === "TSInterfaceDeclaration" ||
       declaration?.type === "TSTypeAliasDeclaration"

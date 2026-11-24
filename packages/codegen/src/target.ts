@@ -116,14 +116,20 @@ export type CapabilityName =
   | "model-array"
   /** A `v-model` that is `trim`, `lazy` or `number`, or of a `number` control. */
   | "model-modifiers"
-  /** A `class` or a `style` on a component, which falls through to its root (ADR-0054). */
+  /**
+   * A `class`, a `style`, an attribute or a native listener on a component, which falls through to
+   * its root (ADR-0054, ADR-0118), and a component's `...rest`, which takes them instead.
+   */
   | "fallthrough"
   /**
    * A component whose root element HTML or ARIA ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`):
    * a host element between them breaks the parent's content model (ADR-0056).
    */
   | "contextual-root"
-  /** `defineExpose`, and a `ref` on a component, which holds what it exposes. */
+  /**
+   * `defineExpose`, and a `ref` on a component, which holds what it exposes, or its root element
+   * where it exposes nothing (ADR-0118).
+   */
   | "expose"
   /** `provide` and `inject` (`ProvideItem`, `InjectItem`) with an injection key. */
   | "context"

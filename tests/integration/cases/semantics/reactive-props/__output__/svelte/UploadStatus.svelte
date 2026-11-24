@@ -16,9 +16,17 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = UploadStatusProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "fileName" | "state" | "percent" | "steps" | "error" | "children" | "class" | "style" | "ref"
+  > &
+    UploadStatusProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     fileName,
@@ -28,6 +36,7 @@
     error,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -67,20 +76,14 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["upload", `upload-${state}`, className]}
   aria-label={`Upload of ${fileName}`}
   style={mergeStyle({ color: state === "failed" ? "#8a1c1c" : "#1f3d5c", "--upload-percent": percent }, style)}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>{fileName}</h2
   ><div

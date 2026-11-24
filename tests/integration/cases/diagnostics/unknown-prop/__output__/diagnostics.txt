@@ -1,9 +1,9 @@
-error[UF3035]: Field declares no prop `lable`: a component takes its props, `class`, `style`, `key`, `ref`, its events' listeners and its slots. Did you mean `label`?
-  --> diagnostics/unknown-prop/Form.uf.tsx:14:14
+error[UF3035]: Field declares no prop `lable`, and it is no attribute of <label>, where what Field does not declare lands: a component takes its props, `key`, `ref`, its events' listeners, its slots and, falling through, `class`, `style`, attributes and DOM listeners. Did you mean `label`?
+  --> diagnostics/unknown-prop/Form.uf.tsx:15:14
    |
-14 |       <Field lable="Name" />
+15 |       <Field lable="Name" />
    |              ^^^^^
    |
-   = help: Pass a prop Field declares, or declare `lable` in its props.
+   = help: Pass a prop Field declares or an attribute of <label>, or declare `lable` in its props.
    = fix (likely): Write `label`
    = see: https://unframework.dev/diagnostics/UF3035

@@ -1,0 +1,124 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/attributes/SaveButton.uf.tsx",
+  "components": [
+    {
+      "name": "SaveButton",
+      "span": {
+        "start": 94,
+        "end": 248
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 149,
+              "end": 155
+            }
+          },
+          "binding": "title@131",
+          "span": {
+            "start": 142,
+            "end": 155
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string }",
+          "span": {
+            "start": 140,
+            "end": 157
+          }
+        },
+        "span": {
+          "start": 129,
+          "end": 157
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@131",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 131,
+            "end": 136
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 184,
+              "end": 197
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "button",
+            "span": {
+              "start": 198,
+              "end": 212
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "title",
+              "span": {
+                "start": 221,
+                "end": 226
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "title@131",
+                  "span": {
+                    "start": 221,
+                    "end": 226
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 220,
+              "end": 227
+            }
+          }
+        ],
+        "span": {
+          "start": 176,
+          "end": 241
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SaveButton",
+      "span": {
+        "start": 94,
+        "end": 248
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ContactCardProps {
   name: string;
@@ -8,10 +8,10 @@ export interface ContactCardProps {
   phone?: string | null;
 }
 
-export interface ContactCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ContactCardAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "name" | "jobTitle" | "team" | "pronouns" | "phone" | "children"
+>;
 
 export default function ContactCard({
   name,
@@ -29,7 +29,7 @@ export default function ContactCard({
       aria-label={name}
       data-team={team}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2 title={pronouns}>{name}</h2>
       <p>{jobTitle}</p>
@@ -51,13 +51,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

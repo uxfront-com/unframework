@@ -2,6 +2,7 @@ import {
   type CSSProperties,
   type ClassList,
   type JSXOutput,
+  type PropsOf,
   type QRL,
   component$,
 } from "@qwik.dev/core";
@@ -16,22 +17,17 @@ export interface TableSlots {
 }
 
 export default component$<
-  { people: Person[] } & TableSlots & { class?: ClassList; style?: CSSProperties }
+  { people: Person[] } & TableSlots &
+    Omit<PropsOf<"ol">, "people" | "row$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ people, row$, class: className, style, ...attributes }) => {
   return (
-    <ol aria-label="People" {...scopeAttributes(attributes)} class={className} style={style}>
+    <ol aria-label="People" class={className} style={style} {...attributes}>
       {people.map((person, index) => (
         <li key={person.id}>{row$?.({ name: person.name, "data-id": person.id, index })}</li>
       ))}
     </ol>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   createMemo,
@@ -6,6 +7,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
@@ -14,8 +16,11 @@ export interface MessageListEvents {
 }
 
 export default function MessageList(
-  props: MessageListEvents & { class?: string; style?: JSX.CSSProperties },
+  props: MessageListEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onRendered", "class"]);
+
   const [messages, setMessages] = createSignal(["Welcome to the team"]);
   let list: HTMLUListElement | null = null;
 
@@ -31,8 +36,7 @@ export default function MessageList(
     <section
       class={props.class ? `message-list ${props.class}` : "message-list"}
       aria-label="Messages"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ul
         ref={(element) => {
@@ -51,13 +55,6 @@ export default function MessageList(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

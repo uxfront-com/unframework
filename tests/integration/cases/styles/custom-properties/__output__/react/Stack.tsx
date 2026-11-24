@@ -1,10 +1,7 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 import "./Stack.uf.tsx.css";
 
-export interface StackAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StackAttributes = Omit<ComponentPropsWithRef<"ul">, "gap" | "accent" | "children">;
 
 export default function Stack({
   gap,
@@ -18,7 +15,7 @@ export default function Stack({
       className={cx("stack", className)}
       style={{ "--gap": gap, "--accent": accent, ...style } as CSSProperties}
       data-uf-e3a22111=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <li className="item" data-uf-e3a22111="">
         One
@@ -46,13 +43,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

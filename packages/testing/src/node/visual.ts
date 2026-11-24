@@ -452,7 +452,8 @@ interface CdpNode {
  *
  * It walks the pierced DOM tree, so it reaches what a selector cannot: user-agent shadow roots
  * (a `<textarea>`'s text, an `<input>`'s value and placeholder) and generated content
- * (`::before`, `::after`, a list marker).
+ * (`::before`, `::after`, a list marker). It sends every element's request at once, so its
+ * time does not grow with the wait for each answer.
  */
 async function fontAudit(
   page: Page,
@@ -510,9 +511,16 @@ async function fontAudit(
   };
   for (const container of containers) collect(container, undefined);
 
+  // Every element's request is sent before any answer is awaited. CDP answers one session's
+  // requests in the order they were sent, so the audit waits for one round trip, not one per
+  // element: each round trip waits for Vitest's main process too, which every page project of a
+  // live run shares, and 430 of them in turn took 20 s of a 60 s test there (UXF-896).
+  const answers = await Promise.all(
+    elements.map(({ nodeId }) => cdp.send("CSS.getPlatformFontsForNode", { nodeId })),
+  );
   const violations = new Set<string>();
-  for (const { nodeId, label } of elements) {
-    const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+  for (const [index, { fonts }] of answers.entries()) {
+    const { label } = elements[index]!;
     for (const font of fonts) {
       if (font.isCustomFont && ALLOWED_FONTS.includes(font.familyName)) continue;
       if (families.includes(font.familyName)) continue;

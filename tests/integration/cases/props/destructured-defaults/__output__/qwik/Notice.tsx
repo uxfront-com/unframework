@@ -1,4 +1,4 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export interface NoticeProps {
   message: string;
@@ -10,7 +10,13 @@ export interface NoticeProps {
   author?: { name: string };
 }
 
-export default component$<NoticeProps & { class?: ClassList; style?: CSSProperties }>(
+export default component$<
+  NoticeProps &
+    Omit<
+      PropsOf<"section">,
+      "message" | "title" | "tone" | "priority" | "expanded" | "tags" | "author" | "class" | "style"
+    > & { class?: ClassList; style?: CSSProperties }
+>(
   ({
     message,
     title = "Notice",
@@ -28,8 +34,8 @@ export default component$<NoticeProps & { class?: ClassList; style?: CSSProperti
         class={["notice", className]}
         aria-label={title}
         data-tone={tone}
-        {...scopeAttributes(attributes)}
         style={style}
+        {...attributes}
       >
         <h2>{title}</h2>
         <p>{message}</p>
@@ -43,12 +49,3 @@ export default component$<NoticeProps & { class?: ClassList; style?: CSSProperti
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

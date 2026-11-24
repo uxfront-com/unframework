@@ -314,6 +314,13 @@ describe("applyEdits", () => {
     ).toBe("Ab");
   });
 
+  it("applies edits that are alike once, as two fixes that add one import write them", () => {
+    const add = { span: { start: 10, end: 10 }, text: ", b" };
+    expect(
+      applyEdits("import { a } from", [add, { span: { start: 0, end: 0 }, text: "// x\n" }, add]),
+    ).toBe("// x\nimport { a, b } from");
+  });
+
   it("rejects overlapping and out-of-range edits", () => {
     expect(() =>
       applyEdits("abc", [

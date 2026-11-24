@@ -27,6 +27,8 @@ import type {
   ModelBindingAttribute,
   Namespace,
   RefAttribute,
+  StaticAttribute,
+  BoundAttribute,
   RenderNode,
   SlotFill,
   SlotOutletNode,
@@ -115,6 +117,15 @@ export type StylePart =
   | { kind: "Static"; property: string; value: string }
   | { kind: "Bound"; property: string; value: string };
 
+/**
+ * What a component element passes through to the child's fallthrough element (ADR-0118): an
+ * attribute it does not declare, static or bound, or a native listener.
+ */
+export type PrintedFallthrough =
+  | { kind: "Static"; attribute: StaticAttribute }
+  | { kind: "Bound"; attribute: BoundAttribute; code: string }
+  | { kind: "Event"; event: PrintedEvent };
+
 /** A listener, with its handler as code. */
 export interface PrintedEvent {
   /** The listener: its DOM event's name, its option and its handler. */
@@ -200,6 +211,52 @@ export interface PrintedModelBinding {
 }
 
 /**
+ * The guards of a `<component is>`'s attributes that only some tags take (ADR-0119), for its
+ * element piece: by name, the test that the tag `is` chooses is one of them,
+ * `(href ? "a" : "button") === "a"`. Absent where every tag takes every attribute.
+ */
+export function onlyGuards(node: DynamicNode, is: string): ReadonlyMap<string, string> | undefined {
+  if (!node.only?.length) return undefined;
+  const tag = /^[\w$.]+$/.test(is) ? is : `(${is})`;
+  return new Map(
+    node.only.map((entry) => [
+      entry.name,
+      entry.tags.map((each) => `${tag} === ${JSON.stringify(each)}`).join(" || "),
+    ]),
+  );
+}
+
+/**
+ * The attributes a `<component is>`'s tag candidate takes (ADR-0119): all of the node's, but the
+ * static and bound ones its `only` gives to other tags, for a target that writes one element per
+ * tag (Angular's `@case`, Qwik's branches).
+ */
+export function candidateAttributes(node: DynamicNode, tag: string): Attribute[] {
+  return tagAttributes(node).filter((attribute) => {
+    if (attribute.kind !== "Static" && attribute.kind !== "Bound") return true;
+    const only = node.only?.find((entry) => entry.name === attribute.name);
+    return !only || only.tags.includes(tag);
+  });
+}
+
+/** A `<component is>`'s attributes as an element's: a tag candidate's are (ADR-0054). */
+export function tagAttributes(node: DynamicNode): Attribute[] {
+  return node.attributes.filter(
+    (attribute): attribute is Attribute =>
+      attribute.kind !== "Prop" &&
+      attribute.kind !== "Listener" &&
+      attribute.kind !== "ModelBinding",
+  );
+}
+
+/** An element piece's `guards` field, left out where there are none. */
+export function guardsOf(guards: ReadonlyMap<string, string> | undefined): {
+  guards?: ReadonlyMap<string, string>;
+} {
+  return guards ? { guards } : {};
+}
+
+/**
  * `<component is>` (ADR-0054), with what chooses the candidate as code: the dialect writes it,
  * as a `component` or an `element` piece to print the candidates' attributes and content.
  */
@@ -277,7 +334,16 @@ export interface ListParts {
  */
 export type MarkupPiece =
   | { kind: "nodes"; nodes: readonly RenderNode[]; container: Container }
-  | { kind: "element"; element: ElementNode; directives: readonly PrintedAttribute[] }
+  | {
+      kind: "element";
+      element: ElementNode;
+      directives: readonly PrintedAttribute[];
+      /**
+       * The attributes that render only where a test holds, by name, with the test as code: a
+       * `<component is>`'s attributes that only some tags take (ADR-0119, {@link onlyGuards}).
+       */
+      guards?: ReadonlyMap<string, string>;
+    }
   | {
       kind: "wrapper";
       tag: string;
@@ -420,6 +486,20 @@ export interface MarkupDialect {
    * each time the child emits it.
    */
   componentEvent?(listener: PrintedListener, context: ComponentContext): PrintedAttribute[];
+  /**
+   * Writes what a component element passes through to the child's fallthrough element
+   * (ADR-0118), all at once, in source order. Without it, each is written as the element hooks
+   * write it on the component's tag (`attribute`, `boundAttribute`, `eventAttribute`).
+   */
+  fallthroughAttributes?(
+    attributes: readonly PrintedFallthrough[],
+    context: ComponentContext & { attributes: AttributeContext },
+  ): PrintedAttribute[];
+  /**
+   * Writes `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it
+   * does not declare. No default: each target names and spreads its rest its own way.
+   */
+  restAttribute?(context: AttributeContext): PrintedAttribute[];
   /**
    * Writes a component element's content from its fills (ADR-0054): the default slot's
    * children, the named slots' templates, and the forwarded slots. None closes the tag.
@@ -1010,7 +1090,7 @@ export function printMarkup(
       case "nodes":
         return itemsOf(piece.nodes, piece.container, at);
       case "element":
-        return [elementItem(piece.element, piece.directives, at)];
+        return [elementItem(piece.element, piece.directives, at, piece.guards)];
       case "wrapper": {
         const attributes = piece.attributes.map(({ text }) => ({ text, code: false }));
         return [
@@ -1127,6 +1207,7 @@ export function printMarkup(
       ...(spread.length ? { spreads: true } : {}),
     };
     const printed: PrintedAttribute[] = [...directives];
+    const passed: PrintedFallthrough[] = [];
     for (const attribute of node.attributes as readonly ComponentAttribute[]) {
       switch (attribute.kind) {
         case "Prop": {
@@ -1183,9 +1264,52 @@ export function printMarkup(
             ...hook(of, "modelBinding")({ attribute, value: code(attribute.value) }, context),
           );
           break;
+        // What falls through (ADR-0118): all at once below where the dialect takes them so, and
+        // otherwise each as the element hooks write it on the component's tag.
+        case "Static":
+          if (of.fallthroughAttributes) passed.push({ kind: "Static", attribute });
+          else {
+            printed.push({
+              name: attribute.name,
+              text:
+                attribute.value === true
+                  ? attribute.name
+                  : of.attribute(attribute.name, attribute.value, context.tag, attributeContext),
+            });
+          }
+          break;
+        case "Bound": {
+          const value = code(attribute.value);
+          if (of.fallthroughAttributes) passed.push({ kind: "Bound", attribute, code: value });
+          else {
+            printed.push({
+              name: attribute.name,
+              text: of.boundAttribute(attribute.name, value, attributeContext),
+            });
+          }
+          break;
+        }
+        case "Event": {
+          const statement = options.handler?.(attribute, element);
+          const event: PrintedEvent = {
+            attribute,
+            get handler() {
+              return handlerCode(attribute.handler);
+            },
+            ...(statement === undefined ? {} : { statement }),
+          };
+          if (of.fallthroughAttributes) passed.push({ kind: "Event", event });
+          else printed.push(...of.eventAttribute(event, attributeContext));
+          break;
+        }
         default:
           unreachable(attribute);
       }
+    }
+    if (passed.length) {
+      printed.push(
+        ...of.fallthroughAttributes!(passed, { ...context, attributes: attributeContext }),
+      );
     }
     // The scope attributes are values, unless the dialect writes them as code.
     const names = scopeNames(at);
@@ -1260,6 +1384,7 @@ export function printMarkup(
     element: ElementNode,
     directives: readonly PrintedAttribute[],
     at: Scope,
+    guards?: ReadonlyMap<string, string>,
   ): ElementItem {
     const namespace = elementNamespace(element.tag, at.namespace);
     const region = at.dialect.literalRegion?.(element);
@@ -1302,7 +1427,7 @@ export function printMarkup(
     return {
       kind: "element",
       tag: name,
-      attributes: attributesOf(element, marked, inner, rootAttributes(element, at)),
+      attributes: attributesOf(element, marked, inner, rootAttributes(element, at), guards),
       end: selfClosing ? " />" : ">",
       children,
       close: isVoid || selfClosing ? "" : `</${name}>`,
@@ -1323,6 +1448,7 @@ export function printMarkup(
     directives: readonly PrintedAttribute[],
     at: Scope,
     spread: readonly string[],
+    guards?: ReadonlyMap<string, string>,
   ): AttributeText[] {
     const of = at.dialect;
     const context: AttributeContext = {
@@ -1353,6 +1479,24 @@ export function printMarkup(
       const text = custom.get(attribute);
       if (text !== undefined) {
         if (text !== "") printed.push({ name: attributeName(attribute), text });
+        continue;
+      }
+      // An attribute only some tags take: bound to its value where the test holds (ADR-0119).
+      const guard =
+        attribute.kind === "Static" || attribute.kind === "Bound"
+          ? guards?.get(attribute.name)
+          : undefined;
+      if (guard !== undefined && (attribute.kind === "Static" || attribute.kind === "Bound")) {
+        const value =
+          attribute.kind === "Bound"
+            ? code(attribute.value)
+            : attribute.value === true
+              ? "true"
+              : JSON.stringify(attribute.value);
+        printed.push({
+          name: attribute.name,
+          text: of.boundAttribute(attribute.name, `${guard} ? ${value} : undefined`, context),
+        });
         continue;
       }
       switch (attribute.kind) {
@@ -1452,6 +1596,9 @@ export function printMarkup(
           );
           break;
         }
+        case "Rest":
+          printed.push(...hook(of, "restAttribute")(context));
+          break;
         default:
           unreachable(attribute);
       }
@@ -1746,7 +1893,8 @@ function hook<
     | "teleport"
     | "rawHtmlAttribute"
     | "directiveAttribute"
-    | "branchConstant",
+    | "branchConstant"
+    | "restAttribute",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];
   if (!found) {
@@ -1844,6 +1992,7 @@ function attributeName(attribute: Attribute): string {
     case "Style":
       return "style";
     case "Spread":
+    case "Rest":
       return "";
     // A listener orders as Vue's `@event`, which `vue/attributes-order` puts last.
     case "Event":

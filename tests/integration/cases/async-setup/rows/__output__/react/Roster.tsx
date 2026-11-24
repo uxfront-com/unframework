@@ -1,10 +1,7 @@
 import Member from "./Member";
-import { type CSSProperties, Fragment, useRef, useState } from "react";
+import { type ComponentPropsWithRef, Fragment, useRef, useState } from "react";
 
-export interface RosterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RosterAttributes = Omit<ComponentPropsWithRef<"section">, "ids" | "children">;
 
 export default function Roster({
   ids,
@@ -18,12 +15,7 @@ export default function Roster({
   const guestRef = useRef(guest);
 
   return (
-    <section
-      className={cx("roster", className)}
-      aria-label="Roster"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("roster", className)} aria-label="Roster" style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {
@@ -74,13 +66,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

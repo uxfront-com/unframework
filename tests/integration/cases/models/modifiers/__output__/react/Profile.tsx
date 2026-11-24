@@ -1,9 +1,6 @@
-import { type CSSProperties, type ChangeEvent, useState } from "react";
+import { type ChangeEvent, type ComponentPropsWithRef, useState } from "react";
 
-export interface ProfileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileAttributes = Omit<ComponentPropsWithRef<"form">, "children">;
 
 export default function Profile({ className, style, ...attributes }: ProfileAttributes) {
   const [name, setName] = useState("");
@@ -14,7 +11,7 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
   const weightField = useModelText(weight, setWeight, { number: true });
 
   return (
-    <form aria-label="Profile" className={className} style={style} {...scopeAttributes(attributes)}>
+    <form aria-label="Profile" className={className} style={style} {...attributes}>
       <label>
         Name <input {...nameField} />
       </label>
@@ -29,15 +26,6 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
       </output>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

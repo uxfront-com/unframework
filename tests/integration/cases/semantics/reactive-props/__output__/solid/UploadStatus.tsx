@@ -1,4 +1,13 @@
-import { For, type JSX, Match, Switch, createMemo, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  Match,
+  Switch,
+  createMemo,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface UploadStep {
   id: string;
@@ -14,8 +23,22 @@ export interface UploadStatusProps {
 }
 
 export default function UploadStatus(
-  props: UploadStatusProps & { class?: string; style?: JSX.CSSProperties },
+  props: UploadStatusProps &
+    Omit<
+      ComponentProps<"section">,
+      "fileName" | "state" | "percent" | "steps" | "error" | "style"
+    > & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, [
+    "fileName",
+    "state",
+    "percent",
+    "steps",
+    "error",
+    "class",
+    "style",
+  ]);
+
   return (
     <section
       class={cx("upload", `upload-${props.state}`, props.class)}
@@ -27,7 +50,7 @@ export default function UploadStatus(
         },
         ...props.style,
       }}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{props.fileName}</h2>
       <div
@@ -66,13 +89,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

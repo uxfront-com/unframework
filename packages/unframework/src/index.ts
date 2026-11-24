@@ -163,6 +163,22 @@ export function nextTick(_callback?: () => unknown): Promise<unknown> {
   return compileTimeOnly("nextTick");
 }
 
+/**
+ * `true` in a development build: code that only warns the component's author runs under it, and
+ * a production build drops it. Read it only as the whole test of an `if` with no `else`, at the
+ * top of the setup or in client code; each target writes its framework's own check in its place
+ * (ADR-0117).
+ *
+ * ```tsx
+ * if (isDev) {
+ *   if (!label) console.warn("IconButton has no accessible name: pass a `label`.");
+ * }
+ * ```
+ *
+ * The compiler replaces every read, so this value is never read at run time.
+ */
+export const isDev: boolean = true;
+
 // Macros: the component's public API, besides the props in its signature
 
 /** Declares events: `const emit = defineEmits<{ change: [value: number] }>()`; consumers write `onChange`. */

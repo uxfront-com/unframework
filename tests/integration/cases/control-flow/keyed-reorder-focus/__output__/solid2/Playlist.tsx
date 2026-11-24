@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
 export interface Track {
   id: number;
@@ -12,8 +12,14 @@ export interface PlaylistProps {
 }
 
 export default function Playlist(
-  props: PlaylistProps & { class?: string; style?: JSX.CSSProperties },
+  props: PlaylistProps &
+    Omit<ComponentProps<"section">, "initial" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "initial", "class");
+
   const [tracks, setTracks] = createState(untrack(() => props.initial));
 
   function sortByTitle() {
@@ -27,11 +33,7 @@ export default function Playlist(
   }
 
   return (
-    <section
-      class={props.class ? `playlist ${props.class}` : "playlist"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `playlist ${props.class}` : "playlist"} {...others}>
       <ol aria-label="Playlist">
         <KeyedFor each={tracks()} by={(track) => track.id}>
           {(track) => (
@@ -59,13 +61,6 @@ export default function Playlist(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

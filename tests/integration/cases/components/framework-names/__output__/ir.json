@@ -134,7 +134,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "level"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "div"
           }
         ],
         "keys": []
@@ -177,7 +188,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "p"
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "step"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "p"
           }
         ],
         "keys": []
@@ -214,7 +236,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "p"
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "note"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "p"
           }
         ],
         "keys": []

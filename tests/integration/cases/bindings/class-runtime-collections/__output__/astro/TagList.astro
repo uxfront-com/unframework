@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 type TagStates = { selected?: boolean; muted?: boolean };
 
 export interface TagListProps {
@@ -8,24 +10,18 @@ export interface TagListProps {
   extra?: string[];
 }
 
-interface Props extends TagListProps {
+interface Props
+  extends TagListProps, Omit<HTMLAttributes<"div">, "label" | "tags" | "states" | "extra"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, tags, states, extra, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, tags, states, extra, class: className, style, ...attrs } = Astro.props;
 
 const expanded = false as boolean;
 ---
 
-<div class:list={["tag-list", className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={["tag-list", className]} style={style} {...attrs}>
   <span class:list={["tag", tags, states, { "tag-open": expanded }]}>{label}</span>
   <span class:list={[tags]}>Plain</span>
   <span class:list={[extra, expanded ? ["tag-wide", "tag-tall"] : []]}>Extra</span>

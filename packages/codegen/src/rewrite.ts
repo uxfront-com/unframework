@@ -14,6 +14,7 @@ import type {
   BindingReference,
   Code,
   CodeReference,
+  DevReference,
   EmitReference,
   EventReference,
   Expression,
@@ -97,6 +98,12 @@ export interface RewriteRules {
   /** The code that replaces a use of an authoring API (`nextTick`): as written when absent. */
   api?(reference: ApiReference, site: RewriteSite): string;
   /**
+   * The code that replaces `isDev`, an `if`'s test (ADR-0117): the target's framework's own
+   * development check, `process.env.NODE_ENV !== "production"` or `ngDevMode`. As written when
+   * absent, which no output declares, so a target that leaves it out fails its type check (L3).
+   */
+  dev?(reference: DevReference, site: RewriteSite): string;
+  /**
    * The code that replaces a slot's presence, `slots.title` (ADR-0054): whether the parent filled
    * it, as the target tests it (`title != null`, `title()`). As written when absent.
    */
@@ -163,18 +170,22 @@ export function bindingOf(component: UfComponent, id: BindingId): Binding {
 const blockBodies = new WeakMap<UfComponent, ReadonlySet<string>>();
 
 /**
- * What a piece of a component's setup code is: the block body of one of its functions is
- * statements; everything else (initial values, values, expression bodies, conditions) is an
+ * What a piece of a component's setup code is: the block body of one of its functions, and a
+ * top-level `if (isDev) { … }` (ADR-0117), is statements; everything else (initial values, values, expression bodies, conditions) is an
  * expression. Code alone cannot say (`{ a }`), its place in the component does.
  */
 export function codeKind(code: Code, component: UfComponent): CodeKind {
   let bodies = blockBodies.get(component);
   if (!bodies) {
-    bodies = new Set(
-      functionsOf(component).flatMap(({ function: fn }) =>
+    bodies = new Set([
+      ...functionsOf(component).flatMap(({ function: fn }) =>
         fn.expression ? [] : [spanKey(fn.body.span)],
       ),
-    );
+      // A top-level `if (isDev) { … }` is a statement (ADR-0117).
+      ...component.setup.flatMap((item) =>
+        item.kind === "DevCheck" ? [spanKey(item.code.span)] : [],
+      ),
+    ]);
     blockBodies.set(component, bodies);
   }
   return bodies.has(spanKey(code.span)) ? "statements" : "expression";
@@ -322,6 +333,7 @@ function slotsOf(reference: CodeReference): readonly Span[] {
     case "Api":
     case "Slot":
     case "Import":
+    case "Dev":
       return [];
     default:
       return unreachable(reference);
@@ -399,6 +411,8 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
     // A pass-through import is read as written, and its module's plugin resolves it (ADR-0064).
     case "Import":
       return rules.import?.(reference, site) ?? written;
+    case "Dev":
+      return rules.dev?.(reference, site) ?? written;
     default:
       return unreachable(reference);
   }

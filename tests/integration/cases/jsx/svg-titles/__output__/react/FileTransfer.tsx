@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface FileTransferProps {
   fileName: string;
@@ -7,10 +7,10 @@ export interface FileTransferProps {
   eta?: string;
 }
 
-export interface FileTransferAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FileTransferAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "fileName" | "percent" | "paused" | "eta" | "children"
+>;
 
 export default function FileTransfer({
   fileName,
@@ -22,7 +22,7 @@ export default function FileTransfer({
   ...attributes
 }: FileTransferProps & FileTransferAttributes) {
   return (
-    <div className={cx("file-transfer", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("file-transfer", className)} style={style} {...attributes}>
       <svg className="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
         <title>{`${fileName}: ${percent}% sent. ${eta ?? ""}`}</title>
         <circle cx="18" cy="18" r="16" fill="none" stroke="#0969da" strokeWidth="4" />
@@ -48,13 +48,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

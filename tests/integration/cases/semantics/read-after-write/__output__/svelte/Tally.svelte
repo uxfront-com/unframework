@@ -1,17 +1,29 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "ontotal" | "onsteps" | "onlogged" | "children" | "class" | "style" | "ref"
+  > & {
     ontotal?: (value: number) => void;
     onsteps?: (values: number[]) => void;
     onlogged?: (entries: string[]) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { ontotal, onsteps, onlogged, class: className, style, ...attributes }: Props = $props();
+  let {
+    ontotal,
+    onsteps,
+    onlogged,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let count = $state(0);
   let trail = $state.raw<string[]>([]);
@@ -53,16 +65,9 @@
     trail = [...trail, "bubble"];
     onlogged?.(trail);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={["tally", className]} aria-label="Tally" {style} {...scopeAttributes(attributes)}>
+<section class={["tally", className]} aria-label="Tally" {style} bind:this={ref} {...attributes}>
   <p role="status">Count: {count}</p
   ><button type="button" onclick={addTwice}>Add two</button
   ><button type="button" onclick={addFive}>Add five</button

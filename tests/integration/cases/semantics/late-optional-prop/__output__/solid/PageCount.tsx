@@ -1,4 +1,13 @@
-import { type JSX, createMemo, createReaction, mergeProps, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createMemo,
+  createReaction,
+  mergeProps,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface PageCountProps {
   page?: number;
@@ -10,9 +19,13 @@ export interface PageCountEvents {
 }
 
 export default function PageCount(
-  rawProps: PageCountProps & PageCountEvents & { class?: string; style?: JSX.CSSProperties },
+  rawProps: PageCountProps &
+    PageCountEvents &
+    Omit<ComponentProps<"nav">, "page" | "total" | "style"> & { style?: JSX.CSSProperties },
 ) {
   const props = mergeProps({ page: 1 } satisfies Partial<PageCountProps>, rawProps);
+  const [, others] = splitProps(props, ["page", "total", "onPageChange", "class"]);
+
   const label = createMemo(() => `Page ${props.page} of ${props.total}`);
 
   createWatcher(
@@ -26,20 +39,12 @@ export default function PageCount(
     <nav
       class={props.class ? `page-count ${props.class}` : "page-count"}
       aria-label="Pages"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{label()}</p>
       <p>Direct: {props.page}</p>
     </nav>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

@@ -1,4 +1,4 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export interface AuthorBylineProps {
   author: string;
@@ -7,23 +7,28 @@ export interface AuthorBylineProps {
   affiliation?: string;
 }
 
-export default component$<AuthorBylineProps & { class?: ClassList; style?: CSSProperties }>(
-  (props) => {
-    return (
-      <p class={["byline", props.class]} {...scopeAttributes(props)} style={props.style}>
-        By {props.author}, {props.affiliation ?? "independent"}
-        <br />
-        <time dateTime={props.published}>{props.published}</time> · {props.minutes} min read
-      </p>
-    );
-  },
-);
+export default component$<
+  AuthorBylineProps &
+    Omit<PropsOf<"p">, "author" | "published" | "minutes" | "affiliation" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>((props) => {
+  const {
+    author: _author,
+    published: _published,
+    minutes: _minutes,
+    affiliation: _affiliation,
+    class: _class,
+    style: _style,
+    ...attributes
+  } = props;
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <p class={["byline", props.class]} style={props.style} {...attributes}>
+      By {props.author}, {props.affiliation ?? "independent"}
+      <br />
+      <time dateTime={props.published}>{props.published}</time> · {props.minutes} min read
+    </p>
+  );
+});

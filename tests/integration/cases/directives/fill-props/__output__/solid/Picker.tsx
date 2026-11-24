@@ -1,21 +1,30 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface PickerSlots {
   option?: (props: { option: { id: string; label: string } }) => JSX.Element;
 }
 
-export default function Picker(props: PickerSlots & { class?: string; style?: JSX.CSSProperties }) {
+export default function Picker(
+  props: PickerSlots &
+    Omit<ComponentProps<"div">, "option" | "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["option", "class"]);
+
   const [options, setOptions] = createSignal([
     { id: "x", label: "Xray" },
     { id: "y", label: "Yankee" },
   ]);
 
   return (
-    <div
-      class={props.class ? `picker ${props.class}` : "picker"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `picker ${props.class}` : "picker"} {...others}>
       <ul aria-label="Options">
         <KeyedFor each={options()} by={(option) => option.id}>
           {(option) => <li>{props.option?.({ option: option.value })}</li>}
@@ -33,13 +42,6 @@ export default function Picker(props: PickerSlots & { class?: string; style?: JS
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

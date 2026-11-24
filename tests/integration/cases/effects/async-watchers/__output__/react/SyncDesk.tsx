@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -31,10 +31,22 @@ export interface SyncDeskEvents {
   onClamped?: (level: number) => void;
 }
 
-export interface SyncDeskAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SyncDeskAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "files"
+  | "onChecked"
+  | "onSummary"
+  | "onFocused"
+  | "onProgress"
+  | "onSaveState"
+  | "onSavedName"
+  | "onImportState"
+  | "onSettled"
+  | "onSending"
+  | "onSent"
+  | "onClamped"
+  | "children"
+>;
 
 async function validate(value: string): Promise<boolean> {
   return value.includes("@");
@@ -379,7 +391,7 @@ export default function SyncDesk({
       className={cx("sync-desk", className)}
       aria-label="Sync desk"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" onClick={suggest}>
         Suggest
@@ -516,13 +528,4 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

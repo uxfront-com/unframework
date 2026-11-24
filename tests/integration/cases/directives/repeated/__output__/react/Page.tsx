@@ -2,12 +2,9 @@ import Choice from "./Choice";
 import List from "./List";
 import Wrapper from "./Wrapper";
 import { vTrace } from "./vTrace";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
-export interface PageAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PageAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Page({ className, style, ...attributes }: PageAttributes) {
   const [label, setLabel] = useState("first");
@@ -21,12 +18,7 @@ export default function Page({ className, style, ...attributes }: PageAttributes
   const traceRef_3 = useDirective(vTrace, () => label);
 
   return (
-    <section
-      className={cx("page", className)}
-      aria-label="Page"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("page", className)} aria-label="Page" style={style} {...attributes}>
       <Wrapper
         row={
           <span data-name="row" ref={traceRef}>
@@ -98,15 +90,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** The hooks of a directive, which `useDirective` runs on its elements. */

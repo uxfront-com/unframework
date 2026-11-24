@@ -12,9 +12,26 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = OrderSummaryProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "customer"
+    | "orderNumber"
+    | "unitPrice"
+    | "quantity"
+    | "discount"
+    | "coupon"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    OrderSummaryProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     customer,
@@ -25,22 +42,17 @@
     coupon,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["order-summary", className]}
   aria-label="Order summary"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>Order {String(orderNumber).padStart(6, "0")}</h2
   ><p>Customer: {customer.trim().toUpperCase()}</p

@@ -1,9 +1,6 @@
-import { type CSSProperties, type KeyboardEvent, useRef } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef } from "react";
 
-export interface SearchToggleAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchToggleAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function SearchToggle({ className, style, ...attributes }: SearchToggleAttributes) {
   const field = useRef<HTMLInputElement>(null);
@@ -18,12 +15,7 @@ export default function SearchToggle({ className, style, ...attributes }: Search
   }
 
   return (
-    <div
-      className={cx("search-toggle", className)}
-      role="search"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("search-toggle", className)} role="search" style={style} {...attributes}>
       <button type="button" ref={trigger} onClick={focusField}>
         Search
       </button>
@@ -45,13 +37,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

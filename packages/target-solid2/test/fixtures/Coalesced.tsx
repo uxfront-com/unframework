@@ -1,10 +1,11 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
 } from "solid-js";
@@ -21,8 +22,14 @@ function parse(text: string): number {
 }
 
 export default function Coalesced(
-  props: CoalescedEvents & { class?: string; style?: JSX.CSSProperties },
+  props: CoalescedEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onState", "onSaved");
+
   const [step, setStep] = createState("idle");
   const [count, setCount] = createState(0);
   const [busy, setBusy] = createState(false);
@@ -142,12 +149,7 @@ export default function Coalesced(
   }
 
   return (
-    <section
-      aria-label="Coalesced"
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Coalesced" {...others}>
       <p role="status">
         {step()} {count()} {busy() ? "busy" : "idle"}
       </p>
@@ -198,13 +200,6 @@ export default function Coalesced(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

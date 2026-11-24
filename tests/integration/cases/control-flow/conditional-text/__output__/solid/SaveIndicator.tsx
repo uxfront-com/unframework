@@ -1,4 +1,4 @@
-import { type JSX, Show } from "solid-js";
+import { type ComponentProps, type JSX, Show, splitProps } from "solid-js";
 
 export interface SaveIndicatorProps {
   saving: boolean;
@@ -7,14 +7,18 @@ export interface SaveIndicatorProps {
 }
 
 export default function SaveIndicator(
-  props: SaveIndicatorProps & { class?: string; style?: JSX.CSSProperties },
+  props: SaveIndicatorProps &
+    Omit<ComponentProps<"p">, "saving" | "changes" | "savedAt" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["saving", "changes", "savedAt", "class"]);
+
   return (
     <p
       class={props.class ? `save-indicator ${props.class}` : "save-indicator"}
       role="status"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Show when={props.saving} fallback="Saved">
         <em>Saving</em>
@@ -25,11 +29,4 @@ export default function SaveIndicator(
       </Show>
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

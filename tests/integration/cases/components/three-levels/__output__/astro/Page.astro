@@ -1,27 +1,21 @@
 ---
 import Section from "./Section.astro";
+import type { HTMLAttributes } from "astro/types";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"article">, "name"> {
   name: string;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { name, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { name, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
 <article
-  aria-label="Profile"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Profile"}
   class:list={[className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <Section title={`About ${name}`} body="Three components deep." />
   <Section title="Contact" body={`Write to ${name}.`} />

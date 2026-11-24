@@ -1,4 +1,4 @@
-import { type CSSProperties, type SyntheticEvent, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type SyntheticEvent, useMemo, useRef, useState } from "react";
 
 export interface Task {
   id: number;
@@ -17,10 +17,7 @@ export interface TaskBoardProps {
   initial: Task[];
 }
 
-export interface TaskBoardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TaskBoardAttributes = Omit<ComponentPropsWithRef<"section">, "initial" | "children">;
 
 function sizeSummary(event: SyntheticEvent) {
   const area = event.currentTarget as HTMLTextAreaElement;
@@ -122,7 +119,7 @@ export default function TaskBoard({
       className={cx("task-board", className)}
       aria-label="Tasks"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ol aria-label="Open">
         {open.map((task) => (
@@ -178,13 +175,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

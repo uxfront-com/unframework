@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useEffectEvent, useMemo, useRef } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useMemo, useRef } from "react";
 
 export interface TemperatureProps {
   celsius: number;
@@ -8,10 +8,10 @@ export interface TemperatureEvents {
   onReading?: (celsius: number, previous: number) => void;
 }
 
-export interface TemperatureAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TemperatureAttributes = Omit<
+  ComponentPropsWithRef<"figure">,
+  "celsius" | "onReading" | "children"
+>;
 
 export default function Temperature({
   celsius,
@@ -39,7 +39,7 @@ export default function Temperature({
       className={cx("temperature", className)}
       data-level={level}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>{celsius} °C</p>
       <p>{fahrenheit} °F</p>
@@ -61,13 +61,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

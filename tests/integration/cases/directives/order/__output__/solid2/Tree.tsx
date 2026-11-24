@@ -1,6 +1,6 @@
 import Note from "./Note";
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver, onCleanup, onSettled, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit, onCleanup, onSettled, untrack } from "solid-js";
 
 const TRACE = "directive-trace";
 
@@ -29,7 +29,14 @@ function vTrace(getValue: () => string): (element: HTMLElement) => void {
   };
 }
 
-export default function Tree(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Tree(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [shown, setShown] = createState(true);
 
   return (
@@ -38,8 +45,7 @@ export default function Tree(props: { class?: string; style?: JSX.CSSProperties 
       aria-label="Tree"
       data-name="outer"
       ref={vTrace(() => "outer")}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p data-name="first" ref={vTrace(() => "first")}>
         First
@@ -67,13 +73,6 @@ export default function Tree(props: { class?: string; style?: JSX.CSSProperties 
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

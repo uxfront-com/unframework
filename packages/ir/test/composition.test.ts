@@ -12,8 +12,10 @@ import {
   collectFeatures,
   createBinding,
   createBindingReference,
+  createBoundAttribute,
   createCode,
   createDynamicNode,
+  createEventAttribute,
   createExposes,
   createExpression,
   createFunctionHandler,
@@ -23,6 +25,7 @@ import {
   createParameter,
   createPropAttribute,
   createRawHtmlAttribute,
+  createRestAttribute,
   createSlotFill,
   createSlotReference,
   createStaticAttribute,
@@ -41,6 +44,7 @@ import type {
   ComponentAttribute,
   ComponentNode,
   DynamicCandidate,
+  DynamicNode,
   ElementNode,
   Expression,
   IfNode,
@@ -398,6 +402,45 @@ describe("checkInvariants on `<component is>`", () => {
     );
   });
 
+  it("checks an attribute `only` gives to some tags on those tags alone (ADR-0119)", () => {
+    const tags: DynamicCandidate[] = [
+      { kind: "Tag", tag: "a" },
+      { kind: "Tag", tag: "button" },
+    ];
+    const href = createStaticAttribute("href", "/", find("label={label}"));
+    const module = withDynamic(tags, [href]);
+    const node = root(module).children[4] as DynamicNode;
+    // Unchecked on `<button>`, which does not take it.
+    node.only = [{ name: "href", tags: ["a"] }];
+    expect(checkInvariants(module)).toEqual([]);
+    // Without the entry, `<button>` checks it.
+    delete node.only;
+    reports(module, `${at}/attributes/0/name`, "must be an attribute of <button>");
+  });
+
+  it.each([
+    [[{ name: "href", tags: [] }], "/only/0/tags", "must list some of the node's tag candidates"],
+    [[{ name: "href", tags: ["a", "button"] }], "/only/0/tags", "and not all of them"],
+    [[{ name: "href", tags: ["p"] }], "/only/0/tags", "must list some"],
+    [[{ name: "title", tags: ["a"] }], "/only/0/name", "must name a static or bound attribute"],
+    [
+      [
+        { name: "href", tags: ["a"] },
+        { name: "href", tags: ["a"] },
+      ],
+      "/only/1/name",
+      'must name "href" once',
+    ],
+  ])("reports a malformed `only`: %j", (only, path, message) => {
+    const tags: DynamicCandidate[] = [
+      { kind: "Tag", tag: "a" },
+      { kind: "Tag", tag: "button" },
+    ];
+    const module = withDynamic(tags, [createStaticAttribute("href", "/", find("label={label}"))]);
+    (root(module).children[4] as DynamicNode).only = only;
+    reports(module, `${at}${path}`, message);
+  });
+
   it("reports an element's attribute and children for component candidates", () => {
     const field: DynamicCandidate[] = [{ kind: "Component", component: "Field" }];
     reports(
@@ -440,6 +483,31 @@ describe("checkInvariants on components, fills and slots", () => {
     ];
     listener.handler = inline;
     reports(module, "/attributes/2/handler/function/parameters", "never a DOM event");
+  });
+
+  it("reports what falls through set twice, read out of scope, or no DOM event's listener", () => {
+    const module = composition();
+    const field = fieldOf(module);
+    const at = find("label={label}");
+    field.attributes.push(
+      createStaticAttribute("id", "a", at),
+      createBoundAttribute("id", expression(at, [["label", "nowhere"]]), at),
+      createEventAttribute("clear", createFunctionHandler(ids.text, at), at),
+    );
+    reports(module, "/attributes/4/name", "must be set once");
+    reports(module, "/attributes/4/value/refs/0/binding", '"nowhere" is not one');
+    reports(module, "/attributes/5/event", 'and "clear" is not one');
+    reports(module, "/attributes/5/handler/binding", "must name a local function");
+  });
+
+  it("reports the props' rest on an element of a component that keeps inheritAttrs", () => {
+    const module = composition();
+    root(module).attributes.push(createRestAttribute(find("<div>")));
+    reports(module, "/render/attributes/0", "must be in a component with `inheritAttrs: false`");
+    form(module).inheritAttrs = false;
+    expect(
+      checkInvariants(module).filter((error) => error.message.includes("inheritAttrs")),
+    ).toEqual([]);
   });
 
   it("reports a slot filled twice", () => {

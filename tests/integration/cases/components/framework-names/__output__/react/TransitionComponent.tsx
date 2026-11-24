@@ -1,9 +1,6 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface TransitionComponentAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TransitionComponentAttributes = Omit<ComponentPropsWithRef<"p">, "children">;
 
 export default function TransitionComponent({
   className,
@@ -11,7 +8,7 @@ export default function TransitionComponent({
   ...attributes
 }: TransitionComponentAttributes) {
   return (
-    <p className={cx("note", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("note", className)} style={style} {...attributes}>
       Plain child
     </p>
   );
@@ -30,13 +27,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

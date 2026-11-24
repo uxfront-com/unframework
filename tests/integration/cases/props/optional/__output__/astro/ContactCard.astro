@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface ContactCardProps {
   name: string;
   jobTitle?: string;
@@ -7,27 +9,34 @@ export interface ContactCardProps {
   phone?: string | null;
 }
 
-interface Props extends ContactCardProps {
+interface Props
+  extends
+    ContactCardProps,
+    Omit<HTMLAttributes<"article">, "name" | "jobTitle" | "team" | "pronouns" | "phone"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { name, jobTitle, team, pronouns, phone, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  name,
+  jobTitle,
+  team,
+  pronouns,
+  phone,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  "data-team": dataTeam,
+  ...attrs
+} = Astro.props;
 ---
 
 <article
   class:list={["contact-card", className]}
-  aria-label={name}
-  data-team={team}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : name}
+  data-team={"data-team" in Astro.props ? dataTeam : team}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2 title={pronouns}>{name}</h2>
   <p>{jobTitle}</p>

@@ -1,10 +1,7 @@
 import Notice from "./Notice";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface InboxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type InboxAttributes = Omit<ComponentPropsWithRef<"div">, "unread" | "children">;
 
 export default function Inbox({
   unread,
@@ -16,7 +13,7 @@ export default function Inbox({
   const countRef = useRef(count);
 
   return (
-    <div className={cx("inbox", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("inbox", className)} style={style} {...attributes}>
       {count > 0 ? (
         <Notice text={`${count} unread`} tone="info" />
       ) : (
@@ -48,13 +45,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

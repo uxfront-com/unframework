@@ -1,4 +1,4 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export interface ContactLineProps {
   name: string;
@@ -7,14 +7,18 @@ export interface ContactLineProps {
 }
 
 export default function ContactLine(
-  props: ContactLineProps & { class?: string; style?: JSX.CSSProperties },
+  props: ContactLineProps &
+    Omit<ComponentProps<"section">, "name" | "phone" | "verified" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["name", "phone", "verified", "class"]);
+
   return (
     <section
       class={props.class ? `contact-line ${props.class}` : "contact-line"}
       aria-label={props.name}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p data-phone={props.phone === null ? "withheld" : props.phone}>
         Phone: {props.phone === null ? "withheld" : (props.phone ?? "not given yet")}
@@ -28,11 +32,4 @@ export default function ContactLine(
       </p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

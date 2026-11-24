@@ -9,11 +9,27 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = SummaryProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    "name" | "plan" | "seats" | "children" | "class" | "style" | "ref"
+  > &
+    SummaryProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["div"] | null;
+    };
 
-  let { name, plan, seats, class: className, style, ...attributes }: Props = $props();
+  let {
+    name,
+    plan,
+    seats,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -51,19 +67,13 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <div
   class={["summary", className]}
   style={mergeStyle({ display: "table", "border-spacing": "8px 4px" }, style)}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <div style="display: table-caption; font-weight: 700">Account</div
   ><div style="display: table-row">

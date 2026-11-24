@@ -1,4 +1,11 @@
-import { type JSX, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface ArticlePreviewProps {
   title: string;
@@ -10,8 +17,12 @@ export interface ArticlePreviewEvents {
 }
 
 export default function ArticlePreview(
-  props: ArticlePreviewProps & ArticlePreviewEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ArticlePreviewProps &
+    ArticlePreviewEvents &
+    Omit<ComponentProps<"article">, "title" | "text" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["title", "text", "onReady", "class"]);
+
   let body: HTMLParagraphElement | null = null;
   const [characters, setCharacters] = createSignal(0);
   const [counted, setCounted] = createSignal(false);
@@ -27,8 +38,7 @@ export default function ArticlePreview(
     <article
       class={props.class ? `article-preview ${props.class}` : "article-preview"}
       aria-label={props.title}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{props.title}</h2>
       <p
@@ -44,11 +54,4 @@ export default function ArticlePreview(
       <p role="status">{counted() ? `${characters()} characters` : "Counting the characters"}</p>
     </article>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,4 +1,11 @@
-import { type CSSProperties, type KeyboardEvent, useId, useMemo, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type KeyboardEvent,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface CityPickerProps {
   cities: string[];
@@ -9,10 +16,10 @@ export interface CityPickerEvents {
   onNoted?: (text: string) => void;
 }
 
-export interface CityPickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CityPickerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "cities" | "onChose" | "onNoted" | "children"
+>;
 
 export default function CityPicker({
   cities,
@@ -98,7 +105,7 @@ export default function CityPicker({
       className={cx("city-picker", className)}
       aria-label="Trip"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <form role="search" aria-label="Destination" onSubmit={(event) => event.preventDefault()}>
         <label>
@@ -173,13 +180,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

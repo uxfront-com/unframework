@@ -1,9 +1,6 @@
-import { type CSSProperties, type ChangeEvent, useRef, useState } from "react";
+import { type ChangeEvent, type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface QuantityAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type QuantityAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Quantity({ className, style, ...attributes }: QuantityAttributes) {
   const [count, setCount] = useState(2);
@@ -20,12 +17,7 @@ export default function Quantity({ className, style, ...attributes }: QuantityAt
   const volumeField = useModelText(volume, setVolume, { number: true });
 
   return (
-    <section
-      aria-label="Order"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Order" className={className} style={style} {...attributes}>
       <input type="number" aria-label="Count" min="0" {...countField} />
       <input type="range" aria-label="Volume" min="0" max="10" {...volumeField} />
       <output>
@@ -42,15 +34,6 @@ export default function Quantity({ className, style, ...attributes }: QuantityAt
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

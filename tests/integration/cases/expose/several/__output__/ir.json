@@ -272,7 +272,17 @@
             ],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "output"
+            "rootTag": "output",
+            "fallthroughTag": "output",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "count"
+                }
+              ],
+              "listeners": []
+            }
           }
         ],
         "keys": []

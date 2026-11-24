@@ -1,29 +1,25 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface SelectProps<T extends string> {
   label: string;
   options: readonly T[];
 }
 
-interface Props<T extends string> extends SelectProps<T> {
+interface Props<T extends string>
+  extends SelectProps<T>, Omit<HTMLAttributes<"label">, "label" | "options" | "value"> {
   value: T;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, options, value, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, options, value, class: className, style, ...attrs } = Astro.props;
 ---
 
 <label
   class:list={[className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label} <select>{options.map((option) => <option
   value={option}
   selected={value === option}

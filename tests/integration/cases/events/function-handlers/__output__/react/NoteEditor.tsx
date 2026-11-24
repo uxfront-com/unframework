@@ -1,14 +1,20 @@
-import { type CSSProperties, type KeyboardEvent, type UIEvent, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type KeyboardEvent,
+  type UIEvent,
+  useRef,
+  useState,
+} from "react";
 
 export interface NoteEditorEvents {
   onSaved?: (count: number) => void;
   onTagged?: (tag: string, via: string) => void;
 }
 
-export interface NoteEditorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteEditorAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onSaved" | "onTagged" | "children"
+>;
 
 export default function NoteEditor({
   onSaved,
@@ -57,7 +63,7 @@ export default function NoteEditor({
       className={cx("note-editor", className)}
       aria-label="Note"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" onClick={save}>
         Save
@@ -109,13 +115,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

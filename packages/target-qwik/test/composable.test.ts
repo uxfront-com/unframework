@@ -794,18 +794,26 @@ describe("qwik composable calls", () => {
 
   it("passes a getter as the signal `useComputed$` makes, and a callback as a `$()` QRL", () => {
     const basket = caseOutput("composables/getter-argument", "Basket.tsx");
-    expect(basket).toContain(
-      "useTotal(\n      useComputed$(() => price),\n      useComputed$(() => quantity.value),\n    );",
+    expect(lines(basket)).toContain(
+      lines(
+        "useTotal(\n      useComputed$(() => price),\n      useComputed$(() => quantity.value),\n    );",
+      ),
     );
     const clicker = caseOutput("composables/callback-argument", "Clicker.tsx");
-    expect(clicker).toContain("const { count, step, increment, reset } = useCounter(\n      3,");
-    expect(clicker).toContain("$((reached) => {\n        message.value = `Reached ${reached}`;");
+    expect(lines(clicker)).toContain(
+      lines("const { count, step, increment, reset } = useCounter(\n      3,"),
+    );
+    expect(lines(clicker)).toContain(
+      lines("$((reached) => {\n        message.value = `Reached ${reached}`;"),
+    );
   });
 
   it("awaits a returned function's call in client code, so a read after it sees the write", () => {
     const cart = caseOutput("semantics/composable-read-after-write", "Cart.tsx");
-    expect(cart).toContain(
-      "const addTwiceAndReport = $(async () => {\n      await add(1);\n      await add(2);\n      onTotal$?.(items.value);",
+    expect(lines(cart)).toContain(
+      lines(
+        "const addTwiceAndReport = $(async () => {\n      await add(1);\n      await add(2);\n      onTotal$?.(items.value);",
+      ),
     );
   });
 
@@ -842,8 +850,10 @@ export default function Probe() {
       });
       expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
       const probe = project.output("Probe.tsx");
-      expect(probe).toContain("const { count, add, save } = useBits(1);\n    useBits(2);");
-      expect(probe).toContain("void save();\n      await add();");
+      expect(lines(probe)).toContain(
+        lines("const { count, add, save } = useBits(1);\n    useBits(2);"),
+      );
+      expect(lines(probe)).toContain(lines("void save();\n      await add();"));
       await expectToolchainClean("calls/unread", project.outputs);
     },
   );
@@ -1072,8 +1082,8 @@ export default function Probe() {
       };
       const announce = at("const announce = $(() => {");
       const call = at("const { count, increment } = useCounter(");
-      const bump = at("const bump = $(async () => {\n      await increment();");
-      expect(at("$(async () => {\n        await announce();")).toBeGreaterThan(call);
+      const bump = at("const bump = $(async () => {\n    await increment();");
+      expect(at("$(async () => {\n      await announce();")).toBeGreaterThan(call);
       expect(announce).toBeLessThan(call);
       expect(call).toBeLessThan(bump);
       await expectToolchainClean("calls/order", project.outputs);
@@ -1284,3 +1294,12 @@ export default function Gauge() {
     },
   );
 });
+
+/** Code's lines without their indentation, and without blank ones. */
+function lines(code: string): string {
+  return code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}

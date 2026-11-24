@@ -7,16 +7,21 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import { on } from "svelte/events";
 
-  type Props = QuickActionsProps & {
-    onwelcomed?: () => void;
-    onsubscribed?: (count: number) => void;
-    onchosen?: (action: string, scope: string) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "actions" | "onwelcomed" | "onsubscribed" | "onchosen" | "children" | "class" | "style" | "ref"
+  > &
+    QuickActionsProps & {
+      onwelcomed?: () => void;
+      onsubscribed?: (count: number) => void;
+      onchosen?: (action: string, scope: string) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     actions,
@@ -25,6 +30,7 @@
     onchosen,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -60,20 +66,14 @@
       handler(event);
     };
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["quick-actions", className]}
   aria-label="Quick actions"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <label>Search<input
     name="query"

@@ -11,9 +11,17 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLButtonAttributes } from "svelte/elements";
 
-  type Props = ActionButtonProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    HTMLButtonAttributes,
+    "label" | "size" | "primary" | "busy" | "badge" | "children" | "class" | "style" | "ref"
+  > &
+    ActionButtonProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["button"] | null;
+    };
 
   let {
     label,
@@ -23,20 +31,15 @@
     badge,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <button
   type="button"
   class={["button", `button-${size}`, { "button-primary": primary, "is-busy": busy, "button-waiting": busy, "has-badge": badge }, primary ? "solid" : "outline", className]}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{label}</button>

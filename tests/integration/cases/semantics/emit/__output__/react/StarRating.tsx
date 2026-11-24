@@ -1,4 +1,4 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface StarRatingEvents {
   onPreview?: (stars: number) => void;
@@ -6,10 +6,10 @@ export interface StarRatingEvents {
   onCleared?: () => void;
 }
 
-export interface StarRatingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StarRatingAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "onPreview" | "onRate" | "onCleared" | "children"
+>;
 
 const choices = [1, 2, 3, 4, 5];
 
@@ -47,7 +47,7 @@ export default function StarRating({
       role="group"
       aria-label="Rating"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul>
         {choices.map((choice) => (
@@ -79,13 +79,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

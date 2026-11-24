@@ -8,19 +8,20 @@
 
 <script lang="ts">
   import Toast from "./Toast.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import "./Page.uf.tsx.css";
 
-  type Props = PageProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "message" | "children" | "class" | "style" | "ref"
+  > &
+    PageProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { message, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { message, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
 <section
@@ -28,7 +29,8 @@
   aria-label="Page"
   {style}
   data-uf-5a3bed67=""
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p data-uf-5a3bed67="">Saving…</p
   ><Toast {message} {...{ "data-uf-5a3bed67": "" }} />

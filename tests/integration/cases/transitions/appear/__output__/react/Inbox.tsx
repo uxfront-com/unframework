@@ -1,22 +1,14 @@
 import Toast from "./Toast";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface InboxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type InboxAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Inbox({ className, style, ...attributes }: InboxAttributes) {
   const [shown, setShown] = useState(true);
   const shownRef = useRef(shown);
 
   return (
-    <section
-      aria-label="Inbox"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Inbox" className={className} style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {
@@ -29,13 +21,4 @@ export default function Inbox({ className, style, ...attributes }: InboxAttribut
       {shown ? <Toast /> : null}
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

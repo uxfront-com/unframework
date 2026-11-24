@@ -14,9 +14,6 @@ on:
     - cron: "23 3 * * *"
   workflow_dispatch:
 
-env:
-  NODE_VERSION: 24
-
 permissions:
   contents: read
 
@@ -49,8 +46,6 @@ jobs:
       # The image ships every engine, so the postinstall skips its browser install in CI.
       - name: Setup
         uses: ./.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       # scripts/run.ts runs the projects, then the summary, which appends the engine's matrix to
       # the job summary whatever the result. Firefox refuses a $HOME that belongs to another
@@ -190,8 +185,6 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Canaries
         run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}

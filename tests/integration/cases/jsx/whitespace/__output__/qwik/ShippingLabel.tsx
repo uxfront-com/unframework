@@ -1,4 +1,4 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export interface ShippingLabelProps {
   recipient: string;
@@ -7,46 +7,41 @@ export interface ShippingLabelProps {
   postcode: string;
 }
 
-export default component$<ShippingLabelProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ recipient, street, city, postcode, class: className, style, ...attributes }) => {
-    return (
-      <article
-        class={["shipping-label", className]}
-        aria-label="Shipping label"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <p>
-          <strong>To:</strong> {recipient}
-        </p>
-        <p>
-          <span class="shipping-label-city">{city}</span>{" "}
-          <span class="shipping-label-postcode">{postcode}</span>{" "}
-          <span class="shipping-label-country">United Kingdom</span>
-        </p>
-        <p>{"  Handle with care "}</p>
-        <pre>
-          {recipient}
-          {"\n"}
-          {street}
-          {"\n"}
-          {city + "  " + postcode}
-        </pre>
-        <pre>{"Parcel:	1 of 2\nWeight:	2.5 kg"}</pre>
-        <p>
-          Sent by <em>Unframework Ltd</em>
-          {", on two\nlines."}
-        </p>
-      </article>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+export default component$<
+  ShippingLabelProps &
+    Omit<PropsOf<"article">, "recipient" | "street" | "city" | "postcode" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ recipient, street, city, postcode, class: className, style, ...attributes }) => {
+  return (
+    <article
+      class={["shipping-label", className]}
+      aria-label="Shipping label"
+      style={style}
+      {...attributes}
+    >
+      <p>
+        <strong>To:</strong> {recipient}
+      </p>
+      <p>
+        <span class="shipping-label-city">{city}</span>{" "}
+        <span class="shipping-label-postcode">{postcode}</span>{" "}
+        <span class="shipping-label-country">United Kingdom</span>
+      </p>
+      <p>{"  Handle with care "}</p>
+      <pre>
+        {recipient}
+        {"\n"}
+        {street}
+        {"\n"}
+        {city + "  " + postcode}
+      </pre>
+      <pre>{"Parcel:	1 of 2\nWeight:	2.5 kg"}</pre>
+      <p>
+        Sent by <em>Unframework Ltd</em>
+        {", on two\nlines."}
+      </p>
+    </article>
+  );
+});

@@ -1,29 +1,24 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface DraftNoticeProps {
   author: string;
   saved: boolean;
 }
 
-interface Props extends DraftNoticeProps {
+interface Props extends DraftNoticeProps, Omit<HTMLAttributes<"section">, "author" | "saved"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { author, saved, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { author, saved, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
 <section
   class:list={["draft-notice", className]}
-  aria-label="Draft"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Draft"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <img
     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23345'/%3E%3C/svg%3E"

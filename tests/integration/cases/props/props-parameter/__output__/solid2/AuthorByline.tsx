@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface AuthorBylineProps {
   author: string;
@@ -8,24 +9,19 @@ export interface AuthorBylineProps {
 }
 
 export default function AuthorByline(
-  props: AuthorBylineProps & { class?: string; style?: JSX.CSSProperties },
+  props: AuthorBylineProps &
+    Omit<
+      ComponentProps<"p">,
+      "author" | "published" | "minutes" | "affiliation" | "class" | "style"
+    > & { class?: string; style?: JSX.CSSProperties },
 ) {
+  const others = omit(props, "author", "published", "minutes", "affiliation", "class");
+
   return (
-    <p
-      class={props.class ? `byline ${props.class}` : "byline"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <p class={props.class ? `byline ${props.class}` : "byline"} {...others}>
       By {props.author}, {props.affiliation ?? "independent"}
       <br />
       <time datetime={props.published}>{props.published}</time> · {props.minutes} min read
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -18,12 +18,15 @@ import {
   createSlotFill,
   createSlotOutlet,
   createStaticClass,
+  DOM_EVENTS,
 } from "@unframework.dev/ir";
 import type {
+  Attribute,
   ComponentApi,
   ComponentAttribute,
   ComponentNode,
   Handler,
+  Namespace,
   Parameter,
   SlotFill,
   SlotOutletNode,
@@ -32,15 +35,18 @@ import type {
 import type { AST } from "@unframework.dev/parser";
 
 import { keyName } from "./api.ts";
+import { attributesOf, canonicalName, isAttributeOf, takesByName } from "./attribute-names.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";
 import { closest, literalOutsideUnion, renameFix } from "./cross-component.ts";
 import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
+import { ELEMENT_INTERFACES } from "./element-interfaces.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, shadowing, span } from "./expressions.ts";
-import { lowerComponentHandler, lowerRef } from "./listeners.ts";
+import { isElementEvent, listenerName, lowerComponentHandler, lowerRef } from "./listeners.ts";
 import { hasContent, lowerChildren, lowerContent, textPlacementProblem } from "./lower.ts";
 import type { Place } from "./lower.ts";
 import { CONTROL_MODEL, lowerModelBinding, namelessModel } from "./models.ts";
+import { merge, probe } from "./probes.ts";
 import type { ComponentInfo, LoopVariable, RenderContext } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
 import type { TypeTable } from "./types/from-type.ts";
@@ -98,8 +104,13 @@ export function lowerComponentAs(
   // (ADR-0054): a root that lives only inside a given parent (`<li>`, `<tr>`) is checked against
   // the element around the component, which only the parent's compile knows. With no element
   // around it (a slot's fill, this component's own root), nothing places such a root.
-  if (api.rootTag !== undefined) {
-    checkPlacement(api.rootTag, name, place.ancestors, reporter, false);
+  // A `<component is>` root may render any of its tags, so each is placed (ADR-0119).
+  for (const tag of api.rootTag !== undefined
+    ? [api.rootTag]
+    : api.root === "dynamic"
+      ? (api.rootTags ?? [])
+      : []) {
+    checkPlacement(tag, name, place.ancestors, reporter, false);
   }
   const attributes: ComponentAttribute[] = [];
   const fallthrough: AST.JSXAttribute[] = [];
@@ -134,6 +145,15 @@ export function lowerComponentAs(
       seen.set(written, item);
     }
     if (item.type === "JSXSpreadAttribute") {
+      if (isRestSpread(item, render)) {
+        reporter.report(
+          "UF2001",
+          item,
+          `\`${render.restProps!.name}\` is spread on <${info.name}>, a component: the props' rest is spread on one element (ADR-0118).`,
+          { help: `Spread it on an element, \`<input {...${render.restProps!.name}} />\`.` },
+        );
+        continue;
+      }
       reporter.unsupported(
         item,
         "A spread on a component is not supported: a component takes each prop by its name.",
@@ -179,17 +199,82 @@ export function lowerComponentAs(
       continue;
     }
     if (/^on[A-Z]/.test(attribute)) {
+      if (passesListener(attribute, api)) {
+        if (!reachesRootDeclaration(item, item.name, api, info, render)) fallthrough.push(item);
+        continue;
+      }
       const listener = lowerComponentListener(item, item.name, api, info, render, items);
       if (listener) attributes.push(listener);
+      continue;
+    }
+    if (kebabMember(item, item.name, api, info, render, items)) continue;
+    if (passesAttribute(attribute, api)) {
+      if (!reachesRootDeclaration(item, item.name, api, info, render)) fallthrough.push(item);
       continue;
     }
     const prop = lowerProp(item, item.name, api, info, render, items);
     if (prop) attributes.push(prop);
   }
-  attributes.push(...lowerFallthrough(fallthrough, node.openingElement, api, info, render));
+  // `<component is>` passes its candidates `class` and `style` (ADR-0054), and no target passes
+  // them anything else that falls through yet (ADR-0118).
+  const passed = skip
+    ? fallthrough.filter((item) => {
+        const written = item.name.type === "JSXIdentifier" ? item.name.name : "";
+        if (written === "class" || written === "style") return true;
+        reporter.unsupported(
+          item.name,
+          "What falls through to a candidate of `<component is>` is not supported yet: `class` and `style` do, and a candidate takes its own props and events.",
+          { help: "Pass what every candidate declares, or render each by its own tag." },
+        );
+        return false;
+      })
+    : fallthrough;
+  attributes.push(...lowerFallthrough(passed, node.openingElement, api, info, render));
+  // In source order, as written: what falls through is lowered apart, and the first construct a
+  // target lacks is reported where the source first writes it (UF4001).
+  attributes.sort((a, b) => a.span.start - b.span.start);
   const fills = lowerFills(node, api, info, render, items !== undefined);
   if (!fills || reporter.hasErrorsSince(mark)) return { node: undefined, key };
   return { node: createComponentNode(info.name, attributes, fills, span(node)), key };
+}
+
+/**
+ * Whether a ref on a component whose root is a `<component is>` over tags is reported (UF3046,
+ * ADR-0122): it holds the element that renders, so its template ref is typed as the union of the
+ * tags' DOM interfaces, each once, in any order. A supertype such as `HTMLElement` is not, as on
+ * an element root (ADR-0118): a call through it could reach a member no tag has.
+ */
+function dynamicRefProblem(
+  item: AST.JSXAttribute,
+  binding: string,
+  tags: readonly string[],
+  info: ComponentInfo,
+  render: RenderContext,
+): boolean {
+  const elements = [...new Set(tags.map((tag) => ELEMENT_INTERFACES.get(tag) ?? "HTMLElement"))];
+  const type = templateRefType(binding, render);
+  const members = type?.type === "TSUnionType" ? type.types : type ? [type] : [];
+  const written = members.flatMap((member) =>
+    member.type === "TSTypeReference" &&
+    member.typeName.type === "Identifier" &&
+    !member.typeArguments
+      ? [member.typeName.name]
+      : [],
+  );
+  const matches =
+    written.length === members.length &&
+    written.length === elements.length &&
+    new Set(written).size === written.length &&
+    written.every((name) => elements.includes(name));
+  if (matches) return false;
+  const union = elements.join(" | ");
+  render.reporter.report(
+    "UF3046",
+    item,
+    `A ref on \`${info.name}\` holds the element its \`<component is>\` root renders, ${elements.length === 1 ? `an \`${union}\`` : `one of \`${union}\``}, and this template ref is ${type ? "typed as another type" : "not typed"}: a supertype such as \`HTMLElement\` is not accepted.`,
+    { help: `Type it as the elements the root may render: \`useTemplateRef<${union}>()\`.` },
+  );
+  return true;
 }
 
 /**
@@ -209,10 +294,38 @@ function componentRefProblem(
     return true;
   };
   if (!api.exposes.length) {
-    return report(
-      `\`${info.name}\` exposes nothing, so a ref on it holds nothing a parent can call.`,
-      `Expose the functions a parent calls from ${info.name} with \`defineExpose({ … })\`, or remove the ref.`,
-    );
+    // A `<component is>` root's ref holds the element that renders (ADR-0122).
+    if (api.refTags !== undefined)
+      return dynamicRefProblem(item, binding, api.refTags, info, render);
+    // A ref on a component that exposes nothing holds its root element (ADR-0118), typed as
+    // that element's DOM interface.
+    const element = api.refTag === undefined ? undefined : ELEMENT_INTERFACES.get(api.refTag);
+    if (element === undefined && api.exposingRoot !== undefined) {
+      // Vue's ref would hold the root element, the other targets' the root component's exposed
+      // functions, which this component does not expose (ADR-0118).
+      return report(
+        `\`${info.name}\`'s root, \`${api.exposingRoot}\`, exposes functions, which \`${info.name}\` does not expose: a ref on \`${info.name}\` would hold those functions on most targets and its root element on Vue.`,
+        `Expose from ${info.name} with \`defineExpose({ … })\`, or give it an element root.`,
+      );
+    }
+    if (element === undefined) {
+      return report(
+        `\`${info.name}\` exposes nothing and its root is not one element, so a ref on it holds nothing.`,
+        `Expose the functions a parent calls from ${info.name} with \`defineExpose({ … })\`, give it one root element, or remove the ref.`,
+      );
+    }
+    const type = templateRefType(binding, render);
+    const written =
+      type?.type === "TSTypeReference" && type.typeName.type === "Identifier" && !type.typeArguments
+        ? type.typeName.name
+        : undefined;
+    if (written !== element) {
+      return report(
+        `A ref on \`${info.name}\` holds its root <${api.refTag}>, an \`${element}\`, and this template ref is ${type ? "typed as another type" : "not typed"}.`,
+        `Type it as the root element: \`useTemplateRef<${element}>()\`.`,
+      );
+    }
+    return false;
   }
   const exposed = api.exposes.map((name) => `\`${name}\``).join(", ");
   const type = templateRefType(binding, render);
@@ -331,11 +444,54 @@ function lowerProp(
 ): ComponentAttribute | undefined {
   const { reporter, source } = render;
   const prop = api.props.find((each) => each.name === name.name);
-  if (!prop) {
-    const meant = closest(
-      name.name,
-      api.props.map((each) => each.name),
+  if (!prop && api.slots.some((each) => each.name === name.name)) {
+    reporter.report(
+      "UF3035",
+      name,
+      `\`${name.name}\` is a slot of ${info.name}, not a prop or an attribute: a slot is filled with content.`,
+      {
+        help: `Fill it in a slot object: \`<${info.name}>{{ ${name.name}: () => <b>…</b> }}</${info.name}>\`.`,
+      },
     );
+    return undefined;
+  }
+  if (!prop) {
+    const tag = api.fallthroughTag;
+    // A `<component is>` root's are the attributes every tag takes, which alone fall through
+    // (ADR-0122).
+    const tags = dynamicTags(api);
+    const shared = tags
+      ? attributesOf(tags[0]!, "html").filter((attribute) =>
+          tags.every((each) => takesByName(each, attribute)),
+        )
+      : tag === undefined
+        ? []
+        : attributesOf(tag, namespaceOf(api));
+    const where = tags
+      ? tags.map((each) => `<${each}>`).join(" or ")
+      : tag === undefined
+        ? "an element"
+        : `<${tag}>`;
+    // What it may mean: a prop, or an attribute of the element what it does not declare lands
+    // on, an ARIA one only for an `aria` name: `aria-` alone is within reach of a long one.
+    const aria = /^aria/i.test(name.name);
+    // Never a name that would be rejected too: a slot, the kebab form of a prop or a model, or
+    // a name the root component declares.
+    const rejected = new Set([
+      ...api.slots.map((each) => each.name),
+      ...(api.rootDeclarations ?? []).map((each) => each.name),
+    ]);
+    const declared = new Set([...api.props, ...api.models].map((each) => each.name));
+    const meant = closest(name.name, [
+      ...api.props.map((each) => each.name),
+      ...shared.filter(
+        (attribute) =>
+          (aria || !attribute.startsWith("aria-")) &&
+          !rejected.has(attribute) &&
+          !rejected.has(camelize(attribute)) &&
+          !declared.has(camelize(attribute)),
+      ),
+    ]);
     const others = items?.flatMap((each) =>
       each !== item && each.type === "JSXAttribute" && each.name.type === "JSXIdentifier"
         ? [each.name.name]
@@ -344,9 +500,12 @@ function lowerProp(
     reporter.report(
       "UF3035",
       name,
-      `${info.name} declares no prop \`${name.name}\`: a component takes its props, \`class\`, \`style\`, \`key\`, \`ref\`, its events' listeners and its slots.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
+      `${info.name} declares no prop \`${name.name}\`, and it is no attribute of ${where}, where what ${info.name} does not declare lands: a component takes its props, \`key\`, \`ref\`, its events' listeners, its slots and, falling through, \`class\`, \`style\`, attributes and DOM listeners.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
       {
-        help: `Pass a prop ${info.name} declares, or declare \`${name.name}\` in its props.`,
+        help:
+          tag === undefined && !tags
+            ? `Pass a prop ${info.name} declares, or declare \`${name.name}\` in its props.`
+            : `Pass a prop ${info.name} declares or an attribute of ${where}, or declare \`${name.name}\` in its props.`,
         ...(meant ? { fixes: renameFix(meant, meant, name, others) } : {}),
       },
     );
@@ -428,10 +587,17 @@ function lowerComponentListener(
       );
       return undefined;
     }
-    const meant = closest(
-      event,
-      api.events.map((each) => each.name),
+    // What it may mean: an event the component declares, or a DOM event that falls through.
+    // Never a DOM event a root component declares as its own, which would be rejected too.
+    const rootEvents = new Set(
+      (api.rootDeclarations ?? []).flatMap((each) => (each.kind === "event" ? [each.name] : [])),
     );
+    const meant = closest(event, [
+      ...api.events.map((each) => each.name),
+      ...(takesFallthrough(api)
+        ? [...DOM_EVENTS.keys()].filter((each) => !rootEvents.has(each))
+        : []),
+    ]);
     const listener = meant && `on${meant.charAt(0).toUpperCase()}${meant.slice(1)}`;
     // The events the element's other listeners name, as UF3043's fix leaves them.
     const others = items?.flatMap((each) => {
@@ -446,7 +612,7 @@ function lowerComponentListener(
     reporter.report(
       "UF3036",
       name,
-      `${info.name} declares no event \`${event}\`: a component passes no DOM listener through to its root, and \`${name.name}\` listens to an event the component emits.${listener ? ` Did you mean \`${listener}\`?` : ""}`,
+      `${info.name} declares no event \`${event}\`, and \`${event}\` is no DOM event: \`${name.name}\` listens to an event the component emits, or to a DOM event that falls through to its root.${listener ? ` Did you mean \`${listener}\`?` : ""}`,
       {
         help: `Listen to an event ${info.name} declares with \`defineEmits\`, or listen on an element inside it.`,
         ...(meant && listener ? { fixes: renameFix(meant, listener, name, others) } : {}),
@@ -466,8 +632,162 @@ function eventName(listener: string): string {
 }
 
 /**
- * A component's `class` and `style` (ADR-0054): lowered as an element's are, then merged into
- * the component's root, which UF3045 reports where the component renders neither.
+ * Whether a component takes what falls through (ADR-0118): it has a fallthrough element. One
+ * whose root is a component with no known API takes nothing, and UF3045 reports what is passed.
+ */
+function takesFallthrough(api: ComponentApi): boolean {
+  return api.fallthroughTag !== undefined;
+}
+
+/**
+ * The namespace of a fallthrough element's attributes: an `<svg>`'s, and an element's inside
+ * one, are SVG's (ADR-0118).
+ */
+function namespaceOf(api: ComponentApi): Namespace {
+  return api.fallthroughNamespace ?? (api.fallthroughTag === "svg" ? "svg" : "html");
+}
+
+/**
+ * An attribute's name as Vue reads it for a prop (`camelize`): `aria-label` is `ariaLabel`.
+ * Vue passes an attribute in kebab case to the prop of its camel case.
+ */
+function camelize(name: string): string {
+  return name.replace(/-(\w)/g, (_, letter: string) => letter.toUpperCase());
+}
+
+/**
+ * An attribute whose camel case is a prop or a model of the component (UF3035), as `aria-label`
+ * is the prop `ariaLabel`'s: Vue passes it to the prop, and the others let it fall through, so
+ * it is reported, with the prop's own name as its fix. Returns whether it reported.
+ */
+function kebabMember(
+  item: AST.JSXAttribute,
+  name: AST.JSXIdentifier,
+  api: ComponentApi,
+  info: ComponentInfo,
+  render: RenderContext,
+  items: readonly AST.JSXAttributeItem[] | undefined,
+): boolean {
+  if (!name.name.includes("-")) return false;
+  const camel = camelize(name.name);
+  const prop = api.props.find((each) => each.name === camel);
+  const model = prop ? undefined : api.models.find((each) => each.name === camel);
+  if (!prop && !model) return false;
+  const others = items?.flatMap((each) =>
+    each !== item && each.type === "JSXAttribute" && each.name.type === "JSXIdentifier"
+      ? [each.name.name]
+      : [],
+  );
+  render.reporter.report(
+    "UF3035",
+    name,
+    `\`${name.name}\` is written for ${info.name}'s ${prop ? "prop" : "model"} \`${camel}\`, in kebab case: Vue passes it to the ${prop ? "prop" : "model"}, and the other targets let it fall through as an attribute.`,
+    prop
+      ? {
+          help: `Pass the prop by its own name, \`${camel}\`.`,
+          fixes: renameFix(camel, camel, name, others),
+        }
+      : { help: `Bind the model by its own name, \`v-model:${camel}={…}\`.` },
+  );
+  return true;
+}
+
+/**
+ * A name a consumer passes that would fall through, and that a root component declares
+ * (ADR-0118): `onClick` on a component whose root component emits `click`. The targets do not
+ * agree whether it reaches that component's own prop, model or event, or its element, so it is
+ * reported (UF1002). Returns whether it reported.
+ */
+function reachesRootDeclaration(
+  item: AST.JSXAttribute,
+  name: AST.JSXIdentifier,
+  api: ComponentApi,
+  info: ComponentInfo,
+  render: RenderContext,
+): boolean {
+  const listener = /^on[A-Z]/.test(name.name);
+  const event = listener ? eventName(withoutOption(name.name)) : undefined;
+  const declaration = api.rootDeclarations?.find((each) =>
+    each.kind === "event"
+      ? each.name === event
+      : !listener && (each.name === name.name || each.name === camelize(name.name)),
+  );
+  if (!declaration) return false;
+  const what =
+    declaration.kind === "event"
+      ? `\`${declaration.name}\` event`
+      : `${declaration.kind} \`${declaration.name}\``;
+  render.reporter.unsupported(
+    item.name,
+    `\`${name.name}\` reaches ${declaration.component}'s own ${what} through ${info.name}'s root, and what falls through to a root component's own declarations is not supported yet (ADR-0118).`,
+    {
+      help: `Pass it to ${declaration.component} directly, or declare it on ${info.name}.`,
+    },
+  );
+  return true;
+}
+
+/** A listener's name without its option suffix: `onClickOnce` → `onClick`. */
+function withoutOption(listener: string): string {
+  const suffix = OPTION_SUFFIXES.find((each) => listener.endsWith(each));
+  return suffix ? listener.slice(0, -suffix.length) : listener;
+}
+
+/**
+ * Whether an attribute a component does not declare falls through (ADR-0118): it names no prop,
+ * model or slot of the component, and it is an attribute of the element it lands on, or of any
+ * element where the component takes nothing, which UF3045 then reports.
+ */
+function passesAttribute(attribute: string, api: ComponentApi): boolean {
+  if (
+    api.props.some((each) => each.name === attribute) ||
+    api.models.some((each) => each.name === attribute) ||
+    api.slots.some((each) => each.name === attribute) ||
+    attribute.toLowerCase() === "innerhtml"
+  ) {
+    return false;
+  }
+  // A `<component is>` root's: at least one tag takes it, and the lowering reports a name that
+  // only some take (ADR-0122).
+  const tags = dynamicTags(api);
+  if (tags) return tags.some((tag) => takesByName(tag, attribute));
+  const tag = api.fallthroughTag ?? "div";
+  const namespace = namespaceOf(api);
+  return isAttributeOf(tag, namespace, canonicalName(tag, namespace, attribute));
+}
+
+/**
+ * The tags of a `<component is>` root, or of the one a root component renders, that what falls
+ * through is checked against (ADR-0122): where the component keeps `inheritAttrs` and has no
+ * fallthrough element of its own. Absent otherwise.
+ */
+function dynamicTags(api: ComponentApi): readonly string[] | undefined {
+  return api.fallthroughTag === undefined && api.inheritAttrs ? api.rootTags : undefined;
+}
+
+/**
+ * Whether a listener on a component is a native listener that falls through (ADR-0118): it
+ * listens to no event the component declares, with or without an option suffix, and to a DOM
+ * event.
+ */
+export function passesListener(attribute: string, api: ComponentApi): boolean {
+  const event = eventName(attribute);
+  if (api.events.some((each) => each.name === event)) return false;
+  const suffix = OPTION_SUFFIXES.find((each) => attribute.endsWith(each));
+  if (
+    suffix &&
+    api.events.some((each) => each.name === eventName(attribute.slice(0, -suffix.length)))
+  ) {
+    return false;
+  }
+  const listener = listenerName(attribute);
+  return listener !== undefined && isElementEvent(listener.event);
+}
+
+/**
+ * What falls through a component (ADR-0054, ADR-0118): its `class`, its `style`, the attributes
+ * it does not declare and its native listeners, lowered as the fallthrough element's own would
+ * be, then passed to it. UF3045 reports them where the component takes nothing.
  */
 function lowerFallthrough(
   items: readonly AST.JSXAttribute[],
@@ -478,40 +798,112 @@ function lowerFallthrough(
 ): ComponentAttribute[] {
   if (!items.length) return [];
   const { reporter } = render;
-  const dropped =
-    api.inheritAttrs === false
-      ? `${info.name} sets \`inheritAttrs: false\`, so it renders no \`class\` or \`style\` passed to it`
-      : api.root === "other"
-        ? `${info.name}'s root is not one element or one component, so no target knows where a \`class\` or a \`style\` passed to it goes`
-        : undefined;
-  if (dropped) {
+  // A `<component is>` root over tags, or a root component that renders one, takes what every
+  // tag takes (ADR-0122).
+  const tags = dynamicTags(api);
+  if (tags) return lowerDynamicFallthrough(items, opening, tags, api, info, render);
+  if (!takesFallthrough(api)) {
+    const dropped =
+      api.inheritAttrs === false
+        ? `${info.name} sets \`inheritAttrs: false\` and spreads no \`...rest\`, so it renders nothing passed to it that it does not declare`
+        : api.rootUnlisted
+          ? `${info.name}'s root is a \`<component is>\` whose \`is\` reads a value ${info.name}'s API can't list the tags of, so no target knows where what it does not declare goes`
+          : api.root === "component"
+            ? `${info.name}'s root component takes nothing it does not declare, so ${info.name} renders nothing passed to it that it does not declare`
+            : `${info.name}'s root is not one element or one component, so no target knows where what it does not declare goes`;
     for (const item of items) {
       reporter.report("UF3045", item.name, `${dropped}.`, {
         help:
           api.inheritAttrs === false
-            ? `Pass what ${info.name} declares, or remove \`defineOptions({ inheritAttrs: false })\`.`
-            : `Give ${info.name} one root element, or pass a prop it declares.`,
+            ? `Pass what ${info.name} declares, or spread the props' rest on one of its elements: \`<input {...rest} />\`.`
+            : api.rootUnlisted
+              ? `Choose ${info.name}'s root tag with a literal, a conditional of literals or a prop typed as a union of tags, \`is={href ? "a" : "button"}\`, or pass what it declares.`
+              : `Give ${info.name} one root element, or pass what it declares.`,
       });
     }
     return [];
   }
+  const tag = api.fallthroughTag!;
   const lowered = lowerAttributes(
     { ...opening, attributes: [...items] },
     {
-      tag: api.rootTag ?? "div",
-      namespace: "html",
+      tag,
+      namespace: namespaceOf(api),
       hasChildren: false,
       listBody: false,
       render,
+      fallthrough: { own: api.fallthroughOwn },
     },
   );
-  return lowered.attributes.flatMap((attribute): ComponentAttribute[] => {
+  return passedAttributes(lowered.attributes, render);
+}
+
+/**
+ * What falls through to a `<component is>` root over tags, or to a root component that renders
+ * one (ADR-0122): what every tag takes, and every listener, lowered as each tag's own would be,
+ * since the child spreads it on whichever renders. A name that only some tags take is not
+ * supported yet: no target drops it by the tag that renders. The first tag's lowering is the
+ * attributes', and each later tag is checked in a probe (ADR-0119).
+ */
+function lowerDynamicFallthrough(
+  items: readonly AST.JSXAttribute[],
+  opening: AST.JSXOpeningElement,
+  tags: readonly string[],
+  api: ComponentApi,
+  info: ComponentInfo,
+  render: RenderContext,
+): ComponentAttribute[] {
+  const passed = items.filter((item) => {
+    const written = item.name.type === "JSXIdentifier" ? item.name.name : "";
+    if (/^on[A-Z]/.test(written)) return true;
+    const without = tags.filter((tag) => !takesByName(tag, written));
+    if (!without.length) return true;
+    render.reporter.unsupported(
+      item.name,
+      `\`${written}\` falls through to ${info.name}'s \`<component is>\` root only where every tag takes it, and ${without.map((tag) => `<${tag}>`).join(" and ")} ${without.length === 1 ? "doesn't" : "don't"}.`,
+      {
+        help: `Declare it as a prop of ${info.name} and set it on the \`<component is>\`, which renders it only on the tags that take it (ADR-0119).`,
+      },
+    );
+    return false;
+  });
+  if (!passed.length) return [];
+  const passing = { ...opening, attributes: passed };
+  const mark = render.reporter.diagnostics.length;
+  // Taken before the first tag lowers, so each later one starts from the same context.
+  const probes = tags.slice(1).map(() => probe(render));
+  const check = (tag: string, at: RenderContext) =>
+    lowerAttributes(passing, {
+      tag,
+      namespace: "html",
+      hasChildren: false,
+      listBody: false,
+      render: at,
+      fallthrough: { own: api.fallthroughOwn },
+    }).attributes;
+  const lowered = check(tags[0]!, render);
+  for (const [index, tag] of tags.slice(1).entries()) check(tag, probes[index]!);
+  merge(render, mark, probes);
+  return passedAttributes(lowered, render);
+}
+
+/**
+ * The attributes that fall through to a component, as its element lowered them (ADR-0118): a
+ * static `class` is one class, and a listener option is not supported yet.
+ */
+function passedAttributes(
+  attributes: readonly Attribute[],
+  render: RenderContext,
+): ComponentAttribute[] {
+  return attributes.flatMap((attribute): ComponentAttribute[] => {
     switch (attribute.kind) {
       case "Class":
       case "Style":
+      case "Bound":
         return [attribute];
       // A static `class` lowers to a static attribute on an element, and is one class here.
       case "Static":
+        if (attribute.name !== "class") return [attribute];
         return attribute.value === true
           ? []
           : [
@@ -520,10 +912,27 @@ function lowerFallthrough(
                 attribute.span,
               ),
             ];
+      case "Event":
+        if (attribute.capture || attribute.once || attribute.passive) {
+          render.reporter.unsupported(
+            { start: attribute.span.start, end: attribute.span.end },
+            "A listener option on a listener that falls through to a component's root is not supported yet (ADR-0118).",
+            { help: "Listen without the option, or on an element inside the component." },
+          );
+          return [];
+        }
+        return [attribute];
       default:
         return [];
     }
   });
+}
+
+/** Whether a spread spreads the props' rest, `{...rest}` (ADR-0118). */
+export function isRestSpread(item: AST.JSXSpreadAttribute, render: RenderContext): boolean {
+  if (item.argument.type !== "Identifier" || !render.restProps) return false;
+  const resolution = render.scopes.resolve(item.argument);
+  return resolution.kind === "parameter" && resolution.declaration === render.restProps.declaration;
 }
 
 /**
@@ -576,7 +985,7 @@ function lowerFills(
   const at = { start: content[0]!.start, end: content.at(-1)!.end };
   const forwarded = forwardedDefault(content, render);
   if (forwarded) return [createSlotFill("default", [], at, { forward: "default" })];
-  const children = lowerChildren(node.children, FILL, render);
+  const children = lowerChildren(node.children, FILL, inFill(render));
   return children.length ? [createSlotFill("default", children, at)] : [];
 }
 
@@ -605,6 +1014,14 @@ function forwardedDefault(content: readonly AST.JSXChild[], render: RenderContex
     );
   }
   return true;
+}
+
+/**
+ * The render context of a fill's content (ADR-0054): a function the child may call many times,
+ * or none, so what renders once, the props' rest (ADR-0118), cannot be in it.
+ */
+function inFill(render: RenderContext): RenderContext {
+  return render.fill ? render : { ...render, fill: true };
 }
 
 /** Where a fill's content is lowered: inside a component, whose DOM parent the child decides. */
@@ -733,7 +1150,7 @@ function lowerSlotObject(
       variables.push(...read.variables);
     }
     for (const variable of variables) render.loopVariables.set(variable.declaration, variable);
-    const children = lowerContent(value.body, FILL, render);
+    const children = lowerContent(value.body, FILL, inFill(render));
     fills.push(createSlotFill(slot, children, at, parameter ? { parameter } : {}));
   }
   if (!valid) return undefined;

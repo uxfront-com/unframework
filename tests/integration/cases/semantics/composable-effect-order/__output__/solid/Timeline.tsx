@@ -1,5 +1,6 @@
 import { useTracked } from "./useTracked";
 import {
+  type ComponentProps,
   For,
   type JSX,
   createMemo,
@@ -7,10 +8,15 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
-export default function Timeline(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Timeline(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [entries, setEntries] = createSignal<string[]>([]);
 
   function record(entry: string) {
@@ -32,8 +38,7 @@ export default function Timeline(props: { class?: string; style?: JSX.CSSPropert
     <section
       class={props.class ? `timeline ${props.class}` : "timeline"}
       aria-label="Timeline"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">Count: {count()}</p>
       <button type="button" onClick={() => increment()}>
@@ -46,13 +51,6 @@ export default function Timeline(props: { class?: string; style?: JSX.CSSPropert
       </ol>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

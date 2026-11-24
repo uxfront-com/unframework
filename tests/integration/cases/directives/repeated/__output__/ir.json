@@ -697,7 +697,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "choice"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "div"
           }
         ],
         "keys": []
@@ -746,7 +757,13 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ol"
+            "rootTag": "ol",
+            "fallthroughTag": "ol",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
+            "refTag": "ol"
           }
         ],
         "keys": []
@@ -817,7 +834,22 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "section"
+            "rootTag": "section",
+            "fallthroughTag": "section",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "wrapper"
+                },
+                {
+                  "name": "aria-label",
+                  "value": "Rows"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "section"
           }
         ],
         "keys": []

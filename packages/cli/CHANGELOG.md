@@ -1,5 +1,13 @@
 # @unframework.dev/cli
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [348db69]
+  - @unframework.dev/diagnostics@0.4.0
+  - @unframework.dev/compiler@0.3.2
+
 ## 0.2.1
 
 ### Patch Changes

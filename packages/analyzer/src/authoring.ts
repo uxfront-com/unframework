@@ -15,7 +15,7 @@ import { isAuthoringModule } from "./frameworks.ts";
  * `defineSlots`, `defineExpose`, `defineOptions`, `defineModel`, `provide` and `inject`
  * (ADR-0054), and M8's `Teleport` and `Transition`, components written only as tags (ADR-0098,
  * ADR-0100), and `defineDirective`, called only to initialise a module's top-level `const`
- * (ADR-0099).
+ * (ADR-0099), and `isDev`, read only as the test of an `if` (ADR-0117).
  */
 export type AuthoringApi =
   | "ref"
@@ -36,7 +36,8 @@ export type AuthoringApi =
   | "inject"
   | "Teleport"
   | "Transition"
-  | "defineDirective";
+  | "defineDirective"
+  | "isDev";
 
 /** The APIs the analyser lowers. */
 export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
@@ -59,6 +60,7 @@ export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
   "Teleport",
   "Transition",
   "defineDirective",
+  "isDev",
 ]);
 
 /** The APIs the package exports that a later milestone lowers, and what each brings (UF1002). */

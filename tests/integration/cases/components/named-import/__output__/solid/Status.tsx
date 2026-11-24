@@ -1,25 +1,18 @@
 import { Badge } from "./Badge";
 import { Pill as Tag } from "./Pill";
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export default function Status(
-  props: { state: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { state: string } & Omit<ComponentProps<"p">, "state" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["state", "class"]);
+
   return (
-    <p
-      class={props.class ? `status ${props.class}` : "status"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <p class={props.class ? `status ${props.class}` : "status"} {...others}>
       <Badge text="Build" />
       <Tag text={props.state} />
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,10 +1,7 @@
 import type { Tone } from "./types";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface SwatchAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SwatchAttributes = Omit<ComponentPropsWithRef<"span">, "tone" | "children">;
 
 export default function Swatch({
   tone,
@@ -13,11 +10,7 @@ export default function Swatch({
   ...attributes
 }: { tone: Tone } & SwatchAttributes) {
   return (
-    <span
-      className={cx(`swatch swatch-${tone}`, className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <span className={cx(`swatch swatch-${tone}`, className)} style={style} {...attributes}>
       {tone}
     </span>
   );
@@ -36,13 +29,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

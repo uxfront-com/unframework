@@ -53,6 +53,13 @@ import {
 } from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
 import { addDirectiveImports, directiveCode } from "./directive.ts";
+import {
+  changingElementRefs,
+  planRest,
+  restAttributesType,
+  rootElementRefs,
+} from "./fallthrough.ts";
+import type { RestPlan } from "./fallthrough.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
 import { moduleReach, unreachable, VUE_RESERVED, VueNames } from "./names.ts";
@@ -83,6 +90,13 @@ export interface ScriptSetup {
    * hydrating client renders its content.
    */
   mounted?: string;
+  /**
+   * The key the template's `ref` reads a child's instance by, for each template ref on a child
+   * that exposes nothing: the source's ref is its root element, the instance's `$el` (ADR-0118).
+   */
+  instanceRefs: ReadonlyMap<BindingId, string>;
+  /** How the template binds the props' rest (ADR-0118), when an element spreads it. */
+  rest?: RestPlan;
 }
 
 /**
@@ -197,11 +211,15 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   const parameter = component.propsParameter;
   if (parameter) {
     const read = referencedBindings(component);
+    const attributes = restAttributesType(component, () =>
+      imports.add("vue", "IntrinsicElementAttributes", { type: true }),
+    );
+    const type = propsType(component, parameter, attributes);
     statements.push({
       code:
         parameter.form === "object"
-          ? objectDeclaration(component, parameter, names, read)
-          : destructuredDeclaration(component, parameter, names, read),
+          ? objectDeclaration(component, type, parameter, names, read)
+          : destructuredDeclaration(component, type, names, read),
       layout: "macro",
     });
   }
@@ -210,6 +228,8 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // Planned before the setup is printed: a listener's script function claims its name first,
   // in document order, as the template reads it.
   const listeners = planListeners(component, names, { script, template });
+  const instanceRefs = rootElementRefs(component, module, names);
+  const rest = planRest(component, names);
   if (component.emits) {
     const { emits } = component;
     const emit = bindingOf(component, emits.binding);
@@ -255,12 +275,13 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
         ? functionText(item.function, component, script, "client", {
             name: names.local(bindingOf(component, item.binding)),
           })
-        : itemCode(item, component, module, names, imports, script);
+        : itemCode(item, component, module, names, imports, script, instanceRefs);
     statements.push({ code: names.ownQueries(code), layout: itemLayout(item, code) });
   }
   for (const code of listeners.functions) {
     statements.push({ code: names.ownQueries(code), layout: "block" });
   }
+  for (const code of rest?.functions ?? []) statements.push({ code, layout: "block" });
   // Last, once every function it names is declared (ADR-0054).
   if (expose && !awaits) statements.push({ code: expose, layout: "block" });
   // A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
@@ -296,7 +317,14 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     types.length === 0 &&
     constants.length === 0
   ) {
-    return { rewrite: template, listeners, components, ...(keys ? { keys } : {}) };
+    return {
+      rewrite: template,
+      listeners,
+      components,
+      instanceRefs,
+      ...(keys ? { keys } : {}),
+      ...(rest ? { rest } : {}),
+    };
   }
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const code = [
@@ -311,7 +339,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     rewrite: template,
     listeners,
     components,
+    instanceRefs,
     ...(keys ? { keys } : {}),
+    ...(rest ? { rest } : {}),
     ...(textCaret === undefined ? {} : { textCaret }),
     ...(mounted === undefined ? {} : { mounted }),
   };
@@ -593,7 +623,18 @@ function addComposableImports(component: UfComponent, module: UfModule, imports:
  * annotation's names are the ones the module imports, and a runtime type compiler-sfc cannot
  * infer is `null`, which casts nothing, as on every other target (ADR-0034).
  */
-function propsType(component: UfComponent, parameter: PropsParameter): string {
+function propsType(
+  component: UfComponent,
+  parameter: PropsParameter,
+  attributes: string | undefined,
+): string {
+  const own = ownPropsType(component, parameter);
+  // A type the runtime props leave out (`fallthrough.ts`).
+  return attributes === undefined ? own : `${own} & /* @vue-ignore */ ${attributes}`;
+}
+
+/** The props' type as the source declares them. */
+function ownPropsType(component: UfComponent, parameter: PropsParameter): string {
   if (!component.props.some((prop) => prop.declaredBy?.file.startsWith("pkg:"))) {
     return parameter.type.code;
   }
@@ -679,6 +720,7 @@ function declares(item: SetupItem): boolean {
     case "WatchEffect":
     case "Lifecycle":
     case "Provide":
+    case "DevCheck":
       return false;
     default:
       return unreachable(item);
@@ -700,6 +742,7 @@ export function itemCode(
   names: VueNames,
   imports: ImportSet,
   rules: RewriteRules,
+  instanceRefs: ReadonlyMap<BindingId, string> = new Map(),
 ): string {
   const local = (id: BindingId) => names.local(bindingOf(component, id));
   const code = (value: Code, site: "pure" | "client") => rewriteCode(value, component, rules, site);
@@ -724,6 +767,19 @@ export function itemCode(
       // Vue 3.5 sets the ref through its key, and never writes the same-named setup binding.
       const useTemplateRef = imports.add("vue", "useTemplateRef");
       const binding = bindingOf(component, item.binding);
+      const instance = instanceRefs.get(item.binding);
+      if (instance !== undefined && item.type) {
+        // On a child that exposes nothing, the source's ref is the child's root element
+        // (ADR-0118): Vue's ref holds the instance, whose `$el` is that element. A `<component
+        // is>` root's changes with its tag, untracked, so a getter ref reads it each time
+        // (ADR-0122).
+        const changes = changingElementRefs(component, module).has(item.binding);
+        const read = changes ? imports.add("vue", "toRef") : imports.add("vue", "computed");
+        return [
+          `const ${instance} = ${useTemplateRef}<{ $el: ${item.type.code} }>(${JSON.stringify(instance)});`,
+          `const ${names.local(binding)} = ${read}(() => ${instance}.value?.$el ?? null);`,
+        ].join("\n");
+      }
       return `const ${names.local(binding)} = ${useTemplateRef}${typeArgument(item.type)}(${JSON.stringify(binding.name)});`;
     }
     case "Id": {
@@ -817,6 +873,9 @@ export function itemCode(
       });
       return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
     }
+    // Copied as written, where `<script setup>` runs it: once per instance (ADR-0117).
+    case "DevCheck":
+      return code(item.code, "pure");
     default:
       return unreachable(item);
   }
@@ -892,11 +951,11 @@ function watchOptions(item: WatchItem): string | undefined {
 /** `const { label, tone = "info", count = undefined, size: _size = 2 } = defineProps<P>();` */
 function destructuredDeclaration(
   component: UfComponent,
-  parameter: PropsParameter,
+  type: string,
   names: VueNames,
   read: ReadonlySet<BindingId>,
 ): string {
-  const macro = `defineProps<${propsType(component, parameter)}>()`;
+  const macro = `defineProps<${type}>()`;
   const isRead = (prop: Prop) => prop.binding !== undefined && read.has(prop.binding);
   if (!component.props.some(isRead)) return `${macro};`;
   const entries = component.props
@@ -918,11 +977,12 @@ function destructuredDeclaration(
 /** `const props = withDefaults(defineProps<P>(), { title: undefined });` */
 function objectDeclaration(
   component: UfComponent,
+  type: string,
   parameter: PropsParameter,
   names: VueNames,
   read: ReadonlySet<BindingId>,
 ): string {
-  const macro = `defineProps<${propsType(component, parameter)}>()`;
+  const macro = `defineProps<${type}>()`;
   // In the object form, every prop is a binding, read as `props.label`.
   if (!component.props.some((prop) => prop.binding !== undefined && read.has(prop.binding))) {
     return `${macro};`;

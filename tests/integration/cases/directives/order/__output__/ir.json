@@ -499,7 +499,22 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "em"
+            "rootTag": "em",
+            "fallthroughTag": "em",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "data-name",
+                  "value": "note"
+                },
+                {
+                  "name": "v-note",
+                  "value": "note"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "em"
           }
         ],
         "keys": []

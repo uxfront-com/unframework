@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { merge } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { merge, omit } from "solid-js";
 
 export interface FieldProps {
   label: string;
@@ -11,19 +11,22 @@ export interface FieldEvents {
 }
 
 export default function Field(
-  rawProps: FieldProps & FieldEvents & { class?: string; style?: JSX.CSSProperties },
+  rawProps: FieldProps &
+    FieldEvents &
+    Omit<ComponentProps<"div">, "label" | "tone" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = merge(rawProps, {
     get tone() {
       return rawProps.tone === undefined ? "info" : rawProps.tone;
     },
   });
+  const others = omit(props, "label", "tone", "onClear", "class");
+
   return (
-    <div
-      class={cx("field", props.tone, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={cx("field", props.tone, props.class)} {...others}>
       <span>{props.label}</span>
       <button type="button" onClick={() => props.onClear?.(props.label)}>
         Clear {props.label}
@@ -42,11 +45,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

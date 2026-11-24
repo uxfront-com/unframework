@@ -1,25 +1,33 @@
 import { vMark } from "./vMark";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type Ref,
+  type RefCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface TagProps {
   name: string;
 }
 
-export interface TagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagAttributes = Omit<ComponentPropsWithRef<"em">, "name" | "children">;
 
-export default function Tag({ name, className, style, ...attributes }: TagProps & TagAttributes) {
+export default function Tag({
+  name,
+  className,
+  style,
+  ref,
+  ...attributes
+}: TagProps & TagAttributes) {
   const markRef = useDirective(vMark, () => `tag ${name}`);
 
+  const rootRef = useMemo(() => mergeRefs(markRef, ref), [markRef, ref]);
+
   return (
-    <em
-      className={cx("tag", className)}
-      ref={markRef}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <em className={cx("tag", className)} ref={rootRef} style={style} {...attributes}>
       #{name}
     </em>
   );
@@ -38,15 +46,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** The hooks of a directive, which `useDirective` runs on its elements. */
@@ -166,4 +165,23 @@ function queueHook(
       }
     }
   });
+}
+
+/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+function mergeRefs<E extends Element>(...refs: (Ref<E> | undefined)[]): RefCallback<E> {
+  return (element) => {
+    const cleanups = refs.map((ref) => {
+      if (typeof ref === "function") {
+        const cleanup = ref(element);
+        return typeof cleanup === "function" ? cleanup : () => ref(null);
+      }
+      if (ref) ref.current = element;
+      return () => {
+        if (ref) ref.current = null;
+      };
+    });
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+  };
 }

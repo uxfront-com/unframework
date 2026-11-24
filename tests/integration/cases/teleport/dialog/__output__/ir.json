@@ -603,7 +603,35 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "role",
+                  "value": "dialog"
+                },
+                {
+                  "name": "aria-modal",
+                  "value": "true"
+                },
+                {
+                  "name": "aria-labelledby"
+                },
+                {
+                  "name": "tabindex",
+                  "value": "-1"
+                },
+                {
+                  "name": "class",
+                  "value": "dialog"
+                }
+              ],
+              "listeners": [
+                "keydown"
+              ]
+            },
+            "refTag": "div"
           }
         ],
         "keys": []

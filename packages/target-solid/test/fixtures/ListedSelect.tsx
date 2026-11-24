@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   createEffect,
@@ -8,12 +9,14 @@ import {
   untrack,
 } from "solid-js";
 
-export default function ListedSelect(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function ListedSelect(
+  props: Omit<ComponentProps<"form">, "style"> & { style?: JSX.CSSProperties },
+) {
   const [size, setSize] = createSignal("m");
   const [sizes, setSizes] = createSignal(["s", "m", "l"]);
 
   return (
-    <form class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <form {...props}>
       <select
         aria-label="Size"
         onChange={(event) => setSize(event.currentTarget.value)}
@@ -32,13 +35,6 @@ export default function ListedSelect(props: { class?: string; style?: JSX.CSSPro
       </button>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

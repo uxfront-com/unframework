@@ -2,6 +2,7 @@ import Disclosure from "./Disclosure";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
@@ -19,83 +20,69 @@ const vTrace = {
   },
 };
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const note = useSignal<{ name: string } | null>({ name: "note" });
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  const note = useSignal<{ name: string } | null>({ name: "note" });
 
-    const traceElements = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+  const traceElements = useSignal<DirectiveElement<typeof vTrace>[]>([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "body";
-        for (const element of track(traceElements)) {
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "body";
+      for (const element of track(traceElements)) {
+        cleanup(
+          runDirective(vTrace, element, value, {
+            leave: (left) => forgetElement(traceElements, left),
+            back: (kept) => collectElement(traceElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_1 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      if (track(traceElements_1).some((element) => element.isConnected)) {
+        const value = track(() => note.value!.name);
+        for (const element of track(traceElements_1)) {
           cleanup(
             runDirective(vTrace, element, value, {
-              leave: (left) => forgetElement(traceElements, left),
-              back: (kept) => collectElement(traceElements, kept),
+              leave: (left) => forgetElement(traceElements_1, left),
+              back: (kept) => collectElement(traceElements_1, kept),
             }),
           );
         }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_1 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        if (track(traceElements_1).some((element) => element.isConnected)) {
-          const value = track(() => note.value!.name);
-          for (const element of track(traceElements_1)) {
-            cleanup(
-              runDirective(vTrace, element, value, {
-                leave: (left) => forgetElement(traceElements_1, left),
-                back: (kept) => collectElement(traceElements_1, kept),
-              }),
-            );
-          }
-        } else {
-          for (const element of traceElements_1.value) {
-            cleanup(waitForDocument(element, () => traceElements_1.trigger()));
-          }
+      } else {
+        for (const element of traceElements_1.value) {
+          cleanup(waitForDocument(element, () => traceElements_1.trigger()));
         }
-      },
-      { strategy: "document-ready" },
-    );
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["card", className]}
-        aria-label="Card"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <Disclosure>
-          <p data-name="body" ref={(element) => collectElement(traceElements, element)}>
-            Body
+  return (
+    <section class={["card", className]} aria-label="Card" style={style} {...attributes}>
+      <Disclosure>
+        <p data-name="body" ref={(element) => collectElement(traceElements, element)}>
+          Body
+        </p>
+        {note.value ? (
+          <p data-name="note" ref={(element) => collectElement(traceElements_1, element)}>
+            Note
           </p>
-          {note.value ? (
-            <p data-name="note" ref={(element) => collectElement(traceElements_1, element)}>
-              Note
-            </p>
-          ) : null}
-        </Disclosure>
-        <button type="button" onClick$={() => (note.value = { name: "renamed" })}>
-          Rename
-        </button>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+        ) : null}
+      </Disclosure>
+      <button type="button" onClick$={() => (note.value = { name: "renamed" })}>
+        Rename
+      </button>
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

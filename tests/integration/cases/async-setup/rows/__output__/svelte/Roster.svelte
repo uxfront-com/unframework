@@ -2,24 +2,25 @@
 
 <script lang="ts">
   import Member from "./Member.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { ids: string[]; class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "ids" | "children" | "class" | "style" | "ref"
+  > & {
+    ids: string[];
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { ids, class: className, style, ...attributes }: Props = $props();
+  let { ids, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let lead = $state(true);
   let guest = $state(false);
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={["roster", className]} aria-label="Roster" {style} {...scopeAttributes(attributes)}>
+<section class={["roster", className]} aria-label="Roster" {style} bind:this={ref} {...attributes}>
   <button type="button" onclick={() => (lead = !lead)}>Switch lead</button
   ><button type="button" onclick={() => (guest = !guest)}>Toggle guest</button
   ><ul>

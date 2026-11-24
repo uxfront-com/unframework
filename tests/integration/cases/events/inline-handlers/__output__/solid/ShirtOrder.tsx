@@ -1,6 +1,10 @@
-import { type JSX, createSignal, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, onCleanup, splitProps } from "solid-js";
 
-export default function ShirtOrder(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function ShirtOrder(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [size, setSize] = createSignal("M");
   const [quantity, setQuantity] = createSignal(1);
   const [note, setNote] = createSignal("");
@@ -10,8 +14,7 @@ export default function ShirtOrder(props: { class?: string; style?: JSX.CSSPrope
     <section
       class={props.class ? `shirt-order ${props.class}` : "shirt-order"}
       aria-label="Shirt order"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{`${quantity()} x size ${size()}`}</p>
       <div role="group" aria-label="Size">
@@ -71,11 +74,4 @@ export default function ShirtOrder(props: { class?: string; style?: JSX.CSSPrope
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

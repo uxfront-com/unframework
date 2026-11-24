@@ -1,4 +1,12 @@
-import { For, type JSX, Show, createMemo, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  Show,
+  createMemo,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface MenuDish {
   id: string;
@@ -19,14 +27,13 @@ export interface MenuBoardProps {
 }
 
 export default function MenuBoard(
-  props: MenuBoardProps & { class?: string; style?: JSX.CSSProperties },
+  props: MenuBoardProps &
+    Omit<ComponentProps<"div">, "courses" | "closed" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["courses", "closed", "class"]);
+
   return (
-    <div
-      class={props.class ? `menu-board ${props.class}` : "menu-board"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `menu-board ${props.class}` : "menu-board"} {...others}>
       <Show
         when={props.closed}
         fallback={
@@ -55,13 +62,6 @@ export default function MenuBoard(
       </Show>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

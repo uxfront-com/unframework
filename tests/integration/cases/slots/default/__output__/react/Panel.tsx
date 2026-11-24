@@ -1,13 +1,10 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface PanelSlots {
   children?: ReactNode;
 }
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<ComponentPropsWithRef<"section">, "title" | "children">;
 
 export default function Panel({
   title,
@@ -17,12 +14,7 @@ export default function Panel({
   ...attributes
 }: { title: string } & PanelSlots & PanelAttributes) {
   return (
-    <section
-      className={cx("panel", className)}
-      aria-label={title}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("panel", className)} aria-label={title} style={style} {...attributes}>
       <h2>{title}</h2>
       {children}
     </section>
@@ -42,13 +34,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

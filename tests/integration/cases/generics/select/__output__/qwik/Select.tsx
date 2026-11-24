@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useComputed$,
@@ -27,7 +28,12 @@ export default component$(
     class: className,
     style,
     ...attributes
-  }: SelectProps<T> & SelectModels<T> & { class?: ClassList; style?: CSSProperties }) => {
+  }: SelectProps<T> &
+    SelectModels<T> &
+    Omit<PropsOf<"label">, "label" | "options" | "value" | "onValueChange$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }) => {
     const valueLocal = useSignal<T>();
     const value = useComputed$(() => (valueProp === undefined ? valueLocal.value : valueProp));
 
@@ -39,7 +45,7 @@ export default component$(
     const currentValue = value.value;
 
     return (
-      <label {...scopeAttributes(attributes)} class={className} style={style}>
+      <label class={className} style={style} {...attributes}>
         {label}{" "}
         <select onChange$={(_, element) => setValue(element.value as T)}>
           {options.map((option) => (
@@ -54,12 +60,3 @@ export default component$(
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

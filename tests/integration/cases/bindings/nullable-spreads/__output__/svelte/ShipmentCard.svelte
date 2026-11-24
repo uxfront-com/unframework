@@ -25,9 +25,28 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ShipmentCardProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "reference"
+    | "carrier"
+    | "eta"
+    | "parcel"
+    | "tracked"
+    | "tracking"
+    | "stops"
+    | "signature"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    ShipmentCardProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     reference,
@@ -40,22 +59,17 @@
     signature,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["shipment-card", className]}
   aria-label={reference}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p id={carrier?.id} title={carrier?.title}>Carrier</p
   ><p id={eta?.id} title={eta?.title}>Estimated delivery</p

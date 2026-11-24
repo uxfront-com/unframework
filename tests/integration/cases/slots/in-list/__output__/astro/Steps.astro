@@ -1,21 +1,16 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"ol">, "steps"> {
   steps: string[];
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { steps, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { steps, class: className, style, ...attrs } = Astro.props;
 ---
 
-<ol class:list={["steps", className]} style={style} {...scopeAttributes(Astro.props)}>
+<ol class:list={["steps", className]} style={style} {...attrs}>
   {steps.map((step) => (
     <li><slot name="marker" />{step}</li>
   ))}

@@ -1,10 +1,12 @@
-import { type JSX, createEffect, createSignal, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, createEffect, createSignal, onCleanup } from "solid-js";
 
-export default function UnmatchedSelect(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function UnmatchedSelect(
+  props: Omit<ComponentProps<"form">, "style"> & { style?: JSX.CSSProperties },
+) {
   const [size, setSize] = createSignal("xl");
 
   return (
-    <form class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <form {...props}>
       <select
         aria-label="Size"
         onChange={(event) => setSize(event.currentTarget.value)}
@@ -25,13 +27,6 @@ export default function UnmatchedSelect(props: { class?: string; style?: JSX.CSS
       </button>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

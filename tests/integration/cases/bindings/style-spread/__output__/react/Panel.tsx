@@ -1,5 +1,5 @@
 import Hint from "./Hint";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 
 type PanelLook = {
   borderColor?: string;
@@ -25,10 +25,10 @@ export interface PanelProps {
   note?: NoteAttributes;
 }
 
-export interface PanelAttributes_1 {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes_1 = Omit<
+  ComponentPropsWithRef<"div">,
+  "heading" | "panel" | "note" | "children"
+>;
 
 export default function Panel({
   heading,
@@ -39,7 +39,7 @@ export default function Panel({
   ...attributes
 }: PanelProps & PanelAttributes_1) {
   return (
-    <div className={cx("panels", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("panels", className)} style={style} {...attributes}>
       <section id={panel.id} title={panel.title} style={styleObject(panel.style)} className="panel">
         <h2 style={{ marginBottom: "var(--panel-gap, 4px)" }}>{heading}</h2>
         <p title={note?.title} style={styleObject(note?.style)}>
@@ -86,13 +86,4 @@ function styleObject(style: object | string | null | undefined): CSSProperties |
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
   return object as CSSProperties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

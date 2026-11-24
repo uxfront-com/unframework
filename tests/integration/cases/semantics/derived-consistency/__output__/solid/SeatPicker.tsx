@@ -1,4 +1,4 @@
-import { type JSX, createMemo, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createMemo, createSignal, splitProps } from "solid-js";
 
 export interface SeatPickerProps {
   pricePerSeat: number;
@@ -9,8 +9,12 @@ export interface SeatPickerEvents {
 }
 
 export default function SeatPicker(
-  props: SeatPickerProps & SeatPickerEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SeatPickerProps &
+    SeatPickerEvents &
+    Omit<ComponentProps<"section">, "pricePerSeat" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["pricePerSeat", "onQuote", "class"]);
+
   const [seats, setSeats] = createSignal(1);
   const total = createMemo(() => seats() * props.pricePerSeat);
   const summary = createMemo(() =>
@@ -33,8 +37,7 @@ export default function SeatPicker(
     <section
       class={props.class ? `seat-picker ${props.class}` : "seat-picker"}
       aria-label="Seats"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{summary()}</p>
       <button type="button" onClick={addSeat}>
@@ -45,11 +48,4 @@ export default function SeatPicker(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,27 +1,29 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface SizePickerProps {
   legend: string;
   sizes: string[];
 }
 
-interface Props extends SizePickerProps {
+interface Props extends SizePickerProps, Omit<HTMLAttributes<"fieldset">, "legend" | "sizes"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { legend, sizes, class: className, style } = Astro.props;
+const {
+  legend,
+  sizes,
+  class: className,
+  style,
+  "aria-describedby": ariaDescribedby,
+  ...attrs
+} = Astro.props;
 
 function uniqueId(): string {
   const locals = Astro.locals as { ufIdCount?: number };
   locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;
   return `uf-id-${locals.ufIdCount}`;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 const group = uniqueId();
@@ -31,9 +33,9 @@ const picked = "" as string;
 
 <fieldset
   class:list={["size-picker", className]}
-  aria-describedby={hintId}
+  aria-describedby={"aria-describedby" in Astro.props ? ariaDescribedby : hintId}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <legend>{legend}</legend>
   <p id={hintId}>Pick one size.</p>

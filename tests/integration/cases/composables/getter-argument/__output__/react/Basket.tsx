@@ -1,10 +1,7 @@
 import { useTotal } from "./useTotal";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface BasketAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BasketAttributes = Omit<ComponentPropsWithRef<"section">, "price" | "children">;
 
 export default function Basket({
   price,
@@ -20,12 +17,7 @@ export default function Basket({
   );
 
   return (
-    <section
-      className={cx("basket", className)}
-      aria-label="Basket"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("basket", className)} aria-label="Basket" style={style} {...attributes}>
       <p role="status">Total: {total}</p>
       <p>{label}</p>
       <button
@@ -54,13 +46,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

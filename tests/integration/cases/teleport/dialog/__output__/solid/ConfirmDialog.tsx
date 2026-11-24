@@ -1,4 +1,11 @@
-import { type JSX, createUniqueId, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createUniqueId,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface ConfirmDialogProps {
   title: string;
@@ -10,8 +17,15 @@ export interface ConfirmDialogEvents {
 }
 
 export default function ConfirmDialog(
-  props: ConfirmDialogProps & ConfirmDialogEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ConfirmDialogProps &
+    ConfirmDialogEvents &
+    Omit<ComponentProps<"div">, "title" | "onClose" | "style" | "onKeyDown"> & {
+      style?: JSX.CSSProperties;
+      onKeyDown?: Extract<ComponentProps<"div">["onKeyDown"], (event: never) => void>;
+    },
 ) {
+  const [, others] = splitProps(props, ["title", "onConfirm", "onClose", "class", "onKeyDown"]);
+
   const titleId = `uf-id-${createUniqueId()}`;
   let cancel: HTMLButtonElement | null = null;
 
@@ -30,9 +44,11 @@ export default function ConfirmDialog(
       aria-labelledby={titleId}
       tabindex="-1"
       class={props.class ? `dialog ${props.class}` : "dialog"}
-      onKeyDown={onKeydown}
-      style={props.style}
-      {...scopeAttributes(props)}
+      onKeyDown={(event) => {
+        onKeydown(event);
+        props.onKeyDown?.(event);
+      }}
+      {...others}
     >
       <h2 id={titleId}>{props.title}</h2>
       <button
@@ -52,11 +68,4 @@ export default function ConfirmDialog(
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

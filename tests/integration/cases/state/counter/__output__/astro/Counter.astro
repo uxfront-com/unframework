@@ -1,28 +1,23 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface CounterProps {
   initial?: number;
   step?: number;
 }
 
-interface Props extends CounterProps {
+interface Props extends CounterProps, Omit<HTMLAttributes<"div">, "initial" | "step"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { initial = 0, step = 1, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { initial = 0, step = 1, class: className, style, ...attrs } = Astro.props;
 
 const count = initial;
 const doubled = count * 2;
 ---
 
-<div class:list={["counter", className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={["counter", className]} style={style} {...attrs}>
   <output>{count}</output>
   {doubled > 10 ? (
     <span>Big</span>

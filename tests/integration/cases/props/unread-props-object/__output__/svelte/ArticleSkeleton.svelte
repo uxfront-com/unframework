@@ -9,18 +9,21 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ArticleSkeletonProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["article"],
+    "title" | "summary" | "minutes" | "children" | "class" | "style" | "ref"
+  > &
+    ArticleSkeletonProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["article"] | null;
+    };
 
-  let { class: className, style, ..._props }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ..._props }: Props = $props();
 
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { title: _title, summary: _summary, minutes: _minutes, ...attributes } = $derived(_props);
 </script>
 
 <article
@@ -28,7 +31,8 @@
   aria-busy="true"
   aria-label="Loading article"
   {style}
-  {...scopeAttributes(_props)}
+  bind:this={ref}
+  {...attributes}
 >
   <p>Loading the article</p>
 </article>

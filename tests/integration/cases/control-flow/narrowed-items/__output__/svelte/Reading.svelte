@@ -11,29 +11,35 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ReadingProps & {
-    onopen?: (href: string) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["ul"],
+    "sources" | "onopen" | "children" | "class" | "style" | "ref"
+  > &
+    ReadingProps & {
+      onopen?: (href: string) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["ul"] | null;
+    };
 
-  let { sources, onopen, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    sources,
+    onopen,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <ul
   class={["reading", className]}
   aria-label="Reading list"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   {#each sources as source, index (source.id)}
     <li

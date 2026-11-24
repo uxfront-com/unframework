@@ -28,6 +28,7 @@ import type {
   RawHtmlAttribute,
   DirectiveAttribute,
   RefAttribute,
+  RestAttribute,
   RenderNode,
   SlotFill,
   SlotOutletNode,
@@ -162,6 +163,27 @@ export interface JsxDialect {
   componentEvent?(
     attribute: ListenerAttribute,
     node: ComponentNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * What a component element passes through to the child's fallthrough element (ADR-0118): its
+   * attributes the child does not declare and its native listeners, in source order. By default
+   * each is printed as the element hooks print it on the component's tag. A target that passes
+   * them as one value (Angular's record) prints them all at once.
+   */
+  fallthroughAttributes?(
+    attributes: readonly (StaticAttribute | BoundAttribute | EventAttribute)[],
+    node: ComponentNode,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it does
+   * not declare. No default: each target names and spreads its rest its own way.
+   */
+  restAttribute?(
+    attribute: RestAttribute,
+    element: ElementNode,
     context: JsxContext,
   ): AST.JSXAttributeItem[];
   /**
@@ -498,6 +520,11 @@ function componentElement(
     children: [],
     span: node.span,
   };
+  const passed: (StaticAttribute | BoundAttribute | EventAttribute)[] = [];
+  const fallthrough = (attribute: StaticAttribute | BoundAttribute | EventAttribute) => {
+    passed.push(attribute);
+    return [];
+  };
   const attributes = node.attributes.flatMap((attribute): AST.JSXAttributeItem[] => {
     switch (attribute.kind) {
       case "Prop":
@@ -522,10 +549,30 @@ function componentElement(
           : refJsxAttribute(attribute, element, context);
       case "ModelBinding":
         return hook(context, "modelBinding")(attribute, node, context);
+      // What falls through (ADR-0118): printed all at once below where the dialect takes them
+      // so, and otherwise each as the element hooks print it on the component's tag.
+      case "Static":
+        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        return dialect.staticAttribute
+          ? dialect.staticAttribute(attribute, element, context)
+          : staticJsxAttribute(attribute, element, context);
+      case "Bound":
+        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        return dialect.boundAttribute
+          ? dialect.boundAttribute(attribute, element, context)
+          : boundJsxAttribute(attribute, element, context);
+      case "Event":
+        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        return dialect.eventAttribute
+          ? dialect.eventAttribute(attribute, element, context)
+          : eventJsxAttribute(attribute, element, context);
       default:
         return unreachable(attribute);
     }
   });
+  if (passed.length) {
+    attributes.push(...dialect.fallthroughAttributes!(passed, node, element, context));
+  }
   attributes.push(...scopeJsxAttributes(element, context));
   // A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s` of
   // this child alone: a child further out stamps only the content filled into it.
@@ -559,6 +606,7 @@ export function jsxDynamic(
   name: string,
   context: JsxContext,
   leading: readonly AST.JSXAttributeItem[] = [],
+  tag: () => AST.Expression = () => js.identifier(name),
 ): AST.JSXElement {
   const [first] = node.candidates;
   if (first?.kind === "Component") {
@@ -583,9 +631,100 @@ export function jsxDynamic(
   };
   return js.jsxElement(
     name,
-    [...leading, ...jsxAttributes(element, context)],
+    [...leading, ...jsxAttributes(element, onlyContext(node, tag, context))],
     jsxChildren(node.children, context),
   );
+}
+
+/**
+ * The context a `<component is>` over tags prints its attributes in (ADR-0119): an attribute
+ * only some tags take is printed as the first of them would print it, under a guard on the tag
+ * that renders, `href={Tag === "a" ? href : undefined}`, which every JSX target leaves out.
+ */
+export function onlyContext(
+  node: DynamicNode,
+  tag: () => AST.Expression,
+  context: JsxContext,
+): JsxContext {
+  if (!node.only?.length) return context;
+  const only = new Map(node.only.map((entry) => [entry.name, entry.tags]));
+  const { dialect } = context;
+  const guarded = <T extends StaticAttribute | BoundAttribute>(
+    print: (attribute: T, element: ElementNode, context: JsxContext) => AST.JSXAttributeItem[],
+  ) =>
+    function (attribute: T, element: ElementNode, at: JsxContext): AST.JSXAttributeItem[] {
+      const tags = only.get(attribute.name);
+      if (!tags) return print(attribute, element, at);
+      const items = print(attribute, { ...element, tag: tags[0]! }, at);
+      return items.map((item) => guardJsxAttribute(item, () => tagTest(tag, tags)));
+    };
+  return {
+    ...context,
+    dialect: {
+      ...dialect,
+      staticAttribute: guarded<StaticAttribute>(
+        dialect.staticAttribute?.bind(dialect) ?? staticJsxAttribute,
+      ),
+      boundAttribute: guarded<BoundAttribute>(
+        dialect.boundAttribute?.bind(dialect) ?? boundJsxAttribute,
+      ),
+    },
+  };
+}
+
+/**
+ * Whether the tag that renders is one of `tags`: `Tag === "a"`, `Tag === "a" || Tag === "b"`.
+ * `tag` makes a new node for each use, since a placeholder prints once.
+ */
+export function tagTest(tag: () => AST.Expression, tags: readonly string[]): AST.Expression {
+  return tags
+    .map((each) => js.binaryExpression("===", tag(), js.stringLiteral(each)) as AST.Expression)
+    .reduce((left, right) => js.logicalExpression("||", left, right));
+}
+
+/**
+ * An attribute that renders only where `test` holds: `name={test ? value : undefined}`. A
+ * dialect may print it as an object spread (Qwik's untyped attributes, `{...{ form: "f" }}`),
+ * whose each key is guarded the same way, `{...{ form: test ? "f" : undefined }}`. `test` makes
+ * a new node for each use, since a placeholder prints once.
+ */
+function guardJsxAttribute(
+  item: AST.JSXAttributeItem,
+  test: () => AST.Expression,
+): AST.JSXAttributeItem {
+  const guard = (value: AST.Expression) =>
+    js.conditionalExpression(test(), value, js.identifier("undefined"));
+  if (item.type === "JSXSpreadAttribute") {
+    const { argument } = item;
+    if (argument.type !== "ObjectExpression") {
+      // Any other object renders all of its keys or none.
+      return {
+        ...item,
+        argument: js.conditionalExpression(test(), argument, js.objectExpression([])),
+      };
+    }
+    return {
+      ...item,
+      argument: {
+        ...argument,
+        properties: argument.properties.map((property) =>
+          property.type === "Property" ? { ...property, value: guard(property.value) } : property,
+        ),
+      },
+    };
+  }
+  const { value } = item;
+  const expression: AST.Expression =
+    value === null
+      ? js.booleanLiteral(true)
+      : value.type === "JSXExpressionContainer"
+        ? value.expression.type === "JSXEmptyExpression"
+          ? js.identifier("undefined")
+          : value.expression
+        : value.type === "Literal"
+          ? js.stringLiteral(value.value)
+          : value;
+  return { ...item, value: js.jsxExpressionContainer(guard(expression)) };
 }
 
 /** A prop, `label="Name"` for a string literal (as written), and `tone={tone}` otherwise. */
@@ -657,7 +796,8 @@ function hook<
     | "dynamic"
     | "teleport"
     | "transition"
-    | "directiveAttribute",
+    | "directiveAttribute"
+    | "restAttribute",
 >(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
   if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
@@ -713,6 +853,8 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
             ];
       case "Directive":
         return hook(context, "directiveAttribute")(attribute, node, context);
+      case "Rest":
+        return hook(context, "restAttribute")(attribute, node, context);
       default:
         return unreachable(attribute);
     }

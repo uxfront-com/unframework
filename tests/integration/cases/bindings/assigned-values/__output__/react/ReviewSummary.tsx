@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ReviewSummaryProps {
   steps: string[];
@@ -7,10 +7,10 @@ export interface ReviewSummaryProps {
   product: string;
 }
 
-export interface ReviewSummaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReviewSummaryAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "steps" | "score" | "sku" | "product" | "children"
+>;
 
 export default function ReviewSummary({
   steps,
@@ -26,7 +26,7 @@ export default function ReviewSummary({
       className={cx("review-summary", className)}
       aria-label="Review"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ol>
         {steps.map((step, index) => (
@@ -58,13 +58,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

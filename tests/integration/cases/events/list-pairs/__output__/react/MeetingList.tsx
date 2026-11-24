@@ -1,4 +1,4 @@
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export interface Meeting {
   id: number;
@@ -21,10 +21,10 @@ export interface MeetingListEvents {
   onTrack?: (name: string, count: number) => void;
 }
 
-export interface MeetingListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MeetingListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "meetings" | "organiser" | "onOpened" | "onThanked" | "onTrack" | "children"
+>;
 
 export default function MeetingList({
   meetings,
@@ -75,7 +75,7 @@ export default function MeetingList({
       className={cx("meeting-list", className)}
       aria-label="Meetings"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul aria-label="Upcoming">
         {upcoming.map((event) => (
@@ -185,13 +185,4 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,4 +1,4 @@
-import { For, type JSX, createMemo, untrack } from "solid-js";
+import { type ComponentProps, For, type JSX, createMemo, splitProps, untrack } from "solid-js";
 
 export interface StepListProps {
   title: string;
@@ -6,14 +6,16 @@ export interface StepListProps {
 }
 
 export default function StepList(
-  props: StepListProps & { class?: string; style?: JSX.CSSProperties },
+  props: StepListProps &
+    Omit<ComponentProps<"ol">, "title" | "steps" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["title", "steps", "class"]);
+
   return (
     <ol
       class={props.class ? `step-list ${props.class}` : "step-list"}
       aria-label={props.title}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <KeyedFor each={props.steps} by={(step, index) => index}>
         {(step) => (
@@ -24,13 +26,6 @@ export default function StepList(
       </KeyedFor>
     </ol>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

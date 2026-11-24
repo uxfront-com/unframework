@@ -1,26 +1,20 @@
 ---
 import { loadUser } from "./api";
+import type { HTMLAttributes } from "astro/types";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"article">, "id"> {
   id: string;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { id, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { id, class: className, style, ...attrs } = Astro.props;
 
 const user = await loadUser(id);
 const visits = user.visits;
 ---
 
-<article class:list={["member", className]} style={style} {...scopeAttributes(Astro.props)}>
+<article class:list={["member", className]} style={style} {...attrs}>
   <h3>{user.name}</h3>
   <button type="button">{user.name} visits: {visits}</button>
 </article>

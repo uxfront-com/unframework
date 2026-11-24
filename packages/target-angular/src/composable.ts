@@ -259,6 +259,7 @@ function itemCode(item: SetupItem, context: ComposableContext): string {
     case "Provide":
     case "Inject":
     case "Use":
+    case "DevCheck":
       throw new Error(`A composable holds a \`${item.kind}\` item, which the analyser rejects.`);
     default:
       return unreachable(item);

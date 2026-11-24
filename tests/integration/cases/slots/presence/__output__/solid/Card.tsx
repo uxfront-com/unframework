@@ -1,4 +1,4 @@
-import { type JSX, Show, children } from "solid-js";
+import { type ComponentProps, type JSX, Show, children, splitProps } from "solid-js";
 
 export interface CardSlots {
   title?: JSX.Element;
@@ -6,16 +6,20 @@ export interface CardSlots {
 }
 
 export default function Card(
-  props: { label: string } & CardSlots & { class?: string; style?: JSX.CSSProperties },
+  props: { label: string } & CardSlots &
+    Omit<ComponentProps<"section">, "label" | "title" | "children" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["label", "title", "children", "class"]);
+
   const title = children(() => props.title);
   const content = children(() => props.children);
   return (
     <section
       class={props.class ? `card ${props.class}` : "card"}
       aria-label={props.label}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Show when={title()}>
         <header class="title">{title()}</header>
@@ -25,11 +29,4 @@ export default function Card(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

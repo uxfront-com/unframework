@@ -1,11 +1,23 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 const STEPS = [1, 5, 10] as const;
 const LIMITS = Object.freeze({ min: 0, max: 20 });
 const caption = (value: number): string => `${value} of ${LIMITS.max}`;
 const START = LIMITS.min + 2;
 
-export default function Stepper(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Stepper(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [value, setValue] = createSignal(START);
 
   function add(step: number) {
@@ -16,8 +28,7 @@ export default function Stepper(props: { class?: string; style?: JSX.CSSProperti
     <section
       class={props.class ? `stepper ${props.class}` : "stepper"}
       aria-label="Stepper"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{caption(value())}</p>
       <ul>
@@ -33,13 +44,6 @@ export default function Stepper(props: { class?: string; style?: JSX.CSSProperti
       </ul>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

@@ -104,6 +104,8 @@ export function assertedSetup(component: UfComponent): UfComponent {
         case "Provide":
         case "Inject":
           return item;
+        case "DevCheck":
+          return { ...item, code: code(item.code) };
         case "Use":
           return {
             ...item,
@@ -161,6 +163,7 @@ function movedReference(reference: CodeReference, moved: (span: Span) => Span): 
     case "Event":
     case "Api":
     case "Slot":
+    case "Dev":
       return { ...reference, span: moved(reference.span) };
     default:
       return unreachable(reference);

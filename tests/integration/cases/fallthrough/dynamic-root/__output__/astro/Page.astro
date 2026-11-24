@@ -1,0 +1,51 @@
+---
+import Base from "./Base.astro";
+import Primary from "./Primary.astro";
+import type { HTMLAttributes } from "astro/types";
+import "./Page.uf.tsx.css";
+
+interface Props extends HTMLAttributes<"section"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, ...attrs } = Astro.props;
+
+const linked = true as boolean;
+const tone = "rgb(29, 78, 216)" as string;
+const pressed = "none" as string;
+
+const items = [
+  { id: 1, href: "#one", disabled: true, label: "One" },
+  { id: 2, href: "", disabled: true, label: "Two" },
+];
+---
+
+<section class:list={["page", className]} style={style} data-uf-64cf7c28="" {...attrs}>
+  <Primary
+    href={linked ? "#docs" : undefined}
+    disabled={true}
+    text="Docs"
+    class="wide"
+    style={{ color: tone }}
+    data-uf-64cf7c28=""
+  />
+  <Base disabled={true} text="Off" class:list={["off", { muted: !linked }]} data-uf-64cf7c28="" />
+  <Base text="Save" class="save" data-uf-64cf7c28="" />
+  <ul aria-label="Items" data-uf-64cf7c28="">
+    {items.map((item) => (
+      <li data-uf-64cf7c28="">
+        {(() => { const Tag = item.href ? "a" : "button"; return (
+          <Tag
+            href={Tag === "a" ? item.href : undefined}
+            disabled={Tag === "button" ? item.disabled : undefined}
+            class="item"
+            data-uf-64cf7c28=""
+          >{item.label}</Tag>
+        ); })()}
+      </li>
+    ))}
+  </ul>
+  <button type="button" data-uf-64cf7c28="">Toggle</button>
+  <output data-uf-64cf7c28="">{pressed}</output>
+</section>

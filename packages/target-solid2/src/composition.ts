@@ -10,10 +10,12 @@
 //   `children()`, in the component or, where a list's row renders it, in each row.
 // - A model is a `value` prop and an `onValueChange` callback; unbound (`value === undefined`), the
 //   child keeps a local signal seeded by its default.
-// - `class` and `style` fall through to the root, merged with its own (`fallthrough`), unless
-//   `inheritAttrs` is `false`.
-// - What a component exposes it passes to its `ref` prop, `props.ref?.({ focus })`; a parent's
-//   component ref is a `let` its `ref` callback sets, as an element's is (ADR-0049).
+// - What a component does not declare falls through to its root, or with `inheritAttrs: false` to
+//   the element that spreads the props' rest: `class` and `style` merged with its own, the rest
+//   spread after its own attributes (`fallthrough`, src/fallthrough.ts, ADR-0118).
+// - What a component exposes it passes to its `ref` prop, `props.ref?.({ focus })`, and one that
+//   exposes nothing hands it its root element; a parent's component ref is a `let` its `ref`
+//   callback sets, as an element's is (ADR-0049, ADR-0118).
 // - An injection key is a context, `createContext<T>()`, in the output of its module's main
 //   component, `createContext<T | null>(null)`; `provide` wraps the template in the context, which
 //   is its own provider in Solid 2, and `inject` is `useContext(Key) ?? fallback`, or
@@ -32,6 +34,8 @@ import type {
   UfModule,
 } from "@unframework.dev/ir";
 
+import { planFallthrough } from "./fallthrough.ts";
+import type { FallthroughPlan } from "./fallthrough.ts";
 import { generatedInterface } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
 import { eventProp } from "./props.ts";
@@ -45,8 +49,13 @@ export class SolidComposition {
   readonly types: TypeDeclaration[] = [];
   /** How the props parameter names each of `types`: `PickerSlots<T>` (src/generics.ts). */
   readonly #references: string[] = [];
-  /** The inline type the props parameter takes for fallthrough and `ref`, or none. */
+  /**
+   * The type the props parameter takes for fallthrough and `ref`, or none: the attributes of the
+   * element they land on but the names the component declares (src/fallthrough.ts).
+   */
   readonly inline: string | undefined;
+  /** How the component passes what falls through, and the consumer's `ref` (ADR-0118). */
+  readonly plan: FallthroughPlan | undefined;
   /**
    * Where `class` and `style` fall through: the root element's or root component's span, or
    * none (a fragment, a conditional, `inheritAttrs: false`).
@@ -107,10 +116,13 @@ export class SolidComposition {
     }
     this.fallthrough = fallthroughRoot(component);
     this.scopeRoots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
-    const inline: string[] = [];
-    if (this.fallthrough) inline.push(`class?: string`, `style?: ${jsx()}.CSSProperties`);
-    if (component.exposes) inline.push(`ref?: (api: ${this.exposedType()}) => void`);
-    this.inline = inline.length ? `{ ${inline.join("; ")} }` : undefined;
+    const { type, plan } = planFallthrough(component, module, {
+      componentProps: () => imports.add("@solidjs/web", "ComponentProps", { type: true }),
+      jsx,
+      exposed: () => this.exposedType(),
+    });
+    this.inline = type;
+    this.plan = plan;
     this.resolved = this.#resolve(component.render, new Map());
   }
 
@@ -180,6 +192,7 @@ export class SolidComposition {
   get reads(): boolean {
     return Boolean(
       this.fallthrough ||
+      this.plan ||
       this.scopeRoots.size ||
       this.component.exposes ||
       this.component.slots ||
@@ -273,16 +286,22 @@ function propertyKey(name: string): string {
 }
 
 /**
- * Where `class` and `style` fall through (ADR-0054): the root element, or the root component
- * that passes them on, as `ComponentApi.root` reads the source; none for any other root or with
- * `inheritAttrs: false`.
+ * Where `class` and `style` fall through (ADR-0054): the root element, the root component that
+ * passes them on, or the root `<component is>` over tags (ADR-0119), as `ComponentApi.root` reads
+ * the source; none for any other root or with `inheritAttrs: false`.
  */
 function fallthroughRoot(component: UfComponent): Span | undefined {
   if (component.inheritAttrs === false) return undefined;
   const { render } = component;
   if (render.kind === "Element") return render.span;
   const [only] = render.children;
-  return render.children.length === 1 && only?.kind === "Component" ? only.span : undefined;
+  if (render.children.length !== 1) return undefined;
+  // A `<component is>` over tags renders one element, which takes them as a root element does
+  // (ADR-0119): `jsxDynamic` keeps its span for `isRoot`.
+  if (only?.kind === "Component") return only.span;
+  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
+    ? only.span
+    : undefined;
 }
 
 /** What a template, or a row, does with its slots, outside the list rows it holds. */

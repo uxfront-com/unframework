@@ -133,7 +133,22 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "span"
+            "rootTag": "span",
+            "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "badge"
+                },
+                {
+                  "name": "v-mark",
+                  "value": "badge"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "span"
           }
         ],
         "keys": []
@@ -176,7 +191,21 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "em"
+            "rootTag": "em",
+            "fallthroughTag": "em",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "tag"
+                },
+                {
+                  "name": "v-mark"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "em"
           }
         ],
         "keys": []

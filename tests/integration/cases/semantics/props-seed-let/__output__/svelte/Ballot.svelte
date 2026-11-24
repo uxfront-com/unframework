@@ -10,16 +10,31 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = BallotProps & {
-    onvoted?: (remaining: number, text: string) => void;
-    onmoved?: (line: string) => void;
-    onreport?: (text: string) => void;
-    oncounted?: (answers: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "limit"
+    | "label"
+    | "choices"
+    | "onvoted"
+    | "onmoved"
+    | "onreport"
+    | "oncounted"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    BallotProps & {
+      onvoted?: (remaining: number, text: string) => void;
+      onmoved?: (line: string) => void;
+      onreport?: (text: string) => void;
+      oncounted?: (answers: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     limit,
@@ -31,6 +46,7 @@
     oncounted,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -79,16 +95,9 @@
     choices.forEach((choice) => isAnswer(choice) && answers++);
     oncounted?.(answers);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={["ballot", className]} aria-label={label} {style} {...scopeAttributes(attributes)}>
+<section class={["ballot", className]} aria-label={label} {style} bind:this={ref} {...attributes}>
   <p role="status">{votes} votes left</p
   ><p>Picked: {picked}</p
   ><ul aria-label="Choices">

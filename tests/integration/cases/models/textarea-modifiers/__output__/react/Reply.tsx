@@ -1,9 +1,6 @@
-import { type CSSProperties, type ChangeEvent, useState } from "react";
+import { type ChangeEvent, type ComponentPropsWithRef, useState } from "react";
 
-export interface ReplyAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReplyAttributes = Omit<ComponentPropsWithRef<"form">, "children">;
 
 export default function Reply({ className, style, ...attributes }: ReplyAttributes) {
   const [message, setMessage] = useState("Thanks, see you soon");
@@ -29,7 +26,7 @@ export default function Reply({ className, style, ...attributes }: ReplyAttribut
   const signatureField = useModelText(signature, setSignature, { lazy: true });
 
   return (
-    <form aria-label="Reply" className={className} style={style} {...scopeAttributes(attributes)}>
+    <form aria-label="Reply" className={className} style={style} {...attributes}>
       <textarea aria-label="Message" {...messageField} ref={messageCaret} />
       <textarea aria-label="Signature" {...signatureField} ref={signatureCaret} />
       <output>
@@ -37,15 +34,6 @@ export default function Reply({ className, style, ...attributes }: ReplyAttribut
       </output>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

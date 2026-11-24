@@ -104,7 +104,7 @@ describe("solid scoped styles", () => {
     expect(code.split("\n\n")[0]).toBe(
       [
         'import List from "./List";',
-        'import type { JSX } from "solid-js";',
+        'import { type ComponentProps, splitProps } from "solid-js";',
         'import "./Ranking.uf.tsx.css";',
       ].join("\n"),
     );
@@ -119,23 +119,23 @@ describe("solid scoped styles", () => {
     expect(code).toContain(`<b ${stamped}>`);
   });
 
+  // What falls through holds them, spread on the root after its own (ADR-0118).
   it("spreads the scope attributes its styled parents pass on the root of a styled child too", async () => {
     const code = await output(list.module);
-    expect(code).toContain(
-      `data-uf-${listId}=""\n      style={props.style}\n      {...scopeAttributes(props)}\n    >`,
-    );
+    expect(code).toContain(`data-uf-${listId}="" {...others}>`);
   });
 
   // The unplugin joins a source's outputs into one module (ADR-0053): a prop that takes the
   // helper's name moves the first component's helper on, and the second must not take it too.
+  // A root conditional picks the scope attributes out of the props on each branch.
   it("names the helper of each component of a source apart", async () => {
     const { module } = lowered(
       "Two.uf.tsx",
       `export function Item({ scopeAttributes }: { scopeAttributes: string }) {
-  return <li>{scopeAttributes}</li>;
+  return <>{scopeAttributes ? <li>{scopeAttributes}</li> : <li>-</li>}</>;
 }
-export default function Two() {
-  return <ul><Item scopeAttributes="a" /></ul>;
+export default function Two({ open }: { open: boolean }) {
+  return <>{open ? <ul><Item scopeAttributes="a" /></ul> : <p>-</p>}</>;
 }`,
     );
     const helpers = async (index: number) =>
@@ -153,12 +153,12 @@ export default function Two() {
       "a const in an earlier component",
       "scopeAttributes",
       `export function First() { const scopeAttributes = "local"; return <b title={scopeAttributes}>F</b>; }
-export default function Second() { return <i>S</i>; }`,
+export default function Second({ on }: { on: boolean }) { return <>{on ? <i>S</i> : <b>T</b>}</>; }`,
     ],
     [
       "a const in a later component",
       "scopeAttributes",
-      `export function First() { return <b>F</b>; }
+      `export function First({ on }: { on: boolean }) { return <>{on ? <b>F</b> : <i>G</i>}</>; }
 export default function Second() { const scopeAttributes = "local"; return <i title={scopeAttributes}>S</i>; }`,
     ],
     [
@@ -173,7 +173,7 @@ export default function Second({ k }: { k: string }) { return <><b class={["a", 
       `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 export function A() { const slots = defineSlots<{ scopeAttributes?(): Element }>(); return <b>{slots.scopeAttributes?.()}</b>; }
-export default function B() { const slots = defineSlots<{ title?(): Element }>(); return <i>{slots.title?.()}</i>; }`,
+export default function B({ on }: { on: boolean }) { const slots = defineSlots<{ title?(): Element }>(); return <>{on ? <i>{slots.title?.()}</i> : <b>-</b>}</>; }`,
     ],
     [
       "a model in an earlier component",
@@ -183,7 +183,7 @@ export function A() {
   const value = defineModel<string>("scopeAttributes", { default: "" });
   return <button type="button" onClick={() => (value.value = "x")}>{value.value}</button>;
 }
-export default function B() { return <i>B</i>; }`,
+export default function B({ on }: { on: boolean }) { return <>{on ? <i>B</i> : <b>-</b>}</>; }`,
     ],
   ])("names the helper apart from %s", async (_, helper, source) => {
     const { module } = lowered("Pair.uf.tsx", source);
@@ -242,8 +242,8 @@ describe("solid child-root rule, rendered by Solid's server", () => {
   return <button type="button" class="button">{text}</button>;
 }`;
 
-  // A root that spreads its scope attributes renders through Solid's `ssrElement`, which writes a
-  // space after a class and `style` for a key that holds nothing (ADR-0063).
+  // A root that spreads what falls through, its scope attributes with it, renders through Solid's
+  // `ssrElement`, which writes a space after a class (ADR-0063, ADR-0118).
   it("puts the parents' scope attributes on its root, and no prop it leaves unread", async () => {
     const Button = await load(["Button.uf.tsx", BUTTON]);
     expect(
@@ -254,7 +254,7 @@ describe("solid child-root rule, rendered by Solid's server", () => {
         "data-uf-1a2b3c4d": "",
       }),
     ).toBe(
-      '<button type="button" class="button " style="" data-uf-0a1b2c3d="" data-uf-1a2b3c4d="">Save</button>',
+      '<button type="button" class="button " data-uf-0a1b2c3d="" data-uf-1a2b3c4d="">Save</button>',
     );
   });
 
@@ -280,6 +280,8 @@ describe("solid child-root rule, rendered by Solid's server", () => {
       '<span class="badge " data-uf-0a1b2c3d="">Saving</span>',
       '<button type="button" data-uf-0a1b2c3d="">Save</button>',
       // `<Dynamic>` passes its `component` key to `ssrElement`, which skips it after a space.
+      // A root `<component is>` takes a consumer's style in what falls through, as a root element
+      // does, which leaves out one the consumer doesn't pass (ADR-0122).
       '<h3 class="heading " data-uf-0a1b2c3d="" >Notes</h3>',
     ]);
   });
@@ -298,7 +300,9 @@ describe("solid child-root rule, rendered by Solid's server", () => {
 }`,
     ]);
     expect([await render(Sum, {}), await render(Title, { big: true })]).toEqual([
-      '<p class="" style="">a &lt; b &amp;&amp; c > d</p>',
+      "<p >a &lt; b &amp;&amp; c > d</p>",
+      // A root `<component is>` takes the class and style in what falls through, as the root
+      // element does, which leaves out those the consumer doesn't pass (ADR-0122).
       "<h2 >a &lt; b</h2>",
     ]);
   });
@@ -315,7 +319,7 @@ export default function Save() {
       ],
     );
     expect(await render(Save, { "data-uf-0a1b2c3d": "" })).toBe(
-      '<button type="button" class="button " style="" data-uf-0a1b2c3d="">Save</button>',
+      '<button type="button" class="button " data-uf-0a1b2c3d="">Save</button>',
     );
   });
 

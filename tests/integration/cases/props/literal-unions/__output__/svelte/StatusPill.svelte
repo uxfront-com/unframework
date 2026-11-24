@@ -9,9 +9,17 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = StatusPillProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["span"],
+    "status" | "size" | "level" | "children" | "class" | "style" | "ref"
+  > &
+    StatusPillProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["span"] | null;
+    };
 
   let {
     status,
@@ -19,19 +27,14 @@
     level = 1,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <span
   class={["pill", `pill-${status}`, `pill-${size}`, `pill-level-${level}`, className]}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{status === "active" ? "Active" : status === "paused" ? "Paused" : "Archived"}{level === 3 ? " (critical)" : ""}</span>

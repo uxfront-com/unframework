@@ -482,12 +482,72 @@ export interface ComponentApi {
   /** `false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off. */
   inheritAttrs: boolean;
   /**
-   * What the component's render root is: one element, one component, or anything else (a
-   * fragment, a conditional, a slot outlet). Fallthrough and Angular's host need it (ADR-0056).
+   * What the component's render root is: one element, one component, one `<component is>` over
+   * tags (`dynamic`, ADR-0119), or anything else (a fragment, a conditional, a slot outlet).
+   * Fallthrough and Angular's host need it (ADR-0056).
    */
-  root: "element" | "component" | "other";
+  root: "element" | "component" | "dynamic" | "other";
   /** The root element's tag, when the root is an element. */
   rootTag?: string;
+  /**
+   * The tag of the element a consumer's undeclared attributes and listeners land on (ADR-0118):
+   * the root element's, the root component's own, or, with `inheritAttrs: false`, the element
+   * that spreads the props' rest. A parent checks what falls through against it. Absent where
+   * nothing but declared names may be passed.
+   */
+  fallthroughTag?: string;
+  /**
+   * `svg` where the fallthrough element is an SVG one (ADR-0118): an `<svg>`, or an element
+   * inside one that spreads the props' rest, whose attributes a parent checks as SVG's. Absent
+   * for an HTML element.
+   */
+  fallthroughNamespace?: "svg";
+  /**
+   * The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer
+   * passes is checked as that element would be checked with it, its `role`, its `tabindex` and
+   * its own key handlers included (UF3030). A `dynamic` root's are its `<component is>`'s, which
+   * each tag it may render is checked with (ADR-0122). Absent where nothing falls through.
+   */
+  fallthroughOwn?: ApiFallthroughOwn;
+  /**
+   * What the components the root renders declare, through a chain of root components, nearest
+   * first (ADR-0118): a name a consumer passes that would fall through reaches that component's
+   * own prop, model or event instead, which the targets do not pass alike, so a parent reports
+   * it (UF1002). Absent where the root is no component, or nothing falls through to it.
+   */
+  rootDeclarations?: ApiRootDeclaration[];
+  /**
+   * The root component that exposes functions (ADR-0118), through a chain of root components
+   * that expose nothing, where this component exposes nothing either: a ref on it holds neither
+   * an element nor those functions, so a parent reports it (UF3046). Absent otherwise.
+   */
+  exposingRoot?: string;
+  /**
+   * The tag of the element a `ref` on the component holds, where the component exposes nothing
+   * (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no
+   * element.
+   */
+  refTag?: string;
+  /**
+   * The tags of the element a `ref` on the component holds, where it exposes nothing and its
+   * root is `dynamic` (ADR-0122): the element that renders, typed as the union of the tags' DOM
+   * interfaces. A root component that renders such a root, through a chain of root components
+   * that expose nothing, takes them too. Absent otherwise: `refTag` names one element.
+   */
+  refTags?: string[];
+  /**
+   * The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it
+   * places them, and merges its `class` and `style` into whichever renders. Where the component
+   * keeps `inheritAttrs`, what else falls through is checked against every tag, and passes only
+   * where every tag takes it (ADR-0122). A root component that renders a `dynamic` root, through
+   * a chain of root components that keep `inheritAttrs`, takes its tags too.
+   */
+  rootTags?: string[];
+  /**
+   * Set when the root is a `<component is>` whose `is` the API cannot list the tags of, as a
+   * setup value's (ADR-0119), so a parent's UF3045 says why. Absent otherwise.
+   */
+  rootUnlisted?: true;
   /** The component's scoped styles, when it imports a stylesheet (ADR-0063). */
   styles?: ComponentStylesApi;
   /**
@@ -511,6 +571,26 @@ export interface ComponentStylesApi {
   /** @pattern ^[0-9a-f]{8}$ */
   scopeId: string;
   slotted: boolean;
+}
+
+/** The fallthrough element's own attributes and listeners, as its source writes them. */
+export interface ApiFallthroughOwn {
+  /**
+   * Each attribute: its static value, `true` written without one, and no value where bound
+   * (a form `validateModule` checks, as a static attribute's).
+   */
+  attributes: { name: string; value?: string | true }[];
+  /** The DOM events its own listeners listen to, in lower case (`keydown`). */
+  listeners: string[];
+}
+
+/** A prop, a model or an event that a component's root component declares (ADR-0118). */
+export interface ApiRootDeclaration {
+  /** The prop's or the model's name, or the event's, as `defineEmits` declares it (`click`). */
+  name: string;
+  kind: "prop" | "model" | "event";
+  /** The root component that declares it. */
+  component: string;
 }
 
 /** A prop or a model of a child's API: its name, its optionality and its type as written. */
@@ -625,7 +705,10 @@ export interface UfComponent {
   slots?: Slots;
   /** The local functions the component exposes with `defineExpose({ … })` (ADR-0054). */
   exposes?: Exposes;
-  /** Set by `defineOptions({ inheritAttrs: false })`: no `class` or `style` falls through. */
+  /**
+   * Set by `defineOptions({ inheritAttrs: false })`: nothing falls through to the root. What a
+   * consumer passes reaches the element that spreads the props' rest, if one does (ADR-0118).
+   */
   inheritAttrs?: false;
   /**
    * Every binding the component declares, by the start of its span: the props (each
@@ -955,7 +1038,8 @@ export type CodeReference =
   | ApiReference
   | EventReference
   | SlotReference
-  | ImportReference;
+  | ImportReference
+  | DevReference;
 
 /**
  * A write of a `state` or `model` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`,
@@ -1037,6 +1121,17 @@ export interface EmitReference {
   span: Span;
   /** The payload's arguments, in order: their references follow this one in the list. */
   arguments: Span[];
+}
+
+/**
+ * `isDev`, read as the whole test of an `if` with no `else` (ADR-0117): in client code, or in a
+ * {@link DevCheckItem}. Each target writes its framework's own development check in its place,
+ * which a production build folds to `false`.
+ */
+export interface DevReference {
+  kind: "Dev";
+  /** The identifier. */
+  span: Span;
 }
 
 /**
@@ -1131,7 +1226,8 @@ export type SetupItem =
   | ModelItem
   | ProvideItem
   | InjectItem
-  | UseItem;
+  | UseItem
+  | DevCheckItem;
 
 /**
  * `const user = await loadUser(props.id)`: an `awaited` binding (ADR-0101). The awaits open the
@@ -1267,6 +1363,19 @@ export interface WatchEffectItem {
   kind: "WatchEffect";
   /** The effect: its one parameter, when it has one, is `onCleanup`. */
   effect: FunctionCode;
+  span: Span;
+}
+
+/**
+ * `if (isDev) { … }` at the top level of the setup (ADR-0117): code that runs only in a
+ * development build, once where the target runs the setup, in source order. It reads what pure
+ * code reads, and `console`, and writes nothing the component holds, so a development render and
+ * a production one are the same.
+ */
+export interface DevCheckItem {
+  kind: "DevCheck";
+  /** The whole statement, `if` to its block's end: its test is a {@link DevReference}. */
+  code: Code;
   span: Span;
 }
 
@@ -1504,7 +1613,21 @@ export interface DynamicNode {
   children: RenderNode[];
   /** The fills of component candidates. */
   fills?: SlotFill[];
+  /**
+   * The attributes only some tag candidates take, by name, each with the tags that take it
+   * (ADR-0119): it renders only when one of them does. An attribute every candidate takes has no
+   * entry, and the field is absent when there are none.
+   */
+  only?: DynamicOnly[];
   span: Span;
+}
+
+/** An attribute of a `Dynamic` node that only some of its tag candidates take (ADR-0119). */
+export interface DynamicOnly {
+  /** The attribute's name, as its `Static` or `Bound` attribute spells it. */
+  name: string;
+  /** The candidate tags that take it, in candidate order: some of them, never all. */
+  tags: string[];
 }
 
 /**
@@ -1668,6 +1791,7 @@ export type Attribute =
   | ClassAttribute
   | StyleAttribute
   | SpreadAttribute
+  | RestAttribute
   | EventAttribute
   | RefAttribute
   | ModelAttribute
@@ -1675,8 +1799,10 @@ export type Attribute =
   | DirectiveAttribute;
 
 /**
- * An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child
- * declares, a model's binding, or a `class`, a `style` (fallthrough) or a `ref` (what it exposes).
+ * An attribute on a component (ADR-0053, ADR-0054, ADR-0118): a prop, a listener of an event the
+ * child declares, a model's binding, a `ref` (what it exposes, or its root element), or what
+ * falls through to the child's fallthrough element: a `class`, a `style`, an attribute of that
+ * element (`Static`, `Bound`) or a native listener (`Event`, with no option).
  */
 export type ComponentAttribute =
   | PropAttribute
@@ -1684,7 +1810,10 @@ export type ComponentAttribute =
   | ModelBindingAttribute
   | ClassAttribute
   | StyleAttribute
-  | RefAttribute;
+  | RefAttribute
+  | StaticAttribute
+  | BoundAttribute
+  | EventAttribute;
 
 /** A prop passed to a component, `label="Name"` or `label={name}`: a static value is a literal. */
 export interface PropAttribute {
@@ -1966,6 +2095,17 @@ export interface SpreadAttribute {
    * nullish is an error on Angular (NG8107), and one through `.` of an object that may be throws.
    */
   nullish: boolean;
+  span: Span;
+}
+
+/**
+ * `{...rest}`, the rest of a destructured props pattern, spread whole on one element of a
+ * component that sets `inheritAttrs: false` (ADR-0118): the element takes what its consumer
+ * passes that the component does not declare, its `class` and `style` included, as a root takes
+ * them where `inheritAttrs` is on.
+ */
+export interface RestAttribute {
+  kind: "Rest";
   span: Span;
 }
 

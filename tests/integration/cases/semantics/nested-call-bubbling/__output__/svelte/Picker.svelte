@@ -2,15 +2,19 @@
 
 <script lang="ts">
   import { tick } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "ondone" | "children" | "class" | "style" | "ref"
+  > & {
     ondone?: (step: number, status: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { ondone, class: className, style, ...attributes }: Props = $props();
+  let { ondone, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let selected = $state("none");
   let hits = $state(0);
@@ -49,16 +53,9 @@
     void run();
     status = "started";
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={["picker", className]} aria-label="Picker" {style} {...scopeAttributes(attributes)}>
+<section class={["picker", className]} aria-label="Picker" {style} bind:this={ref} {...attributes}>
   <div class="choices" role="presentation" onclick={report}>
     <button type="button" onclick={() => pick("alpha")}>Alpha</button
     ><button type="button" onclick={() => pick("beta")}>Beta</button>

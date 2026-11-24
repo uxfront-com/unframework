@@ -35,6 +35,7 @@ import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
 import { checkCopiedText, closure } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
+import { misplacedDev } from "./dev.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { SetupBinding } from "./render.ts";
 import type { Scopes } from "./scope.ts";
@@ -469,6 +470,11 @@ function hookReferences(
           return;
         }
         if (shared.failed.has(resolution.declaration)) return;
+        if (authoring.get(resolution.declaration) === "isDev") {
+          // A directive's hook is no component's code (ADR-0117).
+          misplacedDev(node, reporter);
+          return;
+        }
         if (authoring.has(resolution.declaration)) {
           reject(
             node,

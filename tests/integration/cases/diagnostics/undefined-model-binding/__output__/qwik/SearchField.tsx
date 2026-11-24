@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useComputed$,
@@ -14,8 +15,12 @@ export interface SearchFieldModels {
 }
 
 export const SearchField = component$<
-  SearchFieldModels & { class?: ClassList; style?: CSSProperties }
->(({ query: queryProp, onQueryChange$, class: className, style, ...attributes }) => {
+  SearchFieldModels &
+    Omit<PropsOf<"input">, "query" | "onQueryChange$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ query: queryProp, onQueryChange$, class: className, style, onInput$, ...attributes }) => {
   const queryLocal = useSignal<string>();
   const query = useComputed$(() => (queryProp === undefined ? queryLocal.value : queryProp));
 
@@ -31,19 +36,10 @@ export const SearchField = component$<
       type="search"
       aria-label="Search"
       value={currentQuery}
-      onInput$={(_, element) => setQuery(element.value)}
-      {...scopeAttributes(attributes)}
+      onInput$={[$((_, element) => setQuery(element.value)), onInput$]}
       class={className}
       style={style}
+      {...attributes}
     />
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

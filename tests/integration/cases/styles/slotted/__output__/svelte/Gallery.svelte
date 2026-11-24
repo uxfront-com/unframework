@@ -3,23 +3,30 @@
 <script lang="ts">
   import Frame from "./Frame.svelte";
   import Mat from "./Mat.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { matted?: boolean; class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "matted" | "children" | "class" | "style" | "ref"
+  > & {
+    matted?: boolean;
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { matted = true, class: className, style, ...attributes }: Props = $props();
+  let {
+    matted = true,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   const Component = $derived(matted ? Mat : Frame);
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={className} {style} {...scopeAttributes(attributes)}>
+<section class={className} {style} bind:this={ref} {...attributes}>
   <Frame>
     <p class="caption" data-uf-9dc516fd-s="">A quiet harbour</p>
   </Frame

@@ -1,11 +1,8 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import "virtual:styleframe.css";
 import "./Panel.uf.tsx.css";
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<ComponentPropsWithRef<"section">, "text" | "children">;
 
 export default function Panel({
   text,
@@ -14,12 +11,7 @@ export default function Panel({
   ...attributes
 }: { text: string } & PanelAttributes) {
   return (
-    <section
-      className={cx("panel", className)}
-      style={style}
-      data-uf-b6be1fd3=""
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("panel", className)} style={style} data-uf-b6be1fd3="" {...attributes}>
       <p className="body" data-uf-b6be1fd3="">
         {text}
       </p>
@@ -40,13 +32,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -14,7 +14,9 @@ import {
 } from "./escape.ts";
 import {
   classArrayItems,
+  guardsOf,
   keepsWhitespace,
+  onlyGuards,
   staticClassValue,
   staticStyleValue,
   unreachable,
@@ -142,6 +144,8 @@ const hasSpread = (element: ElementNode) =>
       case "RawHtml":
       // An attachment, `{@attach vFocusTrap(() => open)}`, never an attribute (ADR-0099).
       case "Directive":
+      // The props' rest, spread as it is (ADR-0118).
+      case "Rest":
         return false;
       default:
         return unreachable(attribute);
@@ -450,6 +454,8 @@ export const svelteDialect: MarkupDialect = {
           span: node.span,
         },
         directives: [{ name: "this", text: `this={${is}}` }],
+        // An attribute only some tags take renders on those (ADR-0119).
+        ...guardsOf(onlyGuards(node, is)),
       },
     ];
   },

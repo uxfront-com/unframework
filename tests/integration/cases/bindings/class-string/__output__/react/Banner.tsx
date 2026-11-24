@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface BannerProps {
   message: string;
@@ -6,10 +6,10 @@ export interface BannerProps {
   emphasis?: string | null;
 }
 
-export interface BannerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BannerAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "message" | "tone" | "emphasis" | "children"
+>;
 
 export default function Banner({
   message,
@@ -20,12 +20,7 @@ export default function Banner({
   ...attributes
 }: BannerProps & BannerAttributes) {
   return (
-    <div
-      className={cx("banner", tone, className)}
-      role="note"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("banner", tone, className)} role="note" style={style} {...attributes}>
       <p className={cx(emphasis)}>{message}</p>
       <p className={cx(`banner-footer banner-footer-${tone}`)}>Shown to every visitor.</p>
     </div>
@@ -45,13 +40,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 export interface Settings {
   theme: string;
@@ -17,8 +17,14 @@ export interface DisplaySettingsEvents {
 }
 
 export default function DisplaySettings(
-  props: DisplaySettingsEvents & { class?: string; style?: JSX.CSSProperties },
+  props: DisplaySettingsEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onApplied", "onSaved", "class");
+
   const [settings, setSettings] = createState<Settings>({ theme: "light", size: 14 });
   const [maxSize, setMaxSize] = createState(20);
   const [saving, setSaving] = createState(false);
@@ -59,8 +65,7 @@ export default function DisplaySettings(
     <section
       class={props.class ? `display-settings ${props.class}` : "display-settings"}
       aria-label="Display"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">
         Theme {settings().theme}, size {settings().size}
@@ -91,13 +96,6 @@ export default function DisplaySettings(
       </div>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

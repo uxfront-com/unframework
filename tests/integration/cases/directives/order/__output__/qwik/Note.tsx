@@ -2,53 +2,52 @@ import { vNote } from "./vNote";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
   useVisibleTask$,
 } from "@qwik.dev/core";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const noteElements = useSignal<DirectiveElement<typeof vNote>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "note";
-        for (const element of track(noteElements)) {
-          cleanup(
-            runDirective(vNote, element, value, {
-              leave: (left) => forgetElement(noteElements, left),
-              back: (kept) => collectElement(noteElements, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    return (
-      <em
-        data-name="note"
-        ref={(element) => collectElement(noteElements, element)}
-        {...scopeAttributes(attributes)}
-        class={className}
-        style={style}
-      >
-        Note
-      </em>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
+export default component$<
+  Omit<PropsOf<"em">, "class" | "style" | "ref"> & {
+    class?: ClassList;
+    style?: CSSProperties;
+    ref?: Signal<Element | undefined>;
   }
-  return scope;
-}
+>(({ class: className, style, ref, ...attributes }) => {
+  const noteElements = useSignal<DirectiveElement<typeof vNote>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "note";
+      for (const element of track(noteElements)) {
+        cleanup(
+          runDirective(vNote, element, value, {
+            leave: (left) => forgetElement(noteElements, left),
+            back: (kept) => collectElement(noteElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  return (
+    <em
+      data-name="note"
+      ref={(element) => {
+        if (ref) ref.value = element;
+        collectElement(noteElements, element);
+      }}
+      class={className}
+      style={style}
+      {...attributes}
+    >
+      Note
+    </em>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

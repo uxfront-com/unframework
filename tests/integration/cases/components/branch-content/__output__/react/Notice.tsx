@@ -1,9 +1,6 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<ComponentPropsWithRef<"p">, "text" | "tone" | "children">;
 
 export default function Notice({
   text,
@@ -13,12 +10,7 @@ export default function Notice({
   ...attributes
 }: { text: string; tone: "info" | "quiet" } & NoticeAttributes) {
   return (
-    <p
-      role="status"
-      className={cx("notice", tone, className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <p role="status" className={cx("notice", tone, className)} style={style} {...attributes}>
       {text}
     </p>
   );
@@ -37,13 +29,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

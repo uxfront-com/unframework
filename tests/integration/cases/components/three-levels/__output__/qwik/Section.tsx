@@ -1,22 +1,16 @@
 import Heading from "./Heading";
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export default component$<
-  { title: string; body: string } & { class?: ClassList; style?: CSSProperties }
+  { title: string; body: string } & Omit<
+    PropsOf<"section">,
+    "title" | "body" | "class" | "style"
+  > & { class?: ClassList; style?: CSSProperties }
 >(({ title, body, class: className, style, ...attributes }) => {
   return (
-    <section class={["section", className]} {...scopeAttributes(attributes)} style={style}>
+    <section class={["section", className]} style={style} {...attributes}>
       <Heading text={title} />
       <p>{body}</p>
     </section>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

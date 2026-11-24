@@ -1,10 +1,15 @@
 import { loadUser } from "./api";
-import type { JSX } from "@solidjs/web";
-import { Loading, Show, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Loading, Show, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
 export default function Profile(
-  props: { id: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { id: string } & Omit<ComponentProps<"p">, "id" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "id", "class");
+
   const awaited = createMemo(async () => {
     const user = await untrack(() => loadUser(props.id));
     return { user };
@@ -18,11 +23,7 @@ export default function Profile(
           const [visits, setVisits] = createState(user.visits);
 
           return (
-            <p
-              class={props.class ? `profile ${props.class}` : "profile"}
-              style={props.style}
-              {...scopeAttributes(props)}
-            >
+            <p class={props.class ? `profile ${props.class}` : "profile"} {...others}>
               {user.name}{" "}
               <button type="button" onClick={() => setVisits(visits() + 1)}>
                 Visits: {visits()}
@@ -33,13 +34,6 @@ export default function Profile(
       </Show>
     </Loading>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

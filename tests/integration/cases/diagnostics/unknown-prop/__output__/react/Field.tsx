@@ -1,9 +1,6 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface FieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FieldAttributes = Omit<ComponentPropsWithRef<"label">, "label" | "children">;
 
 export function Field({
   label,
@@ -12,17 +9,8 @@ export function Field({
   ...attributes
 }: { label: string } & FieldAttributes) {
   return (
-    <label className={className} style={style} {...scopeAttributes(attributes)}>
+    <label className={className} style={style} {...attributes}>
       {label} <input type="text" />
     </label>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

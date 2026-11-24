@@ -3,86 +3,73 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
   useVisibleTask$,
 } from "@qwik.dev/core";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const open = useSignal(false);
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  const open = useSignal(false);
 
-    const close = $(() => {
-      open.value = false;
-    });
+  const close = $(() => {
+    open.value = false;
+  });
 
-    const onKeydown = $(async (event: KeyboardEvent) => {
-      if (event.key === "Escape") await close();
-    });
+  const onKeydown = $(async (event: KeyboardEvent) => {
+    if (event.key === "Escape") await close();
+  });
 
-    const focusTrapElements = useSignal<DirectiveElement<typeof vFocusTrap>[]>([]);
+  const focusTrapElements = useSignal<DirectiveElement<typeof vFocusTrap>[]>([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        if (track(focusTrapElements).some((element) => element.isConnected)) {
-          const value = track(() => open.value);
-          for (const element of track(focusTrapElements)) {
-            cleanup(
-              runDirective(vFocusTrap, element, value, {
-                leave: (left) => forgetElement(focusTrapElements, left),
-                back: (kept) => collectElement(focusTrapElements, kept),
-              }),
-            );
-          }
-        } else {
-          for (const element of focusTrapElements.value) {
-            cleanup(waitForDocument(element, () => focusTrapElements.trigger()));
-          }
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      if (track(focusTrapElements).some((element) => element.isConnected)) {
+        const value = track(() => open.value);
+        for (const element of track(focusTrapElements)) {
+          cleanup(
+            runDirective(vFocusTrap, element, value, {
+              leave: (left) => forgetElement(focusTrapElements, left),
+              back: (kept) => collectElement(focusTrapElements, kept),
+            }),
+          );
         }
-      },
-      { strategy: "document-ready" },
-    );
+      } else {
+        for (const element of focusTrapElements.value) {
+          cleanup(waitForDocument(element, () => focusTrapElements.trigger()));
+        }
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["settings", className]}
-        aria-label="Settings"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <button type="button" onClick$={() => (open.value = true)}>
-          Open
-        </button>
-        {open.value ? (
-          <div
-            role="dialog"
-            aria-label="Preferences"
-            tabIndex={-1}
-            class="dialog"
-            ref={(element) => collectElement(focusTrapElements, element)}
-            onKeyDown$={onKeydown}
-          >
-            <button type="button">Theme</button>
-            <button type="button">Language</button>
-            <button type="button" onClick$={close}>
-              Close
-            </button>
-          </div>
-        ) : null}
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["settings", className]} aria-label="Settings" style={style} {...attributes}>
+      <button type="button" onClick$={() => (open.value = true)}>
+        Open
+      </button>
+      {open.value ? (
+        <div
+          role="dialog"
+          aria-label="Preferences"
+          tabIndex={-1}
+          class="dialog"
+          ref={(element) => collectElement(focusTrapElements, element)}
+          onKeyDown$={onKeydown}
+        >
+          <button type="button">Theme</button>
+          <button type="button">Language</button>
+          <button type="button" onClick$={close}>
+            Close
+          </button>
+        </div>
+      ) : null}
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

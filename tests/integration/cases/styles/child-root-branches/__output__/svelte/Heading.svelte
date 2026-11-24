@@ -1,18 +1,40 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { big, text, ...attributes }: { big: boolean; text: string } = $props();
+  import type { ClassValue, DOMAttributes, SvelteHTMLElements } from "svelte/elements";
 
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  type Props = Omit<
+    SvelteHTMLElements["h2"] & SvelteHTMLElements["h3"],
+    | "big"
+    | "text"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+    | keyof DOMAttributes<HTMLElementTagNameMap["h2" | "h3"]>
+  > &
+    Omit<DOMAttributes<HTMLElementTagNameMap["h2" | "h3"]>, "children"> & {
+      big: boolean;
+      text: string;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["h2" | "h3"] | null;
+    };
+
+  let {
+    big,
+    text,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <svelte:element
   this={big ? "h2" : "h3"}
-  class="heading"
-  {...scopeAttributes(attributes)}
+  class={["heading", className]}
+  {style}
+  bind:this={ref}
+  {...attributes}
 >{text}</svelte:element>

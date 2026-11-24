@@ -1,10 +1,7 @@
 import { DEFAULT_SIZE, SIZES, SIZE_ORDER, type Size } from "./tokens";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface SizePickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SizePickerAttributes = Omit<ComponentPropsWithRef<"fieldset">, "children">;
 
 export default function SizePicker({ className, style, ...attributes }: SizePickerAttributes) {
   const [size, setSize] = useState<Size>(DEFAULT_SIZE);
@@ -16,11 +13,7 @@ export default function SizePicker({ className, style, ...attributes }: SizePick
   }
 
   return (
-    <fieldset
-      className={cx("size-picker", className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <fieldset className={cx("size-picker", className)} style={style} {...attributes}>
       <legend>Size</legend>
       <p role="status">Picked: {SIZES[size]}</p>
       <ul>
@@ -49,13 +42,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

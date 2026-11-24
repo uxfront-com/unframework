@@ -1,23 +1,26 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface OrderSummaryProps {
   /** The unit price, in cents. */
   price: number;
   taxRate: number;
 }
 
-interface Props extends OrderSummaryProps {
+interface Props extends OrderSummaryProps, Omit<HTMLAttributes<"section">, "price" | "taxRate"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { price, taxRate, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  price,
+  taxRate,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  "data-tier": dataTier,
+  ...attrs
+} = Astro.props;
 
 const quantity = 1 as number;
 const subtotal = quantity * price;
@@ -34,10 +37,10 @@ const tier = getTier();
 
 <section
   class:list={["order-summary", className]}
-  aria-label="Order summary"
-  data-tier={tier}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Order summary"}
+  data-tier={"data-tier" in Astro.props ? dataTier : tier}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p role="status">Quantity: {quantity}</p>
   <button type="button" disabled={quantity === 1}>Remove one</button>

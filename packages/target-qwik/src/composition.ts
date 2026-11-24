@@ -11,7 +11,8 @@
 //   a `useComputed$` of the prop, or of a local signal while the prop is `undefined`, and a write
 //   goes through a `$()` setter that writes the local signal while unbound and awaits the
 //   callback; a form control's `v-model` reads its state in render (see `modelAttribute`);
-// - a consumer's `class` and `style` are props merged into the root (`fallthrough`);
+// - a consumer's `class` and `style` are props merged into the element that spreads the rest of
+//   the props, its other attributes and listeners (`fallthrough`, ./fallthrough.ts);
 // - `defineExpose` fills the consumer's `ref` signal with the exposed QRLs once the component is
 //   in the document, and empties it when it goes (`exposeRef`, emulated);
 // - an injection key is a `createContextId`, `provide` `useContextProvider`, and `inject`
@@ -39,11 +40,13 @@ import type {
   RenderNode,
   SlotFill,
   SlotOutletNode,
+  Span,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
 
 import { qwikEventProp } from "./events.ts";
+import { Passed, classAndStyleRoot } from "./fallthrough.ts";
 import { genericModelType } from "./generics.ts";
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";
@@ -80,10 +83,15 @@ export interface CompositionPlan {
   readonly slots: ReadonlyMap<string, string>;
   /** Each model, by its binding. */
   readonly models: ReadonlyMap<BindingId, ModelPlan>;
-  /** The `class` and `style` props a consumer's attributes fall through as. */
-  readonly fallthrough?: { className: string; style: string };
+  /**
+   * The `class` and `style` props a consumer's attributes fall through as, which the node that
+   * spreads the rest merges (`target`, ./fallthrough.ts).
+   */
+  readonly fallthrough?: { className: string; style: string; target: Span };
   /** The `ref` prop that `defineExpose` fills. */
   readonly expose?: { ref: string };
+  /** What the component takes apart from its declared props (ADR-0118, ./fallthrough.ts). */
+  readonly passed?: Passed;
 }
 
 /** Plans a component's composition: see {@link CompositionPlan}. */
@@ -140,14 +148,45 @@ export function planComposition(
       written: written.has(item.binding),
     });
   }
+  const passed = new Passed(component, module, declaredProps(component), (name) =>
+    names.fresh(name),
+  );
+  // A root `<component is>` over tags takes the consumer's `class` and `style` alone, with no
+  // rest (ADR-0119).
+  const target = passed.target ?? classAndStyleRoot(component, module)?.span;
   return {
     slots,
     models,
-    ...(fallsThrough(component, module)
-      ? { fallthrough: { className: local("class", "className"), style: local("style") } }
+    ...(target
+      ? {
+          fallthrough: { className: local("class", "className"), style: local("style"), target },
+        }
       : {}),
     ...(component.exposes ? { expose: { ref: local("ref") } } : {}),
+    ...(passed.target || passed.rootRef ? { passed } : {}),
   };
+}
+
+/**
+ * The props a component declares, by the names a consumer passes them as: its props, its events'
+ * and models' QRL props, its render-prop slots, `class` and `style`, and the `ref` it exposes
+ * through. None of them falls through (ADR-0118).
+ */
+export function declaredProps(component: UfComponent): Set<string> {
+  const declared = new Set(component.props.map((prop) => prop.name));
+  for (const event of component.emits?.events ?? []) declared.add(qwikEventProp(event.name));
+  for (const item of component.setup) {
+    if (item.kind !== "Model") continue;
+    declared.add(item.name);
+    declared.add(modelCallback(item.name));
+  }
+  for (const slot of component.slots?.slots ?? []) {
+    if (isRenderProp(component, slot.name)) declared.add(slotProp(slot.name));
+  }
+  declared.add("class");
+  declared.add("style");
+  if (component.exposes) declared.add("ref");
+  return declared;
 }
 
 /** The names `qwik/loader-location` takes for Qwik City's loaders and actions. */
@@ -201,32 +240,6 @@ function renderedSlots(component: UfComponent): string[] {
     for (const reference of expression.refs) if (reference.kind === "Slot") add(reference.slot);
   }
   return found;
-}
-
-/**
- * Whether a consumer's `class` and `style` fall through to the component (ADR-0054): its root is
- * one element, or one component that takes them in turn, and it does not turn them off.
- */
-function fallsThrough(component: UfComponent, module: UfModule): boolean {
-  if (component.inheritAttrs === false) return false;
-  if (component.render.kind === "Element") return true;
-  // A component at the root is the only child of the root fragment.
-  const [root, ...rest] = component.render.children;
-  if (root?.kind !== "Component" || rest.length) return false;
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find(
-      (name) => name.kind === "Component" && name.local === root.component,
-    );
-    if (!imported) continue;
-    const api = entry.api.components.find((each) =>
-      imported.imported === "default"
-        ? each.export === "default"
-        : each.export === "named" && each.name === imported.imported,
-    );
-    return api?.inheritAttrs ?? false;
-  }
-  const local = module.components.find((each) => each.name === root.component);
-  return local !== undefined && local !== component && fallsThrough(local, module);
 }
 
 /**
@@ -470,16 +483,25 @@ export function modelAttribute(
   // An element that listens to the event itself runs the model's handler first in its own prop
   // (./listeners.ts), as Vue's directive listens before the element's listeners: two props of
   // one name fail type-checking (TS17001).
-  const listener = element.attributes.some(
+  const listens = element.attributes.some(
     (other) => other.kind === "Event" && other.event === event,
-  )
+  );
+  // On the element that spreads the props' rest, the consumer's listener of the event runs after
+  // the model's handler (./fallthrough.ts).
+  const passed = listens ? undefined : plan.composition.passed?.listener(element, event);
+  const qrl = (code: string) => `${plan.names.core("$")}(${code})`;
+  const listener = listens
     ? []
     : [
         js.jsxAttribute(
           qwikEventProp(event),
           js.jsxExpressionContainer(
             context.placeholders.expression(
-              explicit ? `${plan.names.core("$")}(${handler})` : handler,
+              passed !== undefined
+                ? `[${qrl(handler)}, ${passed}]`
+                : explicit
+                  ? qrl(handler)
+                  : handler,
             ),
           ),
         ),
@@ -495,7 +517,9 @@ export function modelAttribute(
       const modelText = plan.names.once("modelText");
       const ref = controlRef(element, plan, locals, modelBindingName(attribute.value, plan));
       return [
-        ...(ref.attribute ? [prop("ref", ref.name)] : []),
+        ...(ref.attribute
+          ? [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(ref.name)))]
+          : []),
         prop("value", `${modelText}.shown(${ref.name}.value, ${current}, ${options})`),
         ...listener,
       ];

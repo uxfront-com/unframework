@@ -1,4 +1,4 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface Task {
   id: string;
@@ -9,10 +9,7 @@ export interface TaskListProps {
   initial: Task[];
 }
 
-export interface TaskListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TaskListAttributes = Omit<ComponentPropsWithRef<"section">, "initial" | "children">;
 
 export default function TaskList({
   initial,
@@ -60,7 +57,7 @@ export default function TaskList({
       className={cx("task-list", className)}
       aria-label="Tasks"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {tasks.length === 0 ? (
         <p>No tasks yet.</p>
@@ -109,13 +106,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

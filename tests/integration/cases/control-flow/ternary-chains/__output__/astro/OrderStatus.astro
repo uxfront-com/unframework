@@ -1,25 +1,20 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface OrderStatusProps {
   status: "pending" | "shipped" | "delivered" | "cancelled";
   carrier?: string;
   eta?: string;
 }
 
-interface Props extends OrderStatusProps {
+interface Props extends OrderStatusProps, Omit<HTMLAttributes<"p">, "status" | "carrier" | "eta"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { status, carrier, eta, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { status, carrier, eta, class: className, style, ...attrs } = Astro.props;
 ---
 
-<p class:list={["order-status", className]} style={style} {...scopeAttributes(Astro.props)}>
+<p class:list={["order-status", className]} style={style} {...attrs}>
   {status === "pending" ? "Waiting for payment." : status === "shipped" ? <><strong>Shipped</strong> with {carrier ?? "our courier"}, arriving {eta ?? "soon"}.</> : status === "delivered" ? <strong>Delivered</strong> : <em>Cancelled</em>}
 </p>

@@ -1,15 +1,20 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 import "./Stack.uf.tsx.css";
 
 export default function Stack(
-  props: { gap: string; accent: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { gap: string; accent: string } & Omit<
+    ComponentProps<"ul">,
+    "gap" | "accent" | "style"
+  > & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["gap", "accent", "class", "style"]);
+
   return (
     <ul
       class={props.class ? `stack ${props.class}` : "stack"}
       style={{ ...{ "--gap": props.gap, "--accent": props.accent }, ...props.style }}
       data-uf-e3a22111=""
-      {...scopeAttributes(props)}
+      {...others}
     >
       <li class="item" data-uf-e3a22111="">
         One
@@ -22,11 +27,4 @@ export default function Stack(
       </li>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('link', { name: 'Docs' })",
+      "dom": [
+        "<section class=\"page\" data-uf-64cf7c28=\"\">",
+        "  <a class=\"base primary wide\" data-uf-64cf7c28=\"\" href=\"#docs\" style=\"color: rgb(29, 78, 216); padding: 4px 8px;\" uf:focused=\"\">",
+        "    \"Docs\"",
+        "  </a>",
+        "  <button class=\"base off\" data-uf-64cf7c28=\"\" disabled=\"\" style=\"padding: 4px 8px;\">",
+        "    \"Off\"",
+        "  </button>",
+        "  <button class=\"base save\" data-uf-64cf7c28=\"\" style=\"padding: 4px 8px;\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <ul aria-label=\"Items\" data-uf-64cf7c28=\"\">",
+        "    <li data-uf-64cf7c28=\"\">",
+        "      <a class=\"item\" data-uf-64cf7c28=\"\" href=\"#one\">",
+        "        \"One\"",
+        "      </a>",
+        "    </li>",
+        "    <li data-uf-64cf7c28=\"\">",
+        "      <button class=\"item\" data-uf-64cf7c28=\"\" disabled=\"\">",
+        "        \"Two\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button data-uf-64cf7c28=\"\" type=\"button\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "  <output data-uf-64cf7c28=\"\">",
+        "    \"docs\"",
+        "  </output>",
+        "</section>"
+      ],
+      "aria": [
+        "- link \"Docs\":",
+        "  - /url: \"#docs\"",
+        "- button \"Off\" [disabled]",
+        "- button \"Save\"",
+        "- list \"Items\":",
+        "  - listitem:",
+        "    - link \"One\":",
+        "      - /url: \"#one\"",
+        "  - listitem:",
+        "    - button \"Two\" [disabled]",
+        "- button \"Toggle\"",
+        "- status: docs"
+      ],
+      "events": {}
+    }
+  ]
+}

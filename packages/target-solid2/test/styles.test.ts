@@ -101,7 +101,8 @@ describe("solid2 scoped styles", () => {
     expect(code.split("\n\n")[0]).toBe(
       [
         'import List from "./List";',
-        'import type { JSX } from "@solidjs/web";',
+        'import type { ComponentProps } from "@solidjs/web";',
+        'import { omit } from "solid-js";',
         'import "./Ranking.uf.tsx.css";',
       ].join("\n"),
     );
@@ -116,23 +117,23 @@ describe("solid2 scoped styles", () => {
     expect(code).toContain(`<b ${stamped}>`);
   });
 
+  // What falls through holds them, spread on the root after its own (ADR-0118).
   it("spreads the scope attributes its styled parents pass on the root of a styled child too", async () => {
     const code = await output(list.module);
-    expect(code).toContain(
-      `data-uf-${listId}=""\n      style={props.style}\n      {...scopeAttributes(props)}\n    >`,
-    );
+    expect(code).toContain(`data-uf-${listId}="" {...others}>`);
   });
 
   // The unplugin joins a source's outputs into one module (ADR-0053): a prop that takes the
   // helper's name moves the first component's helper on, and the second must not take it too.
+  // A root conditional picks the scope attributes out of the props on each branch.
   it("names the helper of each component of a source apart", async () => {
     const { module } = lowered(
       "Two.uf.tsx",
       `export function Item({ scopeAttributes }: { scopeAttributes: string }) {
-  return <li>{scopeAttributes}</li>;
+  return <>{scopeAttributes ? <li>{scopeAttributes}</li> : <li>-</li>}</>;
 }
-export default function Two() {
-  return <ul><Item scopeAttributes="a" /></ul>;
+export default function Two({ open }: { open: boolean }) {
+  return <>{open ? <ul><Item scopeAttributes="a" /></ul> : <p>-</p>}</>;
 }`,
     );
     const helpers = async (index: number) =>
@@ -150,12 +151,12 @@ export default function Two() {
       "a const in an earlier component",
       "scopeAttributes",
       `export function First() { const scopeAttributes = "local"; return <b title={scopeAttributes}>F</b>; }
-export default function Second() { return <i>S</i>; }`,
+export default function Second({ on }: { on: boolean }) { return <>{on ? <i>S</i> : <b>T</b>}</>; }`,
     ],
     [
       "a const in a later component",
       "scopeAttributes",
-      `export function First() { return <b>F</b>; }
+      `export function First({ on }: { on: boolean }) { return <>{on ? <b>F</b> : <i>G</i>}</>; }
 export default function Second() { const scopeAttributes = "local"; return <i title={scopeAttributes}>S</i>; }`,
     ],
     [
@@ -170,7 +171,7 @@ export default function Second({ k }: { k: string }) { return <><b class={["a", 
       `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 export function A() { const slots = defineSlots<{ scopeAttributes?(): Element }>(); return <b>{slots.scopeAttributes?.()}</b>; }
-export default function B() { const slots = defineSlots<{ title?(): Element }>(); return <i>{slots.title?.()}</i>; }`,
+export default function B({ on }: { on: boolean }) { const slots = defineSlots<{ title?(): Element }>(); return <>{on ? <i>{slots.title?.()}</i> : <b>-</b>}</>; }`,
     ],
     [
       "a model in an earlier component",
@@ -180,7 +181,7 @@ export function A() {
   const value = defineModel<string>("scopeAttributes", { default: "" });
   return <button type="button" onClick={() => (value.value = "x")}>{value.value}</button>;
 }
-export default function B() { return <i>B</i>; }`,
+export default function B({ on }: { on: boolean }) { return <>{on ? <i>B</i> : <b>-</b>}</>; }`,
     ],
   ])("names the helper apart from %s", async (_, helper, source) => {
     const { module } = lowered("Pair.uf.tsx", source);

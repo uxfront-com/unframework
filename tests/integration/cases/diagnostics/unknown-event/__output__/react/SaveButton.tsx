@@ -1,38 +1,30 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface SaveButtonEvents {
   onSave?: () => void;
 }
 
-export interface SaveButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SaveButtonAttributes = Omit<ComponentPropsWithRef<"button">, "onSave" | "children">;
 
 export function SaveButton({
   onSave,
   className,
   style,
+  onClick,
   ...attributes
 }: SaveButtonEvents & SaveButtonAttributes) {
   return (
     <button
       type="button"
-      onClick={() => onSave?.()}
+      onClick={(event) => {
+        onSave?.();
+        onClick?.(event);
+      }}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       Save
     </button>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

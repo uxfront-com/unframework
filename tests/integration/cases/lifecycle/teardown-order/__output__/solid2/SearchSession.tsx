@@ -1,4 +1,4 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   For,
   createMemo,
@@ -7,6 +7,7 @@ import {
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
   untrack,
@@ -22,8 +23,23 @@ export interface SearchSessionEvents {
 }
 
 export default function SearchSession(
-  props: SearchSessionEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SearchSessionEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(
+    props,
+    "onUnmounted",
+    "onEffectCleaned",
+    "onWatchCleaned",
+    "onSearched",
+    "onSearchCleaned",
+    "onSummary",
+    "class",
+  );
+
   const [query, setQuery] = createState("");
   const [results, setResults] = createState<string[]>([]);
 
@@ -71,8 +87,7 @@ export default function SearchSession(
     <section
       class={props.class ? `search-session ${props.class}` : "search-session"}
       aria-label="Search"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <label>
         Query
@@ -91,13 +106,6 @@ export default function SearchSession(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

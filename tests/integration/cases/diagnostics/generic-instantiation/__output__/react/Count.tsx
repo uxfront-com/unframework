@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 interface Fruit {
   id: string;
@@ -6,10 +6,7 @@ interface Fruit {
   children: Fruit[];
 }
 
-export interface CountAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CountAttributes = Omit<ComponentPropsWithRef<"p">, "items" | "children">;
 
 export function Count({
   items,
@@ -18,17 +15,8 @@ export function Count({
   ...attributes
 }: { items: Fruit[] } & CountAttributes) {
   return (
-    <p className={className} style={style} {...scopeAttributes(attributes)}>
+    <p className={className} style={style} {...attributes}>
       {items.length} fruits
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

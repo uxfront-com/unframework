@@ -74,10 +74,12 @@ export async function compileWithOptimizer(
 
 /**
  * L15: the optimizer's client modules for each file in production mode, as a Qwik build splits
- * them: the file's own module first, then its segments, beside it.
+ * them: the file's own module first, then its segments, beside it. In development mode the
+ * optimizer folds `isDev` to `true`, as Qwik's Vite plugin does in a dev build (ADR-0117).
  */
 export async function emitWithOptimizer(
   files: readonly ToolchainFile[],
+  mode: "production" | "development" = "production",
 ): Promise<Map<string, ToolchainFile[]>> {
   assertFilesToCompile(files);
   optimizer ??= loadOptimizer();
@@ -92,7 +94,7 @@ export async function emitWithOptimizer(
       transpileTs: true,
       transpileJsx: true,
       explicitExtensions: true,
-      mode: "prod",
+      mode: mode === "production" ? "prod" : "dev",
       isServer: false,
     });
     emitted.set(

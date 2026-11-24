@@ -109,6 +109,73 @@ const SCOPE_DIRECTIVE = [
 ];
 const HOST = "protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;";
 
+/**
+ * The fallthrough directive a component file declares before its class, which the element that
+ * takes what its consumer passes binds (ADR-0118): ./fallthrough.test.ts tests it, and the shape
+ * tests here expect it as written.
+ */
+const FALLTHROUGH_DIRECTIVE = [
+  "/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */",
+  "type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };",
+  "",
+  "/**",
+  " * Puts what a consumer passes the component, and the component does not declare, on the element",
+  " * that takes it (ADR-0118): the attributes, the consumer's winning over the element's own, and",
+  " * the native listeners, which run after the element's own.",
+  " */",
+  '@Directive({ selector: "[ufFallthrough]" })',
+  "export class Fallthrough implements OnChanges, OnDestroy {",
+  "  readonly ufFallthrough = input.required<{",
+  "    attributes: Record<string, unknown> | undefined;",
+  "    listeners: Listeners | undefined;",
+  "  }>();",
+  "  private readonly element = inject<ElementRef<Element>>(ElementRef);",
+  "  private readonly renderer = inject(Renderer2);",
+  "  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));",
+  "  private readonly listening = new Map<string, { handler: unknown; stop: () => void }>();",
+  "  private written: Record<string, unknown> = {};",
+  "",
+  "  ngOnChanges(): void {",
+  "    const element = this.element.nativeElement;",
+  "    const { attributes = {}, listeners = {} } = this.ufFallthrough();",
+  "    for (const name of Object.keys(this.written)) {",
+  "      if (!(name in attributes)) this.renderer.removeAttribute(element, name);",
+  "    }",
+  "    for (const [name, value] of Object.entries(attributes)) {",
+  "      if (value === null || value === undefined) this.renderer.removeAttribute(element, name);",
+  "      else this.renderer.setAttribute(element, name, String(value));",
+  "    }",
+  "    this.written = attributes;",
+  "    if (!this.browser) return;",
+  "    const handlers = new Map(Object.entries(listeners));",
+  "    for (const [event, { handler, stop }] of this.listening) {",
+  "      if (handlers.get(event) === handler) continue;",
+  "      stop();",
+  "      this.listening.delete(event);",
+  "    }",
+  "    for (const [event, handler] of handlers) {",
+  "      if (handler === undefined || this.listening.has(event)) continue;",
+  "      this.listening.set(event, { handler, stop: this.renderer.listen(element, event, handler) });",
+  "    }",
+  "  }",
+  "",
+  "  ngOnDestroy(): void {",
+  "    for (const { stop } of this.listening.values()) stop();",
+  "  }",
+  "}",
+];
+/** The root's binding of the fallthrough directive. */
+const PASSED =
+  '[ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"';
+/** The inputs of what a consumer passes beside `class` and `style`, as the class declares them. */
+const PASSED_INPUTS = [
+  "readonly ufAttributes = input<Record<string, unknown>>();",
+  "readonly ufListeners = input<Listeners>();",
+];
+/** The member that holds the root element a ref on the component holds. */
+const rootElement = (type: string) =>
+  `readonly ufElement = viewChild<ElementRef<${type}>>("ufElement");`;
+
 const greeting = createElement(
   "p",
   [createStaticAttribute("class", "greeting", at)],
@@ -121,7 +188,7 @@ describe("angular target", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
   });
 
-  it("emulates the listener options, ids, nextTick, class and style bindings, raw HTML, composition's cells, teleports, transitions and directives, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
+  it("emulates the listener options, ids, nextTick, class and style bindings, raw HTML, composition's cells, a ref's root element, teleports, transitions and directives, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
     const emulated = Object.entries(target.capabilities)
       .filter(([, cell]) => cell.support !== "native")
       .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
@@ -140,8 +207,9 @@ describe("angular target", () => {
       ["slot-forwarding", "emulated", "uf<Component><Slot>"],
       ["model-array", "emulated", "toggle"],
       ["model-modifiers", "emulated", "modelText"],
-      ["fallthrough", "emulated", "fallthrough"],
+      ["fallthrough", "emulated", "Fallthrough"],
       ["contextual-root", "unsupported", undefined],
+      ["expose", "emulated", "ufElement"],
       ["reactive-context", "emulated", "refObject"],
       ["dynamic-component", "emulated", "@switch"],
       ["child-root-scope", "unsupported", undefined],
@@ -158,13 +226,16 @@ describe("angular target", () => {
       {
         path: "hello.ts",
         contents: [
-          'import { Component, Directive, ElementRef, type OnInit, Renderer2, inject, input } from "@angular/core";',
+          'import { isPlatformBrowser } from "@angular/common";',
+          'import { Component, Directive, ElementRef, type OnChanges, type OnDestroy, type OnInit, PLATFORM_ID, Renderer2, inject, input, viewChild } from "@angular/core";',
           "",
           ...SCOPE_DIRECTIVE,
           "",
+          ...FALLTHROUGH_DIRECTIVE,
+          "",
           "@Component({",
           '  selector: "uf-hello",',
-          "  imports: [ScopeAttributes],",
+          "  imports: [ScopeAttributes, Fallthrough],",
           "  host: {",
           '    "[attr.class]": "null",',
           '    "[attr.style]": "\'display: contents;\'"',
@@ -175,13 +246,17 @@ describe("angular target", () => {
           '      class="greeting"',
           '      [class]="this.class()"',
           '      [style]="this.style()"',
+          `      ${PASSED}`,
           '      [ufScope]="this.host"',
+          "      #ufElement",
           "    >Hello, world!</p>",
           "  `",
           "})",
           "export default class Hello {",
           "  readonly class = input<string>();",
           "  readonly style = input<Record<string, string | null | undefined>>();",
+          ...PASSED_INPUTS.map((line) => `  ${line}`),
+          `  ${rootElement("HTMLParagraphElement")}`,
           `  ${HOST}`,
           "}",
           "",
@@ -215,7 +290,9 @@ describe("angular target", () => {
         "    <p",
         '      [class]="this.class()"',
         '      [style]="this.style()"',
+        `      ${PASSED}`,
         '      [ufScope]="this.host"',
+        "      #ufElement",
         "    >&#64;if (b) &#123;&#125; &lt;c> &amp; \\`$&#123;d&#125;\\` \\\\e</p>",
         "  ",
       ].join("\n"),
@@ -257,7 +334,16 @@ describe("angular target", () => {
     const render = createElement("p", [createStaticAttribute("title", "a\rb", at)], [], at);
     const [file] = emitModule(moduleOf(render));
     expect(templateOf(file!.contents)).toContain(
-      '<p title="a&#13;b" [class]="this.class()" [style]="this.style()" [ufScope]="this.host"></p>',
+      [
+        "<p",
+        '      title="a&#13;b"',
+        '      [class]="this.class()"',
+        '      [style]="this.style()"',
+        `      ${PASSED}`,
+        '      [ufScope]="this.host"',
+        "      #ufElement",
+        "    ></p>",
+      ].join("\n"),
     );
   });
 
@@ -266,7 +352,7 @@ describe("angular target", () => {
   it("names the class apart when the component is named after Angular's decorator", () => {
     const [file] = emitModule(moduleOf(greeting, "Component"));
     expect(file!.contents).toMatch(
-      /^import \{ Component, [^}]*\binput \} from "@angular\/core";\n/,
+      /^import \{ isPlatformBrowser \} from "@angular\/common";\nimport \{ Component, [^}]*\binput, viewChild \} from "@angular\/core";\n/,
     );
     expect(file!.contents).toContain("\n@Component({\n");
     expect(file!.contents).toMatch(/\nexport default class Component_1 \{\n[\s\S]*\n\}\n$/);
@@ -308,7 +394,15 @@ describe("angular target", () => {
     const render = element("p", [text("a "), element("b", [text("b")]), text(" c")]);
     const [file] = emitModule(moduleOf(render));
     expect(templateOf(file!.contents)).toContain(
-      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">a <b>b</b> c</p>',
+      [
+        "<p",
+        '      [class]="this.class()"',
+        '      [style]="this.style()"',
+        `      ${PASSED}`,
+        '      [ufScope]="this.host"',
+        "      #ufElement",
+        "    >a <b>b</b> c</p>",
+      ].join("\n"),
     );
   });
 });
@@ -359,14 +453,19 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
     expect(file).toEqual({
       path: "badge.ts",
       contents: [
+        'import { isPlatformBrowser } from "@angular/common";',
         "import {",
         "  Component,",
         "  Directive,",
         "  ElementRef,",
+        "  type OnChanges,",
+        "  type OnDestroy,",
         "  type OnInit,",
+        "  PLATFORM_ID,",
         "  Renderer2,",
         "  inject,",
         "  input,",
+        "  viewChild,",
         '} from "@angular/core";',
         "",
         "export interface BadgeProps {",
@@ -377,9 +476,11 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         "",
         ...SCOPE_DIRECTIVE,
         "",
+        ...FALLTHROUGH_DIRECTIVE,
+        "",
         "@Component({",
         '  selector: "uf-badge",',
-        "  imports: [ScopeAttributes],",
+        "  imports: [ScopeAttributes, Fallthrough],",
         '  host: { "[attr.class]": "null", "[attr.style]": "\'display: contents;\'" },',
         "  preserveWhitespaces: false,",
         "  template: `",
@@ -387,10 +488,13 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         "    @let tone = this.tone();",
         "    @let count = this.count();",
         "    <p",
-        '      [attr.data-tone]="tone"',
+        // The root's own attribute, unless the consumer passes it (ADR-0118).
+        "      [attr.data-tone]=\"'data-tone' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-tone'] : tone\"",
         '      [class]="this.class()"',
         '      [style]="this.style()"',
+        `      ${PASSED}`,
         '      [ufScope]="this.host"',
+        "      #ufElement",
         "    >{{ label }}&ngsp;{{ count ?? 0 }}</p>",
         "  `,",
         "})",
@@ -402,6 +506,8 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         "  readonly count = input<number>();",
         "  readonly class = input<string>();",
         "  readonly style = input<Record<string, string | null | undefined>>();",
+        ...PASSED_INPUTS.map((line) => `  ${line}`),
+        `  ${rootElement("HTMLParagraphElement")}`,
         `  ${HOST}`,
         "}",
         "",
@@ -440,6 +546,8 @@ export default function Defaults({ label = null, size = 1000, tags = [], author 
       ");",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      ...PASSED_INPUTS,
+      rootElement("HTMLParagraphElement"),
       HOST,
     ]);
   });
@@ -468,6 +576,8 @@ export default function ToneLabel({ tone = "info", size = 1 }: ToneProps) {
       "});",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      ...PASSED_INPUTS,
+      rootElement("HTMLParagraphElement"),
       HOST,
     ]);
   });
@@ -484,7 +594,9 @@ export default function Byline(props: { author: string; minutes?: number }) {
       "<p",
       '[class]="this.class()"',
       '[style]="this.style()"',
+      PASSED,
       '[ufScope]="this.host"',
+      "#ufElement",
       ">By {{ author }}, {{ minutes ?? 1 }} min</p>",
     ]);
     expect(classBody(file.contents)).toEqual([
@@ -492,10 +604,12 @@ export default function Byline(props: { author: string; minutes?: number }) {
       "readonly minutes = input<number>();",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      ...PASSED_INPUTS,
+      rootElement("HTMLParagraphElement"),
       HOST,
     ]);
-    // An inline props type declares nothing.
-    expect(file.contents).not.toMatch(/\binterface\b|^(?:export )?type /m);
+    // An inline props type declares nothing, beside the type of the consumer's listeners.
+    expect(file.contents).not.toMatch(/\binterface\b|^(?:export )?type (?!Listeners )/m);
   });
 
   // A prop is the component's API: a consumer may pass one the template does not read, which
@@ -514,7 +628,13 @@ export default function Quiet({ label, note }: QuietProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let label = this.label();",
-      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">{{ label }}</p>',
+      "<p",
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      PASSED,
+      '[ufScope]="this.host"',
+      "#ufElement",
+      ">{{ label }}</p>",
     ]);
     expect(classBody(file.contents)).toEqual([
       "readonly label = input.required<string>();",
@@ -522,6 +642,8 @@ export default function Quiet({ label, note }: QuietProps) {
       "readonly note = input<string>();",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      ...PASSED_INPUTS,
+      rootElement("HTMLParagraphElement"),
       HOST,
     ]);
   });
@@ -554,11 +676,19 @@ export default function Panel({ finishes, extra }: PanelProps) {
 }
 `);
     const declared = [...file.contents.matchAll(/^(?:export )?(?:interface|type) (\w+)/gm)];
-    expect(declared.map((match) => match[1])).toEqual(["Size", "Unused", "Finish", "Extra"]);
+    // Then the type of the consumer's listeners, which the file declares (ADR-0118).
+    expect(declared.map((match) => match[1])).toEqual([
+      "Size",
+      "Unused",
+      "Finish",
+      "Extra",
+      "Listeners",
+    ]);
   });
 
   it("imports `input` only when there are props, under another name when the module declares it", async () => {
-    // A component that opts out of the fallthrough declares no `class` and `style` inputs.
+    // A component that opts out of the fallthrough declares no `class` and `style` inputs, only
+    // the element a ref on it holds (ADR-0118).
     const plain = await formatted(`
 import { defineOptions } from "@uxfront/unframework";
 
@@ -567,7 +697,9 @@ export default function Plain() {
   return <p>{Math.PI}</p>;
 }
 `);
-    expect(plain.contents).toMatch(/^import \{ Component \} from "@angular\/core";\n/);
+    expect(plain.contents).toMatch(
+      /^import \{ Component, ElementRef, viewChild \} from "@angular\/core";\n/,
+    );
     const taken = await formatted(`
 export interface input {
   value: string;
@@ -578,12 +710,15 @@ export default function Field({ value }: input) {
 }
 `);
     expect(taken.contents).toMatch(
-      /^import \{\n {2}Component,\n[^}]*\n {2}input as input_1,\n\} from "@angular\/core";/,
+      /^import \{ isPlatformBrowser \} from "@angular\/common";\nimport \{\n {2}Component,\n[^}]*\n {2}input as input_1,\n {2}viewChild,\n\} from "@angular\/core";/,
     );
     expect(classBody(taken.contents)).toEqual([
       "readonly value = input_1.required<string>();",
       "readonly class = input_1<string>();",
       "readonly style = input_1<Record<string, string | null | undefined>>();",
+      "readonly ufAttributes = input_1<Record<string, unknown>>();",
+      "readonly ufListeners = input_1<Listeners>();",
+      rootElement("HTMLParagraphElement"),
       HOST,
     ]);
   });
@@ -762,7 +897,13 @@ export default function Card({ owner }: CardProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let owner = this.owner();",
-      '<div [class]="this.class()" [style]="this.style()" [ufScope]="this.host">',
+      "<div",
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      PASSED,
+      '[ufScope]="this.host"',
+      "#ufElement",
+      ">",
       "@if (owner) {",
       "<p>{{ owner.name.toUpperCase() }}</p>",
       "}",
@@ -790,7 +931,13 @@ export default function Rows({ prefix, rows }: RowsProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let rows = this.rows();",
-      '<ul [class]="this.class()" [style]="this.style()" [ufScope]="this.host">',
+      "<ul",
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      PASSED,
+      '[ufScope]="this.host"',
+      "#ufElement",
+      ">",
       "@for (row of rows; track this.prefix() + row.id) {",
       "<li>{{ row.label }}</li>",
       "}",
@@ -818,6 +965,8 @@ export default function Stats({ values }: StatsProps) {
       "readonly values = input.required<number[]>();",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      ...PASSED_INPUTS,
+      rootElement("HTMLParagraphElement"),
       "protected readonly JSON = JSON;",
       "protected readonly Math = Math;",
       "protected readonly NaN = NaN;",
@@ -847,7 +996,13 @@ export default function Gap({ on, names }: GapProps) {
     expect(templateLines(file.contents)).toEqual([
       "@let on = this.on();",
       "@let names = this.names();",
-      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">',
+      "<p",
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      PASSED,
+      '[ufScope]="this.host"',
+      "#ufElement",
+      ">",
       '@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
       '@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
       "</p>",
@@ -879,10 +1034,12 @@ export default function Match({ label, on }: MatchProps) {
       "@let label = this.label();",
       "@let on = this.on();",
       "<div",
-      "[attr.title]=\"/\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
+      "[attr.title]=\"'title' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['title'] : /\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
       '[class]="this.class()"',
       '[style]="this.style()"',
+      PASSED,
       '[ufScope]="this.host"',
+      "#ufElement",
       ">",
       "@if (/^\\\\x2f/.test(label)) {",
       "<b>slash</b>",
@@ -926,7 +1083,13 @@ export default function Empty({ attrs }: EmptyProps) {
     } as UfModule;
     const [file] = emitModule(keyless);
     expect(templateLines(file!.contents)).toEqual([
-      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">x</p>',
+      "<p",
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      PASSED,
+      '[ufScope]="this.host"',
+      "#ufElement",
+      ">x</p>",
     ]);
   });
 
@@ -944,6 +1107,8 @@ export default function Badge({ tone = "info" }: BadgeProps) {
       'readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", { transform: (value) => value === undefined ? "info" : value });',
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      ...PASSED_INPUTS,
+      rootElement("HTMLParagraphElement"),
       HOST,
     ]);
   });
@@ -1020,7 +1185,9 @@ export default async function Card({ id }: { id: string }) {
       '(click)="onClick()"',
       '[class]="this.class()"',
       '[style]="this.style()"',
+      PASSED,
       '[ufScope]="this.host"',
+      "#ufElement",
       ">{{ user.name }}: {{ visits }}</button>",
       "}",
     ]);
@@ -1028,6 +1195,8 @@ export default async function Card({ id }: { id: string }) {
       "readonly id = input.required<string>();",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      ...PASSED_INPUTS,
+      rootElement("HTMLButtonElement"),
       "private readonly pendingTasks = inject(PendingTasks);",
       "private readonly destroyRef = inject(DestroyRef);",
       "protected readonly resolved = signal(false);",

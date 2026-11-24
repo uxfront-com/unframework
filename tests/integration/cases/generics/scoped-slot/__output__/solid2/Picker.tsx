@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, omit, untrack } from "solid-js";
 
 export interface PickerProps<T> {
   items: T[];
@@ -10,22 +10,22 @@ export interface PickerSlots<T> {
 }
 
 export default function Picker<T>(
-  props: PickerProps<T> & PickerSlots<T> & { class?: string; style?: JSX.CSSProperties },
+  props: PickerProps<T> &
+    PickerSlots<T> &
+    Omit<ComponentProps<"ul">, "items" | "item" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "items", "item");
+
   return (
-    <ul class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <ul {...others}>
       <KeyedFor each={props.items} by={(item, index) => index}>
         {(item) => <li>{props.item?.({ item: item.value })}</li>}
       </KeyedFor>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

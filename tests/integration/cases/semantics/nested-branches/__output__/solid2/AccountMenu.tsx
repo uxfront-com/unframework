@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit } from "solid-js";
 
 interface User {
   name: string;
@@ -14,8 +14,15 @@ export interface AccountMenuEvents {
 }
 
 export default function AccountMenu(
-  props: AccountMenuProps & AccountMenuEvents & { class?: string; style?: JSX.CSSProperties },
+  props: AccountMenuProps &
+    AccountMenuEvents &
+    Omit<ComponentProps<"section">, "owner" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "owner", "onGreeted", "class");
+
   const [step, setStep] = createState("intro");
   const [user, setUser] = createState<User | null>(null);
 
@@ -39,8 +46,7 @@ export default function AccountMenu(
     <section
       class={props.class ? `account-menu ${props.class}` : "account-menu"}
       aria-label="Account"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Show
         when={step() === "intro"}
@@ -79,13 +85,6 @@ export default function AccountMenu(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

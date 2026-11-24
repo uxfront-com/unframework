@@ -1,11 +1,11 @@
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 import "./Chip.uf.tsx.css";
 
 export default function Chip(
-  rawProps: { label: string; variant?: "neutral" | "danger"; pressed?: boolean } & {
-    class?: string;
-    style?: JSX.CSSProperties;
-  },
+  rawProps: { label: string; variant?: "neutral" | "danger"; pressed?: boolean } & Omit<
+    ComponentProps<"button">,
+    "label" | "variant" | "pressed" | "style"
+  > & { style?: JSX.CSSProperties },
 ) {
   const props = mergeProps(
     { variant: "neutral", pressed: false } satisfies Partial<{
@@ -15,6 +15,8 @@ export default function Chip(
     }>,
     rawProps,
   );
+  const [, others] = splitProps(props, ["label", "variant", "pressed", "class"]);
+
   return (
     <button
       type="button"
@@ -23,17 +25,9 @@ export default function Chip(
       data-state={props.pressed ? "on" : "off"}
       aria-pressed={props.pressed ? "true" : "false"}
       data-uf-69db3802=""
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.label}
     </button>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

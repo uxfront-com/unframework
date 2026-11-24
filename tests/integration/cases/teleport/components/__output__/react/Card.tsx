@@ -1,13 +1,10 @@
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, useRef, useState } from "react";
 
 export interface CardSlots {
   children?: ReactNode;
 }
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Card({
   children,
@@ -19,7 +16,7 @@ export default function Card({
   const openRef = useRef(open);
 
   return (
-    <div className={cx("card", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("card", className)} style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {
@@ -47,13 +44,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

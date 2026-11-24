@@ -1,15 +1,21 @@
-import type { JSX } from "@solidjs/web";
-import { For, Show, children, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, Show, children, createMemo, omit, untrack } from "solid-js";
 
 export interface RowSlotsSlots {
   badge?: JSX.Element;
 }
 
 export default function RowSlots(
-  props: { items: string[] } & RowSlotsSlots & { class?: string; style?: JSX.CSSProperties },
+  props: { items: string[] } & RowSlotsSlots &
+    Omit<ComponentProps<"ul">, "items" | "badge" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "items", "badge");
+
   return (
-    <ul class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <ul {...others}>
       <KeyedFor each={props.items} by={(item) => item}>
         {(item) => {
           const badge = children(() => props.badge);
@@ -25,13 +31,6 @@ export default function RowSlots(
       </KeyedFor>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

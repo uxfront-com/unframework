@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -12,10 +12,7 @@ import {
 } from "react";
 import "./Panel.uf.tsx.css";
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Panel({ className, style, ...attributes }: PanelAttributes) {
   const [open, setOpen] = useState(false);
@@ -27,7 +24,7 @@ export default function Panel({ className, style, ...attributes }: PanelAttribut
       aria-label="Delivery"
       style={style}
       data-uf-eab7eeb4=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"
@@ -64,15 +61,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** One element a `Transition` renders: its key, its last render and the phase it is in. */
