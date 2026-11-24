@@ -147,15 +147,18 @@ export default defineConfig({
       },
     },
     {
-      // A case's source is the input the corpus compiles, and its golden outputs on seven targets,
-      // and the docs pages that quote them verbatim, follow its form. So it's written the way
-      // authors write components, and a style rule doesn't rewrite it.
-      files: ["tests/integration/cases/**/*.uf.{ts,tsx}"],
+      // A component's source keeps the form its author wrote, since every output follows it: the
+      // corpus's golden outputs on seven targets, and the docs pages that quote them verbatim. A
+      // target's fixtures are the outputs its tests compare byte for byte. So a style rule
+      // doesn't rewrite either.
+      files: ["**/*.uf.{ts,tsx}", "packages/*/test/fixtures/**", "packages/*/probes/fixtures/**"],
       rules: {
         // The compiler must keep lowering the braceless `if` that authors write.
         curly: "off",
-        // A case's prop types reach every output as written: `T[]` is the form most authors use.
+        // Prop types reach every output as written, and `T[]` is the form most authors use.
         "typescript/array-type": "off",
+        // Numbers in a component reach its outputs as written.
+        "unicorn/numeric-separators-style": "off",
       },
     },
   ],
