@@ -9,6 +9,8 @@ export const root: string = fileURLToPath(new URL("../../..", import.meta.url));
 export interface WorkspacePackage {
   directory: string;
   path: string;
+  // A package.json as JSON.parse gives it, whose fields the invariants read in every shape.
+  // oxlint-disable-next-line typescript/no-explicit-any
   manifest: Record<string, any>;
 }
 

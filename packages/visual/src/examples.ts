@@ -377,7 +377,7 @@ function parseLayout(value: string): PreviewLayout | string {
       ? "gives none twice"
       : "gives none with other words";
   }
-  let layout: FlexLayout = DEFAULT_LAYOUT;
+  const layout: FlexLayout = { ...DEFAULT_LAYOUT };
   const seen = new Set<string>();
   for (const word of words) {
     const gap = GAP_WORD.exec(word)?.[1];
@@ -389,7 +389,7 @@ function parseLayout(value: string): PreviewLayout | string {
       return `sets ${known.kind} twice`;
     }
     seen.add(known.kind);
-    layout = { ...layout, ...known.sets };
+    Object.assign(layout, known.sets);
   }
   return layout;
 }

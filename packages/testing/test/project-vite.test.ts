@@ -290,6 +290,8 @@ describe("withProjectVite", () => {
     ).rejects.toThrow(
       "[uf] vite in unframework.config.ts gave a promise that rejected: engine failed to start",
     );
+    // A promise that rejects with something other than an Error is reported too.
+    // oxlint-disable-next-line prefer-promise-reject-errors
     await expect(withProjectVite({}, () => Promise.reject("offline"), context)).rejects.toThrow(
       '[uf] vite in unframework.config.ts threw: "offline"',
     );

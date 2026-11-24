@@ -703,6 +703,8 @@ export function noErrorBroadcast(): Plugin {
             return;
           }
         }
+        // `send` is overloaded, so the wrapper passes on the arguments as they came.
+        // oxlint-disable-next-line quality/no-reflect-apply
         Reflect.apply(send, undefined, args);
       };
     },

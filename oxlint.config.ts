@@ -42,19 +42,13 @@ export default defineConfig({
     "no-console": "off",
     "no-fallthrough": "off",
     "no-promise-executor-return": "off",
-    "oxc/no-accumulating-spread": "off",
-    "prefer-promise-reject-errors": "off",
     "quality/no-array-filter-map": "off",
     "quality/no-chained-type-assertions": "off",
     "quality/no-conditional-empty-object-spread": "off",
     "quality/no-known-value-widening": "off",
     "quality/no-object-parameters": "off",
-    "quality/no-reflect-apply": "off",
-    "quality/no-reflect-get": "off",
     "quality/no-unknown-returns": "off",
     "quality/no-unsafe-dictionary-type": "off",
-    "typescript/no-empty-object-type": "off",
-    "typescript/no-explicit-any": "off",
     "typescript/no-implied-eval": "off",
     "typescript/no-non-null-assertion": "off",
     "typescript/no-unsafe-argument": "off",
@@ -161,6 +155,28 @@ export default defineConfig({
         "typescript/no-unnecessary-type-assertion": "off",
         // A target's fixtures compare with `null` as its output does, `!= null`.
         eqeqeq: "off",
+      },
+    },
+    {
+      // The authoring types are TypeScript's JSX contract and the public API of
+      // `@uxfront/unframework`: `ElementChildrenAttribute` is `{ children: {} }`, a component type
+      // takes `any` props so that every component's props are assignable to it, and `ModelRef` is
+      // a name of its own for `Ref`.
+      files: ["packages/unframework/src/index.ts", "packages/unframework/src/jsx-runtime.ts"],
+      rules: {
+        // Function parameters are contravariant, so only `any` accepts every component's props.
+        "typescript/no-explicit-any": "off",
+        // `{}` is the type TypeScript reads `children` from, and `ModelRef` is public.
+        "typescript/no-empty-object-type": "off",
+      },
+    },
+    {
+      // Tests read what a framework sets outside any type, like React's
+      // `IS_REACT_ACT_ENVIRONMENT`, Angular's `ng` or Qwik's flags, to check what it did.
+      files: ["**/test/**"],
+      rules: {
+        // The globals and fields read have no declared type to read them through.
+        "quality/no-reflect-get": "off",
       },
     },
   ],

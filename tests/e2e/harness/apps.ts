@@ -20,6 +20,9 @@ export const tarballsDir: string = join(e2eRoot, ".tarballs");
 /** What `prepare-apps` leaves in a copy, so that it only ever replaces its own directories. */
 export const copyMarker = ".unframework-e2e-copy";
 
+// A package.json as JSON.parse gives it: the scripts read and rewrite fields whose shape varies
+// from package to package, and the tests build partial ones.
+// oxlint-disable-next-line typescript/no-explicit-any
 export type Manifest = Record<string, any>;
 
 export interface App {
