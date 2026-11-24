@@ -628,9 +628,21 @@ describe("canaries", () => {
 
   it("L2-unformatted output is not a fixed point of the formatter, on every target", async () => {
     const result = await compileWith("L2-unformatted");
+    // Without the format step, Angular's shared fallthrough modules print as the target writes
+    // them, whose import and type lines run past the formatter's width (ADR-0121).
+    const helpers: Partial<Record<TargetName, string[]>> = {
+      angular: ["Fallthrough.ts", "Listeners.ts"],
+    };
     for (const target of TARGET_NAMES) {
       expect(await formattingProblems(target, result.outputs[target]!), target).toEqual([
         expect.stringMatching(/ is not formatted idempotently:/),
+        ...(helpers[target] ?? []).map((file) =>
+          expect.stringMatching(
+            new RegExp(
+              `^${target}/_unframework/${file.replace(".", "\\.")} is not formatted idempotently:`,
+            ),
+          ),
+        ),
       ]);
     }
   });
@@ -930,11 +942,9 @@ describe("canaries", () => {
     // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
     expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
-    // The fallthrough directive's input too, which no consumer binds (ADR-0118), and the
-    // fallthrough inputs a parent binds on the host. The scope directive is a shared helper
-    // module, apart from the component's file (ADR-0121).
+    // The fallthrough inputs a parent binds on the host too (ADR-0118). The scope and fallthrough
+    // directives are shared helper modules, apart from the component's file (ADR-0121).
     expect(lines("angular")).toEqual([
-      "  readonly ufFallthrough = input.required<any>();",
       '  readonly title = input<any>("Tasks (today)", {',
       "  readonly tasks = input.required<any>();",
       "  readonly done = input.required<any>();",
@@ -1007,7 +1017,6 @@ describe("canaries", () => {
     expect(await lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
-      "  readonly ufFallthrough = input.required<any>();",
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",
       "  readonly class = input<any>();",

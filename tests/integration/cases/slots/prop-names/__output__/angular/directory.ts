@@ -1,3 +1,4 @@
+import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
 import Table, { TableRow } from "./table";
 import { Component, ElementRef, computed, inject, input, viewChild } from "@angular/core";
@@ -6,9 +7,6 @@ export interface Person {
   id: string;
   name: string;
 }
-
-/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
-type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
 
 @Component({
   selector: "uf-directory",

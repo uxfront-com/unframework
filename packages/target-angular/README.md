@@ -292,9 +292,10 @@ parent, so the composable's effects stay the component's view effects.
   leaves `undefined` removes the root's, as Vue's merge does. The host clears both with
   `[attr.class]` and `[attr.style]` bindings, keeping only `display: contents`. Its other
   attributes and DOM listeners a consumer passes arrive in two more inputs, `ufAttributes` and
-  `ufListeners`, which the inline `Fallthrough` directive on its fallthrough element (its root, or
-  the element that spreads the props' rest) sets through `Renderer2`, the consumer's value winning
-  and the root's own listener running first (ADR-0118). A ref on a component that exposes nothing
+  `ufListeners`, which the `Fallthrough` directive on its fallthrough element (its root, or the
+  element that spreads the props' rest) sets through `Renderer2`, the consumer's value winning
+  and the root's own listener running first (ADR-0118). The directive and the listeners' types
+  are shared helper modules (ADR-0121). A ref on a component that exposes nothing
   reads its `ufElement`, a `viewChild` of its root, which a root component forwards.
 - **Context.** An injected value is read once the inputs are set, from the injector the class
   holds: a consumer projected into its provider is created before the provider's inputs are set,
@@ -394,7 +395,7 @@ object), `style-binding` (emulated, `styleObject`, for a style bound to a value 
 spreads; ADR-0065), `raw-html` (emulated, `TrustedHtmlPipe`, a pure pipe that marks `innerHTML`'s
 markup trusted, so Angular's sanitiser keeps it as written; ADR-0097) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
-(`toggle`), `model-modifiers` (`modelText`), `fallthrough` (the inline `Fallthrough` directive), `expose` (`ufElement`, where a component exposes nothing), `reactive-context`
+(`toggle`), `model-modifiers` (`modelText`), `fallthrough` (the shared `Fallthrough` directive), `expose` (`ufElement`, where a component exposes nothing), `reactive-context`
 (`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and
 `contextual-root`, unsupported (UF4001, errors), `child-root-scope` and `sheet-order`,
 unsupported (UF4003 and UF4002, info), and `generic-slot-props`, unsupported (UF4004, info): slot
@@ -413,17 +414,20 @@ re-projects `<ng-content />`.
 The shared helpers are modules of their own in the tree's `_unframework/` (ADR-0121), put
 through `EmitContext.helper` and printed by `src/shared.ts`: `ScopeAttributes.ts`,
 `TextCaret.ts`, `TrustedHtmlPipe.ts`, `styleObject.ts`, `modelText.ts`, `writeModelText.ts`,
-`looseToNumber.ts`, `queueHook.ts` and one module for each event and option a listener uses,
-such as `ClickCapture.ts`. Each imports Angular by its own names, so its text depends only on the
-helper, and a helper that calls another imports it as its sibling (`./looseToNumber`).
+`looseToNumber.ts`, `queueHook.ts`, `Fallthrough.ts`, `Listeners.ts` and one module for each
+event and option a listener uses, such as `ClickCapture.ts`. Each imports Angular by its own
+names, so its text depends only on the helper, and a helper that calls another imports it as its
+sibling (`./looseToNumber`). `Listeners.ts` holds the types of the fallthrough listeners' record,
+`Listeners` and, for an SVG element, `SvgListeners`, which a component imports with
+`import type`, and which `Fallthrough`'s input takes either of.
 
 A component imports each without the extension, `import { ScopeAttributes } from
 "./_unframework/ScopeAttributes"`, under one name in every component of a source, and lists a
 directive or a pipe in its `imports`. `Transition` and `TransitionRegion` stay inline: the
 directive finds its region through `inject`, which looks through every ancestor's injector,
 across component hosts, so a shared region class would let a child's transition read its
-parent's region (R2). The directive runner, `Teleport`, `idCounter`, `Fallthrough` and the short
-helpers stay inline too. A context without `helper` gets every helper printed inline, as before.
+parent's region (R2). The directive runner, `Teleport`, `idCounter` and the short helpers stay
+inline too. A context without `helper` gets every helper printed inline, as before.
 
 Inline content on either side of a child component's host reads with a space in the accessible
 name: Chrome adds one at every `display: contents` element, so Angular reads `Build passing` where
@@ -439,7 +443,7 @@ Tests and tooling build, check and run the Angular output through three subpaths
     the unframework plugin's virtual `X.uf.tsx.ts` modules and its modules of composables,
     `X.uf.ts.ts`, which a component's program reads so its template is checked against the
     composable's types (ADR-0069), and for the shared helper modules it serves,
-    `_unframework/ScopeAttributes.ts`, which a component's program reads too and which compile
+    `_unframework/angular/ScopeAttributes.ts`, which a component's program reads too and which compile
     ahead of time on their own (ADR-0121), Analog with `jit: false`, and the
     Angular linker, over the pre-bundled framework in the browser and over the packages the SSR
     module graph inlines on the server, so no JIT compiler runs.

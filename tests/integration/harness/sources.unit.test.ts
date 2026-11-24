@@ -76,7 +76,13 @@ describe("a case of two sources", () => {
       svelte: ["Field.svelte", "Form.svelte"],
       solid: ["Field.tsx", "Form.tsx"],
       solid2: ["Field.tsx", "Form.tsx"],
-      angular: ["field.ts", "_unframework/ScopeAttributes.ts", "form.ts"],
+      angular: [
+        "field.ts",
+        "_unframework/Fallthrough.ts",
+        "_unframework/Listeners.ts",
+        "_unframework/ScopeAttributes.ts",
+        "form.ts",
+      ],
       qwik: ["Field.tsx", "Form.tsx"],
       astro: ["Field.astro", "Form.astro"],
     });
