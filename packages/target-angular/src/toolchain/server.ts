@@ -76,7 +76,7 @@ async function render(
         ref.setInput(name, value);
       }
       app.attachView(ref.hostView);
-      app.injector.get(DOCUMENT).body.appendChild(ref.location.nativeElement as Node);
+      app.injector.get(DOCUMENT).body.append(ref.location.nativeElement as Node);
       return app;
     },
     // The URL must be an allowed host, or the render fails with NG05706.

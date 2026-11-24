@@ -31,7 +31,7 @@ export const mount: MountAdapter = async (component, container, options) => {
     setInputs(ref, inputs, options.props ?? {});
     host = ref.location.nativeElement as HTMLElement;
     // `appendChild`, which domino has too: test/rerender.test.ts runs this adapter on it.
-    container.appendChild(host);
+    container.append(host);
     app.attachView(ref.hostView);
   } catch (error) {
     app.destroy();

@@ -76,7 +76,6 @@ export default defineConfig({
     "unicorn/no-array-fill-with-reference-type": "off",
     "unicorn/no-magic-array-flat-depth": "off",
     "unicorn/prefer-array-flat-map": "off",
-    "unicorn/prefer-dom-node-append": "off",
     "unicorn/prefer-import-meta-properties": "off",
     "unicorn/prefer-native-coercion-functions": "off",
     "unicorn/prefer-set-has": "off",
