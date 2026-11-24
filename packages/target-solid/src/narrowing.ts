@@ -346,7 +346,7 @@ function narrowingReads(test: Expression): Array<ReferencePath> {
           }
           compared(inner.right);
         } else if (inner.operator === "instanceof") {
-          add(inner.left as Parsed);
+          add(inner.left);
         } else if (inner.operator === "in") {
           add(inner.right);
         }

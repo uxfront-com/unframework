@@ -491,7 +491,7 @@ export class ReactListeners {
     const local = locals(taken, [base])[base]!;
     taken.push(local);
     const async = typed.async ? "async " : "";
-    const parameter = same ? "" : `${own!.name}: typeof ${event}`;
+    const parameter = same ? "" : `${own.name}: typeof ${event}`;
     const call = `${typed.async ? "void " : ""}${local}(${same ? "" : event});`;
     return `const ${local} = ${async}(${parameter}) => {\n${body}\n};\n${call}`;
   }

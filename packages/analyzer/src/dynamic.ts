@@ -240,7 +240,7 @@ function leavesOf(
       break;
   }
   // A value whose type allows only some strings: a prop of `"h2" | "h3"`.
-  const checked = checkExpression(node as AST.Expression, render);
+  const checked = checkExpression(node, render);
   if (!checked.clean) {
     return undefined;
   }

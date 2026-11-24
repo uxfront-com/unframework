@@ -432,7 +432,7 @@ export function declareSetup(context: SetupContext): Setup {
         } else if (api === "defineDirective") {
           misplacedDirective(call.callee as AST.IdentifierReference, reporter);
         } else if (api === "isDev") {
-          misplacedDev(call.callee as AST.IdentifierReference, reporter);
+          misplacedDev(call.callee, reporter);
         } else {
           misplacedNextTick(call.callee as AST.IdentifierReference);
         }
@@ -759,7 +759,7 @@ export function declareSetup(context: SetupContext): Setup {
         continue;
       }
       const binding = declare(
-        property.value as AST.BindingIdentifier,
+        property.value,
         USED_KINDS[found.kind],
         found.kind === "function" ? FUNCTION : memberKinds(found.type),
       );
@@ -927,7 +927,7 @@ export function declareSetup(context: SetupContext): Setup {
         misplacedNextTick(call.callee as AST.IdentifierReference);
         return;
       case "isDev":
-        misplacedDev(call.callee as AST.IdentifierReference, reporter);
+        misplacedDev(call.callee, reporter);
         return;
       case "Teleport":
         teleportNotTag(call.callee as AST.IdentifierReference, reporter);
@@ -1131,8 +1131,7 @@ export function declareSetup(context: SetupContext): Setup {
         );
         nullable.set(
           parameters.at(-1)!,
-          Boolean(element.optional) ||
-            mayBeNullish(context.types.kindsOf(element.elementType as AST.TSType)),
+          Boolean(element.optional) || mayBeNullish(context.types.kindsOf(element.elementType)),
         );
       }
       const end = member.typeAnnotation!.end;
@@ -1554,7 +1553,7 @@ export function declareSetup(context: SetupContext): Setup {
         );
       }
       seen.add(key);
-      const value = property.value as AST.Expression;
+      const value = property.value;
       if (key === "required") {
         if (value.type !== "Literal" || typeof value.value !== "boolean") {
           return invalid(value, "`required` is `true` or `false`, as a literal.");
@@ -2632,10 +2631,10 @@ function cleanups(
               : awaited !== undefined && typed.start > awaited
                 ? "is called after an `await`"
                 : undefined;
-        if (passed && !why && !seen.has(callee.function!)) {
-          seen.add(callee.function!);
-          const position = (parent as AST.CallExpression).arguments.indexOf(typed as AST.Argument);
-          cleanups(callee.function!, position, immediate, render, seen);
+        if (passed && !why && !seen.has(callee.function)) {
+          seen.add(callee.function);
+          const position = parent.arguments.indexOf(typed as AST.Argument);
+          cleanups(callee.function, position, immediate, render, seen);
         }
         if (why) {
           const message = `\`${typed.name}\` ${why}: a callback registers its cleanups as it runs, at once, where Solid's \`onCleanup\` finds the effect that runs them.`;
@@ -3160,7 +3159,7 @@ function findEventParameters(
     }
     const dom = DOM_EVENTS.get(name.event) ?? "Event";
     const { expression } = node.value;
-    const named = functionOf(expression as AST.Node);
+    const named = functionOf(expression);
     if (named) {
       use(named, 0, dom, [name.event]);
     } else if (expression.type === "ArrowFunctionExpression") {

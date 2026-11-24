@@ -37,8 +37,8 @@ function find(
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  if (!Array.isArray(value) && test(value as { kind?: string })) {
-    return value as { kind?: string };
+  if (!Array.isArray(value) && test(value)) {
+    return value;
   }
   for (const item of Object.values(value)) {
     const found = find(item, test);

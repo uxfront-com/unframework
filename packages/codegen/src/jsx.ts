@@ -1096,7 +1096,7 @@ export function spreadRead(
     return js.memberExpression(source, key.name);
   }
   const read = js.memberExpression(source, key.name, { optional: true });
-  return js.chainExpression(read as AST.ChainElement);
+  return js.chainExpression(read);
 }
 
 /**
@@ -1191,7 +1191,7 @@ export function jsxText(value: string): AST.JSXText | AST.JSXExpressionContainer
  */
 export function jsxAttributeValue(value: string): AST.JSXAttributeValue {
   if (!/["&]/.test(value) && !/[^\S ]/.test(value)) {
-    return { type: "Literal", value, raw: `"${value}"`, start: 0, end: 0 } as AST.StringLiteral;
+    return { type: "Literal", value, raw: `"${value}"`, start: 0, end: 0 };
   }
   return js.jsxExpressionContainer(js.stringLiteral(value));
 }

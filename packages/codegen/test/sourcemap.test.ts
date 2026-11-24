@@ -64,7 +64,7 @@ function originOf(file: OutputFile, map: SourceMapV3, source: string, token: str
     return undefined;
   }
   const lines = source.split("\n").slice(0, found.line - 1);
-  return lines.reduce((sum, line) => sum + line.length + 1, 0) + found.column!;
+  return lines.reduce((sum, line) => sum + line.length + 1, 0) + found.column;
 }
 
 /** Each segment's token, in the output and in the source, which L14 reads as one text. */
@@ -1194,7 +1194,7 @@ describe("oxfmt", () => {
   it("returns no map from format()", async () => {
     const result = await format("a.ts", "const a=1", OUTPUT_FORMAT);
     expect(Object.keys(result).toSorted()).toEqual(["code", "errors"]);
-    expect(Object.keys(await format("a.ts", "const a=1", { sourceMap: true } as never))).toEqual(
+    expect(Object.keys(await format("a.ts", "const a=1", { sourceMap: true }))).toEqual(
       Object.keys(result),
     );
   });

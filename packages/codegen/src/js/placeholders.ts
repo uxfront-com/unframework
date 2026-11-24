@@ -46,7 +46,7 @@ export class Placeholders {
     if (parenthesesNeeded(expression, code, slot)) {
       text = `(${text})`;
     }
-    return this.#add(text) as AST.IdentifierReference;
+    return this.#add(text);
   }
 
   /**
@@ -56,10 +56,10 @@ export class Placeholders {
   type(code: string): AST.TSTypeReference {
     return {
       type: "TSTypeReference",
-      typeName: this.#add(code) as AST.IdentifierReference,
+      typeName: this.#add(code),
       typeArguments: null,
       ...at,
-    } as AST.TSTypeReference;
+    };
   }
 
   /**
@@ -78,7 +78,7 @@ export class Placeholders {
     if (statements.length !== 1 || arrow?.params.length !== 1) {
       throw new Error(`Cannot parse \`${code}\` as one parameter.`);
     }
-    return this.#add(code) as AST.BindingIdentifier;
+    return this.#add(code);
   }
 
   /**
@@ -99,7 +99,7 @@ export class Placeholders {
       (comment) => comment.type === "Line" && comment.end === code.length,
     );
     const node = this.#add(text, { statements: true, lineComment });
-    return { type: "ExpressionStatement", expression: node, ...at } as AST.ExpressionStatement;
+    return { type: "ExpressionStatement", expression: node, ...at };
   }
 
   #add(

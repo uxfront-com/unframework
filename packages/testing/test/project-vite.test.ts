@@ -290,9 +290,9 @@ describe("withProjectVite", () => {
     ).rejects.toThrow(
       "[uf] vite in unframework.config.ts gave a promise that rejected: engine failed to start",
     );
-    await expect(
-      withProjectVite({}, () => Promise.reject("offline" as unknown as Error), context),
-    ).rejects.toThrow('[uf] vite in unframework.config.ts threw: "offline"');
+    await expect(withProjectVite({}, () => Promise.reject("offline"), context)).rejects.toThrow(
+      '[uf] vite in unframework.config.ts threw: "offline"',
+    );
     await expect(
       withProjectVite(
         {},

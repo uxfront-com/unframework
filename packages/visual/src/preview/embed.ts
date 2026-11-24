@@ -76,7 +76,7 @@ function embedScript(
   },
   readOptions: typeof embedOptions,
 ): void {
-  const data = JSON.parse(document.getElementById("uf-embed-data")!.textContent!) as EmbedData;
+  const data = JSON.parse(document.getElementById("uf-embed-data")!.textContent) as EmbedData;
   const params = new URLSearchParams(location.search);
   const example = params.get(constants.example);
   const target = params.get(constants.target);

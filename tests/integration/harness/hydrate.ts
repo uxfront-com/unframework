@@ -76,8 +76,8 @@ async function render(
   const source = caseMainSource(harness, request.case);
   const runner = runnerOf(ssr);
   const [renderer, module] = await Promise.all([
-    runner.import(server) as Promise<{ renderForHydration?: HydrationRenderer }>,
-    runner.import(source) as Promise<{ default?: unknown }>,
+    runner.import<{ renderForHydration?: HydrationRenderer }>(server),
+    runner.import<{ default?: unknown }>(source),
   ]);
   if (typeof renderer.renderForHydration !== "function") {
     throw new Error(

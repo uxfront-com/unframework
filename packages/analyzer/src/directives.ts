@@ -102,7 +102,7 @@ export function isDirectiveCall(
   if (inner?.type !== "CallExpression" || inner.callee.type !== "Identifier") {
     return false;
   }
-  const resolution = scopes.resolve(inner.callee as AST.IdentifierReference);
+  const resolution = scopes.resolve(inner.callee);
   return (
     resolution.kind === "import" && authoring.get(resolution.declaration) === "defineDirective"
   );
@@ -141,7 +141,7 @@ export function directiveCandidate(
   return {
     statement: exported ?? statement,
     declarator: declarator as DirectiveCandidate["declarator"],
-    call: unwrapped(declarator.init!) as AST.CallExpression,
+    call: unwrapped(declarator.init) as AST.CallExpression,
     exported: exported !== undefined,
   };
 }

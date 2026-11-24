@@ -679,7 +679,7 @@ class Resolution {
       }
       if (inner.type === "TSRestType") {
         // A named rest element, `...rest: T[]`, is a rest type around a named member.
-        const rest = inner.typeAnnotation as AST.TSType | AST.TSNamedTupleMember;
+        const rest = inner.typeAnnotation;
         if (rest.type === "TSNamedTupleMember") {
           const element = rest.elementType as AST.TSType;
           return {

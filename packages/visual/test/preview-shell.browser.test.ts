@@ -44,7 +44,7 @@ async function open(name: ShellFixture, targets?: Array<string>, hash = ""): Pro
 function names(list: Element): Array<string> {
   return [...list.querySelectorAll(":scope > [role='treeitem']")].map((item) => {
     const label = item.getAttribute("aria-labelledby");
-    return (label ? document.getElementById(label)! : item).textContent!.trim();
+    return (label ? document.getElementById(label)! : item).textContent.trim();
   });
 }
 

@@ -232,7 +232,7 @@ describe("browser projects", () => {
     const [, , , , browser] = harnessProjects({ harness, mode, targets: ["qwik"] });
     const project = await (browser as () => Promise<UserWorkspaceConfig>)();
     expect(project.test?.include).toEqual(["cases/**/*.test.ts"]);
-    const provided = project.test?.provide as { ufNoOutput?: Record<string, string> } | undefined;
+    const provided = project.test?.provide;
     expect(provided?.ufNoOutput).toEqual(noOutputCases(listCases(harness.casesDir), "qwik"));
     const names = (project.plugins ?? [])
       .flat()
@@ -284,7 +284,7 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
       projects.slice(6).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
     );
     expect(ssr!.test?.name).toBe("ssr:react");
-    const provided = ssr!.test?.provide as { ufOnly?: Array<string> } | undefined;
+    const provided = ssr!.test?.provide;
     expect(provided?.ufOnly).toEqual(["semantics/listbox"]);
     expect(browser!.test?.name).toBe("browser:react");
     expect(browser!.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);

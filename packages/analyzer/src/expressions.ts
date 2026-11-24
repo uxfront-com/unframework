@@ -1629,7 +1629,7 @@ class Walk {
       }
       return UNKNOWN;
     }
-    this.refs.push(createSlotReference(slot!, span(node)));
+    this.refs.push(createSlotReference(slot, span(node)));
     return union(FUNCTION, UNDEFINED);
   }
 
@@ -3893,7 +3893,7 @@ class Walk {
           if (property !== undefined && key !== undefined && key !== property) {
             continue;
           }
-          found.push(this.#originOf(item.value as AST.Expression, visiting));
+          found.push(this.#originOf(item.value, visiting));
           if (property !== undefined && key === property) {
             return either(...found);
           }
@@ -5050,9 +5050,9 @@ class Walk {
           }
         } else {
           // Each item is written to the loop's target in turn (UF2004).
-          const left = node.left as AST.AssignmentTarget;
+          const left = node.left;
           const target = this.#target(left);
-          const member = withoutAssertions(left as AST.Expression);
+          const member = withoutAssertions(left);
           if (target.kind === "member" && member.type === "MemberExpression") {
             this.value(left as AST.Expression, "value", false);
             this.#patternWrite(left, [member], "value");
@@ -5242,9 +5242,9 @@ class Walk {
 
   /** An update in setup code: as an assignment's target, `++` and `--` write (ADR-0045). */
   #update(node: AST.UpdateExpression, position: Position): Kinds {
-    const target = this.#target(node.argument as AST.AssignmentTarget);
+    const target = this.#target(node.argument);
     if (target.kind === "member") {
-      this.value(node.argument as AST.Expression, "value", false);
+      this.value(node.argument, "value", false);
       this.#memberWrite(node, withoutAssertions(node.argument) as AST.MemberExpression, position);
     }
     if (target.kind === "binding" && this.#write(node, target.binding, node.operator, position)) {
@@ -5372,7 +5372,7 @@ class Walk {
       return;
     }
     const { source, reporter } = this.#context;
-    const object = first.member.object as AST.Expression;
+    const object = first.member.object;
     const text = source.slice(object.start, object.end);
     const fix =
       node.type === "AssignmentExpression"
@@ -5405,7 +5405,7 @@ class Walk {
     const { source, component } = this.#context;
     let binding: SetupBinding | undefined;
     for (const member of members) {
-      const object = unwrapExpression(member.object as AST.Expression);
+      const object = unwrapExpression(member.object);
       if (
         object.type !== "MemberExpression" ||
         object.object.type !== "Identifier" ||
@@ -5640,7 +5640,7 @@ class Walk {
           const found = this.#target(target);
           if (found.kind === "member") {
             this.value(target as AST.Expression, "value", false);
-            const member = withoutAssertions(target as AST.Expression);
+            const member = withoutAssertions(target);
             if (member.type === "MemberExpression") {
               members.push(member);
             }

@@ -1158,9 +1158,7 @@ class Rules {
         return;
       }
       if (typed.type === "TSTypeReference" && typed.typeName.type === "Identifier") {
-        const resolution = render.scopes.resolve(
-          typed.typeName as unknown as AST.IdentifierReference,
-        );
+        const resolution = render.scopes.resolve(typed.typeName);
         if (resolution.kind === "import" && erased.has(resolution.declaration)) {
           found.push({ reference: typed, annotation });
         }
@@ -1170,7 +1168,7 @@ class Rules {
         visit(
           child,
           key === "typeAnnotation" && child && (child as AST.Node).type === "TSTypeAnnotation"
-            ? (typed as AST.Node)
+            ? typed
             : annotation,
         );
       }
@@ -1233,7 +1231,7 @@ class Rules {
     const grand = parents.at(-3);
     const contextual =
       (parent?.type === "ArrowFunctionExpression" &&
-        parent.params.includes(holder as AST.ParamPattern) &&
+        parent.params.includes(holder) &&
         grand?.type === "CallExpression" &&
         grand.arguments.includes(parent)) ||
       (parent?.type === "VariableDeclarator" &&
@@ -1241,10 +1239,10 @@ class Rules {
         parent.init !== null &&
         grand?.type === "VariableDeclaration" &&
         grand.kind === "const");
-    if (!contextual || (holder as AST.BindingIdentifier).optional) {
+    if (!contextual || holder.optional) {
       return undefined;
     }
-    const name = (holder as AST.BindingIdentifier).name;
+    const name = holder.name;
     return { start: holder.start + name.length, end: annotation.end };
   }
 }

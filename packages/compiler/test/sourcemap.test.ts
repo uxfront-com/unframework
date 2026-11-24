@@ -54,7 +54,7 @@ function broken(
       const token = /[\p{ID_Start}$_][\p{ID_Continue}$]*|\d[\w.]*|\S/uy;
       token.lastIndex = fromColumn!;
       const text = token.exec(source[fromLine!]!)![0];
-      if (output[line]!.slice(column!, column! + text.length) !== text) {
+      if (output[line]!.slice(column, column! + text.length) !== text) {
         problems.push(`${line}:${column} ${text}`);
       }
     }

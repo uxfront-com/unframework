@@ -927,7 +927,7 @@ function narrowsKinds(before: Kinds, after: Kinds): boolean {
     return false;
   }
   return (["strings", "numbers", "booleans"] as const).some(
-    (field) => after[field] !== undefined && after[field]!.size !== (before[field]?.size ?? -1),
+    (field) => after[field] !== undefined && after[field].size !== (before[field]?.size ?? -1),
   );
 }
 

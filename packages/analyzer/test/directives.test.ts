@@ -3,7 +3,7 @@
 // code: UF2037 for a definition outside the canonical form, UF3055 for a name no directive has,
 // UF3056 for a use without an element or with a value built in place, and UF1002 for what is not
 // supported yet (arguments, modifiers, a spread's key, a list's body).
-import type { DirectiveAttribute, ElementNode, ModuleApi } from "@unframework.dev/ir";
+import type { DirectiveAttribute, ModuleApi } from "@unframework.dev/ir";
 import { parseModule } from "@unframework.dev/parser";
 import type { DirectiveValueCheck } from "@unframework.dev/type-oracle";
 import { describe, expect, it } from "vitest";
@@ -438,7 +438,7 @@ describe("the codes it shares", () => {
 
   it("lowers the element's other attributes beside it", () => {
     const { module } = run(source('<p class="note" v-mark="a" title="t">a</p>'));
-    expect((root(module) as ElementNode).attributes.map(({ kind }) => kind)).toEqual([
+    expect(root(module).attributes.map(({ kind }) => kind)).toEqual([
       "Static",
       "Directive",
       "Static",

@@ -172,5 +172,5 @@ export function readCaseConfig(id: string, file: string): CaseConfig {
   if (problems.length) {
     throw new Error(`[uf] Case ${id}: case.json has ${problems.join("; ")}.`);
   }
-  return record as CaseConfig;
+  return record;
 }

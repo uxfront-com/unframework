@@ -97,7 +97,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
               },
               owners: { react: {} },
               dependencies: [],
-            } as never;
+            };
           }
           if (file === "src/copy-clash.uf.tsx" || file === "src/copy-case.uf.tsx") {
             return {
@@ -112,7 +112,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
               },
               owners: { react: {} },
               dependencies: [],
-            } as never;
+            };
           }
           if (file === "src/case.uf.tsx") {
             const same = { contents: "export default 3;\n" };
@@ -128,7 +128,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
               },
               owners: { react: {} },
               dependencies: [],
-            } as never;
+            };
           }
           return {
             filename: "src/A.uf.tsx",

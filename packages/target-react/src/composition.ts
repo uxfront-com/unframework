@@ -325,7 +325,7 @@ export function planComposition(
     component.render.kind === "Element"
       ? component.render
       : component.render.children.length === 1 && component.render.children[0]!.kind === "Component"
-        ? component.render.children[0]!
+        ? component.render.children[0]
         : undefined;
   const roots = inner ? (single ? [single.span] : []) : scopeRoots(component);
   // The root that spreads the rest passes the styled parents' scope attributes with it, and the

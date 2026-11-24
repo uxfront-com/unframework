@@ -408,8 +408,10 @@ describe("on an analysed source", () => {
   const { module, diagnostics } = analyze(parseModule("Keys.uf.tsx", source));
   const keys = module!.components[0]!;
   const listeners = (keys.render as ElementNode).children.flatMap((child) =>
-    child.kind === "Element" ? child.attributes.filter((each) => each.kind === "Event") : [],
-  ) as Array<EventAttribute>;
+    child.kind === "Element"
+      ? child.attributes.filter((each): each is EventAttribute => each.kind === "Event")
+      : [],
+  );
   const fnOf = (listener: EventAttribute): FunctionCode =>
     listener.handler.kind === "Inline"
       ? listener.handler.function

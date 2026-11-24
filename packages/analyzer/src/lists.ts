@@ -269,10 +269,8 @@ function bodyProblem(callback: AST.ArrowFunctionExpression): { message: string; 
   const { body } = callback;
   const returned =
     body.type === "BlockStatement"
-      ? (
-          body.body.find((statement) => statement.type === "ReturnStatement") as
-            | AST.ReturnStatement
-            | undefined
+      ? body.body.find(
+          (statement): statement is AST.ReturnStatement => statement.type === "ReturnStatement",
         )?.argument
       : body;
   if (returned?.type === "JSXFragment") {

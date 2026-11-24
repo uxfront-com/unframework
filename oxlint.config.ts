@@ -61,7 +61,6 @@ export default defineConfig({
     "typescript/no-explicit-any": "off",
     "typescript/no-implied-eval": "off",
     "typescript/no-non-null-assertion": "off",
-    "typescript/no-unnecessary-type-assertion": "off",
     "typescript/no-unsafe-argument": "off",
     "typescript/no-unsafe-assignment": "off",
     "typescript/no-unsafe-call": "off",
@@ -161,6 +160,9 @@ export default defineConfig({
         // Imports in a component reach its outputs as written, and a target's fixtures keep the
         // inline `type` specifiers its output uses.
         "import/consistent-type-specifier-style": "off",
+        // An assertion that the source's types don't need can be one an output's framework types
+        // need, like an event's target, and it reaches every output as written.
+        "typescript/no-unnecessary-type-assertion": "off",
       },
     },
   ],

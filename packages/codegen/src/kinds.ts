@@ -376,7 +376,7 @@ class Kinds {
       return false;
     }
     const returned: Array<Node | null> = [];
-    collectReturns(statements as unknown as Array<Node>, returned);
+    collectReturns(statements, returned);
     return (
       returned.length > 0 &&
       returned.every((each) => each === null || this.#expression(each, fn.body))

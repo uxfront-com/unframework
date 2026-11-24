@@ -136,7 +136,7 @@ const hasNestedRules = (rule: Rule) => rule.nodes.some((node) => node.type === "
 /** Whether a rule around `rule` passes `test`: Vue's walk up to a parent's `__deep`. */
 function anyAncestor(rule: Rule, test: (rule: Rule) => boolean): boolean {
   for (let parent = rule.parent; parent && parent.type !== "root"; parent = parent.parent) {
-    if (parent.type === "rule" && test(parent as Rule)) {
+    if (parent.type === "rule" && test(parent)) {
       return true;
     }
   }

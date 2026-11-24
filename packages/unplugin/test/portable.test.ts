@@ -139,13 +139,13 @@ describe("the root", () => {
 
   it("is webpack's compiler.context", async () => {
     const [pre] = rawPlugins({ target: "vue" }, moved);
-    pre.webpack!({ context: project.root } as never);
+    pre.webpack!({ context: project.root });
     expect(await resolveId(pre, rootRelative)).toBe(`${file("Hello.uf.tsx")}.vue`);
   });
 
   it("is Rspack's compiler.context", async () => {
     const [pre] = rawPlugins({ target: "vue" }, moved);
-    pre.rspack!({ context: project.root } as never);
+    pre.rspack!({ context: project.root });
     expect(await resolveId(pre, rootRelative)).toBe(`${file("Hello.uf.tsx")}.vue`);
   });
 
@@ -436,7 +436,7 @@ describe("watchChange", () => {
       await client.pluginContainer.load(`${path}.vue`);
       edit(path);
       await client.pluginContainer.watchChange(path, { event: "update" });
-      await server.server.environments.ssr!.pluginContainer.watchChange(path, { event: "update" });
+      await server.server.environments.ssr.pluginContainer.watchChange(path, { event: "update" });
       await vi.waitFor(() => expect(compiles).toBe(2));
       expect(codeOf(await client.pluginContainer.load(`${path}.vue`))).toContain("Hello, edit!");
       expect(compiles).toBe(2);

@@ -215,7 +215,7 @@ describe("props types read through the type oracle", () => {
       "`item`'s type names `Item`, which `types.ts` declares without `export`: an output that writes the prop's type cannot import it.",
     ],
   ])("reports %s", async (_, files, problem, message) => {
-    const { module, diagnostics } = await analyzeWith(files as Record<string, string>);
+    const { module, diagnostics } = await analyzeWith(files);
     expect(problems(files["A.uf.tsx"], diagnostics)).toEqual([problem].flat());
     expect(diagnostics[0]!.message).toBe(message);
     expect(module?.components ?? []).toEqual([]);

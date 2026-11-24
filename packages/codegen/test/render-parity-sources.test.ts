@@ -2,7 +2,7 @@
 // them into one component without changing what any renders, and the seeded fuzz is
 // deterministic and as varied as the printers' hard parts.
 import { walk } from "@unframework.dev/ir";
-import type { Attribute, Expression, RenderNode, UfComponent } from "@unframework.dev/ir";
+import type { Expression, RenderNode, UfComponent } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -212,7 +212,7 @@ function features(cases: ReadonlyArray<ParityCase>): Set<string> {
         if (node.tag !== node.tag.toLowerCase()) {
           found.add("a camel-case SVG element");
         }
-        for (const attribute of node.attributes as Array<Attribute>) {
+        for (const attribute of node.attributes) {
           found.add(`a ${attribute.kind} attribute`);
           if (attribute.kind === "Class") {
             for (const item of attribute.items) {

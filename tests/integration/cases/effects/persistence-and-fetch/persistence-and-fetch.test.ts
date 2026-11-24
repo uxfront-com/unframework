@@ -29,7 +29,7 @@ const CATALOGUE: Record<string, Array<string>> = {
 function fakeNetwork() {
   const aborted: Array<string> = [];
   const real = window.fetch;
-  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     const href = input instanceof Request ? input.url : input.toString();
     const url = new URL(href, window.location.origin);
     const answer =
@@ -49,7 +49,7 @@ function fakeNetwork() {
         reject(new DOMException("The request was aborted.", "AbortError"));
       });
     });
-  }) as typeof window.fetch;
+  };
   return {
     aborted,
     restore: () => {

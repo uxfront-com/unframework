@@ -30,7 +30,7 @@ import { teleportedBy } from "./teleports.ts";
 
 /** Whether this project hydrates (`test.provide.ufHydrate`). */
 export function isHydrateProject(): boolean {
-  return (inject("ufHydrate") as boolean | undefined) === true;
+  return inject("ufHydrate") === true;
 }
 
 /** The attributes whose values are ids, or lists of ids, that the `ids` sub-check reads. */

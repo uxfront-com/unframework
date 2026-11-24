@@ -1334,7 +1334,7 @@ function callbackBase(element: ElementNode, bindings: ReadonlyMap<BindingId, Bin
     );
     const words =
       attribute?.kind === "Static" ? String(attribute.value).match(/[A-Za-z0-9]+/g) : null;
-    if (!words || !/^[A-Za-z]/.test(words[0]!)) {
+    if (!words || !/^[A-Za-z]/.test(words[0])) {
       return undefined;
     }
     const base = pascalCase(words.join("-"));

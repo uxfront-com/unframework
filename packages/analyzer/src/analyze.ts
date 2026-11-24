@@ -1207,10 +1207,7 @@ function checkTopLevelStatement(
       // `defineDirective(…)` alone declares nothing (ADR-0099).
       const { expression } = statement;
       if (isDirectiveCall(expression, context.scopes, context.authoring)) {
-        misplacedDirective(
-          (expression as AST.CallExpression).callee as AST.IdentifierReference,
-          reporter,
-        );
+        misplacedDirective(expression.callee as AST.IdentifierReference, reporter);
         return;
       }
       break;
@@ -1917,9 +1914,9 @@ function findKeys(program: AST.Program): Map<number, KeyCandidate> {
     if (!typed && !symbol) {
       continue;
     }
-    const params = typed ? (annotation as AST.TSTypeReference).typeArguments?.params : undefined;
+    const params = typed ? annotation.typeArguments?.params : undefined;
     keys.set(statement.start, {
-      statement: statement as AST.Statement,
+      statement,
       declaration,
       id: declarator.id,
       exported,

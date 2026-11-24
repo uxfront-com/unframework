@@ -66,7 +66,7 @@ describe("the solid2 fragment's resolution of Solid 2", () => {
     const solid = await container.resolveId("solid-js", importer);
     expect(solid!.id).not.toContain("server");
     // Solid's own dependency resolves from Solid, 2.0.0 too.
-    const signals = await container.resolveId("@solidjs/signals", solid!.id.split("?")[0]!);
+    const signals = await container.resolveId("@solidjs/signals", solid!.id.split("?")[0]);
     expect(versionOf(signals!.id.split("?")[0]!)).toBe("2.0.0");
   });
 

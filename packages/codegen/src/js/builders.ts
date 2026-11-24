@@ -14,7 +14,7 @@ function isIdentifierName(name: string): boolean {
 // --- Identifiers and literals ---------------------------------------------------------------
 
 export function identifier(name: string): AST.IdentifierReference {
-  return { type: "Identifier", name, ...at } as AST.IdentifierReference;
+  return { type: "Identifier", name, ...at };
 }
 
 /** A binding identifier, with a type annotation when given (`props: Props`). */
@@ -27,19 +27,19 @@ export function bindingIdentifier(
     name,
     ...(typeAnnotation ? { typeAnnotation: tsTypeAnnotation(typeAnnotation) } : {}),
     ...at,
-  } as AST.BindingIdentifier;
+  };
 }
 
 export function stringLiteral(value: string): AST.StringLiteral {
-  return { type: "Literal", value, raw: JSON.stringify(value), ...at } as AST.StringLiteral;
+  return { type: "Literal", value, raw: JSON.stringify(value), ...at };
 }
 
 export function booleanLiteral(value: boolean): AST.BooleanLiteral {
-  return { type: "Literal", value, raw: String(value), ...at } as AST.BooleanLiteral;
+  return { type: "Literal", value, raw: String(value), ...at };
 }
 
 export function nullLiteral(): AST.NullLiteral {
-  return { type: "Literal", value: null, raw: "null", ...at } as AST.NullLiteral;
+  return { type: "Literal", value: null, raw: "null", ...at };
 }
 
 /**
@@ -51,7 +51,7 @@ export function numberLiteral(value: number): AST.NumericLiteral | AST.UnaryExpr
   if (value < 0 || Object.is(value, -0)) {
     return unaryExpression("-", numberLiteral(-value));
   }
-  return { type: "Literal", value, raw: String(value), ...at } as AST.NumericLiteral;
+  return { type: "Literal", value, raw: String(value), ...at };
 }
 
 /** A template literal without expressions. Escapes backticks, `${` and backslashes. */
@@ -71,7 +71,7 @@ export function templateLiteral(text: string): AST.TemplateLiteral {
 // --- Programs and modules -------------------------------------------------------------------
 
 export function program(body: Array<AST.Statement>): AST.Program {
-  return { type: "Program", sourceType: "module", hashbang: null, body, ...at } as AST.Program;
+  return { type: "Program", sourceType: "module", hashbang: null, body, ...at };
 }
 
 export function importDeclaration(
@@ -87,7 +87,7 @@ export function importDeclaration(
     phase: null,
     importKind,
     ...at,
-  } as AST.ImportDeclaration;
+  };
 }
 
 export function importSpecifier(
@@ -101,7 +101,7 @@ export function importSpecifier(
     local: bindingIdentifier(local),
     importKind,
     ...at,
-  } as AST.ImportSpecifier;
+  };
 }
 
 export function importDefaultSpecifier(local: string): AST.ImportDefaultSpecifier {
@@ -109,7 +109,7 @@ export function importDefaultSpecifier(local: string): AST.ImportDefaultSpecifie
     type: "ImportDefaultSpecifier",
     local: bindingIdentifier(local),
     ...at,
-  } as AST.ImportDefaultSpecifier;
+  };
 }
 
 export function exportDefault(
@@ -120,7 +120,7 @@ export function exportDefault(
     declaration,
     exportKind: "value",
     ...at,
-  } as AST.ExportDefaultDeclaration;
+  };
 }
 
 export function exportNamed(declaration: AST.Declaration): AST.ExportNamedDeclaration {
@@ -132,7 +132,7 @@ export function exportNamed(declaration: AST.Declaration): AST.ExportNamedDeclar
     exportKind: "value",
     attributes: [],
     ...at,
-  } as AST.ExportNamedDeclaration;
+  };
 }
 
 /** `export { local, local as alias, local as default };` */
@@ -143,35 +143,32 @@ export function exportList(
   return {
     type: "ExportNamedDeclaration",
     declaration: null,
-    specifiers: names.map(
-      (name) =>
-        ({
-          type: "ExportSpecifier",
-          local: identifier(local),
-          exported: identifier(name),
-          exportKind: "value",
-          ...at,
-        }) as AST.ExportSpecifier,
-    ),
+    specifiers: names.map((name) => ({
+      type: "ExportSpecifier",
+      local: identifier(local),
+      exported: identifier(name),
+      exportKind: "value",
+      ...at,
+    })),
     source: null,
     exportKind: "value",
     attributes: [],
     ...at,
-  } as AST.ExportNamedDeclaration;
+  };
 }
 
 // --- Statements -----------------------------------------------------------------------------
 
 export function blockStatement(body: Array<AST.Statement>): AST.BlockStatement {
-  return { type: "BlockStatement", body, ...at } as AST.BlockStatement;
+  return { type: "BlockStatement", body, ...at };
 }
 
 export function returnStatement(argument: AST.Expression | null): AST.ReturnStatement {
-  return { type: "ReturnStatement", argument, ...at } as AST.ReturnStatement;
+  return { type: "ReturnStatement", argument, ...at };
 }
 
 export function expressionStatement(expression: AST.Expression): AST.ExpressionStatement {
-  return { type: "ExpressionStatement", expression, ...at } as AST.ExpressionStatement;
+  return { type: "ExpressionStatement", expression, ...at };
 }
 
 /**
@@ -191,7 +188,7 @@ export function ifStatement(
     consequent: statement(consequent),
     alternate: alternate === undefined ? null : statement(alternate),
     ...at,
-  } as AST.IfStatement;
+  };
 }
 
 /**
@@ -212,7 +209,7 @@ export function variableDeclaration(
     declare: false,
     declarations: [{ type: "VariableDeclarator", id, init, definite: false, ...at }],
     ...at,
-  } as AST.VariableDeclaration;
+  };
 }
 
 // --- Functions and calls --------------------------------------------------------------------
@@ -230,7 +227,7 @@ export function functionDeclaration(
     async: Boolean(options.async),
     declare: false,
     params,
-    body: blockStatement(body) as AST.FunctionBody,
+    body: blockStatement(body),
     expression: false,
     typeParameters: null,
     returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
@@ -272,7 +269,7 @@ export function callExpression(
     optional: false,
     typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
     ...at,
-  } as AST.CallExpression;
+  };
 }
 
 /** `new callee(args)`, with type arguments when given (`new Map<string, number>()`). */
@@ -287,7 +284,7 @@ export function newExpression(
     arguments: args,
     typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
     ...at,
-  } as AST.NewExpression;
+  };
 }
 
 /** `await argument`. */
@@ -305,7 +302,7 @@ export function restElement(name: string, typeAnnotation?: AST.TSType): AST.Form
     typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
     value: null,
     ...at,
-  } as AST.FormalParameterRest;
+  };
 }
 
 // --- Patterns -------------------------------------------------------------------------------
@@ -325,7 +322,7 @@ export function objectPattern(
     optional: false,
     typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
     ...at,
-  } as AST.ObjectPattern;
+  };
 }
 
 /**
@@ -345,7 +342,7 @@ export function arrayPattern(
     optional: false,
     typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
     ...at,
-  } as AST.ArrayPattern;
+  };
 }
 
 /** The rest of an object pattern, `...rest`. */
@@ -358,7 +355,7 @@ export function bindingRestElement(name: string): AST.BindingRestElement {
     typeAnnotation: null,
     value: null,
     ...at,
-  } as AST.BindingRestElement;
+  };
 }
 
 /** A shorthand property of an object pattern, `name` or `name = defaultValue`. */
@@ -366,7 +363,7 @@ export function bindingProperty(name: string, defaultValue?: AST.Expression): AS
   return {
     type: "Property",
     kind: "init",
-    key: identifier(name) as unknown as AST.IdentifierName,
+    key: identifier(name),
     value: defaultValue
       ? assignmentPattern(bindingIdentifier(name), defaultValue)
       : bindingIdentifier(name),
@@ -374,7 +371,7 @@ export function bindingProperty(name: string, defaultValue?: AST.Expression): AS
     shorthand: true,
     computed: false,
     ...at,
-  } as AST.BindingProperty;
+  };
 }
 
 /** `left = right`, a binding with a default. */
@@ -390,7 +387,7 @@ export function assignmentPattern(
     optional: false,
     typeAnnotation: null,
     ...at,
-  } as AST.AssignmentPattern;
+  };
 }
 
 // --- Expressions ----------------------------------------------------------------------------
@@ -419,7 +416,7 @@ export function memberExpression(
 
 /** An optional chain, around the outermost link of a chain holding `?.`. */
 export function chainExpression(expression: AST.ChainElement): AST.ChainExpression {
-  return { type: "ChainExpression", expression, ...at } as AST.ChainExpression;
+  return { type: "ChainExpression", expression, ...at };
 }
 
 export function conditionalExpression(
@@ -443,7 +440,7 @@ export function binaryExpression(
   left: AST.Expression,
   right: AST.Expression,
 ): AST.BinaryExpression {
-  return { type: "BinaryExpression", operator, left, right, ...at } as AST.BinaryExpression;
+  return { type: "BinaryExpression", operator, left, right, ...at };
 }
 
 export function unaryExpression(
@@ -477,7 +474,7 @@ export function updateExpression(
 }
 
 export function arrayExpression(elements: Array<AST.ArrayExpressionElement>): AST.ArrayExpression {
-  return { type: "ArrayExpression", elements, ...at } as AST.ArrayExpression;
+  return { type: "ArrayExpression", elements, ...at };
 }
 
 export function spreadElement(argument: AST.Expression): AST.SpreadElement {
@@ -502,7 +499,7 @@ export function property(
     shorthand: Boolean(options.shorthand) && isIdentifierName(key),
     computed: false,
     ...at,
-  } as AST.ObjectProperty;
+  };
 }
 
 /**
@@ -518,7 +515,7 @@ export function objectExpression(
       Array.isArray(entry) ? property(entry[0], entry[1]) : entry,
     ),
     ...at,
-  } as AST.ObjectExpression;
+  };
 }
 
 /** `expression satisfies type`. */
@@ -550,7 +547,7 @@ export function typeReference(
     typeName: identifier(name),
     typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
     ...at,
-  } as AST.TSTypeReference;
+  };
 }
 
 function typeParameterInstantiation(
@@ -582,7 +579,7 @@ const KEYWORD_TYPES = {
 } as const satisfies Record<KeywordType, string>;
 
 export function keywordType(keyword: KeywordType): AST.TSType {
-  return { type: KEYWORD_TYPES[keyword], ...at } as AST.TSType;
+  return { type: KEYWORD_TYPES[keyword], ...at };
 }
 
 /** `element[]`. */
@@ -598,7 +595,7 @@ export function unionType(types: ReadonlyArray<AST.TSType>): AST.TSUnionType {
 // --- Classes --------------------------------------------------------------------------------
 
 export function decorator(expression: AST.Expression): AST.Decorator {
-  return { type: "Decorator", expression, ...at } as AST.Decorator;
+  return { type: "Decorator", expression, ...at };
 }
 
 /** A class, with the interfaces it implements by name (`implements OnInit`). */
@@ -625,7 +622,7 @@ export function classDeclaration(
     abstract: false,
     declare: false,
     ...at,
-  } as AST.Class;
+  };
 }
 
 /**
@@ -645,7 +642,7 @@ export function propertyDefinition(
   return {
     type: "PropertyDefinition",
     decorators: [],
-    key: identifier(name) as unknown as AST.IdentifierName,
+    key: identifier(name),
     typeAnnotation: options.typeAnnotation ? tsTypeAnnotation(options.typeAnnotation) : null,
     value,
     computed: false,
@@ -681,7 +678,7 @@ export function methodDefinition(
   return {
     type: "MethodDefinition",
     decorators: [],
-    key: identifier(kind === "constructor" ? "constructor" : name) as unknown as AST.IdentifierName,
+    key: identifier(kind === "constructor" ? "constructor" : name),
     value: {
       type: "FunctionExpression",
       id: null,
@@ -689,7 +686,7 @@ export function methodDefinition(
       async: Boolean(options.async),
       declare: false,
       params,
-      body: blockStatement(body) as AST.FunctionBody,
+      body: blockStatement(body),
       expression: false,
       typeParameters: null,
       returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
@@ -746,10 +743,7 @@ export function jsxAttribute(
   return {
     type: "JSXAttribute",
     name: jsxName(name) as AST.JSXAttributeName,
-    value:
-      typeof value === "string"
-        ? ({ type: "Literal", value, raw: `"${value}"`, ...at } as AST.StringLiteral)
-        : value,
+    value: typeof value === "string" ? { type: "Literal", value, raw: `"${value}"`, ...at } : value,
     ...at,
   };
 }
@@ -761,7 +755,7 @@ export function jsxSpreadAttribute(argument: AST.Expression): AST.JSXSpreadAttri
 
 /** `{expression}`, as a child or an attribute value. */
 export function jsxExpressionContainer(expression: AST.Expression): AST.JSXExpressionContainer {
-  return { type: "JSXExpressionContainer", expression, ...at } as AST.JSXExpressionContainer;
+  return { type: "JSXExpressionContainer", expression, ...at };
 }
 
 /** An element, self-closing when it has no children. */
@@ -796,5 +790,5 @@ export function jsxFragment(children: Array<AST.JSXChild>): AST.JSXFragment {
     children,
     closingFragment: { type: "JSXClosingFragment", ...at },
     ...at,
-  } as AST.JSXFragment;
+  };
 }

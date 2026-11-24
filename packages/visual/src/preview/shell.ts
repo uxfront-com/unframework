@@ -316,7 +316,7 @@ function shellScript(
   type Control = ShellData["components"][number]["controls"][number];
   type Component = ShellData["components"][number];
   type Example = ShellData["examples"][number];
-  const data = JSON.parse(document.getElementById("uf-preview-data")!.textContent!) as ShellData;
+  const data = JSON.parse(document.getElementById("uf-preview-data")!.textContent) as ShellData;
   const $ = <T extends Element>(selector: string) => document.querySelector<T>(selector)!;
   const filter = $<HTMLInputElement>("#uf-filter");
   const trees = [...document.querySelectorAll<HTMLElement>("[data-uf-tree]")];

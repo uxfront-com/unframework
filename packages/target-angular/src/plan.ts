@@ -801,7 +801,7 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
       }
       for (const attribute of node.attributes) {
         if (attribute.kind === "Directive") {
-          visit(attribute.value as Code);
+          visit(attribute.value);
         }
       }
     },

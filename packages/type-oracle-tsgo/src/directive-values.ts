@@ -13,7 +13,7 @@ import type {
 import type { CallExpression, Node, SourceFile } from "typescript/ast";
 import { isCallExpression, isIdentifier } from "typescript/ast/is";
 import { SymbolFlags, TypeFlags } from "typescript/sync";
-import type { Checker, Type, TypeReference } from "typescript/sync";
+import type { Checker, Type } from "typescript/sync";
 
 /** The shadow of a source: its text, and where each query's helper call starts in it. */
 export interface Shadow {
@@ -152,7 +152,7 @@ function directiveType(type: Type, context: DirectiveValueContext): Type | undef
   if (!declared.length || !declared.every((file) => file && context.isAuthoring(file))) {
     return undefined;
   }
-  const [expected] = context.checker.getTypeArguments(type as TypeReference);
+  const [expected] = context.checker.getTypeArguments(type);
   if (!expected || expected.isErrorType() || expected.flags & TypeFlags.Never) {
     return undefined;
   }

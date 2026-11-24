@@ -65,7 +65,7 @@ async function transformed(mode: "browser" | "ssr"): Promise<string> {
   });
   try {
     const environment = mode === "ssr" ? server.environments.ssr : server.environments.client;
-    const result = await environment!.transformRequest("/Hello.tsx");
+    const result = await environment.transformRequest("/Hello.tsx");
     return result!.code;
   } finally {
     await server.close();

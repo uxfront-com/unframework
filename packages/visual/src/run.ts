@@ -310,7 +310,7 @@ async function visualConfig(
         },
       };
     });
-  const first = browsers[0]?.test?.provide as { ufHarness?: HarnessContext } | undefined;
+  const first = browsers[0]?.test?.provide;
   if (!first?.ufHarness) {
     throw new Error("[uf:visual] defineTestConfig built no browser project.");
   }

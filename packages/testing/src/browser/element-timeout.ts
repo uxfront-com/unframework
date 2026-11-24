@@ -31,6 +31,5 @@ export function boundElementTimeout(): void {
   }
   bound = true;
   const element = expect.element;
-  expect.element = ((subject, options) =>
-    element(subject, { timeout, ...options })) as typeof expect.element;
+  expect.element = (subject, options) => element(subject, { timeout, ...options });
 }

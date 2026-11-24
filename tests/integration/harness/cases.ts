@@ -220,7 +220,11 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
   }
   // Props the server render throws with, which L14 checks (`CaseConfig.ssrThrows`, ADR-0078).
   if (config.ssrThrows !== undefined) {
-    const props = (config.ssrThrows as { props?: unknown } | null)?.props;
+    const { ssrThrows } = config;
+    const props =
+      typeof ssrThrows === "object" && ssrThrows !== null && "props" in ssrThrows
+        ? ssrThrows.props
+        : undefined;
     if (
       typeof config.ssrThrows !== "object" ||
       config.ssrThrows === null ||
@@ -259,7 +263,7 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
   if (problems.length) {
     throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
   }
-  return config as CorpusCaseConfig;
+  return config;
 }
 
 /** The diagnostics a case expects (`__expected__/diagnostics.json`), or `undefined` if missing. */

@@ -449,7 +449,7 @@ function withFallthrough<T extends ElementNode | ComponentNode | DynamicNode>(
   } else {
     attributes.push({ kind: "Style", declarations: [style], span: root.span });
   }
-  return { ...root, attributes } as T;
+  return { ...root, attributes };
 }
 
 /**

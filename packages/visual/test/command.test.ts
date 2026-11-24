@@ -221,7 +221,7 @@ describe("ufExampleCapture with live pixels", () => {
   });
 
   it("fails a follower whose reference finished without capturing", async () => {
-    ufSpecFinished(context("vue", png(20, 10)) as never, { case: CASE });
+    ufSpecFinished(context("vue", png(20, 10)), { case: CASE });
     const result = await ufExampleCapture(context("react", png(20, 10)), request());
     expect(result).toMatchObject({ pass: false, outcome: "missing-reference-capture" });
   });
