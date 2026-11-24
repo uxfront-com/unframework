@@ -278,11 +278,15 @@ describe("toSarif", () => {
     ],
     ["/abs/My Comp#1.uf.tsx", { uri: "file:///abs/My%20Comp%231.uf.tsx" }, "/abs/My Comp#1.uf.tsx"],
     [
-      "C:\\work\\My Comp.uf.tsx",
+      String.raw`C:\work\My Comp.uf.tsx`,
       { uri: "file:///C:/work/My%20Comp.uf.tsx" },
       "/C:/work/My Comp.uf.tsx",
     ],
-    ["\\\\server\\share\\A.uf.tsx", { uri: "file://server/share/A.uf.tsx" }, "/share/A.uf.tsx"],
+    [
+      String.raw`\\server\share\A.uf.tsx`,
+      { uri: "file://server/share/A.uf.tsx" },
+      "/share/A.uf.tsx",
+    ],
   ])("writes %s as a URI that resolves to the file", (path, location, decoded) => {
     const log = toSarif([{ ...frameworkImport(), file: path }], new Map([[path, source]]));
     const { artifactLocation } = log.runs[0]!.results[0]!.locations[0]!.physicalLocation;

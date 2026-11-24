@@ -361,9 +361,9 @@ describe("literals in braces (UF3004)", () => {
 
   it("accepts a string a JSX attribute would read differently, as written", () => {
     expect(lowered("<p title={'Say \"hi\" & wave'}>a</p>")).toEqual([
-      'title="Say \\"hi\\" & wave"',
+      String.raw`title="Say \"hi\" & wave"`,
     ]);
-    expect(lowered('<p title={"a\\nb"}>a</p>')).toEqual(['title="a\\nb"']);
+    expect(lowered(String.raw`<p title={"a\nb"}>a</p>`)).toEqual([String.raw`title="a\nb"`]);
   });
 
   it("lets the value's own fix win, and reports the rest once", () => {
@@ -528,7 +528,7 @@ describe("class", () => {
     ['class={{ "": on }}', "UF3022"],
     ['class={["a", "a"]}', "UF3007"],
     ['class={["a b", { b: on }]}', "UF3007"],
-    ['class={["a\\u00a0b", label]}', "UF3008"],
+    [String.raw`class={["a\u00a0b", label]}`, "UF3008"],
   ])("reports %s", (attribute, code) => {
     expect(codes(attributes(`<p ${attribute}>x</p>`).diagnostics)).toContain(code);
   });

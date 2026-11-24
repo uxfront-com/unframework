@@ -29,7 +29,10 @@ export function expressionAt(
 ): Expression {
   let from = 0;
   const references = refs.map(([text, target]): Reference => {
-    const variable = new RegExp(`(?<![.\\w$])${text.replace(".", "\\.")}(?![\\w$]|\\s*:)`, "g");
+    const variable = new RegExp(
+      `(?<![.\\w$])${text.replace(".", String.raw`\.`)}(?![\\w$]|\\s*:)`,
+      "g",
+    );
     variable.lastIndex = from;
     const start = variable.exec(code)?.index;
     if (start === undefined) {
@@ -76,7 +79,10 @@ export function codeAt(offset: number, code: string, ...targets: Array<CodeTarge
   let from = 0;
   const at = (start: number, text: string) => span(offset + start, offset + start + text.length);
   const variable = (text: string): number => {
-    const pattern = new RegExp(`(?<![.\\w$])${text.replace(/\./g, "\\.")}(?![\\w$]|\\s*:)`, "g");
+    const pattern = new RegExp(
+      `(?<![.\\w$])${text.replace(/\./g, String.raw`\.`)}(?![\\w$]|\\s*:)`,
+      "g",
+    );
     pattern.lastIndex = from;
     const start = pattern.exec(code)?.index;
     if (start === undefined) {

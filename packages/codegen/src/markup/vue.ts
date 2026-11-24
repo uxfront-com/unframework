@@ -45,7 +45,10 @@ const VUE_WHITESPACE_ONLY = /^[\t\n\f\r ]+$/;
 
 /** A string literal in single quotes, escaped as the value of a double-quoted attribute binding. */
 function boundLiteral(value: string): string {
-  const body = stringLiteral(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'");
+  const body = stringLiteral(value)
+    .slice(1, -1)
+    .replace(/\\"/g, '"')
+    .replace(/'/g, String.raw`\'`);
   return escapeHtmlAttribute(`'${body}'`);
 }
 
@@ -80,7 +83,7 @@ function singleQuoted(raw: string): string {
       body += next === '"' ? '"' : `\\${next}`;
       index++;
     } else {
-      body += character === "'" ? "\\'" : character;
+      body += character === "'" ? String.raw`\'` : character;
     }
   }
   return `'${body}'`;

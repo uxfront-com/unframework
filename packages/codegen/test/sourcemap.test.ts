@@ -857,7 +857,7 @@ describe("anchorOutput and remapFormatted", () => {
     ["numbers' trailing zeros", "const r = [1.50, 2.50, 3.50, 4.50, 5.50, 6.50, 7.50, 8.50];"],
     [
       "escaped apostrophes",
-      "const l = ['it\\'s', 'don\\'t', 'can\\'t', 'won\\'t', 'isn\\'t', 'I\\'m'];",
+      String.raw`const l = ['it\'s', 'don\'t', 'can\'t', 'won\'t', 'isn\'t', 'I\'m'];`,
     ],
     [
       "an exponent's sign and a trailing dot",

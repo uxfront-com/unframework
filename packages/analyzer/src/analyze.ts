@@ -1519,7 +1519,7 @@ function reportJsxHelper(fn: AST.Function, reporter: Reporter): void {
 
 /** How many times an identifier is written in a source, as a whole word. */
 function occurrences(source: string, identifier: string): number {
-  const word = identifier.replaceAll("$", "\\$");
+  const word = identifier.replaceAll("$", String.raw`\$`);
   const pattern = new RegExp(`(?<![\\p{ID_Continue}$])${word}(?![\\p{ID_Continue}$])`, "gu");
   return source.match(pattern)?.length ?? 0;
 }

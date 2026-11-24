@@ -54,7 +54,7 @@ describe("textTemplate", () => {
   });
 
   it.each([
-    ["a backslash", "a \\ b"],
+    ["a backslash", String.raw`a \ b`],
     ["backticks", "`code`"],
     ["a template's `${`", "${x} and $ alone, $"],
     ["control characters", "line\nfeed\ttab\f"],

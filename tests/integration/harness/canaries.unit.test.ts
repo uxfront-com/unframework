@@ -1154,9 +1154,9 @@ describe("canaries", () => {
       // Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054).
       const spread =
         target === "react" || target === "qwik"
-          ? ", \\.\\.\\.style"
+          ? String.raw`, \.\.\.style`
           : target === "astro"
-            ? "(?:, \\.\\.\\.\\w+)?"
+            ? String.raw`(?:, \.\.\.\w+)?`
             : "";
       expect(contents, target).toMatch(
         target === "angular"

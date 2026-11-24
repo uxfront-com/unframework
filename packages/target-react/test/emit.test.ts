@@ -740,7 +740,9 @@ export default function Note() {
   defineOptions({ inheritAttrs: false });
   return <textarea name="note">{"  Hello,\\n  world  "}</textarea>;
 }`),
-    ).toContain('<textarea name="note" defaultValue={"  Hello,\\n  world  "} ref={ref} />');
+    ).toContain(
+      String.raw`<textarea name="note" defaultValue={"  Hello,\n  world  "} ref={ref} />`,
+    );
   });
 });
 
@@ -1045,7 +1047,7 @@ describe("react output, rendered by React", () => {
     ];
     const tree = el(
       "div",
-      { title: 'say "hi" & {wave}', "data-path": "a\\b<c>" },
+      { title: 'say "hi" & {wave}', "data-path": String.raw`a\b<c>` },
       el("p", {}, tricky[0]!),
       el("p", {}, tricky[1]!),
       el("p", {}, "before", el("b", {}, tricky[2]!), "after"),
@@ -1054,7 +1056,7 @@ describe("react output, rendered by React", () => {
     expect({ errors, reported }).toEqual({ errors: [], reported: [] });
     expect(html).toBe(
       [
-        '<div title="say &quot;hi&quot; &amp; {wave}" data-path="a\\b&lt;c&gt;">',
+        String.raw`<div title="say &quot;hi&quot; &amp; {wave}" data-path="a\b&lt;c&gt;">`,
         "<p>{braces} &lt;angles&gt; &amp; ampersands</p>",
         "<p>two  spaces, a no-break space and ‘quotes’</p>",
         "<p>before<b> leading and trailing </b>after</p>",
@@ -1117,7 +1119,7 @@ describe("react output, rendered by React", () => {
     const tree = el("form", {}, el("textarea", { id: "t" }, "  Hello,\n  world  "));
     const { files } = emit(tree);
     expect(files[0]!.contents).toContain(
-      '<textarea id="t" defaultValue={"  Hello,\\n  world  "} />',
+      String.raw`<textarea id="t" defaultValue={"  Hello,\n  world  "} />`,
     );
     expect(await renderOutput(tree)).toEqual({
       html: '<form><textarea id="t">  Hello,\n  world  </textarea></form>',

@@ -959,7 +959,9 @@ function localName(plan: SetupPlan, name: string, fn: FunctionCode): string {
 
 /** Whether a function's body reads one of its parameters, by the names it holds. */
 function uses(fn: FunctionCode, name: string): boolean {
-  return new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}(?![\\w$])`).test(fn.body.code);
+  return new RegExp(`(?<![\\w$.])${name.replace(/\$/g, String.raw`\$`)}(?![\\w$])`).test(
+    fn.body.code,
+  );
 }
 
 /**

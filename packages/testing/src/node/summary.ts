@@ -706,5 +706,5 @@ function short(cell: string | undefined): string {
 }
 
 function escapeCell(text: string): string {
-  return text.replaceAll("|", "\\|");
+  return text.replaceAll("|", String.raw`\|`);
 }

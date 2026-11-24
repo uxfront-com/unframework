@@ -107,5 +107,7 @@ function firstChange(a: ReadonlyArray<string>, b: ReadonlyArray<string>): Array<
 
 /** Makes trailing whitespace and carriage returns visible, since they are often the difference. */
 function visible(text: string): string {
-  return text.replace(/\r/g, "\\r").replace(/[ \t]+$/, (spaces) => spaces.replace(/ /g, "·"));
+  return text
+    .replace(/\r/g, String.raw`\r`)
+    .replace(/[ \t]+$/, (spaces) => spaces.replace(/ /g, "·"));
 }

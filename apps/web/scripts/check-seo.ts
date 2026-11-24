@@ -696,7 +696,7 @@ function safeDecode(value: string) {
 }
 
 function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 /** Prints the report: one line per target, its problems under it, then a summary. */

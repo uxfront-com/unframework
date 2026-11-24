@@ -239,17 +239,17 @@ describe("angularRespellsRegex", () => {
     '/"x"/',
     "/'/",
     "/a  b/",
-    "/a\\ b/",
+    String.raw`/a\ b/`,
     "/[(]/",
     "/x{{/",
     "/<b>/",
-    "/^\\//",
+    String.raw`/^\//`,
     "/a\tb/",
   ])("reads %s as respelled", (raw) => {
     expect(angularRespellsRegex(raw)).toBe(true);
   });
 
-  it.each(["/ab/", "/a b/g", "/(a)|[b]/", "/\\d{2}/", "/(?<x>a)/"])(
+  it.each(["/ab/", "/a b/g", "/(a)|[b]/", String.raw`/\d{2}/`, "/(?<x>a)/"])(
     "reads %s as written",
     (raw) => {
       expect(angularRespellsRegex(raw)).toBe(false);

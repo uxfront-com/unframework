@@ -236,16 +236,16 @@ export function quasiText(
 ): string {
   return escapeCharacters(cooked, (character) =>
     character === "`" ? "\\`" : escape(character),
-  ).replace(/\$(?=\{)/g, "\\$");
+  ).replace(/\$(?=\{)/g, String.raw`\$`);
 }
 
 const SIMPLE_ESCAPES: Readonly<Record<string, string>> = {
-  "\\": "\\\\",
-  "\n": "\\n",
-  "\r": "\\r",
-  "\t": "\\t",
-  "\v": "\\v",
-  "\f": "\\f",
+  "\\": String.raw`\\`,
+  "\n": String.raw`\n`,
+  "\r": String.raw`\r`,
+  "\t": String.raw`\t`,
+  "\v": String.raw`\v`,
+  "\f": String.raw`\f`,
 };
 
 function escapeCharacters(value: string, escape: (character: string) => string | undefined) {
@@ -277,7 +277,8 @@ function escapeCharacters(value: string, escape: (character: string) => string |
 }
 
 /** `}` as an escape, for a literal a template scanner must not end an interpolation in. */
-const escapeClosingBrace = (character: string) => (character === "}" ? "\\u007d" : undefined);
+const escapeClosingBrace = (character: string) =>
+  character === "}" ? String.raw`\u007d` : undefined;
 
 /**
  * Code with no `}}` in it, for an interpolation that a template scanner ends at the first one
@@ -300,7 +301,7 @@ export function separateClosingBraces(code: string): string {
       raw.includes("}}") || (before.endsWith("}") && raw.startsWith("}"))
         ? quasiText(cooked, escapeClosingBrace)
         : raw,
-    regex: (raw) => raw.replace(/(?<=\})\}/g, "\\}"),
+    regex: (raw) => raw.replace(/(?<=\})\}/g, String.raw`\}`),
     comment: (raw) => raw.replace(/\}(?=\})/g, "} "),
     other: (text) => text.replace(/\}(?=\})/g, "} "),
   });

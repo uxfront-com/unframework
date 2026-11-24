@@ -38,7 +38,7 @@ describe("serializeDom", () => {
     p.textContent = "a < b & c > d";
     root.append(p);
     expect(normalizeDom(root)).toBe(
-      lines('<p title="say \\"hi\\" & <bye>">', '  "a < b & c > d"', "</p>"),
+      lines(String.raw`<p title="say \"hi\" & <bye>">`, '  "a < b & c > d"', "</p>"),
     );
   });
 
@@ -60,10 +60,10 @@ describe("serializeDom", () => {
     expect(normalizeDom(root)).toBe(
       lines(
         "<pre>",
-        '  "\\nindented"',
+        String.raw`  "\nindented"`,
         "</pre>",
         // Its text is its value, which rule 4d keeps in `uf:value` alone.
-        '<textarea uf:value="\\nline"></textarea>',
+        String.raw`<textarea uf:value="\nline"></textarea>`,
       ),
     );
   });
@@ -74,7 +74,7 @@ describe("serializeDom", () => {
     pre.append(document.createTextNode(""), document.createTextNode("\nindented"));
     root.append(pre);
     expect(pre.innerText).toBe("\nindented");
-    expect(normalizeDom(root)).toBe(lines("<pre>", '  "\\nindented"', "</pre>"));
+    expect(normalizeDom(root)).toBe(lines("<pre>", String.raw`  "\nindented"`, "</pre>"));
     expect(normalizeDom(root)).not.toBe(normalizeDom(container("<pre>indented</pre>")));
   });
 

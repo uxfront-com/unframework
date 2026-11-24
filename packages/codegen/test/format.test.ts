@@ -124,7 +124,7 @@ describe("formatOutput on script blocks", () => {
   it("ends a block at its first `</script`, and keeps `<\\/script` in a string as written", async () => {
     const contents = [
       '<script setup lang="ts">',
-      "const {label='<\\/script>'}=defineProps<{label?: string}>()",
+      String.raw`const {label='<\/script>'}=defineProps<{label?: string}>()`,
       "</script>",
       "",
       "<template>",
@@ -133,7 +133,7 @@ describe("formatOutput on script blocks", () => {
     ].join("\n");
     const result = await formatted("A.vue", contents);
     expect(result).toContain(
-      'const { label = "<\\/script>" } = defineProps<{ label?: string }>();',
+      String.raw`const { label = "<\/script>" } = defineProps<{ label?: string }>();`,
     );
     expect(result.match(/<\/script/g)).toHaveLength(1);
   });

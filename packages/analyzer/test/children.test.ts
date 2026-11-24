@@ -44,7 +44,7 @@ describe("expression children", () => {
     ['{"a"}', '"a"'],
     ["{`a`}", '"a"'],
     ['{"  two  spaces "}', '"  two  spaces "'],
-    ['{"\\n"}', '"\\n"'],
+    [String.raw`{"\n"}`, String.raw`"\n"`],
     ["{label}", "{label}"],
     ['{on ? "yes" : "no"}', '{on ? "yes" : "no"}'],
     ['{maybe ?? "none"}', '{maybe ?? "none"}'],
@@ -71,14 +71,14 @@ describe("expression children", () => {
   });
 
   it("reads a string literal as JavaScript does: no entity decoding, real escapes", () => {
-    expect(lowered('{"a &amp; \\t b"}')).toBe(JSON.stringify("a &amp; \t b"));
+    expect(lowered(String.raw`{"a &amp; \t b"}`)).toBe(JSON.stringify("a &amp; \t b"));
   });
 
   it.each([
-    ['{"a\\rb"}', "\\r"],
-    ['{"a\\0b"}', "\\0"],
-    ['{"a\\u0007b"}', "\\u0007"],
-    ["{`a\\uDC00b`}", "\\uDC00"],
+    [String.raw`{"a\rb"}`, String.raw`\r`],
+    [String.raw`{"a\0b"}`, String.raw`\0`],
+    [String.raw`{"a\u0007b"}`, String.raw`\u0007`],
+    ["{`a\\uDC00b`}", String.raw`\uDC00`],
   ])("reports the character in %s HTML would not keep (UF3010), at its escape", (child, at) => {
     const { source, diagnostics } = component(`<p>${child}</p>`);
     expect(problems(source, diagnostics)).toEqual([`UF3010 ${at}`]);
@@ -240,35 +240,47 @@ describe("where text and expressions sit", () => {
   });
 
   it.each([
-    ['<pre>{"\\nx"}</pre>', '"\\nx"'],
-    ['<pre>{""}{"\\nx"}</pre>', '"\\nx"'],
-    ['<textarea>{"\\nx"}</textarea>', '"\\nx"'],
-    ['<pre>{on && "\\nx"}</pre>', '"\\nx"'],
+    [String.raw`<pre>{"\nx"}</pre>`, String.raw`"\nx"`],
+    [String.raw`<pre>{""}{"\nx"}</pre>`, String.raw`"\nx"`],
+    [String.raw`<textarea>{"\nx"}</textarea>`, String.raw`"\nx"`],
+    [String.raw`<pre>{on && "\nx"}</pre>`, String.raw`"\nx"`],
   ])("reports the leading line feed in %s (UF3017)", (jsx, at) => {
     const { source, diagnostics } = component(jsx, { props: PROPS });
     expect(problems(source, diagnostics)).toEqual([`UF3017 ${at}`]);
   });
 
   it("accepts a line feed after the start", () => {
-    expect(component('<pre>a{"\\nb"}</pre>').diagnostics).toEqual([]);
-    expect(component('<pre>{label}{"\\n"}{label}</pre>', { props: PROPS }).diagnostics).toEqual([]);
+    expect(component(String.raw`<pre>a{"\nb"}</pre>`).diagnostics).toEqual([]);
     expect(
-      component('<pre>{on ? <b>x</b> : <i>y</i>}{"\\nb"}</pre>', { props: PROPS }).diagnostics,
+      component(String.raw`<pre>{label}{"\n"}{label}</pre>`, { props: PROPS }).diagnostics,
+    ).toEqual([]);
+    expect(
+      component(String.raw`<pre>{on ? <b>x</b> : <i>y</i>}{"\nb"}</pre>`, { props: PROPS })
+        .diagnostics,
     ).toEqual([]);
   });
 
   // React's and Astro's servers write nothing for a conditional or a list that renders nothing,
   // so the parser drops the line feed after it; the other targets write a comment first.
   it.each([
-    ['<pre>{on && <b>x</b>}{"\\ny"}</pre>', '"\\ny"'],
-    ['<pre>{on ? null : <b>x</b>}{"\\ny"}</pre>', '"\\ny"'],
-    ['<pre>{items.map((item) => <b key={item}>{item}</b>)}{"\\ny"}</pre>', '"\\ny"'],
+    [String.raw`<pre>{on && <b>x</b>}{"\ny"}</pre>`, String.raw`"\ny"`],
+    [String.raw`<pre>{on ? null : <b>x</b>}{"\ny"}</pre>`, String.raw`"\ny"`],
     [
-      '<pre>{on && <b>x</b>}{items.map((item) => <b key={item}>{item}</b>)}{"\\ny"}</pre>',
-      '"\\ny"',
+      String.raw`<pre>{items.map((item) => <b key={item}>{item}</b>)}{"\ny"}</pre>`,
+      String.raw`"\ny"`,
     ],
-    ['<pre>{on ? items.map((item) => <b key={item}>{item}</b>) : <i />}{"\\ny"}</pre>', '"\\ny"'],
-    ['<pre>{on && <>{items.map((item) => <b key={item}>{item}</b>)}{"\\ny"}</>}</pre>', '"\\ny"'],
+    [
+      String.raw`<pre>{on && <b>x</b>}{items.map((item) => <b key={item}>{item}</b>)}{"\ny"}</pre>`,
+      String.raw`"\ny"`,
+    ],
+    [
+      String.raw`<pre>{on ? items.map((item) => <b key={item}>{item}</b>) : <i />}{"\ny"}</pre>`,
+      String.raw`"\ny"`,
+    ],
+    [
+      String.raw`<pre>{on && <>{items.map((item) => <b key={item}>{item}</b>)}{"\ny"}</>}</pre>`,
+      String.raw`"\ny"`,
+    ],
   ])("reports the line feed after what renders nothing in %s (UF3017)", (jsx, at) => {
     const { source, diagnostics } = component(jsx, { props: PROPS });
     expect(problems(source, diagnostics)).toEqual([`UF3017 ${at}`]);
@@ -279,10 +291,10 @@ describe("where text and expressions sit", () => {
 
   // What a fix lets lower can render nothing as it would once lowered: each fix keeps UF3017.
   it.each([
-    '<pre>{items.map((item) => <b>{item}</b>)}{"\\ny"}</pre>',
-    '<pre>{on && <b className="x">x</b>}{"\\ny"}</pre>',
-    '<pre>{on ? <bR /> : <i />}{"\\ny"}</pre>',
-    '<pre>{on ? <dIV /> : null}{"\\ny"}</pre>',
+    String.raw`<pre>{items.map((item) => <b>{item}</b>)}{"\ny"}</pre>`,
+    String.raw`<pre>{on && <b className="x">x</b>}{"\ny"}</pre>`,
+    String.raw`<pre>{on ? <bR /> : <i />}{"\ny"}</pre>`,
+    String.raw`<pre>{on ? <dIV /> : null}{"\ny"}</pre>`,
   ])("reads what renders nothing in %s as a fix leaves it", (jsx) => {
     const { source, diagnostics } = component(jsx, { props: PROPS });
     applyAndRecheck(source, diagnostics);

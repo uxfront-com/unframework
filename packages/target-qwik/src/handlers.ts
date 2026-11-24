@@ -221,7 +221,7 @@ function emptyCalls(
 
 /** Whether code reads a name, as a word that is not a member's property. */
 export function readsName(code: string, name: string): boolean {
-  return new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}(?![\\w$])`).test(code);
+  return new RegExp(`(?<![\\w$.])${name.replace(/\$/g, String.raw`\$`)}(?![\\w$])`).test(code);
 }
 
 /**

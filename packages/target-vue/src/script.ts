@@ -561,7 +561,7 @@ function withoutSingleQuotes(text: string): string {
     if (inside === "`") {
       if (char === "\\") {
         const next = text[++index] ?? "";
-        written += next === "'" ? "\\u0027" : `\\${next}`;
+        written += next === "'" ? String.raw`\u0027` : `\\${next}`;
       } else if (char === "`") {
         nested.pop();
         written += char;
@@ -570,13 +570,13 @@ function withoutSingleQuotes(text: string): string {
         written += "${";
         index++;
       } else {
-        written += char === "'" ? "\\u0027" : char;
+        written += char === "'" ? String.raw`\u0027` : char;
       }
     } else if (text.startsWith("//", index) || text.startsWith("/*", index)) {
       const close = text.startsWith("//", index) ? "\n" : "*/";
       const end = text.indexOf(close, index + 2);
       const stop = end === -1 ? text.length : end + close.length;
-      written += text.slice(index, stop).replaceAll("'", "\\u0027");
+      written += text.slice(index, stop).replaceAll("'", String.raw`\u0027`);
       index = stop - 1;
     } else if (char === "'" || char === '"') {
       // A string literal, to its closing quote, double-quoted.
@@ -585,9 +585,9 @@ function withoutSingleQuotes(text: string): string {
         const each = text[index]!;
         if (each === "\\") {
           const next = text[++index] ?? "";
-          written += next === "'" ? "\\u0027" : `\\${next}`;
+          written += next === "'" ? String.raw`\u0027` : `\\${next}`;
         } else {
-          written += each === "'" ? "\\u0027" : each === '"' ? '\\"' : each;
+          written += each === "'" ? String.raw`\u0027` : each === '"' ? String.raw`\"` : each;
         }
       }
       written += '"';
@@ -1058,5 +1058,5 @@ function objectDeclaration(
  * could hold it; the target escapes it anyway, as a guard.
  */
 function escapeScriptEnd(code: string): string {
-  return code.replace(/<\/(script)/gi, "<\\/$1");
+  return code.replace(/<\/(script)/gi, String.raw`<\/$1`);
 }

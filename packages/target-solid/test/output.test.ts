@@ -90,7 +90,7 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       'padding: "4px"',
       "props.extra?.id",
       'class={cx("card-link", props.link.class)}',
-      '{["\\n"]}',
+      String.raw`{["\n"]}`,
       "<>",
       "stroke-width={props.count}",
       // A list's item reads through its accessor, a call: `solid/prefer-show` leaves it alone.

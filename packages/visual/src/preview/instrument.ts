@@ -313,7 +313,9 @@ function typeOf(control: PropControl): string {
   }
   return control.options
     .map((option) =>
-      JSON.stringify(option).replaceAll("\u2028", "\\u2028").replaceAll("\u2029", "\\u2029"),
+      JSON.stringify(option)
+        .replaceAll("\u2028", String.raw`\u2028`)
+        .replaceAll("\u2029", String.raw`\u2029`),
     )
     .join(" | ");
 }

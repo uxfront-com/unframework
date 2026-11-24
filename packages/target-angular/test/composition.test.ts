@@ -71,7 +71,7 @@ describe("a select's v-model", () => {
       `[selected]="this.choice() === optionText('' + ' ' + ((item.label) ?? '') + ' ')"`,
     );
     expect(output).toContain(
-      'return text.replace(/^[\\t\\n\\f\\r ]+|[\\t\\n\\f\\r ]+$/g, "").replace(/[\\t\\n\\f\\r ]+/g, " ");',
+      String.raw`return text.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "").replace(/[\t\n\f\r ]+/g, " ");`,
     );
   });
 

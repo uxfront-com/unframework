@@ -56,7 +56,10 @@ export function numberLiteral(value: number): AST.NumericLiteral | AST.UnaryExpr
 
 /** A template literal without expressions. Escapes backticks, `${` and backslashes. */
 export function templateLiteral(text: string): AST.TemplateLiteral {
-  const raw = text.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+  const raw = text
+    .replace(/\\/g, String.raw`\\`)
+    .replace(/`/g, "\\`")
+    .replace(/\$\{/g, "\\${");
   return {
     type: "TemplateLiteral",
     quasis: [{ type: "TemplateElement", value: { raw, cooked: text }, tail: true, ...at }],

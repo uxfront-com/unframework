@@ -320,7 +320,7 @@ function joined(parts: ReadonlyArray<Expression | string>): Expression {
     refs.push(...part.refs.map((reference) => shifted(reference, by)));
   }
   // The DOM strips and collapses an option's text into its value.
-  code += ').replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+  code += String.raw`).replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "")`;
   return { code, span: { start, end: start + code.length }, refs };
 }
 

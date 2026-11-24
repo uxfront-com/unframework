@@ -42,7 +42,7 @@ async function render(suite: ParitySuite, { format, preserveWhitespace }: Setup)
 
 /** The same values with every carriage return (and CRLF) turned into a line feed. */
 function withLineFeeds(value: unknown): unknown {
-  return JSON.parse(JSON.stringify(value).replace(/\\r(?:\\n)?/g, "\\n"));
+  return JSON.parse(JSON.stringify(value).replace(/\\r(?:\\n)?/g, String.raw`\n`));
 }
 
 describe.each<Setup>([

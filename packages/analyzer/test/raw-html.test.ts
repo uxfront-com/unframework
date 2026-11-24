@@ -81,7 +81,7 @@ describe("raw HTML", () => {
 
   it.each([
     ['<div innerHTML="a &amp; b" />', 'UF1002 "a &amp; b"'],
-    ['<div innerHTML="a\\nb" />', 'UF1002 "a\\nb"'],
+    [String.raw`<div innerHTML="a\nb" />`, String.raw`UF1002 "a\nb"`],
     ["<div innerHTML />", "UF1002 innerHTML"],
     ["<div innerHTML={} />", "UF1001 {}"],
     ["<div innerHTML=<b /> />", "UF3012 <b />"],

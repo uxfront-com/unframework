@@ -10,7 +10,7 @@ import type { TargetName } from "@unframework.dev/compiler";
 /** The extension of an authored component file. */
 export const SOURCE_EXTENSION = ".uf.tsx";
 
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 
 /**
  * What `resolveId` looks at, with any query: the module ids of `suffix` coming back, and every

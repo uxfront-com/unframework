@@ -100,7 +100,7 @@ describe("escaping", () => {
     // Angular decodes `&#123;&#123;` before it looks for interpolations, so a run of `{` is an
     // interpolated string literal.
     expect(printMarkup(tricky, angularDialect, flat)).toBe(
-      '<p title="say &quot;hi&quot; &amp; &#123;x&#125;">a &lt; b &amp; {{ "\\u007b\\u007b" }} c &#125;&#125; &#123;d&#125; &#64;if ok&nbsp;x</p>',
+      String.raw`<p title="say &quot;hi&quot; &amp; &#123;x&#125;">a &lt; b &amp; {{ "\u007b\u007b" }} c &#125;&#125; &#123;d&#125; &#64;if ok&nbsp;x</p>`,
     );
   });
 
@@ -114,7 +114,7 @@ describe("escaping", () => {
       ],
     );
     expect(printMarkup(option, svelteDialect)).toBe(
-      '<option title={"a\\u003cb \\u0026 \\"c\\""} value="v">x</option>',
+      String.raw`<option title={"a\u003cb \u0026 \"c\""} value="v">x</option>`,
     );
     expect(printMarkup(el("p", [], [["title", "a<b"]]), svelteDialect)).toBe('<p title="a<b"></p>');
   });
@@ -415,7 +415,12 @@ describe("whitespace and delimiters that template compilers rewrite", () => {
   it("writes U+E500 in text as an escape in an interpolated literal on Angular", () => {
     const tree = el("div", [p(text("x\ue500y")), el("pre", [text("a\ue500 b")])]);
     expect(printMarkup(tree, angularDialect)).toBe(
-      lines("<div>", '  <p>{{ "x\\ue500y" }}</p>', '  <pre>{{ "a\\ue500 b" }}</pre>', "</div>"),
+      lines(
+        "<div>",
+        String.raw`  <p>{{ "x\ue500y" }}</p>`,
+        String.raw`  <pre>{{ "a\ue500 b" }}</pre>`,
+        "</div>",
+      ),
     );
     expect(printMarkup(tree, vueDialect)).toBe(
       lines("<div>", "  <p>x\ue500y</p>", "  <pre>a\ue500 b</pre>", "</div>"),
@@ -423,7 +428,7 @@ describe("whitespace and delimiters that template compilers rewrite", () => {
   });
 
   it("keeps Vue's condensed whitespace and edge whitespace in interpolated literals", () => {
-    expect(printMarkup(runs, vueDialect)).toBe('<p>{{ "a  b\\tc\\nd" }}</p>');
+    expect(printMarkup(runs, vueDialect)).toBe(String.raw`<p>{{ "a  b\tc\nd" }}</p>`);
     expect(printMarkup(p(text("one space")), vueDialect)).toBe("<p>one space</p>");
     // Vue drops whitespace-only text with no sibling on one side.
     expect(printMarkup(p(el("span", [text(" "), el("b")]), el("i", [text(" ")])), vueDialect)).toBe(
@@ -434,7 +439,7 @@ describe("whitespace and delimiters that template compilers rewrite", () => {
   it("escapes what Vue reads inside an interpolation before the expression parser does", () => {
     // Vue decodes entities in `{{ }}`, ends one at the first `}}`, and tools see markup in `<`.
     expect(printMarkup(p(text("a  &amp; </p> {{ x }}")), vueDialect)).toBe(
-      '<p>{{ "a  \\u0026amp; \\u003c/p\\u003e \\u007b\\u007b x \\u007d\\u007d" }}</p>',
+      String.raw`<p>{{ "a  \u0026amp; \u003c/p\u003e \u007b\u007b x \u007d\u007d" }}</p>`,
     );
   });
 
@@ -453,16 +458,16 @@ describe("whitespace and delimiters that template compilers rewrite", () => {
     expect(printMarkup(p(el("b", [text("a")]), text(" b "), el("i")), svelteDialect)).toBe(
       "<p>\n  <b>a</b> b <i></i>\n</p>",
     );
-    expect(printMarkup(runs, svelteDialect)).toBe('<p>{"a  b\\tc\\nd"}</p>');
+    expect(printMarkup(runs, svelteDialect)).toBe(String.raw`<p>{"a  b\tc\nd"}</p>`);
   });
 
   it("escapes every space Angular's whitespace removal would condense or drop", () => {
     expect(
       printMarkup(p(el("b", [text("a")]), text(" "), el("i", [text("b")])), angularDialect),
     ).toBe("<p>\n  <b>a</b>&ngsp;<i>b</i>\n</p>");
-    expect(printMarkup(runs, angularDialect)).toBe('<p>{{ "a\\u0020\\u0020b\\tc\\nd" }}</p>');
+    expect(printMarkup(runs, angularDialect)).toBe(String.raw`<p>{{ "a\u0020\u0020b\tc\nd" }}</p>`);
     expect(printMarkup(p(text("a  \u2009\u3000b")), angularDialect)).toBe(
-      '<p>{{ "a\\u0020\\u0020\\u2009\\u3000b" }}</p>',
+      String.raw`<p>{{ "a\u0020\u0020\u2009\u3000b" }}</p>`,
     );
     expect(printMarkup(p(el("b"), text("\u2009"), el("i")), angularDialect)).toBe(
       '<p>\n  <b></b>{{ "\\u2009" }}<i></i>\n</p>',
@@ -496,7 +501,7 @@ describe("whitespace and delimiters that template compilers rewrite", () => {
   });
 
   it("keeps line breaks and tabs through Astro's JSX whitespace rules", () => {
-    expect(printMarkup(runs, astroDialect)).toBe('<p>{"a  b\\tc\\nd"}</p>');
+    expect(printMarkup(runs, astroDialect)).toBe(String.raw`<p>{"a  b\tc\nd"}</p>`);
     expect(printMarkup(p(text("a  b")), astroDialect)).toBe("<p>a  b</p>");
   });
 
@@ -875,7 +880,7 @@ describe("bindings", () => {
 
   // The analyser rejects them (UF3022): Angular's style parser and its server DOM misread them.
   it.each([
-    ["content", '"a\\";b"'],
+    ["content", String.raw`"a\";b"`],
     ["content", '"("'],
     ["--Gap", "1px"],
   ])("refuses a declaration Angular's style parser misreads: %s", (property, value) => {
@@ -930,7 +935,7 @@ describe("bindings", () => {
       lines(
         "<div>",
         "  <p",
-        '    style:font-family={"\\"Segoe UI\\", serif"}',
+        String.raw`    style:font-family={"\"Segoe UI\", serif"}`,
         `    style:content={"'a  b'"}`,
         '    style:margin="0 auto"',
         '    style:--x="&#123;y&#125;"',
@@ -938,10 +943,10 @@ describe("bindings", () => {
         "  >directives</p",
         "  ><p",
         '    {...{ autocorrect: "off" }}',
-        '    title={"a \\u0026 \\"b\\" \\u003cc\\u003e"}',
-        '    class={"q\\u0026r"}',
+        String.raw`    title={"a \u0026 \"b\" \u003cc\u003e"}`,
+        String.raw`    class={"q\u0026r"}`,
         '    data-x="&#123;y&#125;"',
-        '    style={"content: \\"\\u0026\\""}',
+        String.raw`    style={"content: \"\u0026\""}`,
         "  >spread</p",
         `  ><p title="a &amp; &quot;b&quot; <c>" class="q&amp;r" style={"content: 'a  b'"}>plain</p`,
         '  ><p title="a &amp; &quot;b&quot; <c>" style="content: &quot;&amp;&quot;">plain</p>',
@@ -986,7 +991,7 @@ describe("bindings", () => {
         "    ><li {...{ value: c0N - 1 }}>b</li",
         "    ><li {...{ value: c0None }}>c</li>",
         "  </ol",
-        '  ><meter {...{ value: c0N || c0S.length }} title={"a \\u0026 \\"b\\""}>m</meter',
+        String.raw`  ><meter {...{ value: c0N || c0S.length }} title={"a \u0026 \"b\""}>m</meter`,
         '  ><data {...{ value: `${c0S}!` }}>d</data><button type="button" {...{ value: c0S }}>b</button',
         '  ><input type="hidden" {...{ value: c0S }} /><progress value={c0N}>p</progress',
         "  ><select>",
@@ -1082,14 +1087,14 @@ describe("expressions", () => {
       // `{/` closes a Svelte block.
       svelte: lines(
         "<p",
-        '  title={c0S + "&amp;\\"" + \'q\'}',
+        String.raw`  title={c0S + "&amp;\"" + 'q'}`,
         '>{"}}" + c0S /* c */}{`${c0S}-${1_000}`}{(/a}}b/.test(c0S))}{0x10}</p>',
       ),
       // Angular's lexer: literals from their values, no comments, no template literals.
       angular: lines(
         "<p",
         `  [attr.title]="c0S() + '\\u0026amp;&quot;' + 'q'"`,
-        '>{{ "\\u007d\\u007d" + c0S() }}{{ c0S() + "-" + 1_000 }}{{ /a}\\}b/.test(c0S()) }}{{ 16 }}</p>',
+        String.raw`>{{ "\u007d\u007d" + c0S() }}{{ c0S() + "-" + 1_000 }}{{ /a}\}b/.test(c0S()) }}{{ 16 }}</p>`,
       ),
       astro:
         '<p title={c0S + "&amp;\\"" + \'q\'}>{"}}" + c0S /* c */}{`${c0S}-${1_000}`}{/a}}b/.test(c0S)}{0x10}</p>',
@@ -1102,7 +1107,7 @@ describe("expressions", () => {
     ).toEqual({
       vue: "<p>a&#123;{{ c0S }}}</p>",
       svelte: "<p>a&#123;{c0S}&#125;</p>",
-      angular: '<p>a{{ "\\u007b" }}{{ c0S() }}&#125;</p>',
+      angular: String.raw`<p>a{{ "\u007b" }}{{ c0S() }}&#125;</p>`,
       astro: "<p>a&#123;{c0S}&#125;</p>",
     });
   });
@@ -1567,7 +1572,7 @@ describe("scope attributes (ADR-0063)", () => {
     // Svelte's server escapes the static values of an element with a spread twice: an
     // expression keeps them as written.
     expect(root(false)).toBe('<p title="a &quot;b&quot;"></p>');
-    expect(root(true)).toBe('<p title={"a \\"b\\""} {...rest}></p>');
+    expect(root(true)).toBe(String.raw`<p title={"a \"b\""} {...rest}></p>`);
   });
 
   it("takes the candidates a target names for a component element, and a fill's `-s`", () => {

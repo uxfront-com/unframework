@@ -74,13 +74,13 @@ describe("jsx", () => {
     expect(print("a & b < c > d")).toBe("<p>a &amp; b &lt; c &gt; d</p>");
     expect(print("{braces}")).toBe('<p>{"{braces}"}</p>');
     expect(print("two  spaces")).toBe('<p>{"two  spaces"}</p>');
-    expect(print("line\nbreak")).toBe('<p>{"line\\nbreak"}</p>');
+    expect(print("line\nbreak")).toBe(String.raw`<p>{"line\nbreak"}</p>`);
     expect(print(" ")).toBe('<p>{" "}</p>');
     // Any whitespace but the plain space: transforms rewrite it raw, and the Qwik optimizer
     // trims even a reference that a formatter moved to a line's edge.
     expect(print("a\tb")).toBe('<p>{"a\tb"}</p>');
-    expect(print("d\u00a0e")).toBe('<p>{"d\\xA0e"}</p>');
-    expect(print("a\u2028b")).toBe('<p>{"a\\u2028b"}</p>');
+    expect(print("d\u00a0e")).toBe(String.raw`<p>{"d\xA0e"}</p>`);
+    expect(print("a\u2028b")).toBe(String.raw`<p>{"a\u2028b"}</p>`);
     expect(jsxText("plain").type).toBe("JSXText");
     expect(jsxText("10\u2009km").type).toBe("JSXExpressionContainer");
     // Not JavaScript whitespace, but TypeScript's and oxc's (U+200B) and SWC's (U+0085).
@@ -131,16 +131,16 @@ describe("jsx", () => {
       attributeName: (name) => (name === "for" ? "htmlFor" : name),
       presentAttributeValue: (name) => (name === "hidden" ? true : ""),
     });
-    expect(code).toBe('<label htmlFor="x" data-on="" hidden title={"say \\"hi\\""} />');
+    expect(code).toBe(String.raw`<label htmlFor="x" data-on="" hidden title={"say \"hi\""} />`);
   });
 
   it("quotes attribute values only when quoting keeps them exactly", () => {
     const print = (value: string) =>
       printElement(createElement("p", [createStaticAttribute("title", value, at)], [], at));
-    expect(print("a  b <c> \\d")).toBe('<p title="a  b <c> \\d" />');
+    expect(print(String.raw`a  b <c> \d`)).toBe(String.raw`<p title="a  b <c> \d" />`);
     expect(print("a & b")).toBe('<p title={"a & b"} />');
     expect(print("a\tb")).toBe('<p title={"a\tb"} />');
-    expect(print("a\nb")).toBe('<p title={"a\\nb"} />');
+    expect(print("a\nb")).toBe(String.raw`<p title={"a\nb"} />`);
   });
 });
 

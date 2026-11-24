@@ -66,8 +66,8 @@ describe("fixes that meet", () => {
     ["<p>{(count + 0x10)?.toFixed()}</p>", "<p>{(count + 16).toFixed()}</p>"],
     // Literal spellings in one expression.
     [
-      '<p>{"\\u{1F600}" + 0b1 + items.reverse()}</p>',
-      '<p>{"\\uD83D\\uDE00" + 1 + items.toReversed()}</p>',
+      String.raw`<p>{"\u{1F600}" + 0b1 + items.reverse()}</p>`,
+      String.raw`<p>{"\uD83D\uDE00" + 1 + items.toReversed()}</p>`,
     ],
     // A block-bodied arrow around expressions with fixes of their own.
     [
@@ -164,12 +164,12 @@ const CHILDREN = [
   "text",
   " ",
   '{" "}',
-  '{"\\n"}',
+  String.raw`{"\n"}`,
   "{label}",
   "{label ?? count}",
   "{items.sort().join()}",
   "{0x1F + count}",
-  '{"\\u{41}" + label}',
+  String.raw`{"\u{41}" + label}`,
   "{on && <b>x</b>}",
   "{on && null}",
   "{maybe || <b>y</b>}",

@@ -691,7 +691,7 @@ export default function Pick({ sizes, label }: { sizes: number[]; label: string 
   );
 }`,
     );
-    const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+    const read = String.raw`.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "")`;
     expect(contents).toContain(`currentSize === \`\${n ?? ""}\`${read}`);
     expect(contents).toContain(`currentSize === \` \${label ?? ""}! \`${read}`);
   });
@@ -1258,7 +1258,7 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
 
   it("renders a nullish expression as no text, and keeps a non-ASCII space", async () => {
     const contents = await emitSource(pick);
-    const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+    const read = String.raw`.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "")`;
     expect(contents).toContain(`currentPicked === \`\${hint ?? ""}\`${read}`);
     // The DOM strips ASCII whitespace only.
     expect(contents).toContain('currentPicked === "\u00a0sp\u00a0"');

@@ -469,7 +469,7 @@ describe("UF6007 directive-value-type", () => {
 
   it("leaves out a static value the analyser rejects, which reads otherwise in JavaScript", () => {
     const text = source(
-      '<div><p v-mark="a\\" title="b">a</p><p v-mark="a &amp; b">c</p><p v-mark="ok">d</p></div>',
+      String.raw`<div><p v-mark="a\" title="b">a</p><p v-mark="a &amp; b">c</p><p v-mark="ok">d</p></div>`,
     );
     expect(queried(text)).toEqual([['"ok"', "string", "vMark"]]);
   });

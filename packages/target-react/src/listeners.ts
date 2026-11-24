@@ -437,7 +437,7 @@ export class ReactListeners {
     }
     const async = awaits ? "async " : "";
     // A handler whose code never reads its event takes none (an unused parameter fails L5).
-    const reads = new RegExp(`(?<![\\w$.])${event.replace(/\$/g, "\\$")}(?![\\w$])`).test(
+    const reads = new RegExp(`(?<![\\w$.])${event.replace(/\$/g, String.raw`\$`)}(?![\\w$])`).test(
       lines.join("\n"),
     );
     // The consumer's listener takes the event React gives its prop, which may be narrower than
@@ -782,7 +782,7 @@ function declaresRead(statements: string, later: ReadonlyArray<string>): boolean
   }
   return declared.some((name) =>
     later.some((code) =>
-      new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}(?![\\w$])`).test(code),
+      new RegExp(`(?<![\\w$.])${name.replace(/\$/g, String.raw`\$`)}(?![\\w$])`).test(code),
     ),
   );
 }

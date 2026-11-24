@@ -166,9 +166,9 @@ describe("what the targets render differently, in M1", () => {
       "<svg><g>{label}</g></svg>",
       el("svg", {}, el("g", {}, createInterpolation(expression("label"), at))),
     ],
-    ['<pre>{"\\na"}</pre>', el("pre", {}, "\na")],
+    [String.raw`<pre>{"\na"}</pre>`, el("pre", {}, "\na")],
     [
-      '<pre>{on && "\\na"}</pre>',
+      String.raw`<pre>{on && "\na"}</pre>`,
       el("pre", {}, createIf([createBranch(expression("on"), [createText("\na", at)], at)], at)),
     ],
     ["<svg><g> <circle /></g></svg>", el("svg", {}, el("g", {}, " ", el("circle")))],

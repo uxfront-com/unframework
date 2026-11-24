@@ -648,7 +648,7 @@ describe("spawnNgServe", () => {
     writeFileSync(script, `const { spawn } = require("node:child_process");\n${body}`);
     return script;
   };
-  const LISTEN = 'console.log("  \\u279c  Local:   http://127.0.0.1:4321/");';
+  const LISTEN = String.raw`console.log("  \u279c  Local:   http://127.0.0.1:4321/");`;
   const STAY = "setInterval(() => {}, 1000);";
 
   it("counts a zombie as dead, in the helper these tests lean on", async () => {

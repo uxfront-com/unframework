@@ -1176,7 +1176,9 @@ function sparing(plugin: CompilerPlugin, cases: ReadonlyArray<string>): Compiler
   }
   const spared = (module: UfModule) =>
     cases.some((id) =>
-      new RegExp(`(?:^|/)${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/[^/]+$`).test(module.file),
+      new RegExp(`(?:^|/)${id.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}/[^/]+$`).test(
+        module.file,
+      ),
     );
   return {
     name: plugin.name,
@@ -2330,5 +2332,5 @@ function insertAfter(contents: string, pattern: RegExp, text: string): string | 
 }
 
 function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }

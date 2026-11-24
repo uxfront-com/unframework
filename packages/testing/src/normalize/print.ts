@@ -12,13 +12,13 @@ const VOID_ELEMENTS: ReadonlySet<string> = new Set(
 );
 
 const NAMED_ESCAPES: Readonly<Record<string, string>> = {
-  '"': '\\"',
-  "\\": "\\\\",
-  "\b": "\\b",
-  "\f": "\\f",
-  "\n": "\\n",
-  "\r": "\\r",
-  "\t": "\\t",
+  '"': String.raw`\"`,
+  "\\": String.raw`\\`,
+  "\b": String.raw`\b`,
+  "\f": String.raw`\f`,
+  "\n": String.raw`\n`,
+  "\r": String.raw`\r`,
+  "\t": String.raw`\t`,
 };
 
 /**

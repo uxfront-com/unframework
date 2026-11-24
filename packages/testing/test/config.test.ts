@@ -337,7 +337,7 @@ describe("TESTING_PACKAGE", () => {
     for (const path of [
       "/p/node_modules/@unframework.dev/testing/dist/ssr/index.js",
       "/p/node_modules/.pnpm/@unframework.dev+testing@0.1.0/node_modules/@unframework.dev/testing/dist/ssr/index.js",
-      "C:\\p\\node_modules\\@unframework.dev\\testing\\dist\\ssr\\index.js",
+      String.raw`C:\p\node_modules\@unframework.dev\testing\dist\ssr\index.js`,
     ]) {
       expect(path).toMatch(TESTING_PACKAGE);
     }
@@ -356,7 +356,7 @@ describe("TARGET_PACKAGES", () => {
     for (const path of [
       "/p/node_modules/@unframework.dev/target-angular/dist/toolchain/server.js",
       "/p/node_modules/.pnpm/@unframework.dev+target-qwik@0.1.0/node_modules/@unframework.dev/target-qwik/dist/toolchain/server.js",
-      "C:\\p\\node_modules\\@unframework.dev\\target-svelte\\dist\\toolchain\\server.js",
+      String.raw`C:\p\node_modules\@unframework.dev\target-svelte\dist\toolchain\server.js`,
     ]) {
       expect(path).toMatch(TARGET_PACKAGES);
     }

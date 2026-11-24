@@ -377,7 +377,16 @@ describe("expressions Angular reads", () => {
     const leaf = () =>
       pick([
         () => pick(["label", "count", "on", "items.length", "user.name", ...locals]),
-        () => pick(['"a b"', "'c'", '"\\n\\t"', '"\\x41"', '"\\u0041"', '""', "`t`"]),
+        () =>
+          pick([
+            '"a b"',
+            "'c'",
+            String.raw`"\n\t"`,
+            String.raw`"\x41"`,
+            String.raw`"\u0041"`,
+            '""',
+            "`t`",
+          ]),
         () => pick(["0", "1.5", "1e3", ".5", "1_000", "(-2)"]),
         () => pick(["true", "false", "null", "undefined", "NaN", "Infinity"]),
         // Not `maybe?.length`, which would narrow `maybe` as a test, where `?.` and `??` on it
@@ -435,7 +444,7 @@ describe("expressions Angular reads", () => {
     "items.map((x) => { return x; }).join()",
     "items.map(({ length }) => length).join()",
     "0x1F",
-    '"\\u{1F600}"',
+    String.raw`"\u{1F600}"`,
     "[1, , 2].length",
     'JSON.stringify({ ["k"]: 1 })',
     "count | 1",

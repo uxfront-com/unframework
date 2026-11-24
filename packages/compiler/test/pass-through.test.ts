@@ -17,11 +17,11 @@ const source = [
 ].join("\n");
 
 describe("the passThrough option", () => {
-  it.each(["", ".", "./x", "../x", "/x", "\\x", "C:x", "c:\\x"])(
+  it.each(["", ".", "./x", "../x", "/x", String.raw`\x`, "C:x", String.raw`c:\x`])(
     "rejects the prefix %j loudly",
     async (prefix) => {
       expect(() => checkPassThrough([prefix])).toThrow(
-        `The passThrough prefix "${prefix.replaceAll("\\", "\\\\")}" is invalid`,
+        `The passThrough prefix "${prefix.replaceAll("\\", String.raw`\\`)}" is invalid`,
       );
       await expect(
         compile(source, { filename: "B.uf.tsx", targets: ["vue"], passThrough: [prefix] }),

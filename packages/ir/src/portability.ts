@@ -358,7 +358,7 @@ export function angularRespellsRegex(raw: string): boolean {
       /[A-Za-z!/?]/.test(body[index + 1] ?? "") &&
       !(
         !inClass &&
-        (body.slice(index - 2, index) === "(?" || body.slice(index - 2, index) === "\\k")
+        (body.slice(index - 2, index) === "(?" || body.slice(index - 2, index) === String.raw`\k`)
       )
     ) {
       return true;

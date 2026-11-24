@@ -146,7 +146,7 @@ describe("scopeStylesheet", () => {
     ["an @import into a layer", '@import "x.css" layer; .a { color: red }'],
     ["comments", "/* a */ .a /* b */ { color: red /* c */ }"],
     [":nth-child() of a selector", ".a :nth-child(2n + 1 of .b) { color: red }"],
-    ["an escaped class", ".sm\\:p-2 { padding: 2px }"],
+    ["an escaped class", String.raw`.sm\:p-2 { padding: 2px }`],
     ["an attribute holding a bracket", '[data-x="]"] { color: red }'],
     ["a /* in an unquoted url()", ".a { background: url(/*.png) } .b { color: red }"],
     ["a { in an unquoted url()", ".a { background: url(x{y.png) } .b { color: red }"],
@@ -166,10 +166,10 @@ describe("scopeStylesheet", () => {
       "animation-name with !important unspaced",
       "@keyframes spin { to { opacity: 1 } } .a { animation-name: spin!important }",
     ],
-    ["an escaped quote in an attribute value", '[data-x=\\"a\\"] { color: red }'],
-    ["an escaped space in an attribute value", "[data-x=a\\ b] { color: red }"],
-    ["a hex escape in an attribute value", "[data-x=\\31 0] { color: red }"],
-    ["a hex escape in an attribute name", "[\\64 ata-x] { color: red }"],
+    ["an escaped quote in an attribute value", String.raw`[data-x=\"a\"] { color: red }`],
+    ["an escaped space in an attribute value", String.raw`[data-x=a\ b] { color: red }`],
+    ["a hex escape in an attribute value", String.raw`[data-x=\31 0] { color: red }`],
+    ["a hex escape in an attribute name", String.raw`[\64 ata-x] { color: red }`],
     ["a comment in an attribute selector", '[data-x/*c*/=a], [data-x="a"/*c*/] { color: red }'],
     [
       "an animation moved with nested rules",
@@ -198,9 +198,9 @@ describe("scopeStylesheet", () => {
       "a keyframe name after other values in animation",
       "@keyframes spin { to { opacity: 1 } } .a { animation: 1s linear spin }",
     ],
-    ["a hex escape before a space in an attribute flag", "[a=b \\69] { color: red }"],
+    ["a hex escape before a space in an attribute flag", String.raw`[a=b \69] { color: red }`],
     ["a namespaced attribute with a comment", "[*/**/|a] { color: red }"],
-    ["an escaped attribute namespace", "[\\6a|b] { color: red }"],
+    ["an escaped attribute namespace", String.raw`[\6a|b] { color: red }`],
     [
       "animation-name with !important and a comment",
       "@keyframes spin { to { opacity: 1 } } .a { animation-name: spin !important /* c */ }",
@@ -395,14 +395,16 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
   });
 
   it("reads an attribute of many escapes in linear time", () => {
-    const source = `[data-x=${"\\00006a".repeat(16)}z \\69] { color: red }`;
+    const source = `[data-x=${String.raw`\00006a`.repeat(16)}z \\69] { color: red }`;
     const started = performance.now();
     expect(scopeStylesheet("Card.css", source, ID).diagnostics).toEqual([]);
     expect(performance.now() - started).toBeLessThan(1000);
   });
 
   it("never throws on an escape past the last code point", () => {
-    expect(() => scopeStylesheet("Card.css", "[\\110000x] { color: red }", ID)).not.toThrow();
+    expect(() =>
+      scopeStylesheet("Card.css", String.raw`[\110000x] { color: red }`, ID),
+    ).not.toThrow();
   });
 
   it("reads a line continuation in an attribute value as nothing", () => {
@@ -455,11 +457,11 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
   });
 
   it("reads escaped attribute names before it checks them", () => {
-    expect(rejected("[\\63 lass] { color: red }")).toEqual(["[\\63 lass]"]);
+    expect(rejected(String.raw`[\63 lass] { color: red }`)).toEqual([String.raw`[\63 lass]`]);
   });
 
   it("reads an escaped attribute name before it checks it", () => {
-    expect(rejected('[cl\\61ss=""] { color: red }')).toEqual(['[cl\\61ss=""]']);
+    expect(rejected(String.raw`[cl\61ss=""] { color: red }`)).toEqual([String.raw`[cl\61ss=""]`]);
   });
 
   it("points at the rejected selector of a list, in a nested rule", () => {
@@ -468,7 +470,7 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
   });
 
   it("reads past comments, strings and escapes to find the selector", () => {
-    const source = '.a /* :deep( */, [data-x=":global("] .b\\:c, /* x */ :host { color: red }';
+    const source = String.raw`.a /* :deep( */, [data-x=":global("] .b\:c, /* x */ :host { color: red }`;
     expect(rejected(source)).toEqual([":host"]);
   });
 

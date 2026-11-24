@@ -549,5 +549,5 @@ function isNode(value: unknown): value is Node {
 }
 
 function escape(text: string): string {
-  return text.replace(/[$]/g, "\\$");
+  return text.replace(/[$]/g, String.raw`\$`);
 }

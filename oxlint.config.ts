@@ -77,7 +77,6 @@ export default defineConfig({
     "unicorn/no-magic-array-flat-depth": "off",
     "unicorn/prefer-array-flat-map": "off",
     "unicorn/prefer-native-coercion-functions": "off",
-    "unicorn/prefer-string-raw": "off",
     "unicorn/prefer-string-replace-all": "off",
     "unicorn/prefer-structured-clone": "off",
     "unicorn/prefer-top-level-await": "off",
@@ -123,7 +122,7 @@ export default defineConfig({
           {
             patterns: [
               {
-                regex: "^@unframework\\.dev/testing/",
+                regex: String.raw`^@unframework\.dev/testing/`,
                 message:
                   "A spec imports the public API from the root of @unframework.dev/testing; its subpaths are the harness's (ADR-0085).",
               },
@@ -135,7 +134,7 @@ export default defineConfig({
               {
                 // A `harness`, `scripts` or `packages` segment anywhere in a relative path: the
                 // harness's code, or a package's source reached around its entries.
-                regex: "^\\.\\.?/(.*/)?(harness|scripts|packages)(/|$)",
+                regex: String.raw`^\.\.?/(.*/)?(harness|scripts|packages)(/|$)`,
                 message:
                   "A spec never imports the harness's code or a package's source by path: use the public API of @unframework.dev/testing (ADR-0085).",
               },
@@ -157,6 +156,8 @@ export default defineConfig({
         "typescript/array-type": "off",
         // Numbers in a component reach its outputs as written.
         "unicorn/numeric-separators-style": "off",
+        // Strings in a component reach its outputs as written.
+        "unicorn/prefer-string-raw": "off",
       },
     },
   ],

@@ -194,8 +194,8 @@ describe("validateModule", () => {
         "",
         "./a.css",
         "/a",
-        "\\a",
-        "C:\\x",
+        String.raw`\a`,
+        String.raw`C:\x`,
       ] as const
     ).map((specifier): [string, (module: Record<string, unknown>) => unknown] => [
       `a pass-through import of ${specifier}`,

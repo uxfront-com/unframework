@@ -59,7 +59,7 @@ describe("rule 6: collapseWhitespace, inside a line", () => {
   });
 
   it("does not collapse a no-break space", () => {
-    expect(collapse("<p>a&nbsp; b</p>")).toBe(lines("<p>", '  "a\\u00a0 b"', "</p>"));
+    expect(collapse("<p>a&nbsp; b</p>")).toBe(lines("<p>", String.raw`  "a\u00a0 b"`, "</p>"));
     expect(normalizeHtml("<p>a&nbsp;b</p>")).not.toBe(normalizeHtml("<p>a b</p>"));
   });
 
@@ -302,7 +302,7 @@ describe("rule 6: collapseWhitespace, by display", () => {
         '    <span style="display: table-cell">',
         '      " b  "',
         "    </span>",
-        '    "\\n c"',
+        String.raw`    "\n c"`,
         "  </span>",
         '  " "',
         "  <b>",
@@ -435,7 +435,7 @@ describe("rule 6: collapseWhitespace, where whitespace is preserved", () => {
 
   it("keeps raw-text content (scripts and styles) exactly, SVG's included", () => {
     expect(collapse("<style>\n  a  >  b { }\n</style>")).toBe(
-      lines("<style>", '  "\\n  a  >  b { }\\n"', "</style>"),
+      lines("<style>", String.raw`  "\n  a  >  b { }\n"`, "</style>"),
     );
     expect(normalizeHtml('<svg><style>.a::after { content: "x  y" }</style></svg>')).not.toBe(
       normalizeHtml('<svg><style>.a::after { content: "x y" }</style></svg>'),
@@ -501,7 +501,7 @@ describe("rule 6: collapseWhitespace, where whitespace is preserved", () => {
     expect(collapse('<pre>x\n<span style="white-space: normal">  y</span></pre>')).toBe(
       lines(
         "<pre>",
-        '  "x\\n"',
+        String.raw`  "x\n"`,
         '  <span style="white-space: normal">',
         '    "y"',
         "  </span>",

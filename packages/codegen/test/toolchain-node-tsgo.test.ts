@@ -202,7 +202,7 @@ describe("tsgo's output", () => {
       `  "",`,
       `  ${JSON.stringify(`${second}(1,1): error TS2304: Cannot find name 'greet'.`)},`,
       `  "/elsewhere/Imported.ts(2,1): error TS2304: Cannot find name 'missing'.",`,
-      '].join("\\n"));',
+      String.raw`].join("\n"));`,
       "process.exitCode = 2;",
     ].join("\n");
     const results = await check(fakeToolchain({ version: "7.0.2", tsc }), files);

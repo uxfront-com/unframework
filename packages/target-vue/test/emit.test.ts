@@ -321,7 +321,9 @@ export default function Quote({ text = "x" }: { text?: string }) {
       props: [{ ...prop!, default: { ...prop!.default!, code: '"</script><SCRIPT>"' } }],
     };
     const [file] = target.emit(changed, { module, options: undefined, report: () => {} });
-    expect(file!.contents).toContain('const { text = "<\\/script><SCRIPT>" } = defineProps');
+    expect(file!.contents).toContain(
+      String.raw`const { text = "<\/script><SCRIPT>" } = defineProps`,
+    );
     expect(file!.contents.match(/<\/script/gi)).toHaveLength(1);
   });
 

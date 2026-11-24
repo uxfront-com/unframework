@@ -265,8 +265,8 @@ export function A() { return <Badge tone="ab" />; }`;
 
   it.each([
     ['\'a"b\' | "zzzz"', "value='a\"'", 'a"b'],
-    ['"a\\\\b" | "zzzz"', 'value="ab"', "a\\b"],
-    ['"a\\nb" | "zzzz"', 'value="ab"', "a\nb"],
+    [String.raw`"a\\b" | "zzzz"`, 'value="ab"', String.raw`a\b`],
+    [String.raw`"a\nb" | "zzzz"`, 'value="ab"', "a\nb"],
   ])(
     "offers no fix to a JSX string for %s, which it cannot hold as written",
     (type, attribute, meant) => {

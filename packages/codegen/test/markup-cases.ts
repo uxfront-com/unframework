@@ -733,11 +733,11 @@ export const MARKUP_CASES: ReadonlyArray<MarkupCase> = [
           [],
           b.i(`saved ? "Saved" : 'Not "saved" yet'`),
           "|",
-          b.i('name + "it\'s \\"x\\""'),
+          b.i(String.raw`name + "it's \"x\""`),
         ),
         b.el("p", [], 'Visit "https://a.b".  Thanks'),
         b.if([`name === 'say "hi"'`, b.el("b", [], "hi")]),
-        b.el("p", [b.bind("title", '/a\\/b|[\\]]|\\(/.test(name) ? "match" : "none"')], "r"),
+        b.el("p", [b.bind("title", String.raw`/a\/b|[\]]|\(/.test(name) ? "match" : "none"`)], "r"),
       ),
     expected: [
       `<div title="Don't forget" aria-label="say &quot;hi&quot;'s">`,

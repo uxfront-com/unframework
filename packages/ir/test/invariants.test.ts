@@ -930,7 +930,7 @@ describe("checkInvariants on M1's IR", () => {
     ],
     [
       "a value with an escaped quote of its own kind",
-      node("p", [style(createStaticStyle("content", '"a\\";b"', at))]),
+      node("p", [style(createStaticStyle("content", String.raw`"a\";b"`, at))]),
       "/declarations/0/value",
       "Angular's style parser",
     ],
@@ -3750,7 +3750,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
     [
       "a pass-through import of a module on a drive",
       changedModule(node("p"), (module) => {
-        module.passThroughImports = [createPassThroughImport("C:\\theme.css", [], at)];
+        module.passThroughImports = [createPassThroughImport(String.raw`C:\theme.css`, [], at)];
       }),
       "/passThroughImports/0/specifier",
       "neither relative nor absolute",

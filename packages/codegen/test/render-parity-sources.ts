@@ -27,7 +27,7 @@ export const TRICKY_SOURCES: ReadonlyArray<SourceCase> = [
   {
     name: "interpolations beside text with edge and run whitespace",
     params: "{ s, t }: { s: string; t: string }",
-    jsx: '<p>{" a  "}{s}{"  b "}x {t}  y{"\\t"}{s}</p>',
+    jsx: String.raw`<p>{" a  "}{s}{"  b "}x {t}  y{"\t"}{s}</p>`,
     props: { s: " lead  run ", t: "trail\t" },
   },
   {
@@ -76,9 +76,9 @@ export const TRICKY_SOURCES: ReadonlyArray<SourceCase> = [
     jsx: [
       "<p>",
       '{s + "\\x41"}|{on ? "\\u00e9\\t" : \'it\\\'s\'}|{`\\x42${s}\\uD83D\\uDE00`.length}|',
-      '{s + "😀" + "\\uD83D\\uDE00"}|{s.length > 0 ? 1e3 : .5}|{1_000 + 0.25}|',
+      String.raw`{s + "😀" + "\uD83D\uDE00"}|{s.length > 0 ? 1e3 : .5}|{1_000 + 0.25}|`,
       "{s /* note */}|{/* lead */ s}|{s // line\n}|",
-      '{"a\\\\b" + s}|{\'"\' + s + "\'"}',
+      String.raw`{"a\\b" + s}|{'"' + s + "'"}`,
       "</p>",
     ].join(""),
     props: { s: "z", on: true },
@@ -251,7 +251,7 @@ export const TRICKY_SOURCES: ReadonlyArray<SourceCase> = [
   ...[true, false].map((on): SourceCase => ({
     name: `whitespace in a pre, around a conditional (${on})`,
     params: "{ on, s }: { on: boolean; s: string }",
-    jsx: '<pre>a  {on ? " b\\n" : <i>{s}</i>}{"\\tc "}</pre>',
+    jsx: String.raw`<pre>a  {on ? " b\n" : <i>{s}</i>}{"\tc "}</pre>`,
     props: { on, s: " s " },
   })),
   // A line feed after a conditional that always renders an element, which the analyser accepts:
@@ -260,14 +260,14 @@ export const TRICKY_SOURCES: ReadonlyArray<SourceCase> = [
   ...[true, false].map((on): SourceCase => ({
     name: `a line feed in a pre after a conditional of elements (${on})`,
     params: "{ on }: { on: boolean }",
-    jsx: '<pre>{on ? <b>x</b> : <i>y</i>}{"\\nz"}</pre>',
+    jsx: String.raw`<pre>{on ? <b>x</b> : <i>y</i>}{"\nz"}</pre>`,
     props: { on },
   })),
   {
     // For Solid: a line feed between two interpolations in a `<pre>`, which JSX keeps.
     name: "a line feed between interpolations in a pre",
     params: "{ a, b }: { a: string; b: string }",
-    jsx: '<pre>{a}{"\\n"}{b}</pre>',
+    jsx: String.raw`<pre>{a}{"\n"}{b}</pre>`,
     props: { a: "x", b: "y" },
   },
   {
@@ -818,7 +818,7 @@ export const ROOT_SOURCES: ReadonlyArray<SourceCase> = [
   },
   {
     name: "whitespace at both edges",
-    jsx: '<>{" "}<b>x</b>{"\\n"}</>',
+    jsx: String.raw`<>{" "}<b>x</b>{"\n"}</>`,
   },
   {
     name: "a conditional, a list and a block at the root",
@@ -997,7 +997,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
       case 1:
         return `{${numberProp(pick([0, -0, 1e21, 2.5, -3, 0.1 + 0.2, 1e-7]))}}`;
       case 2:
-        return `{${stringProp()} + ${pick(['"\\x41"', '"!"', '" & "', "'{{'", '"\\u00e9"'])}}`;
+        return `{${stringProp()} + ${pick([String.raw`"\x41"`, '"!"', '" & "', "'{{'", String.raw`"\u00e9"`])}}`;
       case 3:
         return `{\`\${${stringProp()}}|\${${numberProp(pick([1, 0]))}}\`}`;
       case 4: {
@@ -1595,7 +1595,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
       case "pre": {
         // Preformatted text keeps every space and line break; it never starts with a line feed.
         const children = mixed(["b", "i", "span", "br"], place, 4, tag);
-        return [`a${pick(["  ", "\t", " "])}`.replace(/\t/, '{"\\t"}'), ...children].join("");
+        return [`a${pick(["  ", "\t", " "])}`.replace(/\t/, String.raw`{"\t"}`), ...children].join(
+          "",
+        );
       }
       case "ul":
       case "ol":

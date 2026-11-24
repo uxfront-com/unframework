@@ -137,7 +137,8 @@ export function stringLiteral(text: string): string | undefined {
   const body = text.slice(1, -1);
   try {
     // A single-quoted literal reads as JSON once its quotes are double and its own `"` escaped.
-    const json = quote === '"' ? text : `"${body.replace(/\\'/g, "'").replace(/"/g, '\\"')}"`;
+    const json =
+      quote === '"' ? text : `"${body.replace(/\\'/g, "'").replace(/"/g, String.raw`\"`)}"`;
     const value: unknown = JSON.parse(json);
     return typeof value === "string" ? value : undefined;
   } catch {

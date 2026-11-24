@@ -51,8 +51,7 @@ import type {
  * Angular's `WS_CHARS`: with `preserveWhitespaces: false` it drops text made only of these and
  * turns any run of two or more into one space, interpolations included, before rendering.
  */
-const ANGULAR_SPACE =
-  " \\f\\n\\r\\t\\v\\u1680\\u180e\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff";
+const ANGULAR_SPACE = String.raw` \f\n\r\t\v\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff`;
 const ANGULAR_WHITESPACE_ONLY = new RegExp(`^[${ANGULAR_SPACE}]+$`);
 const ANGULAR_RUN = new RegExp(`[${ANGULAR_SPACE}]{2,}`);
 /**
@@ -132,7 +131,7 @@ export function angularCode(code: string, context: AngularContext): string {
           return regex;
         }
         // `a</b/` would open a tag; `\}` means `}` in a regular expression either way.
-        return `${before.endsWith("<") ? " " : ""}${regex.replace(/(?<=\})\}/g, "\\}")}`;
+        return `${before.endsWith("<") ? " " : ""}${regex.replace(/(?<=\})\}/g, String.raw`\}`)}`;
       },
       comment: () => " ",
       other: (text, before) => {
@@ -245,7 +244,7 @@ function angularRegex(raw: string, interpolation: boolean): string {
     }
     const syntax =
       !inClass &&
-      (units.at(-1)?.text === "\\k" ||
+      (units.at(-1)?.text === String.raw`\k` ||
         units
           .slice(-2)
           .map((unit) => unit.text)
@@ -261,14 +260,14 @@ function angularRegex(raw: string, interpolation: boolean): string {
   // interpolation's text ({@link angularCode}).
   units.forEach((unit, at) => {
     if (unit.text.endsWith("{") && units[at + 1]?.text.startsWith("{")) {
-      unit.text = "\\x7b";
+      unit.text = String.raw`\x7b`;
     }
   });
   const write = (slashes: boolean) =>
     units
-      .map((unit) => (slashes && unit.slash ? "\\x2f" : unit.text))
+      .map((unit) => (slashes && unit.slash ? String.raw`\x2f` : unit.text))
       .join("")
-      .replace(/ {2,}/g, (run) => "\\x20".repeat(run.length));
+      .replace(/ {2,}/g, (run) => String.raw`\x20`.repeat(run.length));
   const body = `/${write(false)}/`.includes("//") ? write(true) : write(false);
   return `/${body}/${raw.slice(close + 1)}`;
 }
