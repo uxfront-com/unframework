@@ -1,3 +1,4 @@
+import { ScopeAttributes } from "./_unframework/ScopeAttributes";
 import { CardIcon } from "./card-icon";
 import { isPlatformBrowser } from "@angular/common";
 import {
@@ -6,38 +7,12 @@ import {
   ElementRef,
   type OnChanges,
   type OnDestroy,
-  type OnInit,
   PLATFORM_ID,
   Renderer2,
   inject,
   input,
   viewChild,
 } from "@angular/core";
-
-/** The scope attributes taken off each host, for the roots its component renders later. */
-const scopes_1 = new WeakMap<Element, string[]>();
-
-/**
- * Gives a root node of its component the scope attributes the component's styled parents put on
- * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
- */
-@Directive({ selector: "[ufScope]" })
-export class ScopeAttributes_1 implements OnInit {
-  readonly ufScope = input.required<HTMLElement>();
-  private readonly element = inject<ElementRef<Element>>(ElementRef);
-  private readonly renderer = inject(Renderer2);
-
-  ngOnInit(): void {
-    const host = this.ufScope();
-    let names = scopes_1.get(host);
-    if (!names) {
-      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
-      for (const name of names) this.renderer.removeAttribute(host, name);
-      scopes_1.set(host, names);
-    }
-    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
-  }
-}
 
 /** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
 type Listeners_1 = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
@@ -90,7 +65,7 @@ export class Fallthrough_1 implements OnChanges, OnDestroy {
 
 @Component({
   selector: "uf-card",
-  imports: [CardIcon, ScopeAttributes_1, Fallthrough_1],
+  imports: [CardIcon, ScopeAttributes, Fallthrough_1],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `

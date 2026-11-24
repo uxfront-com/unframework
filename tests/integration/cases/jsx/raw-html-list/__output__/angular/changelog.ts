@@ -1,3 +1,5 @@
+import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { TrustedHtmlPipe } from "./_unframework/TrustedHtmlPipe";
 import { isPlatformBrowser } from "@angular/common";
 import {
   Component,
@@ -5,16 +7,12 @@ import {
   ElementRef,
   type OnChanges,
   type OnDestroy,
-  type OnInit,
   PLATFORM_ID,
-  Pipe,
-  type PipeTransform,
   Renderer2,
   inject,
   input,
   viewChild,
 } from "@angular/core";
-import { DomSanitizer, type SafeHtml } from "@angular/platform-browser";
 
 export interface Entry {
   id: number;
@@ -23,31 +21,6 @@ export interface Entry {
 
 export interface ChangelogProps {
   entries: Entry[];
-}
-
-/** The scope attributes taken off each host, for the roots its component renders later. */
-const scopes = new WeakMap<Element, string[]>();
-
-/**
- * Gives a root node of its component the scope attributes the component's styled parents put on
- * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
- */
-@Directive({ selector: "[ufScope]" })
-export class ScopeAttributes implements OnInit {
-  readonly ufScope = input.required<HTMLElement>();
-  private readonly element = inject<ElementRef<Element>>(ElementRef);
-  private readonly renderer = inject(Renderer2);
-
-  ngOnInit(): void {
-    const host = this.ufScope();
-    let names = scopes.get(host);
-    if (!names) {
-      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
-      for (const name of names) this.renderer.removeAttribute(host, name);
-      scopes.set(host, names);
-    }
-    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
-  }
 }
 
 /** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
@@ -96,16 +69,6 @@ export class Fallthrough implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     for (const { stop } of this.listening.values()) stop();
-  }
-}
-
-/** Marks markup trusted, so that `[innerHTML]` renders it as written. */
-@Pipe({ name: "trustedHtml" })
-class TrustedHtmlPipe implements PipeTransform {
-  private readonly sanitizer = inject(DomSanitizer);
-
-  transform(html: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 }
 

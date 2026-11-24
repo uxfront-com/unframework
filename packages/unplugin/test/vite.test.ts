@@ -644,6 +644,8 @@ describe("shared helper modules (ADR-0121)", () => {
           targets: ["react"],
           helperRoot: "",
         });
+        // No compile has emitted it yet.
+        expect(apiOf(server.server).getCompiled(at("_unframework/cx.ts"))).toBeUndefined();
         const code = codeOf(await client.pluginContainer.load(two));
         // Both components import `cx` alike, so the join writes the import once (ADR-0053).
         expect(code.match(/^import .* from "\.\.\/\.\.\/_unframework\/cx";$/gm)).toEqual([
@@ -681,6 +683,13 @@ describe("shared helper modules (ADR-0121)", () => {
         expect(
           await client.pluginContainer.resolveId("../../_unframework/missing", two),
         ).toBeNull();
+        // `getCompiled` gives the text `load` serves, which Angular's ngtsc reads, and nothing
+        // once a project file sits at its path.
+        expect(apiOf(server.server).getCompiled(cx)).toBe(codeOf(loaded));
+        expect(apiOf(server.server).getCompiled(`${cx}x`)).toBeUndefined();
+        mkdirSync(at("_unframework"), { recursive: true });
+        writeFileSync(cx, 'export const label = "mine";\n');
+        expect(apiOf(server.server).getCompiled(cx)).toBeUndefined();
       } finally {
         await server.close();
       }
@@ -1072,10 +1081,12 @@ describe("types read through the type oracle (ADR-0067)", () => {
           typeOracle,
         });
         await typeOracle.dispose();
+        // The copies, then the shared helper module (ADR-0121), which the module imports.
         expect(compiled.outputs.angular!.map(({ path }) => path)).toEqual([
           "chip.ts",
           "tones.ts",
           "base.ts",
+          "_unframework/ScopeAttributes.ts",
         ]);
         expect(code).toBe(compiled.outputs.angular![0]!.contents);
         expect(code).not.toContain("BASE");

@@ -26,8 +26,13 @@ import {
 import type { DirectiveRunnerNames, EmitContext, OutputFile } from "@unframework.dev/codegen";
 import type { UfDirective } from "@unframework.dev/ir";
 
+import { importShared } from "./shared.ts";
+
 /** The inline helper that runs a directive's hooks as its element comes and goes. */
 export const RUNNER_HELPER = "runDirective";
+
+/** The helper that queues the hooks, shared in `_unframework/` where helpers are (ADR-0121). */
+export const QUEUE_HELPER = "queueHook";
 
 /** The runner's names, each claimed through `claim` from its base. */
 export function runnerNames(claim: (base: string) => string): DirectiveRunnerNames {
@@ -39,13 +44,15 @@ export function runnerNames(claim: (base: string) => string): DirectiveRunnerNam
     watches: claim("documentWatches"),
     checker: claim("directiveCheck"),
     leftWatch: claim("watchLeft"),
-    queue: claim("queueHook"),
+    queue: claim(QUEUE_HELPER),
   };
 }
 
-/** The runner and the queue it calls, as a file declares them. */
-export function runnerCode(names: DirectiveRunnerNames): string[] {
-  return [...directiveRunnerCode(names), hookQueueCode(names.queue)].map((code) => `${code}\n`);
+/** The runner and the queue it calls, as a file declares them: the queue unless it is shared. */
+export function runnerCode(names: DirectiveRunnerNames, queue = true): string[] {
+  return [...directiveRunnerCode(names), ...(queue ? [hookQueueCode(names.queue)] : [])].map(
+    (code) => `${code}\n`,
+  );
 }
 
 /** The class an Angular directive is declared as: `VFocusTrap` for `vFocusTrap`. */
@@ -105,16 +112,21 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
     runner.run,
     imports,
   );
+  const path = `${directiveFile(directive.name)}.ts`;
+  // With `helper`, the queue is shared in `_unframework/` (ADR-0121); the runner stays inline (R2).
+  if (context.helper) {
+    importShared(context.helper, path, imports, [{ name: QUEUE_HELPER, local: runner.queue }]);
+  }
   return [
     {
-      path: `${directiveFile(directive.name)}.ts`,
+      path,
       contents: [
         printProgram(js.program(imports.toDeclarations())).trim(),
         ...dependencyImports(dependencies),
         "",
         ...dependencies.types.map((code) => `${code}\n`),
         ...(dependencies.constants.length ? [`${dependencies.constants.join("\n")}\n`] : []),
-        ...runnerCode(runner),
+        ...runnerCode(runner, context.helper === undefined),
         directiveCode,
       ].join("\n"),
     },

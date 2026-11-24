@@ -382,7 +382,7 @@ describe("compile with sourceMap", () => {
   it.each<[string, TargetName, number, string, number]>([
     ["control-flow/keyed-map/ContributorTable", "solid", 36, ".login", 26],
     ["control-flow/keyed-map/ContributorTable", "astro", 36, ".login", 26],
-    ["lifecycle/teardown-order/SearchSession", "angular", 154, ".length", 53],
+    ["lifecycle/teardown-order/SearchSession", "angular", 130, ".length", 53],
     ["lifecycle/unmount-timers/AutoRefresh", "react", 53, "setInterval", 25],
     ["state/array-replacement/TaskList", "qwik", 32, "tasks.value, {", 19],
   ])(

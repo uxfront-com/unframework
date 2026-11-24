@@ -148,6 +148,26 @@ describe("build --package: Angular", () => {
     expect(files[TYPES]).not.toMatch(/export (declare class |\{[^}]*)ScopeAttributes/);
   });
 
+  // ADR-0121: the components' shared helper modules are bundled into the FESM, each once.
+  it("bundles a shared helper once, however many components import it", async () => {
+    const root = angular(PANEL);
+    expect((await run(root, "build", "--package")).code).toBe(0);
+    const outputs = tree(join(root, "dist", "angular"));
+    const importers = ["card.ts", "card-title.ts", "panel.ts"].filter((path) =>
+      outputs[path]?.includes('from "./_unframework/ScopeAttributes"'),
+    );
+    expect(importers.length).toBeGreaterThanOrEqual(2);
+    expect(Object.keys(outputs)).toContain("_unframework/ScopeAttributes.ts");
+    const files = tree(join(root, "dist", "package"));
+    expect(files[FESM]!.match(/\bclass ScopeAttributes\b/g)).toHaveLength(1);
+    expect(files[FESM]).not.toMatch(/ScopeAttributes\$\d/);
+    // It stays private, as it was inline, and a consumer still type-checks.
+    expect(files[TYPES]).not.toMatch(/export (declare class |\{[^}]*)ScopeAttributes/);
+    const good = ngc(consumer(root, "angular", { "consumer.ts": cardConsumer("'Hi'") }));
+    expect(good.output).toBe("");
+    expect(good.code).toBe(0);
+  });
+
   it("finds a slot directive whose decorator the formatter broke over lines", async () => {
     const slot = "headWithAVeryLongNameThatPushesTheDecoratorPastThePrintWidthOfTheFormatter";
     const root = angular({

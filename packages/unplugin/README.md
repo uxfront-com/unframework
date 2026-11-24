@@ -380,12 +380,15 @@ relative path, so importing a package's component from one reports UF1202.
 
 On Vite, the pre plugin, named `unframework`, exposes `api.getCompiled(id)`: the code of the last load of
 a module id that finished, in any environment, or `undefined` when the id has not loaded or that
-load failed. A load in progress never clears it. Angular's `ngtscVirtual` reads the virtual
-sources of child components with it:
+load failed. A load in progress never clears it. For a shared helper module's id,
+`<helper root>/_unframework/<file>`, it gives the module's text once a compile has emitted it, as
+`load` serves it, and `undefined` where a project file sits at that path (ADR-0121). Angular's
+`ngtscVirtual` reads the virtual sources of child components and helper modules with it:
 
 ```ts
 const api = config.plugins.find((plugin) => plugin.name === "unframework")?.api;
 api.getCompiled("/abs/Child.uf.tsx.ts");
+api.getCompiled("/abs/_unframework/ScopeAttributes.ts");
 ```
 
 It exposes `api.getSheet(file)` too: the scoped sheet this target's last finished load of the

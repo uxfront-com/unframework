@@ -33,17 +33,18 @@ describe("compile", () => {
         Object.entries(result.outputs).map(([t, files]) => [t, files.map((f) => f.path)]),
       ),
     ).toEqual({
-      // React shares its helpers in `_unframework/` (ADR-0121).
+      // React and Angular share their helpers in `_unframework/` (ADR-0121).
       react: ["Hello.tsx", "_unframework/cx.ts"],
       vue: ["Hello.vue"],
       svelte: ["Hello.svelte"],
       solid: ["Hello.tsx"],
       solid2: ["Hello.tsx"],
-      angular: ["hello.ts"],
+      angular: ["hello.ts", "_unframework/ScopeAttributes.ts"],
       qwik: ["Hello.tsx"],
       astro: ["Hello.astro"],
     });
     expect(result.helpers.react).toEqual(["_unframework/cx.ts"]);
+    expect(result.helpers.angular).toEqual(["_unframework/ScopeAttributes.ts"]);
     expect(result.helpers.vue).toEqual([]);
     expect(result.owners.react).toEqual({ "Hello.tsx": "Hello" });
     expect(result.ir?.components.map((component) => component.name)).toEqual(["Hello"]);

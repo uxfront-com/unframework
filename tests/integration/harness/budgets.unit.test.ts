@@ -269,7 +269,9 @@ describe("each toolchain's frameworkEmit", () => {
     try {
       const toolchain = await loadToolchain(target);
       const files = committedOutputFiles(info, target);
-      const moved = files.map((file) => join(copy, relative(dirname(files[0]!), file)));
+      // From the tree's root: a file in `_unframework/` (ADR-0121) may sort first.
+      const tree = join(info.dir, "__output__", target);
+      const moved = files.map((file) => join(copy, relative(tree, file)));
       expect(await measureSize(toolchain, target, moved)).toEqual(
         await measureSize(toolchain, target, files),
       );
@@ -294,7 +296,10 @@ describe("each toolchain's frameworkEmit", () => {
   });
 
   it("angular leaves out what only JIT and TestBed read", async () => {
-    const [module] = [...(await emit("angular", "state/counter")).values()].flat();
+    // The component's module, not a shared helper's in `_unframework/` (ADR-0121).
+    const [module] = [...(await emit("angular", "state/counter"))]
+      .filter(([path]) => !path.includes("/_unframework/"))
+      .flatMap(([, modules]) => modules);
     expect(module!.contents).toContain("ɵɵdefineComponent");
     expect(module!.contents).not.toContain("setClassMetadata");
   });

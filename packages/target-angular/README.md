@@ -7,13 +7,15 @@ templates, whose host element has `display: contents` (decision D6, ADR-0010).
 
 One `<kebab-name>.ts` file per component (plan §6), in this order: the imports from
 `@angular/core`, `@angular/common` and `@angular/platform-browser`, of the children's output files, of the composables'
-(`./use-toggle`, ADR-0069) and of the values the source imports from `.ts` modules, each under a
-name no source name takes; the type declarations; the module's constants the component reads, and
+(`./use-toggle`, ADR-0069), of the shared helper modules in the tree's `_unframework/`
+(ADR-0121) and of the values the source imports from `.ts` modules, each under a name no source
+name takes; the type declarations; the module's constants the component reads, and
 those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); the application's id
 counter, an injection token (`idCounter`, ADR-0095), when the component makes ids; the
 injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
-`modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the pipe `innerHTML`
-reads its markup through (`TrustedHtmlPipe`, ADR-0097); the directives its listeners'
+`toggle`, `selectedValues`, `optionText` and their model helpers where the helpers are not
+shared); the slot directives; where the helpers are not shared, the pipe `innerHTML`
+reads its markup through (`TrustedHtmlPipe`, ADR-0097) and the directives its listeners'
 options need; the component.
 
 - **Types.** The source's type declarations the output reads (its inputs' and outputs' types, the
@@ -365,9 +367,11 @@ parent's attribute on a child's tag, and the child's `-s` on the content filled 
 sheet uses `:slotted()`, through `<ng-content>` and `ng-template` slots alike. The parent's
 attribute lands on the child's host, which must keep only `display: contents`, and a template
 cannot write an attribute whose name it does not know. So each root node of a component binds an
-inline attribute directive to its host, `[ufScope]="this.host"` (`ScopeAttributes`, with the host
+shared attribute directive to its host, `[ufScope]="this.host"` (`ScopeAttributes`, with the host
 in a protected `host` member): in `ngOnInit` it takes the host's `data-uf-*` attributes off it,
-keeps their names in a module `WeakMap` for a root that renders later, and sets them on its node.
+keeps their names in its module's `WeakMap` for a root that renders later, and sets them on its
+node. The map is keyed by the host, which only its own component's roots read, so one map serves
+the tree (ADR-0121, R2).
 Its root nodes are those Vue's fallthrough reaches (`scopeRoots`): the root element, component or
 each candidate of a root `<component is>`, or each branch of a root conditional that renders one
 alone. A root component's own root directive runs after this one has set them on its host, so they
@@ -400,11 +404,26 @@ cannot infer. Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 
-`directive` is emulated (ADR-0099): a standalone attribute directive, `VFocusTrap` in `v-focus-trap.ts` for a `.uf.ts` module's, bound as `[vFocusTrap]` and in the component's `imports`, whose `afterRenderEffect` passes the value to an inline `runDirective` and whose `DestroyRef` stops it. The helper runs the hooks as a `MutationObserver` sees the element come into the document and leave it, since Angular creates projected content before a child puts it there, and queues them through an inline `queueHook`, which runs them in Vue's order.
+`directive` is emulated (ADR-0099): a standalone attribute directive, `VFocusTrap` in `v-focus-trap.ts` for a `.uf.ts` module's, bound as `[vFocusTrap]` and in the component's `imports`, whose `afterRenderEffect` passes the value to an inline `runDirective` and whose `DestroyRef` stops it. The helper runs the hooks as a `MutationObserver` sees the element come into the document and leave it, since Angular creates projected content before a child puts it there, and queues them through a shared `queueHook`, which runs them in Vue's order.
 
 `transition` is emulated (ADR-0100): a `<Transition>`'s element takes an inline directive, `Transition`, bound as `[ufTransition]="'fade'"`, and a conditional child sits in `<ng-container [ufTransitionRegion]="…">`, whose inline directive, `TransitionRegion`, is created with the transition and holds the branch shown. The element's directive runs Vue's enter classes once its region has rendered, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when a view around the element goes, so the directive lets the element go at once while its region still shows its branch.
 
 `teleport` is emulated (ADR-0098): an `<ng-template ufTeleport>` whose inline directive, `Teleport`, creates its view in its own view container once the application has rendered and moves the view's nodes into `to`. A render's teleports mount in the document's order, and a root teleport takes its parents' scope attributes off the host.
+
+The shared helpers are modules of their own in the tree's `_unframework/` (ADR-0121), put
+through `EmitContext.helper` and printed by `src/shared.ts`: `ScopeAttributes.ts`,
+`TextCaret.ts`, `TrustedHtmlPipe.ts`, `styleObject.ts`, `modelText.ts`, `writeModelText.ts`,
+`looseToNumber.ts`, `queueHook.ts` and one module for each event and option a listener uses,
+such as `ClickCapture.ts`. Each imports Angular by its own names, so its text depends only on the
+helper, and a helper that calls another imports it as its sibling (`./looseToNumber`).
+
+A component imports each without the extension, `import { ScopeAttributes } from
+"./_unframework/ScopeAttributes"`, under one name in every component of a source, and lists a
+directive or a pipe in its `imports`. `Transition` and `TransitionRegion` stay inline: the
+directive finds its region through `inject`, which looks through every ancestor's injector,
+across component hosts, so a shared region class would let a child's transition read its
+parent's region (R2). The directive runner, `Teleport`, `idCounter`, `Fallthrough` and the short
+helpers stay inline too. A context without `helper` gets every helper printed inline, as before.
 
 Inline content on either side of a child component's host reads with a space in the accessible
 name: Chrome adds one at every `display: contents` element, so Angular reads `Build passing` where
@@ -419,7 +438,9 @@ Tests and tooling build, check and run the Angular output through three subpaths
   - `vite("browser" | "ssr", context)`: Angular's AOT compiler (ngtsc, strict templates) for
     the unframework plugin's virtual `X.uf.tsx.ts` modules and its modules of composables,
     `X.uf.ts.ts`, which a component's program reads so its template is checked against the
-    composable's types (ADR-0069), Analog with `jit: false`, and the
+    composable's types (ADR-0069), and for the shared helper modules it serves,
+    `_unframework/ScopeAttributes.ts`, which a component's program reads too and which compile
+    ahead of time on their own (ADR-0121), Analog with `jit: false`, and the
     Angular linker, over the pre-bundled framework in the browser and over the packages the SSR
     module graph inlines on the server, so no JIT compiler runs.
   - `frameworkCompile(files, context)` (L3) and `typecheck(files, context)` (L4): one ngtsc
