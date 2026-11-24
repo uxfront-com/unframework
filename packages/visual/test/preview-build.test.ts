@@ -89,7 +89,9 @@ function unframework(
   let stderr = "";
   child.stdout.on("data", (chunk) => void (stdout += String(chunk)));
   child.stderr.on("data", (chunk) => void (stderr += String(chunk)));
-  return new Promise((done) => child.once("exit", (code) => done({ code, stdout, stderr })));
+  return new Promise((done) => {
+    child.once("exit", (code) => done({ code, stdout, stderr }));
+  });
 }
 
 function project(files: Record<string, string>): string {
@@ -133,11 +135,11 @@ function fileServer(dir: string): Promise<{ url: string; server: Server }> {
       () => response.writeHead(404).end(),
     );
   });
-  return new Promise((done) =>
+  return new Promise((done) => {
     server.listen(0, "127.0.0.1", () =>
       done({ url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/sub/`, server }),
-    ),
-  );
+    );
+  });
 }
 
 /** Every file under a directory, relative to it. */
@@ -173,7 +175,9 @@ describe("unframework preview build", () => {
 
   afterAll(async () => {
     await browser?.close();
-    await new Promise((done) => site?.server.close(done));
+    await new Promise((done) => {
+      site?.server.close(done);
+    });
   });
 
   it("exits 0, prints where it wrote, and writes the shell, seven frames and Astro's renders", () => {
@@ -315,7 +319,9 @@ describe("unframework preview build", () => {
         ].join("\n"),
       );
     });
-    await new Promise<void>((done) => other.listen(0, "127.0.0.1", done));
+    await new Promise<void>((done) => {
+      other.listen(0, "127.0.0.1", done);
+    });
     const page = await browser.newPage();
     try {
       await page.goto(`http://127.0.0.1:${(other.address() as AddressInfo).port}/`);
@@ -338,7 +344,9 @@ describe("unframework preview build", () => {
       );
     } finally {
       await page.close();
-      await new Promise((done) => other.close(done));
+      await new Promise((done) => {
+        other.close(done);
+      });
     }
   });
 
@@ -416,7 +424,9 @@ describe("unframework preview build", () => {
           ].join("\n"),
         );
       });
-      await new Promise<void>((done) => other.listen(0, "127.0.0.1", done));
+      await new Promise<void>((done) => {
+        other.listen(0, "127.0.0.1", done);
+      });
       const page = await browser.newPage();
       try {
         await page.goto(`http://127.0.0.1:${(other.address() as AddressInfo).port}/`);
@@ -453,7 +463,9 @@ describe("unframework preview build", () => {
         ).toEqual([]);
       } finally {
         await page.close();
-        await new Promise((done) => other.close(done));
+        await new Promise((done) => {
+          other.close(done);
+        });
       }
     },
   );
@@ -903,7 +915,9 @@ describe("buildPreview of an example's controls", () => {
         expect(await tone("astro", "bare")).toBe("info");
       } finally {
         await browser.close();
-        await new Promise((done) => site.server.close(done));
+        await new Promise((done) => {
+          site.server.close(done);
+        });
       }
     },
   );
@@ -966,7 +980,9 @@ describe("buildPreview", () => {
           .toBe(`failed: ${render.error}`);
       } finally {
         await browser.close();
-        await new Promise((done) => site.server.close(done));
+        await new Promise((done) => {
+          site.server.close(done);
+        });
       }
     },
   );

@@ -110,7 +110,9 @@ export function diagnosticLine(diagnostic: Diagnostic, root: string): string {
  */
 export function untilInterrupted(): { interrupted: Promise<void>; dispose(): void } {
   let interrupt!: () => void;
-  const interrupted = new Promise<void>((resolve) => (interrupt = resolve));
+  const interrupted = new Promise<void>((resolve) => {
+    interrupt = resolve;
+  });
   let count = 0;
   const onSignal = () => {
     count += 1;

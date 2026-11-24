@@ -48,7 +48,6 @@ export default defineConfig({
     // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
-    "no-promise-executor-return": "off",
     "quality/no-array-filter-map": "off",
     "quality/no-chained-type-assertions": "off",
     "quality/no-conditional-empty-object-spread": "off",

@@ -24,7 +24,10 @@ const listening = (...names: Array<string>) =>
     names.map((name) => [name, (...args: Array<unknown>) => void events.push([name, ...args])]),
   );
 
-const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+const frame = () =>
+  new Promise((resolve) => {
+    requestAnimationFrame(resolve);
+  });
 
 /** Settles as the testing API does: the adapter's settle and two frames, until quiet. */
 async function settle(): Promise<void> {
@@ -259,7 +262,9 @@ describe("listener order across elements (ADR-0047)", () => {
     // The container reads "saving": it waits for the listener's synchronous part, not for the
     // rest, which runs half a second later.
     expect(logEntries()).toEqual(["draft saving"]);
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 600);
+    });
     await settle();
     expect(container.querySelector("output")?.textContent).toBe("saved");
   });
@@ -424,7 +429,9 @@ describe("controls at dispatch and calls where another listener follows (ADR-004
     // The container ran after the call's synchronous part, not after the whole of it.
     expect(logEntries()).toEqual(["page"]);
     expect(status()).toBe("saving inner");
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 400);
+    });
     await settle();
     expect(status()).toBe("saved inner");
   });

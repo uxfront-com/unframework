@@ -45,9 +45,13 @@ describe("cpuTime", () => {
   it("charges nothing for another thread's work", async () => {
     const worker = new Worker(spinner, { eval: true });
     try {
-      await new Promise((resolve) => worker.once("message", resolve));
+      await new Promise((resolve) => {
+        worker.once("message", resolve);
+      });
       const before = cpuTime();
-      const done = new Promise((resolve) => worker.once("message", resolve));
+      const done = new Promise((resolve) => {
+        worker.once("message", resolve);
+      });
       worker.postMessage(200);
       await done;
       expect(cpuTime() - before).toBeLessThan(100);

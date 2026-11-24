@@ -42,7 +42,10 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
     page._$HY.done = true;
     sharedConfig.done = true;
   }
-  const settle = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+  const settle = () =>
+    new Promise<void>((resolve) => {
+      queueMicrotask(resolve);
+    });
   await settle();
   return {
     settle,

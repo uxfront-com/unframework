@@ -122,7 +122,9 @@ describeTargets("stub/clock", () => {
       const view = await mount(ticker(), { clock: true });
       await view.user.click(view.getByRole("button", { name: "Start" }));
       // A fixed wait, only to prove that real time runs no interval: five of them.
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
       expect(view.emitted("tick")).toEqual([]);
       // Two intervals and a half: the ticks at 20 and 40 ms, both in this step.
       await view.clock.tick(50);

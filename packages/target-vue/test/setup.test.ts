@@ -48,7 +48,9 @@ describe.each([{ inline: true }, { inline: false }])(
       );
       expect(html).toBe("<div>Ticking</div>");
       // A timer started on the server would tick here.
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 20);
+      });
       expect(heard).toEqual([]);
     });
 

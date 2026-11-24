@@ -176,7 +176,10 @@ it("keeps the DOM's order, phases and options for every listener", async () => {
 });
 
 /** Waits for timers and promise continuations the component started. */
-const tasks = () => new Promise((resolve) => setTimeout(resolve, 20));
+const tasks = () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 20);
+  });
 
 it("coalesces each synchronous run where it runs, and runs a post watcher after a pre watcher's render", async () => {
   mounted = await mount(await fixture("Runs"), container, {
@@ -420,7 +423,9 @@ it("runs lifecycle hooks in the browser, empties a template ref with its element
   await mounted.unmount();
   mounted = undefined;
   drain();
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => {
+    setTimeout(resolve, 100);
+  });
   expect(events).toEqual([]);
   expect(logged).toEqual([]);
 });

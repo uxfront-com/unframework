@@ -181,7 +181,9 @@ describe("lifecycle (Lifecycle)", () => {
     expect(run.at(-1)).toEqual(["unmounted"]);
     expect(run.slice(0, -1).map(([name]) => name)).toEqual(run.slice(0, -1).map(() => "ticked"));
     // Only proves that nothing more comes once the interval is cleared.
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
     expect(taken()).toEqual([]);
   });
 });

@@ -40,7 +40,9 @@ function Counter({ step = 1, onChange }: CounterProps) {
       {
         type: "button",
         onClick: async () => {
-          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 0);
+          });
           setCount(100);
           onChange?.(100);
         },

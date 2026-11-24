@@ -426,7 +426,9 @@ describe("startPreview", () => {
         "src/Hello.uf.tsx": "export default function Hello() {\n  return <p>Hello</p>;\n}\n",
       });
       const taken = createServer();
-      await new Promise<void>((done) => taken.listen(0, PREVIEW_HOST, done));
+      await new Promise<void>((done) => {
+        taken.listen(0, PREVIEW_HOST, done);
+      });
       const port = (taken.address() as AddressInfo).port;
       const before = servers();
       try {
@@ -434,7 +436,9 @@ describe("startPreview", () => {
         // A closed server's handle goes once its socket has closed, just after `close()` resolves.
         await expect.poll(servers, { timeout: 5000 }).toBe(before);
       } finally {
-        await new Promise((done) => taken.close(done));
+        await new Promise((done) => {
+          taken.close(done);
+        });
       }
     },
   );
@@ -798,7 +802,9 @@ describe("unframework preview", () => {
       let stdout = "";
       let stderr = "";
       child.stderr.on("data", (chunk) => void (stderr += String(chunk)));
-      const exited = new Promise<number | null>((done) => child.once("exit", (code) => done(code)));
+      const exited = new Promise<number | null>((done) => {
+        child.once("exit", (code) => done(code));
+      });
       try {
         await new Promise<void>((done, fail) => {
           child.stdout.on("data", (chunk) => {

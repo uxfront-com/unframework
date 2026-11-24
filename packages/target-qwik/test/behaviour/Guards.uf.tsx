@@ -20,7 +20,9 @@ export default function Guards() {
 
   async function save(name: string) {
     status.value = `saving ${name}`;
-    await new Promise<void>((resolve) => setTimeout(resolve, 300));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 300);
+    });
     status.value = `saved ${name}`;
   }
 

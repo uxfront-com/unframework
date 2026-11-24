@@ -37,7 +37,9 @@ export default function TickParent(
  * queued at the first write, which queues the watchers of a write the component didn't make.
  */
 function nextTick(): Promise<void> {
-  return new Promise((resolve) => queueMicrotask(() => queueMicrotask(resolve)));
+  return new Promise((resolve) => {
+    queueMicrotask(() => queueMicrotask(resolve));
+  });
 }
 
 /**

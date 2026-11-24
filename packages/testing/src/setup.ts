@@ -271,6 +271,10 @@ afterAll(async ({}, suite) => {
  * framework scheduler's warning after unmount then lands in the test that unmounted.
  */
 async function settleTeardown(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
 }

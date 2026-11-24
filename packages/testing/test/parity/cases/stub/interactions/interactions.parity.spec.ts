@@ -44,7 +44,9 @@ const slow: StubComponent = {
     const save = async () => {
       status.textContent = "Saving";
       await Promise.resolve();
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
       status.textContent = "Saved";
       emit("saved");
     };

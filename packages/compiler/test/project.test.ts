@@ -702,9 +702,13 @@ describe("a child's own children (ADR-0118)", () => {
     ]);
     // Base reads once the second resolve has started, while the first is reading Wrap's children.
     let open!: () => void;
-    const gate = new Promise<void>((resolve) => (open = resolve));
+    const gate = new Promise<void>((resolve) => {
+      open = resolve;
+    });
     let reached!: () => void;
-    const reading = new Promise<void>((resolve) => (reached = resolve));
+    const reading = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
     const readFile = async (path: string) => {
       if (path.endsWith("/Base.uf.tsx")) {
         reached();
@@ -729,9 +733,13 @@ describe("a child's own children (ADR-0118)", () => {
     ]);
     // Held reads only once the gate opens, so its resolve keeps the session open meanwhile.
     let open!: () => void;
-    const gate = new Promise<void>((resolve) => (open = resolve));
+    const gate = new Promise<void>((resolve) => {
+      open = resolve;
+    });
     let reached!: () => void;
-    const reading = new Promise<void>((resolve) => (reached = resolve));
+    const reading = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
     const reads: Array<string> = [];
     let failing = true;
     const readFile = async (path: string) => {
@@ -789,7 +797,9 @@ describe("a child's own children (ADR-0118)", () => {
     let seed = 7;
     const delay = () => {
       seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
-      return new Promise((resolve) => setTimeout(resolve, seed % 7));
+      return new Promise((resolve) => {
+        setTimeout(resolve, seed % 7);
+      });
     };
     const codes = (result: {
       diagnostics: ReadonlyArray<{ code: string; span: { start: number } }>;

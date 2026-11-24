@@ -104,7 +104,9 @@ it("selects the option a child component renders after the mount", async () => {
   const select = container.querySelector("select")!;
   setValues(["x", "y"]);
   // The browser reports added options in a microtask (MutationObserver).
-  await new Promise((resolve) => setTimeout(resolve));
+  await new Promise((resolve) => {
+    setTimeout(resolve);
+  });
   expect([select.value, select.selectedIndex]).toEqual(["y", 1]);
 });
 
@@ -143,6 +145,8 @@ it("selects no option once the selected one leaves the list, as Vue's vModelSele
   container.querySelector("button")!.click();
   await settle();
   // The browser reports removed options in a microtask (MutationObserver).
-  await new Promise((resolve) => setTimeout(resolve));
+  await new Promise((resolve) => {
+    setTimeout(resolve);
+  });
   expect([select.value, select.selectedIndex, select.options.length]).toEqual(["", -1, 2]);
 });

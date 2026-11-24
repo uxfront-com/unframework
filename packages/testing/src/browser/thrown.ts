@@ -71,7 +71,9 @@ export async function expectThrown(host: ThrownStepHost, step: () => Promise<voi
     await step().catch(take);
     for (let round = 0; round < SETTLE_ROUNDS; round += 1) {
       await host.settle().catch(take);
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
     }
   } finally {
     window.removeEventListener("error", onError);

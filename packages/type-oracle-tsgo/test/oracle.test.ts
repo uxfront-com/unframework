@@ -35,7 +35,9 @@ async function exited(pids: ReadonlyArray<string>): Promise<void> {
     if (Date.now() > deadline) {
       throw new Error(`Still running: ${pids.join(", ")}.`);
     }
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 20);
+    });
   }
 }
 

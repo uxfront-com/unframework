@@ -205,7 +205,9 @@ describe("effects and lifecycle", () => {
     expect(emitted.stopped).toEqual([[]]);
     const titles = emitted.title.length;
     // The interval is cleared: no tick comes after unmount.
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 1500);
+    });
     expect(emitted.title).toHaveLength(titles);
   });
 

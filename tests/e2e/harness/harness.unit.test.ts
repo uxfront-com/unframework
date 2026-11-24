@@ -432,7 +432,10 @@ describe("the packed tarballs' record", () => {
 });
 
 describe("createEditor", () => {
-  const nextTask = (): Promise<void> => new Promise((done) => setImmediate(done));
+  const nextTask = (): Promise<void> =>
+    new Promise((done) => {
+      setImmediate(done);
+    });
   // The fake watcher reports a change only when a test says so, which is what the waits rest on.
   const settled = async (promise: Promise<void>): Promise<boolean> => {
     let done = false;
@@ -509,7 +512,9 @@ describe("createEditor", () => {
     expect(readFileSync(file(), "utf8")).toBe("one");
     expect(readFileSync(other, "utf8")).toBe("one");
     watcher.emit("change", file());
-    await new Promise((done) => setTimeout(done, 80));
+    await new Promise((done) => {
+      setTimeout(done, 80);
+    });
     expect(await settled(restored)).toBe(false);
     watcher.emit("change", other);
     await restored;
@@ -538,12 +543,17 @@ describe("createEditor", () => {
 
 describe("rebuildWatcher", () => {
   const COMPLETE = "Application bundle generation complete. [0.1 seconds]\n";
-  const nextTask = (): Promise<void> => new Promise((done) => setImmediate(done));
+  const nextTask = (): Promise<void> =>
+    new Promise((done) => {
+      setImmediate(done);
+    });
   const settled = async (promise: Promise<void>): Promise<boolean> => {
     let done = false;
     void promise.then(() => (done = true));
     // Past the editor's wait after a reported write.
-    await new Promise((wait) => setTimeout(wait, 80));
+    await new Promise((wait) => {
+      setTimeout(wait, 80);
+    });
     return done;
   };
   let output: PassThrough;
@@ -639,7 +649,9 @@ describe("spawnNgServe", () => {
   };
   const until = async (done: () => boolean): Promise<void> => {
     for (let tries = 0; tries < 100 && !done(); tries += 1) {
-      await new Promise((wait) => setTimeout(wait, 20));
+      await new Promise((wait) => {
+        setTimeout(wait, 20);
+      });
     }
   };
   // A stand-in for the CLI: a script that runs under the same spawn.
@@ -752,7 +764,9 @@ describe("spawnNgServe", () => {
       scratch,
     );
     const child = Number(readFileSync(pids, "utf8"));
-    await new Promise((wait) => setTimeout(wait, 100));
+    await new Promise((wait) => {
+      setTimeout(wait, 100);
+    });
     await server.stop();
     await until(() => !isAlive(child));
     expect(isAlive(child)).toBe(false);
@@ -805,7 +819,9 @@ describe("spawnNgServe", () => {
       ),
       scratch,
     );
-    await new Promise((wait) => setTimeout(wait, 400));
+    await new Promise((wait) => {
+      setTimeout(wait, 400);
+    });
     expect(isAlive(Number(readFileSync(pidFile, "utf8")))).toBe(true);
     await server.stop();
   });
@@ -841,7 +857,9 @@ describe("spawnNgServe", () => {
       fakeNg(`${LISTEN}setTimeout(() => process.exit(1), 50);`),
       scratch,
     );
-    await new Promise((wait) => setTimeout(wait, 150));
+    await new Promise((wait) => {
+      setTimeout(wait, 150);
+    });
     await expect(server.stop()).resolves.toBeUndefined();
   });
 });
@@ -858,10 +876,14 @@ describe("the port ledger", () => {
 
   it("reports the ports something still listens on", async () => {
     const server = createServer();
-    await new Promise<void>((done) => server.listen(0, HOST, done));
+    await new Promise<void>((done) => {
+      server.listen(0, HOST, done);
+    });
     const { port } = server.address() as { port: number };
     expect(await stillListening([port])).toEqual([port]);
-    await new Promise((done) => server.close(done));
+    await new Promise((done) => {
+      server.close(done);
+    });
     expect(await stillListening([port])).toEqual([]);
   });
 });
@@ -922,11 +944,15 @@ describe("the global hooks", () => {
 
   it("fails the run when a recorded port still listens", async () => {
     const server = createServer();
-    await new Promise<void>((done) => server.listen(0, HOST, done));
+    await new Promise<void>((done) => {
+      server.listen(0, HOST, done);
+    });
     const { port } = server.address() as { port: number };
     recordPort(scratch, port);
     await expect(globalTeardown()).rejects.toThrow(`on port ${port}`);
-    await new Promise((done) => server.close(done));
+    await new Promise((done) => {
+      server.close(done);
+    });
     await expect(globalTeardown()).resolves.toBeUndefined();
     expect(recordedPorts(scratch)).toEqual([]);
   });

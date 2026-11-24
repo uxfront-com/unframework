@@ -95,7 +95,9 @@ async function startStrict(
   mounted = {
     async settle() {
       await inAct(async () => {});
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
     },
     rerender: () => Promise.reject(new Error("A StrictMode test does not rerender.")),
     interact: (action) => inAct(action),
@@ -211,7 +213,9 @@ describe("react output in the browser", () => {
     mounted = undefined;
     const count = events.length;
     expect(events.at(-1)).toEqual(["unmounted"]);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
     expect(events).toHaveLength(count);
   });
 
@@ -247,7 +251,12 @@ describe("react output in the browser", () => {
     await start(await component("Notes"), ["mounted", "picked"]);
     // The template ref and the native listener share the caret's callback, and placing the caret
     // selects nothing: Vue's set value fires no `select`.
-    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    await act(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 50);
+        }),
+    );
     expect(events).toEqual([["mounted", true]]);
     for (const [label, text] of [
       ["Note", "Buy milk"],
@@ -528,7 +537,9 @@ describe("react output in the browser", () => {
       await mounted!.unmount();
       mounted = undefined;
       const count = events.length;
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
       expect(events).toHaveLength(count);
     });
 
@@ -716,7 +727,9 @@ describe("react output in the browser", () => {
         await userEvent.click(button("Suggest"));
         await vi.waitFor(() => expect(events).toHaveLength(3));
         // A later commit would let them run late: none comes on its own.
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 100);
+        });
         expect(events).toEqual([
           ["summary", "ada@example.com is valid"],
           ["saved", "ada@lovelace.dev"],
@@ -776,7 +789,9 @@ describe("react output in the browser", () => {
         await userEvent.click(button("Close"));
         await userEvent.keyboard("{Escape}");
         await vi.waitFor(() => expect(events).toHaveLength(2));
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 50);
+        });
         expect(events).toEqual([
           ["closed", "escape"],
           ["closed", "button"],

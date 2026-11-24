@@ -55,7 +55,9 @@ export function reviveReactivity(): void {
  */
 export async function settle(): Promise<void> {
   flush();
-  await new Promise<void>((resolve) => queueMicrotask(resolve));
+  await new Promise<void>((resolve) => {
+    queueMicrotask(resolve);
+  });
   flush();
 }
 

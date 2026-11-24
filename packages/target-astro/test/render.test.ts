@@ -80,8 +80,12 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
   it("captures only the render's own calls, not those other work makes meanwhile", async () => {
     let entered!: () => void;
     let release!: () => void;
-    const started = new Promise<void>((resolve) => (entered = resolve));
-    const gate = new Promise<void>((resolve) => (release = resolve));
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     Object.assign(globalThis, { __ufTestGate: { entered, gate } });
     compileInBrowserProject(
       "Gated",

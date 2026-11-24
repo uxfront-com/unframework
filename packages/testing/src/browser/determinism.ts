@@ -110,7 +110,9 @@ async function matchesWithin(query: string, timeout: number): Promise<boolean> {
     if (Date.now() >= deadline) {
       return false;
     }
-    await new Promise((resolve) => setTimeout(resolve, COLOR_SCHEME_POLL_MS));
+    await new Promise((resolve) => {
+      setTimeout(resolve, COLOR_SCHEME_POLL_MS);
+    });
   }
   return true;
 }
@@ -164,7 +166,9 @@ export async function settleAnimations(): Promise<void> {
     }
     await Promise.race([
       Promise.allSettled(running.map((animation) => animation.finished)),
-      new Promise((resolve) => setTimeout(resolve, left)),
+      new Promise((resolve) => {
+        setTimeout(resolve, left);
+      }),
     ]);
   }
 }

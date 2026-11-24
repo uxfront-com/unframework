@@ -116,7 +116,9 @@ export function spawnNgServe(
   const killGroup = (): void => signal("SIGKILL");
   process.once("exit", killGroup);
   // Every pipe closes once the whole group has gone, so nothing it printed is lost.
-  const closed = new Promise<void>((done) => child.once("close", () => done()));
+  const closed = new Promise<void>((done) => {
+    child.once("close", () => done());
+  });
 
   const stop = async (): Promise<void> => {
     signal("SIGTERM");

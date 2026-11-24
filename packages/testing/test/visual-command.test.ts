@@ -627,7 +627,9 @@ describe("ufVisualCapture's preconditions", () => {
     const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
     const asked: Array<number> = [];
     let release = () => {};
-    const released = new Promise<void>((resolve) => (release = resolve));
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const held: FakeCdp = {
       async send(method, params) {
         if (method === "DOM.getDocument") {

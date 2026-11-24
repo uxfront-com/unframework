@@ -193,7 +193,9 @@ describe("the segment registry", () => {
     void loading();
     let idle = false;
     const waiting = loads.idle().then(() => (idle = true));
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
     expect(idle).toBe(false);
     pending.resolve(undefined);
     await waiting;

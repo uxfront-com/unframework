@@ -23,11 +23,16 @@ export async function hostPage(): Promise<HostPage> {
     response.writeHead(200, { "content-type": "text/html" });
     response.end(html);
   });
-  await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+  await new Promise<void>((done) => {
+    server.listen(0, "127.0.0.1", done);
+  });
   return {
     url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/`,
     set: (next) => void (html = next),
-    close: () => new Promise((done) => server.close(() => done())),
+    close: () =>
+      new Promise((done) => {
+        server.close(() => done());
+      }),
   };
 }
 
