@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { ResolvedConfig } from "vite";
 import { afterAll, describe, expect, it } from "vitest";
 
+import { sharedModule } from "../src/shared.ts";
 import { compilePool, ngtscVirtual, poolSize, workerUrl } from "../src/toolchain/ngtsc-virtual.ts";
 import type {
   CompileRequest,
@@ -256,6 +257,71 @@ describe("ngtscVirtual", () => {
       const { transform, loaded } = await ngtscPlugin({}, "server", { lazy: true });
       await expect(transform(id("Form"), form("./field", "[label]"))).rejects.toThrow(/TS2307/);
       expect(loaded).toEqual([]);
+    });
+  });
+
+  // ADR-0121: an output imports its shared helpers from `_unframework/`, modules the unframework
+  // plugin serves once a compile has emitted them, and a helper module imports its siblings.
+  describe("a shared helper module", () => {
+    const helper = (name: string) => join(directory, "_unframework", `${name}.ts`);
+    /** A component whose root binds the scope directive's input, `binding`. */
+    const scoped = (binding: string) =>
+      [
+        'import { Component, ElementRef, inject } from "@angular/core";',
+        'import { ScopeAttributes } from "./_unframework/ScopeAttributes";',
+        "",
+        "@Component({",
+        '  selector: "uf-scoped",',
+        "  imports: [ScopeAttributes],",
+        `  template: \`<p ${binding}="this.host">x</p>\`,`,
+        "})",
+        "export default class Scoped {",
+        "  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;",
+        "}",
+        "",
+      ].join("\n");
+
+    it("is read before the parent compiles, which is checked against it", async () => {
+      const { transform } = await ngtscPlugin({
+        [helper("ScopeAttributes")]: sharedModule("ScopeAttributes"),
+      });
+      await expect(transform(id("Scoped"), scoped("[ufScope]"))).resolves.toMatchObject({
+        code: expect.stringContaining("dependencies: [ScopeAttributes]"),
+      });
+      // Checked against the directive's inputs: a misspelt one fails strict templates.
+      await expect(transform(id("Scoped"), scoped("[ufScop]"))).rejects.toThrow(/NG8002/);
+    });
+
+    it("is compiled ahead of time on its own", async () => {
+      const { transform } = await ngtscPlugin({
+        [helper("ScopeAttributes")]: sharedModule("ScopeAttributes"),
+        [helper("TrustedHtmlPipe")]: sharedModule("TrustedHtmlPipe"),
+      });
+      const directive = await transform(helper("ScopeAttributes"));
+      expect(directive.code).toContain("ɵɵdefineDirective");
+      expect(directive.code).not.toMatch(/@Directive\(/);
+      const pipe = await transform(helper("TrustedHtmlPipe"));
+      expect(pipe.code).toContain("ɵɵdefinePipe");
+      expect(pipe.code).not.toMatch(/@Pipe\(/);
+    });
+
+    it("compiles a helper that imports a sibling helper", async () => {
+      const { transform } = await ngtscPlugin({
+        [helper("modelText")]: sharedModule("modelText"),
+        [helper("looseToNumber")]: sharedModule("looseToNumber"),
+      });
+      await expect(transform(helper("modelText"))).resolves.toMatchObject({
+        code: expect.stringContaining('from "./looseToNumber"'),
+      });
+    });
+
+    it("leaves a project file at a helper's path alone", async () => {
+      // The plugin serves no text for the id: a file of the project sits there.
+      const { transform } = await ngtscPlugin({}, "server", { lazy: true });
+      await expect(
+        transform(helper("ScopeAttributes"), sharedModule("ScopeAttributes")),
+      ).resolves.toBeNull();
+      await expect(transform(id("Scoped"), scoped("[ufScope]"))).rejects.toThrow(/TS2307/);
     });
   });
 

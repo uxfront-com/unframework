@@ -15,6 +15,7 @@ import type { EmitContext } from "@unframework.dev/codegen";
 import {
   directiveCode,
   scopeDirectiveCode,
+  spaced,
   textCaretDirectiveCode,
   trustedHtmlPipeCode,
 } from "./directives.ts";
@@ -102,7 +103,7 @@ export function directiveModule(spec: DirectiveSpec): string {
       imports,
       placeholders,
     );
-    return () => `${decorator}\n${printProgram(js.program(statements))}`;
+    return () => `${decorator}\n${spaced(printProgram(js.program(statements)))}`;
   });
 }
 

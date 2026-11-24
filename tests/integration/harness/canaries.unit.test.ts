@@ -930,10 +930,10 @@ describe("canaries", () => {
     // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
     expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
-    // The scope and fallthrough directives' inputs too, which no consumer binds (ADR-0063,
-    // ADR-0118), and the fallthrough inputs a parent binds on the host.
+    // The fallthrough directive's input too, which no consumer binds (ADR-0118), and the
+    // fallthrough inputs a parent binds on the host. The scope directive is a shared helper
+    // module, apart from the component's file (ADR-0121).
     expect(lines("angular")).toEqual([
-      "  readonly ufScope = input.required<any>();",
       "  readonly ufFallthrough = input.required<any>();",
       '  readonly title = input<any>("Tasks (today)", {',
       "  readonly tasks = input.required<any>();",
@@ -1007,7 +1007,6 @@ describe("canaries", () => {
     expect(await lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
-      "  readonly ufScope = input.required<any>();",
       "  readonly ufFallthrough = input.required<any>();",
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",

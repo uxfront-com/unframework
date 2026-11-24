@@ -405,3 +405,13 @@ class ${className} implements ${core("PipeTransform", true)} {
 }
 `;
 }
+
+/**
+ * A printed class with a blank line before each of its methods, as Angular code sets them apart
+ * from the fields and from each other (oxfmt keeps a blank line, and adds none). Read before the
+ * placeholders are spliced: a member starts at the class's indentation, and a method's line ends
+ * with its body's `{` where a field's holds ` = `.
+ */
+export function spaced(printed: string): string {
+  return printed.replace(/\n(?= {2}[^\s}][^\n]*\{\n)(?! {2}[^\n]* = )/g, "\n\n");
+}
