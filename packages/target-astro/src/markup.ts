@@ -161,8 +161,14 @@ function ownAttributes(
   { fallthrough, spelling }: ComposedMarkup,
 ): Map<Attribute, string> {
   const texts = new Map<Attribute, string>();
-  if (!fallthrough || fallthrough.target.kind !== "Element") return texts;
-  const element = fallthrough.target;
+  if (!fallthrough || fallthrough.target.kind === "Component") return texts;
+  // A `<component is>` root's own attributes are what every tag takes: its first stands for
+  // them all (ADR-0122).
+  const { target } = fallthrough;
+  const element: ElementNode =
+    target.kind === "Element"
+      ? target
+      : { kind: "Element", tag: fallthrough.tag!, attributes: [], children: [], span: target.span };
   const context = { element, namespace: elementNamespace(element.tag, "html") };
   for (const { attribute, local } of fallthrough.own) {
     const { name } = attribute;

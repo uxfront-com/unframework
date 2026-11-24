@@ -68,6 +68,11 @@ export interface Fallthrough {
    */
   tag?: string;
   /**
+   * The tags of a `<component is>` root, whose attributes `Props` takes where every tag takes
+   * them (ADR-0122). Absent otherwise.
+   */
+  tags?: string[];
+  /**
    * The names `Props` leaves out of the tag's attributes: those it declares itself, and a root
    * component's props and models, which its own type declares as the root component reads them.
    */
@@ -91,8 +96,8 @@ export function planFallthrough(
   if (rest) target = restElement(component);
   else if (render.kind === "Element") target = render;
   else if (only?.kind === "Component") target = only;
-  // A `<component is>` over tags renders one element, which takes the consumer's `class` and
-  // `style` alone (ADR-0119): the analyser lets a parent pass it nothing else yet.
+  // A `<component is>` over tags renders one element, which takes what falls through as a root
+  // element does (ADR-0119, ADR-0122).
   else if (only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")) {
     target = only;
   }
@@ -100,27 +105,35 @@ export function planFallthrough(
   const { scope } = spelling;
   const className = scope.claim("className");
   const style = scope.claim("style");
-  // A `<component is>` takes nothing else yet, so it spreads no rest (ADR-0119).
-  const attributes = target.kind === "Dynamic" ? undefined : scope.claim("attrs");
+  const attributes = scope.claim("attrs");
   const declared = declaredNames(component);
   const own: OwnAttribute[] = [];
-  if (target.kind === "Element") {
+  if (target.kind !== "Component") {
     const seen = new Set<string>();
+    // A `<component is>`'s attribute only some tags take renders behind its guard, and no
+    // consumer passes it (ADR-0122).
+    const only = new Set(
+      target.kind === "Dynamic" ? (target.only ?? []).map((each) => each.name) : [],
+    );
     for (const attribute of target.attributes) {
       if (attribute.kind !== "Static" && attribute.kind !== "Bound") continue;
       const { name } = attribute;
       if (name === "class" || name === "style" || declared.has(name) || seen.has(name)) continue;
+      if (only.has(name)) continue;
       seen.add(name);
       own.push({ attribute, local: scope.claim(localName(name)) });
     }
   }
   const scopeless = rest && target !== render ? scope.claim("withoutScope") : undefined;
-  const tag =
+  const found =
     target.kind === "Element"
-      ? target.tag
+      ? [target.tag]
       : target.kind === "Component"
-        ? componentFallthroughTag(module, target.component)
-        : undefined;
+        ? componentFallthroughTags(module, target.component)
+        : target.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
+  const tag = found?.[0];
+  // Several for a `<component is>` root, or a root component that renders one (ADR-0122).
+  const tags = found && found.length > 1 ? found : undefined;
   const omitted = new Set(declared);
   if (target.kind === "Component") {
     for (const name of childProps(module, target.component)) omitted.add(name);
@@ -135,6 +148,7 @@ export function planFallthrough(
     own,
     ...(scopeless ? { scopeless } : {}),
     ...(tag ? { tag } : {}),
+    ...(tags ? { tags } : {}),
   };
 }
 
@@ -185,14 +199,15 @@ function restElement(component: UfComponent): ElementNode | undefined {
 }
 
 /**
- * The tag of the element a child's consumer's attributes land on, as its API says: an imported
- * child's, or one of the module's own components', read through its own root (ADR-0118).
+ * The tags of the element a child's consumer's attributes land on, as its API says: an imported
+ * child's, or one of the module's own components', read through its own root (ADR-0118). Several
+ * for a `<component is>` root, whichever renders (ADR-0122).
  */
-function componentFallthroughTag(
+function componentFallthroughTags(
   module: UfModule,
   local: string,
   seen: ReadonlySet<string> = new Set(),
-): string | undefined {
+): string[] | undefined {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
     if (!imported) continue;
@@ -201,15 +216,23 @@ function componentFallthroughTag(
         ? each.export === "default"
         : each.export === "named" && each.name === imported.imported,
     );
-    return api?.fallthroughTag;
+    if (api?.fallthroughTag !== undefined) return [api.fallthroughTag];
+    return api?.inheritAttrs ? api.rootTags : undefined;
   }
   const own = module.components.find((each) => each.name === local);
   if (!own || seen.has(local)) return undefined;
-  if (own.inheritAttrs === false) return restElement(own)?.tag;
+  if (own.inheritAttrs === false) {
+    const element = restElement(own);
+    return element && [element.tag];
+  }
   const { render } = own;
-  if (render.kind === "Element") return render.tag;
+  if (render.kind === "Element") return [render.tag];
   const [root] = render.children;
-  return render.children.length === 1 && root?.kind === "Component"
-    ? componentFallthroughTag(module, root.component, new Set([...seen, local]))
+  if (render.children.length !== 1) return undefined;
+  if (root?.kind === "Dynamic" && root.candidates.every((each) => each.kind === "Tag")) {
+    return root.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
+  }
+  return root?.kind === "Component"
+    ? componentFallthroughTags(module, root.component, new Set([...seen, local]))
     : undefined;
 }
