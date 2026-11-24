@@ -124,7 +124,7 @@ catalog:
   "@astrojs/check": 0.9.10
   "@astrojs/compiler-rs": 0.5.1
   "@babel/core": 7.29.7
-  "@babel/preset-typescript": 7.29.7
+  "@babel/preset-typescript": 8.0.7
   # The wasm runtime Astro's checker loads (`@astrojs/astro2tsx`), pinned in its toolchain: a peer
   # of `@napi-rs/wasm-runtime`, which pnpm would otherwise take from rolldown's wasm binding, a 2.0
   # beta the checker cannot run on.
