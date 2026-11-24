@@ -49,6 +49,12 @@ export interface ToolchainContext {
    */
   declarations?: readonly string[];
   /**
+   * The build `frameworkEmit` compiles for: `production` by default (L15), or `development`. Only
+   * a compiler that decides the build itself reads it, as Qwik's optimizer folds its `isDev`
+   * (ADR-0117); the others leave the build's checks for its bundler to replace.
+   */
+  mode?: "production" | "development";
+  /**
    * The Vite plugins the project adds for the modules the outputs import and it resolves itself,
    * such as a styling engine's (ADR-0064): a toolchain that runs the outputs through a Vite server of
    * its own (Astro's render server) adds a fresh set there too.

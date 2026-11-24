@@ -248,6 +248,7 @@ export function removeSpans(code: Code, spans: readonly Span[]): Code {
         case "Api":
         case "Event":
         case "Slot":
+        case "Dev":
           return { ...reference, span: moved(reference.span) };
         case "Write":
           return {
@@ -362,6 +363,9 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
           else if (argument.kind === "Getter") visit(argument.getter.body.refs);
           else visit(argument.callback.body.refs);
         }
+        break;
+      case "DevCheck":
+        visit(item.code.refs);
         break;
       default:
         unreachable(item);

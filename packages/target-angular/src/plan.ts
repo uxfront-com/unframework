@@ -599,6 +599,7 @@ function formsOf(
         break;
       case "Provide":
       case "Inject":
+      case "DevCheck":
         break;
       case "Use": {
         // The composable reads a value, and may call a getter, while it sets up (`ref(name())`):
@@ -737,6 +738,9 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
           if (argument.kind === "Value") visit(argument.value);
           else visit((argument.kind === "Getter" ? argument.getter : argument.callback).body);
         }
+        break;
+      case "DevCheck":
+        visit(item.code);
         break;
       case "TemplateRef":
       case "Id":

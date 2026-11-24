@@ -3,6 +3,8 @@ export type {
   ApiEventParameter,
   ApiMember,
   ApiReference,
+  DevCheckItem,
+  DevReference,
   ApiFallthroughOwn,
   ApiRootDeclaration,
   ApiSlot,
@@ -144,6 +146,8 @@ export { IR_VERSION } from "./version.ts";
 export {
   bindingId,
   createApiReference,
+  createDevCheckItem,
+  createDevReference,
   createBinding,
   createBindingReference,
   createBoundAttribute,

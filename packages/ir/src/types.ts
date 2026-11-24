@@ -1029,7 +1029,8 @@ export type CodeReference =
   | ApiReference
   | EventReference
   | SlotReference
-  | ImportReference;
+  | ImportReference
+  | DevReference;
 
 /**
  * A write of a `state` or `model` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`,
@@ -1111,6 +1112,17 @@ export interface EmitReference {
   span: Span;
   /** The payload's arguments, in order: their references follow this one in the list. */
   arguments: Span[];
+}
+
+/**
+ * `isDev`, read as the whole test of an `if` with no `else` (ADR-0117): in client code, or in a
+ * {@link DevCheckItem}. Each target writes its framework's own development check in its place,
+ * which a production build folds to `false`.
+ */
+export interface DevReference {
+  kind: "Dev";
+  /** The identifier. */
+  span: Span;
 }
 
 /**
@@ -1205,7 +1217,8 @@ export type SetupItem =
   | ModelItem
   | ProvideItem
   | InjectItem
-  | UseItem;
+  | UseItem
+  | DevCheckItem;
 
 /**
  * `const user = await loadUser(props.id)`: an `awaited` binding (ADR-0101). The awaits open the
@@ -1341,6 +1354,19 @@ export interface WatchEffectItem {
   kind: "WatchEffect";
   /** The effect: its one parameter, when it has one, is `onCleanup`. */
   effect: FunctionCode;
+  span: Span;
+}
+
+/**
+ * `if (isDev) { … }` at the top level of the setup (ADR-0117): code that runs only in a
+ * development build, once where the target runs the setup, in source order. It reads what pure
+ * code reads, and `console`, and writes nothing the component holds, so a development render and
+ * a production one are the same.
+ */
+export interface DevCheckItem {
+  kind: "DevCheck";
+  /** The whole statement, `if` to its block's end: its test is a {@link DevReference}. */
+  code: Code;
   span: Span;
 }
 

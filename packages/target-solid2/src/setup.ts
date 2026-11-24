@@ -246,6 +246,9 @@ export class SolidCode {
       emit: (emit, _binding, parts) =>
         `${props.object!}.${eventProp(emit.event)}?.(${parts.arguments.join(", ")})`,
       api: () => (this.#nextTick ??= this.#imports.claim(NEXT_TICK_HELPER)),
+      // Solid's own flag: `true` in its development build, `false` in its production build and
+      // on its server (ADR-0117).
+      dev: () => this.#imports.add("@solidjs/web", "isDev"),
       slot: (reference) => this.slot(reference.slot),
     };
   }
@@ -397,6 +400,16 @@ export class SolidCode {
     const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
     if (!this.#readsReactive(code)) return text;
     return `${this.solid("untrack")}(() => ${arrowBody(text)})`;
+  }
+
+  /**
+   * A top-level `if (isDev) { … }` (ADR-0117), for the `pure` site: a statement, in `untrack`
+   * where it reads a prop, state or a derived value, as a value the setup evaluates is.
+   */
+  devCheck(code: Code): string {
+    const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
+    if (!this.#readsReactive(code)) return text;
+    return `${this.solid("untrack")}(() => {\n${text}\n});`;
   }
 
   /**
@@ -597,6 +610,7 @@ export class SolidCode {
         case "Event":
         case "Api":
         case "Slot":
+        case "Dev":
           return [];
         default:
           return unreachable(ref);
@@ -846,6 +860,9 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
       throw new Error("A provide prints in the template, never in the setup.");
     case "Use":
       return code.use(item);
+    // In the body, which runs once per instance, untracked as the setup's values are (ADR-0117).
+    case "DevCheck":
+      return code.devCheck(item.code);
     default:
       return unreachable(item);
   }
@@ -928,6 +945,7 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
             case "Event":
             case "Api":
             case "Slot":
+            case "Dev":
               return false;
             default:
               return unreachable(ref);
@@ -965,6 +983,8 @@ function itemCode(item: SetupItem): Code[] {
       return [item.effect.body];
     case "Lifecycle":
       return [item.callback.body];
+    case "DevCheck":
+      return [item.code];
     case "TemplateRef":
     case "Id":
       return [];

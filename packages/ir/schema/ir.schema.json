@@ -834,6 +834,9 @@
         },
         {
           "$ref": "#/definitions/UseItem"
+        },
+        {
+          "$ref": "#/definitions/DevCheckItem"
         }
       ],
       "description": "What a component's setup declares or runs, in source order (ADR-0045)."
@@ -921,6 +924,9 @@
         },
         {
           "$ref": "#/definitions/ImportReference"
+        },
+        {
+          "$ref": "#/definitions/DevReference"
         }
       ],
       "description": "A resolved name in setup code."
@@ -1066,6 +1072,25 @@
       ],
       "additionalProperties": false,
       "description": "A use of a handler's event parameter, `event.key` or `event.preventDefault()` (ADR-0047): a member every target's event object has (`PORTABLE_EVENT_MEMBERS`), read or called. The parameter is the one a  {@link  Parameter }  marks with `event`."
+    },
+    "DevReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Dev"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The identifier."
+        }
+      },
+      "required": [
+        "kind",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`isDev`, read as the whole test of an `if` with no `else` (ADR-0117): in client code, or in a  {@link  DevCheckItem } . Each target writes its framework's own development check in its place, which a production build folds to `false`."
     },
     "StateItem": {
       "type": "object",
@@ -1814,6 +1839,29 @@
       ],
       "additionalProperties": false,
       "description": "A member a `Use` item destructures: `on`, or `on: open` under another name."
+    },
+    "DevCheckItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "DevCheck"
+        },
+        "code": {
+          "$ref": "#/definitions/Code",
+          "description": "The whole statement, `if` to its block's end: its test is a  {@link  DevReference } ."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "code",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`if (isDev) { … }` at the top level of the setup (ADR-0117): code that runs only in a development build, once where the target runs the setup, in source order. It reads what pure code reads, and `console`, and writes nothing the component holds, so a development render and a production one are the same."
     },
     "ElementNode": {
       "type": "object",

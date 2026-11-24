@@ -169,20 +169,21 @@ Three rewrites keep the output what Solid's tools expect:
 
 The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 
-| Source                                        | Solid                                                                                                    |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `const count = ref(initial)`                  | `const [count, setCount] = createSignal(untrack(() => props.initial))`; no setter when nothing writes it |
-| `count.value`, `count.value += step`          | `count()`, `setCount(count() + props.step)`                                                              |
-| `const total = computed(() => …)`             | `const total = createMemo(() => …)`, read `total()`                                                      |
-| `` const label = `…${name}` `` (setup-once)   | ``const label = untrack(() => `…${props.name}`)``                                                        |
-| `let timer`                                   | `let timer` as written                                                                                   |
-| `function save() {…}`, `const save = () => …` | as written, with no `batch`                                                                              |
-| `watch(source, cb, options)`                  | `createWatcher(source, cb, options)`, an inline helper                                                   |
-| `watchEffect((onCleanup) => …)`               | `createWatchEffect([sources], (onCleanup) => …)`, an inline helper over the values it reads              |
-| `onMounted(cb)`, `onUnmounted(cb)`            | `onMount(cb)`, `onMount(() => onCleanup(cb))`, before the first watcher                                  |
-| `useTemplateRef<T>()`                         | `let field: T \| null = null`, set and emptied by the element's `ref` callback                           |
-| `useId()`                                     | `` `uf-id-${createUniqueId()}` ``                                                                        |
-| `await nextTick()`                            | `await nextTick()`, an inline helper resolving a promise                                                 |
+| Source                                        | Solid                                                                                                                    |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `const count = ref(initial)`                  | `const [count, setCount] = createSignal(untrack(() => props.initial))`; no setter when nothing writes it                 |
+| `count.value`, `count.value += step`          | `count()`, `setCount(count() + props.step)`                                                                              |
+| `const total = computed(() => …)`             | `const total = createMemo(() => …)`, read `total()`                                                                      |
+| `` const label = `…${name}` `` (setup-once)   | ``const label = untrack(() => `…${props.name}`)``                                                                        |
+| `let timer`                                   | `let timer` as written                                                                                                   |
+| `function save() {…}`, `const save = () => …` | as written, with no `batch`                                                                                              |
+| `watch(source, cb, options)`                  | `createWatcher(source, cb, options)`, an inline helper                                                                   |
+| `watchEffect((onCleanup) => …)`               | `createWatchEffect([sources], (onCleanup) => …)`, an inline helper over the values it reads                              |
+| `onMounted(cb)`, `onUnmounted(cb)`            | `onMount(cb)`, `onMount(() => onCleanup(cb))`, before the first watcher                                                  |
+| `useTemplateRef<T>()`                         | `let field: T \| null = null`, set and emptied by the element's `ref` callback                                           |
+| `useId()`                                     | `` `uf-id-${createUniqueId()}` ``                                                                                        |
+| `await nextTick()`                            | `await nextTick()`, an inline helper resolving a promise                                                                 |
+| `if (isDev) { … }`                            | `if (isDev) { … }`, `isDev` from `solid-js/web`, in `untrack` at the top level where it reads a prop or state (ADR-0117) |
 
 - Signals apply a write at once: a read after a write sees it, after `await` too, and Solid
   updates the DOM and recomputes the memos that read it as the write is made. Client code is

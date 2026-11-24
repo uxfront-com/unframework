@@ -234,6 +234,9 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
     case "Inject":
       add(item.fallback);
       break;
+    case "DevCheck":
+      add(item.code);
+      break;
     case "TemplateRef":
     case "Id":
     case "Model":
@@ -390,6 +393,20 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
       return [declaration(useStatement(plan, item))];
     case "Await":
       return awaitStatements(plan, item);
+    // In the `component$` body, which runs where the setup does (ADR-0117).
+    // In the `component$` body, untracked where it reads a prop or a signal, so it subscribes
+    // the component to nothing and runs where the body does (ADR-0117).
+    case "DevCheck": {
+      const text = rewritten(plan, item.code, "statements", undefined, "pure");
+      const kinds = new Map(plan.component.bindings.map((each) => [each.id, each.kind]));
+      const reactive = item.code.refs.some(
+        (ref) =>
+          ref.kind === "Binding" &&
+          ["prop", "state", "derived", "model"].includes(kinds.get(ref.binding) ?? ""),
+      );
+      if (!reactive) return [block(text)];
+      return [block(`${plan.names.core("untrack")}(() => {\n${text}\n});`)];
+    }
     default:
       return unreachable(item);
   }

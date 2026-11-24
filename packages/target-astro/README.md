@@ -54,6 +54,8 @@ per component (ADR-0034, ADR-0046):
       `ref` for a type argument or a literal; a block getter is a local function called once,
       `function getTier(): Tier {…}` and `const tier = getTier();`;
     - `const`s and the local functions the server render calls are copied as written;
+    - a top-level `if (isDev) { … }` is `if (import.meta.env.DEV) { … }`, copied in source order,
+      and the props it reads are declared (ADR-0117);
     - `useId()` calls the inline helper `uniqueId` (the `use-id` cell), a counter on
       `Astro.locals`, which lives for one request: ids are `uf-id-1`, `uf-id-2`… across the page,
       and every request starts again;

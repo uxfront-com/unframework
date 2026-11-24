@@ -77,6 +77,8 @@ Everything `@unframework.dev/target-solid`'s README says holds here, but for wha
   before those that run after it. Their reactions live in roots of their own, apart from the
   component's owner: Solid's server creates none, and one among the component's children would
   shift the hydration keys of what the client renders after it.
+- **`isDev`.** It comes from `@solidjs/web`, where Solid 2 exports it, not from `solid-js/web`
+  (ADR-0117).
 - **Hooks.** `onMounted` is `onSettled` with a block body, and `onUnmounted` is the cleanup an
   `onSettled` returns. Solid 2 refuses any other value an `onSettled` callback returns.
 - **Props.** Defaults are getters in `merge`, `get step() { return rawProps.step === undefined ? 1

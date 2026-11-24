@@ -136,7 +136,8 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
         `toolchain:${target}`,
         "toolchain",
         target,
-        ["harness/toolchain.test.ts"],
+        // The production proof of `isDev` beside L3 to L5 (ADR-0117).
+        ["harness/toolchain.test.ts", "harness/dev-only.test.ts"],
         {
           // One framework compile and one checker run over the whole corpus, in beforeAll.
           hookTimeout: 300_000,

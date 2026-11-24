@@ -109,6 +109,7 @@ the template itself, which reads through `@let`, and a template statement's inpu
 | `const { on, toggle } = useToggle(false)` | `protected readonly toggle_1 = useToggle(false)`, read as `this.toggle_1.on()` and `@let on = this.toggle_1.on();` (below)     |
 | `emit("change", value)`                   | `this.change.emit(value)`, by the payload rule                                                                                 |
 | `nextTick()`                              | `this.nextTick()`, a private method that renders in a microtask with `ApplicationRef.tick()` (emulated, `next-tick`)           |
+| `if (isDev) { … }`                        | `if (typeof ngDevMode === "undefined" \|\| ngDevMode) { … }`, at the top level in `ngOnInit` (ADR-0117)                        |
 | `watch(source, callback, options)`        | an `effect()` created in `ngOnInit`; `afterRenderEffect()` with `flush: "post"` (below)                                        |
 | `watchEffect(effect)`                     | `afterRenderEffect(effect)` in the constructor: after the render, in the browser only                                          |
 | `onMounted(callback)`                     | `afterNextRender(callback)` in the constructor: in the browser, once the view is in the document                               |

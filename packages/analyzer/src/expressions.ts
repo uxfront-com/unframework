@@ -18,6 +18,7 @@ import {
   angularRespellsRegex,
   CLIENT_GLOBALS,
   createApiReference,
+  createDevReference,
   createBinding,
   createBindingReference,
   createCode,
@@ -71,6 +72,7 @@ import {
   widened,
 } from "./code.ts";
 import type { Reporter } from "./context.ts";
+import { devTest, misplacedDev } from "./dev.ts";
 import { misplacedDirective } from "./directives.ts";
 import { readLiteral } from "./literals.ts";
 import {
@@ -261,6 +263,23 @@ export function checkExpression(node: AST.Expression, context: RenderContext): C
  * Checks a value the setup evaluates (ADR-0045): the initial value of a `ref`, a `const` or a
  * `let`, which is pure code. Its statement's comments are the caller's to check.
  */
+/**
+ * Checks and lowers a top-level `if (isDev) { … }` of the setup (ADR-0117): the whole statement,
+ * its test a `Dev` reference and its block pure code that may read `console`.
+ */
+export function lowerDevCheck(
+  node: AST.IfStatement,
+  test: AST.IdentifierReference,
+  context: RenderContext,
+): Code {
+  const { reporter, source } = context;
+  const mark = reporter.diagnostics.length;
+  const walk = new Walk(context, "pure", true);
+  walk.devCheck(node, test);
+  inSourceOrder(reporter, mark);
+  return createCode(source.slice(node.start, node.end), span(node), sortReferences(walk.refs));
+}
+
 export function checkCode(node: AST.Expression, context: RenderContext): CheckedCode {
   const { reporter, source } = context;
   const mark = reporter.diagnostics.length;
@@ -601,9 +620,25 @@ class Walk {
   /** The callee of the call being walked, while it is: a shared value's reference marks it. */
   #callee: object | undefined;
 
-  constructor(context: RenderContext, mode: Mode) {
+  /**
+   * Set while a top-level `if (isDev)` block is walked (ADR-0117): pure code that may read
+   * `console` too, and whose `if (isDev)` tests are its own.
+   */
+  readonly #dev: boolean;
+
+  constructor(context: RenderContext, mode: Mode, dev = false) {
     this.#context = context;
     this.#mode = mode;
+    this.#dev = dev;
+  }
+
+  /**
+   * A top-level `if (isDev) { … }` of the setup (ADR-0117): its test is a `Dev` reference, and
+   * its block pure code that may warn through `console`.
+   */
+  devCheck(node: AST.IfStatement, test: AST.IdentifierReference): void {
+    this.refs.push(createDevReference(span(test)));
+    this.#statement(node.consequent);
   }
 
   /** The kinds the walk read for a node: `unknown` for one it did not walk. */
@@ -1027,7 +1062,7 @@ class Walk {
    */
   #global(node: AST.IdentifierReference, shorthand = false): Kinds {
     const { name } = node;
-    if (GLOBALS[this.#mode].has(name)) {
+    if (GLOBALS[this.#mode].has(name) || (this.#dev && name === "console")) {
       this.refs.push(createGlobalReference(name, span(node)));
       return ALLOWED_GLOBALS.has(name) ? globalValue(name) : UNKNOWN;
     }
@@ -1048,7 +1083,11 @@ class Walk {
       );
       return UNKNOWN;
     }
-    if (this.#mode === "pure" && (CLIENT_GLOBALS.has(name) || WINDOW_MEMBER_GLOBALS.has(name))) {
+    if (
+      this.#mode === "pure" &&
+      !(this.#dev && name === "console") &&
+      (CLIENT_GLOBALS.has(name) || WINDOW_MEMBER_GLOBALS.has(name))
+    ) {
       this.#context.reporter.report(
         "UF3020",
         node,
@@ -1265,6 +1304,10 @@ class Walk {
     }
     const api = authoring.get(declaration);
     if (api === undefined) return UNKNOWN;
+    if (api === "isDev") {
+      misplacedDev(node, this.#context.reporter);
+      return kinds("boolean");
+    }
     if (api === "Teleport") {
       teleportNotTag(node, this.#context.reporter);
       return UNKNOWN;
@@ -4524,11 +4567,22 @@ class Walk {
       case "VariableDeclaration":
         this.#declaration(node);
         return;
-      case "IfStatement":
-        this.value(node.test, "value", false);
+      case "IfStatement": {
+        // `if (isDev)` in client code, or nested in a top-level one (ADR-0117): its test is the
+        // target's own check. A component's only: a composable's is UF2040.
+        const dev =
+          (this.#mode === "client" || this.#dev) && !this.#context.setup.composable
+            ? devTest(node, {
+                scopes: this.#context.scopes,
+                authoring: this.#context.setup.authoring,
+              })
+            : undefined;
+        if (dev) this.refs.push(createDevReference(span(dev)));
+        else this.value(node.test, "value", false);
         this.#statement(node.consequent);
         if (node.alternate) this.#statement(node.alternate);
         return;
+      }
       case "BlockStatement":
         this.#statements(node.body);
         return;

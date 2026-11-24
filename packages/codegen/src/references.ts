@@ -148,6 +148,8 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
     if (options.includeKeys === false && path.endsWith("/key")) continue;
     read(expression);
   }
+  // A development-only block runs where the setup does, on the server too (ADR-0117).
+  for (const item of component.setup) if (item.kind === "DevCheck") read(item.code);
   if (options.client) {
     walk(component.render, {
       enter(node) {
@@ -179,8 +181,10 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
           read(item.value);
           break;
         // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
-        // `serverView` does, so this walk reads nothing of it.
+        // `serverView` does, so this walk reads nothing of it. A development-only block is read
+        // above, client or not.
         case "Use":
+        case "DevCheck":
         case "State":
         case "Derived":
         case "TemplateRef":
@@ -227,6 +231,7 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       case "Lifecycle":
       case "Model":
       case "Provide":
+      case "DevCheck":
         break;
       default:
         unreachable(item);
@@ -348,6 +353,9 @@ function reachTypes(
       case "Inject":
         if (item.fallback) code(item.fallback);
         break;
+      case "DevCheck":
+        code(item.code);
+        break;
       // A composable's call: this walk reads nothing of it, so a type that only its arguments
       // name gets no import on a target that doesn't hand it a `serverView` (ADR-0069).
       case "Use":
@@ -404,6 +412,7 @@ function readsOf(code: Expression | Code, found: Set<BindingId>): void {
       case "Api":
       case "Slot":
       case "Import":
+      case "Dev":
         break;
       default:
         unreachable(reference);
@@ -430,6 +439,8 @@ function serverCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
+    case "DevCheck":
+      return [item.code];
     // A composable's call (ADR-0069): this reads nothing of it. Only a render node's setup reaches
     // it, which is empty.
     case "Use":

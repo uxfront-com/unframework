@@ -815,6 +815,7 @@ function simpleRead(plan: Plan, reference: CodeReference): boolean {
     case "Slot":
     case "Write":
     case "Api":
+    case "Dev":
       return false;
     default:
       return unreachable(reference);

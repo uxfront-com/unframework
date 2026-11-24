@@ -76,6 +76,7 @@ import {
   setupTypes,
 } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
+import { reportDevShadows } from "./dev.ts";
 import {
   directiveCandidate,
   isDirectiveCall,
@@ -2223,6 +2224,8 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     program: parsed.program,
     failed: props.failed || reporter.hasErrorsSince(mark),
   });
+  // A name a target's `isDev` check reads, shadowed (UF2003, ADR-0117).
+  reportDevShadows(fn, props.props, { scopes, authoring: setup.scope.authoring }, reporter);
   module.observe?.(candidate.name, [...setup.scope.bindings.values()]);
   if (!root || props.failed || reporter.hasErrorsSince(mark)) return undefined;
   // The types its output declares: its props', its events' and its setup code's (ADR-0045).

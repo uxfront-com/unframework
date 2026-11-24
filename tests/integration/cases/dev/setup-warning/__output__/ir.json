@@ -1,0 +1,224 @@
+{
+  "irVersion": 1,
+  "file": "dev/setup-warning/IconButton.uf.tsx",
+  "components": [
+    {
+      "name": "IconButton",
+      "span": {
+        "start": 232,
+        "end": 630
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 288,
+              "end": 294
+            }
+          },
+          "binding": "label@269",
+          "span": {
+            "start": 280,
+            "end": 294
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label?: string }",
+          "span": {
+            "start": 278,
+            "end": 296
+          }
+        },
+        "span": {
+          "start": 267,
+          "end": 296
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@269",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 269,
+            "end": 274
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "DevCheck",
+          "code": {
+            "code": "if (isDev) {\n    if (!label) console.warn(\"IconButton has no accessible name: pass it a `label`.\");\n  }",
+            "span": {
+              "start": 302,
+              "end": 405
+            },
+            "refs": [
+              {
+                "kind": "Dev",
+                "span": {
+                  "start": 306,
+                  "end": 311
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "label@269",
+                "span": {
+                  "start": 324,
+                  "end": 329
+                }
+              },
+              {
+                "kind": "Global",
+                "name": "console",
+                "span": {
+                  "start": 331,
+                  "end": 338
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 302,
+            "end": 405
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 429,
+              "end": 442
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 455,
+                "end": 460
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@269",
+                  "span": {
+                    "start": 455,
+                    "end": 460
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 443,
+              "end": 461
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "svg",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "viewBox",
+                "value": "0 0 16 16",
+                "span": {
+                  "start": 474,
+                  "end": 493
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "width",
+                "value": "16",
+                "span": {
+                  "start": 494,
+                  "end": 504
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "height",
+                "value": "16",
+                "span": {
+                  "start": 505,
+                  "end": 516
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-hidden",
+                "value": "true",
+                "span": {
+                  "start": 517,
+                  "end": 535
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "path",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "d",
+                    "value": "M8 1l2 5h5l-4 3 2 6-5-4-5 4 2-6-4-3h5z",
+                    "span": {
+                      "start": 551,
+                      "end": 593
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 545,
+                  "end": 596
+                }
+              }
+            ],
+            "span": {
+              "start": 469,
+              "end": 609
+            }
+          }
+        ],
+        "span": {
+          "start": 421,
+          "end": 623
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "IconButton",
+      "span": {
+        "start": 232,
+        "end": 630
+      }
+    }
+  ],
+  "types": []
+}

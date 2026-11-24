@@ -148,6 +148,8 @@ export interface EventPayload {
 
 /** What the setup declares, as every walk of the component's code reads it (ADR-0045). */
 export interface SetupScope {
+  /** Set where the setup is a composable's body (ADR-0069): `isDev` is UF2040 there (ADR-0117). */
+  readonly composable?: true;
   /** The setup's bindings, by the identifier that declares each. */
   readonly bindings: ReadonlyMap<object, SetupBinding>;
   /**

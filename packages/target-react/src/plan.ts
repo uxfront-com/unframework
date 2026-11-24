@@ -479,6 +479,7 @@ export function planComponent(
           case "Api":
           case "Event":
           case "Slot":
+          case "Dev":
             break;
           default:
             reference satisfies never;
@@ -1480,6 +1481,8 @@ function hoistable(
             case "Global":
             case "Import":
             case "Event":
+            // `process.env.NODE_ENV` reads the same at module scope (ADR-0117).
+            case "Dev":
               return true;
             case "Binding": {
               const kind = kindOf(reference.binding)!;

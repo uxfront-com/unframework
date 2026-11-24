@@ -36,6 +36,8 @@ export class Scopes {
   readonly #references = new Map<object, Resolution>();
   /** The identifiers that read or write a value, not a type. */
   readonly #values = new Set<object>();
+  /** The identifier of each declaration, by its name: a variable, a parameter, a function. */
+  readonly #declarations = new Map<string, AST.Node[]>();
 
   constructor(program: AST.Program) {
     const manager = analyze(program as unknown as Parameters<typeof analyze>[0], {
@@ -48,7 +50,19 @@ export class Scopes {
         this.#references.set(reference.identifier, resolutionOf(reference.resolved));
         if (reference.isValueReference) this.#values.add(reference.identifier);
       }
+      for (const variable of scope.variables) {
+        for (const definition of variable.defs) {
+          const found = this.#declarations.get(variable.name) ?? [];
+          found.push(definition.name as unknown as AST.Node);
+          this.#declarations.set(variable.name, found);
+        }
+      }
     }
+  }
+
+  /** The identifiers that declare `name` anywhere in the module, in no particular order. */
+  declarationsOf(name: string): readonly AST.Node[] {
+    return this.#declarations.get(name) ?? [];
   }
 
   /** What an identifier refers to. One scope analysis never visited reads as a global. */

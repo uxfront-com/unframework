@@ -1005,6 +1005,8 @@ function declaredQrls(
       case "Model":
       case "Provide":
       case "Inject":
+      // A development-only block calls no setup function (UF2014, ADR-0117).
+      case "DevCheck":
         break;
       // A composable's callback argument is a QRL its hook calls, as a child calls a listener:
       // its calls are awaited (ADR-0069).
@@ -1116,6 +1118,11 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
     api() {
       return names.once("nextTick");
     },
+    // Qwik's own flag: its `./build` export resolves to `true` in development and `false` in
+    // production, by export condition (ADR-0117).
+    dev() {
+      return names.imports.add("@qwik.dev/core/build", "isDev");
+    },
     event(reference) {
       if (reference.member === "currentTarget") return names.once("element");
       if (event === undefined) {
@@ -1145,6 +1152,7 @@ export function referencedIds(refs: readonly CodeReference[]): Set<BindingId> {
       case "Api":
       case "Event":
       case "Slot":
+      case "Dev":
         break;
       default:
         unreachable(reference);
@@ -1194,6 +1202,9 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
         break;
       case "Inject":
         if (item.fallback) codes.push(item.fallback);
+        break;
+      case "DevCheck":
+        codes.push(item.code);
         break;
       case "Use":
         for (const argument of item.arguments) {
@@ -1407,6 +1418,8 @@ function hoistable(
           case "Import":
           case "Api":
           case "Event":
+          // An import, which a QRL reads at module scope (ADR-0117).
+          case "Dev":
             return false;
           default:
             return unreachable(reference);
@@ -1491,6 +1504,10 @@ function planFunctions(
         break;
       case "Inject":
         if (item.fallback) mark(render, item.fallback.refs);
+        break;
+      // Runs where the body does, as render code reads (ADR-0117).
+      case "DevCheck":
+        mark(render, item.code.refs);
         break;
       case "Function":
       case "TemplateRef":
@@ -1734,6 +1751,8 @@ function emittedEvents(component: UfComponent): Set<string> {
       case "Model":
       case "Provide":
       case "Inject":
+      // A development-only block emits nothing (UF2017, ADR-0117).
+      case "DevCheck":
         break;
       // A composable's callback argument may emit (ADR-0069).
       case "Use":
