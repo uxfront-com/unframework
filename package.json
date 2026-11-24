@@ -31,7 +31,7 @@
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "turbo": "^2.11.2",
-    "typescript": "7.1.0-beta"
+    "typescript": "7.1.0-dev.20261120.1"
   },
   "engines": {
     "node": ">=24"
