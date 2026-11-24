@@ -237,7 +237,7 @@ export const svelteDialect: MarkupDialect = {
     }
     const atEdge =
       (position.first && HTML_WHITESPACE.test(text.charAt(0))) ||
-      (position.last && HTML_WHITESPACE.test(text.charAt(text.length - 1)));
+      (position.last && HTML_WHITESPACE.test(text.at(-1) ?? ""));
     return atEdge || CONDENSED.test(text)
       ? `{${stringLiteral(text)}}`
       : escapeBraces(escapeHtmlText(text));

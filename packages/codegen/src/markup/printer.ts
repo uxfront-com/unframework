@@ -1826,7 +1826,7 @@ export function printMarkup(
   function writeOpenTag(lines: Array<string>, item: ElementItem, after: number): void {
     const items = item.attributes;
     const tag = `<${item.tag}${items.map(({ text }) => ` ${text}`).join("")}${item.end}`;
-    const line = lines[lines.length - 1]!;
+    const line = lines.at(-1)!;
     const column = line.length - line.lastIndexOf("\n") - 1;
     const multiline = items.some(({ text, code }) => code && text.includes("\n"));
     if (!items.length || (!multiline && column + tag.length + after <= printWidth)) {

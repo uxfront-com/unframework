@@ -3444,13 +3444,13 @@ function literalLines(code: string): Set<number> {
         } else if (char === "'" || char === '"' || char === "`") {
           state = char;
         } else if (substitutions.length && char === "{") {
-          substitutions[substitutions.length - 1]!++;
+          substitutions.at(-1)!++;
         } else if (substitutions.length && char === "}") {
           if (substitutions.at(-1) === 0) {
             substitutions.pop();
             state = "`";
           } else {
-            substitutions[substitutions.length - 1]!--;
+            substitutions.at(-1)!--;
           }
         }
         break;
