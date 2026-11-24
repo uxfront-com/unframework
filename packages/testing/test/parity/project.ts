@@ -114,7 +114,7 @@ export function parityProject(
         ufCapabilities: STUB_CAPABILITIES,
       },
       // The harness's: the setup bounds `expect.element` by the poll timeout, and requires one.
-      expect: { requireAssertions: true, poll: { timeout: 5_000 } },
+      expect: { requireAssertions: true, poll: { timeout: 5000 } },
       browser: parityBrowser({ name: "parity" }),
     },
   };
@@ -155,7 +155,7 @@ export function hydrateParityProject(
         ufCapabilities: STUB_CAPABILITIES,
         ufHydrate: true,
       },
-      expect: { requireAssertions: true, poll: { timeout: 5_000 } },
+      expect: { requireAssertions: true, poll: { timeout: 5000 } },
       browser: parityBrowser({
         name: "parity-hydrate",
         commands: { ufHydrationRender: stubHydrationRender },

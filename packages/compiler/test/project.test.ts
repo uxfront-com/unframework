@@ -788,7 +788,7 @@ describe("a child's own children (ADR-0118)", () => {
     // A seeded generator, so each run's read delays differ and the test is the same each time.
     let seed = 7;
     const delay = () => {
-      seed = (seed * 1103515245 + 12345) % 2147483648;
+      seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
       return new Promise((resolve) => setTimeout(resolve, seed % 7));
     };
     const codes = (result: {

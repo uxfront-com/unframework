@@ -25,6 +25,12 @@ export default defineConfig({
     // sent on as a reply's field. The rule's fix renames such shorthand properties too, which
     // changes the object it builds.
     "unicorn/catch-error-name": "off",
+    // Hexadecimal numbers here are code points and hash constants, written as their standards
+    // write them (`0xd800`, `0x811c9dc5`), so the rule groups only those already grouped, by four.
+    "unicorn/numeric-separators-style": [
+      "error",
+      { hexadecimal: { onlyIfContainsSeparator: true, groupLength: 4 } },
+    ],
     // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
@@ -66,7 +72,6 @@ export default defineConfig({
     "unicorn/consistent-function-scoping": "off",
     "unicorn/no-array-fill-with-reference-type": "off",
     "unicorn/no-magic-array-flat-depth": "off",
-    "unicorn/numeric-separators-style": "off",
     "unicorn/prefer-array-flat-map": "off",
     "unicorn/prefer-at": "off",
     "unicorn/prefer-dom-node-append": "off",

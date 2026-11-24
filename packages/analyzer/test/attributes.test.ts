@@ -867,7 +867,7 @@ describe("fixes", () => {
         }
       }
       expect(failures).toEqual([]);
-      expect(fixed).toBeGreaterThan(scaledBound(5_000, run));
+      expect(fixed).toBeGreaterThan(scaledBound(5000, run));
     });
   }, 60_000);
 

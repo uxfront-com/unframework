@@ -429,7 +429,7 @@ describe("sourceMapProblems (L14)", () => {
 
   it("fails mappings that point outside the output or the source", async () => {
     const [file] = await mapped();
-    const beyond = encodedMappings(new TraceMap({ ...file!.map!, mappings: [[[0, 0, 9_999, 0]]] }));
+    const beyond = encodedMappings(new TraceMap({ ...file!.map!, mappings: [[[0, 0, 9999, 0]]] }));
     expect(
       sourceMapProblems("react", [withMap(file!, { mappings: beyond })], source, none)[0],
     ).toMatch(/1 wrong segment\(s\), the first at 1:0 points outside its files/);

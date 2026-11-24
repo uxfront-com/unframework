@@ -602,9 +602,9 @@ export const NUMERIC_ATTRIBUTES: ReadonlyMap<
     ol: { start: { kind: "integer" } },
     progress: { max: { kind: "number" }, value: { kind: "number" } },
     select: { size: { kind: "positive-integer" } },
-    td: { rowspan: { kind: "non-negative-integer", max: 65534 } },
+    td: { rowspan: { kind: "non-negative-integer", max: 65_534 } },
     textarea: { cols: { kind: "positive-integer" }, rows: { kind: "positive-integer" } },
-    th: { rowspan: { kind: "non-negative-integer", max: 65534 } },
+    th: { rowspan: { kind: "non-negative-integer", max: 65_534 } },
   }).map(([tag, attributes]) => [tag, table(attributes)]),
 );
 

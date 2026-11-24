@@ -406,7 +406,7 @@ async function browserProject(
       {
         testTimeout: TEST_TIMEOUT,
         // A locator that never matches fails in seconds, and a test without an assertion fails L8.
-        expect: { poll: { timeout: 5_000 }, requireAssertions: true },
+        expect: { poll: { timeout: 5000 }, requireAssertions: true },
       },
       {
         name,

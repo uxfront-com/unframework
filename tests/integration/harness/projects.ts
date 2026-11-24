@@ -553,7 +553,7 @@ async function pageProject(
         expect: {
           // A locator that never matches fails in seconds, not at the test timeout. The testing
           // setup gives `expect.element` this timeout too: Vitest 5 does not (element-timeout.ts).
-          poll: { timeout: 5_000 },
+          poll: { timeout: 5000 },
           // A test without an assertion fails L8: every spec asserts what it rendered (ADR-0043).
           requireAssertions: true,
         },

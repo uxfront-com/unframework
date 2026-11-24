@@ -432,7 +432,7 @@ describe("startPreview", () => {
       try {
         await expect(startPreview({ root, port })).rejects.toThrow("EADDRINUSE");
         // A closed server's handle goes once its socket has closed, just after `close()` resolves.
-        await expect.poll(servers, { timeout: 5_000 }).toBe(before);
+        await expect.poll(servers, { timeout: 5000 }).toBe(before);
       } finally {
         await new Promise((done) => taken.close(done));
       }

@@ -399,7 +399,7 @@ async function stableCapture(
     caret: "hide",
     scale: "css",
     type: "png",
-    timeout: 5_000,
+    timeout: 5000,
   };
   // The union of the container's box and those of what it teleported (ADR-0098).
   const clip = request.teleported?.length ? await unionClip(context, request) : undefined;
@@ -423,7 +423,7 @@ async function unionClip(
 ): Promise<{ x: number; y: number; width: number; height: number }> {
   const boxes = [];
   for (const { selector } of [request.element, ...(request.teleported ?? [])]) {
-    const box = await context.iframe.locator(selector).boundingBox({ timeout: 5_000 });
+    const box = await context.iframe.locator(selector).boundingBox({ timeout: 5000 });
     if (!box) {
       throw new Error(`[uf:visual] ${selector} has no box to capture.`);
     }

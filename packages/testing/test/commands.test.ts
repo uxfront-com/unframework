@@ -459,7 +459,7 @@ describe("parityBrowser", () => {
   });
 
   it("bounds every action by the action timeout, as an assertion is bounded by the poll's", () => {
-    expect(ACTION_TIMEOUT).toBe(5_000);
+    expect(ACTION_TIMEOUT).toBe(5000);
     const provider = parityBrowser({ name: "browser:vue" }).provider as unknown as {
       options: { actionTimeout?: number };
     };

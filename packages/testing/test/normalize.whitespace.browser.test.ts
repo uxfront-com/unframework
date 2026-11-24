@@ -361,7 +361,7 @@ function random(seed: number): () => number {
     let t = state;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
   };
 }
 
@@ -528,8 +528,8 @@ describe("rule 6 against Chromium's layout, fuzzed", () => {
       }
     }
     // The fuzz has to exercise the rule: thousands of pairs it equates, each laid out twice.
-    expect(equal).toBeGreaterThan(5_000);
-    expect(liveEqual).toBeGreaterThan(5_000);
+    expect(equal).toBeGreaterThan(5000);
+    expect(liveEqual).toBeGreaterThan(5000);
     expect(falseEquals).toEqual([]);
     expect(liveFalseEquals).toEqual([]);
   }, 120_000);

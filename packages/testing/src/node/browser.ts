@@ -18,7 +18,7 @@ export { VIEWPORT } from "./viewport.ts";
  * timeout, so a locator that matches nothing would hold a failing test, or a browser canary,
  * for a minute.
  */
-export const ACTION_TIMEOUT = 5_000;
+export const ACTION_TIMEOUT = 5000;
 
 /**
  * The switches Chromium launches with, for the captures (L10):

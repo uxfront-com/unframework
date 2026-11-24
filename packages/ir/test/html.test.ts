@@ -226,7 +226,7 @@ function spellings(scheme: string, count: number): Array<string> {
 }
 
 describe("URLs", () => {
-  const urls = [...spellings("javascript", 5_000), ...spellings("data", 5_000)];
+  const urls = [...spellings("javascript", 5000), ...spellings("data", 5000)];
   // What the browser reads, with Node's WHATWG URL parser, which follows the same standard. A
   // URL it cannot parse (`//javascript:x` has a port that is not a number) loads nothing.
   const base = "https://base.invalid/";
