@@ -376,7 +376,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   reportApiClashes(component, composition, fallthrough, rootElement !== undefined, context);
   // The directive the element that takes the records binds, and their listeners' type.
   const passes = fallthrough?.passes
-    ? fallthroughNames(component, module, imports, fallthrough.target.kind === "Element")
+    ? fallthroughNames(component, module, imports, fallthrough.target.kind !== "Component")
     : undefined;
   const usesRefObject = component.setup.some(
     (item) =>

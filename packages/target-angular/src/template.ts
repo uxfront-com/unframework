@@ -364,8 +364,9 @@ function takingPassed(
   } else if (style?.kind === "Style") {
     attributes[styleAt] = { ...style, declarations: [...style.declarations, declaration] };
   } else attributes.push({ kind: "Style", declarations: [declaration], span });
-  if (fallthrough.passes && root.kind === "Element" && !fallthrough.rest) {
-    // The root takes the records as the rest's element does: through the directive.
+  if (fallthrough.passes && root.kind !== "Component" && !fallthrough.rest) {
+    // The root takes the records as the rest's element does: through the directive, on the
+    // element of each `@case` of a `<component is>` root (ADR-0122).
     attributes.push({ kind: "Rest", span });
   }
   if (fallthrough.passes && root.kind === "Component") {
