@@ -165,6 +165,42 @@ export function rootElementRefs(
 }
 
 /**
+ * The template refs of {@link rootElementRefs} on a child whose root is a `<component is>` over
+ * tags (ADR-0122): its `$el` is the element of whichever tag renders, which changes as the tag
+ * does, and which Vue does not track, so the source's ref reads it each time.
+ */
+export function changingElementRefs(component: UfComponent, module: UfModule): Set<BindingId> {
+  const refs = new Set<BindingId>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component" || !rendersTags(module, node.component)) return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Ref") refs.add(attribute.binding);
+      }
+    },
+  });
+  return refs;
+}
+
+/** Whether a child's ref holds the element of whichever tag its `<component is>` root renders. */
+function rendersTags(module: UfModule, local: string): boolean {
+  for (const entry of module.imports ?? []) {
+    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+    if (!imported) continue;
+    const api = entry.api.components.find((each) =>
+      imported.imported === "default"
+        ? each.export === "default"
+        : each.export === "named" && each.name === imported.imported,
+    );
+    return api !== undefined && api.exposes.length === 0 && api.refTags !== undefined;
+  }
+  const own = module.components.find((each) => each.name === local);
+  if (!own || own.exposes?.functions.length || own.render.kind === "Element") return false;
+  const [only] = own.render.children;
+  return own.render.children.length === 1 && only?.kind === "Dynamic";
+}
+
+/**
  * Whether a child exposes nothing, so a ref on it holds its root element: an imported child's
  * API says, where it names the element (`refTag`, or `refTags` for a `<component is>` root,
  * ADR-0122), and one of the module's own components says
