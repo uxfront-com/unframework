@@ -48,6 +48,7 @@ import {
   directiveClassName,
   directiveFile,
   emitDirective,
+  QUEUE_HELPER,
   RUNNER_HELPER,
   runnerCode,
   runnerNames,
@@ -55,6 +56,7 @@ import {
 import {
   directiveCode,
   scopeDirectiveCode,
+  spaced,
   teleportDirectiveCode,
   transitionDirectiveCode,
   transitionRegionCode,
@@ -88,12 +90,14 @@ import {
 } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { classRules } from "./rules.ts";
+import { directiveModule, importShared } from "./shared.ts";
+import type { SharedUse } from "./shared.ts";
 import { template, templateReads } from "./template.ts";
 import { declaredTypes } from "./types.ts";
 
 /** The note the emulated cells share: why a listener's option needs a directive. */
 const OPTION_NOTE =
-  "A template's `(event)` binding takes no listener options: the file declares an attribute directive per event and option (`[ufClickCapture]`) that listens with `Renderer2.listen` and re-emits the event (ADR-0047).";
+  "A template's `(event)` binding takes no listener options: an attribute directive per event and option (`[ufClickCapture]`), shared in the tree's `_unframework/`, listens with `Renderer2.listen` and re-emits the event (ADR-0047).";
 
 /**
  * The Angular 22 target: standalone, zoneless components. The host element gets
@@ -154,7 +158,7 @@ export const angular: Target = defineTarget({
     "style-binding": {
       support: "emulated",
       helper: "styleObject",
-      note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+      note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, a shared helper, `styleObject`, splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
     // Angular sanitises a bound `innerHTML`: it drops `id`, `data-*` and `style` attributes, form
@@ -201,12 +205,12 @@ export const angular: Target = defineTarget({
     "model-modifiers": {
       support: "emulated",
       helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
     },
     fallthrough: {
       support: "emulated",
       helper: "Fallthrough",
-      note: "Angular has no attribute spread, and a host that carries an attribute is not unwrapped. A component that takes what its consumer passes declares it as inputs, which the consumer binds on the host, and clears `class` and `style` from the host, which keeps only `display: contents` (ADR-0056): `class` and `style` merge into the element that takes them, its root or the props' rest's element, and the other attributes and native listeners come as two records, `ufAttributes` and `ufListeners`, which an inline attribute directive, `Fallthrough` (`[ufFallthrough]`), sets on that element through `Renderer2`, the consumer's attribute winning, and listens to in the browser after the element's own listeners. A root component passes them on to its own (ADR-0118). A hand-written consumer's attribute on the host stays on the host.",
+      note: "Angular has no attribute spread, and a host that carries an attribute is not unwrapped. A component that takes what its consumer passes declares it as inputs, which the consumer binds on the host, and clears `class` and `style` from the host, which keeps only `display: contents` (ADR-0056): `class` and `style` merge into the element that takes them, its root or the props' rest's element, and the other attributes and native listeners come as two records, `ufAttributes` and `ufListeners`, which an attribute directive shared in the tree's `_unframework/`, `Fallthrough` (`[ufFallthrough]`), sets on that element through `Renderer2`, the consumer's attribute winning, and listens to in the browser after the element's own listeners. A root component passes them on to its own (ADR-0118). A hand-written consumer's attribute on the host stays on the host.",
     },
     "contextual-root": {
       support: "unsupported",
@@ -239,7 +243,7 @@ export const angular: Target = defineTarget({
       code: "UF4003",
       severity: "info",
       reason:
-        "Each root node of a child binds an inline attribute directive, `[ufScope]`, that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
+        "Each root node of a child binds a shared attribute directive, `ScopeAttributes` (`[ufScope]`), that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
     },
     "slotted-styles": { support: "native" },
     // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
@@ -275,7 +279,7 @@ export const angular: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: RUNNER_HELPER,
-      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // Angular's `animate.enter` and `animate.leave` take one class list, which can't run Vue's
     // three phases, so an inline directive runs them, with `animate.leave`'s function form
@@ -331,7 +335,9 @@ function reportsLiteralFallthrough(component: UfComponent, context: EmitContext)
 /** A component's output file. */
 function emitComponent(component: UfComponent, context: EmitContext): OutputFile {
   const { module } = context;
-  const plan = planComponent(component, module);
+  // With `helper`, the helpers that pass R1 to R4 are shared in `_unframework/` (ADR-0121).
+  const shares = context.helper !== undefined;
+  const plan = planComponent(component, module, shares);
   const { imports } = plan;
   const composition = planComposition(plan);
   // Angular matches a child by its selector alone, so two children of one name are reported
@@ -403,10 +409,13 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   // ADR-0037) takes none of them.
   const clearsHost = fallthrough !== undefined || component.inheritAttrs === false;
   reportApiClashes(component, composition, fallthrough, rootElement !== undefined, context);
-  // The directive the element that takes the records binds, and their listeners' type.
-  const passes = fallthrough?.passes
-    ? fallthroughNames(component, module, imports, fallthrough.target.kind !== "Component")
-    : undefined;
+  // The directive the element that takes the records binds, and their listeners' type, shared
+  // in `_unframework/` with `helper` (ADR-0121).
+  const passes = !fallthrough?.passes
+    ? undefined
+    : shares
+      ? sharedFallthroughNames(plan, fallthrough)
+      : fallthroughNames(component, module, imports, fallthrough.target.kind !== "Component");
   const usesRefObject = component.setup.some(
     (item) =>
       (item.kind === "Provide" || (item.kind === "Inject" && item.fallback)) &&
@@ -417,9 +426,11 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const nextId = component.setup.some((item) => item.kind === "Id")
     ? imports.claim("idCounter")
     : undefined;
-  const directives = listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
+  const directives = shares
+    ? []
+    : listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
   // `innerHTML` reads its markup through a pure pipe that marks it trusted (ADR-0097).
-  const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
+  const trustedHtml = rendersRawHtml(component) ? plan.helper("TrustedHtmlPipe") : undefined;
   // A teleport mounts its view through an inline directive (ADR-0098).
   const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
   // A transition runs through an inline directive, and a region directive around a conditional
@@ -443,7 +454,10 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ),
   );
   const ownApplied = ownDirectives(component, module);
-  const runner = ownApplied.length ? runnerNames((base) => imports.claim(base)) : undefined;
+  // A shared `queueHook` is imported (ADR-0121); the rest of the runner stays inline (R2).
+  const runner = ownApplied.length
+    ? runnerNames((base) => (base === QUEUE_HELPER ? plan.helper(base) : imports.claim(base)))
+    : undefined;
   const ownClasses = ownApplied.map((directive) => ({
     directive,
     className: imports.claim(directiveClassName(directive.name)),
@@ -452,7 +466,12 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   // attributes the component's styled parents put on its host.
   const roots = scopedRoots(component, fallthrough?.rest === true);
   const scope = roots.size
-    ? { ...scopeNames(component, module, imports), host: plan.members.claim("host") }
+    ? {
+        ...(shares
+          ? { className: plan.helper("ScopeAttributes"), scopes: "" }
+          : scopeNames(component, module, imports)),
+        host: plan.members.claim("host"),
+      }
     : undefined;
   // A teleport root takes its parents' scope attributes off the host (ADR-0098).
   const { render } = component;
@@ -631,7 +650,9 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
         `export const ${key.name} = new ${imports.add("@angular/core", "InjectionToken")}<${tokenType(key)}>(${JSON.stringify(key.description)});\n`,
     ),
     ...(refObject === undefined ? [] : [refObjectCode(refObject)]),
-    ...[...models.helpers, ...models.support].map(({ code }) => `${code}\n`),
+    ...[...models.helpers, ...models.support]
+      .filter(({ shared }) => shared === undefined)
+      .map(({ code }) => `${code}\n`),
     ...composition.slots.map((slot) =>
       slotDirectiveCode(
         component.name,
@@ -640,8 +661,8 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
         component.typeParameters,
       ),
     ),
-    ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
-    ...(passes === undefined
+    ...(scope && !shares ? [scopeDirectiveCode(scope, imports)] : []),
+    ...(passes === undefined || shares
       ? []
       : [
           fallthroughDirectiveCode(
@@ -651,8 +672,10 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
             (name) => imports.add("@angular/common", name),
           ),
         ]),
-    ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
-    ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
+    ...(models.textCaret === undefined || shares
+      ? []
+      : [textCaretDirectiveCode(models.textCaret, imports)]),
+    ...(trustedHtml === undefined || shares ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
     ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
     ...(transition === undefined
       ? []
@@ -660,13 +683,38 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
           transitionRegionCode(transition.regionClass, imports),
           transitionDirectiveCode(transition.className, transition.regionClass, imports),
         ]),
-    ...(runner === undefined ? [] : runnerCode(runner)),
+    ...(runner === undefined ? [] : runnerCode(runner, !shares)),
     ...ownClasses.map(({ directive, className: name }) =>
       directiveClassCode(directive, name, runner?.run ?? RUNNER_HELPER, imports),
     ),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
+  }
+  const path = `${kebabCase(component.name)}.ts`;
+  if (context.helper) {
+    importShared(context.helper, path, imports, [
+      ...listeners.directives.map((spec): SharedUse => ({
+        name: spec.name,
+        local: spec.className,
+        contents: directiveModule(spec),
+      })),
+      ...(scope ? [{ name: "ScopeAttributes", local: scope.className }] : []),
+      ...(passes === undefined
+        ? []
+        : [
+            { name: listenersExport(fallthrough!), local: passes.listeners, type: true },
+            ...(passes.directive === undefined
+              ? []
+              : [{ name: "Fallthrough", local: passes.directive }]),
+          ]),
+      ...models.helpers.flatMap(({ name, shared }) =>
+        shared === undefined ? [] : [{ name: shared, local: name }],
+      ),
+      ...(models.textCaret === undefined ? [] : [{ name: "TextCaret", local: models.textCaret }]),
+      ...(trustedHtml === undefined ? [] : [{ name: "TrustedHtmlPipe", local: trustedHtml }]),
+      ...(runner === undefined ? [] : [{ name: QUEUE_HELPER, local: runner.queue }]),
+    ]);
   }
   // The types it imports, by name, from where the source imports them, a child's from its
   // output (`./field`), and in the main component's file the module's type exports, in source
@@ -703,7 +751,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       spaced(printProgram(js.program(statements))),
     ].join("\n"),
   );
-  return { path: `${kebabCase(component.name)}.ts`, contents };
+  return { path, contents };
 }
 
 /** Whether an element of the component's template sets `innerHTML` (ADR-0097). */
@@ -795,6 +843,25 @@ function fallthroughNames(
   const claim = helperClaim(component, module, imports);
   const listeners = claim("Listeners");
   return directive ? { listeners, directive: claim("Fallthrough") } : { listeners };
+}
+
+/** The export name of the listeners' type the component's records take, in `_unframework/`. */
+function listenersExport(fallthrough: FallthroughPlan): string {
+  return fallthrough.events === "SVGElementEventMap" ? "SvgListeners" : "Listeners";
+}
+
+/**
+ * The local names of the shared fallthrough directive and its listeners' type (ADR-0121), as
+ * `plan.helper` claims them: one per source, so the join writes one import (A3).
+ */
+function sharedFallthroughNames(
+  plan: Plan,
+  fallthrough: FallthroughPlan,
+): { listeners: string; directive?: string } {
+  const listeners = plan.helper(listenersExport(fallthrough));
+  return fallthrough.target.kind !== "Component"
+    ? { listeners, directive: plan.helper("Fallthrough") }
+    : { listeners };
 }
 
 /**
@@ -1052,14 +1119,4 @@ function typeParameters(
     end: 0,
   }));
   return { type: "TSTypeParameterDeclaration", params, start: 0, end: 0 };
-}
-
-/**
- * A printed class with a blank line before each of its methods, as Angular code sets them apart
- * from the fields and from each other (oxfmt keeps a blank line, and adds none). Read before the
- * placeholders are spliced: a member starts at the class's indentation, and a method's line ends
- * with its body's `{` where a field's holds ` = `.
- */
-function spaced(printed: string): string {
-  return printed.replace(/\n(?= {2}[^\s}][^\n]*\{\n)(?! {2}[^\n]* = )/g, "\n\n");
 }

@@ -1,5 +1,6 @@
+import { clearedRef } from "./_unframework/clearedRef";
 import type { ComponentProps, JSX } from "@solidjs/web";
-import { omit, onCleanup, untrack } from "solid-js";
+import { omit, untrack } from "solid-js";
 
 export default function SearchField(
   props: { label: string } & Omit<ComponentProps<"label">, "label" | "ref" | "class" | "style"> & {
@@ -34,10 +35,4 @@ export default function SearchField(
       />
     </label>
   );
-}
-
-/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
-function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
-  onCleanup(clear);
-  return callback;
 }

@@ -7,8 +7,10 @@ It is a fork of `@unframework.dev/target-solid`, the Solid 1.9 target, moved to 
 opts in.
 
 ```tsx
+import { createState } from "./_unframework/createState";
+import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver, merge, untrack } from "solid-js";
+import { Show, merge, untrack } from "solid-js";
 
 export interface CounterProps {
   initial?: number;
@@ -56,8 +58,8 @@ export default function Counter(
 }
 ```
 
-The helpers each output prints after the component (`createState`, `scopeAttributes`) are left
-out above.
+`createState` and `scopeAttributes` are shared helpers, modules of their own in the tree's
+`_unframework/` (ADR-0121).
 
 ## Where it differs from Solid 1
 
@@ -66,8 +68,10 @@ Everything `@unframework.dev/target-solid`'s README says holds here, but for wha
 
 - **State.** Solid 2 lets a read see a write only once it flushes, on a microtask or at
   `flush()`, which an effect's callback or `onSettled` cannot call. Vue's read sees a write at
-  once. So `ref` goes through an inline helper, `createState`: a signal that holds a version, whose
-  read returns the value last written and tracks the signal where something observes it. Solid
+  once. So `ref` goes through a helper, `createState`: a signal that holds a version, whose
+  read returns the value last written and tracks the signal where something observes it. It is
+  shared in the tree's `_unframework/` (ADR-0121), but in a component with watchers, whose
+  `createState` queues their flush at the write and stays inline. Solid
   applies what a write changes, the DOM included, when it flushes. A derived value is a function,
   `const doubled = () => count() * 2`, which reads the latest values too
   (`interactivity`, emulated).
@@ -111,6 +115,11 @@ Everything `@unframework.dev/target-solid`'s README says holds here, but for wha
 - **Teleport and transition.** `Teleport` renders Solid 2's `<Portal>`, which inserts no wrapper,
   once the component has mounted, the teleports in the order they rendered. `Transition` resolves
   its child on the server too.
+- **Shared helpers (ADR-0121).** `_unframework/` holds Solid 1's shared helpers but `Teleport`,
+  and `createState.ts`, `enumeratedValue.ts` and `clearedRef.ts` beside them. `Teleport` stays
+  inline, since its queue of the teleports that rendered lives in the module. So does the
+  `createState` of a component with watchers, whose write queues their flush, under a name past
+  the shared one's where the component's source has others.
 
 ## Toolchain
 

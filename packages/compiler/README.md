@@ -46,6 +46,17 @@ scoped sheet, `<source>.css` (`Button.uf.tsx.css`): its sheets scoped and joined
 which the `output` hooks see and formatting keeps as printed. `CompileResult.owners` names the
 component each output file is written for, by target, which the unplugin loads files by; the
 sheet is no component's module, and is left out.
+**Shared helper modules** (ADR-0121). A target puts each helper it emits for a missing primitive
+through `EmitContext.helper`, into one module per helper, `_unframework/<file>` at the root of the
+output tree, which each output imports by a relative path. `helperRoot` names that root, in the
+frame of `filename`: the source's directory or one above it, and the source's own directory by
+default, so one compile's outputs are a complete tree. Any other directory throws. The modules
+follow the components and the copies, sorted and formatted, and each maps onto itself under
+`sourceMap`. `owners` leaves them out, and `CompileResult.helpers` lists their paths by target.
+A module's text depends only on the target and the helper, so every compile that emits it writes
+the same file, and a caller that writes a tree writes each once. A caller must write them beside
+the components. A target that gives one module two texts is UF9001, and a shared module whose
+copy would take a helper module's place is UF1104.
 The `typeOracle` option is the type oracle (plan §5.5, ADR-0067): before it analyses, `compile()`
 asks it for the shape of each type the analyser reads (`shapeQueries`), and the analyser lowers
 props from those shapes, so a props type may come from another file or a package. Its queries name
@@ -86,7 +97,8 @@ map as it is. Maps don't change the files' text, and they never enter the golden
 **The project graph** (ADR-0071). `createProject({ root, readFile, targets, typeOracle })` takes
 the files `createFileResolver` does and the options each compile takes, but `filename` and
 `resolve`. Its `compile(file)` compiles a module, named relative to `root`, through its own
-resolver and the caller's oracle, and keeps the result. The result leaves out the copies of shared
+resolver and the caller's oracle, and keeps the result. Its `helperRoot` is one directory for every
+module, or a function that gives each module's from its file. The result keeps its helper modules. The result leaves out the copies of shared
 `.ts` modules: each copy is its module's own node, which `copy(file)` gives. `copies(file)` gives
 a compiled module's copies at their paths relative to it, each with its module's current text: with
 the result's outputs, they are what `compile()` emits (the unplugin's golden guard reads them), but

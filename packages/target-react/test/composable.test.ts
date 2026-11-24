@@ -6,7 +6,7 @@
 // target's lane has landed (../../codegen/test/composable-cases.ts).
 import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import type { OutputFile } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
@@ -44,6 +44,8 @@ async function expectClean(directory: string, outputs: readonly OutputFile[]): P
   mkdirSync(at, { recursive: true });
   const files = outputs.map((output) => {
     const absolute = join(at, output.path);
+    // A helper module sits in `_unframework/` (ADR-0121).
+    mkdirSync(dirname(absolute), { recursive: true });
     writeFileSync(absolute, output.contents);
     return { path: absolute, contents: output.contents };
   });

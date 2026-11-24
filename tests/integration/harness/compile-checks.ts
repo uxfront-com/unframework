@@ -281,7 +281,8 @@ export interface MapSource {
 /**
  * L14 (ADR-0078): every way a target's output files' maps fail to round-trip to the source. Each
  * map decodes and names its one source with that source's content, relative to the file: the
- * `.uf.tsx`, or for a copy of a shared module (`modules`, by path) the copy itself (ADR-0070).
+ * `.uf.tsx`, or for a copy of a shared module or a helper module (`modules`, by path) the file
+ * itself (ADR-0070, ADR-0121).
  * Each segment without a name maps to the same text in both files, read for the length of the
  * source's token: oxfmt may lengthen a number the output still starts with (`5.` to `5.0`), and a
  * token it rewrites otherwise has lost its segment (ADR-0074). A segment with a name marks a
@@ -306,7 +307,8 @@ function fileMapProblems(
   const { map } = file;
   if (!map) return [`${where} has no source map.`];
   const copy = modules.has(file.path);
-  const expected = copy ? posix.basename(file.path) : posix.basename(source.filename);
+  // A copy, or a helper module (ADR-0121), names itself, at its own path in the tree.
+  const expected = copy ? file.path : posix.basename(source.filename);
   const text = copy ? file.contents : source.text;
   const named = map.sources.map((name) =>
     posix.normalize(posix.join(posix.dirname(file.path), name)),

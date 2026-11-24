@@ -3,7 +3,7 @@
 // renders, so its `onMount`, effect and `onCleanup` are its branch's: `mounted` once the element
 // is in the document, `updated` from an effect that reads the value, behind `Object.is`, and
 // `unmounted` once the branch is disposed. Solid evaluates a ref before the element's children
-// are inserted, so its hooks would run parent first: each goes through the inline `queueHook`,
+// are inserted, so its hooks would run parent first: each goes through the `queueHook` helper,
 // which runs them in Vue's order (`emulated`). Solid 1.9's server render drops `ref`.
 import {
   dependencyImports,
@@ -21,7 +21,12 @@ import {
 import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
 import type { UfDirective } from "@unframework.dev/ir";
 
-/** The inline helper that runs a directive's hooks in Vue's order. */
+import { sharedModule } from "./shared.ts";
+
+/**
+ * The helper that runs a directive's hooks in Vue's order, shared in `_unframework/` (ADR-0121) or
+ * printed inline.
+ */
 export const QUEUE_HELPER = "queueHook";
 
 /** The local names a ref factory reads: Solid's primitives, and the queue helper. */
@@ -111,18 +116,27 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
   };
   const queue = scope.claim(QUEUE_HELPER);
   const factory = factoryCode(directive, { solid, queue }, true);
+  const path = `${directive.name}.ts`;
+  // With `helper`, the queue is the tree's shared module (ADR-0121); without it, inline.
+  const shared = context.helper?.("queueHook.ts", sharedModule(QUEUE_HELPER), path);
+  const queueImport = shared
+    ? [
+        `import { ${queue === QUEUE_HELPER ? queue : `${QUEUE_HELPER} as ${queue}`} } from "${shared.replace(/\.ts$/, "")}";`,
+      ]
+    : [];
   const specifiers = [...used]
     .toSorted(([a], [b]) => (a < b ? -1 : 1))
     .map(([imported, local]) => (imported === local ? local : `${imported} as ${local}`));
   const code = [
     [
+      ...queueImport,
       `import { ${specifiers.join(", ")} } from "solid-js";`,
       ...dependencyImports(dependencies),
     ].join("\n"),
     ...dependencies.types,
     ...(dependencies.constants.length ? [dependencies.constants.join("\n")] : []),
     factory,
-    hookQueueCode(queue),
+    ...(shared ? [] : [hookQueueCode(queue)]),
   ].join("\n\n");
-  return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
+  return [{ path, contents: `${code}\n` }];
 }

@@ -143,6 +143,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
         },
         sheet: () => Promise.reject(new Error("no sheet")),
         composable: () => Promise.reject(new Error("no composables")),
+        helper: () => Promise.reject(new Error("no helper")),
       };
       const result = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
       expect(result).toEqual({
@@ -163,6 +164,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
         load: () => Promise.reject(new Error("already compiled")),
         sheet: () => Promise.reject(new Error("no sheet")),
         composable: () => Promise.reject(new Error("no composables")),
+        helper: () => Promise.reject(new Error("no helper")),
       };
       const { html } = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
       expect(html).toBe('<form aria-label="Again"><p class="changed">Name</p></form>');
@@ -199,6 +201,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
         },
         sheet: (id: string) => Promise.resolve(sheets.get(id)!),
         composable: () => Promise.reject(new Error("no composables")),
+        helper: () => Promise.reject(new Error("no helper")),
       };
       const render = () => renderAstroComponent(root, { id: idOf("Card"), props: {} }, children);
       expect((await render()).html).toBe(
@@ -230,6 +233,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
           asked.push(id);
           return Promise.resolve(composable);
         },
+        helper: () => Promise.reject(new Error("no helper")),
       };
       const render = () =>
         renderAstroComponent(root, { id: idOf("Disclosure"), props: {} }, children);
@@ -237,6 +241,40 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
       expect(asked).toEqual([composableId]);
       composable = composable.replace("const on = initial;", "const on = !initial;");
       expect((await render()).html).toBe("<p>open</p>");
+    });
+
+    // ADR-0121: a shared helper module is a plain TypeScript module in `_unframework/`, which the
+    // browser project's compile emitted, and the render serves as it does, on each render.
+    it("renders a component that imports a shared helper module", async () => {
+      const helperId = join(root, "_unframework", "astro", "scopeAttributes.ts");
+      let helper =
+        'export function scopeAttributes(props: object): Record<string, ""> {\n  return Object.fromEntries(Object.keys(props).filter((name) => name.startsWith("data-uf-")).map((name) => [name, ""]));\n}\n';
+      compileInBrowserProject(
+        "Scoped",
+        '---\nimport { scopeAttributes } from "./_unframework/scopeAttributes";\n---\n\n<p {...scopeAttributes(Astro.props)}>scoped</p>\n',
+      );
+      const asked: string[] = [];
+      const children = {
+        resolve: (specifier: string) =>
+          Promise.resolve(specifier === "./_unframework/scopeAttributes" ? helperId : undefined),
+        load: () => Promise.reject(new Error("no child")),
+        sheet: () => Promise.reject(new Error("no sheet")),
+        composable: () => Promise.reject(new Error("no composables")),
+        helper: (id: string) => {
+          asked.push(id);
+          return Promise.resolve(helper);
+        },
+      };
+      const render = () =>
+        renderAstroComponent(
+          root,
+          { id: idOf("Scoped"), props: { "data-uf-1": "", title: "x" } },
+          children,
+        );
+      expect(await render()).toEqual({ html: "<p data-uf-1>scoped</p>", console: [] });
+      expect(asked).toEqual([helperId]);
+      helper = helper.replace('name.startsWith("data-uf-")', 'name === "title"');
+      expect((await render()).html).toBe("<p title>scoped</p>");
     });
 
     // A real Vite client environment, as Vitest's browser project has: a stubbed plugin

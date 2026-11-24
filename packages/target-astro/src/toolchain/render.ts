@@ -65,6 +65,11 @@ export interface ChildModules {
    * (`/abs/useToggle.uf.ts`, ADR-0069), as the unframework plugin compiles it.
    */
   composable(id: string): Promise<string>;
+  /**
+   * The shared helper module the browser project's pipeline serves for a helper's id
+   * (`/abs/_unframework/astro/scopeAttributes.ts`, ADR-0121), as the unframework plugin emitted it.
+   */
+  helper(id: string): Promise<string>;
 }
 
 /** The children of the render running now: renders run one at a time. */
@@ -78,6 +83,12 @@ const SHEET_ID = /\.uf\.tsx\.css(?:\?.*)?$/;
 
 /** A module of composables' id on Astro, the authored `.uf.ts` file's (ADR-0069), with any query. */
 const COMPOSABLE_ID = /\.uf\.ts(?:\?.*)?$/;
+
+/**
+ * A shared helper module's id (`/abs/_unframework/astro/scopeAttributes.ts`, ADR-0121), with any
+ * query: the unframework plugin puts its target's name between `_unframework/` and the file.
+ */
+const HELPER_ID = /\/_unframework\/[^/?]+\/[^/?]+(?:\?.*)?$/;
 
 /** Any stylesheet's id, with any query: an emitted sheet, or one a plugin serves (ADR-0064). */
 const STYLESHEET_ID = /\.css(?:\?.*)?$/;
@@ -129,6 +140,13 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
       const code = typeof loaded === "object" ? loaded?.code : loaded;
       if (code == null)
         throw new Error(`ufAstroRender: the browser project serves no composables ${id}.`);
+      return code;
+    },
+    async helper(id) {
+      const loaded = await client.pluginContainer.load(id);
+      const code = typeof loaded === "object" ? loaded?.code : loaded;
+      if (code == null)
+        throw new Error(`ufAstroRender: the browser project serves no helper ${id}.`);
       return code;
     },
   };
@@ -188,7 +206,9 @@ async function render(
     // A module of composables this render's project cannot serve is loaded again if imported.
     const current = COMPOSABLE_ID.test(served)
       ? await children?.composable(served).catch(() => undefined)
-      : compiledAstroSource(served);
+      : HELPER_ID.test(served)
+        ? await children?.helper(served).catch(() => undefined)
+        : compiledAstroSource(served);
     if (current !== previous) invalidate(server.ssr, served);
   }
 
@@ -319,13 +339,15 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
       if (child !== undefined && SHEET_ID.test(child)) return splitQuery(child)[0];
       // A module of composables (ADR-0069): its static module, as the browser project compiles it.
       if (child !== undefined && COMPOSABLE_ID.test(child)) return splitQuery(child)[0];
+      // A shared helper module (ADR-0121): its text, as the browser project's compile emitted it.
+      if (child !== undefined && HELPER_ID.test(child)) return splitQuery(child)[0];
       if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) return null;
       const [path] = splitQuery(child);
       if (compiledAstroSource(path) === undefined) await children.load(path);
       return path;
     },
     load: {
-      filter: { id: [ASTRO_VIRTUAL_ID, SHEET_ID, COMPOSABLE_ID] },
+      filter: { id: [ASTRO_VIRTUAL_ID, SHEET_ID, COMPOSABLE_ID, HELPER_ID] },
       async handler(id) {
         // The render puts the sheet before the markup itself (`importedSheets`): the module is
         // only an edge of the graph, whatever the sheet holds.
@@ -335,6 +357,14 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
           if (!children) throw new Error(`ufAstroRender: no browser project serves ${id}.`);
           const [file] = splitQuery(id);
           const code = await children.composable(file);
+          served.set(file, code);
+          return code;
+        }
+        // A shared helper module, a plain TypeScript module too (ADR-0121).
+        if (HELPER_ID.test(id)) {
+          if (!children) throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+          const [file] = splitQuery(id);
+          const code = await children.helper(file);
           served.set(file, code);
           return code;
         }

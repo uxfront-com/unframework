@@ -5,6 +5,7 @@ import { compile, createFileResolver, createSyntacticOracle } from "@unframework
 import { describe, expect, it } from "vitest";
 
 import { project, run, tree, write } from "./helpers.ts";
+import { fixtureFor } from "./shared-helpers/fixture.ts";
 
 const TARGETS = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"] as const;
 
@@ -76,6 +77,8 @@ async function compiled(root: string, target: (typeof TARGETS)[number]) {
       resolve,
       typeOracle,
       sourceMap: true,
+      // As the build compiles: one `_unframework/` at the root of each tree (ADR-0121).
+      helperRoot: "src",
     });
     expect(diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
     const directory = relative("src", source).replace(/[^/]*$/, "");
@@ -126,6 +129,16 @@ describe("build", () => {
     expect(react["shared/format.ts.map"]).toBeUndefined();
   });
 
+  it("gives a helper module a sidecar that names the module itself (ADR-0121)", async () => {
+    const root = project(fixtureFor("react"));
+    expect(await run(root, "build")).toMatchObject({ code: 0 });
+    const react = tree(join(root, "dist/react"));
+    expect(react["_unframework/cx.ts"]).toMatch(/\n\/\/# sourceMappingURL=cx\.ts\.map\n$/);
+    const map = JSON.parse(react["_unframework/cx.ts.map"]!);
+    expect(map.sources).toEqual(["cx.ts"]);
+    expect(map.sourcesContent).toEqual([react["_unframework/cx.ts"]!.replace(COMMENT, "")]);
+  });
+
   it("names the source in a sidecar from where the file was written", async () => {
     const root = project(FIXTURE);
     await run(root, "build");
@@ -165,17 +178,28 @@ describe("build", () => {
     expect(JSON.parse(angular["card.ts.map"]!).sources).toEqual(["../../src/Card.uf.tsx"]);
   });
 
-  it("gives identical bytes on a second run and in another directory (P8)", async () => {
-    const first = project(FIXTURE);
-    await run(first, "build");
-    const before = tree(join(first, "dist"));
-    expect(await run(first, "build")).toMatchObject({ code: 0 });
-    expect(tree(join(first, "dist"))).toEqual(before);
-    const second = project(FIXTURE);
-    await run(second, "build");
-    expect(tree(join(second, "dist"))).toEqual(before);
-    expect(JSON.stringify(before)).not.toContain(first);
-  });
+  // The shared helpers' fixture too, whose components in two directories share helper modules
+  // (ADR-0121).
+  it.each([
+    ["the design system", FIXTURE],
+    ["the shared helpers' fixture", fixtureFor("react")],
+    ["the shared helpers' fixture: Svelte", fixtureFor("svelte")],
+    ["the shared helpers' fixture: Astro", fixtureFor("astro")],
+    ["the shared helpers' fixture: Angular", fixtureFor("angular")],
+  ])(
+    "gives identical bytes on a second run and in another directory (P8): %s",
+    async (_, files) => {
+      const first = project(files);
+      await run(first, "build");
+      const before = tree(join(first, "dist"));
+      expect(await run(first, "build")).toMatchObject({ code: 0 });
+      expect(tree(join(first, "dist"))).toEqual(before);
+      const second = project(files);
+      await run(second, "build");
+      expect(tree(join(second, "dist"))).toEqual(before);
+      expect(JSON.stringify(before)).not.toContain(first);
+    },
+  );
 
   it("writes a barrel per target in that target's import form", async () => {
     const root = project(FIXTURE);

@@ -1,5 +1,7 @@
+import { clearedRef } from "./_unframework/clearedRef";
+import { enumeratedValue } from "./_unframework/enumeratedValue";
 import type { ComponentProps, JSX } from "@solidjs/web";
-import { createUniqueId, omit, onCleanup, onSettled } from "solid-js";
+import { createUniqueId, omit, onSettled } from "solid-js";
 
 export interface ConfirmDialogProps {
   title: string;
@@ -65,15 +67,4 @@ export default function ConfirmDialog(
       </button>
     </div>
   );
-}
-
-/** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
-function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
-  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
-function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
-  onCleanup(clear);
-  return callback;
 }
