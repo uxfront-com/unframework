@@ -39,10 +39,12 @@ const MODULES: Record<
   solid: {
     path: "vFocusTrap.ts",
     export: "export function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void",
+    helpers: ["_unframework/queueHook.ts"],
   },
   solid2: {
     path: "vFocusTrap.ts",
     export: "export function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void",
+    helpers: ["_unframework/queueHook.ts"],
   },
   angular: {
     path: "v-focus-trap.ts",
@@ -59,15 +61,24 @@ describe("a module of directives on each target", () => {
     async (target) => {
       const result = await compile(TRAP, { filename: "focusTrap.uf.ts", targets: [target] });
       expect(result.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      // Its own files: a target may also put the helpers it calls in `_unframework/` (ADR-0121).
+      // Its own files, without the helpers it calls, which it puts in `_unframework/` (ADR-0121).
       const files = ownOutputs(result, target);
       const expected = MODULES[target];
       if (!expected) {
         expect(files).toEqual([]);
         return;
       }
-      expect(files.map(({ path }) => path)).toEqual([expected.path, ...(expected.helpers ?? [])]);
-      expect(result.helpers[target] ?? []).toEqual(expected.helpers ?? []);
+      const helpers = expected.helpers ?? [];
+      expect(files.map(({ path }) => path)).toEqual([expected.path]);
+      expect(result.helpers[target] ?? []).toEqual(helpers);
+      // `compile()` appends the helper modules after the module, which imports each one.
+      expect((result.outputs[target] ?? []).map(({ path }) => path)).toEqual([
+        expected.path,
+        ...helpers,
+      ]);
+      for (const helper of helpers) {
+        expect(files[0]!.contents).toContain(`from "./${helper.replace(/\.ts$/, "")}"`);
+      }
       expect(files[0]!.contents).toContain(expected.export);
       // The constant its hook reads comes with it, as a composable's does (ADR-0070).
       expect(files[0]!.contents).toContain('const FOCUSABLE = "button";');
