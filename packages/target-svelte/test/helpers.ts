@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { formatOutput } from "@unframework.dev/codegen";
@@ -200,6 +200,8 @@ export function writeScratch(
   return Object.fromEntries(
     Object.entries(files).map(([name, contents]) => {
       const path = join(directory, name);
+      // A shared helper module sits in `_unframework/` (ADR-0121).
+      mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, contents);
       return [name, path];
     }),
