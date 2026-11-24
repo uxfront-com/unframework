@@ -130,10 +130,11 @@ interface Analysis {
   pending: Promise<Analysed | undefined>;
 }
 
-/** A project's session: the children analysed in it, and each file's component imports. */
+/** A project's session: the children analysed in it, each file's component imports and its text. */
 interface Session {
   analyses: Map<string, Analysis>;
   imports: Map<string, Promise<string[]>>;
+  texts: Map<string, Promise<string | undefined>>;
 }
 
 /**
@@ -170,11 +171,13 @@ export function createProject(options: ProjectOptions): Project {
    * The children analysed in the current session, by file (ADR-0118): a parent reads each child
    * with its own children, so without it a child that many paths reach is read once per path.
    * A session lasts while a compile, an update or a resolve is in flight, so it sees each file
-   * as it is then, and an update starts a fresh one.
+   * as it is then, and an update starts a fresh one. It reads each file's text once too: the
+   * children, the cycle searches and the compile itself share it, so a compile waits on one read
+   * per file, not one per path that reaches it.
    */
   let session: Session | undefined;
   let active = 0;
-  const newSession = (): Session => ({ analyses: new Map(), imports: new Map() });
+  const newSession = (): Session => ({ analyses: new Map(), imports: new Map(), texts: new Map() });
   const inSession = async <T>(run: () => Promise<T>, fresh = false): Promise<T> => {
     if (fresh || !session) session = newSession();
     active++;
@@ -186,11 +189,29 @@ export function createProject(options: ProjectOptions): Project {
   };
   const memoOf = () => session ?? newSession();
 
+  /**
+   * A file's text, read once in the session `memo` (the current one by default), or read again
+   * outside a session. A read that fails is forgotten, so the next one tries again.
+   */
+  const readText = (path: string | undefined, memo = session): Promise<string | undefined> => {
+    if (path === undefined || !memo) return readPath(path);
+    let text = memo.texts.get(path);
+    if (!text) {
+      const read = readPath(path);
+      memo.texts.set(path, read);
+      read.catch(() => {
+        if (memo.texts.get(path) === read) memo.texts.delete(path);
+      });
+      text = read;
+    }
+    return text;
+  };
+
   /** The files a child imports components from, read once in the session. */
   const importsOf = (path: string, memo: Session): Promise<string[]> => {
     let found = memo.imports.get(path);
     if (!found) {
-      found = readPath(path).then((source) =>
+      found = readText(path, memo).then((source) =>
         source === undefined
           ? []
           : componentImportNames(parseModule(path, source)).flatMap(({ specifier }) => {
@@ -240,7 +261,7 @@ export function createProject(options: ProjectOptions): Project {
     let entry = memo.analyses.get(path);
     if (!entry) {
       entry = {
-        pending: readPath(path).then((source) =>
+        pending: readText(path, memo).then((source) =>
           source === undefined ? undefined : analyseChild(path, source, memo),
         ),
       };
@@ -272,7 +293,7 @@ export function createProject(options: ProjectOptions): Project {
     for (const specifier of stylesheetImports(parsed)) {
       const sheet = joinPath(directoryOf(path), specifier);
       if (sheet !== undefined) edges.add(sheet);
-      const text = await readPath(sheet);
+      const text = await readText(sheet, memo);
       stylesheets.set(specifier, text === undefined ? undefined : stylesheetSource(sheet!, text));
     }
     // Each type the child's API is declared with, as `compile()` reads its source's (ADR-0067).
@@ -307,12 +328,12 @@ export function createProject(options: ProjectOptions): Project {
     request: ResolveRequest,
   ): Promise<ResolvedStylesheet | undefined> => {
     const path = joinPath(directoryOf(request.importer), request.specifier);
-    const source = await readPath(path);
+    const source = await readText(path);
     return source === undefined ? undefined : { file: path!, source };
   };
 
   const readModule = async (path: string | undefined) => {
-    const source = await readPath(path);
+    const source = await readText(path);
     return source === undefined ? undefined : { file: path!, source };
   };
 
@@ -363,7 +384,7 @@ export function createProject(options: ProjectOptions): Project {
    * read by the API of the module it imports, which the project's analysis caches by content.
    */
   const componentEdgesOf = async (file: string, read: Set<string>): Promise<string[]> => {
-    const source = await readPath(file);
+    const source = await readText(file);
     if (source === undefined) return [];
     let cached = imported.get(file);
     if (cached?.source !== source) {
@@ -571,7 +592,7 @@ export function createProject(options: ProjectOptions): Project {
       const cached = compiled.get(file);
       if (cached) return cached.result;
       return inSession(async () => {
-        const source = await readPath(file);
+        const source = await readText(file);
         if (source === undefined) throw new Error(`The project has no file "${file}".`);
         return build(file, source);
       });
@@ -596,7 +617,7 @@ export function createProject(options: ProjectOptions): Project {
     const before = new Map(copies);
     for (const file of files) {
       if (!copies.has(file)) continue;
-      const source = await readPath(file);
+      const source = await readText(file);
       if (source === undefined) copies.delete(file);
       else copies.set(file, source);
     }
@@ -616,7 +637,7 @@ export function createProject(options: ProjectOptions): Project {
     for (const file of [...affected].toSorted()) {
       const node = compiled.get(file);
       if (!node) continue;
-      const source = await readPath(file);
+      const source = await readText(file);
       if (source === undefined) {
         compiled.delete(file);
         continue;

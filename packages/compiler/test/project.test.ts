@@ -666,19 +666,19 @@ function counted(initial: Record<string, string>) {
 }
 
 describe("a child's own children (ADR-0118)", () => {
-  it("reads each child about once per compile and update, however many paths reach it", async () => {
+  it("reads each child once per compile and update, however many paths reach it", async () => {
     for (const depth of [4, 12]) {
       const initial = layered(depth);
       const { project, reads, files } = counted(initial);
       const total = Object.keys(initial).length;
       expect((await project.compile("Page.uf.tsx")).diagnostics).toEqual([]);
-      // Each file is read as a child, then again by the two imports' cycle searches.
-      expect(reads.count).toBeLessThanOrEqual(4 * total);
+      // The session reads each file once: as a child, by the cycle searches and by the compile.
+      expect(reads.count).toBeLessThanOrEqual(total);
       reads.count = 0;
       const last = `Y${depth - 1}.uf.tsx`;
       files.set(`/project/${last}`, initial[last]!.replace("<button", '<button title="t"'));
       await project.update([last]);
-      expect(reads.count).toBeLessThanOrEqual(4 * total);
+      expect(reads.count).toBeLessThanOrEqual(total);
     }
   });
 
@@ -713,6 +713,50 @@ describe("a child's own children (ADR-0118)", () => {
     const apis = await Promise.all([first, second]);
     expect(apis.map((api) => api?.components[0]?.fallthroughTag)).toEqual(["button", "button"]);
     expect(apis.map((api) => api?.file)).toEqual(["Wrap.uf.tsx", "../Wrap.uf.tsx"]);
+  });
+
+  it("reads a file once while the session lasts, and again after a read that failed", async () => {
+    const files = new Map([
+      ["/project/Held.uf.tsx", "export default function Held() {\n  return <p>Held</p>;\n}\n"],
+      ["/project/a.css", "p { color: red; }"],
+    ]);
+    // Held reads only once the gate opens, so its resolve keeps the session open meanwhile.
+    let open!: () => void;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    let reached!: () => void;
+    const reading = new Promise<void>((resolve) => (reached = resolve));
+    const reads: string[] = [];
+    let failing = true;
+    const readFile = async (path: string) => {
+      reads.push(path);
+      if (path.endsWith("/Held.uf.tsx")) {
+        reached();
+        await gate;
+      }
+      if (path.endsWith("/a.css") && failing) {
+        failing = false;
+        throw new Error("EBUSY");
+      }
+      return files.get(path);
+    };
+    const project = createProject({ root: "/project", readFile, targets: [] });
+    const held = project.resolve({ specifier: "./Held.uf.tsx", importer: "A.uf.tsx" });
+    await reading;
+    const request = { specifier: "./a.css", importer: "A.uf.tsx" };
+    const read = async () => project.resolve.stylesheet?.(request);
+    await expect(read()).rejects.toThrow("EBUSY");
+    const sheet = { file: "a.css", source: "p { color: red; }" };
+    expect(await read()).toEqual(sheet);
+    // An edit while the session lasts is seen by the next session, not this one.
+    files.set("/project/a.css", "p { color: blue; }");
+    expect(await read()).toEqual(sheet);
+    expect(reads.filter((path) => path.endsWith("/a.css"))).toHaveLength(2);
+    open();
+    await held;
+    expect(await read()).toEqual({
+      ...sheet,
+      source: "p { color: blue; }",
+    });
   });
 
   it("cuts a cycle where the graph says, however concurrent compiles reach it (P8)", async () => {
