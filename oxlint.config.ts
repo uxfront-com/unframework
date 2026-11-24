@@ -76,7 +76,6 @@ export default defineConfig({
     "unicorn/prefer-dom-node-append": "off",
     "unicorn/prefer-import-meta-properties": "off",
     "unicorn/prefer-native-coercion-functions": "off",
-    "unicorn/prefer-number-properties": "off",
     "unicorn/prefer-set-has": "off",
     "unicorn/prefer-single-call": "off",
     "unicorn/prefer-string-raw": "off",

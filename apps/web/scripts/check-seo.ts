@@ -680,7 +680,9 @@ function decodeEntities(value: string) {
       return named[code.toLowerCase()] ?? entity;
     }
     const point =
-      code[1]?.toLowerCase() === "x" ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      code[1]?.toLowerCase() === "x"
+        ? Number.parseInt(code.slice(2), 16)
+        : Number.parseInt(code.slice(1), 10);
     return String.fromCodePoint(point);
   });
 }

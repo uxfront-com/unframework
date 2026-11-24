@@ -158,11 +158,11 @@ describe("the layout", () => {
     const style = getComputedStyle(frames);
     const box = figure.getBoundingClientRect();
     expect(box.width).toBeCloseTo(
-      canvas.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+      canvas.width - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight),
       0,
     );
     expect(box.height).toBeCloseTo(
-      canvas.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
+      canvas.height - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom),
       0,
     );
   });

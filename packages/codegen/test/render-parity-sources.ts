@@ -210,7 +210,7 @@ export const TRICKY_SOURCES: ReadonlyArray<SourceCase> = [
     params:
       "{ zero, empty, nan, nothing }: { zero: number; empty: string; nan: number; nothing: string | null }",
     jsx: '<p>[{zero && <b>zero</b>}{empty && "empty"}{nan && <i>nan</i>}{nothing && <u>null</u>}]</p>',
-    props: { zero: 0, empty: "", nan: NaN, nothing: null },
+    props: { zero: 0, empty: "", nan: Number.NaN, nothing: null },
   },
   {
     name: "truthy values that are not booleans render their branch",
