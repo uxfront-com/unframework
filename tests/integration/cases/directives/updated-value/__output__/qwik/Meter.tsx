@@ -2,64 +2,51 @@ import { vRecord } from "./vRecord";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
   useVisibleTask$,
 } from "@qwik.dev/core";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const level = useSignal(1);
-    const renders = useSignal(0);
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  const level = useSignal(1);
+  const renders = useSignal(0);
 
-    const recordElements = useSignal<DirectiveElement<typeof vRecord>[]>([]);
+  const recordElements = useSignal<DirectiveElement<typeof vRecord>[]>([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = track(() => level.value);
-        for (const element of track(recordElements)) {
-          cleanup(
-            runDirective(vRecord, element, value, {
-              leave: (left) => forgetElement(recordElements, left),
-              back: (kept) => collectElement(recordElements, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = track(() => level.value);
+      for (const element of track(recordElements)) {
+        cleanup(
+          runDirective(vRecord, element, value, {
+            leave: (left) => forgetElement(recordElements, left),
+            back: (kept) => collectElement(recordElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["meter", className]}
-        aria-label="Meter"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <output class="level" ref={(element) => collectElement(recordElements, element)}>
-          Level {level.value}
-        </output>
-        <p>Rendered again {renders.value} times</p>
-        <button type="button" onClick$={() => level.value++}>
-          Raise
-        </button>
-        <button type="button" onClick$={() => renders.value++}>
-          Render again
-        </button>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["meter", className]} aria-label="Meter" style={style} {...attributes}>
+      <output class="level" ref={(element) => collectElement(recordElements, element)}>
+        Level {level.value}
+      </output>
+      <p>Rendered again {renders.value} times</p>
+      <button type="button" onClick$={() => level.value++}>
+        Raise
+      </button>
+      <button type="button" onClick$={() => renders.value++}>
+        Render again
+      </button>
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

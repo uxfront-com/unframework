@@ -5,8 +5,10 @@ import {
   ElementRef,
   type OnInit,
   Renderer2,
+  computed,
   inject,
   input,
+  viewChild,
 } from "@angular/core";
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
@@ -34,6 +36,9 @@ export class ScopeAttributes implements OnInit {
   }
 }
 
+/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
+type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
+
 @Component({
   selector: "uf-post",
   imports: [Card, CardHeader, CardFooter, ScopeAttributes],
@@ -41,7 +46,14 @@ export class ScopeAttributes implements OnInit {
   preserveWhitespaces: false,
   template: `
     @let author = this.author();
-    <uf-card [class]="this.class()" [style]="this.style()" [ufScope]="this.host">
+    <uf-card
+      [class]="this.class()"
+      [style]="this.style()"
+      [ufAttributes]="this.ufAttributes()"
+      [ufListeners]="this.ufListeners()"
+      [ufScope]="this.host"
+      #ufElement
+    >
       <p>Slots arrive in M3.</p>
       <ng-template ufCardHeader>
         <h2>Release notes</h2>
@@ -56,5 +68,9 @@ export default class Post {
   readonly author = input.required<string>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufAttributes = input<Record<string, unknown>>();
+  readonly ufListeners = input<Listeners>();
+  private readonly rootComponent = viewChild("ufElement", { read: Card });
+  readonly ufElement = computed(() => this.rootComponent()?.ufElement());
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

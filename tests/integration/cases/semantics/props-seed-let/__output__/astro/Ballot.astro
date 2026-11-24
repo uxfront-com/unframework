@@ -1,23 +1,27 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface BallotProps {
   limit: number;
   label?: string;
   choices: string[];
 }
 
-interface Props extends BallotProps {
+interface Props
+  extends BallotProps, Omit<HTMLAttributes<"section">, "limit" | "label" | "choices"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { limit, label = "Vote", choices, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  limit,
+  label = "Vote",
+  choices,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 
 const votes = limit;
 const picked = "none" as string;
@@ -25,9 +29,9 @@ const picked = "none" as string;
 
 <section
   class:list={["ballot", className]}
-  aria-label={label}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p role="status">{votes} votes left</p>
   <p>Picked: {picked}</p>

@@ -1,18 +1,13 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"div">, "option"> {
   option?: (props: { option: { id: string; label: string } }) => unknown;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { option: option_1, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { option: option_1, class: className, style, ...attrs } = Astro.props;
 
 const options = [
   { id: "x", label: "Xray" },
@@ -20,7 +15,7 @@ const options = [
 ];
 ---
 
-<div class:list={["picker", className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={["picker", className]} style={style} {...attrs}>
   <ul aria-label="Options">
     {options.map((option) => (
       <li>{option_1?.({ option })}</li>

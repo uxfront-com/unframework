@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 interface HintAttributes {
   id: string;
   style?: string;
@@ -9,19 +11,12 @@ export interface HintProps {
   attrs: HintAttributes;
 }
 
-interface Props extends HintProps {
+interface Props extends HintProps, Omit<HTMLAttributes<"small">, "text" | "attrs"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { text, attrs, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { text, attrs, class: className, style, ...attrs_1 } = Astro.props;
 
 /** A style bound to a value as an object: a declaration list becomes one. */
 function styleObject(style: object | string | null | undefined): Record<string, string> {
@@ -46,5 +41,5 @@ function styleObject(style: object | string | null | undefined): Record<string, 
   id={attrs.id}
   class:list={[className]}
   style={{ ...styleObject(attrs.style), ...style }}
-  {...scopeAttributes(Astro.props)}
+  {...attrs_1}
 >{text}</small>

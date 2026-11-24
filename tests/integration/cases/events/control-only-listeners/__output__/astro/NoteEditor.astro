@@ -1,17 +1,12 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"form"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const bold = false as boolean;
 const saves = 0 as number;
@@ -19,9 +14,9 @@ const saves = 0 as number;
 
 <form
   class:list={["note-editor", className]}
-  aria-label="Note"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Note"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <label>Title<input name="title" /></label>
   <label>Text<textarea name="text"></textarea></label>

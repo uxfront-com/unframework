@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type ReactNode,
   type ReactPortal,
   useRef,
@@ -13,10 +13,7 @@ interface Row {
   label: string;
 }
 
-export interface PanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PanelAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Panel({ className, style, ...attributes }: PanelAttributes) {
   const [note, setNote] = useState(false);
@@ -41,12 +38,7 @@ export default function Panel({ className, style, ...attributes }: PanelAttribut
   );
 
   return (
-    <section
-      className={cx("panel", className)}
-      aria-label="Panel"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("panel", className)} aria-label="Panel" style={style} {...attributes}>
       <button
         type="button"
         onClick={() => {
@@ -120,15 +112,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** Subscribes to nothing: whether the component has mounted never changes once it has. */

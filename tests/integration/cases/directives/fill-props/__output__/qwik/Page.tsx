@@ -3,62 +3,49 @@ import { vTrace } from "./vTrace";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
   useVisibleTask$,
 } from "@qwik.dev/core";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const traceElements = useSignal<
-      { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
-    >([]);
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  const traceElements = useSignal<
+    { element: DirectiveElement<typeof vTrace>; values: [DirectiveValue<typeof vTrace>] }[]
+  >([]);
 
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        for (const { element, values } of track(traceElements)) {
-          cleanup(
-            runDirective(vTrace, element, values[0], {
-              leave: (left) => forgetValues(traceElements, left),
-              back: collectValues(traceElements, values),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      for (const { element, values } of track(traceElements)) {
+        cleanup(
+          runDirective(vTrace, element, values[0], {
+            leave: (left) => forgetValues(traceElements, left),
+            back: collectValues(traceElements, values),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["page", className]}
-        aria-label="Page"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <Picker
-          option$={({ option }) => (
-            <span
-              data-name={`option-${option.id}`}
-              ref={collectValues(traceElements, [option.label])}
-            >
-              {option.label}
-            </span>
-          )}
-        />
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["page", className]} aria-label="Page" style={style} {...attributes}>
+      <Picker
+        option$={({ option }) => (
+          <span
+            data-name={`option-${option.id}`}
+            ref={collectValues(traceElements, [option.label])}
+          >
+            {option.label}
+          </span>
+        )}
+      />
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

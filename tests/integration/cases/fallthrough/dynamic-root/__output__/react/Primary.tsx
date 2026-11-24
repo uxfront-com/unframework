@@ -1,14 +1,14 @@
 import Base from "./Base";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithoutRef, Ref } from "react";
 
 export interface PrimaryEvents {
   onPress?: () => void;
 }
 
-export interface PrimaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PrimaryAttributes = Omit<
+  ComponentPropsWithoutRef<typeof Base>,
+  "href" | "disabled" | "text" | "onPress" | "children"
+> & { ref?: Ref<HTMLAnchorElement | HTMLButtonElement> };
 
 export default function Primary({
   href,
@@ -24,10 +24,10 @@ export default function Primary({
       href={href}
       disabled={disabled}
       text={text}
-      onPress={() => onPress?.()}
       className={cx("primary", className)}
+      onPress={() => onPress?.()}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     />
   );
 }
@@ -45,13 +45,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

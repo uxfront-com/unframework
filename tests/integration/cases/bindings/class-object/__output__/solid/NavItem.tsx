@@ -1,4 +1,4 @@
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 
 export interface NavItemProps {
   label: string;
@@ -9,9 +9,14 @@ export interface NavItemProps {
 }
 
 export default function NavItem(
-  rawProps: NavItemProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: NavItemProps &
+    Omit<ComponentProps<"a">, "label" | "href" | "active" | "muted" | "danger" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = mergeProps({ danger: false } satisfies Partial<NavItemProps>, rawProps);
+  const [, others] = splitProps(props, ["label", "href", "active", "muted", "danger", "class"]);
+
   return (
     <a
       href={props.href}
@@ -25,8 +30,7 @@ export default function NavItem(
         props.class,
       )}
       aria-current={props.active ? "page" : undefined}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.label}
     </a>
@@ -43,11 +47,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,4 +1,12 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface Contact {
   id: string;
@@ -15,8 +23,12 @@ export interface ContactListEvents {
 }
 
 export default function ContactList(
-  props: ContactListProps & ContactListEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ContactListProps &
+    ContactListEvents &
+    Omit<ComponentProps<"section">, "initial" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["initial", "onChoose", "onRemoved", "class"]);
+
   const [contacts, setContacts] = createSignal(untrack(() => props.initial));
   const [chosen, setChosen] = createSignal<string>();
 
@@ -34,8 +46,7 @@ export default function ContactList(
     <section
       class={props.class ? `contact-list ${props.class}` : "contact-list"}
       aria-label="Contacts"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ul>
         <KeyedFor each={contacts()} by={(contact) => contact.id}>
@@ -62,13 +73,6 @@ export default function ContactList(
       <p role="status">Chosen: {chosen() ?? "nobody"}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

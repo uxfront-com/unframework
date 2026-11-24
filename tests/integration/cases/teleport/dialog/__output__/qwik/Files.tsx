@@ -3,6 +3,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -17,61 +18,52 @@ export interface FilesEvents {
   onDelete$?: QRL<(file: string) => void>;
 }
 
-export default component$<FilesProps & FilesEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ file, onDelete$, class: className, style, ...attributes }) => {
-    const open = useSignal(false);
+export default component$<
+  FilesProps &
+    FilesEvents &
+    Omit<PropsOf<"section">, "file" | "onDelete$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ file, onDelete$, class: className, style, ...attributes }) => {
+  const open = useSignal(false);
 
-    const confirm = $(() => {
-      open.value = false;
-      onDelete$?.(file);
-    });
+  const confirm = $(() => {
+    open.value = false;
+    onDelete$?.(file);
+  });
 
-    const mounted = useSignal(false);
-    useVisibleTask$(
-      () => {
-        mounted.value = true;
-      },
-      { strategy: "document-ready" },
-    );
+  const mounted = useSignal(false);
+  useVisibleTask$(
+    () => {
+      mounted.value = true;
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["files", className]}
-        aria-label="Files"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <p>{file}</p>
-        <button type="button" onClick$={() => (open.value = true)}>
-          Delete {file}
-        </button>
-        {open.value
-          ? mounted.value && (
-              <>
-                {""}
-                <div ref={teleport("body")} data-teleported="true" class="backdrop">
-                  <ConfirmDialog
-                    title={`Delete ${file}?`}
-                    onConfirm$={confirm}
-                    onClose$={() => (open.value = false)}
-                  />
-                </div>
-              </>
-            )
-          : null}
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["files", className]} aria-label="Files" style={style} {...attributes}>
+      <p>{file}</p>
+      <button type="button" onClick$={() => (open.value = true)}>
+        Delete {file}
+      </button>
+      {open.value
+        ? mounted.value && (
+            <>
+              {""}
+              <div ref={teleport("body")} data-teleported="true" class="backdrop">
+                <ConfirmDialog
+                  title={`Delete ${file}?`}
+                  onConfirm$={confirm}
+                  onClose$={() => (open.value = false)}
+                />
+              </div>
+            </>
+          )
+        : null}
+    </section>
+  );
+});
 
 /** The elements `teleport` has taken. */
 const teleported = new WeakSet<Element>();

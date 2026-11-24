@@ -3,6 +3,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   untrack,
@@ -13,7 +14,11 @@ import {
 } from "@qwik.dev/core";
 
 export default component$<
-  { id: string } & { class?: ClassList; style?: CSSProperties; ref?: Signal<object | undefined> }
+  { id: string } & Omit<PropsOf<"article">, "id" | "class" | "style" | "ref"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+      ref?: Signal<object | undefined>;
+    }
 >(({ id, class: className, style, ref, ...attributes }) => {
   const userLoad = useComputed$(() => untrack(() => loadUser(id)));
   const user = userLoad.value;
@@ -34,7 +39,7 @@ export default component$<
   );
 
   return (
-    <article class={["member", className]} {...scopeAttributes(attributes)} style={style}>
+    <article class={["member", className]} style={style} {...attributes}>
       <h3>{user.name}</h3>
       <button type="button" onClick$={() => visits.value++}>
         {user.name} visits: {visits.value}
@@ -49,13 +54,4 @@ export default component$<
  */
 function exposeRef(ref: Signal<object | undefined> | undefined, exposed: object | undefined): void {
   if (ref) ref.value = exposed;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

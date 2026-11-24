@@ -9,21 +9,26 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = BannerProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    "message" | "tone" | "emphasis" | "children" | "class" | "style" | "ref"
+  > &
+    BannerProps & { class?: ClassValue; style?: string; ref?: HTMLElementTagNameMap["div"] | null };
 
-  let { message, tone, emphasis, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    message,
+    tone,
+    emphasis,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<div class={["banner", tone, className]} role="note" {style} {...scopeAttributes(attributes)}>
+<div class={["banner", tone, className]} role="note" {style} bind:this={ref} {...attributes}>
   <p class={emphasis}>{message}</p
   ><p class={`banner-footer banner-footer-${tone}`}>Shown to every visitor.</p>
 </div>

@@ -1,6 +1,7 @@
 ---
 import Badge from "./Badge.astro";
 import Tag from "./Tag.astro";
+import type { HTMLAttributes } from "astro/types";
 
 type NoticeLook = {
   color?: string;
@@ -18,19 +19,13 @@ export interface NoticeProps {
   vars?: NoticeVars;
 }
 
-interface Props extends NoticeProps {
+interface Props
+  extends NoticeProps, Omit<HTMLAttributes<"div">, "title" | "look" | "declarations" | "vars"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { title, look, declarations, vars, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { title, look, declarations, vars, class: className, style, ...attrs } = Astro.props;
 
 /** A style bound to a value as an object: a declaration list becomes one. */
 function styleObject(style: object | string | null | undefined): Record<string, string> {
@@ -55,7 +50,7 @@ const quiet = false as boolean;
 const Tag_1 = quiet ? Tag : Badge;
 ---
 
-<div class:list={["notice", className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={["notice", className]} style={style} {...attrs}>
   <p style={look}>{title}</p>
   <Badge
     label="Permanent"

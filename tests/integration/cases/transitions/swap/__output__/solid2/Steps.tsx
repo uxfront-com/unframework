@@ -1,4 +1,4 @@
-import { type JSX, isServer } from "@solidjs/web";
+import { type ComponentProps, type JSX, isServer } from "@solidjs/web";
 import {
   Match,
   Show,
@@ -8,12 +8,20 @@ import {
   createSignal,
   getObserver,
   isHydrating,
+  omit,
   onCleanup,
   untrack,
 } from "solid-js";
 import "./Steps.uf.tsx.css";
 
-export default function Steps(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Steps(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [first, setFirst] = createState(true);
   const [step, setStep] = createState(1);
 
@@ -22,8 +30,7 @@ export default function Steps(props: { class?: string; style?: JSX.CSSProperties
       class={props.class ? `steps ${props.class}` : "steps"}
       aria-label="Checkout"
       data-uf-84fe8ccf=""
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={() => setFirst(!first())} data-uf-84fe8ccf="">
         Swap
@@ -67,13 +74,6 @@ export default function Steps(props: { class?: string; style?: JSX.CSSProperties
       </Transition>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Runs Vue's transition classes of `name` on the element `children` renders as it enters and leaves. */

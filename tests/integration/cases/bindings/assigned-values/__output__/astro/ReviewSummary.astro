@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface ReviewSummaryProps {
   steps: string[];
   score: number;
@@ -6,26 +8,31 @@ export interface ReviewSummaryProps {
   product: string;
 }
 
-interface Props extends ReviewSummaryProps {
+interface Props
+  extends
+    ReviewSummaryProps,
+    Omit<HTMLAttributes<"section">, "steps" | "score" | "sku" | "product"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { steps, score, sku, product, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  steps,
+  score,
+  sku,
+  product,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <section
   class:list={["review-summary", className]}
-  aria-label="Review"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Review"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <ol>
     {steps.map((step, index) => (

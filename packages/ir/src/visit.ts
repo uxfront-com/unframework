@@ -53,6 +53,7 @@ const attributeKinds = {
   ModelBinding: true,
   RawHtml: true,
   Directive: true,
+  Rest: true,
 } satisfies Record<AnyAttribute["kind"], true>;
 const bindingKinds = {
   prop: true,
@@ -94,6 +95,7 @@ const setupItemKinds = {
   Provide: true,
   Inject: true,
   Use: true,
+  DevCheck: true,
 } satisfies Record<SetupItem["kind"], true>;
 const handlerKinds = { Function: true, Inline: true } satisfies Record<Handler["kind"], true>;
 const watchSourceKinds = { Ref: true, Getter: true } satisfies Record<WatchSource["kind"], true>;
@@ -106,6 +108,7 @@ const codeReferenceKinds = {
   Event: true,
   Slot: true,
   Import: true,
+  Dev: true,
 } satisfies Record<CodeReference["kind"], true>;
 
 /**
@@ -422,6 +425,7 @@ function attributeExpressions(
     case "Event":
     case "Ref":
     case "Listener":
+    case "Rest":
       return;
     default:
       unreachable(attribute);
@@ -536,6 +540,10 @@ function partsOf(
             add(argument.getter, `${at}/getter`, "pure", "getter");
           else add(argument.callback, `${at}/callback`, "client", "function");
         }
+        break;
+      // A development-only block runs where the setup does, as a value is read (ADR-0117).
+      case "DevCheck":
+        parts.push({ value: item.code, path: `${path}/code` });
         break;
       case "TemplateRef":
       case "Id":
@@ -914,6 +922,7 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
     case "ModelBinding":
     case "RawHtml":
     case "Directive":
+    case "Rest":
       return;
     case "Class":
       for (const [item, { span }] of attribute.items.entries()) {

@@ -1,10 +1,7 @@
 import Member from "./Member";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 
-export interface LeadAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LeadAttributes = Omit<ComponentPropsWithoutRef<typeof Member>, "id" | "children">;
 
 export default function Lead({
   id,
@@ -12,14 +9,5 @@ export default function Lead({
   style,
   ...attributes
 }: { id: string } & LeadAttributes) {
-  return <Member id={id} className={className} style={style} {...scopeAttributes(attributes)} />;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
+  return <Member id={id} className={className} style={style} {...attributes} />;
 }

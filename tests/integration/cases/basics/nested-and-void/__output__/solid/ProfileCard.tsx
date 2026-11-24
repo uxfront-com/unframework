@@ -1,12 +1,15 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
-export default function ProfileCard(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function ProfileCard(
+  props: Omit<ComponentProps<"article">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   return (
     <article
       class={props.class ? `profile ${props.class}` : "profile"}
       aria-labelledby="profile-name"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <header class="profile-header">
         <img
@@ -27,11 +30,4 @@ export default function ProfileCard(props: { class?: string; style?: JSX.CSSProp
       <input id="profile-note" type="text" name="note" placeholder="Say hello" />
     </article>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

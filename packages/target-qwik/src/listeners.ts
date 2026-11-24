@@ -22,6 +22,8 @@
 // A control runs at dispatch as the element's marker only where it runs on every event and the
 // element has no window listener of the event (the loader applies an element's markers to every
 // event it broadcasts to the window listener, wherever the event happened): else in a `sync$`.
+// A component's listener takes no marker either: it lands on the child's element, whose own
+// capture listener of the event runs from the window where a consumer's may join it (ADR-0118).
 import {
   functionSource,
   handlerControls,
@@ -42,6 +44,7 @@ import type {
 
 import { modelListener } from "./composition.ts";
 import { qwikListenerProp } from "./events.ts";
+import { landsOnTags } from "./fallthrough.ts";
 import { readsName, splitHandler } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
 import type { ListenerGroup, SetupPlan } from "./plan.ts";
@@ -141,7 +144,32 @@ export class Listeners {
       const found = modelListener(other, element, context, this.#plan);
       return found.event === attribute.event ? [found.handler] : [];
     })[0];
-    return this.#event(attribute.event, listeners, context, this.explicit.has(first), model);
+    // On the element that spreads the props' rest, the consumer's listener of the event runs
+    // last, after the element's own (./fallthrough.ts).
+    // Where the element's own listeners of the event all run from the window (capture ones
+    // beside a consumer's, ./plan.ts), the consumer's stays in the rest, which the element spreads.
+    const onElement =
+      model !== undefined ||
+      listeners.some((listener) => this.#plan.listeners.groups.get(listener)?.scope === "element");
+    const passed = onElement
+      ? this.#plan.composition.passed?.listener(element, attribute.event)
+      : undefined;
+    // A component's listener lands on its child's element, which may listen from the window: a
+    // marker there would apply to the event wherever it happens (see this file's header).
+    const component = [...this.#plan.listeners.components.values()].includes(element);
+    // A child's `<component is>` root of several tags types its listeners as each tag's, which
+    // give a handler no one type: it is typed as written (ADR-0122).
+    const typed = component && landsOnTags(this.#plan.module, element.tag);
+    return this.#event(
+      attribute.event,
+      listeners,
+      context,
+      this.explicit.has(first),
+      component,
+      model,
+      passed,
+      typed,
+    );
   }
 
   #event(
@@ -149,7 +177,10 @@ export class Listeners {
     listeners: readonly EventAttribute[],
     context: JsxContext,
     explicit: boolean,
+    component: boolean,
     model?: string,
+    passed?: string,
+    typed = false,
   ): JsxAttribute[] {
     const plan = this.#plan;
     const groups = [
@@ -164,7 +195,10 @@ export class Listeners {
       listeners.some((listener) => listener.passive) && !plan.listeners.mixedPassive.has(event);
     if (passive) attributes.push(js.jsxAttribute(`passive:${event}`));
     const lowered = new Map(
-      groups.map((group) => [group.scope, this.#group(group, { markers: !window, passive })]),
+      groups.map((group) => [
+        group.scope,
+        this.#group(group, { markers: !window && !component, passive }),
+      ]),
     );
     const markers = [...lowered.values()].flatMap((each) => each.markers);
     for (const marker of new Set(markers)) attributes.push(js.jsxAttribute(marker));
@@ -186,6 +220,9 @@ export class Listeners {
         ...(sync ? [{ code: () => sync, inline: false }] : []),
         ...(model && scope === "element" ? [{ code: () => model, inline: true }] : []),
         ...(found?.handler ? [found.handler] : []),
+        ...(passed !== undefined && scope === "element"
+          ? [{ code: () => passed, inline: false }]
+          : []),
       ];
       if (!entries.length) continue;
       const value =
@@ -193,7 +230,7 @@ export class Listeners {
           ? context.placeholders.expression(
               explicit && entries[0]!.inline
                 ? `${plan.names.core("$")}(${entries[0]!.code(true)})`
-                : entries[0]!.code(false),
+                : entries[0]!.code(typed),
             )
           : js.arrayExpression(
               entries.map(({ code, inline }) =>

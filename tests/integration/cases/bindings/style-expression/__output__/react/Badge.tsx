@@ -1,14 +1,11 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 
 export interface BadgeProps {
   label: string;
   tone?: string;
 }
 
-export interface BadgeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BadgeAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "tone" | "children">;
 
 export default function Badge({
   label,
@@ -21,7 +18,7 @@ export default function Badge({
     <span
       className={cx("badge", className)}
       style={{ ...styleObject(tone), ...style }}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </span>
@@ -59,13 +56,4 @@ function styleObject(style: object | string | null | undefined): CSSProperties |
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
   return object as CSSProperties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

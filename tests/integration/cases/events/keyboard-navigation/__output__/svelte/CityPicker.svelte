@@ -7,16 +7,29 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = CityPickerProps & {
-    onchose?: (city: string) => void;
-    onnoted?: (text: string) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "cities" | "onchose" | "onnoted" | "children" | "class" | "style" | "ref"
+  > &
+    CityPickerProps & {
+      onchose?: (city: string) => void;
+      onnoted?: (text: string) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { cities, onchose, onnoted, class: className, style, ...attributes }: Props = $props();
+  let {
+    cities,
+    onchose,
+    onnoted,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   const uid = $props.id();
   const listId = `uf-id-${uid}-0`;
@@ -70,20 +83,14 @@
       field.value = "";
     }
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["city-picker", className]}
   aria-label="Trip"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <form role="search" aria-label="Destination" onsubmit={(event) => event.preventDefault()}>
     <label>City<input

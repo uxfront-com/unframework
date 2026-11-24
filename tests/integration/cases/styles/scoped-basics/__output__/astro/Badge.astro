@@ -1,29 +1,18 @@
 ---
+import type { HTMLAttributes } from "astro/types";
 import "./Badge.uf.tsx.css";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"span">, "label" | "count"> {
   label: string;
   count: number;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, count, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, count, class: className, style, ...attrs } = Astro.props;
 ---
 
-<span
-  class:list={["badge", className]}
-  style={style}
-  data-uf-d9cef2e7=""
-  {...scopeAttributes(Astro.props)}
->
+<span class:list={["badge", className]} style={style} data-uf-d9cef2e7="" {...attrs}>
   <span class="label" data-uf-d9cef2e7="">{label}</span>
   <span class="count" data-uf-d9cef2e7="">{count}</span>
 </span>

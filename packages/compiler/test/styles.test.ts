@@ -107,11 +107,10 @@ describe("compile() with stylesheets", () => {
     }
     // Every element carries the scope attribute.
     expect(result.outputs.vue?.[0]?.contents).toContain(`<p class="card" data-uf-${id}="">Hi</p>`);
-    // React's root spreads its styled parents' scope attributes after its own (ADR-0063).
+    // React's root spreads the props' rest after its own attributes, its styled parents' scope
+    // attributes with it (ADR-0063, ADR-0118).
     expect(result.outputs.react?.[0]?.contents).toMatch(
-      new RegExp(
-        `style=\\{style\\}\\s+data-uf-${id}=""\\s+\\{\\.\\.\\.scopeAttributes\\(attributes\\)\\}\\s+>`,
-      ),
+      new RegExp(`style=\\{style\\}\\s+data-uf-${id}=""\\s+\\{\\.\\.\\.attributes\\}\\s*>`),
     );
     // The sheet is no component's module: the unplugin serves it on an id of its own.
     expect(result.owners).toEqual({ vue: { "Card.vue": "Card" }, react: { "Card.tsx": "Card" } });

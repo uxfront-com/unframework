@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -18,10 +18,17 @@ export interface InboxLookupEvents {
   onCounted?: (count: number) => void;
 }
 
-export interface InboxLookupAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type InboxLookupAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "onLooked"
+  | "onDropped"
+  | "onSorted"
+  | "onScaled"
+  | "onBusy"
+  | "onFailed"
+  | "onCounted"
+  | "children"
+>;
 
 export default function InboxLookup({
   onLooked,
@@ -236,7 +243,7 @@ export default function InboxLookup({
       className={cx("inbox-lookup", className)}
       aria-label="Inbox"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"
@@ -365,13 +372,4 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -10,24 +10,34 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = AuthorBylineProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["p"],
+    "author" | "published" | "minutes" | "affiliation" | "children" | "class" | "style" | "ref"
+  > &
+    AuthorBylineProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["p"] | null;
+    };
 
-  let { class: className, style, ...props }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...props }: Props = $props();
 
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    author: _author,
+    published: _published,
+    minutes: _minutes,
+    affiliation: _affiliation,
+    ...attributes
+  } = $derived(props);
 </script>
 
 <p
   class={["byline", className]}
   {style}
-  {...scopeAttributes(props)}
+  bind:this={ref}
+  {...attributes}
 >By {props.author}, {props.affiliation ?? "independent"}<br /><time
   datetime={props.published}
 >{props.published}</time> · {props.minutes} min read</p>

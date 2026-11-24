@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -14,10 +14,10 @@ export interface SearchResultsEvents {
   onShown?: (text: string) => void;
 }
 
-export interface SearchResultsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchResultsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onReady" | "onRendered" | "onShown" | "children"
+>;
 
 export default function SearchResults({
   onReady,
@@ -116,7 +116,7 @@ export default function SearchResults({
       className={cx("search-results", className)}
       aria-label="Search"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p ref={banner}>{status}</p>
       <label>
@@ -206,13 +206,4 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

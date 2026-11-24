@@ -1,18 +1,16 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface NoteEditorEvents {
   onSaved?: (title: string, bold: boolean) => void;
 }
 
-export interface NoteEditorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteEditorAttributes = Omit<ComponentPropsWithRef<"form">, "onSaved" | "children">;
 
 export default function NoteEditor({
   onSaved,
   className,
   style,
+  onSubmit,
   ...attributes
 }: NoteEditorEvents & NoteEditorAttributes) {
   const [title, setTitle] = useState("");
@@ -32,9 +30,12 @@ export default function NoteEditor({
     <form
       className={cx("note-editor", className)}
       aria-label="Note"
-      onSubmit={(event) => event.preventDefault()}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit?.(event);
+      }}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Title
@@ -84,13 +85,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

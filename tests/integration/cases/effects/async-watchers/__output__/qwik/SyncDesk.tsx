@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -37,7 +38,25 @@ async function validate(value: string): Promise<boolean> {
 }
 
 export default component$<
-  SyncDeskProps & SyncDeskEvents & { class?: ClassList; style?: CSSProperties }
+  SyncDeskProps &
+    SyncDeskEvents &
+    Omit<
+      PropsOf<"section">,
+      | "files"
+      | "onChecked$"
+      | "onSummary$"
+      | "onFocused$"
+      | "onProgress$"
+      | "onSaveState$"
+      | "onSavedName$"
+      | "onImportState$"
+      | "onSettled$"
+      | "onSending$"
+      | "onSent$"
+      | "onClamped$"
+      | "class"
+      | "style"
+    > & { class?: ClassList; style?: CSSProperties }
 >(
   ({
     files,
@@ -306,8 +325,8 @@ export default component$<
       <section
         class={["sync-desk", className]}
         aria-label="Sync desk"
-        {...scopeAttributes(attributes)}
         style={style}
+        {...attributes}
       >
         <button type="button" onClick$={suggest}>
           Suggest
@@ -380,13 +399,4 @@ export default component$<
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

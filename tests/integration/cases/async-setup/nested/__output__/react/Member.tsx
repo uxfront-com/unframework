@@ -1,6 +1,6 @@
 import { loadUser } from "./api";
 import {
-  type CSSProperties,
+  type ComponentPropsWithoutRef,
   type Ref,
   Suspense,
   use,
@@ -14,11 +14,9 @@ export interface MemberHandle {
   reset(): void;
 }
 
-export interface MemberAttributes {
-  className?: string;
-  style?: CSSProperties;
+export type MemberAttributes = Omit<ComponentPropsWithoutRef<"article">, "id" | "children"> & {
   ref?: Ref<MemberHandle>;
-}
+};
 
 async function memberSetup({ id }: { id: string }) {
   const user = await loadUser(id);
@@ -40,6 +38,7 @@ function MemberResolved({
   className,
   style,
   ref,
+  id: _id,
   setup,
   settled: _settled,
   ...attributes
@@ -60,7 +59,7 @@ function MemberResolved({
   useImperativeHandle(ref, () => ({ reset }));
 
   return (
-    <article className={cx("member", className)} style={style} {...scopeAttributes(attributes)}>
+    <article className={cx("member", className)} style={style} {...attributes}>
       <h3>{user.name}</h3>
       <button
         type="button"
@@ -88,15 +87,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

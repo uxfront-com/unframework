@@ -2,21 +2,19 @@
 
 <script lang="ts">
   import Names from "./Names.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { names: string[]; class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["ul"], "names" | "children" | "class" | "style" | "ref"> & {
+    names: string[];
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["ul"] | null;
+  };
 
-  let { names, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let { names, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 </script>
 
-<Names {names} class={className} {style} {...scopeAttributes(attributes)}>
+<Names {names} class={className} {style} bind:ref {...attributes}>
   {#snippet children({ item })}
     <b>{item}!</b>
   {/snippet}

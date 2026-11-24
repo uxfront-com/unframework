@@ -2,15 +2,16 @@
 
 <script lang="ts">
   import { tick } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<SvelteHTMLElements["section"], "ontoggled" | "children" | "class" | "style" | "ref"> & {
     ontoggled?: (items: number) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { ontoggled, class: className, style, ...attributes }: Props = $props();
+  let { ontoggled, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let open = $state(false);
   let field: HTMLInputElement | null = null;
@@ -28,16 +29,9 @@
     shown = panel;
     ontoggled?.(shown?.childElementCount ?? 0);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section aria-label="Details" class={className} {style} {...scopeAttributes(attributes)}>
+<section aria-label="Details" class={className} {style} bind:this={ref} {...attributes}>
   <label for={fieldId}>Name</label><input id={fieldId} bind:this={field}
   /><button
     type="button"

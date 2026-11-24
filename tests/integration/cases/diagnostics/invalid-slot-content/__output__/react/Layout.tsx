@@ -1,14 +1,11 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface LayoutSlots {
   title?: ReactNode;
   children?: ReactNode;
 }
 
-export interface LayoutAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LayoutAttributes = Omit<ComponentPropsWithRef<"main">, "title" | "children">;
 
 export function Layout({
   title,
@@ -18,18 +15,9 @@ export function Layout({
   ...attributes
 }: LayoutSlots & LayoutAttributes) {
   return (
-    <main className={className} style={style} {...scopeAttributes(attributes)}>
+    <main className={className} style={style} {...attributes}>
       <h1>{title}</h1>
       {children}
     </main>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

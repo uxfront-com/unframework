@@ -1,9 +1,22 @@
 import Member from "./Member";
-import { For, type JSX, Show, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  Show,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export default function Roster(
-  props: { ids: string[] } & { class?: string; style?: JSX.CSSProperties },
+  props: { ids: string[] } & Omit<ComponentProps<"section">, "ids" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["ids", "class"]);
+
   const [lead, setLead] = createSignal(true);
   const [guest, setGuest] = createSignal(false);
 
@@ -11,8 +24,7 @@ export default function Roster(
     <section
       class={props.class ? `roster ${props.class}` : "roster"}
       aria-label="Roster"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={() => setLead(!lead())}>
         Switch lead
@@ -33,13 +45,6 @@ export default function Roster(
       </ul>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

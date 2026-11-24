@@ -1,6 +1,7 @@
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   noSerialize,
@@ -19,7 +20,20 @@ export interface SearchSessionEvents {
   onSummary$?: QRL<(text: string) => void>;
 }
 
-export default component$<SearchSessionEvents & { class?: ClassList; style?: CSSProperties }>(
+export default component$<
+  SearchSessionEvents &
+    Omit<
+      PropsOf<"section">,
+      | "onUnmounted$"
+      | "onEffectCleaned$"
+      | "onWatchCleaned$"
+      | "onSearched$"
+      | "onSearchCleaned$"
+      | "onSummary$"
+      | "class"
+      | "style"
+    > & { class?: ClassList; style?: CSSProperties }
+>(
   ({
     onUnmounted$,
     onEffectCleaned$,
@@ -146,8 +160,8 @@ export default component$<SearchSessionEvents & { class?: ClassList; style?: CSS
       <section
         class={["search-session", className]}
         aria-label="Search"
-        {...scopeAttributes(attributes)}
         style={style}
+        {...attributes}
       >
         <label>
           Query
@@ -168,12 +182,3 @@ export default component$<SearchSessionEvents & { class?: ClassList; style?: CSS
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

@@ -1,10 +1,22 @@
 import Base from "./Base";
 import Primary from "./Primary";
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 import { Dynamic } from "solid-js/web";
 import "./Page.uf.tsx.css";
 
-export default function Page(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Page(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [linked, setLinked] = createSignal(true);
   const [tone, setTone] = createSignal("rgb(29, 78, 216)");
   const [pressed, setPressed] = createSignal("none");
@@ -14,29 +26,24 @@ export default function Page(props: { class?: string; style?: JSX.CSSProperties 
   ]);
 
   return (
-    <section
-      class={props.class ? `page ${props.class}` : "page"}
-      data-uf-64cf7c28=""
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `page ${props.class}` : "page"} data-uf-64cf7c28="" {...others}>
       <Primary
         href={linked() ? "#docs" : undefined}
         disabled={true}
         text="Docs"
-        onPress={() => setPressed("docs")}
         class="wide"
         style={{ color: tone() }}
+        onPress={() => setPressed("docs")}
         data-uf-64cf7c28=""
       />
       <Base
         disabled={true}
         text="Off"
-        onPress={() => setPressed("off")}
         class={cx("off", { muted: !linked() })}
+        onPress={() => setPressed("off")}
         data-uf-64cf7c28=""
       />
-      <Base text="Save" onPress={() => setPressed("save")} class="save" data-uf-64cf7c28="" />
+      <Base text="Save" class="save" onPress={() => setPressed("save")} data-uf-64cf7c28="" />
       <ul aria-label="Items" data-uf-64cf7c28="">
         <KeyedFor each={items()} by={(item) => item.id}>
           {(item) => (
@@ -81,13 +88,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

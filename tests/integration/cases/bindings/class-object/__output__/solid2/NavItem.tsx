@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { merge } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { merge, omit } from "solid-js";
 
 export interface NavItemProps {
   label: string;
@@ -10,13 +10,19 @@ export interface NavItemProps {
 }
 
 export default function NavItem(
-  rawProps: NavItemProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: NavItemProps &
+    Omit<
+      ComponentProps<"a">,
+      "label" | "href" | "active" | "muted" | "danger" | "class" | "style"
+    > & { class?: string; style?: JSX.CSSProperties },
 ) {
   const props = merge(rawProps, {
     get danger() {
       return rawProps.danger === undefined ? false : rawProps.danger;
     },
   });
+  const others = omit(props, "label", "href", "active", "muted", "danger", "class");
+
   return (
     <a
       href={props.href}
@@ -30,8 +36,7 @@ export default function NavItem(
         props.class,
       )}
       aria-current={enumeratedValue(props.active ? "page" : undefined)}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.label}
     </a>
@@ -53,11 +58,4 @@ function cx(...parts: unknown[]): string {
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

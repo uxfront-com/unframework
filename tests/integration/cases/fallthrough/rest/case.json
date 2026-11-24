@@ -1,0 +1,4 @@
+{
+  "description": "A component with inheritAttrs: false spreads its props' rest on an inner element, which takes its consumer's attributes, class, style and listeners instead of its root.",
+  "main": "SignUp.uf.tsx"
+}

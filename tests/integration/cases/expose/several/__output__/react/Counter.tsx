@@ -1,15 +1,19 @@
-import { type CSSProperties, type Ref, useImperativeHandle, useRef, useState } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  type Ref,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 
 export interface CounterHandle {
   increment(): void;
   reset(): void;
 }
 
-export interface CounterAttributes {
-  className?: string;
-  style?: CSSProperties;
+export type CounterAttributes = Omit<ComponentPropsWithoutRef<"output">, "start" | "children"> & {
   ref?: Ref<CounterHandle>;
-}
+};
 
 export default function Counter({
   start,
@@ -34,7 +38,7 @@ export default function Counter({
   useImperativeHandle(ref, () => ({ increment, reset }));
 
   return (
-    <output className={cx("count", className)} style={style} {...scopeAttributes(attributes)}>
+    <output className={cx("count", className)} style={style} {...attributes}>
       {count}
     </output>
   );
@@ -53,13 +57,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

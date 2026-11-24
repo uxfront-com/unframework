@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type ReactNode,
   type ReactPortal,
   useRef,
@@ -12,10 +12,7 @@ export interface NoticeProps {
   message: string;
 }
 
-export interface NoticeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoticeAttributes = Omit<ComponentPropsWithRef<"section">, "message" | "children">;
 
 export default function Notice({
   message,
@@ -32,12 +29,7 @@ export default function Notice({
   );
 
   return (
-    <section
-      className={cx("inbox", className)}
-      aria-label="Inbox"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("inbox", className)} aria-label="Inbox" style={style} {...attributes}>
       <p>Dismissed {dismissed} times</p>
       {mounted
         ? teleport(
@@ -75,15 +67,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** Subscribes to nothing: whether the component has mounted never changes once it has. */

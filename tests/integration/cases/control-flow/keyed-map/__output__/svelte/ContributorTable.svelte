@@ -14,21 +14,29 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLTableAttributes } from "svelte/elements";
 
-  type Props = ContributorTableProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    HTMLTableAttributes,
+    "caption" | "contributors" | "children" | "class" | "style" | "ref"
+  > &
+    ContributorTableProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["table"] | null;
+    };
 
-  let { caption, contributors, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    caption,
+    contributors,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<table class={["contributors", className]} {style} {...scopeAttributes(attributes)}>
+<table class={["contributors", className]} {style} bind:this={ref} {...attributes}>
   <caption>{caption}</caption
   ><thead>
     <tr>

@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface AddressProps {
   name: string;
@@ -7,10 +8,16 @@ export interface AddressProps {
 }
 
 export default function Address(
-  props: AddressProps & { class?: string; style?: JSX.CSSProperties },
+  props: AddressProps &
+    Omit<ComponentProps<"pre">, "name" | "street" | "city" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "name", "street", "city");
+
   return (
-    <pre class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <pre {...others}>
       {props.name}
       {["\n"]}
       {props.street}
@@ -18,11 +25,4 @@ export default function Address(
       {props.city ?? "-"}
     </pre>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

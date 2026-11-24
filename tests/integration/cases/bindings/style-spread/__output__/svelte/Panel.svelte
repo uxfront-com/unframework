@@ -28,11 +28,23 @@
 
 <script lang="ts">
   import Hint from "./Hint.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = PanelProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    "heading" | "panel" | "note" | "children" | "class" | "style" | "ref"
+  > &
+    PanelProps & { class?: ClassValue; style?: string; ref?: HTMLElementTagNameMap["div"] | null };
 
-  let { heading, panel, note, class: className, style, ...attributes }: Props = $props();
+  let {
+    heading,
+    panel,
+    note,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   function styleText(style: object | string | null | undefined): string | undefined {
     if (style === null || style === undefined || typeof style === "string")
@@ -47,16 +59,9 @@
       })
       .join("; ");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<div class={["panels", className]} {style} {...scopeAttributes(attributes)}>
+<div class={["panels", className]} {style} bind:this={ref} {...attributes}>
   <section id={panel.id} title={panel.title} style={styleText(panel.style)} class="panel">
     <h2 style="margin-bottom: var(--panel-gap, 4px)">{heading}</h2
     ><p title={note?.title} style={styleText(note?.style)}>Changes save as you type.</p

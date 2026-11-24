@@ -1,22 +1,21 @@
 import Notice from "./Notice";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export default function Board(
-  props: { build: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { build: string } & Omit<ComponentProps<"div">, "build" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "build");
+
   return (
-    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <div {...others}>
       <Notice label="Build" action={<a href="#logs">See the logs</a>}>
         Build {props.build} failed.
       </Notice>
       <Notice label="Deploy" />
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

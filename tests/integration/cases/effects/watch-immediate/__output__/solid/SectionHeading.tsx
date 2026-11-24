@@ -1,4 +1,11 @@
-import { type JSX, createReaction, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface SectionHeadingProps {
   title: string;
@@ -10,8 +17,12 @@ export interface SectionHeadingEvents {
 }
 
 export default function SectionHeading(
-  props: SectionHeadingProps & SectionHeadingEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SectionHeadingProps &
+    SectionHeadingEvents &
+    Omit<ComponentProps<"h2">, "title" | "onChange" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["title", "onChange", "onReady", "class"]);
+
   createWatcher(
     () => props.title,
     (value, previous) => {
@@ -25,21 +36,10 @@ export default function SectionHeading(
   });
 
   return (
-    <h2
-      class={props.class ? `section-heading ${props.class}` : "section-heading"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <h2 class={props.class ? `section-heading ${props.class}` : "section-heading"} {...others}>
       {props.title}
     </h2>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

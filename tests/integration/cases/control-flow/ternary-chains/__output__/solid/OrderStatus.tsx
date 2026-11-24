@@ -1,4 +1,4 @@
-import { type JSX, Match, Switch } from "solid-js";
+import { type ComponentProps, type JSX, Match, Switch, splitProps } from "solid-js";
 
 export interface OrderStatusProps {
   status: "pending" | "shipped" | "delivered" | "cancelled";
@@ -7,14 +7,15 @@ export interface OrderStatusProps {
 }
 
 export default function OrderStatus(
-  props: OrderStatusProps & { class?: string; style?: JSX.CSSProperties },
+  props: OrderStatusProps &
+    Omit<ComponentProps<"p">, "status" | "carrier" | "eta" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["status", "carrier", "eta", "class"]);
+
   return (
-    <p
-      class={props.class ? `order-status ${props.class}` : "order-status"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <p class={props.class ? `order-status ${props.class}` : "order-status"} {...others}>
       <Switch fallback={<em>Cancelled</em>}>
         <Match when={props.status === "pending"}>Waiting for payment.</Match>
         <Match when={props.status === "shipped"}>
@@ -27,11 +28,4 @@ export default function OrderStatus(
       </Switch>
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

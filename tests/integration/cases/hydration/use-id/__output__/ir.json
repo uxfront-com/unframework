@@ -266,7 +266,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "p"
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "field"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "p"
           }
         ],
         "keys": []

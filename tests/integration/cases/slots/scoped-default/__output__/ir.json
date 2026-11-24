@@ -219,7 +219,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ul"
+            "rootTag": "ul",
+            "fallthroughTag": "ul",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "aria-label",
+                  "value": "Names"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "ul"
           }
         ],
         "keys": []

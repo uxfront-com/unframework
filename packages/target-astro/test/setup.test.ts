@@ -15,7 +15,7 @@ import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import { loadAstroComponent, scratchDirectory, writeAstroModule } from "./astro.ts";
 import { M2_SHAPES } from "./lint-probes.ts";
-import { compiled, emitSource, SCOPE_HELPER } from "./source.ts";
+import { compiled, emitSource } from "./source.ts";
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const scratch = scratchDirectory("setup");
@@ -294,7 +294,8 @@ describe("setup (ADR-0046)", () => {
   it("seeds state from a prop, and reads only the props the server render reaches", async () => {
     const output = await compiled(counter);
     expect(output).toBe(M2_SHAPES["Counter.astro"]);
-    // `step` is read by the handler alone, which never runs: it is not destructured.
+    // `step` is read by the handler alone, which never runs: it is destructured as `_step`, only
+    // to take it out of what falls through.
     await expect(renderSource(output)).resolves.toBe(
       '<div class="counter"><output>0</output><button type="button">Add</button></div>',
     );
@@ -318,18 +319,18 @@ describe("setup (ADR-0046)", () => {
     expect(output.slice(0, output.indexOf("---\n\n<p"))).toBe(
       [
         "---",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
         "export interface LevelProps {",
         "  flag: boolean;",
         "}",
         "",
-        "interface Props extends LevelProps {",
+        'interface Props extends LevelProps, Omit<HTMLAttributes<"p">, "flag"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        "const { flag, class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        "const { flag, class: className, style, ...attrs } = Astro.props;",
         "",
         "const level = (flag ? 1 : 2) as number;",
         "const maybe = (flag ? 1 : null) as number | null;",
@@ -357,14 +358,14 @@ describe("setup (ADR-0046)", () => {
     expect(output).toBe(
       [
         "---",
-        "interface Props {",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
+        'interface Props extends HTMLAttributes<"section"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        "const { class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        'const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;',
         "",
         "const rates = { standard: 0, express: 12 };",
         "",
@@ -378,10 +379,10 @@ describe("setup (ADR-0046)", () => {
         "---",
         "",
         "<section",
-        '  aria-label="Totals"',
+        '  aria-label={"aria-label" in Astro.props ? ariaLabel : "Totals"}',
         "  class:list={[className]}",
         "  style={style}",
-        "  {...scopeAttributes(Astro.props)}",
+        "  {...attrs}",
         ">",
         "  <p>{format(shipping)}</p>",
         '  <button type="button">Express</button>',
@@ -396,33 +397,41 @@ describe("setup (ADR-0046)", () => {
 
   it("drops listeners, template refs, watchers, effects, hooks, `let`s, `emit` and what only they reach", async () => {
     // `open` is read by a watcher and a handler, `delay` by a hook, `Entry` by an event's
-    // payload and a handler's parameter: none of them is declared.
+    // payload and a handler's parameter: none of them is declared. `delay` is destructured as
+    // `_delay`, only to take it out of what falls through.
     const output = await compiled(dropped);
     expect(output).toBe(
       [
         "---",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
         "export interface PanelProps {",
         "  heading: string;",
         "  delay: number;",
         "}",
         "",
-        "interface Props extends PanelProps {",
+        'interface Props extends PanelProps, Omit<HTMLAttributes<"section">, "heading" | "delay"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        "const { heading, class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        "const {",
+        "  heading,",
+        "  delay: _delay,",
+        "  class: className,",
+        "  style,",
+        '  "aria-label": ariaLabel,',
+        "  ...attrs",
+        "} = Astro.props;",
         "",
         'const status = "Waiting" as string;',
         "---",
         "",
         "<section",
-        "  aria-label={heading}",
+        '  aria-label={"aria-label" in Astro.props ? ariaLabel : heading}',
         "  class:list={[className]}",
         "  style={style}",
-        "  {...scopeAttributes(Astro.props)}",
+        "  {...attrs}",
         ">",
         '  <p role="status">{status}</p>',
         '  <input aria-label="Name" />',
@@ -441,25 +450,25 @@ describe("setup (ADR-0046)", () => {
     expect(object).toBe(
       [
         "---",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
         "export interface PlanetProps {",
         "  name: string;",
         "}",
         "",
-        "interface Props extends PlanetProps {",
+        'interface Props extends PlanetProps, Omit<HTMLAttributes<"p">, "name"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
         "const props = Astro.props;",
-        "const { class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        "const { name: _name, class: className, style, ...attrs } = Astro.props;",
         "",
         "const moons = 2 as number;",
         "const label = `${props.name}: ${moons}`;",
         "---",
         "",
-        "<p class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>{label}</p>",
+        "<p class:list={[className]} style={style} {...attrs}>{label}</p>",
         "",
       ].join("\n"),
     );
@@ -469,19 +478,19 @@ describe("setup (ADR-0046)", () => {
     expect(binding).toBe(
       [
         "---",
-        "interface Props {",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
+        'interface Props extends HTMLAttributes<"p"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        "const { class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        "const { class: className, style, ...attrs } = Astro.props;",
         "",
         'const Astro_1 = "Mars" as string;',
         "---",
         "",
-        "<p class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>{Astro_1}</p>",
+        "<p class:list={[className]} style={style} {...attrs}>{Astro_1}</p>",
         "",
       ].join("\n"),
     );

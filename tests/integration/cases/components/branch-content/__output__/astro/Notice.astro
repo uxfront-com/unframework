@@ -1,24 +1,19 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"p">, "text" | "tone"> {
   text: string;
   tone: "info" | "quiet";
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { text, tone, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { text, tone, class: className, style, role, ...attrs } = Astro.props;
 ---
 
 <p
-  role="status"
+  role={"role" in Astro.props ? role : "status"}
   class:list={["notice", tone, className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{text}</p>

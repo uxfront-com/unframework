@@ -130,6 +130,7 @@ function spansOf(reference: CodeReference): Span[] {
     case "Event":
     case "Api":
     case "Slot":
+    case "Dev":
       return [reference.span];
     default:
       return reference satisfies never;
@@ -165,6 +166,7 @@ function movedReference(reference: CodeReference, moved: (span: Span) => Span): 
     case "Event":
     case "Api":
     case "Slot":
+    case "Dev":
       return { ...reference, span: moved(reference.span) };
     default:
       return reference satisfies never;

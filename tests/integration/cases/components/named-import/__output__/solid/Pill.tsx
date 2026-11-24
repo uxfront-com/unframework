@@ -1,20 +1,15 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
-export function Pill(props: { text: string } & { class?: string; style?: JSX.CSSProperties }) {
+export function Pill(
+  props: { text: string } & Omit<ComponentProps<"span">, "text" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
+) {
+  const [, others] = splitProps(props, ["text", "class"]);
+
   return (
-    <span
-      class={props.class ? `pill ${props.class}` : "pill"}
-      style={props.style}
-      {...scopeAttributes_1(props)}
-    >
+    <span class={props.class ? `pill ${props.class}` : "pill"} {...others}>
       {props.text}
     </span>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes_1(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

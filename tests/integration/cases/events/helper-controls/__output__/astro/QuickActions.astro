@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface QuickActionsProps {
   actions: string[];
 }
 
-interface Props extends QuickActionsProps {
+interface Props extends QuickActionsProps, Omit<HTMLAttributes<"section">, "actions"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { actions, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { actions, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const query = "" as string;
 const lastKey = "none" as string;
@@ -24,9 +19,9 @@ const subscriptions = 0 as number;
 
 <section
   class:list={["quick-actions", className]}
-  aria-label="Quick actions"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Quick actions"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <label>Search<input name="query" /></label>
   <p>Query: {query}</p>

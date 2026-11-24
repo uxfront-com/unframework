@@ -2,15 +2,19 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onsave" | "onstatus" | "onclosed" | "onkey" | "children" | "class" | "style" | "ref"
+  > & {
     onsave?: (count: number) => void;
     onstatus?: (value: string) => void;
     onclosed?: (reason: string) => void;
     onkey?: (key: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
   let {
@@ -20,6 +24,7 @@
     onkey,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -88,20 +93,14 @@
   onMount(() => () => {
     stop();
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["draft-panel", className]}
   aria-label="Draft"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <button type="button" aria-expanded={open} onclick={show}>Options</button
   >{#if open}

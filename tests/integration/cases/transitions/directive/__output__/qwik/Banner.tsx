@@ -2,6 +2,7 @@ import { vMark } from "./vMark";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useConstant,
@@ -12,107 +13,92 @@ import {
 import { isServer } from "@qwik.dev/core/build";
 import styles from "./Banner.uf.tsx.css?inline";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    useStyles$(styles);
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  useStyles$(styles);
 
-    const shown = useSignal(true);
+  const shown = useSignal(true);
 
-    const fadeState = useConstant((): TransitionState => ({
-      current: shown.value ? 0 : -1,
-      elements: [],
-      entering: [],
-    }));
-    const fadeShown = useSignal<number[]>([shown.value ? 0 : -1].filter((index) => index >= 0));
-    useVisibleTask$(
-      ({ track }) => {
-        const next = track(() => (shown.value ? 0 : -1));
-        const previous = fadeState.current;
-        if (next === previous) return;
-        fadeState.current = next;
-        if (next >= 0) {
-          // Shown again while it leaves: its leave stops, and it stays as it is.
-          stopTransition(fadeState.elements[next]);
-          if (!fadeShown.value.includes(next)) {
-            fadeState.entering.push(next);
-            fadeShown.value = [...fadeShown.value, next];
-            // Qwik renders the branch within the frame, unless a condition around the transition
-            // hides it: then the mark goes, so the element it shows later enters only with appear.
-            requestAnimationFrame(() =>
-              requestAnimationFrame(() => {
-                const left = fadeState.entering.indexOf(next);
-                if (left >= 0) fadeState.entering.splice(left, 1);
-              }),
-            );
-          }
-        }
-        const leaving = previous < 0 ? undefined : fadeState.elements[previous];
-        if (!leaving) {
-          fadeShown.value = fadeShown.value.filter((index) => index !== previous);
-          return;
-        }
-        runTransition(leaving, "fade", "leave", () => {
-          if (fadeState.current !== previous)
-            fadeShown.value = fadeShown.value.filter((index) => index !== previous);
-        });
-      },
-      { strategy: "document-ready" },
-    );
-
-    const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "banner";
-        for (const element of track(markElements)) {
-          cleanup(
-            runDirective(vMark, element, value, {
-              leave: (left) => forgetElement(markElements, left),
-              back: (kept) => collectElement(markElements, kept),
+  const fadeState = useConstant((): TransitionState => ({
+    current: shown.value ? 0 : -1,
+    elements: [],
+    entering: [],
+  }));
+  const fadeShown = useSignal<number[]>([shown.value ? 0 : -1].filter((index) => index >= 0));
+  useVisibleTask$(
+    ({ track }) => {
+      const next = track(() => (shown.value ? 0 : -1));
+      const previous = fadeState.current;
+      if (next === previous) return;
+      fadeState.current = next;
+      if (next >= 0) {
+        // Shown again while it leaves: its leave stops, and it stays as it is.
+        stopTransition(fadeState.elements[next]);
+        if (!fadeShown.value.includes(next)) {
+          fadeState.entering.push(next);
+          fadeShown.value = [...fadeShown.value, next];
+          // Qwik renders the branch within the frame, unless a condition around the transition
+          // hides it: then the mark goes, so the element it shows later enters only with appear.
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              const left = fadeState.entering.indexOf(next);
+              if (left >= 0) fadeState.entering.splice(left, 1);
             }),
           );
         }
-      },
-      { strategy: "document-ready" },
-    );
+      }
+      const leaving = previous < 0 ? undefined : fadeState.elements[previous];
+      if (!leaving) {
+        fadeShown.value = fadeShown.value.filter((index) => index !== previous);
+        return;
+      }
+      runTransition(leaving, "fade", "leave", () => {
+        if (fadeState.current !== previous)
+          fadeShown.value = fadeShown.value.filter((index) => index !== previous);
+      });
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        aria-label="News"
-        data-uf-53025c4a=""
-        {...scopeAttributes(attributes)}
-        class={className}
-        style={style}
-      >
-        <button type="button" onClick$={() => (shown.value = false)} data-uf-53025c4a="">
-          Dismiss
-        </button>
-        <>
-          {fadeShown.value.includes(0) && (
-            <p
-              class="banner"
-              ref={transition(fadeState, "fade", 0, false, (element) =>
-                collectElement(markElements, element),
-              )}
-              data-uf-53025c4a=""
-            >
-              New releases are out.
-            </p>
-          )}
-        </>
-      </section>
-    );
-  },
-);
+  const markElements = useSignal<DirectiveElement<typeof vMark>[]>([]);
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "banner";
+      for (const element of track(markElements)) {
+        cleanup(
+          runDirective(vMark, element, value, {
+            leave: (left) => forgetElement(markElements, left),
+            back: (kept) => collectElement(markElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  return (
+    <section aria-label="News" data-uf-53025c4a="" class={className} style={style} {...attributes}>
+      <button type="button" onClick$={() => (shown.value = false)} data-uf-53025c4a="">
+        Dismiss
+      </button>
+      <>
+        {fadeShown.value.includes(0) && (
+          <p
+            class="banner"
+            ref={transition(fadeState, "fade", 0, false, (element) =>
+              collectElement(markElements, element),
+            )}
+            data-uf-53025c4a=""
+          >
+            New releases are out.
+          </p>
+        )}
+      </>
+    </section>
+  );
+});
 
 /**
  * A transition's state: the branch shown, each branch's element, and the branches a change of the

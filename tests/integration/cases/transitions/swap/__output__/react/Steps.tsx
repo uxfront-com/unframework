@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -12,10 +12,7 @@ import {
 } from "react";
 import "./Steps.uf.tsx.css";
 
-export interface StepsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepsAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Steps({ className, style, ...attributes }: StepsAttributes) {
   const [first, setFirst] = useState(true);
@@ -29,7 +26,7 @@ export default function Steps({ className, style, ...attributes }: StepsAttribut
       aria-label="Checkout"
       style={style}
       data-uf-84fe8ccf=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button
         type="button"
@@ -94,15 +91,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** One element a `Transition` renders: its key, its last render and the phase it is in. */

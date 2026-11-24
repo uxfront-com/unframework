@@ -8,11 +8,22 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TagProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["em"],
+    "label" | "tone" | "children" | "class" | "style" | "ref"
+  > &
+    TagProps & { class?: ClassValue; style?: string; ref?: HTMLElementTagNameMap["em"] | null };
 
-  let { label, class: className, style, ...attributes }: Props = $props();
+  let {
+    label,
+    tone: _tone,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -50,17 +61,11 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <em
   class={["tag", className]}
   style={mergeStyle({ color: "rgb(120, 30, 30)", padding: "1px 4px" }, style)}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{label}</em>

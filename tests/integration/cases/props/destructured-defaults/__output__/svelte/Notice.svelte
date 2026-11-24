@@ -13,9 +13,27 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = NoticeProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "message"
+    | "title"
+    | "tone"
+    | "priority"
+    | "expanded"
+    | "tags"
+    | "author"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    NoticeProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     message,
@@ -27,15 +45,9 @@
     author = { name: "System" },
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
@@ -43,7 +55,8 @@
   aria-label={title}
   data-tone={tone}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>{title}</h2
   ><p>{message}</p

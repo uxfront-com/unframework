@@ -1,12 +1,15 @@
-import { type JSX, Show, createSignal, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, Show, createSignal, onCleanup, splitProps } from "solid-js";
 
 export interface ShippingDetailsEvents {
   onToggled?: (items: number) => void;
 }
 
 export default function ShippingDetails(
-  props: ShippingDetailsEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ShippingDetailsEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onToggled", "class"]);
+
   const [open, setOpen] = createSignal(false);
   let details: HTMLUListElement | null = null;
 
@@ -20,8 +23,7 @@ export default function ShippingDetails(
     <section
       class={props.class ? `shipping-details ${props.class}` : "shipping-details"}
       aria-label="Shipping"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-expanded={open()} onClick={toggle}>
         Shipping details
@@ -42,13 +44,6 @@ export default function ShippingDetails(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

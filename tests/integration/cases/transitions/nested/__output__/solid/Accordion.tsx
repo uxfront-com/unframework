@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   type JSX,
   Show,
   children,
@@ -11,17 +12,13 @@ import {
 import { isServer } from "solid-js/web";
 import "./Accordion.uf.tsx.css";
 
-export default function Accordion(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Accordion(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
   const [open, setOpen] = createSignal(true);
 
   return (
-    <section
-      aria-label="Shipping"
-      data-uf-357b6b1f=""
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Shipping" data-uf-357b6b1f="" {...props}>
       <button
         type="button"
         aria-expanded={open()}
@@ -43,13 +40,6 @@ export default function Accordion(props: { class?: string; style?: JSX.CSSProper
       </Transition>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Runs Vue's transition classes of `name` on the element `children` renders as it enters and leaves. */

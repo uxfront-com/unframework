@@ -1,4 +1,4 @@
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 
 export interface TallyEvents {
   onTotal?: (value: number) => void;
@@ -6,7 +6,11 @@ export interface TallyEvents {
   onLogged?: (entries: string[]) => void;
 }
 
-export default function Tally(props: TallyEvents & { class?: string; style?: JSX.CSSProperties }) {
+export default function Tally(
+  props: TallyEvents & Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["onTotal", "onSteps", "onLogged", "class"]);
+
   const [count, setCount] = createSignal(0);
   const [trail, setTrail] = createSignal<string[]>([]);
 
@@ -49,12 +53,7 @@ export default function Tally(props: TallyEvents & { class?: string; style?: JSX
   }
 
   return (
-    <section
-      class={props.class ? `tally ${props.class}` : "tally"}
-      aria-label="Tally"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `tally ${props.class}` : "tally"} aria-label="Tally" {...others}>
       <p role="status">Count: {count()}</p>
       <button type="button" onClick={addTwice}>
         Add two
@@ -78,11 +77,4 @@ export default function Tally(props: TallyEvents & { class?: string; style?: JSX
       <p>Phases: {trail().join(" then ")}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

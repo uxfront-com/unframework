@@ -1,4 +1,4 @@
-import { type CSSProperties, useState } from "react";
+import { type ComponentPropsWithRef, useState } from "react";
 
 export interface SelectProps<T extends string> {
   label: string;
@@ -10,10 +10,10 @@ export interface SelectModels<T extends string> {
   onValueChange?: (value: T) => void;
 }
 
-export interface SelectAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SelectAttributes = Omit<
+  ComponentPropsWithRef<"label">,
+  "label" | "options" | "value" | "onValueChange" | "children"
+>;
 
 export default function Select<T extends string>({
   label,
@@ -27,7 +27,7 @@ export default function Select<T extends string>({
   const [, setLocalValue] = useState({ value: value });
 
   return (
-    <label className={className} style={style} {...scopeAttributes(attributes)}>
+    <label className={className} style={style} {...attributes}>
       {label}{" "}
       <select
         value={value}
@@ -44,13 +44,4 @@ export default function Select<T extends string>({
       </select>
     </label>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

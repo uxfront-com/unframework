@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 type Availability = "in-stock" | "backorder" | "discontinued";
 
 interface Finish {
@@ -13,26 +15,31 @@ export interface ProductSpecProps {
   finishes: Finish[];
 }
 
-interface Props extends ProductSpecProps {
+interface Props
+  extends
+    ProductSpecProps,
+    Omit<HTMLAttributes<"section">, "name" | "availability" | "size" | "finishes"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { name, availability, size, finishes, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  name,
+  availability,
+  size,
+  finishes,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <section
   class:list={["product-spec", className]}
-  aria-label={name}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : name}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{name}</h2>
   <dl>

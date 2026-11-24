@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface InvoiceTotalProps {
   quantity: number;
 }
 
-interface Props extends InvoiceTotalProps {
+interface Props extends InvoiceTotalProps, Omit<HTMLAttributes<"div">, "quantity"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { quantity, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { quantity, class: className, style, ...attrs } = Astro.props;
 
 const refunded = 0 as number;
 
@@ -30,7 +25,7 @@ function getTotal() {
 const total = getTotal();
 ---
 
-<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={[className]} style={style} {...attrs}>
   <output>{`${total} after ${refunded} refunded`}</output>
   <button type="button">Refund</button>
 </div>

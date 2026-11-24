@@ -1,5 +1,5 @@
 import { vMark } from "./vMark";
-import { type JSX, isServer } from "@solidjs/web";
+import { type ComponentProps, type JSX, isServer } from "@solidjs/web";
 import {
   Show,
   children,
@@ -12,17 +12,16 @@ import {
 } from "solid-js";
 import "./Banner.uf.tsx.css";
 
-export default function Banner(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Banner(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
   const [shown, setShown] = createState(true);
 
   return (
-    <section
-      aria-label="News"
-      data-uf-53025c4a=""
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="News" data-uf-53025c4a="" {...props}>
       <button type="button" onClick={() => setShown(false)} data-uf-53025c4a="">
         Dismiss
       </button>
@@ -35,13 +34,6 @@ export default function Banner(props: { class?: string; style?: JSX.CSSPropertie
       </Transition>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Runs Vue's transition classes of `name` on the element `children` renders as it enters and leaves. */

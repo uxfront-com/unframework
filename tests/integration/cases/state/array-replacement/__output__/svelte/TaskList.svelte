@@ -13,11 +13,19 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TaskListProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "initial" | "children" | "class" | "style" | "ref"
+  > &
+    TaskListProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { initial, class: className, style, ...attributes }: Props = $props();
+  let { initial, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let tasks = $state.raw(untrack(() => initial));
   let selected = $state<string>();
@@ -44,20 +52,14 @@
       tasks = tasks.toSpliced(index - 1, 2, current, above);
     }
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["task-list", className]}
   aria-label="Tasks"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   {#if tasks.length === 0}
     <p>No tasks yet.</p>

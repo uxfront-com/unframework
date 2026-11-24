@@ -1,4 +1,4 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export interface TagProps {
   label: string;
@@ -7,7 +7,14 @@ export interface TagProps {
   indent?: string;
 }
 
-export default function Tag(props: TagProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Tag(
+  props: TagProps &
+    Omit<ComponentProps<"span">, "label" | "colour" | "weight" | "indent" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
+) {
+  const [, others] = splitProps(props, ["label", "colour", "weight", "indent", "class", "style"]);
+
   return (
     <span
       class={props.class ? `tag ${props.class}` : "tag"}
@@ -24,16 +31,9 @@ export default function Tag(props: TagProps & { class?: string; style?: JSX.CSSP
         },
         ...props.style,
       }}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.label}
     </span>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

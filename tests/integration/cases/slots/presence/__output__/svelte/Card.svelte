@@ -2,27 +2,32 @@
 
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "label" | "title" | "children" | "class" | "style" | "ref"
+  > & {
     label: string;
     title?: Snippet;
     children?: Snippet;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { label, title, children, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    label,
+    title,
+    children,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<section class={["card", className]} aria-label={label} {style} {...scopeAttributes(attributes)}>
+<section class={["card", className]} aria-label={label} {style} bind:this={ref} {...attributes}>
   {#if title}
     <header class="title">{@render title?.()}</header>
   {/if}{#if children}

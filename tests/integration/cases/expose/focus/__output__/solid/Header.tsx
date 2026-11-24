@@ -1,15 +1,15 @@
 import SearchField from "./SearchField";
-import { type JSX, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, onCleanup, splitProps } from "solid-js";
 
-export default function Header(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Header(
+  props: Omit<ComponentProps<"header">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   let search: { focus(): void } | null = null;
 
   return (
-    <header
-      class={props.class ? `header ${props.class}` : "header"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <header class={props.class ? `header ${props.class}` : "header"} {...others}>
       <SearchField
         ref={(api) => {
           search = api;
@@ -24,11 +24,4 @@ export default function Header(props: { class?: string; style?: JSX.CSSPropertie
       </button>
     </header>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -11,10 +11,7 @@ export interface DraftEditorEvents {
   onSaved?: (count: number) => void;
 }
 
-export interface DraftEditorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DraftEditorAttributes = Omit<ComponentPropsWithRef<"section">, "onSaved" | "children">;
 
 export default function DraftEditor({
   onSaved,
@@ -55,7 +52,7 @@ export default function DraftEditor({
       className={cx("draft-editor", className)}
       aria-label="Draft"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Draft
@@ -79,13 +76,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,14 +1,14 @@
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface DisclosureModels {
   open?: boolean;
   onOpenChange?: (value: boolean) => void;
 }
 
-export interface DisclosureAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DisclosureAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "title" | "open" | "onOpenChange" | "children"
+>;
 
 export default function Disclosure({
   title,
@@ -27,7 +27,7 @@ export default function Disclosure({
   });
 
   return (
-    <div className={cx("disclosure", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("disclosure", className)} style={style} {...attributes}>
       <button
         type="button"
         aria-expanded={open}
@@ -57,13 +57,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

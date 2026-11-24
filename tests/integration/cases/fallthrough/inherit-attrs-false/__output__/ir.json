@@ -124,7 +124,8 @@
             "exposes": [],
             "inheritAttrs": false,
             "root": "element",
-            "rootTag": "label"
+            "rootTag": "label",
+            "refTag": "label"
           }
         ],
         "keys": []

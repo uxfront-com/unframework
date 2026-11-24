@@ -1,11 +1,8 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { chip } from "virtual:fixture-engine";
 import "virtual:fixture-engine.css";
 
-export interface ChipAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChipAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "tone" | "children">;
 
 export default function Chip({
   label,
@@ -15,7 +12,7 @@ export default function Chip({
   ...attributes
 }: { label: string; tone?: "plain" | "accent" } & ChipAttributes) {
   return (
-    <span className={cx(chip(tone), className)} style={style} {...scopeAttributes(attributes)}>
+    <span className={cx(chip(tone), className)} style={style} {...attributes}>
       {label}
     </span>
   );
@@ -34,13 +31,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

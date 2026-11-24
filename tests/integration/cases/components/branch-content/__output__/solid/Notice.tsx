@@ -1,15 +1,15 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export default function Notice(
-  props: { text: string; tone: "info" | "quiet" } & { class?: string; style?: JSX.CSSProperties },
+  props: { text: string; tone: "info" | "quiet" } & Omit<
+    ComponentProps<"p">,
+    "text" | "tone" | "style"
+  > & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["text", "tone", "class"]);
+
   return (
-    <p
-      role="status"
-      class={cx("notice", props.tone, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <p role="status" class={cx("notice", props.tone, props.class)} {...others}>
       {props.text}
     </p>
   );
@@ -25,11 +25,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -149,8 +149,9 @@ async function typecheck(
   const outcome = await formatOutput({ ...file!, contents: edit(file!.contents) });
   expect(outcome.error).toBeUndefined();
   const lines = outcome.file.contents.split("\n");
-  // Each element sits on its own line, in order, after the root's opening line.
-  const first = lines.findIndex((line) => line.trim() === `<${root}>`) + 2;
+  // Each element sits on its own line, in order, after the root's opening line, which takes the
+  // consumer's `ref` (ADR-0118).
+  const first = lines.findIndex((line) => line.trim() === `<${root} ref={ref}>`) + 2;
   expect(lines[first - 1 + pairs.length]?.trim()).toBe(`</${root}>`);
   const path = join(scratch, `${name}.tsx`);
   writeFileSync(path, outcome.file.contents);

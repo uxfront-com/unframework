@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, Show, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, Show, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
 export interface Task {
   id: string;
@@ -11,8 +11,14 @@ export interface TaskListProps {
 }
 
 export default function TaskList(
-  props: TaskListProps & { class?: string; style?: JSX.CSSProperties },
+  props: TaskListProps &
+    Omit<ComponentProps<"section">, "initial" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "initial", "class");
+
   const [tasks, setTasks] = createState(untrack(() => props.initial));
   const [selected, setSelected] = createState<string>();
   let added = 0;
@@ -43,8 +49,7 @@ export default function TaskList(
     <section
       class={props.class ? `task-list ${props.class}` : "task-list"}
       aria-label="Tasks"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Show
         when={tasks().length === 0}
@@ -88,13 +93,6 @@ export default function TaskList(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

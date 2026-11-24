@@ -1,13 +1,19 @@
-import { type CSSProperties, type MouseEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type MouseEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface ProfileFieldsEvents {
   onFirstNickname?: (nickname: string) => void;
 }
 
-export interface ProfileFieldsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileFieldsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onFirstNickname" | "children"
+>;
 
 export default function ProfileFields({
   onFirstNickname,
@@ -85,7 +91,7 @@ export default function ProfileFields({
       className={cx("profile-fields", className)}
       aria-label="Profile"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <div className="name-group" role="group" aria-label="Name fields" ref={nameFieldsListeners}>
         <label>
@@ -181,13 +187,4 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

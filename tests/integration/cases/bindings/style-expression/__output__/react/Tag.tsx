@@ -1,21 +1,24 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface TagProps {
   label: string;
   tone?: string;
 }
 
-export interface TagAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TagAttributes = Omit<ComponentPropsWithRef<"em">, "label" | "tone" | "children">;
 
-export default function Tag({ label, className, style, ...attributes }: TagProps & TagAttributes) {
+export default function Tag({
+  label,
+  className,
+  style,
+  tone: _tone,
+  ...attributes
+}: TagProps & TagAttributes) {
   return (
     <em
       className={cx("tag", className)}
       style={{ color: "rgb(120, 30, 30)", padding: "1px 4px", ...style }}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </em>
@@ -35,13 +38,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

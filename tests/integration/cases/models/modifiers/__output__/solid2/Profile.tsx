@@ -1,13 +1,18 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import { createRenderEffect, createSignal, getObserver, untrack } from "solid-js";
 
-export default function Profile(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Profile(
+  props: Omit<ComponentProps<"form">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
   const [name, setName] = createState("");
   const [city, setCity] = createState("Lisbon");
   const [weight, setWeight] = createState(0);
 
   return (
-    <form aria-label="Profile" class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <form aria-label="Profile" {...props}>
       <label>
         Name <input value={untrack(name)} ref={modelText(name, setName, { trim: true })} />
       </label>
@@ -23,13 +28,6 @@ export default function Profile(props: { class?: string; style?: JSX.CSSProperti
       </output>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Binds a text field to a signal as Vue's `vModelText` does: see its modifiers. */

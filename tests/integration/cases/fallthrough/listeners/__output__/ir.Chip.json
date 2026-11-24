@@ -1,0 +1,227 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/listeners/Chip.uf.tsx",
+  "components": [
+    {
+      "name": "Chip",
+      "span": {
+        "start": 169,
+        "end": 408
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 218,
+              "end": 224
+            }
+          },
+          "binding": "label@200",
+          "span": {
+            "start": 211,
+            "end": 224
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 209,
+            "end": 226
+          }
+        },
+        "span": {
+          "start": 198,
+          "end": 226
+        }
+      },
+      "types": [],
+      "emits": {
+        "binding": "emit@238",
+        "type": {
+          "code": "{ pick: [label: string] }",
+          "span": {
+            "start": 257,
+            "end": 282
+          }
+        },
+        "events": [
+          {
+            "name": "pick",
+            "parameters": [
+              {
+                "name": "label",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 273,
+                    "end": 279
+                  }
+                },
+                "span": {
+                  "start": 266,
+                  "end": 279
+                }
+              }
+            ],
+            "span": {
+              "start": 259,
+              "end": 280
+            }
+          }
+        ],
+        "span": {
+          "start": 232,
+          "end": 286
+        }
+      },
+      "bindings": [
+        {
+          "id": "label@200",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 200,
+            "end": 205
+          }
+        },
+        {
+          "id": "emit@238",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 238,
+            "end": 242
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 310,
+              "end": 323
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "chip",
+            "span": {
+              "start": 324,
+              "end": 336
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "click",
+            "handler": {
+              "kind": "Inline",
+              "function": {
+                "parameters": [],
+                "body": {
+                  "code": "emit(\"pick\", label)",
+                  "span": {
+                    "start": 352,
+                    "end": 371
+                  },
+                  "refs": [
+                    {
+                      "kind": "Emit",
+                      "binding": "emit@238",
+                      "event": "pick",
+                      "span": {
+                        "start": 352,
+                        "end": 371
+                      },
+                      "arguments": [
+                        {
+                          "start": 365,
+                          "end": 370
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "label@200",
+                      "span": {
+                        "start": 365,
+                        "end": 370
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 346,
+                  "end": 371
+                }
+              },
+              "span": {
+                "start": 346,
+                "end": 371
+              }
+            },
+            "span": {
+              "start": 337,
+              "end": 372
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 381,
+                "end": 386
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@200",
+                  "span": {
+                    "start": 381,
+                    "end": 386
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 380,
+              "end": 387
+            }
+          }
+        ],
+        "span": {
+          "start": 302,
+          "end": 401
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Chip",
+      "span": {
+        "start": 169,
+        "end": 408
+      }
+    }
+  ],
+  "types": []
+}

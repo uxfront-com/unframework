@@ -1,16 +1,25 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface BadgeProps {
   label: string;
   tone?: string;
 }
 
-export default function Badge(props: BadgeProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Badge(
+  props: BadgeProps &
+    Omit<ComponentProps<"span">, "label" | "tone" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
+) {
+  const others = omit(props, "label", "tone", "class", "style");
+
   return (
     <span
       class={props.class ? `badge ${props.class}` : "badge"}
       style={{ ...styleProperties(props.tone), ...props.style }}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.label}
     </span>
@@ -42,11 +51,4 @@ function styleProperties(
     properties[key.startsWith("--") ? key : kebab] = String(value);
   }
   return properties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

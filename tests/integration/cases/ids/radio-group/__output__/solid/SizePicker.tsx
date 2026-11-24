@@ -1,4 +1,13 @@
-import { For, type JSX, createMemo, createSignal, createUniqueId, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  createUniqueId,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface SizePickerProps {
   legend: string;
@@ -6,8 +15,11 @@ export interface SizePickerProps {
 }
 
 export default function SizePicker(
-  props: SizePickerProps & { class?: string; style?: JSX.CSSProperties },
+  props: SizePickerProps &
+    Omit<ComponentProps<"fieldset">, "legend" | "sizes" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["legend", "sizes", "class"]);
+
   const group = `uf-id-${createUniqueId()}`;
   const hintId = `uf-id-${createUniqueId()}`;
   const [picked, setPicked] = createSignal("");
@@ -20,8 +32,7 @@ export default function SizePicker(
     <fieldset
       class={props.class ? `size-picker ${props.class}` : "size-picker"}
       aria-describedby={hintId}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <legend>{props.legend}</legend>
       <p id={hintId}>Pick one size.</p>
@@ -42,13 +53,6 @@ export default function SizePicker(
       <output>{picked() || "none"}</output>
     </fieldset>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

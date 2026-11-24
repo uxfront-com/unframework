@@ -1,0 +1,14 @@
+---
+import Pressable from "./Pressable.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"button">, "text"> {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style, ...attrs } = Astro.props;
+---
+
+<Pressable text={text} class:list={["save", className]} style={style} {...attrs} />

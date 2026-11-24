@@ -1,6 +1,6 @@
 import Disclosure from "./Disclosure";
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver, onCleanup, onSettled, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit, onCleanup, onSettled, untrack } from "solid-js";
 
 function vTrace(getValue: () => string): (element: HTMLElement) => void {
   const hooks = {
@@ -28,16 +28,18 @@ function vTrace(getValue: () => string): (element: HTMLElement) => void {
   };
 }
 
-export default function Card(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Card(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [note, setNote] = createState<{ name: string } | null>({ name: "note" });
 
   return (
-    <section
-      class={props.class ? `card ${props.class}` : "card"}
-      aria-label="Card"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `card ${props.class}` : "card"} aria-label="Card" {...others}>
       <Disclosure>
         <p data-name="body" ref={vTrace(() => "body")}>
           Body
@@ -55,13 +57,6 @@ export default function Card(props: { class?: string; style?: JSX.CSSProperties 
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

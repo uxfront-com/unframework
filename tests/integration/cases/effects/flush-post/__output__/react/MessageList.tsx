@@ -1,13 +1,13 @@
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface MessageListEvents {
   onRendered?: (count: number) => void;
 }
 
-export interface MessageListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MessageListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onRendered" | "children"
+>;
 
 export default function MessageList({
   onRendered,
@@ -40,7 +40,7 @@ export default function MessageList({
       className={cx("message-list", className)}
       aria-label="Messages"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul ref={list}>
         {messages.map((message) => (
@@ -67,13 +67,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

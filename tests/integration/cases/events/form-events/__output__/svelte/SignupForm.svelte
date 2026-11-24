@@ -1,15 +1,23 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLFormAttributes } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<HTMLFormAttributes, "onsignup" | "children" | "class" | "style" | "ref"> & {
     onsignup?: (fullName: string, email: string, plan: string, newsletter: boolean) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["form"] | null;
   };
 
-  let { onsignup, class: className, style, ...attributes }: Props = $props();
+  let {
+    onsignup,
+    class: className,
+    style,
+    ref = $bindable(null),
+    onsubmit,
+    ...attributes
+  }: Props = $props();
 
   let fullName = $state("");
   let email = $state("");
@@ -21,21 +29,18 @@
     event.preventDefault();
     onsignup?.(fullName, email, plan, newsletter);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <form
   class={["signup-form", className]}
   aria-label="Sign up"
-  onsubmit={submit}
+  onsubmit={(event) => {
+    submit(event);
+    onsubmit?.(event);
+  }}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <label>Name<input
     name="name"

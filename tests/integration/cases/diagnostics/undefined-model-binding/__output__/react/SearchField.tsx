@@ -1,20 +1,22 @@
-import { type CSSProperties, useState } from "react";
+import { type ComponentPropsWithRef, useState } from "react";
 
 export interface SearchFieldModels {
   query?: string;
   onQueryChange?: (value: string | undefined) => void;
 }
 
-export interface SearchFieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchFieldAttributes = Omit<
+  ComponentPropsWithRef<"input">,
+  "query" | "onQueryChange" | "children"
+>;
 
 export function SearchField({
   query: queryProp,
   onQueryChange,
   className,
   style,
+  value: _value,
+  onChange,
   ...attributes
 }: SearchFieldModels & SearchFieldAttributes) {
   const [localQuery, setLocalQuery] = useState<{ value: string | undefined }>({ value: undefined });
@@ -28,19 +30,11 @@ export function SearchField({
       onChange={(event) => {
         setLocalQuery({ value: event.target.value });
         onQueryChange?.(event.target.value);
+        onChange?.(event);
       }}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     />
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

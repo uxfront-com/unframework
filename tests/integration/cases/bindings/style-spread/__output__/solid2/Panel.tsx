@@ -1,5 +1,6 @@
 import Hint from "./Hint";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 type PanelLook = {
   borderColor?: string;
@@ -25,13 +26,17 @@ export interface PanelProps {
   note?: NoteAttributes;
 }
 
-export default function Panel(props: PanelProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Panel(
+  props: PanelProps &
+    Omit<ComponentProps<"div">, "heading" | "panel" | "note" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
+) {
+  const others = omit(props, "heading", "panel", "note", "class");
+
   return (
-    <div
-      class={props.class ? `panels ${props.class}` : "panels"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `panels ${props.class}` : "panels"} {...others}>
       <section
         id={props.panel.id}
         title={props.panel.title}
@@ -77,11 +82,4 @@ function styleProperties(
     properties[key.startsWith("--") ? key : kebab] = String(value);
   }
   return properties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

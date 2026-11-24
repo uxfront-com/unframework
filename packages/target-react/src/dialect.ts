@@ -51,7 +51,7 @@ export function reactDialect(
   listeners: ReactListeners,
   composer: ReactComposer,
 ): JsxDialect {
-  return {
+  const dialect: JsxDialect = {
     attributeName: (name, element) =>
       formControlProp(name, element) ?? REACT_PROP_NAMES[name] ?? name,
 
@@ -158,9 +158,33 @@ export function reactDialect(
 
     conditional: (node, context) => keyedTernary(node, context, names.imports),
 
-    eventAttribute: (attribute, element, context) => listeners.event(attribute, element, context),
+    eventAttribute: (attribute, element, context) =>
+      rooted(listeners.event(attribute, element, context), element),
     directiveAttribute: (attribute, element, context) =>
-      listeners.directive(attribute, element, context),
+      rooted(listeners.directive(attribute, element, context), element),
+
+    // What a parent passes a child that it does not declare (ADR-0118), printed as the child's
+    // fallthrough element would take it: React's prop names and number types of its tag, and a
+    // listener as the element's synthetic prop, its own semantics kept (`event-semantics`).
+    fallthroughAttributes(attributes, node, _element, context) {
+      const element = listeners.fallthroughElement(node, attributes);
+      return attributes.flatMap((attribute) => {
+        switch (attribute.kind) {
+          case "Static":
+            return dialect.staticAttribute!(attribute, element, context);
+          case "Bound":
+            return dialect.boundAttribute!(attribute, element, context);
+          case "Event":
+            return listeners.event(attribute, element, context);
+          default:
+            return attribute satisfies never;
+        }
+      });
+    },
+
+    // The props' rest spreads after the element's own attributes, so the consumer's win, as a
+    // root's fallthrough does (`ReactComposer.scopeRootAttributes`, ADR-0118).
+    restAttribute: () => [],
 
     // React's raw HTML prop takes an object, which marks the markup as set on purpose (ADR-0097).
     rawHtmlAttribute: (attribute, _element, context) => [
@@ -172,33 +196,43 @@ export function reactDialect(
       ),
     ],
 
-    // A component's `ref` holds what it exposes (ADR-0054): the ref object itself.
+    // A component's `ref` holds what it exposes, or its root element (ADR-0054, ADR-0118): the
+    // ref object itself.
     refAttribute: (attribute, element, context) =>
-      /^[A-Z]/.test(element.tag)
-        ? [
-            js.jsxAttribute(
-              "ref",
-              js.jsxExpressionContainer(
-                js.identifier(
-                  context.component.bindings.find((binding) => binding.id === attribute.binding)!
-                    .name,
+      rooted(
+        /^[A-Z]/.test(element.tag)
+          ? [
+              js.jsxAttribute(
+                "ref",
+                js.jsxExpressionContainer(
+                  js.identifier(
+                    context.component.bindings.find((binding) => binding.id === attribute.binding)!
+                      .name,
+                  ),
                 ),
               ),
-            ),
-          ]
-        : listeners.ref(attribute, element, context),
+            ]
+          : listeners.ref(attribute, element, context),
+        element,
+      ),
 
     slotOutlet: (node, context) => composer.slotOutlet(node, context),
     slotValue: (slot, context) => composer.slotValue(slot, context),
     fillAttribute: (fill, node, context) => composer.fillAttribute(fill, node, context),
     componentEvent: (attribute, node, context) => composer.componentEvent(attribute, node, context),
     modelAttribute: (attribute, element, context) =>
-      composer.modelAttribute(attribute, element, context),
+      rooted(composer.modelAttribute(attribute, element, context), element),
     modelBinding: (attribute, node, context) => composer.modelBinding(attribute, node, context),
     dynamic: (node, context) => composer.dynamic(node, context),
     scopeRootAttributes: (element, context) => composer.scopeRootAttributes(element, context),
   };
+  /** A root's own `ref` joined with its consumer's, which holds the root too (ADR-0118). */
+  const rooted = <T extends JsxAttributeItem>(items: T[], element: ElementNode) =>
+    items.map((item) => composer.rootRef(item, element));
+  return dialect;
 }
+
+type JsxAttributeItem = Parameters<ReactComposer["rootRef"]>[0];
 
 /** Whether a spread on the element carries a `class`, which the element's `class` merges. */
 function spreadsClass(element: ElementNode): boolean {

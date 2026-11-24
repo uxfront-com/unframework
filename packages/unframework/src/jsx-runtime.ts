@@ -178,14 +178,42 @@ export interface CustomElementAttributes
   [attribute: string]: unknown;
 }
 
+/** The attributes of any element, as one union of each element's own. */
+type AnyElementAttributes = UpstreamIntrinsicElements[keyof UpstreamIntrinsicElements];
+/** Every key of every member of a union. */
+type AnyKeyOf<T> = T extends unknown ? keyof T : never;
+/** What the members of a union that have `K` take for it. */
+type ValueAt<T, K extends PropertyKey> = T extends unknown
+  ? K extends keyof T
+    ? T[K]
+    : never
+  : never;
+
+/**
+ * Every attribute of an element (`id`, `title`, `type`, `placeholder`, …), typed as the elements
+ * that have it take it, but the ones unframework owns, `class`, `style` and the listeners, which
+ * `ComponentAttributes` types itself. What a consumer passes a component that it does not declare
+ * falls through to its root (ADR-0118): layer 2 checks it against that element.
+ */
+export type NativeAttributes = {
+  [
+    K in Exclude<AnyKeyOf<AnyElementAttributes>, OwnedKeys | "class" | "style" | `on${string}`>
+  ]?: ValueAt<AnyElementAttributes, K>;
+};
+
 /**
  * Layer 1 of plan §5.6: what every component accepts besides its signature props, so that legitimate
  * consumer code never fails under stock tsgo. Payloads, model types and slot props are deliberately
- * `any` or `unknown` here: the compiler (layer 2) and the content mapper (layer 3) check them.
+ * `any` or `unknown` here: the compiler (layer 2) and the content mapper (layer 3) check them. A
+ * component's own props win over these (`LibraryManagedAttributes` omits their names), so a prop
+ * named like an attribute keeps its own type.
  */
-export interface ComponentAttributes {
+export interface ComponentAttributes extends NativeAttributes {
   key?: ListKey | undefined;
-  /** A component ref. Its exposed API (`defineExpose`) is typed by the content mapper. */
+  /**
+   * A component ref: what it exposes (`defineExpose`), typed by the content mapper, or else its root
+   * element (ADR-0118).
+   */
   ref?: RefAttribute<any> | undefined;
   /** Fallthrough onto the component's root element. */
   class?: ClassValue | undefined;
@@ -241,5 +269,5 @@ export declare namespace JSX {
    */
   type LibraryManagedAttributes<C, P> = C extends TypedComponent
     ? P & Pick<ComponentAttributes, "ref" | "class" | "style">
-    : P & ComponentAttributes;
+    : P & Omit<ComponentAttributes, keyof P>;
 }

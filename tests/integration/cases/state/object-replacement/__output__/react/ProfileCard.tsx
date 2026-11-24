@@ -1,4 +1,4 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface Profile {
   name: string;
@@ -10,10 +10,7 @@ export interface ProfileCardProps {
   initial: Profile;
 }
 
-export interface ProfileCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileCardAttributes = Omit<ComponentPropsWithRef<"article">, "initial" | "children">;
 
 export default function ProfileCard({
   initial,
@@ -39,7 +36,7 @@ export default function ProfileCard({
       className={cx("profile-card", className)}
       aria-label="Profile"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{profile.name}</h2>
       <p>{profile.title}</p>
@@ -67,13 +64,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

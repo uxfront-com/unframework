@@ -1,15 +1,19 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLButtonAttributes } from "svelte/elements";
   import "./Chip.uf.tsx.css";
 
-  type Props = {
+  type Props = Omit<
+    HTMLButtonAttributes,
+    "label" | "variant" | "pressed" | "children" | "class" | "style" | "ref"
+  > & {
     label: string;
     variant?: "neutral" | "danger";
     pressed?: boolean;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["button"] | null;
   };
 
   let {
@@ -18,15 +22,9 @@
     pressed = false,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <button
@@ -37,5 +35,6 @@
   aria-pressed={pressed ? "true" : "false"}
   {style}
   data-uf-69db3802=""
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{label}</button>

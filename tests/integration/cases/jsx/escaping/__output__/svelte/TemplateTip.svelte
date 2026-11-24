@@ -9,21 +9,30 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TemplateTipProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["figure"],
+    "example" | "note" | "path" | "children" | "class" | "style" | "ref"
+  > &
+    TemplateTipProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["figure"] | null;
+    };
 
-  let { example, note, path, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    example,
+    note,
+    path,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<figure class={["template-tip", className]} {style} {...scopeAttributes(attributes)}>
+<figure class={["template-tip", className]} {style} bind:this={ref} {...attributes}>
   <figcaption
     title="Vue &#123;&#123; name &#125;&#125;, Svelte &#123;#if ok&#125;, Angular @if (ok) &amp; JSX &#123;name&#125;"
   >Template syntax &amp; escaping</figcaption

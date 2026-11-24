@@ -1,13 +1,19 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 export interface InvoiceTotalProps {
   quantity: number;
 }
 
 export default function InvoiceTotal(
-  props: InvoiceTotalProps & { class?: string; style?: JSX.CSSProperties },
+  props: InvoiceTotalProps &
+    Omit<ComponentProps<"div">, "quantity" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "quantity");
+
   const [refunded, setRefunded] = createState(0);
   const total = () => {
     const units = props.quantity - refunded();
@@ -22,20 +28,13 @@ export default function InvoiceTotal(
   }
 
   return (
-    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <div {...others}>
       <output>{`${total()} after ${refunded()} refunded`}</output>
       <button type="button" onClick={refund}>
         Refund
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

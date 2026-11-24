@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface InboxMessage {
   id: string;
   subject: string;
@@ -10,7 +12,8 @@ export interface MessageListProps {
   emptyText?: string;
 }
 
-interface Props extends MessageListProps {
+interface Props
+  extends MessageListProps, Omit<HTMLAttributes<"section">, "messages" | "archived" | "emptyText"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
@@ -21,21 +24,16 @@ const {
   emptyText = "Nothing here yet.",
   class: className,
   style,
+  "aria-label": ariaLabel,
+  ...attrs
 } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
 ---
 
 <section
   class:list={["message-list", className]}
-  aria-label="Messages"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Messages"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>Inbox</h2>
   <ul>

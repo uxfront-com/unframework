@@ -1,9 +1,6 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface NoteEditorAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type NoteEditorAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function NoteEditor({ className, style, ...attributes }: NoteEditorAttributes) {
   const [note, setNote] = useState("Buy milk");
@@ -18,7 +15,7 @@ export default function NoteEditor({ className, style, ...attributes }: NoteEdit
   });
 
   return (
-    <section aria-label="Note" className={className} style={style} {...scopeAttributes(attributes)}>
+    <section aria-label="Note" className={className} style={style} {...attributes}>
       <textarea
         aria-label="Text"
         value={note}
@@ -40,13 +37,4 @@ export default function NoteEditor({ className, style, ...attributes }: NoteEdit
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

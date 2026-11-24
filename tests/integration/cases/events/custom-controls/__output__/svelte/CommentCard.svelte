@@ -1,15 +1,19 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onliked" | "children" | "class" | "style" | "ref"
+  > & {
     onliked?: (liked: boolean, by: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { onliked, class: className, style, ...attributes }: Props = $props();
+  let { onliked, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let text = $state("");
   let liked = $state(false);
@@ -29,20 +33,14 @@
     if (event.key === " ") event.preventDefault();
     if (event.key === "Enter" || event.key === " ") toggleLike(event);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["comment-card", className]}
   aria-label="Comment"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <label>Comment<textarea name="comment" rows="2" oninput={autosize}></textarea></label
   ><div class="meter" role="presentation">

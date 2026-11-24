@@ -1,14 +1,11 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import "./Mat.uf.tsx.css";
 
 export interface MatSlots {
   children?: ReactNode;
 }
 
-export interface MatAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MatAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Mat({
   children,
@@ -17,12 +14,7 @@ export default function Mat({
   ...attributes
 }: MatSlots & MatAttributes) {
   return (
-    <div
-      className={cx("mat", className)}
-      style={style}
-      data-uf-09929c4a=""
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("mat", className)} style={style} data-uf-09929c4a="" {...attributes}>
       {children}
     </div>
   );
@@ -41,13 +33,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

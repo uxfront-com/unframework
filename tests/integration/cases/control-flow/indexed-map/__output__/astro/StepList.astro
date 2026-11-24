@@ -1,29 +1,24 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface StepListProps {
   title: string;
   steps: string[];
 }
 
-interface Props extends StepListProps {
+interface Props extends StepListProps, Omit<HTMLAttributes<"ol">, "title" | "steps"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { title, steps, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { title, steps, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
 <ol
   class:list={["step-list", className]}
-  aria-label={title}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   {steps.map((step, index) => (
     <li data-step={index + 1}>Step {index + 1}: {step}</li>

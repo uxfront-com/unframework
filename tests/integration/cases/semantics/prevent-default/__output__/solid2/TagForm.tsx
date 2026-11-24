@@ -1,5 +1,14 @@
-import type { JSX } from "@solidjs/web";
-import { For, Show, createMemo, createSignal, getObserver, onCleanup, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import {
+  For,
+  Show,
+  createMemo,
+  createSignal,
+  getObserver,
+  omit,
+  onCleanup,
+  untrack,
+} from "solid-js";
 
 export interface TagFormEvents {
   onTagsChange?: (tags: string[]) => void;
@@ -10,8 +19,15 @@ function blockComma(event: KeyboardEvent) {
 }
 
 export default function TagForm(
-  props: TagFormEvents & { class?: string; style?: JSX.CSSProperties },
+  props: TagFormEvents &
+    Omit<ComponentProps<"form">, "class" | "style" | "onSubmit"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+      onSubmit?: Extract<ComponentProps<"form">["onSubmit"], (event: never) => void>;
+    },
 ) {
+  const others = omit(props, "onTagsChange", "class", "onSubmit");
+
   const [tags, setTags] = createState<string[]>([]);
   const [draft, setDraft] = createState("");
   const [helpOpen, setHelpOpen] = createState(false);
@@ -41,9 +57,11 @@ export default function TagForm(
     <form
       class={props.class ? `tag-form ${props.class}` : "tag-form"}
       aria-label="Tags"
-      onSubmit={addTag}
-      style={props.style}
-      {...scopeAttributes(props)}
+      onSubmit={(event) => {
+        addTag(event);
+        props.onSubmit?.(event);
+      }}
+      {...others}
     >
       <label>
         New tag
@@ -75,13 +93,6 @@ export default function TagForm(
       </ul>
     </form>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

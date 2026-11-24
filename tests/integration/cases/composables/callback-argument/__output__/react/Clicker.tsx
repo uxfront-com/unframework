@@ -1,14 +1,11 @@
 import { useCounter } from "./useCounter";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface ClickerEvents {
   onLimit?: (count: number) => void;
 }
 
-export interface ClickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ClickerAttributes = Omit<ComponentPropsWithRef<"section">, "onLimit" | "children">;
 
 export default function Clicker({
   onLimit,
@@ -30,7 +27,7 @@ export default function Clicker({
       className={cx("clicker", className)}
       aria-label="Clicker"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">Count: {count}</p>
       <p>{message}</p>
@@ -57,13 +54,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 interface LogLine {
   id: string;
   text: string;
@@ -11,26 +13,31 @@ export interface BuildLogProps {
   warnings?: string[];
 }
 
-interface Props extends BuildLogProps {
+interface Props
+  extends
+    BuildLogProps,
+    Omit<HTMLAttributes<"section">, "target" | "failed" | "lines" | "warnings"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { target, failed, lines, warnings, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  target,
+  failed,
+  lines,
+  warnings,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <section
   class:list={["build-log", className]}
-  aria-label="Build log"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Build log"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <pre>$ make {target}{failed ? <strong> (failed)</strong> : null}
 {(lines ?? []).map((line) => <code>{line.text}{"\n"}</code>)}</pre>

@@ -1,60 +1,47 @@
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   component$,
   useSignal,
   useTask$,
 } from "@qwik.dev/core";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const zoom = useSignal(100);
-    const history = useSignal<string[]>([]);
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+>(({ class: className, style, ...attributes }) => {
+  const zoom = useSignal(100);
+  const history = useSignal<string[]>([]);
 
-    const previousZoom = useSignal(() => zoom.value);
-    useTask$(
-      ({ track }) => {
-        const value = track(zoom);
-        const previous = previousZoom.value;
-        if (Object.is(value, previous)) return;
-        previousZoom.value = value;
-        history.value = [...history.value, `${previous}% to ${value}%`];
-      },
-      { deferUpdates: false },
-    );
+  const previousZoom = useSignal(() => zoom.value);
+  useTask$(
+    ({ track }) => {
+      const value = track(zoom);
+      const previous = previousZoom.value;
+      if (Object.is(value, previous)) return;
+      previousZoom.value = value;
+      history.value = [...history.value, `${previous}% to ${value}%`];
+    },
+    { deferUpdates: false },
+  );
 
-    return (
-      <section
-        class={["zoom-control", className]}
-        aria-label="Zoom"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <output>{zoom.value}%</output>
-        <button type="button" onClick$={() => (zoom.value += 25)}>
-          Zoom in
-        </button>
-        <button type="button" onClick$={() => (zoom.value -= 25)}>
-          Zoom out
-        </button>
-        <button type="button" onClick$={() => (zoom.value = 100)}>
-          Reset
-        </button>
-        <ol aria-label="History">
-          {history.value.map((entry, index) => (
-            <li key={index}>{entry}</li>
-          ))}
-        </ol>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["zoom-control", className]} aria-label="Zoom" style={style} {...attributes}>
+      <output>{zoom.value}%</output>
+      <button type="button" onClick$={() => (zoom.value += 25)}>
+        Zoom in
+      </button>
+      <button type="button" onClick$={() => (zoom.value -= 25)}>
+        Zoom out
+      </button>
+      <button type="button" onClick$={() => (zoom.value = 100)}>
+        Reset
+      </button>
+      <ol aria-label="History">
+        {history.value.map((entry, index) => (
+          <li key={index}>{entry}</li>
+        ))}
+      </ol>
+    </section>
+  );
+});

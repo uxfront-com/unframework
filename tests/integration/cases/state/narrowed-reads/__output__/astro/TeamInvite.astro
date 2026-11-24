@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface Member {
   id: number;
   name: string;
@@ -13,19 +15,19 @@ export interface TeamInviteProps {
   members: Member[];
 }
 
-interface Props extends TeamInviteProps {
+interface Props extends TeamInviteProps, Omit<HTMLAttributes<"section">, "inviter" | "members"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { inviter, members, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  inviter,
+  members,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 
 const greeting = inviter ? `Invite as ${inviter.name}` : "Invite as a guest";
 const selected = null as Member | null;
@@ -38,9 +40,9 @@ const seconds = 0 as number;
 
 <section
   class:list={["team-invite", className]}
-  aria-label="Invite"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Invite"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{greeting}</h2>
   <ul aria-label="Members">

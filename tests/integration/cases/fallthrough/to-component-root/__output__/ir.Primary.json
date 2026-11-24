@@ -152,7 +152,22 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "button"
+            "rootTag": "button",
+            "fallthroughTag": "button",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "type",
+                  "value": "button"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "button"
           }
         ],
         "keys": []

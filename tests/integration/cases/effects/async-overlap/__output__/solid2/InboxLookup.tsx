@@ -1,4 +1,4 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   For,
   createMemo,
@@ -7,6 +7,7 @@ import {
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
   untrack,
@@ -23,8 +24,24 @@ export interface InboxLookupEvents {
 }
 
 export default function InboxLookup(
-  props: InboxLookupEvents & { class?: string; style?: JSX.CSSProperties },
+  props: InboxLookupEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(
+    props,
+    "onLooked",
+    "onDropped",
+    "onSorted",
+    "onScaled",
+    "onBusy",
+    "onFailed",
+    "onCounted",
+    "class",
+  );
+
   const [sender, setSender] = createState("");
   const [order, setOrder] = createState("newest");
   const [answers, setAnswers] = createState<string[]>([]);
@@ -131,8 +148,7 @@ export default function InboxLookup(
     <section
       class={props.class ? `inbox-lookup ${props.class}` : "inbox-lookup"}
       aria-label="Inbox"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={() => setSender("Ann")}>
         Find Ann
@@ -177,13 +193,6 @@ export default function InboxLookup(
       <p>Unread: {unread()}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

@@ -1,4 +1,13 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface MailboxProps {
   folder: string;
@@ -12,8 +21,21 @@ export interface MailboxEvents {
 }
 
 export default function Mailbox(
-  props: MailboxProps & MailboxEvents & { class?: string; style?: JSX.CSSProperties },
+  props: MailboxProps &
+    MailboxEvents &
+    Omit<ComponentProps<"section">, "folder" | "onProgress" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, [
+    "folder",
+    "onLoaded",
+    "onProgress",
+    "onSeen",
+    "onNoted",
+    "class",
+  ]);
+
   const [name, setName] = createSignal("Loading");
   const [unread, setUnread] = createSignal(0);
   const [status, setStatus] = createSignal("idle");
@@ -89,8 +111,7 @@ export default function Mailbox(
     <section
       class={props.class ? `mailbox ${props.class}` : "mailbox"}
       aria-label="Mailbox"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{name()}</h2>
       <p role="status">{summary()}</p>
@@ -109,13 +130,6 @@ export default function Mailbox(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

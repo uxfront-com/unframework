@@ -1,25 +1,19 @@
 ---
 import type { Sized, Toned } from "./types";
+import type { HTMLAttributes } from "astro/types";
 
 type ChipProps = Sized & Toned & { label: string };
 
-interface Props extends ChipProps {
+interface Props extends ChipProps, Omit<HTMLAttributes<"span">, "size" | "tone" | "label"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { size, tone = "neutral", label, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { size, tone = "neutral", label, class: className, style, ...attrs } = Astro.props;
 ---
 
 <span
   class:list={[`chip chip-${size} chip-${tone}`, className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label}</span>

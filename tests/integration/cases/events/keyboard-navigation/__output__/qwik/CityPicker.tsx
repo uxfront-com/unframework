@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   sync$,
@@ -20,7 +21,12 @@ export interface CityPickerEvents {
 }
 
 export default component$<
-  CityPickerProps & CityPickerEvents & { class?: ClassList; style?: CSSProperties }
+  CityPickerProps &
+    CityPickerEvents &
+    Omit<PropsOf<"section">, "cities" | "onChose$" | "onNoted$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ cities, onChose$, onNoted$, class: className, style, ...attributes }) => {
   const listId = "uf-id-" + useId();
   const query = useSignal("");
@@ -75,12 +81,7 @@ export default component$<
   });
 
   return (
-    <section
-      class={["city-picker", className]}
-      aria-label="Trip"
-      {...scopeAttributes(attributes)}
-      style={style}
-    >
+    <section class={["city-picker", className]} aria-label="Trip" style={style} {...attributes}>
       <form
         role="search"
         aria-label="Destination"
@@ -148,12 +149,3 @@ export default component$<
     </section>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

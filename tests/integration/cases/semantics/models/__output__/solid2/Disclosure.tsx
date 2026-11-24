@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit } from "solid-js";
 
 export interface DisclosureModels {
   open?: boolean;
@@ -7,8 +7,14 @@ export interface DisclosureModels {
 }
 
 export default function Disclosure(
-  props: { title: string } & DisclosureModels & { class?: string; style?: JSX.CSSProperties },
+  props: { title: string } & DisclosureModels &
+    Omit<ComponentProps<"div">, "title" | "open" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "title", "open", "onOpenChange", "class");
+
   const [localOpen, setLocalOpen] = createState<boolean>(false);
   const open = () => (props.open === undefined ? localOpen() : props.open);
 
@@ -18,11 +24,7 @@ export default function Disclosure(
   }
 
   return (
-    <div
-      class={props.class ? `disclosure ${props.class}` : "disclosure"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `disclosure ${props.class}` : "disclosure"} {...others}>
       <button
         type="button"
         aria-expanded={enumeratedValue(open())}
@@ -40,13 +42,6 @@ export default function Disclosure(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

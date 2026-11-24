@@ -50,13 +50,16 @@ import { codeOf } from "@unframework.dev/ir";
 import { childrenOf, walk } from "@unframework.dev/ir";
 import type {
   BindingId,
+  ComponentNode,
   DynamicNode,
   ElementNode,
   EventAttribute,
   EventDeclaration,
   FragmentNode,
   ModelAttribute,
+  Prop,
   RenderNode,
+  Span,
   TypeDeclaration,
   TypeText,
   UfComponent,
@@ -93,6 +96,14 @@ import {
 } from "./composition.ts";
 import { DIRECTIVE_HELPER, emitDirective, hooksCode, QwikDirectives } from "./directive.ts";
 import { qwikEventProp } from "./events.ts";
+import {
+  childFallthroughTag,
+  declaredBy,
+  restAttributesHelper,
+  sameSpan,
+  singleRoot,
+} from "./fallthrough.ts";
+import type { Passed } from "./fallthrough.ts";
 import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
 import { Listeners } from "./listeners.ts";
@@ -204,12 +215,16 @@ export const qwik: Target = defineTarget({
       helper: "modelText",
       note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
     },
+    // Qwik's own props' rest (ADR-0118, ./fallthrough.ts): what a consumer passes and a component
+    // does not declare is `...attributes`, which its root, or the element that spreads the
+    // source's `{...rest}`, spreads last, its listener of an event the element listens to beside
+    // the element's own, `onClick$={[$(…), onClick$]}`.
     fallthrough: { support: "native" },
     "contextual-root": { support: "native" },
     expose: {
       support: "emulated",
       helper: "exposeRef",
-      note: "Qwik has no component instance, so a component ref is a signal the child fills with what it exposes, through an inline helper, `exposeRef` (ADR-0054).",
+      note: "Qwik has no component instance, so a ref on a component that exposes functions is a signal the child fills with what it exposes, through an inline helper, `exposeRef` (ADR-0054). A ref on a component that exposes nothing is Qwik's own element ref, a signal the root element takes: in the props' rest, or beside the root's own ref, `ref={(element) => { input.value = element; if (ref) ref.value = element; }}` (ADR-0118).",
     },
     context: { support: "native" },
     "reactive-context": { support: "native" },
@@ -220,7 +235,7 @@ export const qwik: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root.",
+      note: "A child cannot know the scope attributes its styled parents pass. A root that spreads the props' rest takes them with it, and elsewhere an inline helper picks them out of its props by name and spreads them on the root, while a rest spread on another element leaves them out through `restAttributes` (ADR-0118).",
     },
     "slotted-styles": { support: "native" },
     // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
@@ -345,7 +360,14 @@ export const qwik: Target = defineTarget({
     const componentFn = imports.add("@qwik.dev/core", "component$");
     const names = new OutputNames(imports);
     const plan = planSetup(component, module, names);
-    const scope = scopePlan(component, names);
+    // What a consumer passes that the component does not declare (ADR-0118, ./fallthrough.ts).
+    const { passed } = plan.composition;
+    const scope = scopePlan(component, names, passed);
+    // The props' rest, `{...rest}`, where an element other than the root spreads it: without the
+    // scope attributes, which the root keeps (ADR-0063).
+    const restHelper =
+      passed?.rest !== undefined && !passed.onRoot ? names.once("restAttributes") : undefined;
+    const printed: PrintedPassed = { merged: false };
     const listeners = new Listeners(plan);
     // Each directive's list of elements and visible task (ADR-0099).
     const directives = new QwikDirectives(component, plan, names);
@@ -381,8 +403,21 @@ export const qwik: Target = defineTarget({
         ),
         ...(teleport ? { teleport: teleportJsx(teleport) } : {}),
         ...(transitions ? { transition: transitions.jsx } : {}),
-        directiveAttribute: (attribute, _element, context) =>
-          directives.attribute(attribute, context),
+        // On the root, a consumer's ref fills beside the directive's list (ADR-0118).
+        directiveAttribute: (attribute, element, context) => {
+          const root = passed?.rootRef && isRoot(component, element);
+          if (root) printed.merged = true;
+          return directives.attribute(attribute, context, root ? passed.ref() : undefined);
+        },
+        // The props' rest (ADR-0118), which the element spreads last once printed.
+        restAttribute: () => {
+          if (passed?.rest === undefined) throw new Error("A rest spread on no rest's element.");
+          const rest = js.identifier(passed.rest);
+          printed.rest = js.jsxSpreadAttribute(
+            restHelper ? js.callExpression(js.identifier(restHelper), [rest]) : rest,
+          );
+          return [printed.rest];
+        },
         // A template ref beside a directive is filled by the directive's own `ref` (ADR-0099).
         refAttribute: (attribute, element, context) =>
           directives.fillsTemplateRef(attribute)
@@ -408,7 +443,19 @@ export const qwik: Target = defineTarget({
     for (const attribute of listsInFills(render)) listeners.explicit.add(attribute);
     const setup = printSetup(plan);
     const root = jsxNode(render, jsx);
-    if (plan.composition.fallthrough) mergeFallthrough(root, plan.composition.fallthrough);
+    if (passed) {
+      const problem = passThrough(root, plan, passed, printed);
+      if (problem) {
+        context.report({ code: "UF1002", severity: "error", ...problem });
+        return [];
+      }
+    }
+    // A root that takes the consumer's `class` and `style` with no rest, as a `<component is>`
+    // over tags does, merges them into each element it may render (ADR-0119).
+    const { fallthrough } = plan.composition;
+    if (fallthrough && passed?.rest === undefined) {
+      for (const element of rootElements(root)) mergeFallthrough(element, fallthrough);
+    }
     const returned = js.returnStatement(root);
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), as a string
     // Qwik attaches once per component: `useStyles$(styles)`.
@@ -417,6 +464,7 @@ export const qwik: Target = defineTarget({
       local: names.fresh("styles"),
     };
     const body = [
+      restOfProps(component, plan),
       sheet ? `${names.core("useStyles$")}(${sheet.local});` : "",
       setup.body,
       teleport ? teleportSetup(teleport, names) : "",
@@ -436,6 +484,7 @@ export const qwik: Target = defineTarget({
       events?.reference,
       models?.reference,
       slots?.reference,
+      elementProps(plan),
       ownProps(component, plan),
     ].filter((type) => type !== undefined);
     // The rest the root picks the scope attributes out of needs a props type to destructure.
@@ -479,6 +528,10 @@ export const qwik: Target = defineTarget({
     // A component that renders itself refers to its own `const` (ADR-0053).
     const helperCode = helpers(plan, listeners);
     if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
+    if (restHelper && passed?.tag !== undefined) {
+      const type = `${names.core("PropsOf", { type: true })}<${JSON.stringify(passed.tag)}>`;
+      helperCode.push(restAttributesHelper(restHelper, type));
+    }
     if (teleport) helperCode.push(teleportHelper(teleport));
     if (transitions) helperCode.push(transitions.helpers());
     helperCode.push(...directives.helpers(names));
@@ -625,6 +678,7 @@ type Parameter = Parameters<typeof js.arrowFunction>[0][number];
 type AstExpression = Parameters<typeof js.conditionalExpression>[0];
 type JsxAttribute = ReturnType<typeof js.jsxAttribute> | ReturnType<typeof js.jsxSpreadAttribute>;
 type JsxAttributeNode = ReturnType<typeof js.jsxAttribute>;
+type JsxSpreadAttribute = ReturnType<typeof js.jsxSpreadAttribute>;
 type JsxElementNode = ReturnType<typeof js.jsxElement>;
 type JsxChild = Parameters<typeof js.jsxFragment>[0][number];
 
@@ -642,14 +696,27 @@ interface ScopePlan {
   helper: string;
 }
 
-/** The component's {@link ScopePlan}, or none where Vue gives no node the attributes. */
-function scopePlan(component: UfComponent, names: OutputNames): ScopePlan | undefined {
-  const roots = scopeRoots(component);
+/**
+ * The component's {@link ScopePlan}, or none where Vue gives no node the attributes, or where the
+ * root spreads the props' rest, which holds them (ADR-0118). Where an element other than the root
+ * spreads the rest, the root keeps them, as Vue's does.
+ */
+function scopePlan(
+  component: UfComponent,
+  names: OutputNames,
+  passed: Passed | undefined,
+): ScopePlan | undefined {
+  const roots = scopeRoots(component).filter(
+    (span) => !(passed?.onRoot && passed.isTarget({ span })),
+  );
+  const root = singleRoot(component);
+  if (passed?.rest !== undefined && !passed.onRoot && root) roots.push(root.span);
   if (!roots.length) return undefined;
   const parameter = component.propsParameter;
   return {
     pending: new Set(roots.map(spanKey)),
-    props: parameter?.form === "object" ? parameter.name! : names.fresh("attributes"),
+    props:
+      parameter?.form === "object" ? parameter.name! : (passed?.rest ?? names.fresh("attributes")),
     helper: names.once(SCOPE_HELPER),
   };
 }
@@ -684,6 +751,9 @@ function ${name}(props: object): Record<string, ""> {
  * of the props object, and applies a default as `??` (ADR-0034: the analyser rejects a default
  * on a prop that admits `null`, so `??` and destructuring agree). A component whose root takes
  * its styled parents' scope attributes destructures the rest of its props too (`...attributes`).
+ * Where that rest is what falls through (ADR-0118), the pattern names every prop the component
+ * declares, an unread one as `_name`, so none falls through, and the consumer's listeners and ref
+ * the component takes apart from the rest (./fallthrough.ts).
  */
 function propsParameter(
   component: UfComponent,
@@ -692,25 +762,33 @@ function propsParameter(
   scope: ScopePlan | undefined,
 ): Parameter | undefined {
   const parameter = component.propsParameter;
+  const { passed } = plan.composition;
   const read = component.props.filter(
     (prop) => prop.binding !== undefined && jsx.referenced.has(prop.binding),
   );
-  // The events code emits, after the props: `({ initial = 0, onChange$ })`.
-  const events = [...plan.eventLocals].map(([event, local]) => {
-    const prop = qwikEventProp(event);
-    const property = js.bindingProperty(prop);
-    // A name the source takes renames the destructured prop (`{ onChange$: onChange$_1 }`).
+  // A name the source takes renames the destructured prop (`{ onChange$: onChange$_1 }`).
+  const property = ([prop, local]: readonly [string, string]) => {
+    const each = js.bindingProperty(prop);
     return local === prop
-      ? property
-      : { ...property, value: js.bindingIdentifier(local), shorthand: false };
-  });
+      ? each
+      : { ...each, value: js.bindingIdentifier(local), shorthand: false };
+  };
+  // The events code emits, after the props: `({ initial = 0, onChange$ })`.
+  const events = [...plan.eventLocals].map(([event, local]) =>
+    property([qwikEventProp(event), local]),
+  );
   const composition = compositionProps(plan);
+  const taken = passedProps(plan);
   if (parameter?.form === "object") {
-    return read.length || plan.emitted.size || composition.length || scope
+    return read.length || plan.emitted.size || composition.length || scope || passed
       ? js.bindingIdentifier(parameter.name!)
       : undefined;
   }
-  if (!read.length && !events.length && !composition.length && !scope) return undefined;
+  const rest = passed?.rest ?? scope?.props;
+  const unread = passed?.rest === undefined ? [] : unreadProps(component, plan, read);
+  if (!read.length && !events.length && !composition.length && !taken.length && !rest) {
+    return undefined;
+  }
   // In the order the source destructures them, which may differ from the type's.
   const start = (binding: string) => bindingOf(component, binding).span.start;
   return js.objectPattern([
@@ -723,14 +801,135 @@ function propsParameter(
         ),
       ),
     ...events,
-    ...composition.map(([prop, local]) => {
-      const property = js.bindingProperty(prop);
-      return local === prop
-        ? property
-        : { ...property, value: js.bindingIdentifier(local), shorthand: false };
-    }),
-    ...(scope ? [js.bindingRestElement(scope.props)] : []),
+    ...composition.map(property),
+    ...unread.map(property),
+    ...taken.map(property),
+    ...(rest ? [js.bindingRestElement(rest)] : []),
   ]);
+}
+
+/**
+ * What a component declares that no printed code reads, each with a `_` local: kept out of the
+ * props' rest, which falls through (ADR-0118). Its unread props, the events it never emits, the
+ * change callbacks of the models it never writes, and the render-prop slots it never renders.
+ */
+function unreadProps(
+  component: UfComponent,
+  plan: SetupPlan,
+  read: readonly Prop[],
+): [prop: string, local: string][] {
+  const unused = (prop: string): [string, string] => [prop, plan.names.fresh(`_${prop}`)];
+  const { composition } = plan;
+  return [
+    ...component.props.filter((prop) => !read.includes(prop)).map((prop) => unused(prop.name)),
+    ...(component.emits?.events ?? [])
+      .filter((event) => !plan.eventLocals.has(event.name))
+      .map((event) => unused(qwikEventProp(event.name))),
+    ...[...composition.models.values()]
+      .filter((model) => !model.written)
+      .map((model) => unused(model.callbackProp)),
+    ...(component.slots?.slots ?? [])
+      .filter((slot) => isRenderProp(component, slot.name) && !composition.slots.has(slot.name))
+      .map((slot) => unused(slotProp(slot.name))),
+  ];
+}
+
+/**
+ * The consumer's listeners and ref the component takes apart from the props' rest, with their
+ * locals (./fallthrough.ts): the fallthrough element runs each listener after its own, and the
+ * root fills the ref beside its own.
+ */
+function passedProps(plan: SetupPlan): [prop: string, local: string][] {
+  const { passed } = plan.composition;
+  if (!passed) return [];
+  return [
+    ...passed.listeners,
+    ...(passed.refLocal === undefined ? [] : [["ref", passed.refLocal] as [string, string]]),
+  ];
+}
+
+/**
+ * In the object form, the props' rest that falls through (ADR-0118), declared first:
+ * `const { label: _label, class: _class, style: _style, ...attributes } = props;`. The code reads
+ * the props from the object, so each declared one is named `_name`, which keeps it out of the
+ * rest.
+ */
+function restOfProps(component: UfComponent, plan: SetupPlan): string {
+  const parameter = component.propsParameter;
+  const { passed } = plan.composition;
+  if (parameter?.form !== "object" || !passed) return "";
+  const entries = [
+    ...(passed.rest === undefined
+      ? []
+      : [...passed.declared].map((prop) => `${prop}: ${plan.names.fresh(`_${prop}`)}`)),
+    ...passedProps(plan).map(([prop, local]) => (prop === local ? prop : `${prop}: ${local}`)),
+    ...(passed.rest === undefined ? [] : [`...${passed.rest}`]),
+  ];
+  return entries.length ? `const { ${entries.join(", ")} } = ${parameter.name};` : "";
+}
+
+/**
+ * The attributes and listeners of the element a consumer's land on (ADR-0118), as Qwik types
+ * them, without the names the component declares (an event named like a DOM one, a prop named
+ * like an attribute), which would otherwise intersect: `Omit<PropsOf<"button">, "title" | …>`.
+ */
+function elementProps(plan: SetupPlan): string | undefined {
+  const { passed } = plan.composition;
+  if (passed?.rest === undefined || passed.tag === undefined) return undefined;
+  const omitted = new Set(passed.declared);
+  // The ref the component takes apart from the rest is a signal (see `ownProps`), and a
+  // component whose root holds no element for a ref (a root component that exposes) takes none.
+  if (passed.refLocal !== undefined || !passed.rootRef) omitted.add("ref");
+  const props = plan.names.core("PropsOf", { type: true });
+  // A root component takes what it declares as its props type has it, `value: number` where the
+  // tag's would be `string | number | readonly string[]`, and passes the rest on to its own
+  // element: `PropsOf<typeof Base>`, without the props the root sets itself, which a consumer
+  // then need not pass.
+  const root = passed.rootComponent;
+  if (root) for (const name of setByRoot(root)) omitted.add(name);
+  // A generic root component's props `PropsOf` cannot infer, so the rest takes its tag's
+  // attributes, without what that component declares, whose types are its own.
+  const generic = passed.genericRoot;
+  if (generic) {
+    for (const name of setByRoot(generic)) omitted.add(name);
+    const declared = declaredBy(plan.module, generic.component);
+    for (const name of declared.props) omitted.add(name);
+    for (const name of declared.models) omitted.add(name).add(modelCallback(name));
+    for (const name of declared.events) omitted.add(qwikEventProp(name));
+  }
+  const names = [...omitted].map((name) => JSON.stringify(name)).join(" | ");
+  // A `<component is>` root's are what every tag takes (ADR-0122). Its listeners are each
+  // tag's, so a parent's handler is typed as written (`landsOnTags`).
+  const elements = root
+    ? [`typeof ${root.component}`]
+    : (passed.tags ?? [passed.tag]).map((tag) => JSON.stringify(tag));
+  return `Omit<${elements.map((element) => `${props}<${element}>`).join(" & ")}, ${names}>`;
+}
+
+/**
+ * The props a root component element sets that its component declares, by the names Qwik passes
+ * them as: its props, its models and their callbacks, its emits' listeners and its render-prop
+ * slots. The attributes and listeners it passes on to its own element are left in, as a
+ * consumer's win over them (ADR-0118).
+ */
+function setByRoot(root: ComponentNode): string[] {
+  const names = root.attributes.flatMap((attribute) => {
+    switch (attribute.kind) {
+      case "Prop":
+        return [attribute.name];
+      case "ModelBinding":
+        return [attribute.model, modelCallback(attribute.model)];
+      case "Listener":
+        return [qwikEventProp(attribute.event)];
+      default:
+        return [];
+    }
+  });
+  // A default fill without a parameter is the projected children, and any other a render prop.
+  for (const fill of root.fills) {
+    if (fill.slot !== "default" || fill.parameter) names.push(slotProp(fill.slot));
+  }
+  return names;
 }
 
 /**
@@ -814,6 +1013,15 @@ function ownProps(component: UfComponent, plan: SetupPlan): string | undefined {
   // holds functions, and the consumer's ref type names the exposed functions as plain ones.
   if (component.exposes)
     members.push(`ref?: ${plan.names.core("Signal", { type: true })}<object | undefined>`);
+  // A consumer's ref of the root element, which the root fills beside its own (ADR-0118): the
+  // signal Qwik's `ref` on an element takes. Where a root component takes it in place of the
+  // root's own, it is of the own one's element, which the visible task fills from it.
+  else if (plan.composition.passed?.refLocal !== undefined) {
+    const element = plan.composition.passed.forwarded
+      ? (plan.composition.passed.forwarded.type?.code ?? "Element")
+      : "Element";
+    members.push(`ref?: ${plan.names.core("Signal", { type: true })}<${element} | undefined>`);
+  }
   return members.length ? `{ ${members.join("; ")} }` : undefined;
 }
 
@@ -839,13 +1047,155 @@ function keyDeclarations(
     .join("\n");
 }
 
+/** What the dialect prints of what falls through, which {@link passThrough} completes. */
+interface PrintedPassed {
+  /** The props' rest, `{...rest}`, as printed where the source spreads it. */
+  rest?: JsxSpreadAttribute;
+  /** Whether the root's directive ref fills the consumer's ref. */
+  merged: boolean;
+}
+
+/** Whether a printed element is the component's root element. */
+function isRoot(component: UfComponent, element: ElementNode): boolean {
+  const { render } = component;
+  return render.kind === "Element" && sameSpan(render.span, element.span);
+}
+
 /**
- * Merges the `class` and `style` a consumer passes into the root (`fallthrough`): the class
- * tokens after the root's own, `class={["tag", className]}`, and the style's declarations after
- * the root's, `style={{ padding: "2px", ...style }}`, so the consumer's win (ADR-0054).
+ * Completes what falls through in the printed render (ADR-0118, ./fallthrough.ts): the element
+ * that spreads the props' rest merges the consumer's `class` and `style` and spreads the rest
+ * last, so the consumer's attribute wins over its own; and the root takes a consumer's ref apart
+ * from the rest, beside its own, where it has one or the rest spreads elsewhere. Returns the
+ * problem where the root's own ref cannot take the consumer's too.
  */
-function mergeFallthrough(root: AstExpression, names: { className: string; style: string }): void {
-  for (const element of rootElements(root)) mergeInto(element, names);
+function passThrough(
+  root: AstExpression,
+  plan: SetupPlan,
+  passed: Passed,
+  printed: PrintedPassed,
+): { message: string; span: Span; help: string } | undefined {
+  const { fallthrough } = plan.composition;
+  // A `<component is>` root's branches each take it, one of which shows (ADR-0122).
+  const roots = (): JsxElementNode[] => {
+    if (passed.tags) return rootElements(root);
+    const element = rootElement(root);
+    return element ? [element] : [];
+  };
+  if (passed.rest !== undefined) {
+    const found = printed.rest ? elementHolding(root, printed.rest) : undefined;
+    for (const target of found ? [found] : roots()) {
+      if (fallthrough) mergeFallthrough(target, fallthrough);
+      const attributes = target.openingElement.attributes;
+      const spread = printed.rest ?? js.jsxSpreadAttribute(js.identifier(passed.rest));
+      const at = attributes.indexOf(spread);
+      if (at >= 0) attributes.splice(at, 1);
+      attributes.push(spread);
+    }
+  }
+  if (!passed.rootRef) return undefined;
+  for (const element of roots()) {
+    const problem = passRef(element, plan, passed, printed);
+    if (problem) return problem;
+  }
+  return undefined;
+}
+
+/**
+ * The root element's ref (see {@link passThrough}): the consumer's, in the rest or beside the
+ * root's own, on each branch of a `<component is>` root (ADR-0122).
+ */
+function passRef(
+  element: JsxElementNode,
+  plan: SetupPlan,
+  passed: Passed,
+  printed: PrintedPassed,
+): { message: string; span: Span; help: string } | undefined {
+  const attributes = element.openingElement.attributes;
+  const own = attributes.find(
+    (attribute): attribute is JsxAttributeNode =>
+      attribute.type === "JSXAttribute" &&
+      attribute.name.type === "JSXIdentifier" &&
+      attribute.name.name === "ref",
+  );
+  if (!own) {
+    // In the rest, the root takes it with what else falls through.
+    if (!passed.onRoot) {
+      attributes.push(
+        js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(passed.ref()))),
+      );
+    }
+    return undefined;
+  }
+  if (printed.merged) return undefined;
+  const value = attributeValue(own);
+  // A template ref is its signal, by name; anything else is printed code (a placeholder).
+  if (value?.type !== "Identifier" || value.name === "") {
+    return {
+      message:
+        "The root's ref is not one template ref, so the qwik target cannot fill a consumer's ref of the component's root element beside it (ADR-0118).",
+      span: plan.component.render.span,
+      help: "Put the template ref on the root element alone.",
+    };
+  }
+  const ref = passed.ref();
+  // A root component takes the consumer's signal, or else its own: Qwik serialises a
+  // component's props, which a function is not, and fills the consumer's as the server renders,
+  // before the consumer's `onMounted` runs. A visible task fills the own one from it
+  // (./setup.ts).
+  if (passed.forwarded) {
+    attributes.splice(
+      attributes.indexOf(own),
+      1,
+      js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(passed.rootSignal()))),
+    );
+    return undefined;
+  }
+  // `ref={(element) => { input.value = element; if (ref) ref.value = element; }}`: Qwik's ref
+  // takes one signal or function, and both refs hold the root element.
+  const parameter = plan.names.once("element");
+  const fill = (signal: string) =>
+    js.expressionStatement(
+      js.assignmentExpression(
+        "=",
+        js.memberExpression(js.identifier(signal), "value"),
+        js.identifier(parameter),
+      ),
+    );
+  const merged = js.arrowFunction(
+    [js.bindingIdentifier(parameter)],
+    [fill(value.name), js.ifStatement(js.identifier(ref), fill(ref))],
+  );
+  attributes.splice(
+    attributes.indexOf(own),
+    1,
+    js.jsxAttribute("ref", js.jsxExpressionContainer(merged)),
+  );
+  return undefined;
+}
+
+/** The element a printed render returns: the element, or the only element of its fragment. */
+function rootElement(root: AstExpression): JsxElementNode | undefined {
+  // A component at the root is the only child of a fragment.
+  const [only] = root.type === "JSXFragment" ? root.children : [];
+  return root.type === "JSXElement" ? root : only?.type === "JSXElement" ? only : undefined;
+}
+
+/** The printed element whose attributes hold `item`, anywhere in a printed render. */
+function elementHolding(node: unknown, item: object): JsxElementNode | undefined {
+  if (!node || typeof node !== "object") return undefined;
+  if (isJsxElement(node) && node.openingElement.attributes.some((each) => each === item)) {
+    return node;
+  }
+  for (const value of Array.isArray(node) ? node : Object.values(node)) {
+    const found = elementHolding(value, item);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/** Whether a printed node is a JSX element. */
+function isJsxElement(node: object): node is JsxElementNode {
+  return "type" in node && node.type === "JSXElement";
 }
 
 /**
@@ -871,8 +1221,13 @@ function rootElements(node: AstExpression | JsxChild): JsxElementNode[] {
   }
 }
 
-/** Merges the consumer's `class` and `style` into one element of the root. */
-function mergeInto(
+/**
+ * Merges the `class` and `style` a consumer passes into the element that spreads the props' rest
+ * (`fallthrough`): the class tokens after the element's own, `class={["tag", className]}`, and
+ * the style's declarations after the element's, `style={{ padding: "2px", ...style }}`, so the
+ * consumer's win (ADR-0054).
+ */
+function mergeFallthrough(
   element: JsxElementNode,
   { className, style }: { className: string; style: string },
 ): void {
@@ -1177,23 +1532,36 @@ function qwikDialect(
   locals: RenderLocals,
   scope: ScopePlan | undefined,
 ): JsxDialect {
-  const namespaceOf = (element: ElementNode) => namespaces.get(element) ?? "html";
   const { composition } = plan;
+  // What a component element passes through to its child's fallthrough element (ADR-0118) is
+  // printed as that element's attributes, as the child's props type takes them: by `start:end`
+  // of the component's span, the element's tag.
+  const passedTo = new Map<string, string>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component") return;
+      const tag = childFallthroughTag(module, node.component);
+      if (tag !== undefined) passedTo.set(spanKey(node.span), tag);
+    },
+  });
+  /** The element an attribute is printed on: a component's passes it on to its child's. */
+  const asElement = (element: ElementNode): ElementNode => {
+    const tag = element.attributes.length ? undefined : passedTo.get(spanKey(element.span));
+    return tag === undefined ? element : { ...element, tag };
+  };
+  const namespaceOf = (element: ElementNode) =>
+    namespaces.get(element) ?? (element.tag === "svg" ? "svg" : "html");
   const fills = fillExpressions(component);
-  const { render } = component;
-  const fallthroughRoot = render.kind === "Element" ? render : render.children[0];
   /**
    * `style={value}`, or `style={styleObject(value)}` where an object spread merges it: on the
-   * root that takes a consumer's style, and on a component or a `<component is>`, whose root
+   * element that takes a consumer's style, and on a component or a `<component is>`, whose root
    * spreads it (ADR-0054).
    */
   const wholeStyle = (value: AstExpression, element: ElementNode) => {
     const merged =
       /^[A-Z]/.test(element.tag) ||
       (composition.fallthrough !== undefined &&
-        fallthroughRoot !== undefined &&
-        fallthroughRoot.span.start === element.span.start &&
-        fallthroughRoot.span.end === element.span.end);
+        sameSpan(composition.fallthrough.target, element.span));
     return js.jsxAttribute(
       "style",
       js.jsxExpressionContainer(
@@ -1301,8 +1669,15 @@ function qwikDialect(
           ])
         : element;
     },
+    // A component's native listener falls through to its child's fallthrough element
+    // (ADR-0118): printed as a listener of an element of the component's listeners, a prop.
     eventAttribute: (attribute, element, context) =>
-      listeners.attributes(attribute, element, context),
+      listeners.attributes(
+        attribute,
+        (!element.attributes.length && plan.listeners.components.get(spanKey(element.span))) ||
+          element,
+        context,
+      ),
     // Qwik's raw HTML prop takes the string itself (ADR-0097). Its server renders an empty
     // string as a `dangerouslysetinnerhtml=""` attribute, where it renders `undefined` as nothing
     // and its client empties the element for both: markup that may be empty is passed as
@@ -1320,7 +1695,8 @@ function qwikDialect(
       return [js.jsxAttribute("dangerouslySetInnerHTML", js.jsxExpressionContainer(value))];
     },
     attributeName: (name, element) => qwikAttributeName(name, namespaceOf(element)),
-    staticAttribute(attribute, element, context) {
+    staticAttribute(attribute, printedOn, context) {
+      const element = asElement(printedOn);
       // A static `class` beside a spread that carries one merges with it.
       if (attribute.name === "class") return staticJsxAttribute(attribute, element, context);
       const namespace = namespaceOf(element);
@@ -1342,7 +1718,8 @@ function qwikDialect(
         ),
       ];
     },
-    boundAttribute(attribute, element, context) {
+    boundAttribute(attribute, printedOn, context) {
+      const element = asElement(printedOn);
       const model = attribute.name === "value" ? options.get(element) : undefined;
       if (model) {
         return [
@@ -1453,7 +1830,13 @@ function candidateBranches(
 function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | ModelAttribute> {
   const found = new Set<EventAttribute | ModelAttribute>();
   const visit = (node: RenderNode, fill: boolean, list: boolean): void => {
-    if ((node.kind === "Element" || node.kind === "Dynamic") && fill && list) {
+    // A component's native listeners fall through to its root (ADR-0118), printed as an
+    // element's.
+    if (
+      (node.kind === "Element" || node.kind === "Dynamic" || node.kind === "Component") &&
+      fill &&
+      list
+    ) {
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" || attribute.kind === "Model") found.add(attribute);
       }

@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface TemperatureProps {
   celsius: number;
 }
 
-interface Props extends TemperatureProps {
+interface Props extends TemperatureProps, Omit<HTMLAttributes<"figure">, "celsius"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { celsius, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { celsius, class: className, style, "data-level": dataLevel, ...attrs } = Astro.props;
 
 const fahrenheit = Math.round((celsius * 9) / 5 + 32);
 const level = celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild";
@@ -23,9 +18,9 @@ const level = celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild";
 
 <figure
   class:list={["temperature", className]}
-  data-level={level}
+  data-level={"data-level" in Astro.props ? dataLevel : level}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p>{celsius} °C</p>
   <p>{fahrenheit} °F</p>

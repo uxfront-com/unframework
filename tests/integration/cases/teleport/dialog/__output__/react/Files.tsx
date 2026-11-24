@@ -1,6 +1,6 @@
 import ConfirmDialog from "./ConfirmDialog";
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type ReactNode,
   type ReactPortal,
   useRef,
@@ -17,10 +17,10 @@ export interface FilesEvents {
   onDelete?: (file: string) => void;
 }
 
-export interface FilesAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FilesAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "file" | "onDelete" | "children"
+>;
 
 export default function Files({
   file,
@@ -45,12 +45,7 @@ export default function Files({
   );
 
   return (
-    <section
-      className={cx("files", className)}
-      aria-label="Files"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("files", className)} aria-label="Files" style={style} {...attributes}>
       <p>{file}</p>
       <button
         type="button"
@@ -95,15 +90,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /** Subscribes to nothing: whether the component has mounted never changes once it has. */

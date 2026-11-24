@@ -1,20 +1,15 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
-export function Hint(props: { text: string } & { class?: string; style?: JSX.CSSProperties }) {
+export function Hint(
+  props: { text: string } & Omit<ComponentProps<"small">, "text" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
+) {
+  const [, others] = splitProps(props, ["text", "class"]);
+
   return (
-    <small
-      class={props.class ? `hint ${props.class}` : "hint"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <small class={props.class ? `hint ${props.class}` : "hint"} {...others}>
       {props.text}
     </small>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

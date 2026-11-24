@@ -122,7 +122,7 @@ describe("svelte composables", () => {
       'const text = $derived(`${toggle.label}: ${toggle.on ? "on" : "off"}`);',
     );
     expect(script).toContain("aria-pressed={toggle.on}");
-    expect(script).toContain("onclick={() => toggle.toggle()}");
+    expect(script).toContain("    toggle.toggle();\n    onclick?.(event);");
     expect(await typecheck(outputs)).toEqual(clean(outputs));
   });
 

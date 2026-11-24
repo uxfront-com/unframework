@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -18,7 +19,12 @@ export interface AutoRefreshEvents {
 }
 
 export default component$<
-  AutoRefreshProps & AutoRefreshEvents & { class?: ClassList; style?: CSSProperties }
+  AutoRefreshProps &
+    AutoRefreshEvents &
+    Omit<PropsOf<"section">, "interval" | "onRefresh$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ interval, onRefresh$, class: className, style, ...attributes }) => {
   const enabled = useSignal(false);
   const timer = useSignal<ReturnType<typeof setInterval> | undefined>();
@@ -52,8 +58,8 @@ export default component$<
     <section
       class={["auto-refresh", className]}
       aria-label="Auto-refresh"
-      {...scopeAttributes(attributes)}
       style={style}
+      {...attributes}
     >
       <button type="button" aria-pressed={enabled.value} onClick$={toggle}>
         Auto-refresh
@@ -62,12 +68,3 @@ export default component$<
     </section>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

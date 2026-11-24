@@ -1,27 +1,22 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface StatusPillProps {
   status: "active" | "paused" | "archived";
   size?: "small" | "large";
   level?: 1 | 2 | 3;
 }
 
-interface Props extends StatusPillProps {
+interface Props extends StatusPillProps, Omit<HTMLAttributes<"span">, "status" | "size" | "level"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { status, size = "small", level = 1, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { status, size = "small", level = 1, class: className, style, ...attrs } = Astro.props;
 ---
 
 <span
   class:list={["pill", `pill-${status}`, `pill-${size}`, `pill-level-${level}`, className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{status === "active" ? "Active" : status === "paused" ? "Paused" : "Archived"}{level === 3 ? " (critical)" : ""}</span>

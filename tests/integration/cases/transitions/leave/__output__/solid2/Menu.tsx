@@ -1,4 +1,4 @@
-import { type JSX, isServer } from "@solidjs/web";
+import { type ComponentProps, type JSX, isServer } from "@solidjs/web";
 import {
   Show,
   children,
@@ -6,12 +6,20 @@ import {
   createSignal,
   getObserver,
   isHydrating,
+  omit,
   onCleanup,
   untrack,
 } from "solid-js";
 import "./Menu.uf.tsx.css";
 
-export default function Menu(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Menu(
+  props: Omit<ComponentProps<"nav">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [open, setOpen] = createState(true);
 
   return (
@@ -19,8 +27,7 @@ export default function Menu(props: { class?: string; style?: JSX.CSSProperties 
       class={props.class ? `menu ${props.class}` : "menu"}
       aria-label="Account"
       data-uf-e688a71a=""
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button
         type="button"
@@ -45,13 +52,6 @@ export default function Menu(props: { class?: string; style?: JSX.CSSProperties 
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Runs Vue's transition classes of `name` on the element `children` renders as it enters and leaves. */

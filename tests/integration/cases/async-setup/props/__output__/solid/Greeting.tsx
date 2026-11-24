@@ -1,9 +1,21 @@
 import { loadUser } from "./api";
-import { type JSX, Show, Suspense, createResource } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  Suspense,
+  createResource,
+  splitProps,
+} from "solid-js";
 
 export default function Greeting(
-  props: { id: string; prefix: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { id: string; prefix: string } & Omit<
+    ComponentProps<"section">,
+    "id" | "prefix" | "style"
+  > & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["id", "prefix", "class"]);
+
   const [awaited] = createResource(async () => {
     const user = await loadUser(props.prefix + props.id);
     return { user };
@@ -19,8 +31,7 @@ export default function Greeting(
             <section
               class={props.class ? `greeting ${props.class}` : "greeting"}
               aria-label="Greeting"
-              style={props.style}
-              {...scopeAttributes(props)}
+              {...others}
             >
               <h2>Hello, {user.name}</h2>
               <p>Signed in as {props.id}</p>
@@ -30,11 +41,4 @@ export default function Greeting(
       </Show>
     </Suspense>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

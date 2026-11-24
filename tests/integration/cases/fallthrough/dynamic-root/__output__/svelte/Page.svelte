@@ -3,12 +3,16 @@
 <script lang="ts">
   import Base from "./Base.svelte";
   import Primary from "./Primary.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import "./Page.uf.tsx.css";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let linked = $state(true);
   let tone = $state("rgb(29, 78, 216)");
@@ -18,34 +22,27 @@
     { id: 1, href: "#one", disabled: true, label: "One" },
     { id: 2, href: "", disabled: true, label: "Two" },
   ]);
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<section class={["page", className]} {style} data-uf-64cf7c28="" {...scopeAttributes(attributes)}>
+<section class={["page", className]} {style} data-uf-64cf7c28="" bind:this={ref} {...attributes}>
   <Primary
     href={linked ? "#docs" : undefined}
     disabled={true}
     text="Docs"
-    onpress={() => (pressed = "docs")}
     class="wide"
     style="color: {tone}"
+    onpress={() => (pressed = "docs")}
     {...{ "data-uf-64cf7c28": "" }}
   /><Base
     disabled={true}
     text="Off"
-    onpress={() => (pressed = "off")}
     class={["off", { muted: !linked }]}
+    onpress={() => (pressed = "off")}
     {...{ "data-uf-64cf7c28": "" }}
   /><Base
     text="Save"
-    onpress={() => (pressed = "save")}
     class="save"
+    onpress={() => (pressed = "save")}
     {...{ "data-uf-64cf7c28": "" }}
   /><ul aria-label="Items" data-uf-64cf7c28="">
     {#each items as item (item.id)}

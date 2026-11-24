@@ -1,4 +1,12 @@
-import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createSignal,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 export interface Track {
   id: number;
@@ -11,8 +19,11 @@ export interface PlaylistProps {
 }
 
 export default function Playlist(
-  props: PlaylistProps & { class?: string; style?: JSX.CSSProperties },
+  props: PlaylistProps &
+    Omit<ComponentProps<"section">, "initial" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["initial", "class"]);
+
   const [tracks, setTracks] = createSignal(untrack(() => props.initial));
 
   function sortByTitle() {
@@ -26,11 +37,7 @@ export default function Playlist(
   }
 
   return (
-    <section
-      class={props.class ? `playlist ${props.class}` : "playlist"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section class={props.class ? `playlist ${props.class}` : "playlist"} {...others}>
       <ol aria-label="Playlist">
         <KeyedFor each={tracks()} by={(track) => track.id}>
           {(track) => (
@@ -53,13 +60,6 @@ export default function Playlist(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

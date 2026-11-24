@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, Show, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, Show, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
 export interface Meeting {
   id: number;
@@ -23,8 +23,15 @@ export interface MeetingListEvents {
 }
 
 export default function MeetingList(
-  props: MeetingListProps & MeetingListEvents & { class?: string; style?: JSX.CSSProperties },
+  props: MeetingListProps &
+    MeetingListEvents &
+    Omit<ComponentProps<"section">, "meetings" | "organiser" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "meetings", "organiser", "onOpened", "onThanked", "onTrack", "class");
+
   const [rooms] = createState(["Atlas", "Borealis"]);
   const [log, setLog] = createState<string[]>([]);
   const [lastKey, setLastKey] = createState("none");
@@ -53,8 +60,7 @@ export default function MeetingList(
     <section
       class={props.class ? `meeting-list ${props.class}` : "meeting-list"}
       aria-label="Meetings"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <ul aria-label="Upcoming">
         <KeyedFor each={upcoming()} by={(event) => event.id}>
@@ -140,13 +146,6 @@ export default function MeetingList(
       </ol>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

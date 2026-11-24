@@ -1,29 +1,24 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface CalloutProps {
   heading: string;
   body: string;
 }
 
-interface Props extends CalloutProps {
+interface Props extends CalloutProps, Omit<HTMLAttributes<"aside">, "heading" | "body"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { heading, body, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { heading, body, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
 <aside
   class:list={["callout", className]}
-  aria-label={heading}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : heading}
   style={{ "--callout-accent": "#1f4d7a", borderLeft: "4px solid var(--callout-accent)", padding: "8px 12px", color: "#1a1a1a", ...style }}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p style="margin: 0; font-weight: 700">{heading}</p>
   <p style="margin: 4px 0 0">{body}</p>

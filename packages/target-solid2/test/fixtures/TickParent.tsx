@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 import { TickChild } from "./TickChild";
 
@@ -8,8 +8,11 @@ export interface TickParentEvents {
 }
 
 export default function TickParent(
-  props: TickParentEvents & { class?: string; style?: JSX.CSSProperties },
+  props: TickParentEvents &
+    Omit<ComponentProps<"div">, "class" | "style"> & { class?: string; style?: JSX.CSSProperties },
 ) {
+  const others = omit(props, "onChecked");
+
   const [count, setCount] = createState(0);
   const [seen, setSeen] = createState(0);
 
@@ -20,20 +23,13 @@ export default function TickParent(
   }
 
   return (
-    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <div {...others}>
       <TickChild count={count()} onSeen={(value: number) => setSeen(value)} />
       <button type="button" onClick={bump}>
         Bump
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

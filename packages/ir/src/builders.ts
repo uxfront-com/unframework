@@ -4,6 +4,8 @@
 
 import type {
   ApiReference,
+  DevCheckItem,
+  DevReference,
   CallbackArgument,
   ComposableParameter,
   DeclaredBy,
@@ -91,6 +93,7 @@ import type {
   DirectiveHook,
   UfDirective,
   RefAttribute,
+  RestAttribute,
   RefType,
   Reference,
   RefSource,
@@ -613,6 +616,16 @@ export function createApiReference(api: ApiReference["api"], at: Span): ApiRefer
   return { kind: "Api", api, span: at };
 }
 
+/** Builds a read of `isDev` as an `if`'s test (ADR-0117). */
+export function createDevReference(at: Span): DevReference {
+  return { kind: "Dev", span: at };
+}
+
+/** Builds a top-level `if (isDev) { … }` of the setup (ADR-0117). */
+export function createDevCheckItem(code: Code, at: Span): DevCheckItem {
+  return { kind: "DevCheck", code, span: at };
+}
+
 /** Builds a use of a member of a handler's event parameter (`event.key`); `call` for a call. */
 export function createEventReference(member: string, at: Span, call = false): EventReference {
   return { kind: "Event", member, span: at, ...(call ? { call: true as const } : {}) };
@@ -969,6 +982,11 @@ export function createFunctionHandler(binding: BindingId, at: Span): FunctionHan
 /** Builds a handler written in place: `onClick={() => count.value++}`. */
 export function createInlineHandler(fn: FunctionCode, at: Span): InlineHandler {
   return { kind: "Inline", function: fn, span: at };
+}
+
+/** Builds `{...rest}`, the props' rest spread on an element (ADR-0118). */
+export function createRestAttribute(at: Span): RestAttribute {
+  return { kind: "Rest", span: at };
 }
 
 /** Builds `ref={input}`, which attaches the element to a `templateRef` binding. */

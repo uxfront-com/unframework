@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useEffectEvent, useMemo, useRef } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useMemo, useRef } from "react";
 
 export interface PageCountProps {
   page?: number;
@@ -9,10 +9,10 @@ export interface PageCountEvents {
   onPageChange?: (page: number, previous: number) => void;
 }
 
-export interface PageCountAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PageCountAttributes = Omit<
+  ComponentPropsWithRef<"nav">,
+  "page" | "total" | "onPageChange" | "children"
+>;
 
 export default function PageCount({
   page = 1,
@@ -36,12 +36,7 @@ export default function PageCount({
   }, [page]);
 
   return (
-    <nav
-      className={cx("page-count", className)}
-      aria-label="Pages"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <nav className={cx("page-count", className)} aria-label="Pages" style={style} {...attributes}>
       <p role="status">{label}</p>
       <p>Direct: {page}</p>
     </nav>
@@ -61,13 +56,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

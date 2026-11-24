@@ -8,15 +8,27 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = TemperatureProps & {
-    onreading?: (celsius: number, previous: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["figure"],
+    "celsius" | "onreading" | "children" | "class" | "style" | "ref"
+  > &
+    TemperatureProps & {
+      onreading?: (celsius: number, previous: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["figure"] | null;
+    };
 
-  let { celsius, onreading, class: className, style, ...attributes }: Props = $props();
+  let {
+    celsius,
+    onreading,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   const fahrenheit = $derived(Math.round((celsius * 9) / 5 + 32));
   const level = $derived(celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild");
@@ -31,20 +43,14 @@
       onreading?.(value, previous);
     });
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <figure
   class={["temperature", className]}
   data-level={level}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p>{celsius} °C</p
   ><p>{fahrenheit} °F</p

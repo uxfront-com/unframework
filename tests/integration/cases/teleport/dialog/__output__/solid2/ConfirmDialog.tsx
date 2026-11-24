@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { createUniqueId, onCleanup, onSettled } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createUniqueId, omit, onCleanup, onSettled } from "solid-js";
 
 export interface ConfirmDialogProps {
   title: string;
@@ -11,8 +11,16 @@ export interface ConfirmDialogEvents {
 }
 
 export default function ConfirmDialog(
-  props: ConfirmDialogProps & ConfirmDialogEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ConfirmDialogProps &
+    ConfirmDialogEvents &
+    Omit<ComponentProps<"div">, "title" | "onClose" | "class" | "style" | "onKeyDown"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+      onKeyDown?: Extract<ComponentProps<"div">["onKeyDown"], (event: never) => void>;
+    },
 ) {
+  const others = omit(props, "title", "onConfirm", "onClose", "class", "onKeyDown");
+
   const titleId = `uf-id-${createUniqueId()}`;
   let cancel: HTMLButtonElement | null = null;
 
@@ -31,9 +39,11 @@ export default function ConfirmDialog(
       aria-labelledby={enumeratedValue(titleId)}
       tabindex="-1"
       class={props.class ? `dialog ${props.class}` : "dialog"}
-      onKeyDown={onKeydown}
-      style={props.style}
-      {...scopeAttributes(props)}
+      onKeyDown={(event) => {
+        onKeydown(event);
+        props.onKeyDown?.(event);
+      }}
+      {...others}
     >
       <h2 id={titleId}>{props.title}</h2>
       <button
@@ -60,13 +70,6 @@ export default function ConfirmDialog(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */

@@ -1,10 +1,11 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
 } from "solid-js";
@@ -16,8 +17,14 @@ export interface SearchPagerEvents {
 }
 
 export default function SearchPager(
-  props: SearchPagerEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SearchPagerEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onQueryRun", "onPageRun", "onCleanedUp", "class");
+
   const [query, setQuery] = createState("");
   const [page, setPage] = createState(1);
 
@@ -51,8 +58,7 @@ export default function SearchPager(
     <section
       class={props.class ? `search-pager ${props.class}` : "search-pager"}
       aria-label="Search"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">
         {query() === "" ? "All results" : `Results for ${query()}`}, page {page()}
@@ -71,13 +77,6 @@ export default function SearchPager(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

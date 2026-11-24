@@ -1,14 +1,11 @@
-import { type CSSProperties, useId } from "react";
+import { type ComponentPropsWithRef, useId } from "react";
 
 export interface FieldProps {
   label: string;
   hint: string;
 }
 
-export interface FieldAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FieldAttributes = Omit<ComponentPropsWithRef<"p">, "label" | "hint" | "children">;
 
 export default function Field({
   label,
@@ -21,7 +18,7 @@ export default function Field({
   const hintId = `uf-id-${useId()}`;
 
   return (
-    <p className={cx("field", className)} style={style} {...scopeAttributes(attributes)}>
+    <p className={cx("field", className)} style={style} {...attributes}>
       <label htmlFor={inputId}>{label}</label>
       <input id={inputId} type="text" aria-describedby={hintId} />
       <small id={hintId}>{hint}</small>
@@ -42,13 +39,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

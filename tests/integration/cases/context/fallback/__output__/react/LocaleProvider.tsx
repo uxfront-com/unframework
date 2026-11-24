@@ -1,13 +1,10 @@
-import { type CSSProperties, type ReactNode, createContext, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, createContext, useState } from "react";
 
 export interface LocaleProviderSlots {
   children?: ReactNode;
 }
 
-export interface LocaleProviderAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LocaleProviderAttributes = Omit<ComponentPropsWithRef<"div">, "locale" | "children">;
 
 export const LocaleKey = createContext<string | undefined>(undefined);
 
@@ -22,18 +19,9 @@ export default function LocaleProvider({
 
   return (
     <LocaleKey value={localeValue}>
-      <div lang={locale} className={className} style={style} {...scopeAttributes(attributes)}>
+      <div lang={locale} className={className} style={style} {...attributes}>
         {children}
       </div>
     </LocaleKey>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

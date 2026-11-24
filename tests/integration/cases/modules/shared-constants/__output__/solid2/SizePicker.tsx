@@ -1,8 +1,15 @@
 import { DEFAULT_SIZE, SIZES, SIZE_ORDER, type Size } from "./tokens";
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
 
-export default function SizePicker(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function SizePicker(
+  props: Omit<ComponentProps<"fieldset">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const [size, setSize] = createState<Size>(DEFAULT_SIZE);
 
   function pick(next: Size) {
@@ -10,11 +17,7 @@ export default function SizePicker(props: { class?: string; style?: JSX.CSSPrope
   }
 
   return (
-    <fieldset
-      class={props.class ? `size-picker ${props.class}` : "size-picker"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <fieldset class={props.class ? `size-picker ${props.class}` : "size-picker"} {...others}>
       <legend>Size</legend>
       <p role="status">Picked: {SIZES[size()]}</p>
       <ul>
@@ -39,13 +42,6 @@ export default function SizePicker(props: { class?: string; style?: JSX.CSSPrope
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

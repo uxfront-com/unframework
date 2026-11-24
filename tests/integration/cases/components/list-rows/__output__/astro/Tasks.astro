@@ -1,5 +1,6 @@
 ---
 import Row from "./Row.astro";
+import type { HTMLAttributes } from "astro/types";
 
 export interface Task {
   id: number;
@@ -7,25 +8,18 @@ export interface Task {
   done: boolean;
 }
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"div">, "initial"> {
   initial: Task[];
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { initial, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { initial, class: className, style, ...attrs } = Astro.props;
 
 const tasks = initial;
 ---
 
-<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={[className]} style={style} {...attrs}>
   <div role="list" aria-label="Tasks">
     {tasks.map((task) => (
       <Row name={task.name} done={task.done} />

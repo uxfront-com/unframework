@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   sync$,
@@ -12,71 +13,66 @@ export interface TagFormEvents {
   onTagsChange$?: QRL<(tags: string[]) => void>;
 }
 
-export default component$<TagFormEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onTagsChange$, class: className, style, ...attributes }) => {
-    const tags = useSignal<string[]>([]);
-    const draft = useSignal("");
-    const helpOpen = useSignal(false);
-    const field = useSignal<HTMLInputElement>();
+export default component$<
+  TagFormEvents &
+    Omit<PropsOf<"form">, "onTagsChange$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ onTagsChange$, class: className, style, onSubmit$, ...attributes }) => {
+  const tags = useSignal<string[]>([]);
+  const draft = useSignal("");
+  const helpOpen = useSignal(false);
+  const field = useSignal<HTMLInputElement>();
 
-    const updateDraft = $((event: InputEvent, element: Element) => {
-      draft.value = (element as HTMLInputElement).value;
-    });
+  const updateDraft = $((event: InputEvent, element: Element) => {
+    draft.value = (element as HTMLInputElement).value;
+  });
 
-    const addTag = $(() => {
-      if (draft.value !== "" && !tags.value.includes(draft.value)) {
-        tags.value = [...tags.value, draft.value];
-        onTagsChange$?.(tags.value);
-      }
-      draft.value = "";
-      const input = field.value;
-      if (input) input.value = "";
-    });
+  const addTag = $(() => {
+    if (draft.value !== "" && !tags.value.includes(draft.value)) {
+      tags.value = [...tags.value, draft.value];
+      onTagsChange$?.(tags.value);
+    }
+    draft.value = "";
+    const input = field.value;
+    if (input) input.value = "";
+  });
 
-    const toggleHelp = $(() => {
-      helpOpen.value = !helpOpen.value;
-    });
+  const toggleHelp = $(() => {
+    helpOpen.value = !helpOpen.value;
+  });
 
-    return (
-      <form
-        class={["tag-form", className]}
-        aria-label="Tags"
-        preventdefault:submit
-        onSubmit$={addTag}
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <label>
-          New tag
-          <input
-            name="tag"
-            ref={field}
-            onKeyDown$={sync$((event: KeyboardEvent) => {
-              if (event.key === ",") event.preventDefault();
-            })}
-            onInput$={updateDraft}
-          />
-        </label>
-        <button type="submit">Add tag</button>
-        <a href="/help/tags" preventdefault:click onClick$={toggleHelp}>
-          How tags work
-        </a>
-        <>{helpOpen.value ? <p>A tag is one word: commas are not allowed.</p> : null}</>
-        <ul aria-label="Added tags">
-          {tags.value.map((tag) => (
-            <li key={tag}>{tag}</li>
-          ))}
-        </ul>
-      </form>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <form
+      class={["tag-form", className]}
+      aria-label="Tags"
+      preventdefault:submit
+      onSubmit$={[addTag, onSubmit$]}
+      style={style}
+      {...attributes}
+    >
+      <label>
+        New tag
+        <input
+          name="tag"
+          ref={field}
+          onKeyDown$={sync$((event: KeyboardEvent) => {
+            if (event.key === ",") event.preventDefault();
+          })}
+          onInput$={updateDraft}
+        />
+      </label>
+      <button type="submit">Add tag</button>
+      <a href="/help/tags" preventdefault:click onClick$={toggleHelp}>
+        How tags work
+      </a>
+      <>{helpOpen.value ? <p>A tag is one word: commas are not allowed.</p> : null}</>
+      <ul aria-label="Added tags">
+        {tags.value.map((tag) => (
+          <li key={tag}>{tag}</li>
+        ))}
+      </ul>
+    </form>
+  );
+});

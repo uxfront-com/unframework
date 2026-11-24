@@ -1,22 +1,24 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface GlossaryProps {
   terms: string[];
   definitions: string[];
 }
 
-interface Props extends GlossaryProps {
+interface Props extends GlossaryProps, Omit<HTMLAttributes<"section">, "terms" | "definitions"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { terms, definitions, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  terms,
+  definitions,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 
 const index = 0 as number;
 const definition = definitions[index] ?? "";
@@ -24,9 +26,9 @@ const definition = definitions[index] ?? "";
 
 <section
   class:list={["glossary", className]}
-  aria-label="Glossary"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Glossary"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{terms[index]}</h2>
   <div class="definition" set:html={definition}></div>

@@ -1,18 +1,19 @@
-import { type JSX, Show, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, Show, createSignal, splitProps } from "solid-js";
 
 export interface ChoiceSlots {
   body?: JSX.Element;
 }
 
-export default function Choice(props: ChoiceSlots & { class?: string; style?: JSX.CSSProperties }) {
+export default function Choice(
+  props: ChoiceSlots &
+    Omit<ComponentProps<"div">, "body" | "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["body", "class"]);
+
   const [first, setFirst] = createSignal(true);
 
   return (
-    <div
-      class={props.class ? `choice ${props.class}` : "choice"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `choice ${props.class}` : "choice"} {...others}>
       <Show when={first()} fallback={<i>{props.body}</i>}>
         <b>{props.body}</b>
       </Show>
@@ -21,11 +22,4 @@ export default function Choice(props: ChoiceSlots & { class?: string; style?: JS
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -4,7 +4,7 @@
   import { vSelectable } from "./vSelectable.svelte";
   import { untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
   interface User {
     name: string;
@@ -13,9 +13,13 @@
   const hooks = "data-hooks";
   const element = "data-element";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let user = $state.raw<User | null>({ name: "Ada" });
   let note = $state("Hello");
@@ -23,13 +27,6 @@
   let nick = $state<string | undefined>("Al");
   let track = $state("Trail");
   let cleanup = $state<string | null>("Tidy");
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 
   function vMark(getValue: () => string): Attachment<HTMLElement> {
     const hooks_1 = {
@@ -62,7 +59,8 @@
   class={["profile", className]}
   aria-label="Profile"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   {#if user}{@const markValue = user.name}<p {@attach vMark(() => markValue)}>{user.name}</p>{/if}{#if typeof label === "string"}{@const markValue_1 = label}<b
     {@attach vMark(() => markValue_1)}

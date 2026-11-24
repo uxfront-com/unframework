@@ -1,8 +1,9 @@
 ---
+import type { HTMLAttributes } from "astro/types";
 import { button } from "virtual:styleframe";
 import "virtual:styleframe.css";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"button">, "label" | "size" | "tone"> {
   label: string;
   size?: "sm" | "lg";
   tone?: "neutral" | "primary";
@@ -10,19 +11,12 @@ interface Props {
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, size, tone, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, size, tone, class: className, style, type, ...attrs } = Astro.props;
 ---
 
 <button
-  type="button"
+  type={"type" in Astro.props ? type : "button"}
   class:list={[button({ size, tone }), className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label}</button>

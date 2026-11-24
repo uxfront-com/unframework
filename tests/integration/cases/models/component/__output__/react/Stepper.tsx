@@ -1,14 +1,14 @@
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface StepperModels {
   value?: number;
   onValueChange?: (value: number) => void;
 }
 
-export interface StepperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepperAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "value" | "onValueChange" | "children"
+>;
 
 export default function Stepper({
   label,
@@ -27,7 +27,7 @@ export default function Stepper({
   });
 
   return (
-    <div className={cx("stepper", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("stepper", className)} style={style} {...attributes}>
       <button
         type="button"
         aria-label={`Fewer ${label}`}
@@ -70,13 +70,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

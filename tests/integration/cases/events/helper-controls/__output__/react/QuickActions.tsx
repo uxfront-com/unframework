@@ -1,4 +1,4 @@
-import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef, useState } from "react";
 
 export interface QuickActionsProps {
   actions: string[];
@@ -10,10 +10,10 @@ export interface QuickActionsEvents {
   onChosen?: (action: string, scope: string) => void;
 }
 
-export interface QuickActionsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type QuickActionsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "actions" | "onWelcomed" | "onSubscribed" | "onChosen" | "children"
+>;
 
 export default function QuickActions({
   actions,
@@ -62,7 +62,7 @@ export default function QuickActions({
       className={cx("quick-actions", className)}
       aria-label="Quick actions"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Search
@@ -155,13 +155,4 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

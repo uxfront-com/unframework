@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface Profile {
   name: string;
   title: string;
@@ -9,28 +11,21 @@ export interface ProfileCardProps {
   initial: Profile;
 }
 
-interface Props extends ProfileCardProps {
+interface Props extends ProfileCardProps, Omit<HTMLAttributes<"article">, "initial"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { initial, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { initial, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const profile = initial;
 ---
 
 <article
   class:list={["profile-card", className]}
-  aria-label="Profile"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Profile"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{profile.name}</h2>
   <p>{profile.title}</p>

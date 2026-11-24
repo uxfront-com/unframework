@@ -7,16 +7,29 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = CommandMenuProps & {
-    onrun?: (command: string) => void;
-    ondismiss?: () => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "commands" | "onrun" | "ondismiss" | "children" | "class" | "style" | "ref"
+  > &
+    CommandMenuProps & {
+      onrun?: (command: string) => void;
+      ondismiss?: () => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { commands, onrun, ondismiss, class: className, style, ...attributes }: Props = $props();
+  let {
+    commands,
+    onrun,
+    ondismiss,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let active = $state(0);
   let query = $state("");
@@ -40,20 +53,14 @@
     const input = shortcutField;
     if (input) input.value = "";
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["command-menu", className]}
   aria-label="Command menu"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <form role="search" aria-label="Commands">
     <label>Command<input

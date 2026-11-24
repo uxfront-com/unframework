@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface CommentQuoteProps {
   author: string;
@@ -6,25 +7,20 @@ export interface CommentQuoteProps {
 }
 
 export default function CommentQuote(
-  props: CommentQuoteProps & { class?: string; style?: JSX.CSSProperties },
+  props: CommentQuoteProps &
+    Omit<ComponentProps<"figure">, "author" | "comment" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "author", "comment", "class");
+
   return (
-    <figure
-      class={props.class ? `comment-quote ${props.class}` : "comment-quote"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <figure class={props.class ? `comment-quote ${props.class}` : "comment-quote"} {...others}>
       <blockquote style={{ margin: "0", padding: "0" }}>
         <p dir="auto">{props.comment}</p>
       </blockquote>
       <figcaption>{props.author}</figcaption>
     </figure>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

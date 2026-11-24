@@ -1,17 +1,14 @@
 import PriceRange from "./PriceRange";
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal } from "solid-js";
 
-export default function Search(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Search(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
   const [low, setLow] = createSignal(20);
   const [high, setHigh] = createSignal(50);
 
   return (
-    <section
-      aria-label="Search"
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Search" {...props}>
       <PriceRange
         label="Price"
         min={low()}
@@ -27,11 +24,4 @@ export default function Search(props: { class?: string; style?: JSX.CSSPropertie
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

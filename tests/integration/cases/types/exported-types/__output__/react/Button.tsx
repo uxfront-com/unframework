@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export type ButtonTone = "primary" | "secondary";
 
@@ -9,10 +9,7 @@ export interface ButtonProps {
   tone?: ButtonTone;
 }
 
-export interface ButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ButtonAttributes = Omit<ComponentPropsWithRef<"button">, "label" | "tone" | "children">;
 
 export default function Button({
   label,
@@ -26,7 +23,7 @@ export default function Button({
       type="button"
       className={cx(`button button-${tone}`, className)}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </button>
@@ -46,13 +43,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

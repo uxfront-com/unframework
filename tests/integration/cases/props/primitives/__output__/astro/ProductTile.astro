@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface ProductTileProps {
   name: string;
   price: number;
@@ -6,26 +8,31 @@ export interface ProductTileProps {
   available?: boolean;
 }
 
-interface Props extends ProductTileProps {
+interface Props
+  extends
+    ProductTileProps,
+    Omit<HTMLAttributes<"article">, "name" | "price" | "stock" | "available"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { name, price, stock, available = true, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  name,
+  price,
+  stock,
+  available = true,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <article
   class:list={["product-tile", className]}
-  aria-label={name}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : name}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{name}</h2>
   <p>Price: {price} EUR</p>

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Edit name' })",
+      "dom": [
+        "<form aria-label=\"Profile\">",
+        "  <input aria-label=\"Name\" name=\"name\" uf:focused=\"\" uf:value=\"Ada\">",
+        "  <button type=\"button\">",
+        "    \"Edit name\"",
+        "  </button>",
+        "  <input aria-label=\"Bio\" name=\"bio\" uf:value=\"\">",
+        "  <button type=\"button\">",
+        "    \"Edit bio\"",
+        "  </button>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Profile\":",
+        "  - textbox \"Name\": Ada",
+        "  - button \"Edit name\"",
+        "  - textbox \"Bio\"",
+        "  - button \"Edit bio\""
+      ],
+      "events": {}
+    }
+  ]
+}

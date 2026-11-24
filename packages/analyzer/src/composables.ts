@@ -276,6 +276,7 @@ export function analyzeComposable(
     byName: new Map(parameters.reads.map((read) => [read.name, read])),
     byDeclaration: parameters.byDeclaration,
     object: undefined,
+    rest: undefined,
     failed: false,
   };
   const setup = declareSetup({

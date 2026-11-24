@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 interface FieldAttributes {
   name: string;
   placeholder?: string;
@@ -21,22 +23,18 @@ export interface TextFieldProps {
   hint?: HintAttributes;
 }
 
-interface Props extends TextFieldProps {
+interface Props
+  extends
+    TextFieldProps,
+    Omit<HTMLAttributes<"div">, "label" | "inputId" | "hintText" | "field" | "hint"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, inputId, hintText, field, hint, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, inputId, hintText, field, hint, class: className, style, ...attrs } = Astro.props;
 ---
 
-<div class:list={["text-field", className]} style={style} {...scopeAttributes(Astro.props)}>
+<div class:list={["text-field", className]} style={style} {...attrs}>
   <label for={inputId}>{label}</label>
   <input
     id={inputId}

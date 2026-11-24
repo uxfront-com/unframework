@@ -9,6 +9,7 @@ import {
   DOCUMENT_ATTRIBUTES,
   DOM_EVENTS,
   ELEMENT_ATTRIBUTES,
+  GLOBAL_ATTRIBUTES,
   isHtmlAttribute,
   isSvgAttribute,
   SVG_ELEMENT_ATTRIBUTES,
@@ -117,6 +118,20 @@ export function canonicalName(tag: string, namespace: Namespace, authored: strin
 /** Whether a name is an attribute of an element in its namespace. */
 export function isAttributeOf(tag: string, namespace: Namespace, name: string): boolean {
   return namespace === "svg" ? isSvgAttribute(tag, name) : isHtmlAttribute(tag, name);
+}
+
+/**
+ * The attributes an element takes in its namespace, by name, `data-*` aside: what a misspelt
+ * attribute may mean (UF3035). One whose name alone is a problem (`autofocus`, `slot`) is none.
+ */
+export function attributesOf(tag: string, namespace: Namespace): string[] {
+  const names =
+    namespace === "svg"
+      ? [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])]
+      : [...GLOBAL_ATTRIBUTES, ...(ELEMENT_ATTRIBUTES.get(tag) ?? [])];
+  return [...names, ...ARIA_ATTRIBUTES].filter(
+    (name) => isAttributeOf(tag, namespace, name) && !nameProblem(tag, namespace, name, name),
+  );
 }
 
 /**

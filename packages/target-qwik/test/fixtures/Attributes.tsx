@@ -1,8 +1,8 @@
-import { component$ } from "@qwik.dev/core";
+import { type Signal, component$ } from "@qwik.dev/core";
 
-export default component$(() => {
+export default component$<{ ref?: Signal<Element | undefined> }>(({ ref }) => {
   return (
-    <form class="attributes" noValidate>
+    <form class="attributes" noValidate ref={ref}>
       <label for="note" accessKey="n">
         Note
       </label>

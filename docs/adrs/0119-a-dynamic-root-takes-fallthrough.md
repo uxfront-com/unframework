@@ -1,6 +1,6 @@
 # ADR-0119: A `<component is>` root takes fallthrough, and each tag its own attributes
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0122
 - **Date:** 2026-11-21
 - **Plan:** §4.3 (Composition), §4.6, §5.3, §6, §9 M3; P2, P3, P6, P7; ADR-0032, ADR-0054,
   ADR-0055, ADR-0056, ADR-0063; amends ADR-0054 (a `<component is>` root takes neither `class` nor

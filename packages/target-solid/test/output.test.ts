@@ -68,8 +68,12 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
     for (const shape of [
       "mergeProps(",
       "satisfies Partial<",
-      "(props: LinkCardProps & { class?: string; style?: JSX.CSSProperties })",
-      "(_props: { note?: string })",
+      // What falls through: the root element's attributes but the declared names (ADR-0118).
+      'props: LinkCardProps &\n    Omit<ComponentProps<"div">, "label" | "link" | "extra" | "accent" | "active" | "style"> & {',
+      "const [, others] = splitProps(props, [",
+      // With `inheritAttrs: false`, the root still takes a consumer's `ref`.
+      '(props: { note?: string } & Pick<ComponentProps<"p">, "ref">)',
+      "<p ref={props.ref}>",
       "<Show when={!props.busy}>",
       "<Switch",
       "<Match when=",
@@ -122,7 +126,7 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       // helpers (src/helpers.ts).
       "export interface WatchersEvents {",
       "onLabelled?: (value: string, previous?: string) => void;",
-      "(\n  props: WatchersProps & WatchersEvents & { class?: string; style?: JSX.CSSProperties },\n)",
+      '(\n  props: WatchersProps &\n    WatchersEvents &\n    Omit<ComponentProps<"section">, "label" | "style"> & { style?: JSX.CSSProperties },\n)',
       'const [query, setQuery] = createSignal("");',
       "const [fixed] = createSignal(format(1));",
       "createWatcher(query, (value, previous, onCleanup) => {",
@@ -253,10 +257,10 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       label: "",
       format: { separator: null },
     };
-    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
-    // which writes \`class\` where the key holds nothing, and a space after a class.
+    // A root that spreads what falls through renders through Solid's \`ssrElement\` (ADR-0063,
+    // ADR-0118), which writes a space after its tag where the spread holds nothing.
     expect(await narrowingHtml(absent)).toBe(
-      '<div class="" style=""><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
+      '<div ><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
     );
     const user = {
       name: "Ada",
@@ -282,7 +286,7 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       attrs: { title: "T", id: "I" },
     });
     expect(html).toContain(
-      '<div class="" style=""><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
+      '<div ><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
     );
     expect(html).toContain('>30<b>Ada</b></p><p>C</p><a href="#a" data-json="{&quot;user&quot;');
     expect(html).toContain(

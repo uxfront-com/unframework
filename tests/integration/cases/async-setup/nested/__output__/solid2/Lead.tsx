@@ -1,17 +1,9 @@
 import Member from "./Member";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps } from "@solidjs/web";
+import { omit } from "solid-js";
 
-export default function Lead(
-  props: { id: string } & { class?: string; style?: JSX.CSSProperties },
-) {
-  return (
-    <Member id={props.id} class={props.class} style={props.style} {...scopeAttributes(props)} />
-  );
-}
+export default function Lead(props: { id: string } & Omit<ComponentProps<typeof Member>, "id">) {
+  const others = omit(props, "id");
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
+  return <Member id={props.id} {...others} />;
 }

@@ -1,5 +1,7 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"fieldset">, "label" | "min" | "max"> {
   label: string;
   min?: number;
   max?: number;
@@ -7,17 +9,10 @@ interface Props {
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, min = 0, max = 100, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, min = 0, max = 100, class: className, style, ...attrs } = Astro.props;
 ---
 
-<fieldset class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<fieldset class:list={[className]} style={style} {...attrs}>
   <legend>{label}</legend>
   <p>From {min} to {max}</p>
   <button type="button">Widen</button>

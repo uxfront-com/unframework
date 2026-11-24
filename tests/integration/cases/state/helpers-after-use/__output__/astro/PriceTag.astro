@@ -1,22 +1,17 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface PriceTagProps {
   /** The unit price, in cents. */
   price: number;
 }
 
-interface Props extends PriceTagProps {
+interface Props extends PriceTagProps, Omit<HTMLAttributes<"section">, "price"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { price, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { price, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const quantity = 1 as number;
 const unit = formatCents(price);
@@ -35,9 +30,9 @@ function describe(): string {
 
 <section
   class:list={["price-tag", className]}
-  aria-label="Price"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Price"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p>Unit: {unit}</p>
   <p role="status">{summary}</p>

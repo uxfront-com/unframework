@@ -1,4 +1,4 @@
-import { type JSX, Show, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, Show, mergeProps, splitProps } from "solid-js";
 
 export interface PlanProps {
   name: string;
@@ -8,14 +8,20 @@ export interface PlanProps {
   note?: string;
 }
 
-export default function Plan(rawProps: PlanProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Plan(
+  rawProps: PlanProps &
+    Omit<ComponentProps<"article">, "name" | "price" | "href" | "featured" | "note" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
+) {
   const props = mergeProps({ featured: false } satisfies Partial<PlanProps>, rawProps);
+  const [, others] = splitProps(props, ["name", "price", "href", "featured", "note", "class"]);
+
   return (
     <article
       class={cx(props.featured ? "plan featured" : "plan", props.class)}
       aria-label={props.name}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{props.name}</h2>
       <p>{props.price} EUR a month</p>
@@ -37,11 +43,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,4 +1,4 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 interface LabelAttributes {
   id: string;
@@ -22,7 +22,22 @@ export interface ShipmentCardProps {
   signature?: LabelAttributes;
 }
 
-export default component$<ShipmentCardProps & { class?: ClassList; style?: CSSProperties }>(
+export default component$<
+  ShipmentCardProps &
+    Omit<
+      PropsOf<"section">,
+      | "reference"
+      | "carrier"
+      | "eta"
+      | "parcel"
+      | "tracked"
+      | "tracking"
+      | "stops"
+      | "signature"
+      | "class"
+      | "style"
+    > & { class?: ClassList; style?: CSSProperties }
+>(
   ({
     reference,
     carrier,
@@ -40,8 +55,8 @@ export default component$<ShipmentCardProps & { class?: ClassList; style?: CSSPr
       <section
         class={["shipment-card", className]}
         aria-label={reference}
-        {...scopeAttributes(attributes)}
         style={style}
+        {...attributes}
       >
         <p id={carrier?.id} title={carrier?.title}>
           Carrier
@@ -83,12 +98,3 @@ export default component$<ShipmentCardProps & { class?: ClassList; style?: CSSPr
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

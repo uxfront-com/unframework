@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface FilterPanelProps {
   heading: string;
@@ -13,10 +13,20 @@ export interface FilterPanelProps {
   current?: "page" | "step";
 }
 
-export interface FilterPanelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type FilterPanelAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  | "heading"
+  | "hint"
+  | "category"
+  | "expanded"
+  | "inStockOnly"
+  | "locked"
+  | "mandatory"
+  | "loading"
+  | "invalid"
+  | "current"
+  | "children"
+>;
 
 export default function FilterPanel({
   heading,
@@ -40,7 +50,7 @@ export default function FilterPanel({
       data-category={category}
       data-layout="stacked"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" aria-expanded={expanded} aria-describedby="filter-panel-hint">
         Price filters
@@ -87,13 +97,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

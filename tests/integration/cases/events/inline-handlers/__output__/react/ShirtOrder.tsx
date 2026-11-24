@@ -1,9 +1,6 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ShirtOrderAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShirtOrderAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ShirtOrder({ className, style, ...attributes }: ShirtOrderAttributes) {
   const [size, setSize] = useState("M");
@@ -19,7 +16,7 @@ export default function ShirtOrder({ className, style, ...attributes }: ShirtOrd
       className={cx("shirt-order", className)}
       aria-label="Shirt order"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">{`${quantity} x size ${size}`}</p>
       <div role="group" aria-label="Size">
@@ -110,13 +107,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,15 +1,15 @@
 import Table from "./Table";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface Person {
   id: string;
   name: string;
 }
 
-export interface DirectoryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DirectoryAttributes = Omit<
+  ComponentPropsWithRef<typeof Table>,
+  "people" | "children" | "renderRow"
+>;
 
 export default function Directory({
   people,
@@ -22,7 +22,7 @@ export default function Directory({
       people={people}
       className={className}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
       renderRow={({ name, "data-id": id, index }) => (
         <span>
           {index + 1}: {name} ({id})
@@ -30,13 +30,4 @@ export default function Directory({
       )}
     />
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

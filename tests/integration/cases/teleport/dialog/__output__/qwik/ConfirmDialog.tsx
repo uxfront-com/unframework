@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useId,
@@ -19,8 +20,13 @@ export interface ConfirmDialogEvents {
 }
 
 export default component$<
-  ConfirmDialogProps & ConfirmDialogEvents & { class?: ClassList; style?: CSSProperties }
->(({ title, onConfirm$, onClose$, class: className, style, ...attributes }) => {
+  ConfirmDialogProps &
+    ConfirmDialogEvents &
+    Omit<PropsOf<"div">, "title" | "onConfirm$" | "onClose$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ title, onConfirm$, onClose$, class: className, style, onKeyDown$, ...attributes }) => {
   const titleId = "uf-id-" + useId();
   const cancel = useSignal<HTMLButtonElement>();
 
@@ -42,9 +48,9 @@ export default component$<
       aria-labelledby={titleId}
       tabIndex={-1}
       class={["dialog", className]}
-      onKeyDown$={onKeydown}
-      {...scopeAttributes(attributes)}
+      onKeyDown$={[onKeydown, onKeyDown$]}
       style={style}
+      {...attributes}
     >
       <h2 id={titleId}>{title}</h2>
       <button type="button" ref={cancel} onClick$={() => onClose$?.()}>
@@ -56,12 +62,3 @@ export default component$<
     </div>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

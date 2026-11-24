@@ -177,7 +177,13 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "label"
+            "rootTag": "label",
+            "fallthroughTag": "label",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
+            "refTag": "label"
           }
         ],
         "keys": []

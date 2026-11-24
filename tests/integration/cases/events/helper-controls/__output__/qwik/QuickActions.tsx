@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   sync$,
@@ -19,7 +20,12 @@ export interface QuickActionsEvents {
 }
 
 export default component$<
-  QuickActionsProps & QuickActionsEvents & { class?: ClassList; style?: CSSProperties }
+  QuickActionsProps &
+    QuickActionsEvents &
+    Omit<
+      PropsOf<"section">,
+      "actions" | "onWelcomed$" | "onSubscribed$" | "onChosen$" | "class" | "style"
+    > & { class?: ClassList; style?: CSSProperties }
 >(({ actions, onWelcomed$, onSubscribed$, onChosen$, class: className, style, ...attributes }) => {
   const query = useSignal("");
   const lastKey = useSignal("none");
@@ -48,8 +54,8 @@ export default component$<
     <section
       class={["quick-actions", className]}
       aria-label="Quick actions"
-      {...scopeAttributes(attributes)}
       style={style}
+      {...attributes}
     >
       <label>
         Search
@@ -122,12 +128,3 @@ export default component$<
 
 // The elements each `once` listener ran for: Qwik's listeners have no `once` option.
 const onceSubmit = new WeakSet<Element>();
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

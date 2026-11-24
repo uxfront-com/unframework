@@ -1,5 +1,6 @@
 import Box from "./Box";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface FrameSlots {
   title?: JSX.Element;
@@ -7,23 +8,21 @@ export interface FrameSlots {
 }
 
 export default function Frame(
-  props: { label: string } & FrameSlots & { class?: string; style?: JSX.CSSProperties },
+  props: { label: string } & FrameSlots &
+    Omit<ComponentProps<"section">, "label" | "title" | "children" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "label", "title", "children", "class");
+
   return (
     <section
       class={props.class ? `frame ${props.class}` : "frame"}
       aria-label={props.label}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Box children={props.children} title={props.title} />
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

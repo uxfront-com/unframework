@@ -5,8 +5,10 @@ import {
   ElementRef,
   type OnInit,
   Renderer2,
+  computed,
   inject,
   input,
+  viewChild,
 } from "@angular/core";
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
@@ -34,13 +36,24 @@ export class ScopeAttributes implements OnInit {
   }
 }
 
+/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
+type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
+
 @Component({
   selector: "uf-outline",
   imports: [Level, ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    <uf-level [title]="'Book'" [class]="this.class()" [style]="this.style()" [ufScope]="this.host">
+    <uf-level
+      [title]="'Book'"
+      [class]="this.class()"
+      [style]="this.style()"
+      [ufAttributes]="this.ufAttributes()"
+      [ufListeners]="this.ufListeners()"
+      [ufScope]="this.host"
+      #ufElement
+    >
       <uf-level [title]="'Part'">
         <uf-level [title]="'Chapter'" />
       </uf-level>
@@ -51,5 +64,9 @@ export class ScopeAttributes implements OnInit {
 export default class Outline {
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufAttributes = input<Record<string, unknown>>();
+  readonly ufListeners = input<Listeners>();
+  private readonly rootComponent = viewChild("ufElement", { read: Level });
+  readonly ufElement = computed(() => this.rootComponent()?.ufElement());
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

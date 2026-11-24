@@ -7,11 +7,19 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = InvoiceTotalProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    "quantity" | "children" | "class" | "style" | "ref"
+  > &
+    InvoiceTotalProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["div"] | null;
+    };
 
-  let { quantity, class: className, style, ...attributes }: Props = $props();
+  let { quantity, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let refunded = $state(0);
 
@@ -26,16 +34,9 @@
   function refund() {
     refunded = refunded + 3;
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<div class={className} {style} {...scopeAttributes(attributes)}>
+<div class={className} {style} bind:this={ref} {...attributes}>
   <output>{`${total} after ${refunded} refunded`}</output
   ><button type="button" onclick={refund}>Refund</button>
 </div>

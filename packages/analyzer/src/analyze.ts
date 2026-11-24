@@ -61,7 +61,7 @@ import type {
   TypeDeclarationStatement,
 } from "@unframework.dev/parser";
 
-import { componentApi, withReferences } from "./api.ts";
+import { componentApi, fillRootComponents, withReferences } from "./api.ts";
 import type { ApiContext } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
@@ -76,6 +76,7 @@ import {
   setupTypes,
 } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
+import { reportDevShadows } from "./dev.ts";
 import {
   directiveCandidate,
   isDirectiveCall,
@@ -93,6 +94,7 @@ import {
 } from "./pass-through.ts";
 import type { PassThrough } from "./pass-through.ts";
 import { analyzeProps, checkTypeParameters, shapeReading } from "./props.ts";
+import type { RestProps } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
@@ -446,6 +448,16 @@ export function analyzeModule(
           slotted: context.sheets.some(({ slotted }) => slotted),
         }
       : undefined;
+  // A root component's fallthrough and ref tags are its own (ADR-0118), now that every
+  // component's API, the imported ones included, is known.
+  fillRootComponents(
+    [...apis].map(([candidate, api]) => ({ node: candidate.node, api })),
+    (name) => {
+      const resolution = scopes.resolve(name as unknown as AST.IdentifierReference);
+      if (resolution.kind !== "import" && resolution.kind !== "variable") return undefined;
+      return components.get(resolution.declaration)?.api;
+    },
+  );
   const ownerApi = sheetOwner && apis.get(sheetOwner);
   if (styles && ownerApi) ownerApi.styles = { scopeId: styles.scopeId, slotted: styles.slotted };
   const api: ModuleApi = {
@@ -2115,12 +2127,16 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     comments: parsed.comments,
     authoring,
     component: fn,
+    components: module.components,
     props,
     statements: body.slice(0, -1),
     returned: returned ?? undefined,
     keys: module.keys,
     composables: module.composables,
   });
+  // The props' rest holds what falls through, so only where it falls through to no root
+  // (ADR-0118).
+  if (props.rest && setup.inheritAttrs) restWithoutOptions(props.rest, fn, parsed, reporter);
   const render: RenderContext = {
     source: parsed.source,
     reporter,
@@ -2131,6 +2147,15 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     props: props.byName,
     propsByDeclaration: props.byDeclaration,
     propsObject: props.object,
+    ...(props.rest
+      ? {
+          restProps: {
+            declaration: props.rest.declaration,
+            name: props.rest.name,
+            accepted: !setup.inheritAttrs,
+          },
+        }
+      : {}),
     loopVariables: new Map(),
     enclosing: [],
     setup: setup.scope,
@@ -2199,6 +2224,8 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     program: parsed.program,
     failed: props.failed || reporter.hasErrorsSince(mark),
   });
+  // A name a target's `isDev` check reads, shadowed (UF2003, ADR-0117).
+  reportDevShadows(fn, props.props, { scopes, authoring: setup.scope.authoring }, reporter);
   module.observe?.(candidate.name, [...setup.scope.bindings.values()]);
   if (!root || props.failed || reporter.hasErrorsSince(mark)) return undefined;
   // The types its output declares: its props', its events' and its setup code's (ADR-0045).
@@ -2221,6 +2248,68 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
       ...(setup.slots ? { slots: setup.slots } : {}),
       ...(setup.exposes ? { exposes: setup.exposes } : {}),
       ...(setup.inheritAttrs ? {} : { inheritAttrs: false as const }),
+    },
+  );
+}
+
+/**
+ * The props' rest in a component that keeps `inheritAttrs` (UF2001, ADR-0118): what a consumer
+ * passes falls through to its root, so the rest would hold nothing. The fix turns fallthrough
+ * off, and imports `defineOptions` where the module does not.
+ */
+function restWithoutOptions(
+  rest: RestProps,
+  fn: ComponentFunction,
+  parsed: ParsedModule,
+  reporter: Reporter,
+): void {
+  const edits: { span: Span; text: string }[] = [];
+  const block = fn.body?.type === "BlockStatement" ? fn.body : undefined;
+  const first = block?.body[0];
+  if (block && first) {
+    const line = parsed.source.lastIndexOf("\n", first.start) + 1;
+    const indent = parsed.source.slice(line, first.start);
+    edits.push({
+      span: { start: first.start, end: first.start },
+      text: `defineOptions({ inheritAttrs: false });\n${/^\s*$/.test(indent) ? indent : ""}`,
+    });
+    const imports = parsed.program.body.filter(
+      (statement): statement is AST.ImportDeclaration =>
+        statement.type === "ImportDeclaration" && isAuthoringModule(statement.source.value),
+    );
+    const named = imports.flatMap((statement) =>
+      statement.importKind === "type" ? [] : statement.specifiers,
+    );
+    const imported = named.some(
+      (specifier) =>
+        specifier.type === "ImportSpecifier" &&
+        specifier.imported.type === "Identifier" &&
+        specifier.imported.name === "defineOptions" &&
+        specifier.local.name === "defineOptions",
+    );
+    const last = named.filter((specifier) => specifier.type === "ImportSpecifier").at(-1);
+    if (!imported && last)
+      edits.push({ span: { start: last.end, end: last.end }, text: ", defineOptions" });
+    else if (!imported) {
+      edits.push({
+        span: { start: 0, end: 0 },
+        text: `import { defineOptions } from "${AUTHORING_PACKAGE}";\n`,
+      });
+    }
+  }
+  reporter.report(
+    "UF2001",
+    rest.span,
+    `\`...${rest.name}\` holds what a consumer passes that the component does not declare, which falls through to its root unless \`defineOptions({ inheritAttrs: false })\` turns that off (ADR-0118).`,
+    {
+      help: `Call \`defineOptions({ inheritAttrs: false })\` and spread \`${rest.name}\` on one element, or remove the rest.`,
+      ...(edits.length
+        ? {
+            fixes: [
+              { title: "Turn fallthrough off with `defineOptions`", confidence: "safe", edits },
+            ],
+          }
+        : {}),
     },
   );
 }
