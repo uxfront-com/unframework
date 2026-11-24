@@ -3396,7 +3396,7 @@
         },
         "fallthroughOwn": {
           "$ref": "#/definitions/ApiFallthroughOwn",
-          "description": "The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer passes is checked as that element would be checked with it, its `role`, its `tabindex` and its own key handlers included (UF3030). Absent where nothing falls through."
+          "description": "The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer passes is checked as that element would be checked with it, its `role`, its `tabindex` and its own key handlers included (UF3030). A `dynamic` root's are its `<component is>`'s, which each tag it may render is checked with (ADR-0122). Absent where nothing falls through."
         },
         "rootDeclarations": {
           "type": "array",
@@ -3413,12 +3413,19 @@
           "type": "string",
           "description": "The tag of the element a `ref` on the component holds, where the component exposes nothing (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no element."
         },
+        "refTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The tags of the element a `ref` on the component holds, where it exposes nothing and its root is `dynamic` (ADR-0122): the element that renders, typed as the union of the tags' DOM interfaces. A root component that renders such a root, through a chain of root components that expose nothing, takes them too. Absent otherwise: `refTag` names one element."
+        },
         "rootTags": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it places them, and merges its `class` and `style` into whichever renders. A root component that renders a `dynamic` root, through a chain of root components that keep `inheritAttrs`, takes its tags too, so a parent passes it `class` and `style` alone."
+          "description": "The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it places them, and merges its `class` and `style` into whichever renders. Where the component keeps `inheritAttrs`, what else falls through is checked against every tag, and passes only where every tag takes it (ADR-0122). A root component that renders a `dynamic` root, through a chain of root components that keep `inheritAttrs`, takes its tags too."
         },
         "rootUnlisted": {
           "type": "boolean",
