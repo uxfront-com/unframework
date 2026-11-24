@@ -44,6 +44,7 @@ import type {
 
 import { modelListener } from "./composition.ts";
 import { qwikListenerProp } from "./events.ts";
+import { landsOnTags } from "./fallthrough.ts";
 import { readsName, splitHandler } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
 import type { ListenerGroup, SetupPlan } from "./plan.ts";
@@ -156,6 +157,9 @@ export class Listeners {
     // A component's listener lands on its child's element, which may listen from the window: a
     // marker there would apply to the event wherever it happens (see this file's header).
     const component = [...this.#plan.listeners.components.values()].includes(element);
+    // A child's `<component is>` root of several tags types its listeners as each tag's, which
+    // give a handler no one type: it is typed as written (ADR-0122).
+    const typed = component && landsOnTags(this.#plan.module, element.tag);
     return this.#event(
       attribute.event,
       listeners,
@@ -164,6 +168,7 @@ export class Listeners {
       component,
       model,
       passed,
+      typed,
     );
   }
 
@@ -175,6 +180,7 @@ export class Listeners {
     component: boolean,
     model?: string,
     passed?: string,
+    typed = false,
   ): JsxAttribute[] {
     const plan = this.#plan;
     const groups = [
@@ -224,7 +230,7 @@ export class Listeners {
           ? context.placeholders.expression(
               explicit && entries[0]!.inline
                 ? `${plan.names.core("$")}(${entries[0]!.code(true)})`
-                : entries[0]!.code(false),
+                : entries[0]!.code(typed),
             )
           : js.arrayExpression(
               entries.map(({ code, inline }) =>

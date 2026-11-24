@@ -1,0 +1,1130 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/dynamic-root-passthrough/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Page",
+      "span": {
+        "start": 136,
+        "end": 1706
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "linked@177",
+          "name": "linked",
+          "kind": "state",
+          "span": {
+            "start": 177,
+            "end": 183
+          }
+        },
+        {
+          "id": "log@205",
+          "name": "log",
+          "kind": "state",
+          "span": {
+            "start": 205,
+            "end": 208
+          }
+        },
+        {
+          "id": "direct@238",
+          "name": "direct",
+          "kind": "templateRef",
+          "span": {
+            "start": 238,
+            "end": 244
+          }
+        },
+        {
+          "id": "chained@312",
+          "name": "chained",
+          "kind": "templateRef",
+          "span": {
+            "start": 312,
+            "end": 319
+          }
+        },
+        {
+          "id": "record@391",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 391,
+            "end": 397
+          }
+        },
+        {
+          "id": "entry@1603",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 1603,
+            "end": 1608
+          }
+        },
+        {
+          "id": "index@1610",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 1610,
+            "end": 1615
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "linked@177",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 190,
+              "end": 194
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 171,
+            "end": 196
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "log@205",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 215,
+              "end": 223
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 225,
+              "end": 227
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 199,
+            "end": 229
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "direct@238",
+          "type": {
+            "code": "HTMLAnchorElement | HTMLButtonElement",
+            "span": {
+              "start": 262,
+              "end": 299
+            }
+          },
+          "span": {
+            "start": 232,
+            "end": 303
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "chained@312",
+          "type": {
+            "code": "HTMLAnchorElement | HTMLButtonElement",
+            "span": {
+              "start": 337,
+              "end": 374
+            }
+          },
+          "span": {
+            "start": 306,
+            "end": 378
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@391",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 404,
+                    "end": 410
+                  }
+                },
+                "span": {
+                  "start": 398,
+                  "end": 410
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    log.value = [...log.value, line];\n  }",
+              "span": {
+                "start": 412,
+                "end": 455
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "log@205",
+                  "operator": "=",
+                  "span": {
+                    "start": 418,
+                    "end": 450
+                  },
+                  "target": {
+                    "start": 418,
+                    "end": 427
+                  },
+                  "value": {
+                    "start": 430,
+                    "end": 450
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "log@205",
+                  "span": {
+                    "start": 434,
+                    "end": 443
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 397,
+              "end": 455
+            }
+          },
+          "span": {
+            "start": 382,
+            "end": 455
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Page",
+            "span": {
+              "start": 481,
+              "end": 498
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Base",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "linked.value ? \"#direct\" : undefined",
+                  "span": {
+                    "start": 526,
+                    "end": 562
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "linked@177",
+                      "span": {
+                        "start": 526,
+                        "end": 538
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "undefined",
+                      "span": {
+                        "start": 553,
+                        "end": 562
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 520,
+                  "end": 563
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Direct\"",
+                  "span": {
+                    "start": 577,
+                    "end": 585
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 572,
+                  "end": 585
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "id",
+                "value": "direct",
+                "span": {
+                  "start": 594,
+                  "end": 605
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Direct",
+                "span": {
+                  "start": 614,
+                  "end": 633
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "data-testid",
+                "value": "direct",
+                "span": {
+                  "start": 642,
+                  "end": 662
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "title",
+                "value": "Go",
+                "span": {
+                  "start": 671,
+                  "end": 681
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "PointerEvent",
+                        "span": {
+                          "start": 700,
+                          "end": 705
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "record(`click on ${(event.currentTarget as Element).localName}`)",
+                      "span": {
+                        "start": 710,
+                        "end": 774
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@391",
+                          "span": {
+                            "start": 710,
+                            "end": 716
+                          },
+                          "call": true
+                        },
+                        {
+                          "kind": "Event",
+                          "member": "currentTarget",
+                          "span": {
+                            "start": 730,
+                            "end": 749
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 699,
+                      "end": 774
+                    }
+                  },
+                  "span": {
+                    "start": 699,
+                    "end": 774
+                  }
+                },
+                "span": {
+                  "start": 690,
+                  "end": 775
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "keydown",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "KeyboardEvent",
+                        "span": {
+                          "start": 796,
+                          "end": 801
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "record(`keydown ${event.key} on ${(event.currentTarget as Element).localName}`)",
+                      "span": {
+                        "start": 816,
+                        "end": 895
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@391",
+                          "span": {
+                            "start": 816,
+                            "end": 822
+                          },
+                          "call": true
+                        },
+                        {
+                          "kind": "Event",
+                          "member": "key",
+                          "span": {
+                            "start": 834,
+                            "end": 843
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "member": "currentTarget",
+                          "span": {
+                            "start": 851,
+                            "end": 870
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 795,
+                      "end": 895
+                    }
+                  },
+                  "span": {
+                    "start": 795,
+                    "end": 895
+                  }
+                },
+                "span": {
+                  "start": 784,
+                  "end": 905
+                }
+              },
+              {
+                "kind": "Ref",
+                "binding": "direct@238",
+                "span": {
+                  "start": 914,
+                  "end": 926
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 506,
+              "end": 935
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Primary",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "linked.value ? \"#chained\" : undefined",
+                  "span": {
+                    "start": 965,
+                    "end": 1002
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "linked@177",
+                      "span": {
+                        "start": 965,
+                        "end": 977
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "undefined",
+                      "span": {
+                        "start": 993,
+                        "end": 1002
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 959,
+                  "end": 1003
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Chained\"",
+                  "span": {
+                    "start": 1017,
+                    "end": 1026
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1012,
+                  "end": 1026
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "id",
+                "value": "chained",
+                "span": {
+                  "start": 1035,
+                  "end": 1047
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Chained",
+                "span": {
+                  "start": 1056,
+                  "end": 1076
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "data-testid",
+                "value": "chained",
+                "span": {
+                  "start": 1085,
+                  "end": 1106
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "PointerEvent",
+                        "span": {
+                          "start": 1125,
+                          "end": 1130
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "record(`chained on ${(event.currentTarget as Element).localName}`)",
+                      "span": {
+                        "start": 1135,
+                        "end": 1201
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@391",
+                          "span": {
+                            "start": 1135,
+                            "end": 1141
+                          },
+                          "call": true
+                        },
+                        {
+                          "kind": "Event",
+                          "member": "currentTarget",
+                          "span": {
+                            "start": 1157,
+                            "end": 1176
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1124,
+                      "end": 1201
+                    }
+                  },
+                  "span": {
+                    "start": 1124,
+                    "end": 1201
+                  }
+                },
+                "span": {
+                  "start": 1115,
+                  "end": 1202
+                }
+              },
+              {
+                "kind": "Ref",
+                "binding": "chained@312",
+                "span": {
+                  "start": 1211,
+                  "end": 1224
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 942,
+              "end": 1233
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1248,
+                  "end": 1261
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(linked.value = !linked.value)",
+                      "span": {
+                        "start": 1277,
+                        "end": 1307
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "linked@177",
+                          "operator": "=",
+                          "span": {
+                            "start": 1277,
+                            "end": 1307
+                          },
+                          "target": {
+                            "start": 1278,
+                            "end": 1290
+                          },
+                          "value": {
+                            "start": 1293,
+                            "end": 1306
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "linked@177",
+                          "span": {
+                            "start": 1294,
+                            "end": 1306
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1271,
+                      "end": 1307
+                    }
+                  },
+                  "span": {
+                    "start": 1271,
+                    "end": 1307
+                  }
+                },
+                "span": {
+                  "start": 1262,
+                  "end": 1308
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle",
+                "span": {
+                  "start": 1309,
+                  "end": 1331
+                }
+              }
+            ],
+            "span": {
+              "start": 1240,
+              "end": 1340
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1355,
+                  "end": 1368
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "direct.value?.focus()",
+                      "span": {
+                        "start": 1384,
+                        "end": 1405
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "direct@238",
+                          "span": {
+                            "start": 1384,
+                            "end": 1396
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1378,
+                      "end": 1405
+                    }
+                  },
+                  "span": {
+                    "start": 1378,
+                    "end": 1405
+                  }
+                },
+                "span": {
+                  "start": 1369,
+                  "end": 1406
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Focus direct",
+                "span": {
+                  "start": 1407,
+                  "end": 1435
+                }
+              }
+            ],
+            "span": {
+              "start": 1347,
+              "end": 1444
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1459,
+                  "end": 1472
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "chained.value?.focus()",
+                      "span": {
+                        "start": 1488,
+                        "end": 1510
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "chained@312",
+                          "span": {
+                            "start": 1488,
+                            "end": 1501
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1482,
+                      "end": 1510
+                    }
+                  },
+                  "span": {
+                    "start": 1482,
+                    "end": 1510
+                  }
+                },
+                "span": {
+                  "start": 1473,
+                  "end": 1511
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Focus chained",
+                "span": {
+                  "start": 1512,
+                  "end": 1541
+                }
+              }
+            ],
+            "span": {
+              "start": 1451,
+              "end": 1550
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Log",
+                "span": {
+                  "start": 1561,
+                  "end": 1577
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "log.value",
+                  "span": {
+                    "start": 1588,
+                    "end": 1597
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "log@205",
+                      "span": {
+                        "start": 1588,
+                        "end": 1597
+                      }
+                    }
+                  ]
+                },
+                "item": "entry@1603",
+                "index": "index@1610",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 1641,
+                    "end": 1646
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@1610",
+                      "span": {
+                        "start": 1641,
+                        "end": 1646
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "entry",
+                        "span": {
+                          "start": 1649,
+                          "end": 1654
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "entry@1603",
+                            "span": {
+                              "start": 1649,
+                              "end": 1654
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1648,
+                        "end": 1655
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1632,
+                    "end": 1660
+                  }
+                },
+                "span": {
+                  "start": 1588,
+                  "end": 1671
+                }
+              }
+            ],
+            "span": {
+              "start": 1557,
+              "end": 1684
+            }
+          }
+        ],
+        "span": {
+          "start": 472,
+          "end": 1699
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Page",
+      "span": {
+        "start": 136,
+        "end": 1706
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Base.uf.tsx",
+      "file": "Base.uf.tsx",
+      "api": {
+        "file": "Base.uf.tsx",
+        "components": [
+          {
+            "name": "Base",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "disabled",
+                "optional": true,
+                "type": "boolean"
+              },
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                },
+                {
+                  "name": "disabled"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                },
+                {
+                  "name": "title",
+                  "value": "Base"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Base",
+          "span": {
+            "start": 68,
+            "end": 72
+          }
+        }
+      ],
+      "span": {
+        "start": 61,
+        "end": 94
+      }
+    },
+    {
+      "specifier": "./Primary.uf.tsx",
+      "file": "Primary.uf.tsx",
+      "api": {
+        "file": "Primary.uf.tsx",
+        "components": [
+          {
+            "name": "Primary",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "component",
+            "rootTags": [
+              "a",
+              "button"
+            ],
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                },
+                {
+                  "name": "disabled"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                },
+                {
+                  "name": "title",
+                  "value": "Base"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootDeclarations": [
+              {
+                "name": "href",
+                "kind": "prop",
+                "component": "Base"
+              },
+              {
+                "name": "disabled",
+                "kind": "prop",
+                "component": "Base"
+              },
+              {
+                "name": "text",
+                "kind": "prop",
+                "component": "Base"
+              }
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Primary",
+          "span": {
+            "start": 102,
+            "end": 109
+          }
+        }
+      ],
+      "span": {
+        "start": 95,
+        "end": 134
+      }
+    }
+  ]
+}

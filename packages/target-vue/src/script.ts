@@ -53,7 +53,12 @@ import {
 } from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
 import { addDirectiveImports, directiveCode } from "./directive.ts";
-import { planRest, restAttributesType, rootElementRefs } from "./fallthrough.ts";
+import {
+  changingElementRefs,
+  planRest,
+  restAttributesType,
+  rootElementRefs,
+} from "./fallthrough.ts";
 import type { RestPlan } from "./fallthrough.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
@@ -765,11 +770,14 @@ export function itemCode(
       const instance = instanceRefs.get(item.binding);
       if (instance !== undefined && item.type) {
         // On a child that exposes nothing, the source's ref is the child's root element
-        // (ADR-0118): Vue's ref holds the instance, whose `$el` is that element.
-        const computed = imports.add("vue", "computed");
+        // (ADR-0118): Vue's ref holds the instance, whose `$el` is that element. A `<component
+        // is>` root's changes with its tag, untracked, so a getter ref reads it each time
+        // (ADR-0122).
+        const changes = changingElementRefs(component, module).has(item.binding);
+        const read = changes ? imports.add("vue", "toRef") : imports.add("vue", "computed");
         return [
           `const ${instance} = ${useTemplateRef}<{ $el: ${item.type.code} }>(${JSON.stringify(instance)});`,
-          `const ${names.local(binding)} = ${computed}(() => ${instance}.value?.$el ?? null);`,
+          `const ${names.local(binding)} = ${read}(() => ${instance}.value?.$el ?? null);`,
         ].join("\n");
       }
       return `const ${names.local(binding)} = ${useTemplateRef}${typeArgument(item.type)}(${JSON.stringify(binding.name)});`;

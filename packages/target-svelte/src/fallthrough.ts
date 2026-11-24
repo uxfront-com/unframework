@@ -9,6 +9,7 @@
 import type {
   ComponentApi,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   RefAttribute,
   UfComponent,
@@ -75,12 +76,35 @@ export function attributesType(tag: string, importType: (name: string) => string
 }
 
 /**
- * The type of the element a ref holds, from lib.dom's maps: `HTMLElementTagNameMap["button"]`,
- * which is `HTMLButtonElement`, and an `<svg>` root's `SVGElementTagNameMap["svg"]`.
+ * The type of what falls through to the element a component's rest lands on, but for the names
+ * it declares (`omitted`): the element's attributes, or a `<component is>` root's, what every
+ * tag takes, with the listeners of whichever renders (ADR-0122), so a listener it calls after
+ * its own takes that element's event: `Omit<HTMLAnchorAttributes & HTMLButtonAttributes, …> &
+ * Omit<DOMAttributes<HTMLElementTagNameMap["a" | "button"]>, "children">`.
  */
-export function elementType(tag: string): string {
-  const map = tag === "svg" ? "SVGElementTagNameMap" : "HTMLElementTagNameMap";
-  return `${map}[${JSON.stringify(tag)}]`;
+export function passedType(
+  tags: readonly string[],
+  declared: readonly string[],
+  importType: (name: string) => string,
+): string {
+  const names = (each: readonly string[]) =>
+    [...new Set(each)].map((name) => JSON.stringify(name)).join(" | ");
+  const attributes = tags.map((tag) => attributesType(tag, importType)).join(" & ");
+  if (tags.length === 1) return `Omit<${attributes}, ${names(declared)}>`;
+  const dom = `${importType("DOMAttributes")}<${elementType(tags)}>`;
+  // `DOMAttributes` holds the listeners and `children` alone.
+  const listeners = declared.filter((name) => name === "children" || name.startsWith("on"));
+  return `Omit<${attributes}, ${names(declared)} | keyof ${dom}> & Omit<${dom}, ${names(listeners)}>`;
+}
+
+/**
+ * The type of the element a ref holds, from lib.dom's maps: `HTMLElementTagNameMap["button"]`,
+ * which is `HTMLButtonElement`, and an `<svg>` root's `SVGElementTagNameMap["svg"]`. A
+ * `<component is>` root's holds whichever tag renders: `HTMLElementTagNameMap["a" | "button"]`.
+ */
+export function elementType(tags: readonly string[]): string {
+  const map = tags[0] === "svg" ? "SVGElementTagNameMap" : "HTMLElementTagNameMap";
+  return `${map}[${[...new Set(tags)].map((tag) => JSON.stringify(tag)).join(" | ")}]`;
 }
 
 /** The API of a child the module imports, by its local name. */
@@ -110,6 +134,25 @@ export function rootComponentNode(component: UfComponent): ComponentNode | undef
     only.span.end === render.span.end
     ? only
     : undefined;
+}
+
+/** A component's root `<component is>` over tags (ADR-0119), as `takesFallthrough` reads it. */
+export function rootDynamicNode(component: UfComponent): DynamicNode | undefined {
+  const { render } = component;
+  if (render.kind !== "Fragment") return undefined;
+  const [only, ...others] = render.children;
+  return only?.kind === "Dynamic" &&
+    only.candidates.every((candidate) => candidate.kind === "Tag") &&
+    others.length === 0 &&
+    only.span.start === render.span.start &&
+    only.span.end === render.span.end
+    ? only
+    : undefined;
+}
+
+/** The tags a `<component is>` over tags may render. */
+function dynamicTags(node: DynamicNode): string[] {
+  return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
 }
 
 /** The prop a slot is passed as: `children` for the default slot. */
@@ -152,19 +195,31 @@ export function rootComponentNames(component: UfComponent, module: UfModule): st
 
 /**
  * The tags a child's API names (ADR-0118), for a child of the module, imported or its own: the
- * element what it does not declare lands on, and the element a ref on it holds.
+ * element what it does not declare lands on, and the element a ref on it holds, several for a
+ * `<component is>` root, whichever renders (ADR-0122).
  */
 function childTags(
   module: UfModule,
   local: string,
   seen: ReadonlySet<string>,
-): { fallthrough?: string; ref?: string } {
+): { fallthrough?: readonly string[]; ref?: readonly string[] } {
   const api = importedApi(module, local);
   if (api === null) return {};
   if (api !== undefined) {
+    const fallthrough =
+      api.fallthroughTag !== undefined
+        ? [api.fallthroughTag]
+        : api.inheritAttrs
+          ? api.rootTags
+          : undefined;
+    const ref = api.exposes.length
+      ? undefined
+      : api.refTag !== undefined
+        ? [api.refTag]
+        : api.refTags;
     return {
-      ...(api.fallthroughTag === undefined ? {} : { fallthrough: api.fallthroughTag }),
-      ...(api.exposes.length || api.refTag === undefined ? {} : { ref: api.refTag }),
+      ...(fallthrough === undefined ? {} : { fallthrough }),
+      ...(ref === undefined ? {} : { ref }),
     };
   }
   const own = module.components.find((each) => each.name === local);
@@ -182,9 +237,14 @@ function ownFallthroughTag(
   component: UfComponent,
   module: UfModule,
   seen: ReadonlySet<string>,
-): string | undefined {
-  if (component.inheritAttrs === false) return restElement(component)?.tag;
-  if (component.render.kind === "Element") return component.render.tag;
+): readonly string[] | undefined {
+  if (component.inheritAttrs === false) {
+    const element = restElement(component);
+    return element && [element.tag];
+  }
+  if (component.render.kind === "Element") return [component.render.tag];
+  const dynamic = rootDynamicNode(component);
+  if (dynamic) return dynamicTags(dynamic);
   const root = rootComponentNode(component);
   return root ? childTags(module, root.component, seen).fallthrough : undefined;
 }
@@ -193,29 +253,34 @@ function ownRefTag(
   component: UfComponent,
   module: UfModule,
   seen: ReadonlySet<string>,
-): string | undefined {
+): readonly string[] | undefined {
   if (component.exposes?.functions.length) return undefined;
-  if (component.render.kind === "Element") return component.render.tag;
+  if (component.render.kind === "Element") return [component.render.tag];
+  const dynamic = rootDynamicNode(component);
+  if (dynamic) return dynamicTags(dynamic);
   const root = rootComponentNode(component);
   return root ? childTags(module, root.component, seen).ref : undefined;
 }
 
 /**
- * The tag of the element what a consumer passes and the component does not declare lands on
- * (`ComponentApi.fallthroughTag`): its root element's, its root component's own, or with
- * `inheritAttrs: false` the element that spreads the props' rest. `undefined` where a consumer
- * passes nothing but what the component declares (UF3045).
+ * The tags of the element what a consumer passes and the component does not declare lands on
+ * (`ComponentApi.fallthroughTag`): its root element's, its `<component is>` root's (ADR-0122),
+ * its root component's own, or with `inheritAttrs: false` the element that spreads the props'
+ * rest. `undefined` where a consumer passes nothing but what the component declares (UF3045).
  */
-export function fallthroughTag(component: UfComponent, module: UfModule): string | undefined {
+export function fallthroughTags(
+  component: UfComponent,
+  module: UfModule,
+): readonly string[] | undefined {
   return ownFallthroughTag(component, module, new Set([component.name]));
 }
 
 /**
- * The tag of the element a ref on the component holds (`ComponentApi.refTag`): its root
- * element's, or its root component's, where it exposes nothing. `undefined` where a ref holds
- * what it exposes, or no element.
+ * The tags of the element a ref on the component holds (`ComponentApi.refTag`): its root
+ * element's, its `<component is>` root's, whichever renders (ADR-0122), or its root component's,
+ * where it exposes nothing. `undefined` where a ref holds what it exposes, or no element.
  */
-export function refTag(component: UfComponent, module: UfModule): string | undefined {
+export function refTags(component: UfComponent, module: UfModule): readonly string[] | undefined {
   return ownRefTag(component, module, new Set([component.name]));
 }
 

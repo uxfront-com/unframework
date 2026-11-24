@@ -744,17 +744,117 @@ export function A() { const tone = "red"; return <div><Child class="x" style={{ 
     expect(codes(run(source).diagnostics)).toEqual([]);
   });
 
-  // Attribute, listener and ref fallthrough doesn't reach a `<component is>` root yet (ADR-0118,
-  // ADR-0119): only `class` and `style` do, so anything else is "not yet", not dropped.
-  it("passes it nothing else yet, through a component root too (UF1002)", () => {
-    const source = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
+  // What every tag takes falls through to a `<component is>` root, and every listener; a name
+  // only some tags take is "not yet", not dropped (ADR-0122).
+  const DYNAMIC = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
 function Outer() { return <Child />; }
-export function A() { return <div><Child id="x" class="c" onFocus={() => {}} /><Outer aria-label="y" style="color: red" /></div>; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual([
-      "UF1002 id",
-      "UF1002 onFocus",
-      "UF1002 aria-label",
+`;
+
+  it("passes it what every tag takes, through a component root too", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child id="x" class="c" aria-label="Go" data-x="1" onClick={() => {}} onFocus={() => {}} /><Outer id="y" aria-label="y" data-x="2" style="color: red" onClick={() => {}} /></div>; }`;
+    const { diagnostics, module } = run(source);
+    expect(codes(diagnostics)).toEqual([]);
+    const passed = componentNode(module!.components.find((each) => each.name === "A")!.render);
+    expect(passed.attributes.map((each) => each.kind)).toEqual([
+      "Static",
+      "Class",
+      "Static",
+      "Static",
+      "Event",
+      "Event",
     ]);
+  });
+
+  it("reports a name only some tags take, naming those that don't, through a component root too (UF1002)", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child disabled={true} /><Outer download="x" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF1002 disabled", "UF1002 download"]);
+    expect(diagnostics[0]!.message).toBe(
+      "`disabled` falls through to Child's `<component is>` root only where every tag takes it, and <a> doesn't.",
+    );
+    expect(diagnostics[0]!.help).toContain("Declare it as a prop of Child");
+    expect(diagnostics[1]!.message).toContain("and <button> doesn't");
+  });
+
+  it("reports a name no tag takes as UF3035, naming every tag", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child colspan="2" /><Outer titl="x" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF3035 colspan", "UF3035 titl"]);
+    expect(diagnostics[0]!.message).toContain("no attribute of <a> or <button>");
+    // The name it may mean is one every tag takes.
+    expect(diagnostics[1]!.message).toContain("Did you mean `title`?");
+  });
+
+  it("reports a listener option, as on an element root (UF1002)", () => {
+    const source = `${DYNAMIC}export function A() { return <div><Child onClickOnce={() => {}} /></div>; }`;
+    expect(codes(run(source).diagnostics)).toEqual(["UF1002"]);
+  });
+
+  it("checks what falls through as each tag's own, and reports a problem once", () => {
+    // `<a type>` takes a MIME type and `<button type>` a keyword: only the later tag's check
+    // finds it, and an ARIA value both find is reported once.
+    const source = `${DYNAMIC}export function A() { return <div><Child type="nope" /><Child aria-pressed="maybe" /></div>; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF3008 type", "UF3008 aria-pressed"]);
+  });
+  it("holds the element that renders in a ref typed as the tags' union, in any order", () => {
+    for (const type of [
+      "HTMLAnchorElement | HTMLButtonElement",
+      "HTMLButtonElement | HTMLAnchorElement",
+    ]) {
+      const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef<${type}>(); const b = useTemplateRef<${type}>(); return <div><Child ref={a} /><Outer ref={b} /></div>; }`;
+      expect(codes(run(source).diagnostics), type).toEqual([]);
+    }
+    expect(
+      apiOf(`${DYNAMIC}export function Child2() { return <Outer />; }`, "Outer").refTags,
+    ).toEqual(["a", "button"]);
+  });
+
+  it("reports a ref typed as one tag, a supertype or nothing, naming the union (UF3046)", () => {
+    for (const type of [
+      "<HTMLButtonElement>",
+      "<HTMLElement>",
+      "<HTMLAnchorElement | HTMLButtonElement | HTMLDivElement>",
+      "<HTMLAnchorElement | HTMLAnchorElement>",
+      "",
+    ]) {
+      const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef${type}(); return <div><Outer ref={a} /></div>; }`;
+      const { diagnostics } = run(source);
+      expect(problems(source, diagnostics), type).toEqual(["UF3046 ref={a}"]);
+      expect(diagnostics[0]!.message).toContain("`HTMLAnchorElement | HTMLButtonElement`");
+      expect(diagnostics[0]!.message).toContain(
+        "a supertype such as `HTMLElement` is not accepted",
+      );
+      expect(diagnostics[0]!.help).toBe(
+        "Type it as the elements the root may render: `useTemplateRef<HTMLAnchorElement | HTMLButtonElement>()`.",
+      );
+    }
+  });
+
+  it("types a ref as one interface where the tags share it", () => {
+    const source = `${API}function Heading({ tag }: { tag: "h2" | "h3" }) { return <component is={tag}>x</component>; }
+export function A() { const a = useTemplateRef<HTMLHeadingElement>(); return <div><Heading tag="h2" ref={a} /></div>; }`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
+  });
+
+  it("holds no element where the component exposes functions", () => {
+    const api = apiOf(
+      `${API}export function Child() { function focus() {} defineExpose({ focus }); return <component is="a" />; }`,
+    );
+    expect(api.refTags).toBeUndefined();
+  });
+
+  it("takes what falls through on the element that spreads the rest, with inheritAttrs off", () => {
+    const source = `${API}function Child({ href, ...rest }: { href?: string }) {
+  defineOptions({ inheritAttrs: false });
+  return <component is={href ? "a" : "button"} href={href}><img alt="" {...rest} /></component>;
+}
+export function A() { return <div><Child id="x" onLoad={() => {}} /></div>; }`;
+    const result = run(source);
+    expect(codes(result.diagnostics)).toEqual([]);
+    const api = result.api!.components.find((each) => each.name === "Child")!;
+    expect(api.fallthroughTag).toBe("img");
+    expect(api.rootTags).toEqual(["a", "button"]);
   });
 
   it("still reports UF3045 for a root over components, a fragment, a conditional and a list", () => {

@@ -89,6 +89,12 @@ export interface ChildApi {
   refTag?: string;
   /** The tag of the element what a consumer passes lands on. */
   fallthroughTag?: string;
+  /**
+   * The attribute that puts the element what a consumer passes would land on in a literal region
+   * (`title="a {{ b }}"`, ADR-0037): Angular binds nothing there, so the child takes nothing,
+   * and a parent reports what it passes (UF1002, ADR-0122). Absent otherwise.
+   */
+  literal?: string;
 }
 
 /**
@@ -109,10 +115,28 @@ export function childApi(
         : each.export === "named" && each.name === imported.imported,
     );
     if (!api) return undefined;
+    // A `<component is>` root's first tag stands for them all: every tag takes what falls
+    // through, and a ref holds whichever renders (ADR-0122).
+    const refTag = api.refTag ?? api.refTags?.[0];
+    const takes = api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+    // The element's own static attributes are in its API: one holding `{{` puts it in a literal
+    // region (`literalRegion`), where `class` and `style` are bound apart.
+    const literal =
+      takes === undefined
+        ? undefined
+        : api.fallthroughOwn?.attributes.find(
+            ({ name, value }) =>
+              name !== "class" &&
+              name !== "style" &&
+              typeof value === "string" &&
+              value.includes("{{"),
+          )?.name;
+    const fallthroughTag = literal === undefined ? takes : undefined;
     return {
       exposes: api.exposes.length > 0,
-      ...(api.refTag === undefined ? {} : { refTag: api.refTag }),
-      ...(api.fallthroughTag === undefined ? {} : { fallthroughTag: api.fallthroughTag }),
+      ...(refTag === undefined ? {} : { refTag }),
+      ...(fallthroughTag === undefined ? {} : { fallthroughTag }),
+      ...(literal === undefined ? {} : { literal }),
     };
   }
   const own = module.components.find((each) => each.name === local);
@@ -121,19 +145,66 @@ export function childApi(
   const exposes = (own.exposes?.functions.length ?? 0) > 0;
   const root = fallthroughRoot(own.render);
   const rootChild = root?.kind === "Component" ? childApi(module, root.component, next) : undefined;
-  const rootTag = root?.kind === "Element" ? root.tag : undefined;
+  const rootTag =
+    root?.kind === "Element"
+      ? root.tag
+      : root?.kind === "Dynamic" && root.candidates[0]?.kind === "Tag"
+        ? root.candidates[0].tag
+        : undefined;
   const refTag = exposes
     ? undefined
     : (rootTag ?? (rootChild && !rootChild.exposes ? rootChild.refTag : undefined));
-  const fallthroughTag =
-    own.inheritAttrs === false
-      ? restElement(own.render)?.element.tag
-      : (rootTag ?? rootChild?.fallthroughTag);
+  const rest = own.inheritAttrs === false ? restElement(own.render)?.element : undefined;
+  const takes = own.inheritAttrs === false ? rest?.tag : (rootTag ?? rootChild?.fallthroughTag);
+  const literal =
+    takes === undefined
+      ? rootChild?.literal
+      : literalAttribute(
+          rest
+            ? [rest]
+            : root?.kind === "Dynamic"
+              ? tagElements(root)
+              : root?.kind === "Element"
+                ? [root]
+                : [],
+        );
+  const fallthroughTag = literal === undefined ? takes : undefined;
   return {
     exposes,
     ...(refTag === undefined ? {} : { refTag }),
     ...(fallthroughTag === undefined ? {} : { fallthroughTag }),
+    ...(literal === undefined ? {} : { literal }),
   };
+}
+
+/** Each tag of a `<component is>` over tags as the element its `@case` writes. */
+function tagElements(root: DynamicNode): ElementNode[] {
+  return root.candidates.flatMap((candidate) =>
+    candidate.kind === "Tag"
+      ? [
+          {
+            kind: "Element" as const,
+            tag: candidate.tag,
+            attributes: candidateAttributes(root, candidate.tag),
+            children: root.children,
+            span: root.span,
+          },
+        ]
+      : [],
+  );
+}
+
+/** The static attribute holding `{{` that puts one of `elements` in a literal region (ADR-0037). */
+function literalAttribute(elements: readonly ElementNode[]): string | undefined {
+  for (const element of elements) {
+    if (angularDialect.literalRegion?.(element) === undefined) continue;
+    const found = element.attributes.find(
+      (attribute) =>
+        attribute.kind === "Static" && attribute.value !== true && attribute.value.includes("{{"),
+    );
+    if (found?.kind === "Static") return found.name;
+  }
+  return undefined;
 }
 
 /**
@@ -164,7 +235,7 @@ export function planFallthrough(
   }
   if (root.kind === "Dynamic") {
     // Each `@case` is an element of its own tag, which takes the consumer's `class` and `style`
-    // alone (ADR-0119): nothing else falls through to a `<component is>` yet.
+    // (ADR-0119), and binds the directive that puts the rest on it (ADR-0122).
     const bindable = root.candidates.every(
       (candidate) =>
         candidate.kind === "Tag" &&
@@ -177,7 +248,7 @@ export function planFallthrough(
         }) === undefined,
     );
     if (!bindable) return undefined;
-    return { target: root, rest: false, passes: false, events: "HTMLElementEventMap" };
+    return { target: root, rest: false, passes: true, events: "HTMLElementEventMap" };
   }
   const child = childApi(module, root.component);
   const tag = child?.fallthroughTag;
@@ -197,8 +268,11 @@ function eventsOf(tag: string | undefined): FallthroughPlan["events"] {
 /** The element a ref on the component holds, which it declares as {@link ELEMENT_MEMBER}. */
 export interface RootElementPlan {
   /** Its root, which carries the template ref the query reads. */
-  root: ElementNode | ComponentNode;
-  /** The DOM interface of a root element (`HTMLButtonElement`). */
+  root: ElementNode | ComponentNode | DynamicNode;
+  /**
+   * The DOM interface of a root element (`HTMLButtonElement`), or of each tag of a `<component
+   * is>` root, whose element of each `@case` carries the template ref (ADR-0122).
+   */
   type?: string;
 }
 
@@ -213,8 +287,15 @@ export function planRootElement(
 ): RootElementPlan | undefined {
   if (component.exposes?.functions.length) return undefined;
   const root = fallthroughRoot(component.render);
-  // A `<component is>` root takes no ref of a consumer's yet (ADR-0119).
-  if (!root || root.kind === "Dynamic") return undefined;
+  if (!root) return undefined;
+  // Whichever tag renders, in its `@case` (ADR-0122).
+  if (root.kind === "Dynamic") {
+    const types = root.candidates.map((candidate) =>
+      candidate.kind === "Tag" ? ELEMENT_INTERFACES.get(candidate.tag) : undefined,
+    );
+    if (types.some((type) => type === undefined)) return undefined;
+    return { root, type: [...new Set(types)].join(" | ") };
+  }
   if (root.kind === "Element") {
     const type = ELEMENT_INTERFACES.get(root.tag);
     if (type === undefined || angularDialect.literalRegion?.(root) !== undefined) return undefined;

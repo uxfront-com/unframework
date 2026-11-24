@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Toggle' })",
+      "dom": [
+        "<section aria-label=\"Page\">",
+        "  <button aria-label=\"Direct\" class=\"base\" data-testid=\"direct\" id=\"direct\" title=\"Go\">",
+        "    \"Direct\"",
+        "  </button>",
+        "  <button aria-label=\"Chained\" class=\"base primary\" data-testid=\"chained\" id=\"chained\" title=\"Base\">",
+        "    \"Chained\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Focus direct\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Focus chained\"",
+        "  </button>",
+        "  <ol aria-label=\"Log\"></ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Page\":",
+        "  - button \"Direct\"",
+        "  - button \"Chained\"",
+        "  - button \"Toggle\"",
+        "  - button \"Focus direct\"",
+        "  - button \"Focus chained\"",
+        "  - list \"Log\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Focus direct' })",
+      "dom": [
+        "<section aria-label=\"Page\">",
+        "  <button aria-label=\"Direct\" class=\"base\" data-testid=\"direct\" id=\"direct\" title=\"Go\" uf:focused=\"\">",
+        "    \"Direct\"",
+        "  </button>",
+        "  <button aria-label=\"Chained\" class=\"base primary\" data-testid=\"chained\" id=\"chained\" title=\"Base\">",
+        "    \"Chained\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Focus direct\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Focus chained\"",
+        "  </button>",
+        "  <ol aria-label=\"Log\"></ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Page\":",
+        "  - button \"Direct\"",
+        "  - button \"Chained\"",
+        "  - button \"Toggle\"",
+        "  - button \"Focus direct\"",
+        "  - button \"Focus chained\"",
+        "  - list \"Log\""
+      ],
+      "events": {}
+    }
+  ]
+}

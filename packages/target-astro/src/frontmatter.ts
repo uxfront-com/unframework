@@ -349,7 +349,10 @@ function propsHeritage(
   const tag = render.fallthrough?.tag;
   if (tag === undefined || tag.includes("-")) return undefined;
   const attributes = imports.add("astro/types", "HTMLAttributes", { type: true });
-  const type = `${attributes}<${JSON.stringify(tag)}>`;
+  // A `<component is>` root's are what every tag takes (ADR-0122).
+  const type = (render.fallthrough?.tags ?? [tag])
+    .map((each) => `${attributes}<${JSON.stringify(each)}>`)
+    .join(" & ");
   const { omitted } = render.fallthrough!;
   return omitted.length
     ? `Omit<${type}, ${omitted.map((name) => JSON.stringify(name)).join(" | ")}>`

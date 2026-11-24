@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import type { IntrinsicElementAttributes } from "vue";
+
 const {
   href = undefined,
   disabled = undefined,
   text,
-} = defineProps<{ href?: string; disabled?: boolean; text: string }>();
+} = defineProps<
+  { href?: string; disabled?: boolean; text: string } & /* @vue-ignore */ Omit<
+    IntrinsicElementAttributes["a"] & IntrinsicElementAttributes["button"],
+    "href" | "disabled" | "text" | "onPress"
+  >
+>();
 const emit = defineEmits<{ press: [] }>();
 
 function press(event: MouseEvent) {
