@@ -398,7 +398,7 @@ describe("an import that never names the file", () => {
         expected.outputs.react![0]!.contents,
       );
       const helper = await client.pluginContainer.resolveId("../_unframework/cx", resolved!.id);
-      expect(helper?.id).toBe(file("node_modules/@ds/core/_unframework/cx.ts"));
+      expect(helper?.id).toBe(file("node_modules/@ds/core/_unframework/react/cx.ts"));
       expect(codeOf(await client.pluginContainer.load(helper!.id))).toBe(
         expected.outputs.react!.find((output) => output.path === "../_unframework/cx.ts")!.contents,
       );
@@ -1147,11 +1147,13 @@ describe("types read through the type oracle (ADR-0067)", () => {
           typeOracle,
         });
         await typeOracle.dispose();
-        // The copies, then the shared helper module (ADR-0121), which the module imports.
+        // The copies, then the shared helper modules (ADR-0121), which the module imports.
         expect(compiled.outputs.angular!.map(({ path }) => path)).toEqual([
           "chip.ts",
           "tones.ts",
           "base.ts",
+          "_unframework/Fallthrough.ts",
+          "_unframework/Listeners.ts",
           "_unframework/ScopeAttributes.ts",
         ]);
         expect(code).toBe(compiled.outputs.angular![0]!.contents);

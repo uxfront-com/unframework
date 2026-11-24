@@ -267,7 +267,7 @@ export function fallthroughDirectiveCode(
   const { directive: className, listeners } = names;
   const type = listenersTypeCode(listeners, events);
   if (className === undefined) return type;
-  return `${type}${fallthroughClassCode(className, listeners, core, common)}`;
+  return `${type}\n${fallthroughClassCode(className, listeners, core, common)}`;
 }
 
 /**
