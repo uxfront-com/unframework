@@ -1,7 +1,6 @@
 // Client-rendered elements keep their handlers in `element._qDispatch`, and the global
 // qwikloader (document-level event delegation) is what calls them: without it, a click does
 // nothing and nothing is logged.
-// oxlint-disable-next-line import/no-unassigned-import -- the loader is a script run for its side effect
 import "@qwik.dev/core/qwikloader.js";
 import { createSignal, jsx, render } from "@qwik.dev/core";
 import type { QRL } from "@qwik.dev/core";

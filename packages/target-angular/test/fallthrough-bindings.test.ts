@@ -5,7 +5,6 @@
 // consumer's key whose value is `undefined` or `null` removes the attribute, and a name the
 // consumer does not pass keeps the root's own binding. Like the rerender test, it runs in Node on
 // domino, through the same renderer as in the browser.
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";

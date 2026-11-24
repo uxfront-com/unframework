@@ -5,7 +5,6 @@
 // required member, the tuple's members otherwise; a rerender, which sets inputs, keeps them. An
 // event named like a native DOM event is the output `uf` and its name (`ufChange`, ADR-0056).
 // Like the rerender test, it runs in Node on domino (this package has no browser project).
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";

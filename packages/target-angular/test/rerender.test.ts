@@ -8,7 +8,6 @@
 // in Node, on the DOM Angular's server platform uses (domino), through the same renderer as in
 // the browser. Angular's own packages ship partially compiled; in this plain-Node project the
 // JIT compiler finishes them as they load. The component itself is compiled ahead of time.
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";

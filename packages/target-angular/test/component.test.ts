@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // The JIT compiler, loaded as it would be where a module skipped ngtsc.
-// oxlint-disable-next-line import/no-unassigned-import -- evaluated for its side effect
 import "@angular/compiler";
 import { Component } from "@angular/core";
 import { afterAll, describe, expect, it } from "vitest";

@@ -5,7 +5,6 @@
 // Angular's own packages ship partially compiled; in this plain-Node project the JIT compiler
 // finishes them as they load (the ssr project links them instead). The component under test is
 // compiled ahead of time by ngtsc either way, so the template's semantics are the same.
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";

@@ -3,10 +3,16 @@ import { defineConfig } from "oxlint";
 
 export default defineConfig({
   extends: [vue],
+  // oxlint reads `env` and `ignorePatterns` from the root config only, so they're restated here.
+  env: vue.env,
   options: {
     typeAware: true,
+    // Migration baseline (UXF-1048): four directives name rules the baseline turns off. Restored
+    // with the last rule.
+    reportUnusedDisableDirectives: "off",
   },
   ignorePatterns: [
+    ...vue.ignorePatterns,
     // Golden outputs are linted by each target's own toolchain (L5), not by the repo's rules.
     "tests/integration/cases/**/__output__/**",
     // Diagnostic cases are deliberately wrong.
@@ -14,6 +20,68 @@ export default defineConfig({
     // Third-party types vendored verbatim (see packages/unframework/scripts/vendor-jsx.ts).
     "packages/unframework/src/vendor/**",
   ],
+  rules: {
+    // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
+    // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
+    // with its reason.
+    "@nkzw/no-instanceof": "off",
+    "array-callback-return": "off",
+    curly: "off",
+    eqeqeq: "off",
+    "import/consistent-type-specifier-style": "off",
+    "import/no-namespace": "off",
+    "no-console": "off",
+    "no-fallthrough": "off",
+    "no-promise-executor-return": "off",
+    "no-regex-spaces": "off",
+    "no-useless-assignment": "off",
+    "object-shorthand": "off",
+    "oxc/no-accumulating-spread": "off",
+    "prefer-promise-reject-errors": "off",
+    "quality/no-array-filter-map": "off",
+    "quality/no-chained-type-assertions": "off",
+    "quality/no-conditional-empty-object-spread": "off",
+    "quality/no-known-value-widening": "off",
+    "quality/no-object-parameters": "off",
+    "quality/no-reflect-apply": "off",
+    "quality/no-reflect-get": "off",
+    "quality/no-unknown-returns": "off",
+    "quality/no-unsafe-dictionary-type": "off",
+    "typescript/array-type": "off",
+    "typescript/no-empty-object-type": "off",
+    "typescript/no-explicit-any": "off",
+    "typescript/no-implied-eval": "off",
+    "typescript/no-non-null-assertion": "off",
+    "typescript/no-unnecessary-type-assertion": "off",
+    "typescript/no-unsafe-argument": "off",
+    "typescript/no-unsafe-assignment": "off",
+    "typescript/no-unsafe-call": "off",
+    "typescript/no-unsafe-function-type": "off",
+    "typescript/no-unsafe-member-access": "off",
+    "typescript/no-unsafe-return": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/switch-exhaustiveness-check": "off",
+    "typescript/use-unknown-in-catch-callback-variable": "off",
+    "unicorn/catch-error-name": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-array-fill-with-reference-type": "off",
+    "unicorn/no-hex-escape": "off",
+    "unicorn/no-magic-array-flat-depth": "off",
+    "unicorn/numeric-separators-style": "off",
+    "unicorn/prefer-array-flat-map": "off",
+    "unicorn/prefer-at": "off",
+    "unicorn/prefer-dom-node-append": "off",
+    "unicorn/prefer-import-meta-properties": "off",
+    "unicorn/prefer-native-coercion-functions": "off",
+    "unicorn/prefer-number-properties": "off",
+    "unicorn/prefer-set-has": "off",
+    "unicorn/prefer-single-call": "off",
+    "unicorn/prefer-string-raw": "off",
+    "unicorn/prefer-string-replace-all": "off",
+    "unicorn/prefer-structured-clone": "off",
+    "unicorn/prefer-top-level-await": "off",
+    "unicorn/text-encoding-identifier-case": "off",
+  },
   overrides: [
     {
       // A component's event handler may be async: every target discards a handler's return value,
