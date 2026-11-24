@@ -13,10 +13,10 @@ name takes; the type declarations; the module's constants the component reads, a
 those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); the application's id
 counter, an injection token (`idCounter`, ADR-0095), when the component makes ids; the
 injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
-`toggle`, `selectedValues`, `optionText`); the slot directives; the component. Without
-`EmitContext.helper`, the file also declares the helpers it would import: the model helpers after
-the inline ones, the pipe `innerHTML` reads its markup through (`TrustedHtmlPipe`, ADR-0097)
-after the slot directives, and the directives its listeners' options need before the component.
+`toggle`, `selectedValues`, `optionText` and their model helpers where the helpers are not
+shared); the slot directives; where the helpers are not shared, the pipe `innerHTML`
+reads its markup through (`TrustedHtmlPipe`, ADR-0097) and the directives its listeners'
+options need; the component.
 
 - **Types.** The source's type declarations the output reads (its inputs' and outputs' types, the
   setup's annotations and code) and every exported one, copied as written and exported as the
@@ -413,10 +413,11 @@ re-projects `<ng-content />`.
 The shared helpers are modules of their own in the tree's `_unframework/` (ADR-0121), put
 through `EmitContext.helper` and printed by `src/shared.ts`: `ScopeAttributes.ts`,
 `TextCaret.ts`, `TrustedHtmlPipe.ts`, `styleObject.ts`, `modelText.ts`, `writeModelText.ts`,
-`looseToNumber.ts`, `queueHook.ts`, and one module for each event and option a listener uses,
+`looseToNumber.ts`, `queueHook.ts` and one module for each event and option a listener uses,
 such as `ClickCapture.ts`. Each imports Angular by its own names, so its text depends only on the
-helper, and a helper that calls another imports it as its sibling (`./looseToNumber`). A component
-imports each without the extension, `import { ScopeAttributes } from
+helper, and a helper that calls another imports it as its sibling (`./looseToNumber`).
+
+A component imports each without the extension, `import { ScopeAttributes } from
 "./_unframework/ScopeAttributes"`, under one name in every component of a source, and lists a
 directive or a pipe in its `imports`. `Transition` and `TransitionRegion` stay inline: the
 directive finds its region through `inject`, which looks through every ancestor's injector,
