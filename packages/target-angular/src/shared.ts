@@ -8,7 +8,10 @@
 // ADR-0053). `Transition` and `TransitionRegion` stay inline: `inject(TransitionRegion)` looks
 // through every ancestor's injector, across component hosts, so one shared class would let a
 // child's transition find its parent's region (R2). So do the directive runner, `Teleport`,
-// `idCounter`, `nextTick`, the once-guard, `Fallthrough` and the short model helpers (R2 to R4).
+// `idCounter`, `nextTick`, the once-guard and the short model helpers (R2 to R4). `Fallthrough`
+// keeps its state per instance, so it is shared, and the listeners' types with it, in a module of
+// their own, `Listeners.ts`, which a component imports with `import type`: one import text per
+// module, so the join meets no name twice (A3).
 import { hookQueueCode, ImportSet, js, Placeholders, printProgram } from "@unframework.dev/codegen";
 import type { EmitContext } from "@unframework.dev/codegen";
 
@@ -20,6 +23,7 @@ import {
   trustedHtmlPipeCode,
 } from "./directives.ts";
 import type { DirectiveSpec } from "./directives.ts";
+import { fallthroughClassCode, listenersTypeCode } from "./fallthrough.ts";
 import { modelHelperCode } from "./models.ts";
 
 /**
@@ -42,7 +46,11 @@ function sibling(imports: ImportSet, name: string): string {
 const DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
   modelText: ["looseToNumber"],
   writeModelText: ["looseToNumber"],
+  Fallthrough: ["Listeners"],
 };
+
+/** The module of a helper that another module exports, by the helper's export name. */
+const MODULE_OF: Readonly<Record<string, string>> = { SvgListeners: "Listeners" };
 
 /**
  * Every helper Angular shares by a fixed name, the module's export name. The event directives
@@ -64,6 +72,19 @@ const SHARED_HELPERS: Readonly<Record<string, ModuleCode>> = {
     exported(
       modelHelperCode("modelText", "modelText", sibling(imports, "looseToNumber")),
       "modelText",
+    ),
+  // Both event maps' types, so the module's text is one wherever it is shared (R1).
+  Listeners: () =>
+    `${listenersTypeCode("Listeners", "HTMLElementEventMap", true)}\n${listenersTypeCode("SvgListeners", "SVGElementEventMap", true)}`,
+  // Its state is the instance's own: the element, the renderer, what it wrote and listens to (R2).
+  Fallthrough: (imports) =>
+    fallthroughClassCode(
+      "Fallthrough",
+      ["Listeners", "SvgListeners"]
+        .map((name) => imports.add("./Listeners", name, { type: true, exact: true }))
+        .join(" | "),
+      (name, type = false) => imports.add("@angular/core", name, { type }),
+      (name) => imports.add("@angular/common", name),
     ),
   writeModelText: (imports) => {
     imports.add("@angular/core", "WritableSignal", { type: true });
@@ -113,6 +134,8 @@ export interface SharedUse {
   local: string;
   /** The module's text, for a helper of no fixed name (an event directive). */
   contents?: string;
+  /** Whether it is a type, which the file imports with `import type`. */
+  type?: boolean;
 }
 
 /**
@@ -125,12 +148,13 @@ export function importShared(
   imports: ImportSet,
   used: Iterable<SharedUse>,
 ): void {
-  const put = (name: string, contents = sharedModule(name)): string => {
-    for (const dependency of DEPENDENCIES[name] ?? []) put(dependency);
+  const put = (name: string, contents?: string): string => {
+    const module = MODULE_OF[name] ?? name;
+    for (const dependency of DEPENDENCIES[module] ?? []) put(dependency);
     // Angular's outputs import a sibling by its name, without the extension (`./card-icon`).
-    return helper(`${name}.ts`, contents, from).replace(/\.ts$/, "");
+    return helper(`${module}.ts`, contents ?? sharedModule(module), from).replace(/\.ts$/, "");
   };
-  for (const { name, local, contents } of used) {
-    imports.add(put(name, contents), name, { local, exact: true });
+  for (const { name, local, contents, type = false } of used) {
+    imports.add(put(name, contents), name, { local, exact: true, type });
   }
 }

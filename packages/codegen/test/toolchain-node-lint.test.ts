@@ -333,6 +333,9 @@ const result = (filePath: string, messages: object[] = [], suppressedMessages: o
 const lintEs = (toolchainDir: string, given: readonly string[] = Object.values(files)) =>
   lintWithEslint(given, { toolchainDir, root: toolchainDir });
 
+/** A file name of over 200 characters, so a few thousand of them fill a long list. */
+const longName = (index: number) => `${String(index).padStart(5, "0")}-${"x".repeat(200)}.tsx`;
+
 describe("lintWithEslint", () => {
   it("runs ESLint's API from the toolchain directory, based where the files are", async () => {
     vi.stubEnv("NODE_OPTIONS", "--no-deprecation");
@@ -434,6 +437,24 @@ describe("lintWithEslint", () => {
       lintWithEslint([files.a], { toolchainDir: failing, root: failing }, { tsconfig: base }),
     ).rejects.toThrow(/it could not lint the files/);
     expect(readdirSync(join(failing, ".uf-tmp"))).toEqual([]);
+  });
+
+  it("lints a corpus whose file list no command line could hold", async () => {
+    // Linux refuses one argument over 128 KiB, and macOS every argument together over 1 MiB
+    // (`spawn E2BIG`): the request goes on standard input, whatever its size.
+    const many = writeTree(
+      temporaryDir(),
+      Object.fromEntries(Array.from({ length: 5000 }, (_, index) => [longName(index), ""])),
+    );
+    const given = Array.from({ length: 5000 }, (_, index) => join(many, longName(index)));
+    expect(JSON.stringify(given).length).toBeGreaterThan(1024 * 1024);
+    const toolchainDir = eslintToolchain({});
+    const results = await lintEs(toolchainDir, given);
+    expect([...results.keys()]).toEqual(given);
+    expect([...results.values()].every((messages) => messages.length === 0)).toBe(true);
+    expect(invocation(toolchainDir)).toMatchObject({
+      files: given.map((file) => realpathSync(file)),
+    });
   });
 
   it("rejects a file it did not lint", async () => {

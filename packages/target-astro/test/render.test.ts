@@ -246,7 +246,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
     // ADR-0121: a shared helper module is a plain TypeScript module in `_unframework/`, which the
     // browser project's compile emitted, and the render serves as it does, on each render.
     it("renders a component that imports a shared helper module", async () => {
-      const helperId = join(root, "_unframework", "scopeAttributes.ts");
+      const helperId = join(root, "_unframework", "astro", "scopeAttributes.ts");
       let helper =
         'export function scopeAttributes(props: object): Record<string, ""> {\n  return Object.fromEntries(Object.keys(props).filter((name) => name.startsWith("data-uf-")).map((name) => [name, ""]));\n}\n';
       compileInBrowserProject(

@@ -209,7 +209,7 @@ export const angular: Target = defineTarget({
     fallthrough: {
       support: "emulated",
       helper: "Fallthrough",
-      note: "Angular has no attribute spread, and a host that carries an attribute is not unwrapped. A component that takes what its consumer passes declares it as inputs, which the consumer binds on the host, and clears `class` and `style` from the host, which keeps only `display: contents` (ADR-0056): `class` and `style` merge into the element that takes them, its root or the props' rest's element, and the other attributes and native listeners come as two records, `ufAttributes` and `ufListeners`, which an inline attribute directive, `Fallthrough` (`[ufFallthrough]`), sets on that element through `Renderer2`, the consumer's attribute winning, and listens to in the browser after the element's own listeners. A root component passes them on to its own (ADR-0118). A hand-written consumer's attribute on the host stays on the host.",
+      note: "Angular has no attribute spread, and a host that carries an attribute is not unwrapped. A component that takes what its consumer passes declares it as inputs, which the consumer binds on the host, and clears `class` and `style` from the host, which keeps only `display: contents` (ADR-0056): `class` and `style` merge into the element that takes them, its root or the props' rest's element, and the other attributes and native listeners come as two records, `ufAttributes` and `ufListeners`, which an attribute directive shared in the tree's `_unframework/`, `Fallthrough` (`[ufFallthrough]`), sets on that element through `Renderer2`, the consumer's attribute winning, and listens to in the browser after the element's own listeners. A root component passes them on to its own (ADR-0118). A hand-written consumer's attribute on the host stays on the host.",
     },
     "contextual-root": {
       support: "unsupported",
@@ -380,10 +380,13 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   // ADR-0037) takes none of them.
   const clearsHost = fallthrough !== undefined || component.inheritAttrs === false;
   reportApiClashes(component, composition, fallthrough, rootElement !== undefined, context);
-  // The directive the element that takes the records binds, and their listeners' type.
-  const passes = fallthrough?.passes
-    ? fallthroughNames(component, module, imports, fallthrough.target.kind === "Element")
-    : undefined;
+  // The directive the element that takes the records binds, and their listeners' type, shared
+  // in `_unframework/` with `helper` (ADR-0121).
+  const passes = !fallthrough?.passes
+    ? undefined
+    : shares
+      ? sharedFallthroughNames(plan, fallthrough)
+      : fallthroughNames(component, module, imports, fallthrough.target.kind === "Element");
   const usesRefObject = component.setup.some(
     (item) =>
       (item.kind === "Provide" || (item.kind === "Inject" && item.fallback)) &&
@@ -630,7 +633,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       ),
     ),
     ...(scope && !shares ? [scopeDirectiveCode(scope, imports)] : []),
-    ...(passes === undefined
+    ...(passes === undefined || shares
       ? []
       : [
           fallthroughDirectiveCode(
@@ -668,6 +671,14 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
         contents: directiveModule(spec),
       })),
       ...(scope ? [{ name: "ScopeAttributes", local: scope.className }] : []),
+      ...(passes === undefined
+        ? []
+        : [
+            { name: listenersExport(fallthrough!), local: passes.listeners, type: true },
+            ...(passes.directive === undefined
+              ? []
+              : [{ name: "Fallthrough", local: passes.directive }]),
+          ]),
       ...models.helpers.flatMap(({ name, shared }) =>
         shared === undefined ? [] : [{ name: shared, local: name }],
       ),
@@ -803,6 +814,25 @@ function fallthroughNames(
   const claim = helperClaim(component, module, imports);
   const listeners = claim("Listeners");
   return directive ? { listeners, directive: claim("Fallthrough") } : { listeners };
+}
+
+/** The export name of the listeners' type the component's records take, in `_unframework/`. */
+function listenersExport(fallthrough: FallthroughPlan): string {
+  return fallthrough.events === "SVGElementEventMap" ? "SvgListeners" : "Listeners";
+}
+
+/**
+ * The local names of the shared fallthrough directive and its listeners' type (ADR-0121), as
+ * `plan.helper` claims them: one per source, so the join writes one import (A3).
+ */
+function sharedFallthroughNames(
+  plan: Plan,
+  fallthrough: FallthroughPlan,
+): { listeners: string; directive?: string } {
+  const listeners = plan.helper(listenersExport(fallthrough));
+  return fallthrough.target.kind === "Element"
+    ? { listeners, directive: plan.helper("Fallthrough") }
+    : { listeners };
 }
 
 /**

@@ -74,12 +74,14 @@ describe("shared helper modules", () => {
     "prints %s's module as valid, formatted TypeScript",
     async (name) => {
       const text = sharedModule(name);
-      expect(text).toMatch(new RegExp(`^export (function|class) ${name}\\b`, "m"));
+      expect(text).toMatch(new RegExp(`^export (function|class|type) ${name}\\b`, "m"));
       const outcome = await formatOutput({ path: `${name}.ts`, contents: text });
       expect(outcome.error).toBeUndefined();
       // Only the framework and the helper's siblings (A1, A2).
       for (const [, specifier] of text.matchAll(/from "([^"]+)"/g)) {
-        expect(specifier).toMatch(/^(?:@angular\/core|@angular\/platform-browser|\.\/\w+)$/);
+        expect(specifier).toMatch(
+          /^(?:@angular\/core|@angular\/common|@angular\/platform-browser|\.\/\w+)$/,
+        );
       }
     },
   );
@@ -144,8 +146,63 @@ export function Badge() {
     expect(importsOf(card!.contents)).toEqual(importsOf(badge!.contents));
     expect(declares(card!.contents, "ScopeAttributes")).toBe(false);
     expect(declares(card!.contents, "scopes")).toBe(false);
-    expect(helpers.map(({ path }) => path)).toEqual(["_unframework/ScopeAttributes.ts"]);
-    expect(helpers[0]!.contents).toBe(sharedModule("ScopeAttributes"));
+    // Each root element takes what its consumer passes, through the shared `Fallthrough` too.
+    expect(helpers.map(({ path }) => path)).toEqual([
+      "_unframework/Fallthrough.ts",
+      "_unframework/Listeners.ts",
+      "_unframework/ScopeAttributes.ts",
+    ]);
+    expect(fileAt(helpers, "_unframework/ScopeAttributes.ts")).toBe(
+      sharedModule("ScopeAttributes"),
+    );
+  });
+
+  it("shares Fallthrough and the listeners' types, which each component imports alike", () => {
+    // A root element takes the records through the directive, an SVG root's typed by the SVG
+    // event map, and a root component passes them on, so it imports only their type.
+    const source = `export default function Card() {
+  return <section class="card">Card</section>;
+}
+
+export function Icon() {
+  return <svg viewBox="0 0 1 1" />;
+}
+
+export function Framed() {
+  return <Card />;
+}
+`;
+    const { files, helpers } = emitShared(source);
+    const directive = 'import { Fallthrough } from "./_unframework/Fallthrough";';
+    const listeners = 'import type { Listeners } from "./_unframework/Listeners";';
+    const svgListeners = 'import type { SvgListeners } from "./_unframework/Listeners";';
+    const card = fileAt(files, "card.ts");
+    const icon = fileAt(files, "icon.ts");
+    const framed = fileAt(files, "framed.ts");
+    // Beside `ScopeAttributes`, which each root takes too.
+    const fallthroughImports = (contents: string) =>
+      importsOf(contents).filter((line) => !line.includes("ScopeAttributes"));
+    expect(fallthroughImports(card)).toEqual([directive, listeners]);
+    expect(fallthroughImports(icon)).toEqual([directive, svgListeners]);
+    expect(fallthroughImports(framed)).toEqual([listeners]);
+    expect(card).toContain("readonly ufListeners = input<Listeners>();");
+    expect(icon).toContain("readonly ufListeners = input<SvgListeners>();");
+    expect(card).toMatch(/imports: \[[^\]]*\bFallthrough\b/);
+    expect(framed).not.toMatch(/\bFallthrough\b/);
+    for (const contents of [card, icon, framed]) {
+      expect(declares(contents, "Fallthrough")).toBe(false);
+      expect(contents).not.toMatch(/^(?:export )?type (?:Svg)?Listeners\b/m);
+    }
+    expect(fileAt(helpers, "_unframework/Fallthrough.ts")).toBe(sharedModule("Fallthrough"));
+    expect(fileAt(helpers, "_unframework/Listeners.ts")).toBe(sharedModule("Listeners"));
+    // The directive takes either type's record, from its sibling.
+    expect(sharedModule("Fallthrough")).toMatch(
+      /^import type \{ Listeners, SvgListeners \} from "\.\/Listeners";$/m,
+    );
+    expect(sharedModule("Fallthrough")).toContain(
+      "listeners: Listeners | SvgListeners | undefined;",
+    );
+    expect(sharedModule("Listeners")).toMatch(/^export type SvgListeners = .*SVGElementEventMap/m);
   });
 
   it("imports a helper under one free name where a component of the source declares it", () => {
@@ -184,6 +241,8 @@ export function Badge() {
     // The template reads them through members of their names, as it reads the inline ones.
     expect(weight).toContain("protected readonly modelText = modelText;");
     expect(helpers.map(({ path }) => path)).toEqual([
+      "_unframework/Fallthrough.ts",
+      "_unframework/Listeners.ts",
       "_unframework/ScopeAttributes.ts",
       "_unframework/TextCaret.ts",
       "_unframework/looseToNumber.ts",

@@ -370,10 +370,12 @@ describe("compile() with shared modules", () => {
       typeOracle,
     });
     expect(result.diagnostics).toEqual([]);
-    // And Angular's shared helper module (ADR-0121).
+    // And Angular's shared helper modules (ADR-0121).
     expect(result.outputs.angular!.map(({ path }) => path)).toEqual([
       "badge.ts",
       "badge-tones.ts",
+      "_unframework/Fallthrough.ts",
+      "_unframework/Listeners.ts",
       "_unframework/ScopeAttributes.ts",
     ]);
   });

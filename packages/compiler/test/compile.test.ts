@@ -39,12 +39,21 @@ describe("compile", () => {
       svelte: ["Hello.svelte"],
       solid: ["Hello.tsx"],
       solid2: ["Hello.tsx"],
-      angular: ["hello.ts", "_unframework/ScopeAttributes.ts"],
+      angular: [
+        "hello.ts",
+        "_unframework/Fallthrough.ts",
+        "_unframework/Listeners.ts",
+        "_unframework/ScopeAttributes.ts",
+      ],
       qwik: ["Hello.tsx"],
       astro: ["Hello.astro"],
     });
     expect(result.helpers.react).toEqual(["_unframework/cx.ts"]);
-    expect(result.helpers.angular).toEqual(["_unframework/ScopeAttributes.ts"]);
+    expect(result.helpers.angular).toEqual([
+      "_unframework/Fallthrough.ts",
+      "_unframework/Listeners.ts",
+      "_unframework/ScopeAttributes.ts",
+    ]);
     expect(result.helpers.vue).toEqual([]);
     expect(result.owners.react).toEqual({ "Hello.tsx": "Hello" });
     expect(result.ir?.components.map((component) => component.name)).toEqual(["Hello"]);

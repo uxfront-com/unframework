@@ -30,7 +30,7 @@ export function createHelperModules(base = ""): HelperModules {
   const modules = new Map<string, string>();
   return {
     helper(file, contents, from) {
-      // A name, in `_unframework/` itself: the unplugin's ids hold no directory below it.
+      // A name, in `_unframework/` itself: the unplugin's ids put only the target's directory there.
       if (!/^[\w$-][\w$.-]*\.[a-z]+$/i.test(file)) {
         throw new TypeError(
           `A helper module's file must be a file name in ${HELPER_DIRECTORY}/, such as "cx.ts", not "${file}".`,
