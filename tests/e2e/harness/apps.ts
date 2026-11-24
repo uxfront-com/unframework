@@ -310,7 +310,7 @@ export const DESIGN_SYSTEM_TEST_DEPENDENCIES: ReadonlyArray<string> = [
  */
 export function readCatalog(text: string, name?: string): Record<string, string> {
   const lines = text.split("\n");
-  let start = -1;
+  let start: number;
   let indent = "  ";
   if (name === undefined) {
     start = lines.indexOf("catalog:");

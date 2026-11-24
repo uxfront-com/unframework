@@ -131,7 +131,9 @@ describe("the directive runner", () => {
     for (const stop of stops) {
       stop();
     }
-    stops = listed.map((element) => runDirective(hooks, element, "b", follow));
+    for (const element of listed) {
+      runDirective(hooks, element, "b", follow);
+    }
     await Promise.resolve();
     expect(calls).toEqual(["mounted body", "unmounted body", "mounted body"]);
   });

@@ -112,7 +112,7 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
       await client.moduleGraph.ensureEntryFromUrl(id);
       const loaded = await client.pluginContainer.load(id);
       const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (code == null) {
+      if (typeof code !== "string") {
         return;
       }
       const transformed = (await client.pluginContainer.transform(code, id)).code;
@@ -124,7 +124,7 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
     async sheet(id) {
       const loaded = await client.pluginContainer.load(id);
       const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (code == null) {
+      if (typeof code !== "string") {
         throw new Error(`ufAstroRender: the browser project serves no sheet ${id}.`);
       }
       return code;
@@ -132,7 +132,7 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
     async composable(id) {
       const loaded = await client.pluginContainer.load(id);
       const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (code == null) {
+      if (typeof code !== "string") {
         throw new Error(`ufAstroRender: the browser project serves no composables ${id}.`);
       }
       return code;
@@ -253,7 +253,7 @@ function importedSheets(ssr: RunnableDevEnvironment, id: string): Array<string> 
 async function stylesheet(ssr: RunnableDevEnvironment, id: string): Promise<string> {
   const loaded = await ssr.pluginContainer.load(id);
   const code = typeof loaded === "object" ? loaded?.code : loaded;
-  if (code == null) {
+  if (typeof code !== "string") {
     throw new Error(`ufAstroRender: no plugin serves the sheet ${id}.`);
   }
   return code;

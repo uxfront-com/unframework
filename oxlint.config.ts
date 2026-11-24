@@ -38,14 +38,10 @@ export default defineConfig({
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
     "@nkzw/no-instanceof": "off",
-    "array-callback-return": "off",
-    eqeqeq: "off",
     "import/no-namespace": "off",
     "no-console": "off",
     "no-fallthrough": "off",
     "no-promise-executor-return": "off",
-    "no-regex-spaces": "off",
-    "no-useless-assignment": "off",
     "oxc/no-accumulating-spread": "off",
     "prefer-promise-reject-errors": "off",
     "quality/no-array-filter-map": "off",
@@ -163,6 +159,8 @@ export default defineConfig({
         // An assertion that the source's types don't need can be one an output's framework types
         // need, like an event's target, and it reaches every output as written.
         "typescript/no-unnecessary-type-assertion": "off",
+        // A target's fixtures compare with `null` as its output does, `!= null`.
+        eqeqeq: "off",
       },
     },
   ],

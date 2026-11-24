@@ -190,7 +190,8 @@ export const NODE_SCRIPT_FS: ScriptFs = {
 export function fillVueScriptFs(plugins: ReadonlyArray<NamedPlugin>): void {
   const api = vueApiOf(plugins);
   const options = api?.options;
-  if (!api || !options || options.script?.fs != null) {
+  const fs = options?.script?.fs;
+  if (!api || !options || (fs !== undefined && fs !== null)) {
     return;
   }
   api.options = { ...options, script: { ...options.script, fs: NODE_SCRIPT_FS } };

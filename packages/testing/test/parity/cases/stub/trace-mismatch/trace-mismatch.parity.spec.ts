@@ -41,8 +41,8 @@ describeTargets("stub/trace-mismatch", () => {
         /^cases\/stub\/trace-mismatch\/__expected__\/trace\.after-click\.json differs from this run's output:/,
       );
       // The status, its ARIA node and the payload: each line that differs.
-      expect(l9).toMatch(/^- +"  \\"2\\"",$/m);
-      expect(l9).toMatch(/^\+ +"  \\"1\\"",$/m);
+      expect(l9).toMatch(/^- +" {2}\\"2\\"",$/m);
+      expect(l9).toMatch(/^\+ +" {2}\\"1\\"",$/m);
       expect(l9).toMatch(/^- +"- status: \\"2\\"",$/m);
       expect(l9).toMatch(/^- +2$/m);
       expect(l9).toMatch(/^\+ +1$/m);

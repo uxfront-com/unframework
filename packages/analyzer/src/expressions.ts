@@ -3005,7 +3005,7 @@ class Walk {
     }
     let result: Kinds = UNKNOWN;
     let parameters: Array<Kinds> = [];
-    let calleeKinds: Kinds = UNKNOWN;
+    let calleeKinds: Kinds;
     if (callee.type === "MemberExpression") {
       const receiver = this.#receiverOf(callee);
       const name = callee.computed

@@ -22,6 +22,8 @@ function shape(nodes: ReadonlyArray<RenderNode>): string {
             .join(" | ")})`;
         case "For":
           return `for(${node.source.code}: ${shape([node.body])})`;
+        default:
+          return "";
       }
     })
     .join(" ");
