@@ -1,12 +1,8 @@
-import {
-  type CSSProperties,
-  type ReactNode,
-  type ReactPortal,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import { createPortal } from "react-dom";
+import { cx } from "./_unframework/cx";
+import { scopeAttributes } from "./_unframework/scopeAttributes";
+import { subscribeNothing } from "./_unframework/subscribeNothing";
+import { teleport } from "./_unframework/teleport";
+import { type CSSProperties, useRef, useState, useSyncExternalStore } from "react";
 
 interface Row {
   id: number;
@@ -105,39 +101,4 @@ export default function Panel({ className, style, ...attributes }: PanelAttribut
       </ul>
     </section>
   );
-}
-
-/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") {
-      if (part) names.push(part);
-    } else if (part && typeof part === "object") {
-      for (const [key, on] of Object.entries(part)) {
-        if (on) names.push(key);
-      }
-    }
-  }
-  return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
-
-/** Subscribes to nothing: whether the component has mounted never changes once it has. */
-function subscribeNothing(): () => void {
-  return () => {};
-}
-
-/** Portals `children` into the element `to` selects, or renders nothing where none does. */
-function teleport(children: ReactNode, to: string): ReactPortal | null {
-  const target = document.querySelector(to);
-  return target ? createPortal(children, target) : null;
 }

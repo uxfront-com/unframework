@@ -8,6 +8,8 @@ export { bindingForms, mergesWholeStyle, spreadStyleExpression } from "./binding
 export type { BindingForms } from "./binding-forms.ts";
 export { composableUse, compositionUse, requiredCapabilities } from "./capabilities.ts";
 export { scopeStylesheet } from "./scoper.ts";
+export { createHelperModules, HELPER_DIRECTORY } from "./helper-modules.ts";
+export type { HelperModules } from "./helper-modules.ts";
 export type { ScopedStylesheet } from "./scoper.ts";
 export { childStyles, scopeAttribute, scopeRoots, slottedAttribute } from "./scope.ts";
 export { eventCalls, handedControls, handlerControls, ownControls } from "./controls.ts";

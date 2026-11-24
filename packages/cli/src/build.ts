@@ -22,7 +22,8 @@ export const run: RunCommand = async (args, io) => {
     values["type-oracle"],
     values.package ? [PACKAGE_DIRECTORY] : [],
   );
-  const { status, diagnostics, sources, config, trees, root, authored, configFile } = compilation;
+  const { status, diagnostics, sources, config, trees, helpers, root, authored, configFile } =
+    compilation;
   io.stderr(printable(formatDiagnostics(diagnostics, sources)));
   // A failed build leaves the last good one in place: nothing is cleaned or written.
   if (status !== 0 || !config) return status;
@@ -36,14 +37,21 @@ export const run: RunCommand = async (args, io) => {
   for (const [target, files] of trees) {
     const directory = join(config.outDir, target);
     await rm(directory, { recursive: true, force: true });
-    for (const file of files) await writeOutput(directory, file, config.srcDir);
+    const shared = helpers.get(target) ?? new Set<string>();
+    for (const file of files)
+      await writeOutput(directory, file, config.srcDir, shared.has(file.path));
   }
   const failed = (await plan?.run()) ?? [];
   io.stderr(printable(formatDiagnostics(failed, sources)));
   return failed.length > 0 ? 1 : 0;
 };
 
-async function writeOutput(directory: string, file: OutputFile, srcDir: string): Promise<void> {
+async function writeOutput(
+  directory: string,
+  file: OutputFile,
+  srcDir: string,
+  helper: boolean,
+): Promise<void> {
   const path = join(directory, file.path);
   await mkdir(dirname(path), { recursive: true });
   if (!file.map || !JS_OR_TS.test(file.path)) {
@@ -54,10 +62,13 @@ async function writeOutput(directory: string, file: OutputFile, srcDir: string):
   await writeFile(path, `${file.contents}${end}//# sourceMappingURL=${basename(path)}.map\n`);
   // `compile()` names a source relative to a file beside it. Each tree mirrors srcDir, so the
   // source is at the file's own path there, and the map names it from where the file was written.
-  const sources = file.map.sources.map((source) =>
-    relative(dirname(path), join(srcDir, dirname(file.path), source))
-      .split(sep)
-      .join("/"),
-  );
+  // A helper module's map names the module itself, beside it: no source holds its text (ADR-0121).
+  const sources = helper
+    ? file.map.sources
+    : file.map.sources.map((source) =>
+        relative(dirname(path), join(srcDir, dirname(file.path), source))
+          .split(sep)
+          .join("/"),
+      );
   await writeFile(`${path}.map`, JSON.stringify({ ...file.map, sources }));
 }

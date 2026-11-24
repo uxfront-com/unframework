@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { composition } from "../../ir/test/composition-fixture.ts";
 import { builtinTargets, compile, TARGET_NAMES } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 describe("composition before M3's lanes", () => {
   // Vue emits all of composition (M3's core lane); every other target reports it until its own
@@ -34,7 +35,7 @@ describe("a contextual root without composition", () => {
       ["UF4001", "angular"],
     ]);
     for (const name of TARGET_NAMES) {
-      expect(result.outputs[name], name).toHaveLength(1);
+      expect(ownOutputs(result, name), name).toHaveLength(1);
     }
   });
 });

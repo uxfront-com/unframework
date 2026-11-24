@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { compile, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";
 import type { CompileResult, CompilerPlugin } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 const hello =
   'export default function Hello() {\n  return <p class="greeting">Hello, world!</p>;\n}\n';
@@ -32,7 +33,8 @@ describe("compile", () => {
         Object.entries(result.outputs).map(([t, files]) => [t, files.map((f) => f.path)]),
       ),
     ).toEqual({
-      react: ["Hello.tsx"],
+      // React shares its helpers in `_unframework/` (ADR-0121).
+      react: ["Hello.tsx", "_unframework/cx.ts", "_unframework/scopeAttributes.ts"],
       vue: ["Hello.vue"],
       svelte: ["Hello.svelte"],
       solid: ["Hello.tsx"],
@@ -41,6 +43,9 @@ describe("compile", () => {
       qwik: ["Hello.tsx"],
       astro: ["Hello.astro"],
     });
+    expect(result.helpers.react).toEqual(["_unframework/cx.ts", "_unframework/scopeAttributes.ts"]);
+    expect(result.helpers.vue).toEqual([]);
+    expect(result.owners.react).toEqual({ "Hello.tsx": "Hello" });
     expect(result.ir?.components.map((component) => component.name)).toEqual(["Hello"]);
   });
 
@@ -57,9 +62,10 @@ describe("compile", () => {
 
   it("is deterministic", async () => {
     const options = { filename: "Hello.uf.tsx", targets: TARGET_NAMES };
-    expect(JSON.stringify(await compile(hello, options))).toBe(
-      JSON.stringify(await compile(hello, options)),
-    );
+    const first = await compile(hello, options);
+    // Its React output shares helpers (ADR-0121), whose modules are part of what must not vary.
+    expect(first.helpers.react!.length).toBeGreaterThan(0);
+    expect(JSON.stringify(first)).toBe(JSON.stringify(await compile(hello, options)));
   });
 
   it("skips formatting when asked", async () => {
@@ -372,7 +378,7 @@ describe("misbehaving plugins", () => {
     expect(codesOf(result)).toEqual([["UF8001", null]]);
     expect(result.diagnostics[0]!.message).toContain(problem);
     for (const name of TARGET_NAMES) {
-      expect(result.outputs[name]!.map((file) => file.path)).toEqual([
+      expect(ownOutputs(result, name).map((file) => file.path)).toEqual([
         name === "angular" ? "hello.ts" : expect.stringMatching(/^Hello\./),
       ]);
     }
@@ -455,7 +461,7 @@ describe("misbehaving plugins", () => {
         'The "holey" plugin\'s ir hook returned invalid IR: /components/0/render/children/1 must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode, TeleportNode, TransitionNode',
       ],
     ]);
-    for (const name of TARGET_NAMES) expect(result.outputs[name]).toHaveLength(1);
+    for (const name of TARGET_NAMES) expect(ownOutputs(result, name)).toHaveLength(1);
   });
 
   // Capability diagnostics point at IR spans, and JSON and SARIF output refuse a location outside
@@ -483,7 +489,7 @@ describe("misbehaving plugins", () => {
         `The "astray" plugin's ir hook returned invalid IR: /file must stay "Hello.uf.tsx", the file analysed; /components/0/render/span must lie in the source (${hello.length} characters); /exports/0/span must lie in the source (${hello.length} characters)`,
       ],
     ]);
-    for (const name of TARGET_NAMES) expect(result.outputs[name]).toHaveLength(1);
+    for (const name of TARGET_NAMES) expect(ownOutputs(result, name)).toHaveLength(1);
   });
 
   // Targets copy an expression's code into seven outputs, and the IR cannot parse it: a plugin
@@ -522,7 +528,7 @@ describe("misbehaving plugins", () => {
     for (const name of TARGET_NAMES) {
       const contents = result.outputs[name]!.map((file) => file.contents).join("\n");
       expect(contents).not.toContain(`{{ ${code} }}`);
-      expect(result.outputs[name]).toHaveLength(1);
+      expect(ownOutputs(result, name)).toHaveLength(1);
     }
   });
 
@@ -802,6 +808,6 @@ describe("output paths", () => {
         'The "twin" plugin\'s ir hook returned invalid IR: /components/1/name must differ from "Hello" by more than case, as each names a file',
       ],
     ]);
-    for (const name of TARGET_NAMES) expect(result.outputs[name]).toHaveLength(1);
+    for (const name of TARGET_NAMES) expect(ownOutputs(result, name)).toHaveLength(1);
   });
 });

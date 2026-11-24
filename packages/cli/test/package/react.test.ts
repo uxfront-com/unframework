@@ -30,6 +30,9 @@ describe("build --package: React", () => {
         "react/Card.uf.tsx.css",
         "react/CardTitle.d.ts",
         "react/CardTitle.js",
+        // The shared helper modules the components import (ADR-0121), which no entry exports.
+        "react/_unframework/cx.js",
+        "react/_unframework/scopeAttributes.js",
         "react/index.d.ts",
         "react/index.js",
         "react/shared/format.js",
@@ -41,6 +44,17 @@ describe("build --package: React", () => {
     expect(files["react/Card.js"]).toContain('from "react/jsx-runtime"');
     expect(files["react/Card.js"]).toContain('import "./Card.uf.tsx.css"');
     expect(files["react/Card.js"]).toContain('from "./shared/format.js"');
+    // Each component imports the helpers from the package's own `_unframework/`, once each.
+    for (const component of ["react/Card.js", "react/CardTitle.js"]) {
+      expect(files[component]).toContain('from "./_unframework/scopeAttributes.js"');
+      expect(files[component]).not.toMatch(/function scopeAttributes\b/);
+    }
+    expect(files["react/_unframework/scopeAttributes.js"]).toMatch(
+      /^export \{ scopeAttributes \};$/m,
+    );
+    expect(JSON.stringify(JSON.parse(files["package.json"] ?? "").exports)).not.toContain(
+      "_unframework",
+    );
     expect(JSON.parse(files["package.json"] ?? "").exports["./react"]).toEqual({
       types: "./react/index.d.ts",
       default: "./react/index.js",

@@ -1,3 +1,4 @@
+import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { Labelled } from "./types";
 import type { CSSProperties } from "react";
 import type { TimeInterval } from "rxjs";
@@ -22,13 +23,4 @@ export default function Status({
       {label}: {value} after {interval} ms
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

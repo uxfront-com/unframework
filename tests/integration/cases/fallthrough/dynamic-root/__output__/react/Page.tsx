@@ -1,5 +1,7 @@
 import Base from "./Base";
 import Primary from "./Primary";
+import { cx } from "./_unframework/cx";
+import { scopeAttributes } from "./_unframework/scopeAttributes";
 import { type CSSProperties, useRef, useState } from "react";
 import "./Page.uf.tsx.css";
 
@@ -92,28 +94,4 @@ export default function Page({ className, style, ...attributes }: PageAttributes
       <output data-uf-64cf7c28="">{pressed}</output>
     </section>
   );
-}
-
-/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") {
-      if (part) names.push(part);
-    } else if (part && typeof part === "object") {
-      for (const [key, on] of Object.entries(part)) {
-        if (on) names.push(key);
-      }
-    }
-  }
-  return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

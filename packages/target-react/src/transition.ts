@@ -1,4 +1,4 @@
-// `<Transition name appear>` on React (ADR-0100): React has no transition primitive, so an inline
+// `<Transition name appear>` on React (ADR-0100): React has no transition primitive, so a
 // component, `Transition`, runs Vue's classes. Each branch of the child's conditional takes a key
 // of its own, so a change of branch is a change of key: the helper keeps the old element, frozen at
 // its last render, beside the new one until its leave ends. It owns the classes in state, since

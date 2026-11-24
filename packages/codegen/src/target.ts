@@ -337,7 +337,10 @@ export type CapabilityCell =
   | { support: "native" }
   | {
       support: "emulated";
-      /** The name of the inline helper the target emits. */
+      /**
+       * The name of the helper the target emits: shared in the output tree's `_unframework/`
+       * directory, or printed inline where it can't be shared (ADR-0121).
+       */
       helper: string;
       note?: string;
     }
@@ -379,6 +382,18 @@ export interface EmitContext {
   options: unknown;
   /** Reports a diagnostic; the compiler sets its file and target. */
   report(diagnostic: Omit<Diagnostic, "file" | "target">): void;
+  /**
+   * Puts a helper in its shared module (ADR-0121), `_unframework/<file>` at the root of the output
+   * tree, and gives the relative path the output file at `from` imports it by, with its extension
+   * (`./_unframework/cx.ts`), which the target drops where its imports do. `file` is a file name
+   * the target gives (P6), with no directory, and the same `file` must always get the same `contents`: a helper's text depends
+   * only on the target and the helper, never on the component. `from` is the path of an output file
+   * the target emits. A helper module that imports another imports it as its sibling
+   * (`./queueHook`), and the target puts that one too. A target that never calls it emits every
+   * helper inline. `compile()` always passes it. A caller that emits without `compile()` may leave
+   * it out, and a target then prints each helper inline, in the output that uses it.
+   */
+  helper?: (file: string, contents: string, from: string) => string;
 }
 
 /** A compile target: one framework, at one major version. */

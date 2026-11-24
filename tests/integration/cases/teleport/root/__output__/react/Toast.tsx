@@ -1,5 +1,6 @@
-import { type ReactNode, type ReactPortal, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { subscribeNothing } from "./_unframework/subscribeNothing";
+import { teleport } from "./_unframework/teleport";
+import { useSyncExternalStore } from "react";
 import "./Toast.uf.tsx.css";
 
 export interface ToastProps {
@@ -25,15 +26,4 @@ export default function Toast({ message }: ToastProps) {
         : null}
     </>
   );
-}
-
-/** Subscribes to nothing: whether the component has mounted never changes once it has. */
-function subscribeNothing(): () => void {
-  return () => {};
-}
-
-/** Portals `children` into the element `to` selects, or renders nothing where none does. */
-function teleport(children: ReactNode, to: string): ReactPortal | null {
-  const target = document.querySelector(to);
-  return target ? createPortal(children, target) : null;
 }

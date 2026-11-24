@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 
 import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
 import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
-import type { CompileResult, TargetName } from "@unframework.dev/compiler";
+import type { CompileResult, OutputFile, TargetName } from "@unframework.dev/compiler";
 import type { ElementNode, RenderNode, UfModule } from "@unframework.dev/ir";
 import type { ProjectKind } from "@unframework.dev/testing/node";
 import { describe, expect, it } from "vitest";
@@ -1135,10 +1135,13 @@ describe("canaries", () => {
     const [before] = clean.outputs.react!;
     const [after] = corrupted.outputs.react!;
     expect(after!.contents.length).toBeGreaterThan(before!.contents.length * 1.9);
-    const size = (contents: string, path: string) => bundleSize([[{ path, contents }]]);
+    // Every file of the compile, its shared helper modules included (ADR-0121), as L15 bundles
+    // a case's tree.
+    const size = (files: readonly OutputFile[]) =>
+      bundleSize(files.map((file) => [{ path: `/case/${file.path}`, contents: file.contents }]));
     const [grown, base] = await Promise.all([
-      size(after!.contents, "/case/a.tsx"),
-      size(before!.contents, "/case/a.tsx"),
+      size(corrupted.outputs.react!),
+      size(clean.outputs.react!),
     ]);
     expect(grown.raw).toBeGreaterThan(base.raw * 1.05);
     expect(grown.gzip).toBeGreaterThan(base.gzip * 1.05);
