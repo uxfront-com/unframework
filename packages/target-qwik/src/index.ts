@@ -1015,8 +1015,10 @@ function compositionProps(plan: SetupPlan): Array<[prop: string, local: string]>
     found.push([slotProp(slot), local]);
   }
   if (composition.fallthrough) {
-    found.push(["class", composition.fallthrough.className]);
-    found.push(["style", composition.fallthrough.style]);
+    found.push(
+      ["class", composition.fallthrough.className],
+      ["style", composition.fallthrough.style],
+    );
   }
   if (composition.expose) {
     found.push(["ref", composition.expose.ref]);

@@ -1769,8 +1769,10 @@ export function printMarkup(
         const out: Array<string> = [];
         let after = "";
         item.segments.forEach((segment, index) => {
-          out.push(`${pad}${after}${segment.open}${segment.parentheses ? "(" : ""}`);
-          out.push(...joinRuns(runs[index]!, segment.children, pad + indent));
+          out.push(
+            `${pad}${after}${segment.open}${segment.parentheses ? "(" : ""}`,
+            ...joinRuns(runs[index]!, segment.children, pad + indent),
+          );
           after = segment.parentheses ? ")" : "";
         });
         out.push(`${pad}${after}${item.close}`);

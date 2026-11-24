@@ -170,19 +170,21 @@ export function untrackEdits(fn: FunctionCode, options: UntrackOptions): Array<E
       edits.push({ at: start, end: start + keyword.length, text: "", depth, closing: false });
       prefix = "async ";
     }
-    edits.push({
-      at: each.region.start,
-      text: `${options.untrack()}(${prefix}() => `,
-      depth,
-      closing: false,
-    });
-    edits.push({
-      at: each.region.end,
-      text: ")",
-      depth,
-      closing: true,
-      opens: each.region.start,
-    });
+    edits.push(
+      {
+        at: each.region.start,
+        text: `${options.untrack()}(${prefix}() => `,
+        depth,
+        closing: false,
+      },
+      {
+        at: each.region.end,
+        text: ")",
+        depth,
+        closing: true,
+        opens: each.region.start,
+      },
+    );
   }
   return edits.map((edit) => ({
     ...edit,

@@ -1634,8 +1634,8 @@ class ScriptWriter {
         for (const { key } of this.#events.values()) {
           unread.push(`${key}: ${scope.claim(`_${key}`)}`);
         }
-        pieces.push(`let ${pattern}: ${type!} = $props();`);
         pieces.push(
+          `let ${pattern}: ${type!} = $props();`,
           `let { ${[...unread, `...${scopeFrom(rest)}`].join(", ")} } = $derived(${local});`,
         );
         return pieces;

@@ -312,11 +312,13 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   if (mounted !== undefined) {
     const ref = imports.add("vue", "ref");
     const onMounted = imports.add("vue", "onMounted");
-    statements.push({ code: `const ${mounted} = ${ref}(false);`, layout: "line" });
-    statements.push({
-      code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
-      layout: "block",
-    });
+    statements.push(
+      { code: `const ${mounted} = ${ref}(false);`, layout: "line" },
+      {
+        code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
+        layout: "block",
+      },
+    );
   }
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.

@@ -280,7 +280,8 @@ ${stop}
     : singles
       ? `\n  // An array of sources changes when one of its values does: one source is an array of one.\n  const sources = typeof source === "function" ? [source] : source;`
       : "";
-  parts.push(`${doc}
+  parts.push(
+    `${doc}
 ${overloads.join("\n")}
 function ${name}(
   ${parameter},
@@ -312,8 +313,9 @@ ${stop}
     const register = (cleanup: () => void) => cleanups.push(cleanup);
 ${callback}
   }
-}`);
-  parts.push(...effect);
+}`,
+    ...effect,
+  );
   if (arrays) {
     parts.push(
       `/** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */

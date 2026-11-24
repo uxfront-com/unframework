@@ -77,7 +77,6 @@ export default defineConfig({
     "unicorn/no-magic-array-flat-depth": "off",
     "unicorn/prefer-array-flat-map": "off",
     "unicorn/prefer-native-coercion-functions": "off",
-    "unicorn/prefer-single-call": "off",
     "unicorn/prefer-string-raw": "off",
     "unicorn/prefer-string-replace-all": "off",
     "unicorn/prefer-structured-clone": "off",

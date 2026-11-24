@@ -652,12 +652,14 @@ function printModel(plan: ReactPlan, item: ModelItem): Printed {
     );
   }
   if (model.mirror) {
-    printed.push(["body", `const ${model.mirror} = ${hook("useRef")}(${model.name});`]);
-    printed.push([
-      "body",
-      `${hook("useLayoutEffect")}(() => {\n${model.mirror}.current = ${model.name};\n});`,
-      "mirror",
-    ]);
+    printed.push(
+      ["body", `const ${model.mirror} = ${hook("useRef")}(${model.name});`],
+      [
+        "body",
+        `${hook("useLayoutEffect")}(() => {\n${model.mirror}.current = ${model.name};\n});`,
+        "mirror",
+      ],
+    );
   }
   return printed;
 }
@@ -870,8 +872,10 @@ function printWatch(plan: ReactPlan, code: ReactCode, item: WatchItem): Printed 
   const deps = `, [${[...new Set([...values, ...(settle?.deps ?? [])])].join(", ")}]`;
   if (cleanupsRef) {
     lines.push(...gatedCall(event, [value, local.previous, ""], cleanupsRef, local));
-    printed.push(["body", `${hook("useEffect")}(() => {\n${lines.join("\n")}\n}${deps});`]);
-    printed.push(["body", unmountEffect(plan, [], cleanupsRef, local)]);
+    printed.push(
+      ["body", `${hook("useEffect")}(() => {\n${lines.join("\n")}\n}${deps});`],
+      ["body", unmountEffect(plan, [], cleanupsRef, local)],
+    );
     return printed;
   }
   const args = [

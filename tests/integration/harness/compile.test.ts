@@ -357,8 +357,8 @@ async function checkOutputs(
   );
 
   const { files, problems: collisions } = caseOutputs(joined, target);
-  problems.push(...collisions);
   problems.push(
+    ...collisions,
     ...moduleCopyProblems(
       target,
       files,
@@ -381,8 +381,10 @@ async function checkOutputs(
     if (different) {
       problems.push(different);
     }
-    problems.push(...(await formattingProblems(target, first.outputs[target] ?? [])));
-    problems.push(...stylesheetProblems(target, first.outputs[target] ?? []));
+    problems.push(
+      ...(await formattingProblems(target, first.outputs[target] ?? [])),
+      ...stylesheetProblems(target, first.outputs[target] ?? []),
+    );
   }
 
   if (problems.length) {
