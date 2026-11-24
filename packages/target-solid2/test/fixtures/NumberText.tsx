@@ -35,17 +35,11 @@ function modelText<T extends string | number | null | undefined>(
     () => value() ?? "",
     (next) => {
       const field = bound;
-      if (!field) {
-        return;
-      }
+      if (!field) return;
       const shown = modifiers.number && !/^0\d/.test(field.value) ? cast(field.value) : field.value;
-      if (shown === next) {
-        return;
-      }
+      if (shown === next) return;
       const typing = document.activeElement === field && field.type !== "range";
-      if (typing && modifiers.trim && field.value.trim() === next) {
-        return;
-      }
+      if (typing && modifiers.trim && field.value.trim() === next) return;
       field.value = String(next);
     },
   );
@@ -75,15 +69,11 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   // A version, never the value: `createSignal` would take a function for a computation.
   const [tracked, notify] = createSignal(0, { ownedWrite: true });
   function read(): T | undefined {
-    if (getObserver()) {
-      tracked();
-    }
+    if (getObserver()) tracked();
     return current;
   }
   function write(value: T | undefined): void {
-    if (Object.is(value, current)) {
-      return;
-    }
+    if (Object.is(value, current)) return;
     current = value;
     notify((version) => version + 1);
   }

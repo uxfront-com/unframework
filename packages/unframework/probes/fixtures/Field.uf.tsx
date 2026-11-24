@@ -23,13 +23,11 @@ export function Field({ label, tabs }: FieldProps) {
   const text = ref("");
   const count = ref(0);
   const agreed = ref(false);
-  const picked = ref<Array<string>>([]);
+  const picked = ref<string[]>([]);
   const input = useTemplateRef<HTMLInputElement>();
   const parent = inject(TabsKey);
   const fallback = inject(TabsKey, tabs ?? { active: ref("a"), select: () => {} });
-  if (tabs) {
-    provide(TabsKey, tabs);
-  }
+  if (tabs) provide(TabsKey, tabs);
 
   watch(text, (value, previous, onCleanup) => {
     const handle = setTimeout(() => console.log(value.toUpperCase(), previous.length), 100);

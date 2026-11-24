@@ -10,7 +10,7 @@ interface User extends Option {
 }
 
 export function GenericConsumers() {
-  const users = ref<Array<User>>([]);
+  const users = ref<User[]>([]);
   const picked = ref<User>();
   const email = ref("");
 
@@ -37,13 +37,7 @@ export function GenericConsumers() {
 }
 
 // A generic component written beside its consumer, with a constrained and defaulted parameter.
-function Table<Row extends Option = Option>({
-  rows,
-  current,
-}: {
-  rows: Array<Row>;
-  current?: Row;
-}) {
+function Table<Row extends Option = Option>({ rows, current }: { rows: Row[]; current?: Row }) {
   return (
     <table>
       <tbody>

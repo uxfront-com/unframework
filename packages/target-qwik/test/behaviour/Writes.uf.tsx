@@ -7,7 +7,7 @@ export default function Writes() {
 
   const count = ref(0);
   const doubled = computed(() => count.value * 2);
-  const phases = ref<Array<string>>([]);
+  const phases = ref<string[]>([]);
 
   function addTen() {
     count.value += 10;

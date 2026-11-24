@@ -12,7 +12,7 @@
 
   let { class: className, style, ref = $bindable(null), onclick, ...attributes }: Props = $props();
 
-  let log = $state.raw<Array<string>>([]);
+  let log = $state.raw<string[]>([]);
   let draft = $state("");
 
   function record(line: string) {
@@ -30,7 +30,7 @@
   function once<E extends Event>(handler: (event: E) => unknown): (event: E) => void {
     let ran = false;
     return (event) => {
-      if (ran) {return;}
+      if (ran) return;
       ran = true;
       handler(event);
     };

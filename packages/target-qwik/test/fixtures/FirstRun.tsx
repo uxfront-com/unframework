@@ -7,7 +7,7 @@ import { appended } from "./appended.ts";
 // click handler that prevents the default in its body; and the controls Qwik runs at dispatch, a
 // `sync$` handler and a `preventdefault:click` attribute (test/loads.browser.test.ts).
 export default component$(() => {
-  const log = useSignal<Array<string>>([]);
+  const log = useSignal<string[]>([]);
   return (
     <div>
       <label>

@@ -6,7 +6,7 @@ export interface Item {
 }
 
 export interface ListProps {
-  items: Array<Item>;
+  items: Item[];
 }
 
 export default function List({ items }: ListProps) {

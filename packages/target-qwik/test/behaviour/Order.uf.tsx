@@ -10,7 +10,7 @@ import { defineEmits, ref } from "@uxfront/unframework";
 export default function Order() {
   const emit = defineEmits<{ welcomed: []; submitted: [count: number] }>();
 
-  const log = ref<Array<string>>([]);
+  const log = ref<string[]>([]);
   const selected = ref("none");
   const hits = ref(0);
   const count = ref(0);

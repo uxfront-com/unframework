@@ -12,7 +12,7 @@ export default function OrderSummary({ price, taxRate }: OrderSummaryProps) {
   const tax = computed(() => Math.round(subtotal.value * taxRate));
   const total = computed(() => subtotal.value + tax.value);
   const tier = computed(() => {
-    if (total.value >= 10_000) return "bulk";
+    if (total.value >= 10000) return "bulk";
     return "standard";
   });
 

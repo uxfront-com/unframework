@@ -37,8 +37,8 @@ export default function Runs(
   const [low, setLow] = createState(0);
   const [high, setHigh] = createState(10);
   const [query, setQuery] = createState("");
-  const [results, setResults] = createState<Array<string>>([]);
-  const [notes, setNotes] = createState<Array<string>>([]);
+  const [results, setResults] = createState<string[]>([]);
+  const [notes, setNotes] = createState<string[]>([]);
   let list: HTMLUListElement | null = null;
 
   createWatcher([low, high], ([a, b]) => {
@@ -90,7 +90,7 @@ export default function Runs(
     );
   }
 
-  function update(change: (entries: Array<string>) => Array<string>) {
+  function update(change: (entries: string[]) => string[]) {
     setNotes(change(notes()));
   }
 
@@ -148,7 +148,7 @@ export default function Runs(
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function KeyedFor<T>(props: {
-  each: ReadonlyArray<T>;
+  each: readonly T[];
   by: (item: T, index: number) => unknown;
   children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
@@ -198,9 +198,7 @@ function queueWatcher(queue: Set<() => void>, run: () => void): void {
 
 /** Queues the flush of the watchers, once, in a microtask. */
 function requestWatcherFlush(): void {
-  if (flushQueued) {
-    return;
-  }
+  if (flushQueued) return;
   flushQueued = true;
   queueMicrotask(() => {
     try {
@@ -215,9 +213,7 @@ function requestWatcherFlush(): void {
           queuedWatchers.post.delete(watcher);
           watcher();
           flush();
-          if (queuedWatchers.pre.size) {
-            break;
-          }
+          if (queuedWatchers.pre.size) break;
         }
       } while (queuedWatchers.pre.size || queuedWatchers.post.size);
     } finally {
@@ -237,7 +233,7 @@ function createWatcher<T>(
   callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
   options?: { flush: "post" },
 ): void;
-function createWatcher<const S extends ReadonlyArray<() => unknown>>(
+function createWatcher<const S extends readonly (() => unknown)[]>(
   sources: S,
   callback: (
     values: WatchedValues<S>,
@@ -247,13 +243,13 @@ function createWatcher<const S extends ReadonlyArray<() => unknown>>(
   options?: { flush: "post" },
 ): void;
 function createWatcher(
-  source: (() => unknown) | ReadonlyArray<() => unknown>,
+  source: (() => unknown) | readonly (() => unknown)[],
   callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
   options?: { flush: "post" },
 ): void {
   // An array of sources changes when one of its values does: one source is an array of one.
   const sources = typeof source === "function" ? [source] : source;
-  const cleanups: Array<() => void> = [];
+  const cleanups: (() => void)[] = [];
   const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;
   const [track, dispose] = runWithOwner(null, () =>
     createRoot((stop) => [createReaction(() => queueWatcher(queue, run)), stop] as const),
@@ -261,14 +257,12 @@ function createWatcher(
   let last = read();
   onSettled(() => () => {
     queue.delete(run);
-    for (const cleanup of cleanups.splice(0)) {
-      cleanup();
-    }
+    for (const cleanup of cleanups.splice(0)) cleanup();
     dispose();
   });
 
-  function read(): Array<unknown> {
-    let values: Array<unknown> = [];
+  function read(): unknown[] {
+    let values: unknown[] = [];
     track(() => {
       values = sources.map((each) => each());
     });
@@ -277,18 +271,14 @@ function createWatcher(
 
   function run(): void {
     const values = read();
-    if (values.every((value, index) => Object.is(value, last[index]))) {
-      return;
-    }
+    if (values.every((value, index) => Object.is(value, last[index]))) return;
     const previous = last;
     last = values;
     call(values, previous);
   }
 
-  function call(values: Array<unknown>, previous: Array<unknown> | undefined): void {
-    for (const cleanup of cleanups.splice(0)) {
-      cleanup();
-    }
+  function call(values: unknown[], previous: unknown[] | undefined): void {
+    for (const cleanup of cleanups.splice(0)) cleanup();
     const register = (cleanup: () => void) => cleanups.push(cleanup);
     if (typeof source === "function") {
       callback(values[0] as never, previous?.[0] as never, register);
@@ -304,10 +294,10 @@ function createWatcher(
  * registrar, whose cleanups run before its next run and when the component is removed.
  */
 function createWatchEffect(
-  sources: ReadonlyArray<() => unknown>,
+  sources: readonly (() => unknown)[],
   effect: (onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  const cleanups: Array<() => void> = [];
+  const cleanups: (() => void)[] = [];
   const [track, dispose] = runWithOwner(null, () =>
     createRoot(
       (stop) => [createReaction(() => queueWatcher(queuedWatchers.post, run)), stop] as const,
@@ -317,22 +307,16 @@ function createWatchEffect(
     run();
     return () => {
       queuedWatchers.post.delete(run);
-      for (const cleanup of cleanups.splice(0)) {
-        cleanup();
-      }
+      for (const cleanup of cleanups.splice(0)) cleanup();
       dispose();
     };
   });
 
   function run(): void {
     track(() => {
-      for (const source of sources) {
-        source();
-      }
+      for (const source of sources) source();
     });
-    for (const cleanup of cleanups.splice(0)) {
-      cleanup();
-    }
+    for (const cleanup of cleanups.splice(0)) cleanup();
     effect((cleanup) => cleanups.push(cleanup));
   }
 }
@@ -357,15 +341,11 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   // A version, never the value: `createSignal` would take a function for a computation.
   const [tracked, notify] = createSignal(0, { ownedWrite: true });
   function read(): T | undefined {
-    if (getObserver()) {
-      tracked();
-    }
+    if (getObserver()) tracked();
     return current;
   }
   function write(value: T | undefined): void {
-    if (Object.is(value, current)) {
-      return;
-    }
+    if (Object.is(value, current)) return;
     current = value;
     notify((version) => version + 1);
     requestWatcherFlush();

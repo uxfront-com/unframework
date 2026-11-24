@@ -3,7 +3,7 @@ import { defineEmits, defineModel, defineSlots, type Element } from "@uxfront/un
 import type { Option } from "./types.ts";
 
 export interface SelectProps<T extends Option> {
-  options: Array<T>;
+  options: T[];
   label?: string;
 }
 

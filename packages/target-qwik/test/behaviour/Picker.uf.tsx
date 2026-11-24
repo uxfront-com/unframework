@@ -7,7 +7,7 @@ export interface Choice {
 
 // A list's handler passes its event to a function, whose `preventDefault()` and
 // `event.currentTarget` must still act as the event is dispatched and read its element.
-export default function Picker({ choices }: { choices: Array<Choice> }) {
+export default function Picker({ choices }: { choices: Choice[] }) {
   const emit = defineEmits<{ picked: [id: string, text: string] }>();
 
   const chosen = ref("none");

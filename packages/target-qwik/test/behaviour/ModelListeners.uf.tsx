@@ -5,7 +5,7 @@ import { ref } from "@uxfront/unframework";
 export default function ModelListeners() {
   const text = ref("");
   const on = ref(false);
-  const seen = ref<Array<string>>([]);
+  const seen = ref<string[]>([]);
   return (
     <div>
       <input

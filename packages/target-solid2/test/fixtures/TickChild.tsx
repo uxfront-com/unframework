@@ -38,9 +38,7 @@ function queueWatcher(run: () => void): void {
 
 /** Queues the flush of the watchers, once, in a microtask. */
 function requestWatcherFlush(): void {
-  if (flushQueued) {
-    return;
-  }
+  if (flushQueued) return;
   flushQueued = true;
   queueMicrotask(() => {
     try {
@@ -66,16 +64,14 @@ function createWatcher<T>(
   source: () => T,
   callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  const cleanups: Array<() => void> = [];
+  const cleanups: (() => void)[] = [];
   const [track, dispose] = runWithOwner(null, () =>
     createRoot((stop) => [createReaction(() => queueWatcher(run)), stop] as const),
   );
   let last = read();
   onSettled(() => () => {
     queuedWatchers.delete(run);
-    for (const cleanup of cleanups.splice(0)) {
-      cleanup();
-    }
+    for (const cleanup of cleanups.splice(0)) cleanup();
     dispose();
   });
 
@@ -89,14 +85,10 @@ function createWatcher<T>(
 
   function run(): void {
     const value = read();
-    if (Object.is(value, last)) {
-      return;
-    }
+    if (Object.is(value, last)) return;
     const previous = last;
     last = value;
-    for (const cleanup of cleanups.splice(0)) {
-      cleanup();
-    }
+    for (const cleanup of cleanups.splice(0)) cleanup();
     callback(value, previous, (cleanup) => cleanups.push(cleanup));
   }
 }

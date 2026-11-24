@@ -6,7 +6,7 @@ export interface RowSlotsSlots {
 }
 
 export default function RowSlots(
-  props: { items: Array<string> } & RowSlotsSlots &
+  props: { items: string[] } & RowSlotsSlots &
     Omit<ComponentProps<"ul">, "items" | "badge" | "class" | "style"> & {
       class?: string;
       style?: JSX.CSSProperties;
@@ -35,7 +35,7 @@ export default function RowSlots(
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function KeyedFor<T>(props: {
-  each: ReadonlyArray<T>;
+  each: readonly T[];
   by: (item: T, index: number) => unknown;
   children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {

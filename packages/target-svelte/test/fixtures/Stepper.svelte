@@ -23,11 +23,11 @@
 
   const limits = { low: 0, high: 10 };
   let count = $state(untrack(() => initial));
-  let history = $state.raw<Array<number>>([]);
+  let history = $state.raw<number[]>([]);
   const doubled = $derived(count * 2);
 
   const parity = $derived.by(() => {
-    if (count % 2 === 0) {return "even";}
+    if (count % 2 === 0) return "even";
     return "odd";
   });
 

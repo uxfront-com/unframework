@@ -13,8 +13,8 @@ export interface CardProps {
   count?: number;
   pill?: boolean;
   level?: 1 | 2 | 3;
-  tags?: Array<string>;
-  finishes: ReadonlyArray<Finish>;
+  tags?: string[];
+  finishes: readonly Finish[];
   size: { width: number; unit: "cm" | "in" };
   note?: string | null;
 }

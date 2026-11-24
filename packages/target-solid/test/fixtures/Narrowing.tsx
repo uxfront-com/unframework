@@ -17,7 +17,7 @@ interface Account {
   admin?: boolean;
   colour?: string;
   age?: number;
-  tags: Array<string>;
+  tags: string[];
   address?: { city: string };
   link?: { href: string; lang?: string };
 }
@@ -54,9 +54,9 @@ interface Attrs {
 export interface NarrowingProps {
   user?: Account;
   note?: string | null;
-  rows: Array<Account | null>;
+  rows: (Account | null)[];
   ready: boolean;
-  places: Array<string>;
+  places: string[];
   count?: number;
   value: string | number | null;
   shape: Circle | Square;
@@ -309,7 +309,7 @@ export default function Narrowing(
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function KeyedFor<T>(props: {
-  each: ReadonlyArray<T>;
+  each: readonly T[];
   by: (item: T, index: number) => unknown;
   children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {

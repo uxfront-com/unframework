@@ -2,7 +2,7 @@ import type { ComponentProps, JSX } from "@solidjs/web";
 import { createSignal, getObserver, omit, onCleanup } from "solid-js";
 
 export interface ListenersEvents {
-  onLogged?: (entries: Array<string>) => void;
+  onLogged?: (entries: string[]) => void;
 }
 
 export default function Listeners(
@@ -14,7 +14,7 @@ export default function Listeners(
 ) {
   const others = omit(props, "onLogged");
 
-  const [log, setLog] = createState<Array<string>>([]);
+  const [log, setLog] = createState<string[]>([]);
   const [volume, setVolume] = createState(0);
   let field: HTMLInputElement | null = null;
 
@@ -139,15 +139,11 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   // A version, never the value: `createSignal` would take a function for a computation.
   const [tracked, notify] = createSignal(0, { ownedWrite: true });
   function read(): T | undefined {
-    if (getObserver()) {
-      tracked();
-    }
+    if (getObserver()) tracked();
     return current;
   }
   function write(value: T | undefined): void {
-    if (Object.is(value, current)) {
-      return;
-    }
+    if (Object.is(value, current)) return;
     current = value;
     notify((version) => version + 1);
   }

@@ -39,13 +39,9 @@ function modelText<T extends string | number | null | undefined>(
     createRenderEffect(() => {
       const next = value() ?? "";
       const shown = modifiers.number && !/^0\d/.test(field.value) ? cast(field.value) : field.value;
-      if (shown === next) {
-        return;
-      }
+      if (shown === next) return;
       const typing = document.activeElement === field && field.type !== "range";
-      if (typing && modifiers.trim && field.value.trim() === next) {
-        return;
-      }
+      if (typing && modifiers.trim && field.value.trim() === next) return;
       field.value = String(next);
     });
   };

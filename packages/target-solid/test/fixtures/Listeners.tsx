@@ -1,7 +1,7 @@
 import { type ComponentProps, type JSX, createSignal, onCleanup, splitProps } from "solid-js";
 
 export interface ListenersEvents {
-  onLogged?: (entries: Array<string>) => void;
+  onLogged?: (entries: string[]) => void;
 }
 
 export default function Listeners(
@@ -9,7 +9,7 @@ export default function Listeners(
 ) {
   const [, others] = splitProps(props, ["onLogged"]);
 
-  const [log, setLog] = createSignal<Array<string>>([]);
+  const [log, setLog] = createSignal<string[]>([]);
   const [volume, setVolume] = createSignal(0);
   let field: HTMLInputElement | null = null;
 

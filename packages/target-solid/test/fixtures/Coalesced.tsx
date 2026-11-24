@@ -15,9 +15,7 @@ export interface CoalescedEvents {
 
 function parse(text: string): number {
   const value = Number(text);
-  if (Number.isNaN(value)) {
-    throw new Error("Not a number");
-  }
+  if (Number.isNaN(value)) throw new Error("Not a number");
   return value;
 }
 
@@ -31,7 +29,7 @@ export default function Coalesced(
   const [busy, setBusy] = createSignal(false);
   const [name, setName] = createSignal("");
   const [input, setInput] = createSignal("x");
-  const [cached, setCached] = createSignal<Array<number> | null>(null);
+  const [cached, setCached] = createSignal<number[] | null>(null);
 
   createWatcher([step, count, busy], ([nextStep, nextCount, nextBusy]) => {
     props.onState?.(nextStep, nextCount, nextBusy);
@@ -60,9 +58,7 @@ export default function Coalesced(
 
   async function save() {
     setStep("");
-    if (!name()) {
-      return;
-    }
+    if (!name()) return;
     await persist(name());
     props.onSaved?.(name());
   }
@@ -211,9 +207,7 @@ let flushQueued = false;
  */
 function queueWatcher(run: () => void): void {
   queuedWatchers.add(run);
-  if (flushQueued) {
-    return;
-  }
+  if (flushQueued) return;
   flushQueued = true;
   queueMicrotask(() => {
     try {
@@ -233,7 +227,7 @@ function queueWatcher(run: () => void): void {
  * callback and a cleanup registrar, whose cleanups run before the next callback and when the
  * component is removed.
  */
-function createWatcher<const S extends ReadonlyArray<() => unknown>>(
+function createWatcher<const S extends readonly (() => unknown)[]>(
   sources: S,
   callback: (
     values: WatchedValues<S>,
@@ -242,23 +236,21 @@ function createWatcher<const S extends ReadonlyArray<() => unknown>>(
   ) => unknown,
 ): void;
 function createWatcher(
-  sources: ReadonlyArray<() => unknown>,
+  sources: readonly (() => unknown)[],
   callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  const cleanups: Array<() => void> = [];
+  const cleanups: (() => void)[] = [];
   const track = createReaction(() => queueWatcher(run));
   let last = read();
   onMount(() =>
     onCleanup(() => {
       queuedWatchers.delete(run);
-      for (const cleanup of cleanups.splice(0)) {
-        cleanup();
-      }
+      for (const cleanup of cleanups.splice(0)) cleanup();
     }),
   );
 
-  function read(): Array<unknown> {
-    let values: Array<unknown> = [];
+  function read(): unknown[] {
+    let values: unknown[] = [];
     track(() => {
       values = sources.map((each) => each());
     });
@@ -267,18 +259,14 @@ function createWatcher(
 
   function run(): void {
     const values = read();
-    if (values.every((value, index) => Object.is(value, last[index]))) {
-      return;
-    }
+    if (values.every((value, index) => Object.is(value, last[index]))) return;
     const previous = last;
     last = values;
     call(values, previous);
   }
 
-  function call(values: Array<unknown>, previous: Array<unknown> | undefined): void {
-    for (const cleanup of cleanups.splice(0)) {
-      cleanup();
-    }
+  function call(values: unknown[], previous: unknown[] | undefined): void {
+    for (const cleanup of cleanups.splice(0)) cleanup();
     const register = (cleanup: () => void) => cleanups.push(cleanup);
     callback(values as never, (previous ?? []) as never, register);
   }

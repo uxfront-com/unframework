@@ -7,7 +7,7 @@ import Counter from "../fixtures/Counter.uf.tsx";
 export function Elements({ href, active }: { href?: string; active: boolean }) {
   const text = ref("");
   const amount = ref(0);
-  const checked = ref<Array<string>>([]);
+  const checked = ref<string[]>([]);
   const picked = ref("a");
   const anyElement = useTemplateRef<HTMLElement>();
   const untyped = useTemplateRef();

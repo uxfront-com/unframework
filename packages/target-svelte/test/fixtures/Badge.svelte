@@ -4,7 +4,7 @@
   interface BadgeProps {
     label: string;
     tone?: "info" | "warn";
-    items?: Array<string>;
+    items?: string[];
     count?: number;
   }
 

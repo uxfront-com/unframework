@@ -6,7 +6,7 @@ import { defineEmits, ref } from "@uxfront/unframework";
 export default function Listeners() {
   const emit = defineEmits<{ submitted: [value: string] }>();
 
-  const log = ref<Array<string>>([]);
+  const log = ref<string[]>([]);
   const draft = ref("");
 
   function record(line: string) {
@@ -14,9 +14,7 @@ export default function Listeners() {
   }
 
   function blockComma(event: KeyboardEvent) {
-    if (event.key === ",") {
-      event.preventDefault();
-    }
+    if (event.key === ",") event.preventDefault();
   }
 
   function submit(event: SubmitEvent) {

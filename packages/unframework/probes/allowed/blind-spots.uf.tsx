@@ -21,7 +21,7 @@ function renderLabel() {
 
 export function BlindSpots() {
   const open = ref(false);
-  const list = ref<Array<number>>([]);
+  const list = ref<number[]>([]);
   const form = ref({ name: "" });
   const label = <b>JSX in a variable</b>;
 
@@ -70,7 +70,7 @@ export function M1BlindSpots({
   active,
 }: {
   label: string;
-  items: Array<string>;
+  items: string[];
   active: boolean;
 }) {
   return (
@@ -127,9 +127,7 @@ export function ConditionalRoot({ show }: { show: boolean }) {
 
 export function ConditionalReturn({ show }: { show: boolean }) {
   // An early or conditional return (plan §4.6). Caught by: compiler (UF2012).
-  if (!show) {
-    return null;
-  }
+  if (!show) return null;
   return <div />;
 }
 
@@ -137,9 +135,7 @@ export function MisplacedReactiveApis({ show }: { show: boolean }) {
   const count = ref(0);
   // A lifecycle hook inside a condition, and a reactive API inside a nested function (plan §4.6).
   // Caught by: compiler (UF2005).
-  if (show) {
-    onMounted(() => {});
-  }
+  if (show) onMounted(() => {});
   const later = () => computed(() => count.value * 2);
   return <output>{later().value}</output>;
 }
