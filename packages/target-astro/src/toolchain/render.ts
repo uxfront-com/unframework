@@ -67,7 +67,7 @@ export interface ChildModules {
   composable(id: string): Promise<string>;
   /**
    * The shared helper module the browser project's pipeline serves for a helper's id
-   * (`/abs/_unframework/scopeAttributes.ts`, ADR-0121), as the unframework plugin emitted it.
+   * (`/abs/_unframework/astro/scopeAttributes.ts`, ADR-0121), as the unframework plugin emitted it.
    */
   helper(id: string): Promise<string>;
 }
@@ -84,8 +84,11 @@ const SHEET_ID = /\.uf\.tsx\.css(?:\?.*)?$/;
 /** A module of composables' id on Astro, the authored `.uf.ts` file's (ADR-0069), with any query. */
 const COMPOSABLE_ID = /\.uf\.ts(?:\?.*)?$/;
 
-/** A shared helper module's id (`/abs/_unframework/scopeAttributes.ts`, ADR-0121), with any query. */
-const HELPER_ID = /\/_unframework\/[^/?]+(?:\?.*)?$/;
+/**
+ * A shared helper module's id (`/abs/_unframework/astro/scopeAttributes.ts`, ADR-0121), with any
+ * query: the unframework plugin puts its target's name between `_unframework/` and the file.
+ */
+const HELPER_ID = /\/_unframework\/[^/?]+\/[^/?]+(?:\?.*)?$/;
 
 /** Any stylesheet's id, with any query: an emitted sheet, or one a plugin serves (ADR-0064). */
 const STYLESHEET_ID = /\.css(?:\?.*)?$/;

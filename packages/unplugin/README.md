@@ -167,14 +167,17 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   map goes on through its module's, and Astro's load map has a segment at column 0 of each line,
   which is where its compiler traces from (ADR-0074, ADR-0078). L14 covers these in dev only.
   An output with no map loads as `{ code }`. A scoped sheet's load is `{ code }` too, since its map has no segments.
-- A shared helper module (ADR-0121) loads under its own id, the absolute path
-  `<helper root>/_unframework/<file>`, which no file holds: `resolveId` gives it for a relative
-  import from one of the plugin's modules, a Qwik segment split off one, or another helper module,
-  and for its id coming back, once a compile has emitted it. `load` gives the compile's text and
-  its map, which names the module itself. Every module of a graph imports one id of each helper,
-  so a bundle holds it once. A project file at that path stays the project's: the plugin never
-  serves the helper in its place, and the module that would import the helper fails with UF1104,
-  as the CLI reports the same layout.
+- A shared helper module (ADR-0121) loads under its own id, `<helper root>/_unframework/<target>/<file>`,
+  which no file holds: `resolveId` gives it for a relative import of
+  `<helper root>/_unframework/<file>` from one of the plugin's modules, a Qwik segment split off
+  one, or another helper module, and for its id or that path coming back, once a compile has
+  emitted it. The target's name in the id keeps two plugins for different targets in one server,
+  such as React and Solid islands in one Astro app, from sharing a module where both emit a helper
+  of one name, like `cx.ts`. `load` gives the compile's text and its map, which names the module
+  itself. Every module of a graph imports one id of each helper, so a bundle holds it once per
+  target. A project file at `<helper root>/_unframework/<file>` stays the project's: the plugin
+  never serves the helper in its place, and the module that would import the helper fails with
+  UF1104, as the CLI reports the same layout.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,
@@ -380,7 +383,8 @@ relative path, so importing a package's component from one reports UF1202.
 
 On Vite, the pre plugin, named `unframework`, exposes `api.getCompiled(id)`: the code of the last load of
 a module id that finished, in any environment, or `undefined` when the id has not loaded or that
-load failed. A load in progress never clears it. For a shared helper module's id,
+load failed. A load in progress never clears it. For a shared helper module, by its id,
+`<helper root>/_unframework/<target>/<file>`, or by the path its outputs import,
 `<helper root>/_unframework/<file>`, it gives the module's text once a compile has emitted it, as
 `load` serves it, and `undefined` where a project file sits at that path (ADR-0121). Angular's
 `ngtscVirtual` reads the virtual sources of child components and helper modules with it:
@@ -389,6 +393,7 @@ load failed. A load in progress never clears it. For a shared helper module's id
 const api = config.plugins.find((plugin) => plugin.name === "unframework")?.api;
 api.getCompiled("/abs/Child.uf.tsx.ts");
 api.getCompiled("/abs/_unframework/ScopeAttributes.ts");
+api.getCompiled("/abs/_unframework/angular/ScopeAttributes.ts");
 ```
 
 It exposes `api.getSheet(file)` too: the scoped sheet this target's last finished load of the

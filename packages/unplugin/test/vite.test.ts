@@ -16,7 +16,7 @@ import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { ID_SUFFIXES, SCAN_ID_PREFIX } from "../src/index.ts";
-import type { CompileEvent } from "../src/index.ts";
+import type { CompileEvent, UnframeworkApi } from "../src/index.ts";
 import unframework from "../src/vite.ts";
 import { apiOf, codeOf, createProject, fakeVue, HELLO, startServer } from "./fixtures.ts";
 import type { Project, TestServer } from "./fixtures.ts";
@@ -631,7 +631,7 @@ describe("shared helper modules (ADR-0121)", () => {
     'import { Transition, ref } from "@uxfront/unframework";\n\nexport default function Panel() {\n  const open = ref(false);\n  return (\n    <section>\n      <button type="button" onClick={() => (open.value = !open.value)}>Details</button>\n      <Transition>{open.value && <p>Ships in two days.</p>}</Transition>\n    </section>\n  );\n}\n';
   const files = { "src/a/Two.uf.tsx": TWO, "src/b/Hello.uf.tsx": HELLO, "src/Panel.uf.tsx": PANEL };
 
-  it("loads each helper a module imports from one id in the graph's root", async () => {
+  it("loads each helper a module imports from one id in the graph's root, named for its target", async () => {
     const helpers = createProject(files);
     try {
       const server = await startServer(helpers.root, unframework({ target: "react" }));
@@ -645,14 +645,16 @@ describe("shared helper modules (ADR-0121)", () => {
           helperRoot: "",
         });
         // No compile has emitted it yet.
-        expect(apiOf(server.server).getCompiled(at("_unframework/cx.ts"))).toBeUndefined();
+        const path = at("_unframework/cx.ts");
+        expect(apiOf(server.server).getCompiled(path)).toBeUndefined();
         const code = codeOf(await client.pluginContainer.load(two));
         // Both components import `cx` alike, so the join writes the import once (ADR-0053).
         expect(code.match(/^import .* from "\.\.\/\.\.\/_unframework\/cx";$/gm)).toEqual([
           'import { cx } from "../../_unframework/cx";',
         ]);
         expect(code).not.toMatch(/function cx\b/);
-        const cx = at("_unframework/cx.ts");
+        // Its id puts the target's name below `_unframework/`, beside the path the output imports.
+        const cx = at("_unframework/react/cx.ts");
         expect(await client.pluginContainer.resolveId("../../_unframework/cx", two)).toMatchObject({
           id: cx,
         });
@@ -683,13 +685,18 @@ describe("shared helper modules (ADR-0121)", () => {
         expect(
           await client.pluginContainer.resolveId("../../_unframework/missing", two),
         ).toBeNull();
-        // `getCompiled` gives the text `load` serves, which Angular's ngtsc reads, and nothing
-        // once a project file sits at its path.
+        // The path the output imports, and the id coming back, resolve to the id too.
+        expect(await client.pluginContainer.resolveId(path, two)).toMatchObject({ id: cx });
+        expect(await client.pluginContainer.resolveId(cx, two)).toMatchObject({ id: cx });
+        // `getCompiled` gives the text `load` serves, which Angular's ngtsc reads, by the id or by
+        // the path, and nothing once a project file sits at the path.
         expect(apiOf(server.server).getCompiled(cx)).toBe(codeOf(loaded));
+        expect(apiOf(server.server).getCompiled(path)).toBe(codeOf(loaded));
         expect(apiOf(server.server).getCompiled(`${cx}x`)).toBeUndefined();
         mkdirSync(at("_unframework"), { recursive: true });
-        writeFileSync(cx, 'export const label = "mine";\n');
+        writeFileSync(path, 'export const label = "mine";\n');
         expect(apiOf(server.server).getCompiled(cx)).toBeUndefined();
+        expect(apiOf(server.server).getCompiled(path)).toBeUndefined();
       } finally {
         await server.close();
       }
@@ -748,13 +755,72 @@ describe("shared helper modules (ADR-0121)", () => {
           "../_unframework/Transition",
           panel,
         );
-        expect(transition?.id).toBe(join(helpers.root, "_unframework/Transition.tsx"));
+        expect(transition?.id).toBe(join(helpers.root, "_unframework/react/Transition.tsx"));
         expect(codeOf(await client.pluginContainer.load(transition!.id))).toContain(
           'import { subscribeNothing } from "./subscribeNothing";',
         );
         expect(
           await client.pluginContainer.resolveId("./subscribeNothing", transition!.id),
-        ).toMatchObject({ id: join(helpers.root, "_unframework/subscribeNothing.ts") });
+        ).toMatchObject({ id: join(helpers.root, "_unframework/react/subscribeNothing.ts") });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      helpers.remove();
+    }
+  });
+
+  it("gives two targets' plugins in one server a module each of a helper both emit", async () => {
+    // React and Solid islands in one Astro app: both targets emit `cx.ts` at one path, and their
+    // texts differ. Solid takes an extension of its own, `X.uf.tsx.tsx`, which React's plugin takes
+    // for no id of its own, so each plugin claims its own component.
+    const BADGE =
+      'export default function Badge(props: { fresh: boolean; tone: string }) {\n  return <span class={["badge", props.tone, { fresh: props.fresh }]}>New</span>;\n}\n';
+    const helpers = createProject({
+      "src/react/Badge.uf.tsx": BADGE,
+      "src/solid/Badge.uf.tsx": BADGE,
+    });
+    try {
+      const server = await startServer(helpers.root, [
+        unframework({ target: "react" }),
+        unframework({ target: "solid", extension: ".tsx" }),
+      ]);
+      try {
+        const { client } = server;
+        const [reactApi, solidApi] = server.server.config.plugins
+          .filter((plugin): plugin is Plugin<UnframeworkApi> => plugin.name === "unframework")
+          .map((plugin) => plugin.api!);
+        const path = join(helpers.root, "_unframework/cx.ts");
+        const textOf = async (target: "react" | "solid", filename: string) =>
+          (await compile(BADGE, { filename, targets: [target], helperRoot: "" })).outputs[
+            target
+          ]!.find((output) => output.path.endsWith("/_unframework/cx.ts"))!.contents;
+        const reactText = await textOf("react", "src/react/Badge.uf.tsx");
+        const solidText = await textOf("solid", "src/solid/Badge.uf.tsx");
+        expect(reactText).not.toBe(solidText);
+
+        const react = join(helpers.root, "src/react/Badge.uf.tsx");
+        const solid = `${join(helpers.root, "src/solid/Badge.uf.tsx")}.tsx`;
+        expect(codeOf(await client.pluginContainer.load(react))).toContain(
+          'from "../../_unframework/cx"',
+        );
+        expect(codeOf(await client.pluginContainer.load(solid))).toContain(
+          'from "../../_unframework/cx"',
+        );
+        // Each component's import resolves to its own target's id.
+        const reactId = (await client.pluginContainer.resolveId("../../_unframework/cx", react))
+          ?.id;
+        const solidId = (await client.pluginContainer.resolveId("../../_unframework/cx", solid))
+          ?.id;
+        expect(reactId).not.toBe(solidId);
+        expect(reactId).toBe(join(helpers.root, "_unframework/react/cx.ts"));
+        expect(solidId).toBe(join(helpers.root, "_unframework/solid/cx.ts"));
+        // Each id loads its own target's text.
+        expect(codeOf(await client.pluginContainer.load(reactId!))).toBe(reactText);
+        expect(codeOf(await client.pluginContainer.load(solidId!))).toBe(solidText);
+        // Each plugin's `getCompiled` of the path gives its own target's text.
+        expect(reactApi!.getCompiled(path)).toBe(reactText);
+        expect(solidApi!.getCompiled(path)).toBe(solidText);
       } finally {
         await server.close();
       }
@@ -775,7 +841,7 @@ describe("shared helper modules (ADR-0121)", () => {
           'import { cx } from "./_unframework/cx";',
         );
         expect(await client.pluginContainer.resolveId("./_unframework/cx", two)).toMatchObject({
-          id: join(helpers.root, "src/a/_unframework/cx.ts"),
+          id: join(helpers.root, "src/a/_unframework/react/cx.ts"),
         });
         // A directory outside the file's graph is refused, naming it.
         const outside = unframework({ target: "react", helperRoot: () => "/elsewhere" });

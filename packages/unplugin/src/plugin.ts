@@ -136,9 +136,10 @@ export interface UnframeworkApi {
   /**
    * The target source of the last load of a module id that finished, in any environment, or
    * `undefined` when the id has not loaded or that load failed. For a shared helper module's id
-   * (ADR-0121), it is the module's text once a compile has emitted it, as `load` serves it, and
-   * `undefined` where a project file sits at its path. Angular's `ngtscVirtual` reads child
-   * components and helper modules with it.
+   * (ADR-0121), `<helper root>/_unframework/<target>/<file>`, or the path its outputs import,
+   * `<helper root>/_unframework/<file>`, it is the module's text once a compile has emitted it, as
+   * `load` serves it, and `undefined` where a project file sits at that path. Angular's
+   * `ngtscVirtual` reads child components and helper modules with it.
    */
   getCompiled(id: string): string | undefined;
   /**
@@ -168,11 +169,15 @@ const SHEET_SUFFIX = ".css";
 const SHEET_ID_FILTER = moduleIdFilter(SHEET_SUFFIX);
 
 /**
- * A shared helper module's id (ADR-0121): `<helper root>/_unframework/<file>`, which loads from the
- * compile that emitted it. A project file there is the project's: the plugin never serves the
- * helper in its place, and fails the module that would import it with UF1104 (`helperClash`).
+ * A shared helper module's id (ADR-0121): `<helper root>/_unframework/<target>/<file>`, which loads
+ * from the compile that emitted it. The target's segment keeps two plugin instances for different
+ * targets in one server, such as React and Solid islands in one Astro app, from sharing a module
+ * where both emit a helper of one name (`cx.ts`). An output imports the path without it,
+ * `<helper root>/_unframework/<file>`, which the filter also takes. A project file at that path is
+ * the project's: the plugin never serves the helper in its place, and fails the module that would
+ * import it with UF1104 (`helperClash`).
  */
-const HELPER_ID_FILTER = /\/_unframework\/[^/?]+(?:\?.*)?$/;
+const HELPER_ID_FILTER = /\/_unframework\/(?:[^/?]+\/)?[^/?]+(?:\?.*)?$/;
 
 /** The extensions a helper's specifier may leave out: React's imports name `./_unframework/cx`. */
 const HELPER_EXTENSIONS = ["", ".ts", ".tsx", ".js", ".jsx"];
@@ -462,12 +467,40 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       : directory;
   };
 
-  // Each shared helper module the compiles emitted (ADR-0121), by its id: its absolute path. A
-  // helper's text depends only on the target and the helper, so a later compile's is the same.
-  const helperModules = new Map<string, OutputFile>();
-  /** The id of the helper module a path names, with or without its extension. */
-  const helperId = (path: string): string | undefined =>
-    HELPER_EXTENSIONS.map((extension) => `${path}${extension}`).find((id) => helperModules.has(id));
+  // Each shared helper module the compiles emitted (ADR-0121), by its id (`helperIdOf`), with the
+  // path its outputs import. A helper's text depends only on the target and the helper, so a later
+  // compile's is the same.
+  const helperModules = new Map<string, { output: OutputFile; path: string }>();
+  /**
+   * A helper module's id, given the absolute path its outputs import: the target's name, as one
+   * path segment, goes between `_unframework/` and the file, so the file keeps its name and
+   * extension, which the framework's own plugin claims it by.
+   */
+  const helperIdOf = (path: string): string => {
+    const slash = path.lastIndexOf("/");
+    const segment = target.name.replace(/[^\w-]/g, "_") || "_";
+    return `${path.slice(0, slash)}/${segment}${path.slice(slash)}`;
+  };
+  /**
+   * The id of the helper module a path names, with or without its extension: an output's import
+   * of the path, or a helper module's import of its sibling, which is already beside the id.
+   */
+  const helperId = (path: string): string | undefined => {
+    for (const extension of HELPER_EXTENSIONS) {
+      const candidate = `${path}${extension}`;
+      if (helperModules.has(candidate)) return candidate;
+      if (helperModules.has(helperIdOf(candidate))) return helperIdOf(candidate);
+    }
+    return undefined;
+  };
+  /**
+   * The helper module an id or the path its outputs import names, unless a project file has taken
+   * the path since, which is the project's to load (`helperClash`).
+   */
+  const helperOf = (id: string): OutputFile | undefined => {
+    const helper = helperModules.get(id) ?? helperModules.get(helperIdOf(id));
+    return helper && !existsSync(helper.path) ? helper.output : undefined;
+  };
 
   /**
    * UF1104, formatted, where a helper module a compile of `file` emitted would sit at a project
@@ -704,9 +737,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const files = result.outputs[target.name] ?? [];
     const helpers = new Set(result.helpers[target.name] ?? []);
     for (const output of files) {
-      const id = posix.join(posix.dirname(file), output.path);
-      // A project file at a helper's id stays the project's (`helperClash`).
-      if (helpers.has(output.path) && !existsSync(id)) helperModules.set(id, output);
+      const path = posix.join(posix.dirname(file), output.path);
+      // A project file at a helper's path stays the project's (`helperClash`).
+      if (helpers.has(output.path) && !existsSync(path)) {
+        helperModules.set(helperIdOf(path), { output, path });
+      }
     }
     const outputs = files.length
       ? { ...result.outputs, [target.name]: [...files, ...project.copies(filename)] }
@@ -1214,8 +1249,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     // A shared helper module (ADR-0121): its text is the compile's, unless a project file has
     // taken its place since, which is the project's to load (`helperClash`).
     const helper = helperModules.get(withoutQuery(id));
-    if (helper && !existsSync(withoutQuery(id))) {
-      return { code: helper.contents, ...(helper.map ? { map: helper.map } : {}) };
+    if (helper && !existsSync(helper.path)) {
+      const { output } = helper;
+      return { code: output.contents, ...(output.map ? { map: output.map } : {}) };
     }
     const requested =
       parseModuleId(id, SHEET_SUFFIX) ??
@@ -1457,9 +1493,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         getCompiled: (id: string) => {
           const own = compiled.get(id);
           if (own !== undefined) return own;
-          // A shared helper module (ADR-0121), as `load` serves it: never in a project file's place.
-          const helper = helperModules.get(id);
-          return helper && !existsSync(id) ? helper.contents : undefined;
+          // A shared helper module (ADR-0121), as `load` serves it, by its id or by the path its
+          // outputs import: never in a project file's place.
+          return helperOf(id)?.contents;
         },
         getSheet: (file: string) => sheets.get(file),
       } satisfies UnframeworkApi,

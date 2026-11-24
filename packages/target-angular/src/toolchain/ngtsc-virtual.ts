@@ -25,12 +25,13 @@ import type { AngularCompiler } from "./tools.ts";
  */
 const VIRTUAL_ID = /\.uf\.tsx?(?:\.[^/?]+)?\.ts$/;
 /**
- * A shared helper module's id (ADR-0121), `<helper root>/_unframework/ScopeAttributes.ts`, which
- * the unframework plugin serves too: an output imports it by a relative path, and a helper module
- * imports its siblings (`./looseToNumber`). It is one of ours only while `getCompiled` gives its
- * text: a project file at that path is the project's.
+ * A shared helper module's id (ADR-0121), `<helper root>/_unframework/angular/ScopeAttributes.ts`,
+ * which the unframework plugin serves too, or the path an output imports it by,
+ * `<helper root>/_unframework/ScopeAttributes.ts`, whose text `getCompiled` gives as well. A helper
+ * module imports its siblings (`./looseToNumber`) beside its id. It is one of ours only while
+ * `getCompiled` gives its text: a project file at the path is the project's.
  */
-const HELPER_ID = /\/_unframework\/[^/?]+\.ts$/;
+const HELPER_ID = /\/_unframework\/(?:[^/?]+\/)?[^/?]+\.ts$/;
 /**
  * A relative import or re-export in generated code, of a child's output (`./field`, ADR-0053)
  * or of a file on disk: `import … from "./x"`, `export … from "./x"` or `import "./x"`. Its
@@ -163,7 +164,7 @@ export function ngtscVirtual(
     transform: {
       // A shared helper module is compiled ahead of time too, so its `@Directive` or `@Pipe`
       // reaches the browser as a definition, never as a JIT decorator (ADR-0121).
-      filter: { id: /(?:\.uf\.tsx?(?:\.[^/?]+)?|\/_unframework\/[^/?]+)\.ts(?:\?|$)/ },
+      filter: { id: /(?:\.uf\.tsx?(?:\.[^/?]+)?|\/_unframework\/(?:[^/?]+\/)?[^/?]+)\.ts(?:\?|$)/ },
       async handler(code, rawId) {
         const id = rawId.split("?")[0]!;
         if (HELPER_ID.test(id) && api!.getCompiled(id) === undefined) return null;
