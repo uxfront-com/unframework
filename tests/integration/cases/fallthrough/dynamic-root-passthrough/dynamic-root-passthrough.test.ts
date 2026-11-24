@@ -76,11 +76,14 @@ describeTargets("fallthrough/dynamic-root-passthrough", () => {
     async () => {
       const view = await mount(Page);
       await view.user.click(view.getByRole("button", { name: "Focus direct" }));
+      await view.expectParity("direct-focused");
       await expect.element(view.getByRole("link", { name: "Direct" })).toHaveFocus();
       await view.user.click(view.getByRole("button", { name: "Focus chained" }));
+      await view.expectParity("chained-focused");
       await expect.element(view.getByRole("link", { name: "Chained" })).toHaveFocus();
       await view.user.click(view.getByRole("button", { name: "Toggle" }));
       await view.user.click(view.getByRole("button", { name: "Focus direct" }));
+      await view.expectParity("button-focused");
       await expect.element(view.getByRole("button", { name: "Direct" })).toHaveFocus();
       await view.user.click(view.getByRole("button", { name: "Focus chained" }));
       await view.expectParity("focused");

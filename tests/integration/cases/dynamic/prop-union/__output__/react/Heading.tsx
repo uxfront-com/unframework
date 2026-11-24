@@ -1,21 +1,33 @@
-import type { CSSProperties } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  type DOMAttributes,
+  type Ref,
+  type RefCallback,
+  useMemo,
+} from "react";
 
-export interface HeadingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HeadingAttributes = Omit<
+  ComponentPropsWithoutRef<"h1"> & ComponentPropsWithoutRef<"h2"> & ComponentPropsWithoutRef<"h3">,
+  "tag" | "text" | "children" | keyof DOMAttributes<HTMLHeadingElement>
+> &
+  Omit<DOMAttributes<HTMLHeadingElement>, "children" | "dangerouslySetInnerHTML"> & {
+    ref?: Ref<HTMLHeadingElement>;
+  };
 
 export default function Heading({
   tag,
   text,
   className,
   style,
+  ref,
   ...attributes
 }: { tag: "h1" | "h2" | "h3"; text: string } & HeadingAttributes) {
+  const rootRef = useMemo(() => mergeRefs(ref), [ref]);
+
   const Tag = tag;
 
   return (
-    <Tag className={cx("heading", className)} style={style} {...scopeAttributes(attributes)}>
+    <Tag className={cx("heading", className)} style={style} ref={rootRef} {...attributes}>
       {text}
     </Tag>
   );
@@ -36,11 +48,21 @@ function cx(...parts: unknown[]): string {
   return names.join(" ");
 }
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
+/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+function mergeRefs<E extends Element>(...refs: (Ref<E> | undefined)[]): RefCallback<E> {
+  return (element) => {
+    const cleanups = refs.map((ref) => {
+      if (typeof ref === "function") {
+        const cleanup = ref(element);
+        return typeof cleanup === "function" ? cleanup : () => ref(null);
+      }
+      if (ref) ref.current = element;
+      return () => {
+        if (ref) ref.current = null;
+      };
+    });
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+  };
 }

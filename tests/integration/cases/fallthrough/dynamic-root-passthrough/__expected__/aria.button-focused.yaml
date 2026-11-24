@@ -1,0 +1,7 @@
+- region "Page":
+  - button "Direct"
+  - button "Chained"
+  - button "Toggle"
+  - button "Focus direct"
+  - button "Focus chained"
+  - list "Log"
