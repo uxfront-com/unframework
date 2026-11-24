@@ -34,13 +34,18 @@ export default defineConfig({
       "error",
       { hexadecimal: { onlyIfContainsSeparator: true, groupLength: 4 } },
     ],
+    // Cases that share a body are grouped, with a comment between them for the cases it explains.
+    // Such a case is empty, and falls through to nothing of its own.
+    "no-fallthrough": ["error", { allowEmptyCase: true }],
+    // A namespace import names a module's whole API as one value: the ESTree types
+    // (`AST.Expression`), a compiler a toolchain loads lazily, typed as its module, and the
+    // exports a test checks one by one.
+    "import/no-namespace": "off",
     // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
     "@nkzw/no-instanceof": "off",
-    "import/no-namespace": "off",
     "no-console": "off",
-    "no-fallthrough": "off",
     "no-promise-executor-return": "off",
     "quality/no-array-filter-map": "off",
     "quality/no-chained-type-assertions": "off",
