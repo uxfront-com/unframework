@@ -1,4 +1,10 @@
-import { type CSSProperties, type KeyboardEvent, type MouseEvent, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type KeyboardEvent,
+  type MouseEvent,
+  useRef,
+  useState,
+} from "react";
 
 export interface CommentComposerEvents {
   onSent?: (text: string) => void;
@@ -6,10 +12,10 @@ export interface CommentComposerEvents {
   onFirstSave?: () => void;
 }
 
-export interface CommentComposerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CommentComposerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onSent" | "onSaved" | "onFirstSave" | "children"
+>;
 
 export default function CommentComposer({
   onSent,
@@ -77,7 +83,7 @@ export default function CommentComposer({
       className={cx("comment-composer", className)}
       aria-label="Composer"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Comment
@@ -252,13 +258,4 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

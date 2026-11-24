@@ -1,0 +1,9 @@
+- region "Page":
+  - link "Direct":
+    - /url: "#direct"
+  - link "Chained":
+    - /url: "#chained"
+  - button "Toggle"
+  - button "Focus direct"
+  - button "Focus chained"
+  - list "Log"

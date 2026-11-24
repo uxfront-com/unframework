@@ -1,10 +1,11 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
   untrack,
@@ -20,8 +21,14 @@ function formatCents(cents: number): string {
 }
 
 export default function PriceTag(
-  props: PriceTagProps & { class?: string; style?: JSX.CSSProperties },
+  props: PriceTagProps &
+    Omit<ComponentProps<"section">, "price" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "price", "class");
+
   const [quantity, setQuantity] = createState(1);
   const [unit, setUnit] = createState(untrack(() => formatCents(props.price)));
   const [summary, setSummary] = createState(untrack(() => describe()));
@@ -45,8 +52,7 @@ export default function PriceTag(
     <section
       class={props.class ? `price-tag ${props.class}` : "price-tag"}
       aria-label="Price"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>Unit: {unit()}</p>
       <p role="status">{summary()}</p>
@@ -60,13 +66,6 @@ export default function PriceTag(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

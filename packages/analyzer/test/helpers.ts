@@ -204,6 +204,8 @@ export function referenceOf(source: string, ref: CodeReference): string {
       return `slot:${ref.slot}`;
     case "Import":
       return `import:${ref.name}`;
+    case "Dev":
+      return `dev:${at(ref.span)}`;
   }
 }
 

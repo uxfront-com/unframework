@@ -1,14 +1,11 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface BoxSlots {
   title?: ReactNode;
   children?: ReactNode;
 }
 
-export interface BoxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BoxAttributes = Omit<ComponentPropsWithRef<"div">, "title" | "children">;
 
 export default function Box({
   title,
@@ -18,7 +15,7 @@ export default function Box({
   ...attributes
 }: BoxSlots & BoxAttributes) {
   return (
-    <div className={cx("box", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("box", className)} style={style} {...attributes}>
       <h3>{title ?? "Untitled"}</h3>
       {children ?? <p>No content</p>}
     </div>
@@ -38,13 +35,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,14 +1,11 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import "./Amber.uf.tsx.css";
 
 export interface AmberSlots {
   children?: ReactNode;
 }
 
-export interface AmberAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type AmberAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
 
 export default function Amber({
   children,
@@ -17,12 +14,7 @@ export default function Amber({
   ...attributes
 }: AmberSlots & AmberAttributes) {
   return (
-    <div
-      className={cx("amber", className)}
-      style={style}
-      data-uf-c97301b3=""
-      {...scopeAttributes(attributes)}
-    >
+    <div className={cx("amber", className)} style={style} data-uf-c97301b3="" {...attributes}>
       {children}
     </div>
   );
@@ -41,13 +33,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

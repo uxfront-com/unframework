@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 type LookupResult = { ok: true; match: string } | { ok: false; error: string };
 
 export interface FilterSummaryProps {
@@ -7,26 +9,28 @@ export interface FilterSummaryProps {
   result: LookupResult;
 }
 
-interface Props extends FilterSummaryProps {
+interface Props
+  extends FilterSummaryProps, Omit<HTMLAttributes<"section">, "tags" | "limit" | "result"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { tags, limit, result, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  tags,
+  limit,
+  result,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <section
   class:list={["filter-summary", className]}
-  aria-label="Filters"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Filters"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p>Tags: {Array.isArray(tags) ? tags.join(", ") : tags}</p>
   <p>Limit: {typeof limit === "number" ? limit.toFixed(0) : limit.toLowerCase()}</p>

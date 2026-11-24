@@ -1,14 +1,20 @@
 import { useCounter } from "./useCounter";
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 export interface ClickerEvents {
   onLimit?: (count: number) => void;
 }
 
 export default function Clicker(
-  props: ClickerEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ClickerEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onLimit", "class");
+
   const [message, setMessage] = createState("Keep going");
   const { count, step, increment, reset } = useCounter(3, (reached) => {
     setMessage(`Reached ${reached}`);
@@ -19,8 +25,7 @@ export default function Clicker(
     <section
       class={props.class ? `clicker ${props.class}` : "clicker"}
       aria-label="Clicker"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">Count: {count()}</p>
       <p>{message()}</p>
@@ -32,13 +37,6 @@ export default function Clicker(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface PlanProps {
   name: string;
@@ -8,10 +8,10 @@ export interface PlanProps {
   note?: string;
 }
 
-export interface PlanAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PlanAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "name" | "price" | "href" | "featured" | "note" | "children"
+>;
 
 export default function Plan({
   name,
@@ -28,7 +28,7 @@ export default function Plan({
       className={cx(featured ? "plan featured" : "plan", className)}
       aria-label={name}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{name}</h2>
       <p>{price} EUR a month</p>
@@ -51,13 +51,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

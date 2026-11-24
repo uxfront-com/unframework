@@ -1,13 +1,10 @@
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type ReactNode, useRef, useState } from "react";
 
 export interface PickerSlots {
   renderOption?: (props: { option: { id: string; label: string } }) => ReactNode;
 }
 
-export interface PickerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PickerAttributes = Omit<ComponentPropsWithRef<"div">, "renderOption" | "children">;
 
 export default function Picker({
   renderOption,
@@ -22,7 +19,7 @@ export default function Picker({
   const optionsRef = useRef(options);
 
   return (
-    <div className={cx("picker", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("picker", className)} style={style} {...attributes}>
       <ul aria-label="Options">
         {options.map((option) => (
           <li key={option.id}>{renderOption?.({ option })}</li>
@@ -63,13 +60,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

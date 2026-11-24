@@ -1,8 +1,17 @@
-import { type CSSProperties, type ClassList, component$, useStyles$ } from "@qwik.dev/core";
+import {
+  type CSSProperties,
+  type ClassList,
+  type PropsOf,
+  component$,
+  useStyles$,
+} from "@qwik.dev/core";
 import styles from "./Stack.uf.tsx.css?inline";
 
 export default component$<
-  { gap: string; accent: string } & { class?: ClassList; style?: CSSProperties }
+  { gap: string; accent: string } & Omit<PropsOf<"ul">, "gap" | "accent" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ gap, accent, class: className, style, ...attributes }) => {
   useStyles$(styles);
 
@@ -11,7 +20,7 @@ export default component$<
       class={["stack", className]}
       style={{ "--gap": gap, "--accent": accent, ...style }}
       data-uf-e3a22111=""
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <li class="item" data-uf-e3a22111="">
         One
@@ -25,12 +34,3 @@ export default component$<
     </ul>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

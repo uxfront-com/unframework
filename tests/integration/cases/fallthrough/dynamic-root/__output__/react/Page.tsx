@@ -1,12 +1,9 @@
 import Base from "./Base";
 import Primary from "./Primary";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 import "./Page.uf.tsx.css";
 
-export interface PageAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PageAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Page({ className, style, ...attributes }: PageAttributes) {
   const [linked, setLinked] = useState(true);
@@ -21,41 +18,36 @@ export default function Page({ className, style, ...attributes }: PageAttributes
   ]);
 
   return (
-    <section
-      className={cx("page", className)}
-      style={style}
-      data-uf-64cf7c28=""
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("page", className)} style={style} data-uf-64cf7c28="" {...attributes}>
       <Primary
         href={linked ? "#docs" : undefined}
         disabled={true}
         text="Docs"
+        className="wide"
+        style={{ color: tone }}
         onPress={() => {
           pressedRef.current = "docs";
           setPressed(pressedRef.current);
         }}
-        className="wide"
-        style={{ color: tone }}
         data-uf-64cf7c28=""
       />
       <Base
         disabled={true}
         text="Off"
+        className={cx("off", { muted: !linked })}
         onPress={() => {
           pressedRef.current = "off";
           setPressed(pressedRef.current);
         }}
-        className={cx("off", { muted: !linked })}
         data-uf-64cf7c28=""
       />
       <Base
         text="Save"
+        className="save"
         onPress={() => {
           pressedRef.current = "save";
           setPressed(pressedRef.current);
         }}
-        className="save"
         data-uf-64cf7c28=""
       />
       <ul aria-label="Items" data-uf-64cf7c28="">
@@ -107,13 +99,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

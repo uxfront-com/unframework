@@ -1,4 +1,4 @@
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useMemo, useRef, useState } from "react";
 
 export type ShippingMethod = "standard" | "express";
 
@@ -11,10 +11,10 @@ export interface CheckoutTotalEvents {
   onShippingChange?: (method: ShippingMethod) => void;
 }
 
-export interface CheckoutTotalAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CheckoutTotalAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "subtotal" | "onShippingChange" | "children"
+>;
 
 const rates = { standard: 0, express: 1200 };
 
@@ -53,7 +53,7 @@ export default function CheckoutTotal({
       className={cx("checkout-total", className)}
       aria-label="Order total"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>Subtotal: {formatCents(subtotal)}</p>
       <p>Shipping: {formatCents(shipping)}</p>
@@ -81,13 +81,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

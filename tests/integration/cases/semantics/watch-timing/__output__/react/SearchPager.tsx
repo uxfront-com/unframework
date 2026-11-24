@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -13,10 +13,10 @@ export interface SearchPagerEvents {
   onCleanedUp?: (watcher: string) => void;
 }
 
-export interface SearchPagerAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type SearchPagerAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onQueryRun" | "onPageRun" | "onCleanedUp" | "children"
+>;
 
 export default function SearchPager({
   onQueryRun,
@@ -93,7 +93,7 @@ export default function SearchPager({
       className={cx("search-pager", className)}
       aria-label="Search"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">
         {query === "" ? "All results" : `Results for ${query}`}, page {page}
@@ -127,13 +127,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

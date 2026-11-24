@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface InboxMessage {
   id: string;
@@ -11,10 +11,10 @@ export interface MessageListProps {
   emptyText?: string;
 }
 
-export interface MessageListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MessageListAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "messages" | "archived" | "emptyText" | "children"
+>;
 
 export default function MessageList({
   messages,
@@ -29,7 +29,7 @@ export default function MessageList({
       className={cx("message-list", className)}
       aria-label="Messages"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>Inbox</h2>
       <ul>
@@ -62,13 +62,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface ShippingLabelProps {
   recipient: string;
   street: string;
@@ -6,26 +8,31 @@ export interface ShippingLabelProps {
   postcode: string;
 }
 
-interface Props extends ShippingLabelProps {
+interface Props
+  extends
+    ShippingLabelProps,
+    Omit<HTMLAttributes<"article">, "recipient" | "street" | "city" | "postcode"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { recipient, street, city, postcode, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  recipient,
+  street,
+  city,
+  postcode,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 ---
 
 <article
   class:list={["shipping-label", className]}
-  aria-label="Shipping label"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Shipping label"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p><strong>To:</strong> {recipient}</p>
   <p>

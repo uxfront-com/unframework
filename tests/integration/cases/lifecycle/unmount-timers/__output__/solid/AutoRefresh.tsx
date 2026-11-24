@@ -1,4 +1,11 @@
-import { type JSX, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
 export interface AutoRefreshProps {
   /** Milliseconds between two refreshes. */
@@ -10,8 +17,12 @@ export interface AutoRefreshEvents {
 }
 
 export default function AutoRefresh(
-  props: AutoRefreshProps & AutoRefreshEvents & { class?: string; style?: JSX.CSSProperties },
+  props: AutoRefreshProps &
+    AutoRefreshEvents &
+    Omit<ComponentProps<"section">, "interval" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["interval", "onRefresh", "class"]);
+
   const [enabled, setEnabled] = createSignal(false);
   let timer: ReturnType<typeof setInterval> | undefined;
   let refreshes = 0;
@@ -41,8 +52,7 @@ export default function AutoRefresh(
     <section
       class={props.class ? `auto-refresh ${props.class}` : "auto-refresh"}
       aria-label="Auto-refresh"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-pressed={enabled()} onClick={toggle}>
         Auto-refresh
@@ -50,11 +60,4 @@ export default function AutoRefresh(
       <p role="status">{enabled() ? "Refreshing" : "Paused"}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

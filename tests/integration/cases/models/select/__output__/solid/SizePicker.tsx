@@ -1,10 +1,12 @@
-import { type JSX, createEffect, createSignal, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, createEffect, createSignal, onCleanup } from "solid-js";
 
-export default function SizePicker(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function SizePicker(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
   const [size, setSize] = createSignal("m");
 
   return (
-    <section aria-label="Size" class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <section aria-label="Size" {...props}>
       <label>
         Size{" "}
         <select
@@ -28,13 +30,6 @@ export default function SizePicker(props: { class?: string; style?: JSX.CSSPrope
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

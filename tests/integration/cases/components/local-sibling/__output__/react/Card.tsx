@@ -1,10 +1,7 @@
 import { CardIcon } from "./CardIcon";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface CardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CardAttributes = Omit<ComponentPropsWithRef<"div">, "title" | "children">;
 
 export default function Card({
   title,
@@ -13,7 +10,7 @@ export default function Card({
   ...attributes
 }: { title: string } & CardAttributes) {
   return (
-    <div className={cx_1("card", className)} style={style} {...scopeAttributes_1(attributes)}>
+    <div className={cx_1("card", className)} style={style} {...attributes}>
       <CardIcon symbol="+" />
       <h3>{title}</h3>
       <CardIcon symbol="-" />
@@ -34,13 +31,4 @@ function cx_1(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes_1(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

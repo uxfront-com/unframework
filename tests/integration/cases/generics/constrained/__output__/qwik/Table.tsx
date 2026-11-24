@@ -1,4 +1,4 @@
-import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export interface TableProps<T extends { id: string; label: string }> {
   caption: string;
@@ -12,9 +12,13 @@ export default component$(
     class: className,
     style,
     ...attributes
-  }: TableProps<T> & { class?: ClassList; style?: CSSProperties }) => {
+  }: TableProps<T> &
+    Omit<PropsOf<"table">, "caption" | "rows" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }) => {
     return (
-      <table {...scopeAttributes(attributes)} class={className} style={style}>
+      <table class={className} style={style} {...attributes}>
         <caption>{caption}</caption>
         <tbody>
           {rows.map((row) => (
@@ -28,12 +32,3 @@ export default component$(
     );
   },
 );
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

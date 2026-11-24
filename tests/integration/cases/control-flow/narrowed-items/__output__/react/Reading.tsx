@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export type Source =
   | { kind: "link"; id: string; title: string; href: string }
@@ -12,10 +12,10 @@ export interface ReadingEvents {
   onOpen?: (href: string) => void;
 }
 
-export interface ReadingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReadingAttributes = Omit<
+  ComponentPropsWithRef<"ul">,
+  "sources" | "onOpen" | "children"
+>;
 
 export default function Reading({
   sources,
@@ -29,7 +29,7 @@ export default function Reading({
       className={cx("reading", className)}
       aria-label="Reading list"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {sources.map((source, index) => (
         <li key={source.id} title={source.kind === "link" ? source.href : source.title}>
@@ -60,13 +60,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

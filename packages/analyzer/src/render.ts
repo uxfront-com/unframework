@@ -148,6 +148,8 @@ export interface EventPayload {
 
 /** What the setup declares, as every walk of the component's code reads it (ADR-0045). */
 export interface SetupScope {
+  /** Set where the setup is a composable's body (ADR-0069): `isDev` is UF2040 there (ADR-0117). */
+  readonly composable?: true;
   /** The setup's bindings, by the identifier that declares each. */
   readonly bindings: ReadonlyMap<object, SetupBinding>;
   /**
@@ -185,10 +187,26 @@ export interface RenderContext {
   readonly propsByDeclaration: ReadonlyMap<object, PropBinding>;
   /** The object form's parameter: what declares it, and its name. */
   readonly propsObject: { declaration: object; name: string } | undefined;
+  /**
+   * The rest of a destructured props pattern (ADR-0118): what declares it, its name, and where
+   * it is spread once lowered (`spread`), since it is spread whole on one element only.
+   */
+  readonly restProps?: {
+    declaration: object;
+    name: string;
+    /** Whether the component sets `inheritAttrs: false`, which the rest needs (UF2001). */
+    accepted: boolean;
+    spread?: { start: number; end: number };
+  };
   /** The loop variables of the lists lowered so far, by the parameter that declares each. */
   readonly loopVariables: Map<object, LoopVariable>;
   /** The loop variables of the lists around the node being lowered, outermost first. */
   readonly enclosing: LoopVariable[];
+  /**
+   * Set while a slot's fill is lowered (ADR-0054): a function the child may call many times, so
+   * what renders once cannot be in it, as in a list.
+   */
+  readonly fill?: true;
   /** What the setup declares. */
   readonly setup: SetupScope;
   /** The `ref` attribute that attaches each template ref, by the identifier that declares it. */

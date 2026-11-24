@@ -1,23 +1,28 @@
-import { Dynamic, type JSX } from "@solidjs/web";
+import { type ComponentProps, Dynamic, type JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export default function Heading(
-  props: { big: boolean; text: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { big: boolean; text: string } & Omit<
+    Omit<
+      ComponentProps<"h2"> & ComponentProps<"h3">,
+      keyof JSX.ElementAttributes<HTMLElementTagNameMap["h2" | "h3"]>
+    > &
+      JSX.ElementAttributes<HTMLElementTagNameMap["h2" | "h3"]>,
+    "big" | "text" | "class" | "style"
+  > & { class?: string; style?: JSX.CSSProperties },
 ) {
+  const others = omit(props, "big", "text", "ref", "class");
+
   return (
     <Dynamic
       component={props.big ? "h2" : "h3"}
       class={props.class ? `heading ${props.class}` : "heading"}
-      style={props.style}
-      {...scopeAttributes(props)}
+      ref={(element: HTMLElementTagNameMap["h2" | "h3"]) => {
+        if (typeof props.ref === "function") props.ref(element);
+      }}
+      {...others}
     >
       {props.text}
     </Dynamic>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

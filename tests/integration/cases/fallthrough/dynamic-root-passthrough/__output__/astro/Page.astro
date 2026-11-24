@@ -1,0 +1,46 @@
+---
+import Base from "./Base.astro";
+import Primary from "./Primary.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
+
+const linked = true as boolean;
+const log = [] as string[];
+---
+
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Page"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
+  <Base
+    href={linked ? "#direct" : undefined}
+    text="Direct"
+    id="direct"
+    aria-label="Direct"
+    data-testid="direct"
+    title="Go"
+  />
+  <Primary
+    href={linked ? "#chained" : undefined}
+    text="Chained"
+    id="chained"
+    aria-label="Chained"
+    data-testid="chained"
+  />
+  <button type="button">Toggle</button>
+  <button type="button">Focus direct</button>
+  <button type="button">Focus chained</button>
+  <ol aria-label="Log">
+    {log.map((entry) => (
+      <li>{entry}</li>
+    ))}
+  </ol>
+</section>

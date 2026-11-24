@@ -57,13 +57,15 @@ interface Checked {
 /**
  * The declarations the checker reads beside the outputs, from the target's toolchain package: a
  * styled output imports its sheet (`import "./Card.uf.tsx.css"`), which type-checks only through
- * `declare module "*.css"` (ADR-0023, ADR-0063). Each target's M4 lane lists its own.
+ * `declare module "*.css"` (ADR-0023, ADR-0063). Each target's M4 lane lists its own. React,
+ * Vue and Svelte read `process.env.NODE_ENV` for `isDev`, which an app declares (ADR-0117).
  */
 const DECLARATIONS: Readonly<Record<string, readonly string[]>> = {
-  react: ["sheets.d.ts"],
+  react: ["sheets.d.ts", "environment.d.ts"],
+  vue: ["environment.d.ts"],
   solid: ["sheets.d.ts"],
   solid2: ["sheets.d.ts"],
-  svelte: ["sheets.d.ts"],
+  svelte: ["sheets.d.ts", "environment.d.ts"],
   astro: ["sheets.d.ts"],
   qwik: ["sheets.d.ts"],
 };

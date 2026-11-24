@@ -19,6 +19,8 @@ const context = { toolchainDir, root: toolchainDir };
 /** The declarations of the styling engines' modules, which the styled goldens import (ADR-0064). */
 const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts");
+/** `process.env.NODE_ENV`, which an output's `isDev` check reads and an app declares (ADR-0117). */
+const ENVIRONMENT = join(toolchainDir, "environment.d.ts");
 /** vue-tsc takes about a second; give it room on a loaded machine. */
 const checker = { timeout: 60_000 };
 
@@ -87,7 +89,7 @@ describe("vue typecheck", () => {
       ].join("\n"),
     });
 
-    const clean = [...golden, child!, STYLEFRAME, FIXTURE_ENGINE];
+    const clean = [...golden, child!, ENVIRONMENT, STYLEFRAME, FIXTURE_ENGINE];
     const results = await toolchain.typecheck([...clean, broken!], context);
 
     expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());

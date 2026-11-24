@@ -1,4 +1,4 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   For,
   createMemo,
@@ -7,6 +7,7 @@ import {
   createSignal,
   flush,
   getObserver,
+  omit,
   onCleanup,
   onSettled,
   runWithOwner,
@@ -24,8 +25,15 @@ export interface RunsEvents {
 }
 
 export default function Runs(
-  props: RunsProps & RunsEvents & { class?: string; style?: JSX.CSSProperties },
+  props: RunsProps &
+    RunsEvents &
+    Omit<ComponentProps<"section">, "label" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "label", "onMoved", "onRendered", "onSaved");
+
   const [low, setLow] = createState(0);
   const [high, setHigh] = createState(10);
   const [query, setQuery] = createState("");
@@ -101,7 +109,7 @@ export default function Runs(
   }
 
   return (
-    <section aria-label="Runs" class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <section aria-label="Runs" {...others}>
       <p role="status">
         {low()}-{high()}
       </p>
@@ -136,13 +144,6 @@ export default function Runs(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

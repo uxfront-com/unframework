@@ -1,0 +1,9 @@
+error[UF2001]: `...rest` holds what a consumer passes that the component does not declare, which falls through to its root unless `defineOptions({ inheritAttrs: false })` turns that off (ADR-0118).
+ --> diagnostics/rest-props/Field.uf.tsx:4:40
+  |
+4 | export default function Field({ label, ...rest }: { label: string }) {
+  |                                        ^^^^^^^
+  |
+  = help: Call `defineOptions({ inheritAttrs: false })` and spread `rest` on one element, or remove the rest.
+  = fix (safe): Turn fallthrough off with `defineOptions`
+  = see: https://unframework.dev/diagnostics/UF2001

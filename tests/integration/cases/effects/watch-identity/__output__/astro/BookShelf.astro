@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface Book {
   id: number;
   title: string;
@@ -8,19 +10,12 @@ export interface BookShelfProps {
   books: Book[];
 }
 
-interface Props extends BookShelfProps {
+interface Props extends BookShelfProps, Omit<HTMLAttributes<"section">, "books"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { books, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { books, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const focused = null as Book | null;
 const reads = new Map<number, number>();
@@ -33,9 +28,9 @@ const high = 5 as number;
 
 <section
   class:list={["book-shelf", className]}
-  aria-label="Books"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Books"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <ul aria-label="Shelf">
     {books.map((book) => (

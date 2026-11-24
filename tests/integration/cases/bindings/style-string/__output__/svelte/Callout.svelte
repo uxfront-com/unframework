@@ -8,11 +8,26 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = CalloutProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["aside"],
+    "heading" | "body" | "children" | "class" | "style" | "ref"
+  > &
+    CalloutProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["aside"] | null;
+    };
 
-  let { heading, body, class: className, style, ...attributes }: Props = $props();
+  let {
+    heading,
+    body,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -50,20 +65,14 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <aside
   class={["callout", className]}
   aria-label={heading}
   style={mergeStyle({ "--callout-accent": "#1f4d7a", "border-left": "4px solid var(--callout-accent)", padding: "8px 12px", color: "#1a1a1a" }, style)}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p style="margin: 0; font-weight: 700">{heading}</p
   ><p style="margin: 4px 0 0">{body}</p>

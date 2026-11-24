@@ -1,12 +1,13 @@
-import { type JSX, onCleanup, untrack } from "solid-js";
+import { type ComponentProps, type JSX, onCleanup, splitProps, untrack } from "solid-js";
 
 export default function SearchField(
-  props: { label: string } & {
-    class?: string;
-    style?: JSX.CSSProperties;
-    ref?: (api: { focus: () => void }) => void;
-  },
+  props: { label: string } & Omit<ComponentProps<"label">, "label" | "ref" | "style"> & {
+      style?: JSX.CSSProperties;
+      ref?: (api: { focus: () => void }) => void;
+    },
 ) {
+  const [, others] = splitProps(props, ["label", "ref", "class"]);
+
   let input: HTMLInputElement | null = null;
 
   function focus() {
@@ -16,11 +17,7 @@ export default function SearchField(
   untrack(() => props.ref?.({ focus }));
 
   return (
-    <label
-      class={props.class ? `search ${props.class}` : "search"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <label class={props.class ? `search ${props.class}` : "search"} {...others}>
       {props.label}
       <input
         ref={(element) => {
@@ -33,11 +30,4 @@ export default function SearchField(
       />
     </label>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

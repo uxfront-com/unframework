@@ -208,56 +208,6 @@
                 }
               },
               {
-                "kind": "Listener",
-                "event": "press",
-                "handler": {
-                  "kind": "Inline",
-                  "function": {
-                    "parameters": [],
-                    "body": {
-                      "code": "(pressed.value = \"docs\")",
-                      "span": {
-                        "start": 644,
-                        "end": 668
-                      },
-                      "refs": [
-                        {
-                          "kind": "Write",
-                          "binding": "pressed@250",
-                          "operator": "=",
-                          "span": {
-                            "start": 644,
-                            "end": 668
-                          },
-                          "target": {
-                            "start": 645,
-                            "end": 658
-                          },
-                          "value": {
-                            "start": 661,
-                            "end": 667
-                          },
-                          "arrowBody": true
-                        }
-                      ]
-                    },
-                    "expression": true,
-                    "span": {
-                      "start": 638,
-                      "end": 668
-                    }
-                  },
-                  "span": {
-                    "start": 638,
-                    "end": 668
-                  }
-                },
-                "span": {
-                  "start": 629,
-                  "end": 669
-                }
-              },
-              {
                 "kind": "Class",
                 "items": [
                   {
@@ -307,6 +257,56 @@
                   "start": 591,
                   "end": 620
                 }
+              },
+              {
+                "kind": "Listener",
+                "event": "press",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(pressed.value = \"docs\")",
+                      "span": {
+                        "start": 644,
+                        "end": 668
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "pressed@250",
+                          "operator": "=",
+                          "span": {
+                            "start": 644,
+                            "end": 668
+                          },
+                          "target": {
+                            "start": 645,
+                            "end": 658
+                          },
+                          "value": {
+                            "start": 661,
+                            "end": 667
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 638,
+                      "end": 668
+                    }
+                  },
+                  "span": {
+                    "start": 638,
+                    "end": 668
+                  }
+                },
+                "span": {
+                  "start": 629,
+                  "end": 669
+                }
               }
             ],
             "fills": [],
@@ -349,6 +349,48 @@
                 "span": {
                   "start": 723,
                   "end": 733
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "off",
+                    "span": {
+                      "start": 750,
+                      "end": 755
+                    }
+                  },
+                  {
+                    "kind": "Toggle",
+                    "name": "muted",
+                    "condition": {
+                      "code": "!linked.value",
+                      "span": {
+                        "start": 766,
+                        "end": 779
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "linked@182",
+                          "span": {
+                            "start": 767,
+                            "end": 779
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 759,
+                      "end": 779
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 742,
+                  "end": 783
                 }
               },
               {
@@ -400,48 +442,6 @@
                   "start": 792,
                   "end": 831
                 }
-              },
-              {
-                "kind": "Class",
-                "items": [
-                  {
-                    "kind": "Static",
-                    "value": "off",
-                    "span": {
-                      "start": 750,
-                      "end": 755
-                    }
-                  },
-                  {
-                    "kind": "Toggle",
-                    "name": "muted",
-                    "condition": {
-                      "code": "!linked.value",
-                      "span": {
-                        "start": 766,
-                        "end": 779
-                      },
-                      "refs": [
-                        {
-                          "kind": "Binding",
-                          "binding": "linked@182",
-                          "span": {
-                            "start": 767,
-                            "end": 779
-                          }
-                        }
-                      ]
-                    },
-                    "span": {
-                      "start": 759,
-                      "end": 779
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 742,
-                  "end": 783
-                }
               }
             ],
             "fills": [],
@@ -468,6 +468,23 @@
                 "span": {
                   "start": 853,
                   "end": 864
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "save",
+                    "span": {
+                      "start": 865,
+                      "end": 877
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 865,
+                  "end": 877
                 }
               },
               {
@@ -518,23 +535,6 @@
                 "span": {
                   "start": 878,
                   "end": 918
-                }
-              },
-              {
-                "kind": "Class",
-                "items": [
-                  {
-                    "kind": "Static",
-                    "value": "save",
-                    "span": {
-                      "start": 865,
-                      "end": 877
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 865,
-                  "end": 877
                 }
               }
             ],
@@ -967,6 +967,31 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                },
+                {
+                  "name": "disabled"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                },
+                {
+                  "name": "style",
+                  "value": "padding: 4px 8px"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
             "rootTags": [
               "a",
               "button"
@@ -1027,7 +1052,58 @@
             "slots": [],
             "exposes": [],
             "inheritAttrs": true,
-            "root": "component"
+            "root": "component",
+            "rootTags": [
+              "a",
+              "button"
+            ],
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                },
+                {
+                  "name": "disabled"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                },
+                {
+                  "name": "style",
+                  "value": "padding: 4px 8px"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootDeclarations": [
+              {
+                "name": "href",
+                "kind": "prop",
+                "component": "Base"
+              },
+              {
+                "name": "disabled",
+                "kind": "prop",
+                "component": "Base"
+              },
+              {
+                "name": "text",
+                "kind": "prop",
+                "component": "Base"
+              },
+              {
+                "name": "press",
+                "kind": "event",
+                "component": "Base"
+              }
+            ]
           }
         ],
         "keys": []

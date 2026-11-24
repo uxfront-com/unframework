@@ -1,22 +1,14 @@
 import { useMediaQuery } from "./useMediaQuery";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface LayoutAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type LayoutAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Layout({ className, style, ...attributes }: LayoutAttributes) {
   const { matches: wide } = useMediaQuery("(min-width: 1px)");
   const { matches: tiny } = useMediaQuery("(max-width: 1px)");
 
   return (
-    <section
-      className={cx("layout", className)}
-      aria-label="Layout"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("layout", className)} aria-label="Layout" style={style} {...attributes}>
       <p role="status">{wide ? "Wide layout" : "Narrow layout"}</p>
       <p>{tiny ? "Tiny screen" : "Not a tiny screen"}</p>
     </section>
@@ -36,13 +28,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

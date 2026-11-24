@@ -1,10 +1,7 @@
 import { useTracked } from "./useTracked";
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
-export interface TimelineAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TimelineAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Timeline({ className, style, ...attributes }: TimelineAttributes) {
   const [entries, setEntries] = useState<string[]>([]);
@@ -41,7 +38,7 @@ export default function Timeline({ className, style, ...attributes }: TimelineAt
       className={cx("timeline", className)}
       aria-label="Timeline"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">Count: {count}</p>
       <button type="button" onClick={() => increment()}>
@@ -69,13 +66,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

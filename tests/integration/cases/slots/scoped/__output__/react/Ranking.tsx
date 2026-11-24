@@ -1,10 +1,7 @@
 import List from "./List";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface RankingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type RankingAttributes = Omit<ComponentPropsWithRef<"div">, "names" | "children">;
 
 export default function Ranking({
   names,
@@ -13,7 +10,7 @@ export default function Ranking({
   ...attributes
 }: { names: string[] } & RankingAttributes) {
   return (
-    <div className={className} style={style} {...scopeAttributes(attributes)}>
+    <div className={className} style={style} {...attributes}>
       <List
         items={names}
         label="Podium"
@@ -30,13 +27,4 @@ export default function Ranking({
       />
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

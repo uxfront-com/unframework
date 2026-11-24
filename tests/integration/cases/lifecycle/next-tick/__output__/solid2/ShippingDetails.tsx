@@ -1,13 +1,19 @@
-import type { JSX } from "@solidjs/web";
-import { Show, createSignal, getObserver, onCleanup } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, createSignal, getObserver, omit, onCleanup } from "solid-js";
 
 export interface ShippingDetailsEvents {
   onToggled?: (items: number) => void;
 }
 
 export default function ShippingDetails(
-  props: ShippingDetailsEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ShippingDetailsEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onToggled", "class");
+
   const [open, setOpen] = createState(false);
   let details: HTMLUListElement | null = null;
 
@@ -21,8 +27,7 @@ export default function ShippingDetails(
     <section
       class={props.class ? `shipping-details ${props.class}` : "shipping-details"}
       aria-label="Shipping"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-expanded={enumeratedValue(open())} onClick={toggle}>
         Shipping details
@@ -50,13 +55,6 @@ export default function ShippingDetails(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

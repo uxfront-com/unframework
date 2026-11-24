@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ShippingLabelProps {
   recipient: string;
@@ -7,10 +7,10 @@ export interface ShippingLabelProps {
   postcode: string;
 }
 
-export interface ShippingLabelAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShippingLabelAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "recipient" | "street" | "city" | "postcode" | "children"
+>;
 
 export default function ShippingLabel({
   recipient,
@@ -26,7 +26,7 @@ export default function ShippingLabel({
       className={cx("shipping-label", className)}
       aria-label="Shipping label"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>
         <strong>To:</strong> {recipient}
@@ -66,13 +66,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

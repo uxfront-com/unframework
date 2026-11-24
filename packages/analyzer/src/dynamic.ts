@@ -26,14 +26,14 @@ import type { AST } from "@unframework.dev/parser";
 
 import { canonicalName, takesByName, unknownOnEvery } from "./attribute-names.ts";
 import { lowerAttributes } from "./attributes.ts";
-import { componentOf, lowerComponentAs } from "./components.ts";
-import { Reporter } from "./context.ts";
+import { componentOf, isRestSpread, lowerComponentAs } from "./components.ts";
 import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, span } from "./expressions.ts";
 import { hasContent, lowerChildren } from "./lower.ts";
 import type { Place } from "./lower.ts";
 import { CONTROL_MODEL } from "./models.ts";
+import { merge, probe } from "./probes.ts";
 import type { ComponentInfo, RenderContext } from "./render.ts";
 import { has } from "./types/kinds.ts";
 
@@ -72,6 +72,22 @@ export function lowerDynamic(
       "`<component is>` as the element a list renders is not supported: a list renders an element or a component, which takes its `key`.",
       { help: "Wrap it in an element that takes the `key`." },
     );
+    return undefined;
+  }
+  // The props' rest is spread on one element (ADR-0118), and `is` chooses among several: each
+  // tag or candidate would take it, so it is reported once, here.
+  const rest = node.openingElement.attributes.find(
+    (item): item is AST.JSXSpreadAttribute =>
+      item.type === "JSXSpreadAttribute" && isRestSpread(item, render),
+  );
+  if (rest) {
+    reporter.report(
+      "UF2001",
+      rest,
+      `\`${render.restProps!.name}\` is spread on \`<component is>\`: the props' rest is spread whole on one element, and \`is\` chooses among several (ADR-0118).`,
+      { help: `Spread it on an element, \`<input {...${render.restProps!.name}} />\`.` },
+    );
+    lowerChildren(node.children, place, render);
     return undefined;
   }
   const value = isAttribute?.value;
@@ -265,27 +281,6 @@ interface Lowered {
 }
 
 /**
- * A copy of the render context that reports into a reporter of its own and leaves the context's
- * lists as they are: each candidate after the first is checked in one, and only what it finds
- * that the first did not is reported.
- */
-function probe(render: RenderContext): RenderContext {
-  return {
-    ...render,
-    reporter: new Reporter(render.reporter.file),
-    bindings: [...render.bindings],
-    attached: new Map(render.attached),
-    loopVariables: new Map(render.loopVariables),
-    facts: {
-      nestedCalls: [...render.facts.nestedCalls],
-      getterKinds: new Map(render.facts.getterKinds),
-      tickCallbacks: [...render.facts.tickCallbacks],
-      passed: new Map(render.facts.passed),
-    },
-  };
-}
-
-/**
  * Takes into the context what a probe found that it lacks: the bindings, the template refs'
  * attachments and the code facts of the attributes lowered there alone (ADR-0119). What both
  * found is kept once.
@@ -314,23 +309,6 @@ function adopt(render: RenderContext, probe: RenderContext): void {
   }
   for (const [key, value] of probe.facts.passed)
     if (!facts.passed.has(key)) facts.passed.set(key, value);
-}
-
-/** Reports what each later candidate's check found that the first one's did not. */
-function merge(render: RenderContext, mark: number, probes: readonly RenderContext[]): void {
-  const seen = new Set(
-    render.reporter.diagnostics
-      .slice(mark)
-      .map((each) => `${each.code} ${each.span.start} ${each.message}`),
-  );
-  for (const each of probes) {
-    for (const diagnostic of each.reporter.diagnostics) {
-      const key = `${diagnostic.code} ${diagnostic.span.start} ${diagnostic.message}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      render.reporter.diagnostics.push(diagnostic);
-    }
-  }
 }
 
 /**

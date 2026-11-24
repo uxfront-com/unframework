@@ -1,10 +1,7 @@
 import type { BadgeProps } from "./types";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface BadgeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BadgeAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "tone" | "children">;
 
 export default function Badge({
   label,
@@ -14,11 +11,7 @@ export default function Badge({
   ...attributes
 }: BadgeProps & BadgeAttributes) {
   return (
-    <span
-      className={cx(`badge badge-${tone}`, className)}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <span className={cx(`badge badge-${tone}`, className)} style={style} {...attributes}>
       {label}
     </span>
   );
@@ -37,13 +30,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

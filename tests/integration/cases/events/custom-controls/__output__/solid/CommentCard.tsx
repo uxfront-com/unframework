@@ -1,12 +1,15 @@
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 
 export interface CommentCardEvents {
   onLiked?: (liked: boolean, by: string) => void;
 }
 
 export default function CommentCard(
-  props: CommentCardEvents & { class?: string; style?: JSX.CSSProperties },
+  props: CommentCardEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onLiked", "class"]);
+
   const [text, setText] = createSignal("");
   const [liked, setLiked] = createSignal(false);
 
@@ -30,8 +33,7 @@ export default function CommentCard(
     <section
       class={props.class ? `comment-card ${props.class}` : "comment-card"}
       aria-label="Comment"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <label>
         Comment
@@ -53,11 +55,4 @@ export default function CommentCard(
       </div>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -14,25 +14,51 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ArticleTeaserProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["article"],
+    | "title"
+    | "summary"
+    | "author"
+    | "minutes"
+    | "featured"
+    | "category"
+    | "pinned"
+    | "layout"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    ArticleTeaserProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["article"] | null;
+    };
 
-  let { title, summary, minutes = 5, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    title,
+    summary,
+    minutes = 5,
+    pinned: _pinned,
+    layout: _layout,
+    author: _author,
+    featured: _featured,
+    category: _category,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <article
   class={["article-teaser", className]}
   aria-label={title}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>{title}</h2
   ><p>{summary}</p

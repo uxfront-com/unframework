@@ -9,21 +9,26 @@
 </script>
 
 <script lang="ts" generics="T">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ListProps<T> & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["ul"],
+    "label" | "items" | "selected" | "children" | "class" | "style" | "ref"
+  > &
+    ListProps<T> & { class?: ClassValue; style?: string; ref?: HTMLElementTagNameMap["ul"] | null };
 
-  let { label, items, selected, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    label,
+    items,
+    selected,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<ul aria-label={label} class={className} {style} {...scopeAttributes(attributes)}>
+<ul aria-label={label} class={className} {style} bind:this={ref} {...attributes}>
   {#each items as item, index (index)}
     <li aria-current={item === selected ? "true" : undefined}>{String(item)}</li>
   {/each}

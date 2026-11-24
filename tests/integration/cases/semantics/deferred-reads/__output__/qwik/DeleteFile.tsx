@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -16,7 +17,12 @@ export interface DeleteFileEvents {
 }
 
 export default component$<
-  DeleteFileProps & DeleteFileEvents & { class?: ClassList; style?: CSSProperties }
+  DeleteFileProps &
+    DeleteFileEvents &
+    Omit<PropsOf<"section">, "fileName" | "onDeleted$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ fileName, onDeleted$, class: className, style, ...attributes }) => {
   const copies = useSignal(1);
   const confirming = useSignal(false);
@@ -40,12 +46,7 @@ export default component$<
   });
 
   return (
-    <section
-      class={["delete-file", className]}
-      aria-label="File"
-      {...scopeAttributes(attributes)}
-      style={style}
-    >
+    <section class={["delete-file", className]} aria-label="File" style={style} {...attributes}>
       <p>
         {fileName}, {copies.value} {copies.value === 1 ? "copy" : "copies"}
       </p>
@@ -64,12 +65,3 @@ export default component$<
     </section>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

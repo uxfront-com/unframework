@@ -1,28 +1,27 @@
 import Rows from "./Rows";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface WrapperSlots {
   row?: JSX.Element;
 }
 
 export default function Wrapper(
-  props: WrapperSlots & { class?: string; style?: JSX.CSSProperties },
+  props: WrapperSlots &
+    Omit<ComponentProps<"section">, "row" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "row", "class");
+
   return (
     <section
       class={props.class ? `wrapper ${props.class}` : "wrapper"}
       aria-label="Rows"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Rows row={props.row} />
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

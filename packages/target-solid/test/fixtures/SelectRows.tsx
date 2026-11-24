@@ -1,41 +1,42 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   createEffect,
   createMemo,
   createSignal,
   onCleanup,
+  splitProps,
   untrack,
 } from "solid-js";
 
 import { SelectRow } from "./SelectRow";
 
 export default function SelectRows(
-  props: { values: string[] } & { class?: string; style?: JSX.CSSProperties },
+  props: { values: string[] } & Omit<ComponentProps<"select">, "values" | "style" | "onChange"> & {
+      style?: JSX.CSSProperties;
+      onChange?: Extract<ComponentProps<"select">["onChange"], (event: never) => void>;
+    },
 ) {
+  const [, others] = splitProps(props, ["values", "onChange"]);
+
   const [size, setSize] = createSignal("y");
 
   return (
     <select
       aria-label="Size"
-      onChange={(event) => setSize(event.currentTarget.value)}
+      onChange={(event) => {
+        setSize(event.currentTarget.value);
+        props.onChange?.(event);
+      }}
       ref={(select) => selectOptions(select, size)}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <KeyedFor each={props.values} by={(value) => value}>
         {(value) => <SelectRow value={value.value} />}
       </KeyedFor>
     </select>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

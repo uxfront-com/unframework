@@ -174,7 +174,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "span"
+            "rootTag": "span",
+            "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "badge"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "span"
           },
           {
             "name": "Pill",
@@ -192,7 +203,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "span"
+            "rootTag": "span",
+            "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "pill"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "span"
           }
         ],
         "keys": []

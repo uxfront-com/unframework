@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, Match, Show, Switch, createMemo, merge, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, Match, Show, Switch, createMemo, merge, omit, untrack } from "solid-js";
 
 interface Account {
   name: string;
@@ -57,7 +57,24 @@ export interface NarrowingProps {
 }
 
 export default function Narrowing(
-  rawProps: NarrowingProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: NarrowingProps &
+    Omit<
+      ComponentProps<"div">,
+      | "user"
+      | "note"
+      | "rows"
+      | "ready"
+      | "places"
+      | "count"
+      | "value"
+      | "shape"
+      | "result"
+      | "label"
+      | "format"
+      | "attrs"
+      | "class"
+      | "style"
+    > & { class?: string; style?: JSX.CSSProperties },
 ) {
   const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };
   const props = merge(rawProps, {
@@ -65,8 +82,24 @@ export default function Narrowing(
       return rawProps.attrs === undefined ? defaults.attrs : rawProps.attrs;
     },
   });
+  const others = omit(
+    props,
+    "user",
+    "note",
+    "rows",
+    "ready",
+    "places",
+    "count",
+    "value",
+    "shape",
+    "result",
+    "label",
+    "format",
+    "attrs",
+  );
+
   return (
-    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <div {...others}>
       <Show when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Show>
       <Show when={props.user || undefined} fallback={<i>anon</i>}>
         {(user) => <b title={user().name}>{user().name}</b>}
@@ -268,13 +301,6 @@ export default function Narrowing(
       </p>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

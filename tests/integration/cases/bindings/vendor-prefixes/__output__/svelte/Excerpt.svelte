@@ -10,21 +10,31 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = ExcerptProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["article"],
+    "title" | "text" | "fill" | "stroke" | "children" | "class" | "style" | "ref"
+  > &
+    ExcerptProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["article"] | null;
+    };
 
-  let { title, text, fill, stroke, class: className, style, ...attributes }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
+  let {
+    title,
+    text,
+    fill,
+    stroke,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
-<article class={["excerpt", className]} {style} {...scopeAttributes(attributes)}>
+<article class={["excerpt", className]} {style} bind:this={ref} {...attributes}>
   <h2
     style:-webkit-text-fill-color={fill}
     style:-webkit-text-stroke-color={stroke}

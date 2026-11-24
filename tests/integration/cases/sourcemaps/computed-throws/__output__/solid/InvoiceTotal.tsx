@@ -1,12 +1,15 @@
-import { type JSX, createMemo, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createMemo, createSignal, splitProps } from "solid-js";
 
 export interface InvoiceTotalProps {
   quantity: number;
 }
 
 export default function InvoiceTotal(
-  props: InvoiceTotalProps & { class?: string; style?: JSX.CSSProperties },
+  props: InvoiceTotalProps &
+    Omit<ComponentProps<"div">, "quantity" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["quantity"]);
+
   const [refunded, setRefunded] = createSignal(0);
   const total = createMemo(() => {
     const units = props.quantity - refunded();
@@ -21,18 +24,11 @@ export default function InvoiceTotal(
   }
 
   return (
-    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <div {...others}>
       <output>{`${total()} after ${refunded()} refunded`}</output>
       <button type="button" onClick={refund}>
         Refund
       </button>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

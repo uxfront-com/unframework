@@ -2,6 +2,7 @@ import Note from "./Note";
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type Signal,
   component$,
   useSignal,
@@ -20,161 +21,159 @@ const vTrace = {
   },
 };
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
-    const shown = useSignal(true);
-
-    const traceElements = useSignal<DirectiveElement<typeof vTrace>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "outer";
-        for (const element of track(traceElements)) {
-          cleanup(
-            runDirective(vTrace, element, value, {
-              leave: (left) => forgetElement(traceElements, left),
-              back: (kept) => collectElement(traceElements, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_1 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "first";
-        for (const element of track(traceElements_1)) {
-          cleanup(
-            runDirective(vTrace, element, value, {
-              leave: (left) => forgetElement(traceElements_1, left),
-              back: (kept) => collectElement(traceElements_1, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_2 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "branch";
-        for (const element of track(traceElements_2)) {
-          cleanup(
-            runDirective(vTrace, element, value, {
-              leave: (left) => forgetElement(traceElements_2, left),
-              back: (kept) => collectElement(traceElements_2, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_3 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "leaf";
-        for (const element of track(traceElements_3)) {
-          cleanup(
-            runDirective(vTrace, element, value, {
-              leave: (left) => forgetElement(traceElements_3, left),
-              back: (kept) => collectElement(traceElements_3, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_4 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "placeholder";
-        for (const element of track(traceElements_4)) {
-          cleanup(
-            runDirective(vTrace, element, value, {
-              leave: (left) => forgetElement(traceElements_4, left),
-              back: (kept) => collectElement(traceElements_4, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    const traceElements_5 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
-
-    useVisibleTask$(
-      ({ track, cleanup }) => {
-        const value = "last";
-        for (const element of track(traceElements_5)) {
-          cleanup(
-            runDirective(vTrace, element, value, {
-              leave: (left) => forgetElement(traceElements_5, left),
-              back: (kept) => collectElement(traceElements_5, kept),
-            }),
-          );
-        }
-      },
-      { strategy: "document-ready" },
-    );
-
-    return (
-      <section
-        class={["tree", className]}
-        aria-label="Tree"
-        data-name="outer"
-        ref={(element) => collectElement(traceElements, element)}
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <p data-name="first" ref={(element) => collectElement(traceElements_1, element)}>
-          First
-        </p>
-        <Note />
-        <>
-          {shown.value ? (
-            <div
-              class="branch"
-              data-name="branch"
-              ref={(element) => collectElement(traceElements_2, element)}
-            >
-              <span data-name="leaf" ref={(element) => collectElement(traceElements_3, element)}>
-                Leaf
-              </span>
-            </div>
-          ) : (
-            <p data-name="placeholder" ref={(element) => collectElement(traceElements_4, element)}>
-              Placeholder
-            </p>
-          )}
-        </>
-        <p data-name="last" ref={(element) => collectElement(traceElements_5, element)}>
-          Last
-        </p>
-        <button type="button" onClick$={() => (shown.value = !shown.value)}>
-          Toggle
-        </button>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
+export default component$<
+  Omit<PropsOf<"section">, "class" | "style" | "ref"> & {
+    class?: ClassList;
+    style?: CSSProperties;
+    ref?: Signal<Element | undefined>;
   }
-  return scope;
-}
+>(({ class: className, style, ref, ...attributes }) => {
+  const shown = useSignal(true);
+
+  const traceElements = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "outer";
+      for (const element of track(traceElements)) {
+        cleanup(
+          runDirective(vTrace, element, value, {
+            leave: (left) => forgetElement(traceElements, left),
+            back: (kept) => collectElement(traceElements, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_1 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "first";
+      for (const element of track(traceElements_1)) {
+        cleanup(
+          runDirective(vTrace, element, value, {
+            leave: (left) => forgetElement(traceElements_1, left),
+            back: (kept) => collectElement(traceElements_1, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_2 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "branch";
+      for (const element of track(traceElements_2)) {
+        cleanup(
+          runDirective(vTrace, element, value, {
+            leave: (left) => forgetElement(traceElements_2, left),
+            back: (kept) => collectElement(traceElements_2, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_3 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "leaf";
+      for (const element of track(traceElements_3)) {
+        cleanup(
+          runDirective(vTrace, element, value, {
+            leave: (left) => forgetElement(traceElements_3, left),
+            back: (kept) => collectElement(traceElements_3, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_4 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "placeholder";
+      for (const element of track(traceElements_4)) {
+        cleanup(
+          runDirective(vTrace, element, value, {
+            leave: (left) => forgetElement(traceElements_4, left),
+            back: (kept) => collectElement(traceElements_4, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  const traceElements_5 = useSignal<DirectiveElement<typeof vTrace>[]>([]);
+
+  useVisibleTask$(
+    ({ track, cleanup }) => {
+      const value = "last";
+      for (const element of track(traceElements_5)) {
+        cleanup(
+          runDirective(vTrace, element, value, {
+            leave: (left) => forgetElement(traceElements_5, left),
+            back: (kept) => collectElement(traceElements_5, kept),
+          }),
+        );
+      }
+    },
+    { strategy: "document-ready" },
+  );
+
+  return (
+    <section
+      class={["tree", className]}
+      aria-label="Tree"
+      data-name="outer"
+      ref={(element) => {
+        if (ref) ref.value = element;
+        collectElement(traceElements, element);
+      }}
+      style={style}
+      {...attributes}
+    >
+      <p data-name="first" ref={(element) => collectElement(traceElements_1, element)}>
+        First
+      </p>
+      <Note />
+      <>
+        {shown.value ? (
+          <div
+            class="branch"
+            data-name="branch"
+            ref={(element) => collectElement(traceElements_2, element)}
+          >
+            <span data-name="leaf" ref={(element) => collectElement(traceElements_3, element)}>
+              Leaf
+            </span>
+          </div>
+        ) : (
+          <p data-name="placeholder" ref={(element) => collectElement(traceElements_4, element)}>
+            Placeholder
+          </p>
+        )}
+      </>
+      <p data-name="last" ref={(element) => collectElement(traceElements_5, element)}>
+        Last
+      </p>
+      <button type="button" onClick$={() => (shown.value = !shown.value)}>
+        Toggle
+      </button>
+    </section>
+  );
+});
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {

@@ -1,0 +1,18 @@
+---
+import Base from "./Base.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<
+  HTMLAttributes<"a"> & HTMLAttributes<"button">,
+  "href" | "text" | "disabled"
+> {
+  href?: string;
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { href, text, class: className, style, ...attrs } = Astro.props;
+---
+
+<Base href={href} text={text} class:list={["primary", className]} style={style} {...attrs} />

@@ -1,0 +1,4 @@
+{
+  "description": "A consumer's native listeners on a component fire from its root element, beside an event the component declares and its own listener of the same event.",
+  "main": "Picker.uf.tsx"
+}

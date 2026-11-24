@@ -1,25 +1,20 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"article">, "title"> {
   title: string;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { title, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { title, class: className, style, ...attrs } = Astro.props;
 
 const nested = false as boolean;
 
 const Tag = nested ? "h3" : "h2";
 ---
 
-<article class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<article class:list={[className]} style={style} {...attrs}>
   <Tag class="title">{title}</Tag>
   <button type="button">{nested ? "Lift" : "Nest"}</button>
 </article>

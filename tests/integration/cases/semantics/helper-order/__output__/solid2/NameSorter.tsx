@@ -1,10 +1,11 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
   createRoot,
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
 } from "solid-js";
@@ -21,8 +22,14 @@ function compare(a: string, b: string): number {
 }
 
 export default function NameSorter(
-  props: NameSorterEvents & { class?: string; style?: JSX.CSSProperties },
+  props: NameSorterEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onStarted", "onFirstSeen", "onSecondSeen", "onTotal", "class");
+
   const [names, setNames] = createState(["Cy", "Al"].toSorted((a, b) => compare(a, b)));
   const [count, setCount] = createState(0);
 
@@ -62,8 +69,7 @@ export default function NameSorter(
     <section
       class={props.class ? `name-sorter ${props.class}` : "name-sorter"}
       aria-label="Names"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>Names: {names().join(", ")}</p>
       <p>Added: {count()}</p>
@@ -75,13 +81,6 @@ export default function NameSorter(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

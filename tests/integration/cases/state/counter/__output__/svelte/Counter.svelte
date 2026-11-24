@@ -9,15 +9,28 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = CounterProps & {
-    onchange?: (value: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["div"],
+    "initial" | "step" | "onchange" | "children" | "class" | "style" | "ref"
+  > &
+    CounterProps & {
+      onchange?: (value: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["div"] | null;
+    };
 
-  let { initial = 0, step = 1, onchange, class: className, style, ...attributes }: Props = $props();
+  let {
+    initial = 0,
+    step = 1,
+    onchange,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let count = $state(untrack(() => initial));
   const doubled = $derived(count * 2);
@@ -26,16 +39,9 @@
     count += step;
     onchange?.(count);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<div class={["counter", className]} {style} {...scopeAttributes(attributes)}>
+<div class={["counter", className]} {style} bind:this={ref} {...attributes}>
   <output>{count}</output
   >{#if doubled > 10}
     <span>Big</span>

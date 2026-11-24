@@ -9,11 +9,26 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = OrderSummaryProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "price" | "taxRate" | "children" | "class" | "style" | "ref"
+  > &
+    OrderSummaryProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
-  let { price, taxRate, class: className, style, ...attributes }: Props = $props();
+  let {
+    price,
+    taxRate,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let quantity = $state(1);
   const subtotal = $derived(quantity * price);
@@ -24,13 +39,6 @@
     if (total >= 10000) return "bulk";
     return "standard";
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
@@ -38,7 +46,8 @@
   aria-label="Order summary"
   data-tier={tier}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p role="status">Quantity: {quantity}</p
   ><button type="button" disabled={quantity === 1} onclick={() => quantity--}>Remove one</button

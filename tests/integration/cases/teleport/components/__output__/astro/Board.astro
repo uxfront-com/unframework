@@ -1,25 +1,19 @@
 ---
 import Card from "./Card.astro";
 import Tip from "./Tip.astro";
+import type { HTMLAttributes } from "astro/types";
 
 interface Row {
   id: number;
   label: string;
 }
 
-interface Props {
+interface Props extends HTMLAttributes<"section"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const rows = [
   { id: 1, label: "Alpha" },
@@ -30,9 +24,9 @@ const rows = [
 
 <section
   class:list={["board", className]}
-  aria-label="Board"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Board"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <button type="button">Reverse tips</button>
   <button type="button">Show late</button>

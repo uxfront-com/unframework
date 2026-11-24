@@ -2,18 +2,18 @@
   {
     "code": "UF3046",
     "severity": "error",
-    "message": "`Hint` exposes nothing, so a ref on it holds nothing a parent can call.",
+    "message": "A ref on `Hint` holds its root <small>, an `HTMLElement`, and this template ref is typed as another type.",
     "file": "diagnostics/invalid-component-ref/Form.uf.tsx",
     "start": {
       "line": 13,
       "column": 13,
-      "offset": 395
+      "offset": 466
     },
     "end": {
       "line": 13,
       "column": 23,
-      "offset": 405
+      "offset": 476
     },
-    "help": "Expose the functions a parent calls from Hint with `defineExpose({ … })`, or remove the ref."
+    "help": "Type it as the root element: `useTemplateRef<HTMLElement>()`."
   }
 ]

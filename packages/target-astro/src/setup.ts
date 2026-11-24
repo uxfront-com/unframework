@@ -131,6 +131,10 @@ export function setupCode(
           statements.push(use(item, component, live, spelling));
         }
         break;
+      // In the frontmatter, which runs once per render on the server (ADR-0117).
+      case "DevCheck":
+        statements.push(rewriteCode(item.code, component, spelling.rules, "pure"));
+        break;
       default:
         unreachable(item);
     }

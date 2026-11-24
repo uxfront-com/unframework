@@ -11,9 +11,17 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = PlanProps & { class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["article"],
+    "name" | "price" | "href" | "featured" | "note" | "children" | "class" | "style" | "ref"
+  > &
+    PlanProps & {
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["article"] | null;
+    };
 
   let {
     name,
@@ -23,22 +31,17 @@
     note,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <article
   class={[featured ? "plan featured" : "plan", className]}
   aria-label={name}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>{name}</h2
   ><p>{price} EUR a month</p

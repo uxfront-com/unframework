@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface Book {
   id: number;
@@ -17,10 +17,10 @@ export interface BookShelfEvents {
   onSummed?: (total: number) => void;
 }
 
-export interface BookShelfAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BookShelfAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "books" | "onMoved" | "onCounted" | "onToggled" | "onBusy" | "onSummed" | "children"
+>;
 
 function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);
@@ -144,7 +144,7 @@ export default function BookShelf({
       className={cx("book-shelf", className)}
       aria-label="Books"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <ul aria-label="Shelf">
         {books.map((book) => (
@@ -206,13 +206,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

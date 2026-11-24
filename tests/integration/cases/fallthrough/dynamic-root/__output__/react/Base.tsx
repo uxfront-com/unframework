@@ -1,13 +1,29 @@
-import type { CSSProperties, MouseEvent } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  type DOMAttributes,
+  type MouseEvent,
+  type Ref,
+  type RefCallback,
+  useMemo,
+} from "react";
 
 export interface BaseEvents {
   onPress?: () => void;
 }
 
-export interface BaseAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type BaseAttributes = Omit<
+  ComponentPropsWithoutRef<"a"> & ComponentPropsWithoutRef<"button">,
+  | "href"
+  | "disabled"
+  | "text"
+  | "onPress"
+  | "children"
+  | keyof DOMAttributes<HTMLAnchorElement | HTMLButtonElement>
+> &
+  Omit<
+    DOMAttributes<HTMLAnchorElement | HTMLButtonElement>,
+    "children" | "dangerouslySetInnerHTML" | "onPress"
+  > & { ref?: Ref<HTMLAnchorElement | HTMLButtonElement> };
 
 export default function Base({
   href,
@@ -16,12 +32,16 @@ export default function Base({
   onPress,
   className,
   style,
+  onClick,
+  ref,
   ...attributes
 }: { href?: string; disabled?: boolean; text: string } & BaseEvents & BaseAttributes) {
   function press(event: MouseEvent) {
     event.preventDefault();
     onPress?.();
   }
+
+  const rootRef = useMemo(() => mergeRefs(ref), [ref]);
 
   const Tag = href ? "a" : "button";
 
@@ -31,8 +51,12 @@ export default function Base({
       disabled={Tag === "button" ? disabled : undefined}
       className={cx("base", className)}
       style={{ padding: "4px 8px", ...style }}
-      onClick={press}
-      {...scopeAttributes(attributes)}
+      onClick={(event) => {
+        press(event);
+        onClick?.(event);
+      }}
+      ref={rootRef}
+      {...attributes}
     >
       {text}
     </Tag>
@@ -54,11 +78,21 @@ function cx(...parts: unknown[]): string {
   return names.join(" ");
 }
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
+/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+function mergeRefs<E extends Element>(...refs: (Ref<E> | undefined)[]): RefCallback<E> {
+  return (element) => {
+    const cleanups = refs.map((ref) => {
+      if (typeof ref === "function") {
+        const cleanup = ref(element);
+        return typeof cleanup === "function" ? cleanup : () => ref(null);
+      }
+      if (ref) ref.current = element;
+      return () => {
+        if (ref) ref.current = null;
+      };
+    });
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+  };
 }

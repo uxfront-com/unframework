@@ -18,16 +18,29 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import { on } from "svelte/events";
 
-  type Props = MeetingListProps & {
-    onopened?: (title: string) => void;
-    onthanked?: (name: string) => void;
-    ontrack?: (name: string, count: number) => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    | "meetings"
+    | "organiser"
+    | "onopened"
+    | "onthanked"
+    | "ontrack"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+  > &
+    MeetingListProps & {
+      onopened?: (title: string) => void;
+      onthanked?: (name: string) => void;
+      ontrack?: (name: string, count: number) => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["section"] | null;
+    };
 
   let {
     meetings,
@@ -37,6 +50,7 @@
     ontrack,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -72,20 +86,14 @@
       handler(event);
     };
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["meeting-list", className]}
   aria-label="Meetings"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <ul aria-label="Upcoming">
     {#each upcoming as event (event.id)}

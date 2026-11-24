@@ -1,21 +1,16 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface DeleteFileProps {
   fileName: string;
 }
 
-interface Props extends DeleteFileProps {
+interface Props extends DeleteFileProps, Omit<HTMLAttributes<"section">, "fileName"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { fileName, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { fileName, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const copies = 1 as number;
 const confirming = false as boolean;
@@ -23,9 +18,9 @@ const confirming = false as boolean;
 
 <section
   class:list={["delete-file", className]}
-  aria-label="File"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "File"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p>{fileName}, {copies} {copies === 1 ? "copy" : "copies"}</p>
   <button type="button">Add a copy</button>

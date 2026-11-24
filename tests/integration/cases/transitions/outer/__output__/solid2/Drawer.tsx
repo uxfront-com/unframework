@@ -1,4 +1,4 @@
-import { type JSX, isServer } from "@solidjs/web";
+import { type ComponentProps, type JSX, isServer } from "@solidjs/web";
 import {
   Show,
   children,
@@ -11,18 +11,17 @@ import {
 } from "solid-js";
 import "./Drawer.uf.tsx.css";
 
-export default function Drawer(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Drawer(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
   const [shown, setShown] = createState(true);
   const [open, setOpen] = createState(true);
 
   return (
-    <section
-      aria-label="Filters"
-      data-uf-54e3e959=""
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <section aria-label="Filters" data-uf-54e3e959="" {...props}>
       <button type="button" onClick={() => setShown(!shown())} data-uf-54e3e959="">
         Drawer
       </button>
@@ -40,13 +39,6 @@ export default function Drawer(props: { class?: string; style?: JSX.CSSPropertie
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Runs Vue's transition classes of `name` on the element `children` renders as it enters and leaves. */

@@ -1,9 +1,6 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface ProfileCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProfileCardAttributes = Omit<ComponentPropsWithRef<"article">, "children">;
 
 export default function ProfileCard({ className, style, ...attributes }: ProfileCardAttributes) {
   return (
@@ -11,7 +8,7 @@ export default function ProfileCard({ className, style, ...attributes }: Profile
       className={cx("profile", className)}
       aria-labelledby="profile-name"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <header className="profile-header">
         <img
@@ -47,13 +44,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 
 import { everyKind } from "../../ir/test/fixtures.ts";
 import { checkCapabilities } from "../src/capabilities.ts";
-import { compile, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";
+import { compile, createFileResolver, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";
 
 describe("portability diagnostics", () => {
   it("reports Vue's single-selection list box at its `size`, on Vue alone", async () => {
@@ -38,6 +38,98 @@ describe("portability diagnostics", () => {
       /^The vue target does not support listbox: runtime-dom's `nodeOps.createElement` /,
     );
     for (const target of TARGET_NAMES) expect(result.outputs[target], target).toHaveLength(1);
+  });
+
+  it("reports a listener that falls through a component once on Astro, and prints none", async () => {
+    // A native listener on a component falls through to its root (ADR-0118), which needs code
+    // running in the browser: Astro reports `interactivity` (info) there, and drops it.
+    const files: Record<string, string> = {
+      "/project/Chip.uf.tsx": [
+        "export default function Chip({ label }: { label: string }) {",
+        '  return <button type="button">{label}</button>;',
+        "}",
+        "",
+      ].join("\n"),
+    };
+    const resolve = createFileResolver({
+      root: "/project",
+      readFile: (path) => Promise.resolve(files[path]),
+    });
+    const source = [
+      'import Chip from "./Chip.uf.tsx";',
+      "",
+      "export default function Picker() {",
+      "  return (",
+      "    <section>",
+      '      <Chip label="Ada" onClick={() => {}} />',
+      "    </section>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const result = await compile(source, {
+      filename: "Picker.uf.tsx",
+      targets: ["astro"],
+      resolve,
+    });
+    expect(
+      result.diagnostics.map(({ code, severity, target, span }) => [
+        code,
+        severity,
+        target,
+        source.slice(span.start, span.end),
+      ]),
+    ).toEqual([["UF4001", "info", "astro", "onClick={() => {}}"]]);
+    expect(result.diagnostics[0]!.message).toMatch(
+      /^The astro target does not support interactivity: /,
+    );
+    const [output] = result.outputs.astro!;
+    expect(output!.contents).toContain('<Chip label="Ada" />');
+    expect(output!.contents).not.toMatch(/onClick|=>/);
+  });
+});
+
+describe("a listener that falls through to a <component is> root (ADR-0122)", () => {
+  // The listener is the page's only code that runs in the browser: Astro reports it alone, at its
+  // own span, and drops it, as it does on an element root.
+  it("reports it on Astro, and drops it", async () => {
+    const files: Record<string, string> = {
+      "/project/Base.uf.tsx": [
+        "export default function Base({ href, text }: { href?: string; text: string }) {",
+        '  return <component is={href ? "a" : "button"} href={href}>{text}</component>;',
+        "}",
+        "",
+      ].join("\n"),
+    };
+    const resolve = createFileResolver({
+      root: "/project",
+      readFile: (path) => Promise.resolve(files[path]),
+    });
+    const source = [
+      'import Base from "./Base.uf.tsx";',
+      "",
+      "export default function Page() {",
+      "  function go() {}",
+      "  return (",
+      "    <section>",
+      '      <Base text="Go" id="go" onClick={go} />',
+      "    </section>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const result = await compile(source, { filename: "Page.uf.tsx", targets: ["astro"], resolve });
+    expect(
+      result.diagnostics.map(({ code, severity, target, span }) => [
+        code,
+        severity,
+        target,
+        source.slice(span.start, span.end),
+      ]),
+    ).toEqual([["UF4001", "info", "astro", "onClick={go}"]]);
+    const [output] = result.outputs.astro!;
+    expect(output!.contents).toContain('<Base text="Go" id="go" />');
+    expect(output!.contents).not.toMatch(/onClick/);
   });
 });
 

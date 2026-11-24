@@ -103,7 +103,9 @@ update renews them even when the key holds. It returns the modules it compiled a
 that were added, changed or went.
 
 `dependencies(file)` lists what a module read. A caller that changes a file without `update` gets
-the last result. `createFileResolver` is a project's `resolve`.
+the last result. A project calls `readFile` once for each file while a compile, an update, a
+`resolve()` or a `resolve.cycle()` is in flight, and again in the next one, so each sees one
+version of each file. `createFileResolver` is a project's `resolve`.
 
 **Cycles.** The resolver's `cycle` gives the files of the cycle of component edges an import
 closes, from the importer back to it: a component edge is a value import of a component from

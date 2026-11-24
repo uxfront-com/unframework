@@ -36,6 +36,7 @@ import type { AuthoringApi } from "./authoring.ts";
 import { AUTHORING_TYPES } from "./authoring.ts";
 import { checkClientRules } from "./client-rules.ts";
 import { closure } from "./declarations.ts";
+import { misplacedDev } from "./dev.ts";
 import type { PropsAnalysis } from "./props.ts";
 import type { RenderContext, SetupBinding } from "./render.ts";
 import type { ItemSource, Setup } from "./setup.ts";
@@ -318,6 +319,16 @@ class Rules {
               help: "Pass the value in as a prop, or set it from client code (`onMounted`, a handler).",
             },
           );
+        }
+        // A development build would render, or compute, otherwise than a production one, and
+        // Solid's server reads its `isDev` as `false`, so its hydration would differ (ADR-0117).
+        if (summary.dev) {
+          misplacedDev(
+            ref.span,
+            this.#reporter,
+            `\`${name}\` tests \`isDev\`, and ${where} calls it: a development build would ${where === "a template expression" ? "render" : "compute"} otherwise than a production one. Only client code tests \`isDev\`, or calls a function that does.`,
+          );
+          continue;
         }
         const impure = this.#impurity(summary);
         if (impure) {
@@ -611,6 +622,10 @@ class Rules {
           break;
         case "Inject":
           if (item.fallback) codes.push(item.fallback);
+          break;
+        // A development-only block runs as the setup does, in source order (ADR-0117).
+        case "DevCheck":
+          codes.push(item.code);
           break;
         // A value is evaluated as the setup runs, and a getter may be read at once (ADR-0069).
         case "Use":

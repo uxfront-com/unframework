@@ -1,21 +1,13 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface TermsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type TermsAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Terms({ className, style, ...attributes }: TermsAttributes) {
   const [agreed, setAgreed] = useState(false);
   const agreedRef = useRef(agreed);
 
   return (
-    <section
-      aria-label="Terms"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Terms" className={className} style={style} {...attributes}>
       <label>
         <input
           type="checkbox"
@@ -39,13 +31,4 @@ export default function Terms({ className, style, ...attributes }: TermsAttribut
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

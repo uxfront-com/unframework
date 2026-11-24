@@ -1,13 +1,19 @@
-import type { JSX } from "@solidjs/web";
-import { createSignal, getObserver } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { createSignal, getObserver, omit } from "solid-js";
 
 export interface SaveDraftEvents {
   onSaved?: (attempt: number, status: string) => void;
 }
 
 export default function SaveDraft(
-  props: SaveDraftEvents & { class?: string; style?: JSX.CSSProperties },
+  props: SaveDraftEvents &
+    Omit<ComponentProps<"section">, "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "onSaved", "class");
+
   const [status, setStatus] = createState("Not saved");
   const [attempts, setAttempts] = createState(0);
 
@@ -25,8 +31,7 @@ export default function SaveDraft(
     <section
       class={props.class ? `save-draft ${props.class}` : "save-draft"}
       aria-label="Draft"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{status()}</p>
       <button type="button" onClick={save}>
@@ -34,13 +39,6 @@ export default function SaveDraft(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

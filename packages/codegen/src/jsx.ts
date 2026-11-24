@@ -28,6 +28,7 @@ import type {
   RawHtmlAttribute,
   DirectiveAttribute,
   RefAttribute,
+  RestAttribute,
   RenderNode,
   SlotFill,
   SlotOutletNode,
@@ -162,6 +163,27 @@ export interface JsxDialect {
   componentEvent?(
     attribute: ListenerAttribute,
     node: ComponentNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * What a component element passes through to the child's fallthrough element (ADR-0118): its
+   * attributes the child does not declare and its native listeners, in source order. By default
+   * each is printed as the element hooks print it on the component's tag. A target that passes
+   * them as one value (Angular's record) prints them all at once.
+   */
+  fallthroughAttributes?(
+    attributes: readonly (StaticAttribute | BoundAttribute | EventAttribute)[],
+    node: ComponentNode,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it does
+   * not declare. No default: each target names and spreads its rest its own way.
+   */
+  restAttribute?(
+    attribute: RestAttribute,
+    element: ElementNode,
     context: JsxContext,
   ): AST.JSXAttributeItem[];
   /**
@@ -498,6 +520,11 @@ function componentElement(
     children: [],
     span: node.span,
   };
+  const passed: (StaticAttribute | BoundAttribute | EventAttribute)[] = [];
+  const fallthrough = (attribute: StaticAttribute | BoundAttribute | EventAttribute) => {
+    passed.push(attribute);
+    return [];
+  };
   const attributes = node.attributes.flatMap((attribute): AST.JSXAttributeItem[] => {
     switch (attribute.kind) {
       case "Prop":
@@ -522,10 +549,30 @@ function componentElement(
           : refJsxAttribute(attribute, element, context);
       case "ModelBinding":
         return hook(context, "modelBinding")(attribute, node, context);
+      // What falls through (ADR-0118): printed all at once below where the dialect takes them
+      // so, and otherwise each as the element hooks print it on the component's tag.
+      case "Static":
+        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        return dialect.staticAttribute
+          ? dialect.staticAttribute(attribute, element, context)
+          : staticJsxAttribute(attribute, element, context);
+      case "Bound":
+        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        return dialect.boundAttribute
+          ? dialect.boundAttribute(attribute, element, context)
+          : boundJsxAttribute(attribute, element, context);
+      case "Event":
+        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        return dialect.eventAttribute
+          ? dialect.eventAttribute(attribute, element, context)
+          : eventJsxAttribute(attribute, element, context);
       default:
         return unreachable(attribute);
     }
   });
+  if (passed.length) {
+    attributes.push(...dialect.fallthroughAttributes!(passed, node, element, context));
+  }
   attributes.push(...scopeJsxAttributes(element, context));
   // A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s` of
   // this child alone: a child further out stamps only the content filled into it.
@@ -749,7 +796,8 @@ function hook<
     | "dynamic"
     | "teleport"
     | "transition"
-    | "directiveAttribute",
+    | "directiveAttribute"
+    | "restAttribute",
 >(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
   if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
@@ -805,6 +853,8 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
             ];
       case "Directive":
         return hook(context, "directiveAttribute")(attribute, node, context);
+      case "Rest":
+        return hook(context, "restAttribute")(attribute, node, context);
       default:
         return unreachable(attribute);
     }

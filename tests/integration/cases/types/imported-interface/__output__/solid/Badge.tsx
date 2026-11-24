@@ -1,16 +1,15 @@
 import type { BadgeProps } from "./types";
-import { type JSX, mergeProps } from "solid-js";
+import { type ComponentProps, type JSX, mergeProps, splitProps } from "solid-js";
 
 export default function Badge(
-  rawProps: BadgeProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: BadgeProps &
+    Omit<ComponentProps<"span">, "label" | "tone" | "style"> & { style?: JSX.CSSProperties },
 ) {
   const props = mergeProps({ tone: "info" } satisfies Partial<BadgeProps>, rawProps);
+  const [, others] = splitProps(props, ["label", "tone", "class"]);
+
   return (
-    <span
-      class={cx(`badge badge-${props.tone}`, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <span class={cx(`badge badge-${props.tone}`, props.class)} {...others}>
       {props.label}
     </span>
   );
@@ -26,11 +25,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

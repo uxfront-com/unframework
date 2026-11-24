@@ -1,9 +1,6 @@
-import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, type KeyboardEvent, useRef, useState } from "react";
 
-export interface ReplyBoxAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ReplyBoxAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ReplyBox({ className, style, ...attributes }: ReplyBoxAttributes) {
   const [started, setStarted] = useState(false);
@@ -28,7 +25,7 @@ export default function ReplyBox({ className, style, ...attributes }: ReplyBoxAt
       className={cx("reply-box", className)}
       aria-label="Reply"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Message
@@ -91,13 +88,4 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

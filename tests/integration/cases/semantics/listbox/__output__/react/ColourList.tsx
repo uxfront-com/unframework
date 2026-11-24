@@ -1,21 +1,13 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface ColourListAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ColourListAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function ColourList({ className, style, ...attributes }: ColourListAttributes) {
   const [colour, setColour] = useState("none");
   const colourRef = useRef(colour);
 
   return (
-    <section
-      aria-label="Colours"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Colours" className={className} style={style} {...attributes}>
       <select
         size={3}
         aria-label="Colour"
@@ -31,13 +23,4 @@ export default function ColourList({ className, style, ...attributes }: ColourLi
       <output>Picked: {colour}</output>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

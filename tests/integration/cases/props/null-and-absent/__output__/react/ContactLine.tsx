@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ContactLineProps {
   name: string;
@@ -6,10 +6,10 @@ export interface ContactLineProps {
   verified?: boolean | null;
 }
 
-export interface ContactLineAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ContactLineAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "name" | "phone" | "verified" | "children"
+>;
 
 export default function ContactLine({
   name,
@@ -24,7 +24,7 @@ export default function ContactLine({
       className={cx("contact-line", className)}
       aria-label={name}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p data-phone={phone === null ? "withheld" : phone}>
         Phone: {phone === null ? "withheld" : (phone ?? "not given yet")}
@@ -47,13 +47,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

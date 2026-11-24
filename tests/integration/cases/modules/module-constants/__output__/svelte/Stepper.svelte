@@ -1,28 +1,25 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
   const STEPS = [1, 5, 10] as const;
   const LIMITS = Object.freeze({ min: 0, max: 20 });
   const caption = (value: number): string => `${value} of ${LIMITS.max}`;
   const START = LIMITS.min + 2;
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let value = $state.raw(START);
 
   function add(step: number) {
     value = Math.min(LIMITS.max, value + step);
-  }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
   }
 </script>
 
@@ -30,7 +27,8 @@
   class={["stepper", className]}
   aria-label="Stepper"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p role="status">{caption(value)}</p
   ><ul>

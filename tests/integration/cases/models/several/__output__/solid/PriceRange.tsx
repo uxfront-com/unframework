@@ -1,4 +1,4 @@
-import { type JSX, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 
 export interface PriceRangeModels {
   min?: number;
@@ -8,8 +8,13 @@ export interface PriceRangeModels {
 }
 
 export default function PriceRange(
-  props: { label: string } & PriceRangeModels & { class?: string; style?: JSX.CSSProperties },
+  props: { label: string } & PriceRangeModels &
+    Omit<ComponentProps<"fieldset">, "label" | "min" | "max" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["label", "min", "onMinChange", "max", "onMaxChange"]);
+
   const [localMin, setLocalMin] = createSignal<number>(0);
   const min = () => (props.min === undefined ? localMin() : props.min);
 
@@ -32,7 +37,7 @@ export default function PriceRange(
   }
 
   return (
-    <fieldset class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <fieldset {...others}>
       <legend>{props.label}</legend>
       <p>
         From {min()} to {max()}
@@ -42,11 +47,4 @@ export default function PriceRange(
       </button>
     </fieldset>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

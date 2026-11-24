@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface Entry {
   id: number;
@@ -9,10 +9,7 @@ export interface ChangelogProps {
   entries: Entry[];
 }
 
-export interface ChangelogAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ChangelogAttributes = Omit<ComponentPropsWithRef<"ul">, "entries" | "children">;
 
 export default function Changelog({
   entries,
@@ -21,7 +18,7 @@ export default function Changelog({
   ...attributes
 }: ChangelogProps & ChangelogAttributes) {
   return (
-    <ul className={cx("changelog", className)} style={style} {...scopeAttributes(attributes)}>
+    <ul className={cx("changelog", className)} style={style} {...attributes}>
       {entries.map((entry) => (
         <li key={entry.id} dangerouslySetInnerHTML={{ __html: entry.html }} />
       ))}
@@ -42,13 +39,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

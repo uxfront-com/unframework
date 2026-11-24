@@ -339,22 +339,6 @@
             "component": "Lead",
             "attributes": [
               {
-                "kind": "Prop",
-                "name": "id",
-                "value": {
-                  "code": "\"hopper\"",
-                  "span": {
-                    "start": 753,
-                    "end": 761
-                  },
-                  "refs": []
-                },
-                "span": {
-                  "start": 750,
-                  "end": 761
-                }
-              },
-              {
                 "kind": "Class",
                 "items": [
                   {
@@ -369,6 +353,22 @@
                 "span": {
                   "start": 737,
                   "end": 749
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "id",
+                "value": {
+                  "code": "\"hopper\"",
+                  "span": {
+                    "start": 753,
+                    "end": 761
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 750,
+                  "end": 761
                 }
               }
             ],
@@ -420,7 +420,25 @@
             "slots": [],
             "exposes": [],
             "inheritAttrs": true,
-            "root": "component"
+            "root": "component",
+            "fallthroughTag": "article",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "member"
+                }
+              ],
+              "listeners": []
+            },
+            "rootDeclarations": [
+              {
+                "name": "id",
+                "kind": "prop",
+                "component": "Member"
+              }
+            ],
+            "exposingRoot": "Member"
           }
         ],
         "keys": []
@@ -466,7 +484,17 @@
             "inheritAttrs": true,
             "root": "element",
             "async": true,
-            "rootTag": "article"
+            "rootTag": "article",
+            "fallthroughTag": "article",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "member"
+                }
+              ],
+              "listeners": []
+            }
           }
         ],
         "keys": []

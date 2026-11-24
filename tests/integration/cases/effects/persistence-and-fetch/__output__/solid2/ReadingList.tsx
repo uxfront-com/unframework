@@ -1,4 +1,4 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   For,
   createMemo,
@@ -7,6 +7,7 @@ import {
   createSignal,
   flush,
   getObserver,
+  omit,
   onSettled,
   runWithOwner,
   untrack,
@@ -26,8 +27,25 @@ export interface ReadingListEvents {
 }
 
 export default function ReadingList(
-  props: ReadingListProps & ReadingListEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ReadingListProps &
+    ReadingListEvents &
+    Omit<ComponentProps<"section">, "shelves" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(
+    props,
+    "shelves",
+    "onRequested",
+    "onCancelled",
+    "onFound",
+    "onStarted",
+    "onChecked",
+    "onRefreshed",
+    "class",
+  );
+
   const [query, setQuery] = createState("");
   const [books, setBooks] = createState<string[]>([]);
   const [searching, setSearching] = createState(false);
@@ -101,8 +119,7 @@ export default function ReadingList(
     <section
       class={props.class ? `reading-list ${props.class}` : "reading-list"}
       aria-label="Reading list"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <label>
         Search
@@ -165,13 +182,6 @@ export default function ReadingList(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

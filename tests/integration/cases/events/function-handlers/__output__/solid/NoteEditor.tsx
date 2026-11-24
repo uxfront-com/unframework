@@ -1,4 +1,4 @@
-import { type JSX, createSignal, onCleanup } from "solid-js";
+import { type ComponentProps, type JSX, createSignal, onCleanup, splitProps } from "solid-js";
 
 export interface NoteEditorEvents {
   onSaved?: (count: number) => void;
@@ -6,8 +6,11 @@ export interface NoteEditorEvents {
 }
 
 export default function NoteEditor(
-  props: NoteEditorEvents & { class?: string; style?: JSX.CSSProperties },
+  props: NoteEditorEvents &
+    Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["onSaved", "onTagged", "class"]);
+
   const [saves, setSaves] = createSignal(0);
   const [lastKey, setLastKey] = createSignal("none");
   const [tags, setTags] = createSignal<string[]>([]);
@@ -39,8 +42,7 @@ export default function NoteEditor(
     <section
       class={props.class ? `note-editor ${props.class}` : "note-editor"}
       aria-label="Note"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" onClick={save}>
         Save
@@ -79,11 +81,4 @@ export default function NoteEditor(
       <p>Tags: {tags().join(", ")}</p>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

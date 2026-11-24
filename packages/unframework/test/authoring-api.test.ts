@@ -27,9 +27,21 @@ const AUTHORING_API = [
   "watchEffect",
 ];
 
+/**
+ * The constants beside the functions: `isDev` (ADR-0117), which the compiler replaces with each
+ * framework's own development check, so uncompiled code reads it as a development build would.
+ */
+const AUTHORING_CONSTANTS = ["isDev"];
+
 describe("the authoring API", () => {
-  it("exports exactly the plan's functions at runtime", () => {
-    expect(Object.keys(api).toSorted()).toEqual(AUTHORING_API);
+  it("exports exactly the plan's functions and constants at runtime", () => {
+    expect(Object.keys(api).toSorted()).toEqual(
+      [...AUTHORING_API, ...AUTHORING_CONSTANTS].toSorted(),
+    );
+  });
+
+  it("exports `isDev` as `true`, as a development build reads it uncompiled", () => {
+    expect(api.isDev).toBe(true);
   });
 
   it.each(AUTHORING_API)("%s throws when it runs uncompiled, naming itself", (name) => {

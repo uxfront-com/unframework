@@ -69,17 +69,6 @@ const script = (...lines: string[]) => `<script lang="ts">\n${lines.join("\n")}\
 const moduleScript = (...lines: string[]) =>
   `<script lang="ts" module>\n${lines.join("\n")}\n</script>`;
 
-/** The lines that end the script of a component whose root takes its styled parents' scope. */
-const SCOPE_HELPER = [
-  "",
-  "  /** The scope attributes of the styled parents that render this component, for its root. */",
-  '  function scopeAttributes(props: object): Record<string, ""> {',
-  '    const scope: Record<string, ""> = {};',
-  '    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
-  "    return scope;",
-  "  }",
-];
-
 describe("svelte target", () => {
   it("declares every capability, natively but for once listeners, fallthrough, model modifiers, reactive context, the child root, a style bound to a value, a teleport and a transition", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
@@ -167,18 +156,18 @@ describe("svelte target", () => {
           "<svelte:options runes={true} preserveWhitespace={false} />",
           "",
           '<script lang="ts">',
-          '  import type { ClassValue } from "svelte/elements";',
+          '  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";',
           "",
-          "  type Props = {",
+          '  type Props = Omit<SvelteHTMLElements["p"], "children" | "class" | "style" | "ref"> & {',
           "    class?: ClassValue;",
           "    style?: string;",
+          '    ref?: HTMLElementTagNameMap["p"] | null;',
           "  };",
           "",
-          "  let { class: className, style, ...attributes }: Props = $props();",
-          ...SCOPE_HELPER,
+          "  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();",
           "</script>",
           "",
-          '<p class={["greeting", className]} {style} {...scopeAttributes(attributes)}>Hello, world!</p>',
+          '<p class={["greeting", className]} {style} bind:this={ref} {...attributes}>Hello, world!</p>',
           "",
         ].join("\n"),
       },
@@ -221,7 +210,8 @@ describe("svelte target", () => {
 // The instance script declares the copied types and reads the props with `$props()`.
 describe("svelte props", () => {
   it("destructures the props it reads, in source order, with their defaults as written", async () => {
-    // `count` and `hidden` are read by no expression: declared, they would be unused variables.
+    // `count` and `hidden` are read by no expression: they are bound apart from the rest the root
+    // spreads, under names starting with `_`, as unused variables are named (ADR-0118).
     expect((await emitSource(SHAPES.destructured)).contents).toBe(
       svelteFile(
         // An output that exports a type declares its types in `<script module>` (ADR-0068).
@@ -236,17 +226,17 @@ describe("svelte props", () => {
           "  }",
         ),
         script(
-          '  import type { ClassValue } from "svelte/elements";',
+          '  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";',
           "",
-          "  type Props = BadgeProps & {",
+          '  type Props = Omit<SvelteHTMLElements["p"], "label" | "tone" | "count" | "hidden" | "children" | "class" | "style" | "ref"> & BadgeProps & {',
           "    class?: ClassValue;",
           "    style?: string;",
+          '    ref?: HTMLElementTagNameMap["p"] | null;',
           "  };",
           "",
-          '  let { tone = "info", label, class: className, style, ...attributes }: Props = $props();',
-          ...SCOPE_HELPER,
+          '  let { tone = "info", label, count: _count, hidden: _hidden, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();',
         ),
-        "<p class={[tone, className]} {style} {...scopeAttributes(attributes)}>{label}</p>",
+        "<p class={[tone, className]} {style} bind:this={ref} {...attributes}>{label}</p>",
       ),
     );
   });
@@ -255,22 +245,25 @@ describe("svelte props", () => {
     expect((await emitSource(SHAPES.objectForm)).contents).toBe(
       svelteFile(
         script(
-          '  import type { ClassValue } from "svelte/elements";',
+          '  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";',
           "",
           "  interface CardProps {",
           "    title: string;",
           "    subtitle?: string;",
           "  }",
           "",
-          "  type Props = CardProps & {",
+          '  type Props = Omit<SvelteHTMLElements["h2"], "title" | "subtitle" | "children" | "class" | "style" | "ref"> & CardProps & {',
           "    class?: ClassValue;",
           "    style?: string;",
+          '    ref?: HTMLElementTagNameMap["h2"] | null;',
           "  };",
           "",
-          "  let { class: className, style, ...p }: Props = $props();",
-          ...SCOPE_HELPER,
+          "  let { class: className, style, ref = $bindable(null), ...p }: Props = $props();",
+          "",
+          // The object keeps the props `p.title` reads: the rest the root spreads is derived from it.
+          "  let { title: _title, subtitle: _subtitle, ...attributes } = $derived(p);",
         ),
-        "<h2 title={p.subtitle} class={className} {style} {...scopeAttributes(p)}>{p.title}</h2>",
+        "<h2 title={p.subtitle} class={className} {style} bind:this={ref} {...attributes}>{p.title}</h2>",
       ),
     );
   });
@@ -280,18 +273,20 @@ describe("svelte props", () => {
     expect((await emitSource(SHAPES.reservedName)).contents).toBe(
       svelteFile(
         script(
-          '  import type { ClassValue } from "svelte/elements";',
+          '  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";',
           "",
-          "  type Props = {",
+          '  type Props = Omit<SvelteHTMLElements["h2"], "title" | "children" | "class" | "style" | "ref"> & {',
           "    title: string;",
           "    class?: ClassValue;",
           "    style?: string;",
+          '    ref?: HTMLElementTagNameMap["h2"] | null;',
           "  };",
           "",
-          "  let { class: className, style, ...props }: Props = $props();",
-          ...SCOPE_HELPER,
+          "  let { class: className, style, ref = $bindable(null), ...props }: Props = $props();",
+          "",
+          "  let { title: _title, ...attributes } = $derived(props);",
         ),
-        "<h2 class={className} {style} {...scopeAttributes(props)}>{props.title}</h2>",
+        "<h2 class={className} {style} bind:this={ref} {...attributes}>{props.title}</h2>",
       ),
     );
   });
@@ -326,20 +321,20 @@ describe("svelte props", () => {
     expect((await emitSource(SHAPES.multiline)).contents).toBe(
       svelteFile(
         script(
-          '  import type { ClassValue } from "svelte/elements";',
+          '  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";',
           "",
-          "  type Props = {",
+          '  type Props = Omit<SvelteHTMLElements["pre"], "text" | "note" | "children" | "class" | "style" | "ref"> & {',
           "    text?: string; note?: string;",
           "    class?: ClassValue;",
           "    style?: string;",
+          '    ref?: HTMLElementTagNameMap["pre"] | null;',
           "  };",
           "",
           "  let { text = `roses",
           '  are red`, note = "a\\',
-          '  b", class: className, style, ...attributes }: Props = $props();',
-          ...SCOPE_HELPER,
+          '  b", class: className, style, ref = $bindable(null), ...attributes }: Props = $props();',
         ),
-        "<pre class={className} {style} {...scopeAttributes(attributes)}>{text}{note}</pre>",
+        "<pre class={className} {style} bind:this={ref} {...attributes}>{text}{note}</pre>",
       ),
     );
   });
@@ -369,7 +364,7 @@ describe("svelte markup", () => {
   it("prints a keyed each block, without the index no expression reads, and an if block", async () => {
     expect(await markupOf(SHAPES.lists)).toBe(
       [
-        "<ul class={className} {style} {...scopeAttributes(attributes)}>",
+        "<ul class={className} {style} bind:this={ref} {...attributes}>",
         "  {#each items as item (item.id)}",
         "    <li>{item.name}</li>",
         "  {/each}{#if items.length === 0}",
@@ -386,7 +381,7 @@ describe("svelte markup", () => {
   it("prints bindings, one class, style directives and spreads key by key", async () => {
     expect(await markupOf(SHAPES.bindings)).toBe(
       [
-        "<p class={className} {style} {...scopeAttributes(attributes)}>",
+        "<p class={className} {style} bind:this={ref} {...attributes}>",
         "  <a",
         "    {href}",
         '    class={["link", { active }, tone, attrs.class]}',
@@ -414,7 +409,7 @@ describe("svelte markup", () => {
   it("writes an attribute Svelte's types lack on its element as an object spread", async () => {
     expect(await markupOf(SHAPES.untyped)).toBe(
       [
-        '<form aria-label="Note" class={className} {style} {...scopeAttributes(attributes)}>',
+        '<form aria-label="Note" class={className} {style} bind:this={ref} {...attributes}>',
         '  <p {...{ autocorrect: "off" }}>a</p',
         "  ><input autocorrect={mode}",
         "  /><div {...{ autocorrect: hints.autocorrect }}>b</div>",
@@ -431,7 +426,7 @@ describe("svelte markup", () => {
   it("writes static text Svelte's server would escape twice or fold as expressions", async () => {
     expect(await markupOf(SHAPES.runtimeText)).toBe(
       [
-        "<div class={className} {style} {...scopeAttributes(attributes)}>",
+        "<div class={className} {style} bind:this={ref} {...attributes}>",
         "  <blockquote",
         '    style:font-family={"\\"Segoe UI\\", serif"}',
         `    style:content={"'a  b'"}`,
@@ -478,7 +473,7 @@ describe("svelte markup", () => {
     expect(contents).toBe(readFileSync(join(packageDir, "test/fixtures/Steps.svelte"), "utf8"));
     expect(await markupOf(SHAPES.assignedValues)).toBe(
       [
-        "<form class={className} {style} {...scopeAttributes(attributes)}>",
+        "<form class={className} {style} bind:this={ref} {...attributes}>",
         "  <ol>",
         "    {#each steps as step, index (step)}",
         "      <li {...{ value: steps.length - 1 - index }}>{step}</li>",
@@ -664,19 +659,25 @@ describe("svelte setup", () => {
     const code = await scriptOf(SHAPES.watchers);
     expect(code).toContain("onresize?: (value: number, previous?: number) => void;");
     expect(code).toContain(
-      "let { size, onturn, onleft, onspan, onrange, onresize, class: className, style, ...attributes }: Props = $props();",
+      "let { size, onturn, onleft, onspan, onrange, onresize, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();",
     );
   });
 
+  // The root's own click listener calls the consumer's after its own code, as Vue runs a root's
+  // own listener first: a spread `onclick` would replace it (ADR-0118).
   it("calls a callback prop through the props object in the object form", async () => {
     expect(await markupOf(SHAPES.objectEvents)).toBe(
       [
         "<button",
         '  type="button"',
-        "  onclick={() => props.onremove?.(props.label)}",
+        "  onclick={(event) => {",
+        "    props.onremove?.(props.label);",
+        "    onclick?.(event);",
+        "  }}",
         "  class={className}",
         "  {style}",
-        "  {...scopeAttributes(props)}",
+        "  bind:this={ref}",
+        "  {...attributes}",
         ">{props.label}</button>",
         "",
       ].join("\n"),

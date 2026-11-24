@@ -1,18 +1,31 @@
-import { type JSX, createEffect, createSignal, onCleanup } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createEffect,
+  createSignal,
+  onCleanup,
+  splitProps,
+} from "solid-js";
 
 export default function OptionText(
-  props: { unit: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { unit: string } & Omit<ComponentProps<"select">, "unit" | "style" | "onChange"> & {
+      style?: JSX.CSSProperties;
+      onChange?: Extract<ComponentProps<"select">["onChange"], (event: never) => void>;
+    },
 ) {
+  const [, others] = splitProps(props, ["unit", "onChange"]);
+
   const [amount, setAmount] = createSignal("2 kg");
 
   return (
     <select
       aria-label="Amount"
-      onChange={(event) => setAmount(event.currentTarget.value)}
+      onChange={(event) => {
+        setAmount(event.currentTarget.value);
+        props.onChange?.(event);
+      }}
       ref={(select) => selectOptions(select, amount)}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <option
         selected={
@@ -38,13 +51,6 @@ export default function OptionText(
       </option>
     </select>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

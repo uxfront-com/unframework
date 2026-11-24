@@ -37,7 +37,9 @@ export function Counter({ initial = 0 }: CounterProps) {
     expect(contents).toContain("const doubled = useComputed$<number>(() => count.value * 2);");
     // A plain `let` would be copied into each `$` scope that captures it (ADR-0045).
     expect(contents).toContain("const clicks = useSignal(0);");
-    expect(contents).toContain("clicks.value += 1;\n    count.value += clicks.value;");
+    expect(lines(contents)).toContain(
+      lines("clicks.value += 1;\n    count.value += clicks.value;"),
+    );
   });
 
   it("keeps a template ref in a signal and an id under the generated prefix", async () => {
@@ -105,17 +107,19 @@ describe("qwik target: local functions", () => {
     );
     // `report` reads `addTen`, declared after it: a `$` scope captures what it reads when it is
     // created, so `addTen` comes first.
-    expect(contents).toContain(
-      [
-        "  const addTen = $(() => {",
-        "    count.value += 10;",
-        "  });",
-        "",
-        "  const report = $(async () => {",
-        "    await addTen();",
-        "    onTotal$?.(count.value);",
-        "  });",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(
+        [
+          "  const addTen = $(() => {",
+          "    count.value += 10;",
+          "  });",
+          "",
+          "  const report = $(async () => {",
+          "    await addTen();",
+          "    onTotal$?.(count.value);",
+          "  });",
+        ].join("\n"),
+      ),
     );
   });
 
@@ -179,9 +183,11 @@ export function Row({ path }: RowProps) {
       ].join("\n"),
     );
     // Only emitted events are destructured; an emit does not wait for its listener (ADR-0047).
+    // A ref on it holds its root element (ADR-0118).
     expect(contents).toContain(
-      "export const Row = component$<RowProps & RowEvents>(({ path, onOpen$, onShare$ }) => {",
+      "export const Row = component$<RowProps & RowEvents & { ref?: Signal<Element | undefined> }>(",
     );
+    expect(contents).toContain("({ path, onOpen$, onShare$, ref }) => {");
     expect(contents).toContain("onClick$={() => onOpen$?.(path)}");
   });
 
@@ -196,7 +202,11 @@ export function Row(props: RowProps) {
 }`,
       ),
     );
-    expect(contents).toContain("component$<RowProps & RowEvents>((props) => {");
+    expect(lines(contents)).toContain(
+      lines(`component$<RowProps & RowEvents & { ref?: Signal<Element | undefined> }>(
+        (props) => {
+          const { ref } = props;`),
+    );
     expect(contents).toContain("onClick$={() => props.onOpen$?.(props.path)}");
   });
 });
@@ -257,8 +267,10 @@ describe("qwik target: watchers, effects and lifecycle", () => {
     expect(contents).toContain("const spanSource = useComputed$(() => high.value - low.value);");
     expect(contents).toContain("const span = track(spanSource);");
     // A mutable tuple, as Vue gives the callback: a function that takes an array takes it.
-    expect(contents).toContain(
-      "const previousValues = useSignal<[typeof low.value, typeof high.value]>(() => [\n      low.value,\n      high.value,\n    ]);",
+    expect(lines(contents)).toContain(
+      lines(
+        "const previousValues = useSignal<[typeof low.value, typeof high.value]>(() => [\n      low.value,\n      high.value,\n    ]);",
+      ),
     );
     expect(contents).toContain(
       "const values: [typeof low.value, typeof high.value] = [track(low), track(high)];",
@@ -287,32 +299,36 @@ describe("qwik target: watchers, effects and lifecycle", () => {
 }`,
       ),
     );
-    expect(contents).toContain(
-      [
-        "  const nameSource = useComputed$(() => channel.value.toLowerCase());",
-        "  const previousName = useSignal<{ value: typeof nameSource.value }>();",
-        "  const nameCleanups = useConstant(() => noSerialize<(() => void)[]>([]));",
-        "  useTask$(",
-        "    ({ track }) => {",
-        "      const name = track(nameSource);",
-        "      const last = previousName.value;",
-        "      if (last && Object.is(name, last.value)) return;",
-        "      previousName.value = { value: name };",
-        "      for (const callback of nameCleanups?.splice(0) ?? []) callback();",
-        "      const onCleanup = (callback: () => void) => void nameCleanups?.push(callback);",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(
+        [
+          "  const nameSource = useComputed$(() => channel.value.toLowerCase());",
+          "  const previousName = useSignal<{ value: typeof nameSource.value }>();",
+          "  const nameCleanups = useConstant(() => noSerialize<(() => void)[]>([]));",
+          "  useTask$(",
+          "    ({ track }) => {",
+          "      const name = track(nameSource);",
+          "      const last = previousName.value;",
+          "      if (last && Object.is(name, last.value)) return;",
+          "      previousName.value = { value: name };",
+          "      for (const callback of nameCleanups?.splice(0) ?? []) callback();",
+          "      const onCleanup = (callback: () => void) => void nameCleanups?.push(callback);",
+        ].join("\n"),
+      ),
     );
-    expect(contents).toContain(
-      [
-        "  useVisibleTask$(",
-        "    ({ cleanup }) => {",
-        "      cleanup(() => {",
-        "        for (const callback of nameCleanups?.splice(0) ?? []) callback();",
-        "      });",
-        "    },",
-        '    { strategy: "document-ready" },',
-        "  );",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(
+        [
+          "  useVisibleTask$(",
+          "    ({ cleanup }) => {",
+          "      cleanup(() => {",
+          "        for (const callback of nameCleanups?.splice(0) ?? []) callback();",
+          "      });",
+          "    },",
+          '    { strategy: "document-ready" },',
+          "  );",
+        ].join("\n"),
+      ),
     );
   });
 
@@ -342,10 +358,10 @@ describe("qwik target: watchers, effects and lifecycle", () => {
       ),
     );
     // Compared without the indentation, which the component's width decides.
-    const lines = contents.split("\n").map((line) => line.trim());
+    const trimmed = contents.split("\n").map((line) => line.trim());
     const at = (...expected: string[]) => {
-      const start = lines.indexOf(expected[0]!);
-      expect(lines.slice(start, start + expected.length)).toEqual(expected);
+      const start = trimmed.indexOf(expected[0]!);
+      expect(trimmed.slice(start, start + expected.length)).toEqual(expected);
     };
     at(
       "const previousItems = useSignal(() => items.value);",
@@ -431,7 +447,9 @@ describe("qwik target: listeners", () => {
       'onKeyDown$={sync$((event: KeyboardEvent) => {\n          if (event.key === ",") event.preventDefault();\n        })}\n        onDblClick$={() => (tags.value = [])}',
     );
     expect(contents).not.toContain("const blockComma");
-    expect(contents).toContain("<form preventdefault:submit onSubmit$={add}>");
+    expect(lines(contents)).toContain(
+      lines("<form preventdefault:submit onSubmit$={add} ref={ref}>"),
+    );
     expect(contents).toContain('const add = $(() => {\n    tags.value = [...tags.value, "x"];');
     // Beside a \`$\` handler, a conditional \`preventDefault()\` runs in a \`sync$\` before it, on the
     // element, and the handler runs after it in the dispatch (ADR-0094).
@@ -519,8 +537,13 @@ describe("qwik target: listeners", () => {
 }`,
       ),
     );
-    expect(contents).toContain(
-      '<div role="presentation" capture:click onClick$={() => (log.value = [...log.value, "capture"])}>',
+    expect(lines(contents)).toContain(
+      lines(`<div
+        role="presentation"
+        capture:click
+        onClick$={() => (log.value = [...log.value, "capture"])}
+        ref={ref}
+      >`),
     );
   });
 
@@ -623,7 +646,9 @@ describe("qwik target: listener order, calls in place and controls (ADR-0047)", 
       ].join("\n"),
     );
     // The toolbar's listener runs last: its call stays a QRL call, and its handler is its own.
-    expect(contents).toContain('<div role="presentation" onClick$={() => record("toolbar")}>');
+    expect(lines(contents)).toContain(
+      lines('<div role="presentation" onClick$={() => record("toolbar")} ref={ref}>'),
+    );
     expect(contents).not.toContain("Promise.resolve");
   });
 
@@ -654,15 +679,21 @@ describe("qwik target: listener order, calls in place and controls (ADR-0047)", 
       ),
     );
     // Qwik would load \`pick\`'s segment after the handler's, and run \`report\` first.
-    expect(contents).toContain(
-      "onClick$={() => {\n            const upper = name.toUpperCase();\n            selected.value = upper;",
+    expect(lines(contents)).toContain(
+      lines(
+        "onClick$={() => {\n            const upper = name.toUpperCase();\n            selected.value = upper;",
+      ),
     );
     // A literal argument takes the parameter's place; another is a \`const\`, in a block.
-    expect(contents).toContain(
-      '{\n            const upper = "all".toUpperCase();\n            selected.value = upper;\n            hits.value++;\n          }',
+    expect(lines(contents)).toContain(
+      lines(
+        '{\n            const upper = "all".toUpperCase();\n            selected.value = upper;\n            hits.value++;\n          }',
+      ),
     );
-    expect(contents).toContain(
-      "{\n            const name: string = names.join();\n            const upper = name.toUpperCase();",
+    expect(lines(contents)).toContain(
+      lines(
+        "{\n            const name: string = names.join();\n            const upper = name.toUpperCase();",
+      ),
     );
     // Every call of \`pick\` is in place: it has no QRL.
     expect(contents).not.toContain("const pick");
@@ -752,19 +783,27 @@ describe("qwik target: listener order, calls in place and controls (ADR-0047)", 
 }`,
       ),
     );
-    expect(contents).toContain("void save();\n          onSeen$?.(status.value);");
-    expect(contents).toContain("const pending = save();\n          onSeen$?.(status.value);");
+    expect(lines(contents)).toContain(lines("void save();\n          onSeen$?.(status.value);"));
+    expect(lines(contents)).toContain(
+      lines("const pending = save();\n          onSeen$?.(status.value);"),
+    );
     // Awaited: the QRL, whose promise the caller waits for.
-    expect(contents).toContain("const chain = $(async () => {\n    await save();");
+    expect(lines(contents)).toContain(lines("const chain = $(async () => {\n    await save();"));
     expect(contents).toContain("const save = $(async () => {");
     // A promise used as a value stays the promise (\`.then\`, held, passed on).
-    expect(contents).toContain("const refresh = $(() => {\n    ask().then((text) => {");
-    expect(contents).toContain(
-      'const pending = ask();\n    status.value = "waiting";\n    status.value = await Promise.race([pending, ask()]);',
+    expect(lines(contents)).toContain(
+      lines("const refresh = $(() => {\n    ask().then((text) => {"),
+    );
+    expect(lines(contents)).toContain(
+      lines(
+        'const pending = ask();\n    status.value = "waiting";\n    status.value = await Promise.race([pending, ask()]);',
+      ),
     );
     expect(contents).not.toContain("await ask()");
     // A spliced call binds a parameter the function assigns with \`let\`.
-    expect(contents).toContain("let value: number = next * 2;\n      if (value > 10) value = 10;");
+    expect(lines(contents)).toContain(
+      lines("let value: number = next * 2;\n      if (value > 10) value = 10;"),
+    );
   });
 
   it("keeps a marker that a listener running every time needs after a once listener's first run", async () => {
@@ -950,11 +989,15 @@ export function Narrow({ sizes }: { sizes: string[] }) {
     );
     // A QRL's call is a promise, which narrows nothing: the predicate is declared where it is
     // called, and the assertion, which never returns, is written in place.
-    expect(contents).toContain(
-      "const set = $((value: string) => {\n    const isKnown = (value: string): value is Size => sizes.includes(value) && value !== size.value;\n\n    if (isKnown(value)) size.value = value;",
+    expect(lines(contents)).toContain(
+      lines(
+        "const set = $((value: string) => {\n    const isKnown = (value: string): value is Size =>\n      sizes.includes(value) && value !== size.value;\n\n    if (isKnown(value)) size.value = value;",
+      ),
     );
-    expect(contents).toContain(
-      "const force = $((value: string) => {\n    {\n      const isKnown = (value: string): value is Size =>\n        sizes.includes(value) && value !== size.value;\n\n      if (!isKnown(value)) throw new Error(value);\n    }\n    size.value = value;",
+    expect(lines(contents)).toContain(
+      lines(
+        "const force = $((value: string) => {\n    {\n      const isKnown = (value: string): value is Size =>\n        sizes.includes(value) && value !== size.value;\n\n      if (!isKnown(value)) throw new Error(value);\n    }\n    size.value = value;",
+      ),
     );
     expect(contents).not.toContain("await");
     expect(contents).not.toMatch(/const (isKnown|assertKnown) = \$/);
@@ -986,19 +1029,21 @@ export function Asserts() {
       ),
     );
     // TypeScript narrows through an assertion only when it calls it by name (TS2776).
-    expect(contents).toContain(
-      [
-        "const check = $((index: number) => {",
-        "    function assertItem(value: Item | undefined): asserts value is Item {",
-        "      checks.value += 1;",
-        "      if (value !== undefined) return;",
-        '      throw new Error("missing");',
-        "    }",
-        "",
-        "    const value = items.value[index];",
-        "    assertItem(value);",
-        "    onChecked$?.(value.id);",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(
+        [
+          "const check = $((index: number) => {",
+          "    function assertItem(value: Item | undefined): asserts value is Item {",
+          "      checks.value += 1;",
+          "      if (value !== undefined) return;",
+          '      throw new Error("missing");',
+          "    }",
+          "",
+          "    const value = items.value[index];",
+          "    assertItem(value);",
+          "    onChecked$?.(value.id);",
+        ].join("\n"),
+      ),
     );
     expect(contents).not.toContain(")(value)");
   });
@@ -1111,9 +1156,13 @@ describe("qwik target: controls at dispatch and merged listeners (ADR-0047)", ()
       ),
     );
     // An unawaited call of an async function is its QRL's, floating: one declaration.
-    expect(contents).toContain('onClick$={() => {\n          void save("a");\n        }}');
+    expect(lines(contents)).toContain(
+      lines('onClick$={() => {\n          void save("a");\n        }}'),
+    );
     expect(contents).toContain("const save = $(async (name: string) => {");
-    expect(contents).toContain('onClick$={() => {\n          onSeen$?.("inner");\n        }}');
+    expect(lines(contents)).toContain(
+      lines('onClick$={() => {\n          onSeen$?.("inner");\n        }}'),
+    );
     // The container's handler, which nothing follows, keeps its expression body.
     expect(contents).toContain("onClick$={() => onSeen$?.(status.value)}");
   });
@@ -1188,14 +1237,16 @@ describe("qwik target: controls at dispatch and merged listeners (ADR-0047)", ()
 }`,
       ),
     );
-    expect(contents).toContain(
-      [
-        "onClick$={(_, element) => {",
-        "          if (tags.value.length !== 0) {",
-        "            saves.value += 1;",
-        "            onSaved$?.(saves.value);",
-        "          }",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(
+        [
+          "onClick$={(_, element) => {",
+          "          if (tags.value.length !== 0) {",
+          "            saves.value += 1;",
+          "            onSaved$?.(saves.value);",
+          "          }",
+        ].join("\n"),
+      ),
     );
     expect(contents).toContain("const listener = () => {");
     expect(contents).toContain("listener();");
@@ -1279,15 +1330,19 @@ describe("qwik target: task order and async tasks (ADR-0048)", () => {
     // Qwik runs a task again only once its last run has settled (core \`runTask\`).
     expect(contents).not.toMatch(/useTask\$\(\s*async/);
     expect(contents).not.toMatch(/useVisibleTask\$\(\s*async/);
-    expect(contents).toContain(
-      "const onCleanup = (callback: () => void) => void queryCleanups?.push(callback);\n      void (async () => {\n        let cancelled = false;",
+    expect(lines(contents)).toContain(
+      lines(
+        "const onCleanup = (callback: () => void) => void queryCleanups?.push(callback);\n      void (async () => {\n        let cancelled = false;",
+      ),
     );
     // The effect's cleanups wait in a list for its next run and for the unmount, as a watcher's.
-    expect(contents).toContain(
-      "const onCleanup = (callback: () => void) => void effectCleanups?.push(callback);\n      void (async () => {\n        const current = query.value;",
+    expect(lines(contents)).toContain(
+      lines(
+        "const onCleanup = (callback: () => void) => void effectCleanups?.push(callback);\n      void (async () => {\n        const current = query.value;",
+      ),
     );
-    expect(contents).toContain(
-      "for (const callback of effectCleanups?.splice(0) ?? []) callback();\n      });",
+    expect(lines(contents)).toContain(
+      lines("for (const callback of effectCleanups?.splice(0) ?? []) callback();\n      });"),
     );
   });
 
@@ -1449,8 +1504,10 @@ describe("qwik target: controls at the top of a listener only (ADR-0047)", () =>
 }`,
       ),
     );
-    expect(contents).toContain(
-      'sync$((event: KeyboardEvent) => {\n          if (event.key === "Enter" || event.key === " ") {',
+    expect(lines(contents)).toContain(
+      lines(
+        'sync$((event: KeyboardEvent) => {\n          if (event.key === "Enter" || event.key === " ") {',
+      ),
     );
   });
 
@@ -1571,10 +1628,10 @@ describe("qwik target: functions client code adds as listeners, and template ref
     const contents = await emitSource(panel);
     // Qwik creates a component's QRLs again each time it renders it: the listener one handler
     // adds is the one another removes only once.
-    expect(contents).toContain(
-      "const onKey = useConstant(() =>\n    $((event: KeyboardEvent) => {",
+    expect(lines(contents)).toContain(
+      lines("const onKey = useConstant(() =>\n    $((event: KeyboardEvent) => {"),
     );
-    expect(contents).toContain("const show = useConstant(() =>\n    $(() => {");
+    expect(lines(contents)).toContain(lines("const show = useConstant(() =>\n    $(() => {"));
   });
 
   it("writes two functions that reference each other so both exist, through a holder", async () => {
@@ -1583,16 +1640,18 @@ describe("qwik target: functions client code adds as listeners, and template ref
       "const functions = useConstant(() => ({}) as { onEscape: typeof onEscape });",
     );
     expect(contents).toContain('document.removeEventListener("keydown", functions.onEscape);');
-    expect(contents).toContain(
-      [
-        "const onEscape = useConstant(() => {",
-        "    const created = $(async (event: KeyboardEvent) => {",
-        '      if (event.key === "Escape") await close("escape");',
-        "    });",
-        "    functions.onEscape = created;",
-        "    return created;",
-        "  });",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(
+        [
+          "const onEscape = useConstant(() => {",
+          "    const created = $(async (event: KeyboardEvent) => {",
+          '      if (event.key === "Escape") await close("escape");',
+          "    });",
+          "    functions.onEscape = created;",
+          "    return created;",
+          "  });",
+        ].join("\n"),
+      ),
     );
     // `close` captures the holder, declared first, and `onEscape` captures `close`.
     expect(contents.indexOf("const functions")).toBeLessThan(contents.indexOf("const close"));
@@ -1601,13 +1660,15 @@ describe("qwik target: functions client code adds as listeners, and template ref
 
   it("writes an expression-bodied onUnmounted callback's calls in place", async () => {
     const contents = await emitSource(panel);
-    expect(contents).toContain(
-      [
-        "cleanup(() => {",
-        '        document.removeEventListener("keydown", onKey);',
-        '        handleElement.value?.removeEventListener("click", show);',
-        "      });",
-      ].join("\n"),
+    expect(lines(contents)).toContain(
+      lines(
+        [
+          "cleanup(() => {",
+          '        document.removeEventListener("keydown", onKey);',
+          '        handleElement.value?.removeEventListener("click", show);',
+          "      });",
+        ].join("\n"),
+      ),
     );
   });
 
@@ -1637,3 +1698,12 @@ describe("qwik target: functions client code adds as listeners, and template ref
     expect(reads).toContain("count.value = describe(field.value ?? null).length;");
   });
 });
+
+/** Code's lines without their indentation, and without blank ones. */
+function lines(code: string): string {
+  return code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}

@@ -1063,7 +1063,7 @@ function takesProps(component: UfComponent): boolean {
  * Where code runs (ADR-0045): a template's expressions; what the setup evaluates, its initial
  * values and its getters (a getter calls only functions Qwik can hoist); and client code.
  */
-type Context = "render" | "initial" | "getter" | "client";
+type Context = "render" | "initial" | "getter" | "client" | "dev";
 
 /** What a component's walk shares: the component's bindings and what the walk finds. */
 interface Walk {
@@ -1150,6 +1150,7 @@ const ITEM_BINDINGS: Readonly<Record<SetupItem["kind"], BindingKind | undefined>
   Inject: "context",
   // Its members each declare a binding of their own kind (`USED_BINDINGS`).
   Use: undefined,
+  DevCheck: undefined,
 };
 
 /** The binding kind of each kind of a composable's member that a `Use` item destructures. */
@@ -1713,6 +1714,10 @@ function checkComponentAttributes(
       }
       seen.add(`${field} ${value}`);
     };
+    const once = (key: string, path: string) => {
+      if (seen.has(key)) errors.push({ path, message: "must be set once" });
+      seen.add(key);
+    };
     switch (attribute.kind) {
       case "Prop":
         name("props", attribute.name, "a prop", "name");
@@ -1735,13 +1740,33 @@ function checkComponentAttributes(
       case "Ref":
         checkRef(attribute, at, place, walk);
         break;
+      // What falls through is checked against the child's fallthrough element by the analyser,
+      // which has the child's API (ADR-0118): here, each name once and what it reads in scope.
+      // A tag candidate's are `checkDynamic`'s.
       case "Static":
+        once(`attribute ${attribute.name}`, `${at}/name`);
+        break;
       case "Bound":
+        once(`attribute ${attribute.name}`, `${at}/name`);
+        checkExpression(attribute.value, `${at}/value`, place.scope, walk);
+        break;
+      case "Event": {
+        const option = attribute.capture
+          ? "capture"
+          : attribute.once
+            ? "once"
+            : attribute.passive
+              ? "passive"
+              : "";
+        once(`listener ${attribute.event} ${option}`, at);
+        checkListener(attribute, at, place, walk);
+        break;
+      }
       case "Spread":
-      case "Event":
       case "Model":
       case "RawHtml":
       case "Directive":
+      case "Rest":
         break;
       default:
         unreachable(attribute);
@@ -2588,6 +2613,17 @@ function checkAttributes(
           checkExpression(attribute.value, `${at}/value`, place.scope, walk, true);
         }
         break;
+      case "Rest":
+        // The props' rest holds what falls through only where nothing falls through to the
+        // root (ADR-0118).
+        if (walk.component.inheritAttrs !== false) {
+          errors.push({
+            path: at,
+            message: "must be in a component with `inheritAttrs: false` (ADR-0118)",
+          });
+        }
+        claim("...rest", at, false);
+        break;
       default:
         unreachable(attribute);
     }
@@ -2966,6 +3002,8 @@ const GLOBALS: Readonly<Record<Context, ReadonlySet<string>>> = {
   initial: PURE_GLOBALS,
   getter: PURE_GLOBALS,
   client: CLIENT_GLOBALS,
+  // A development-only block reads what pure code reads, and warns through `console` (ADR-0117).
+  dev: new Set([...PURE_GLOBALS, "console"]),
 };
 
 /** What each context is, for messages. */
@@ -2974,6 +3012,7 @@ const CONTEXT_NAMES: Readonly<Record<Context, string>> = {
   initial: "an initial value",
   getter: "a getter",
   client: "client code",
+  dev: "a development-only block",
 };
 
 /** Checks a global reference: one its context may read, spanning its name. */
@@ -3573,6 +3612,16 @@ function checkCode(
           message: `must not read a pass-through import in ${CONTEXT_NAMES[context]}: only a template does (ADR-0063)`,
         });
         break;
+      case "Dev":
+        if (context !== "client" && context !== "dev") {
+          errors.push({
+            path: at,
+            message: `must not test \`isDev\` in ${CONTEXT_NAMES[context]}: only client code and a development-only block do (ADR-0117)`,
+          });
+        } else if (!isIdentifier(text)) {
+          errors.push({ path: `${at}/span`, message: "must span the `isDev` identifier" });
+        }
+        break;
       default:
         unreachable(ref);
     }
@@ -4066,6 +4115,12 @@ function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>,
       return;
     case "Use":
       checkUse(item, path, scope, walk);
+      return;
+    case "DevCheck":
+      checkCode(item.code, `${path}/code`, scope, "dev", walk);
+      if (!item.code.refs.some((ref) => ref.kind === "Dev")) {
+        walk.errors.push({ path: `${path}/code`, message: "must test `isDev` (ADR-0117)" });
+      }
       return;
     default:
       unreachable(item);

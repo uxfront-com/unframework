@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ComponentPropsWithRef } from "react";
 
 export interface UsageMeterProps {
   label: string;
@@ -7,10 +7,10 @@ export interface UsageMeterProps {
   thickness: number;
 }
 
-export interface UsageMeterAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type UsageMeterAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "label" | "percent" | "colour" | "thickness" | "children"
+>;
 
 export default function UsageMeter({
   label,
@@ -22,7 +22,7 @@ export default function UsageMeter({
   ...attributes
 }: UsageMeterProps & UsageMeterAttributes) {
   return (
-    <div className={cx("usage-meter", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("usage-meter", className)} style={style} {...attributes}>
       <p style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}>
         {label}: {percent}%
       </p>
@@ -71,13 +71,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

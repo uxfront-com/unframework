@@ -212,7 +212,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "section"
+            "rootTag": "section",
+            "fallthroughTag": "section",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "aria-label",
+                  "value": "Themed"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "section"
           }
         ],
         "keys": [

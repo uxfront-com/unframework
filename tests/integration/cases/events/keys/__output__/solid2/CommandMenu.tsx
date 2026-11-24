@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, onCleanup, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, createMemo, createSignal, getObserver, omit, onCleanup, untrack } from "solid-js";
 
 export interface CommandMenuProps {
   commands: string[];
@@ -11,8 +11,15 @@ export interface CommandMenuEvents {
 }
 
 export default function CommandMenu(
-  props: CommandMenuProps & CommandMenuEvents & { class?: string; style?: JSX.CSSProperties },
+  props: CommandMenuProps &
+    CommandMenuEvents &
+    Omit<ComponentProps<"section">, "commands" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "commands", "onRun", "onDismiss", "class");
+
   const [active, setActive] = createState(0);
   const [query, setQuery] = createState("");
   let shortcutField: HTMLInputElement | null = null;
@@ -40,8 +47,7 @@ export default function CommandMenu(
     <section
       class={props.class ? `command-menu ${props.class}` : "command-menu"}
       aria-label="Command menu"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <form role="search" aria-label="Commands">
         <label>
@@ -84,13 +90,6 @@ export default function CommandMenu(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

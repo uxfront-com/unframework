@@ -28,7 +28,7 @@ import { astroFrameworkCompile } from "../src/toolchain/compile.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import { loadAstroComponent, scratchDirectory } from "./astro.ts";
-import { compiled, emitSource, emitted, emittedWithTypes, SCOPE_HELPER } from "./source.ts";
+import { compiled, emitSource, emitted, emittedWithTypes } from "./source.ts";
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const at = { start: 0, end: 0 };
@@ -136,21 +136,17 @@ describe("astro target", () => {
           path: "Hello.astro",
           contents: [
             "---",
-            "interface Props {",
+            'import type { HTMLAttributes } from "astro/types";',
+            "",
+            'interface Props extends HTMLAttributes<"p"> {',
             "  class?: string;",
             "  style?: Record<string, string | number | undefined>;",
             "}",
             "",
-            "const { class: className, style } = Astro.props;",
-            "",
-            ...SCOPE_HELPER,
+            "const { class: className, style, ...attrs } = Astro.props;",
             "---",
             "",
-            "<p",
-            '  class:list={["greeting", className]}',
-            "  style={style}",
-            "  {...scopeAttributes(Astro.props)}",
-            ">Hello, world!</p>",
+            '<p class:list={["greeting", className]} style={style} {...attrs}>Hello, world!</p>',
             "",
           ].join("\n"),
         },
@@ -162,17 +158,17 @@ describe("astro target", () => {
     expect(emit("Card", card).files[0]!.contents).toBe(
       [
         "---",
-        "interface Props {",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
+        'interface Props extends HTMLAttributes<"section"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        "const { class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        "const { class: className, style, ...attrs } = Astro.props;",
         "---",
         "",
-        '<section class:list={["card", className]} style={style} {...scopeAttributes(Astro.props)}>',
+        '<section class:list={["card", className]} style={style} {...attrs}>',
         '  <h2 title="say &quot;hi&quot; &amp; {x}">a &lt; b &amp; &#123;c&#125; d&nbsp;e</h2>',
         "  <p>Line one<br />Line two</p>",
         '  <input type="checkbox" checked aria-label="Agree" />',
@@ -381,27 +377,27 @@ describe("props: the frontmatter (ADR-0034)", () => {
     expect(emitted(primitives)).toBe(
       lines(
         "---",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
         "export interface ProductTileProps {",
         "  name: string;",
         "  price: number;",
         "  available?: boolean;",
         "}",
         "",
-        "interface Props extends ProductTileProps {",
+        'interface Props extends ProductTileProps, Omit<HTMLAttributes<"article">, "name" | "price" | "available"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        "const { name, price, available = true, class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        'const { name, price, available = true, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;',
         "---",
         "",
         "<article",
         '  class:list={["product-tile", className]}',
-        "  aria-label={name}",
+        '  aria-label={"aria-label" in Astro.props ? ariaLabel : name}',
         "  style={style}",
-        "  {...scopeAttributes(Astro.props)}",
+        "  {...attrs}",
         ">",
         "  <p>Price: {price} EUR</p>",
         '  <p>{available ? "Available" : "Unavailable"}</p>',
@@ -429,21 +425,21 @@ describe("props: the frontmatter (ADR-0034)", () => {
     expect(emitted(inline)).toBe(
       lines(
         "---",
-        'interface Props { label: string; tone?: "info" | "warn"',
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
+        'interface Props extends Omit<HTMLAttributes<"span">, "label" | "tone"> { label: string; tone?: "info" | "warn"',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        'const { label, tone = "info", class: className, style } = Astro.props;',
-        "",
-        ...SCOPE_HELPER,
+        'const { label, tone = "info", class: className, style, "data-tone": dataTone, ...attrs } = Astro.props;',
         "---",
         "",
         "<span",
-        "  data-tone={tone}",
+        '  data-tone={"data-tone" in Astro.props ? dataTone : tone}',
         "  class:list={[className]}",
         "  style={style}",
-        "  {...scopeAttributes(Astro.props)}",
+        "  {...attrs}",
         ">{label}</span>",
       ),
     );
@@ -464,24 +460,24 @@ describe("props: the frontmatter (ADR-0034)", () => {
     expect(emitted(objectForm)).toBe(
       lines(
         "---",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
         "export interface TagProps { label: string; hint?: string }",
         "",
-        "interface Props extends TagProps {",
+        'interface Props extends TagProps, Omit<HTMLAttributes<"span">, "label" | "hint"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
         "const props = Astro.props;",
-        "const { class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        "const { label: _label, hint: _hint, class: className, style, title, ...attrs } = Astro.props;",
         "---",
         "",
         "<span",
-        "  title={props.hint}",
+        '  title={"title" in Astro.props ? title : props.hint}',
         "  class:list={[className]}",
         "  style={style}",
-        "  {...scopeAttributes(Astro.props)}",
+        "  {...attrs}",
         ">{props.label}</span>",
       ),
     );
@@ -494,20 +490,20 @@ describe("props: the frontmatter (ADR-0034)", () => {
       expect(output).toBe(
         lines(
           "---",
+          'import type { HTMLAttributes } from "astro/types";',
+          "",
           "export interface TagProps { label: string }",
           "",
-          "interface Props extends TagProps {",
+          'interface Props extends TagProps, Omit<HTMLAttributes<"span">, "label"> {',
           "  class?: string;",
           "  style?: Record<string, string | number | undefined>;",
           "}",
           "",
           "const props = Astro.props;",
-          "const { class: className, style } = Astro.props;",
-          "",
-          ...SCOPE_HELPER,
+          "const { label: _label, class: className, style, ...attrs } = Astro.props;",
           "---",
           "",
-          "<span class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>{props.label}</span>",
+          "<span class:list={[className]} style={style} {...attrs}>{props.label}</span>",
         ),
       );
       await expect(renderSource(output, { label: "Hi" })).resolves.toBe("<span>Hi</span>");
@@ -536,23 +532,24 @@ describe("props: the frontmatter (ADR-0034)", () => {
       path: "List.astro",
       contents: lines(
         "---",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
         "interface Item { id: string; label: string }",
         "",
         'export type { OtherProps } from "./Other.astro";',
         "",
         "export interface ListProps { items: Item[]; title?: string; extra?: number; prefix: string }",
         "",
-        "interface Props extends ListProps {",
+        'interface Props extends ListProps, Omit<HTMLAttributes<"ul">, "items" | "title" | "extra" | "prefix"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        "const { items, class: className, style } = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
+        // What falls through is the rest of the props: a prop nothing reads is taken out of it.
+        "const { items, title: _title, extra: _extra, prefix: _prefix, class: className, style, ...attrs } = Astro.props;",
         "---",
         "",
-        "<ul class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>",
+        "<ul class:list={[className]} style={style} {...attrs}>",
         "  {items.map((item) => (",
         "    <li>{item.label}</li>",
         "  ))}",
@@ -620,6 +617,8 @@ describe("props: the frontmatter (ADR-0034)", () => {
     expect(await compiled(defaults)).toBe(
       lines(
         "---",
+        'import type { HTMLAttributes } from "astro/types";',
+        "",
         "export interface NoticeProps {",
         "  message: string;",
         "  title?: string;",
@@ -628,7 +627,10 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "  author?: { name: string };",
         "}",
         "",
-        "interface Props extends NoticeProps {",
+        "interface Props",
+        "  extends",
+        "    NoticeProps,",
+        '    Omit<HTMLAttributes<"p">, "message" | "title" | "priority" | "tags" | "author"> {',
         "  class?: string;",
         "  style?: Record<string, string | number | undefined>;",
         "}",
@@ -641,17 +643,17 @@ describe("props: the frontmatter (ADR-0034)", () => {
         '  author = { name: "System" },',
         "  class: className,",
         "  style,",
+        '  "data-priority": dataPriority,',
+        "  ...attrs",
         "} = Astro.props;",
-        "",
-        ...SCOPE_HELPER,
         "---",
         "",
         "<p",
         "  title={title}",
-        "  data-priority={priority}",
+        '  data-priority={"data-priority" in Astro.props ? dataPriority : priority}',
         "  class:list={[className]}",
         "  style={style}",
-        "  {...scopeAttributes(Astro.props)}",
+        "  {...attrs}",
         '>{message} {tags.join(", ")} {author.name}</p>',
       ),
     );
@@ -671,7 +673,7 @@ describe("types and generics (ADR-0067, ADR-0068)", () => {
         ].join("\n"),
       ),
     ).toContain(
-      'interface Props<T extends string = "a"> { items: T[]\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n}',
+      `interface Props<T extends string = "a"> extends Omit<HTMLAttributes<"ul">, "items"> { items: T[]\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n}`,
     );
     const picker = [
       'import { defineOptions, defineSlots } from "@uxfront/unframework";',
@@ -1120,7 +1122,11 @@ describe("imported types through the type oracle (ADR-0067)", () => {
     const card = await emittedTyped("importedProps");
     expect(card).toContain('import type { Props as OwnProps } from "./types";');
     expect(card).toContain("type CardProps = { item: OwnProps; extra?: OwnProps };");
-    expect(card).toContain("interface Props extends CardProps {");
+    expect(card).toContain(
+      'interface Props extends CardProps, Omit<HTMLAttributes<"span">, "item" | "extra"> {',
+    );
+    // An unread prop is taken out of what falls through, after the ones the source destructures.
+    expect(card).toContain("const { item, extra: _extra, class: className, style, ...attrs }");
     // As the whole annotation, `Props` is an alias of it, exported where nothing reads it.
     expect(await emittedTyped("importedGenericProps")).toContain(
       'import type { Props as OwnProps } from "./types";\n---\n'.replace(
@@ -1139,7 +1145,9 @@ describe("imported types through the type oracle (ADR-0067)", () => {
     expect(alias).not.toContain("= Props<T>");
     const extended = await emittedTyped("localGenericPropsFallthrough");
     expect(extended).toContain("interface OwnProps<T> { items: T[] }");
-    expect(extended).toContain("interface Props<T> extends OwnProps<T> {");
+    expect(extended).toContain(
+      'interface Props<T> extends OwnProps<T>, Omit<HTMLAttributes<"ul">, "items"> {',
+    );
   });
 
   it("keeps a `Props` that a scope declares, and renames an injection key's", async () => {
@@ -1162,7 +1170,9 @@ describe("imported types through the type oracle (ADR-0067)", () => {
     const card = await emittedTyped("importedOwnProps");
     expect(card).toContain('import type { OwnProps } from "./types";');
     expect(card).toContain("interface OwnProps_1 { own: OwnProps }");
-    expect(card).toContain("interface Props extends OwnProps_1 {");
+    expect(card).toContain(
+      'interface Props extends OwnProps_1, Omit<HTMLAttributes<"div">, "own"> {',
+    );
   });
 
   it("imports a model's type, which `Props` prints, and no type only a listener names", async () => {
@@ -1174,11 +1184,11 @@ describe("imported types through the type oracle (ADR-0067)", () => {
 
   it("writes `Props` for an intersection as an intersection with the members beside it", async () => {
     expect(await emittedTyped("intersection")).toContain(
-      "type Props = Base & { n: number } & {\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n};",
+      'type Props = Base & { n: number } & Omit<HTMLAttributes<"span">, "label" | "n"> & {\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n};',
     );
     // Parentheses around each part are kept, and an interface would read them as one type.
     expect(await emittedTyped("parenthesised")).toContain(
-      "type Props = (Base) & ({ n: number }) & {",
+      'type Props = (Base) & ({ n: number }) & Omit<HTMLAttributes<"span">, "label" | "n"> & {',
     );
   });
 
@@ -1194,28 +1204,38 @@ describe("imported types through the type oracle (ADR-0067)", () => {
       ].join("\n"),
     );
     expect(output).toContain("export interface OwnProps { label: string }");
-    expect(output).toContain("export interface Props extends OwnProps {");
+    expect(output).toContain(
+      'export interface Props extends OwnProps, Omit<HTMLAttributes<"span">, "label"> {',
+    );
   });
 
   it("names an imported `Props` in a type parameter's constraint and default", async () => {
     const constrained = await emittedTyped("constraintProps");
-    expect(constrained).toContain("interface Props<T extends OwnProps> {");
+    expect(constrained).toContain(
+      'interface Props<T extends OwnProps> extends Omit<HTMLAttributes<"p">, "items"> {',
+    );
     expect(constrained).toContain("type T = OwnProps;");
-    expect(await emittedTyped("defaultProps")).toContain("interface Props<T = OwnProps> {");
+    expect(await emittedTyped("defaultProps")).toContain(
+      'interface Props<T = OwnProps> extends Omit<HTMLAttributes<"p">, "items"> {',
+    );
     expect(await emittedTyped("genericWithoutProps")).toContain(
-      "interface Props<T> {\n  value?: T;",
+      'interface Props<T> extends Omit<HTMLAttributes<"p">, "value"> {\n  value?: T;',
     );
   });
 
   it("declares on `Props` only the type parameters its members name", async () => {
     const card = await emittedTyped("genericUnnamedWithoutProps");
-    expect(card).toContain("interface Props {");
+    expect(card).toContain('interface Props extends HTMLAttributes<"p"> {');
     expect(card).toContain("type T = unknown;");
-    expect(await emittedTyped("genericUnnamedInline")).toContain("interface Props { n: number");
-    expect(await emittedTyped("genericBoundOnly")).toContain(
-      "interface Props<U, T extends U = U> {",
+    expect(await emittedTyped("genericUnnamedInline")).toContain(
+      'interface Props extends Omit<HTMLAttributes<"p">, "n"> { n: number',
     );
-    expect(await emittedTyped("genericDefaultOnly")).toContain("interface Props<T, U = T> {");
+    expect(await emittedTyped("genericBoundOnly")).toContain(
+      "interface Props<U, T extends U = U> extends Omit<",
+    );
+    expect(await emittedTyped("genericDefaultOnly")).toContain(
+      "interface Props<T, U = T> extends Omit<",
+    );
   });
 
   it("declares no type parameter that only a nested scope declares for itself", async () => {
@@ -1295,7 +1315,7 @@ describe("control flow (ADR-0036)", () => {
   it("writes conditionals as ternaries ending in `null`, and lists as `.map` without keys", () => {
     expect(markupOf(emitted(controlFlow))).toBe(
       lines(
-        "<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>",
+        "<div class:list={[className]} style={style} {...attrs}>",
         "  {open ? (",
         "    <p>open</p>",
         "  ) : null}",
@@ -1366,7 +1386,8 @@ describe("attributes (ADR-0037 to ADR-0040)", () => {
   it("writes bindings, `class:list`, style objects and spreads key by key", () => {
     expect(markupOf(emitted(attributes))).toBe(
       lines(
-        "<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>",
+        // `attrs` is the source's prop: what falls through is `attrs_1`.
+        "<div class:list={[className]} style={style} {...attrs_1}>",
         // Astro's renderer does not read `multiple` as a boolean (ADR-0037).
         '  <input type="file" multiple={on ? "" : undefined} disabled={!on} aria-label="Files" />',
         '  <p class="a b">s</p>',

@@ -1,4 +1,11 @@
-import { type CSSProperties, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface PriceRangeProps {
   currency: string;
@@ -10,10 +17,10 @@ export interface PriceRangeEvents {
   onCurrencyUpdate?: (currency: string) => void;
 }
 
-export interface PriceRangeAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PriceRangeAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "currency" | "onSpanUpdate" | "onRangeUpdate" | "onCurrencyUpdate" | "children"
+>;
 
 export default function PriceRange({
   currency,
@@ -68,7 +75,7 @@ export default function PriceRange({
       className={cx("price-range", className)}
       aria-label="Price range"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p role="status">
         {low} to {high} {currency}
@@ -110,13 +117,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

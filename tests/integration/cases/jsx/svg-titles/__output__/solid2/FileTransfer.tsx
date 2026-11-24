@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { Show } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, omit } from "solid-js";
 
 export interface FileTransferProps {
   fileName: string;
@@ -9,14 +9,16 @@ export interface FileTransferProps {
 }
 
 export default function FileTransfer(
-  props: FileTransferProps & { class?: string; style?: JSX.CSSProperties },
+  props: FileTransferProps &
+    Omit<ComponentProps<"div">, "fileName" | "percent" | "paused" | "eta" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "fileName", "percent", "paused", "eta", "class");
+
   return (
-    <div
-      class={props.class ? `file-transfer ${props.class}` : "file-transfer"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `file-transfer ${props.class}` : "file-transfer"} {...others}>
       <svg class="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
         <title>
           {props.fileName}: {props.percent}% sent. {props.eta}
@@ -33,11 +35,4 @@ export default function FileTransfer(
       </svg>
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

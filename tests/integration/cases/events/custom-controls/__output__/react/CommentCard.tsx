@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   type KeyboardEvent,
   type SyntheticEvent,
   type UIEvent,
@@ -11,10 +11,7 @@ export interface CommentCardEvents {
   onLiked?: (liked: boolean, by: string) => void;
 }
 
-export interface CommentCardAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type CommentCardAttributes = Omit<ComponentPropsWithRef<"section">, "onLiked" | "children">;
 
 export default function CommentCard({
   onLiked,
@@ -50,7 +47,7 @@ export default function CommentCard({
       className={cx("comment-card", className)}
       aria-label="Comment"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <label>
         Comment
@@ -87,13 +84,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,0 +1,4 @@
+- toolbar "Actions":
+  - button "Save draft": Save
+  - button "Focus save"
+  - paragraph: "Clicks: 0"

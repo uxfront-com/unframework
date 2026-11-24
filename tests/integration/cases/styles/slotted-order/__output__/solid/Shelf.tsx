@@ -1,6 +1,6 @@
 import Amber from "./Amber";
 import Blue from "./Blue";
-import { For, type JSX, createMemo, untrack } from "solid-js";
+import { type ComponentProps, For, type JSX, createMemo, untrack } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
 const items = [
@@ -8,9 +8,11 @@ const items = [
   { label: "Cool", warm: false },
 ];
 
-export default function Shelf(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Shelf(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
   return (
-    <section class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <section {...props}>
       <Blue>
         <p class="caption" data-uf-721c504a-s="">
           In blue
@@ -34,13 +36,6 @@ export default function Shelf(props: { class?: string; style?: JSX.CSSProperties
       </KeyedFor>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

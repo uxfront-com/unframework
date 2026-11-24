@@ -1,22 +1,14 @@
 import Stepper from "./Stepper";
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
-export interface OrderAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type OrderAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Order({ className, style, ...attributes }: OrderAttributes) {
   const [cups, setCups] = useState(2);
   const cupsRef = useRef(cups);
 
   return (
-    <section
-      aria-label="Order"
-      className={className}
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section aria-label="Order" className={className} style={style} {...attributes}>
       <Stepper
         label="Cups"
         value={cups}
@@ -37,13 +29,4 @@ export default function Order({ className, style, ...attributes }: OrderAttribut
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

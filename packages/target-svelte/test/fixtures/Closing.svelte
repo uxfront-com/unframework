@@ -2,15 +2,16 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLButtonAttributes } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<HTMLButtonAttributes, "onstep" | "children" | "class" | "style" | "ref"> & {
     onstep?: (text: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["button"] | null;
   };
 
-  let { onstep, class: className, style, ...attributes }: Props = $props();
+  let { onstep, class: className, style, ref = $bindable(null), onclick, ...attributes }: Props = $props();
 
   let query = $state("");
 
@@ -48,19 +49,16 @@
   onMount(() => () => {
     onstep?.("closed");
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <button
   type="button"
-  onclick={() => (query += "a")}
+  onclick={(event) => {
+    query += "a";
+    onclick?.(event);
+  }}
   class={className}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >Type</button>

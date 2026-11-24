@@ -1,15 +1,15 @@
 import Panel from "./Panel";
-import { type JSX, Show, createSignal } from "solid-js";
+import { type ComponentProps, type JSX, Show, createSignal, splitProps } from "solid-js";
 
-export default function Board(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Board(
+  props: Omit<ComponentProps<"main">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [shown, setShown] = createSignal(true);
 
   return (
-    <main
-      class={props.class ? `board ${props.class}` : "board"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <main class={props.class ? `board ${props.class}` : "board"} {...others}>
       <button type="button" onClick={() => setShown(false)}>
         Remove panel
       </button>
@@ -18,11 +18,4 @@ export default function Board(props: { class?: string; style?: JSX.CSSProperties
       </Show>
     </main>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

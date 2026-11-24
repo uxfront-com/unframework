@@ -66,8 +66,12 @@ describe("solid2 output, checked by Solid 2's own tools", { timeout: 60_000 }, (
       // Defaults are getters `merge` reads, which apply a default where the prop is `undefined`.
       "const props = merge(rawProps, {",
       'return rawProps.empty === undefined ? "Nothing to do." : rawProps.empty;',
-      "(props: LinkCardProps & { class?: string; style?: JSX.CSSProperties })",
-      "(_props: { note?: string })",
+      // What falls through: the root element's attributes but the declared names (ADR-0118).
+      '      "label" | "link" | "extra" | "accent" | "active" | "class" | "style"\n    > & { class?: string; style?: JSX.CSSProperties },',
+      'const others = omit(props, "label", "link", "extra", "accent", "active", "class", "style");',
+      // With `inheritAttrs: false`, the root still takes a consumer's `ref`.
+      '(props: { note?: string } & Pick<ComponentProps<"p">, "ref">)',
+      "<p ref={props.ref}>",
       "<Show when={!props.busy}>",
       "<Switch",
       "<Match when=",
@@ -121,7 +125,7 @@ describe("solid2 output, checked by Solid 2's own tools", { timeout: 60_000 }, (
       // helpers (src/helpers.ts).
       "export interface WatchersEvents {",
       "onLabelled?: (value: string, previous?: string) => void;",
-      "(\n  props: WatchersProps & WatchersEvents & { class?: string; style?: JSX.CSSProperties },\n)",
+      '(\n  props: WatchersProps &\n    WatchersEvents &\n    Omit<ComponentProps<"section">, "label" | "class" | "style"> & {\n      class?: string;\n      style?: JSX.CSSProperties;\n    },\n)',
       'const [query, setQuery] = createState("");',
       "const [fixed] = createState(format(1));",
       "createWatcher(query, (value, previous, onCleanup) => {",

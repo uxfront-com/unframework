@@ -1,6 +1,7 @@
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useComputed$,
@@ -17,7 +18,12 @@ export interface TemperatureEvents {
 }
 
 export default component$<
-  TemperatureProps & TemperatureEvents & { class?: ClassList; style?: CSSProperties }
+  TemperatureProps &
+    TemperatureEvents &
+    Omit<PropsOf<"figure">, "celsius" | "onReading$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ celsius, onReading$, class: className, style, ...attributes }) => {
   const fahrenheit = useComputed$(() => Math.round((celsius * 9) / 5 + 32));
   const level = useComputed$(() => (celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild"));
@@ -38,8 +44,8 @@ export default component$<
     <figure
       class={["temperature", className]}
       data-level={level.value}
-      {...scopeAttributes(attributes)}
       style={style}
+      {...attributes}
     >
       <p>{celsius} °C</p>
       <p>{fahrenheit.value} °F</p>
@@ -47,12 +53,3 @@ export default component$<
     </figure>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

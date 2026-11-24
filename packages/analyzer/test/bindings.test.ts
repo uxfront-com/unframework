@@ -90,6 +90,8 @@ function describeAttribute(attribute: Attribute): string {
       return `innerHTML={${attribute.value.code}}`;
     case "Directive":
       return `${attribute.name}={${attribute.value.code}}`;
+    case "Rest":
+      return "...rest";
   }
 }
 

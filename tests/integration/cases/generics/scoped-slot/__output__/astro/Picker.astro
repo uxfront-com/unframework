@@ -1,25 +1,20 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface PickerProps<T> {
   items: T[];
 }
 
-interface Props<T> extends PickerProps<T> {
+interface Props<T> extends PickerProps<T>, Omit<HTMLAttributes<"ul">, "items" | "item"> {
   item?: (props: { item: T }) => unknown;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { items, item: item_1, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { items, item: item_1, class: className, style, ...attrs } = Astro.props;
 ---
 
-<ul class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+<ul class:list={[className]} style={style} {...attrs}>
   {items.map((item) => (
     <li>{item_1?.({ item })}</li>
   ))}

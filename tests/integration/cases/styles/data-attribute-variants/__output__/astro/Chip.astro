@@ -1,7 +1,8 @@
 ---
+import type { HTMLAttributes } from "astro/types";
 import "./Chip.uf.tsx.css";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"button">, "label" | "variant" | "pressed"> {
   label: string;
   variant?: "neutral" | "danger";
   pressed?: boolean;
@@ -9,23 +10,27 @@ interface Props {
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, variant = "neutral", pressed = false, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  label,
+  variant = "neutral",
+  pressed = false,
+  class: className,
+  style,
+  type,
+  "data-variant": dataVariant,
+  "data-state": dataState,
+  "aria-pressed": ariaPressed,
+  ...attrs
+} = Astro.props;
 ---
 
 <button
-  type="button"
+  type={"type" in Astro.props ? type : "button"}
   class:list={["chip", className]}
-  data-variant={variant}
-  data-state={pressed ? "on" : "off"}
-  aria-pressed={pressed ? "true" : "false"}
+  data-variant={"data-variant" in Astro.props ? dataVariant : variant}
+  data-state={"data-state" in Astro.props ? dataState : pressed ? "on" : "off"}
+  aria-pressed={"aria-pressed" in Astro.props ? ariaPressed : pressed ? "true" : "false"}
   style={style}
   data-uf-69db3802=""
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label}</button>

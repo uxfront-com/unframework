@@ -2,9 +2,9 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<SvelteHTMLElements["ul"], "label" | "ontitle" | "onreleased" | "onready" | "onstopped" | "children" | "class" | "style" | "ref"> & {
     label: string;
     ontitle?: (text: string) => void;
     onreleased?: (text: string) => void;
@@ -12,9 +12,10 @@
     onstopped?: () => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["ul"] | null;
   };
 
-  let { label, ontitle, onreleased, onready, onstopped, class: className, style, ...attributes }: Props = $props();
+  let { label, ontitle, onreleased, onready, onstopped, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let ticks = $state(0);
   let list: HTMLUListElement | null = null;
@@ -55,16 +56,17 @@
     clearInterval(timer);
     onstopped?.();
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
-<ul bind:this={list} class={className} {style} {...scopeAttributes(attributes)}>
+<ul
+  bind:this={() => list, (element) => {
+    list = element;
+    ref = element;
+  }}
+  class={className}
+  {style}
+  {...attributes}
+>
   <li>{label}</li
   ><li>{ticks}</li>
 </ul>

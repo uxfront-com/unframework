@@ -1,31 +1,26 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface PageCountProps {
   page?: number;
   total: number;
 }
 
-interface Props extends PageCountProps {
+interface Props extends PageCountProps, Omit<HTMLAttributes<"nav">, "page" | "total"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { page = 1, total, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { page = 1, total, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const label = `Page ${page} of ${total}`;
 ---
 
 <nav
   class:list={["page-count", className]}
-  aria-label="Pages"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Pages"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p role="status">{label}</p>
   <p>Direct: {page}</p>

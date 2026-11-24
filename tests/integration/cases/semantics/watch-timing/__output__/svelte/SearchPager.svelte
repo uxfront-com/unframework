@@ -2,14 +2,18 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onqueryrun" | "onpagerun" | "oncleanedup" | "children" | "class" | "style" | "ref"
+  > & {
     onqueryrun?: (value: string, previous: string) => void;
     onpagerun?: (value: number, previous: number) => void;
     oncleanedup?: (watcher: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
   let {
@@ -18,6 +22,7 @@
     oncleanedup,
     class: className,
     style,
+    ref = $bindable(null),
     ...attributes
   }: Props = $props();
 
@@ -73,20 +78,14 @@
     page += 1;
     page += 1;
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["search-pager", className]}
   aria-label="Search"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p role="status">{query === "" ? "All results" : `Results for ${query}`}, page {page}</p
   ><button type="button" onclick={() => search("Boots")}>Search boots</button

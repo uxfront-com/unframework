@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ActionButtonProps {
   label: string;
@@ -8,10 +8,10 @@ export interface ActionButtonProps {
   badge: number;
 }
 
-export interface ActionButtonAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ActionButtonAttributes = Omit<
+  ComponentPropsWithRef<"button">,
+  "label" | "size" | "primary" | "busy" | "badge" | "children"
+>;
 
 export default function ActionButton({
   label,
@@ -34,7 +34,7 @@ export default function ActionButton({
         className,
       )}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       {label}
     </button>
@@ -54,13 +54,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

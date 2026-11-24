@@ -1,16 +1,22 @@
 import { useToggle } from "./useToggle";
-import type { JSX } from "@solidjs/web";
-import { Show } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Show, omit } from "solid-js";
 
-export default function Disclosure(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Disclosure(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
+  const others = omit(props, "class");
+
   const { on, toggle, close } = useToggle(false);
 
   return (
     <section
       class={props.class ? `disclosure ${props.class}` : "disclosure"}
       aria-label="Shipping"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <button type="button" aria-expanded={enumeratedValue(on())} onClick={() => toggle()}>
         Shipping details
@@ -30,11 +36,4 @@ export default function Disclosure(props: { class?: string; style?: JSX.CSSPrope
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

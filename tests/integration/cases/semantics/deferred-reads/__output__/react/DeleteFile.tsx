@@ -1,4 +1,4 @@
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useLayoutEffect, useRef, useState } from "react";
 
 export interface DeleteFileProps {
   fileName: string;
@@ -8,10 +8,10 @@ export interface DeleteFileEvents {
   onDeleted?: (fileName: string, copies: number) => void;
 }
 
-export interface DeleteFileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type DeleteFileAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "fileName" | "onDeleted" | "children"
+>;
 
 export default function DeleteFile({
   fileName,
@@ -58,7 +58,7 @@ export default function DeleteFile({
       className={cx("delete-file", className)}
       aria-label="File"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <p>
         {fileName}, {copies} {copies === 1 ? "copy" : "copies"}
@@ -92,13 +92,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

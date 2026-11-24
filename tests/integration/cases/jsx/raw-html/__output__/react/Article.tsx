@@ -1,14 +1,14 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ArticleProps {
   title: string;
   body: string;
 }
 
-export interface ArticleAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ArticleAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "title" | "body" | "children"
+>;
 
 export default function Article({
   title,
@@ -18,7 +18,7 @@ export default function Article({
   ...attributes
 }: ArticleProps & ArticleAttributes) {
   return (
-    <article className={cx("article", className)} style={style} {...scopeAttributes(attributes)}>
+    <article className={cx("article", className)} style={style} {...attributes}>
       <h2>{title}</h2>
       <div className="body" dangerouslySetInnerHTML={{ __html: body }} />
       <footer dangerouslySetInnerHTML={{ __html: "<small>Filed under <em>News</em></small>" }} />
@@ -39,13 +39,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

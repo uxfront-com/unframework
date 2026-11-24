@@ -248,6 +248,7 @@ export function removeSpans(code: Code, spans: readonly Span[]): Code {
         case "Api":
         case "Event":
         case "Slot":
+        case "Dev":
           return { ...reference, span: moved(reference.span) };
         case "Write":
           return {
@@ -295,7 +296,7 @@ function listenerFunctions(component: UfComponent): Set<string> {
   const named = new Set<string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Function") {
           named.add(attribute.handler.binding);
@@ -363,13 +364,16 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
           else visit(argument.callback.body.refs);
         }
         break;
+      case "DevCheck":
+        visit(item.code.refs);
+        break;
       default:
         unreachable(item);
     }
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
           visit(attribute.handler.function.body.refs);

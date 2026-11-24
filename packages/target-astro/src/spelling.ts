@@ -83,6 +83,9 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
       // A named slot's presence is Astro's own; a scoped slot is a render prop, present when
       // passed.
       slot: ({ slot }) => renderProps.get(slot) ?? `Astro.slots.has(${JSON.stringify(slot)})`,
+      // Vite's flag, which Astro's build replaces, and a package keeps for the app's build to
+      // read (ADR-0077, ADR-0117).
+      dev: () => "import.meta.env.DEV",
       binding: (_, binding, written) => {
         switch (binding.kind) {
           case "prop":

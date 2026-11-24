@@ -1,13 +1,10 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export interface StepsSlots {
   marker?: ReactNode;
 }
 
-export interface StepsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepsAttributes = Omit<ComponentPropsWithRef<"ol">, "steps" | "marker" | "children">;
 
 export default function Steps({
   steps,
@@ -17,7 +14,7 @@ export default function Steps({
   ...attributes
 }: { steps: string[] } & StepsSlots & StepsAttributes) {
   return (
-    <ol className={cx("steps", className)} style={style} {...scopeAttributes(attributes)}>
+    <ol className={cx("steps", className)} style={style} {...attributes}>
       {steps.map((step) => (
         <li key={step}>
           {marker}
@@ -41,13 +38,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

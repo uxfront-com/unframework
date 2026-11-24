@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 interface HintAttributes {
   id: string;
@@ -10,13 +11,20 @@ export interface HintProps {
   attrs: HintAttributes;
 }
 
-export default function Hint(props: HintProps & { class?: string; style?: JSX.CSSProperties }) {
+export default function Hint(
+  props: HintProps &
+    Omit<ComponentProps<"small">, "text" | "attrs" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
+) {
+  const others = omit(props, "text", "attrs", "style");
+
   return (
     <small
       id={props.attrs.id}
       style={{ ...styleProperties(props.attrs.style), ...props.style }}
-      class={props.class}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {props.text}
     </small>
@@ -48,11 +56,4 @@ function styleProperties(
     properties[key.startsWith("--") ? key : kebab] = String(value);
   }
   return properties;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

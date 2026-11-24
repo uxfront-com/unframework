@@ -1,4 +1,4 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   For,
   createMemo,
@@ -8,6 +8,7 @@ import {
   flush,
   getObserver,
   merge,
+  omit,
   onSettled,
   runWithOwner,
   untrack,
@@ -31,13 +32,30 @@ function isAnswer(value: string): value is "yes" | "no" {
 }
 
 export default function Ballot(
-  rawProps: BallotProps & BallotEvents & { class?: string; style?: JSX.CSSProperties },
+  rawProps: BallotProps &
+    BallotEvents &
+    Omit<ComponentProps<"section">, "limit" | "label" | "choices" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = merge(rawProps, {
     get label() {
       return rawProps.label === undefined ? "Vote" : rawProps.label;
     },
   });
+  const others = omit(
+    props,
+    "limit",
+    "label",
+    "choices",
+    "onVoted",
+    "onMoved",
+    "onReport",
+    "onCounted",
+    "class",
+  );
+
   const [votes, setVotes] = createState(untrack(() => props.limit));
   const [picked, setPicked] = createState("none");
   let remaining = untrack(() => props.limit);
@@ -79,8 +97,7 @@ export default function Ballot(
     <section
       class={props.class ? `ballot ${props.class}` : "ballot"}
       aria-label={props.label}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{votes()} votes left</p>
       <p>Picked: {picked()}</p>
@@ -100,13 +117,6 @@ export default function Ballot(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

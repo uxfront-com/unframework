@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export interface ProductTileProps {
   name: string;
@@ -7,10 +7,10 @@ export interface ProductTileProps {
   available?: boolean;
 }
 
-export interface ProductTileAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ProductTileAttributes = Omit<
+  ComponentPropsWithRef<"article">,
+  "name" | "price" | "stock" | "available" | "children"
+>;
 
 export default function ProductTile({
   name,
@@ -26,7 +26,7 @@ export default function ProductTile({
       className={cx("product-tile", className)}
       aria-label={name}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <h2>{name}</h2>
       <p>Price: {price} EUR</p>
@@ -52,13 +52,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

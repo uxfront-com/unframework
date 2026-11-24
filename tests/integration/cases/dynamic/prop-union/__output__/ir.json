@@ -194,6 +194,20 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "heading"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "h1",
+              "h2",
+              "h3"
+            ],
             "rootTags": [
               "h1",
               "h2",

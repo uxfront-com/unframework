@@ -1,6 +1,7 @@
 import {
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useSignal,
@@ -17,7 +18,12 @@ export interface ArticlePreviewEvents {
 }
 
 export default component$<
-  ArticlePreviewProps & ArticlePreviewEvents & { class?: ClassList; style?: CSSProperties }
+  ArticlePreviewProps &
+    ArticlePreviewEvents &
+    Omit<PropsOf<"article">, "title" | "text" | "onReady$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ title, text, onReady$, class: className, style, ...attributes }) => {
   const body = useSignal<HTMLParagraphElement>();
   const characters = useSignal(0);
@@ -37,8 +43,8 @@ export default component$<
     <article
       class={["article-preview", className]}
       aria-label={title}
-      {...scopeAttributes(attributes)}
       style={style}
+      {...attributes}
     >
       <h2>{title}</h2>
       <p ref={body}>{text}</p>
@@ -48,12 +54,3 @@ export default component$<
     </article>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

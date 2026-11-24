@@ -1,10 +1,7 @@
 import { loadUser } from "./api";
-import { type CSSProperties, Suspense, use, useEffect, useState } from "react";
+import { type ComponentPropsWithRef, Suspense, use, useEffect, useState } from "react";
 
-export interface MemberAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MemberAttributes = Omit<ComponentPropsWithRef<"li">, "id" | "children">;
 
 async function memberSetup({ id }: { id: string }) {
   const user = await loadUser(id);
@@ -25,6 +22,7 @@ export default function Member(props: { id: string } & MemberAttributes) {
 function MemberResolved({
   className,
   style,
+  id: _id,
   setup,
   settled: _settled,
   ...attributes
@@ -35,7 +33,7 @@ function MemberResolved({
   const { user } = use(setup);
 
   return (
-    <li className={cx("member", className)} style={style} {...scopeAttributes(attributes)}>
+    <li className={cx("member", className)} style={style} {...attributes}>
       {user.name}
     </li>
   );
@@ -54,15 +52,6 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }
 
 /**

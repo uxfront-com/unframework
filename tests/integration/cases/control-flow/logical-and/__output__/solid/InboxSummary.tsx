@@ -1,4 +1,4 @@
-import { type JSX, Show } from "solid-js";
+import { type ComponentProps, type JSX, Show, splitProps } from "solid-js";
 
 export interface InboxSummaryProps {
   folder: string;
@@ -8,14 +8,18 @@ export interface InboxSummaryProps {
 }
 
 export default function InboxSummary(
-  props: InboxSummaryProps & { class?: string; style?: JSX.CSSProperties },
+  props: InboxSummaryProps &
+    Omit<ComponentProps<"section">, "folder" | "unread" | "flagged" | "signature" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["folder", "unread", "flagged", "signature", "class"]);
+
   return (
     <section
       class={props.class ? `inbox-summary ${props.class}` : "inbox-summary"}
       aria-label="Inbox summary"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <h2>{props.folder || "Inbox"}</h2>
       <Show when={props.unread}>
@@ -35,11 +39,4 @@ export default function InboxSummary(
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

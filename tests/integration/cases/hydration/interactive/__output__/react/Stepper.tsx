@@ -1,4 +1,4 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export interface StepperProps {
   start?: number;
@@ -8,10 +8,10 @@ export interface StepperEvents {
   onChange?: (value: number) => void;
 }
 
-export interface StepperAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type StepperAttributes = Omit<
+  ComponentPropsWithRef<"div">,
+  "start" | "onChange" | "children"
+>;
 
 export default function Stepper({
   start = 0,
@@ -30,7 +30,7 @@ export default function Stepper({
   }
 
   return (
-    <div className={cx("stepper", className)} style={style} {...scopeAttributes(attributes)}>
+    <div className={cx("stepper", className)} style={style} {...attributes}>
       <output>{count}</output>
       <button type="button" onClick={add}>
         Add one
@@ -52,13 +52,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

@@ -1,4 +1,14 @@
-import { For, type JSX, Match, Show, Switch, createMemo, untrack } from "solid-js";
+import {
+  type ComponentProps,
+  For,
+  type JSX,
+  Match,
+  Show,
+  Switch,
+  createMemo,
+  splitProps,
+  untrack,
+} from "solid-js";
 
 interface Team {
   name: string;
@@ -27,14 +37,27 @@ export interface AccountSummaryProps {
 }
 
 export default function AccountSummary(
-  props: AccountSummaryProps & { class?: string; style?: JSX.CSSProperties },
+  props: AccountSummaryProps &
+    Omit<
+      ComponentProps<"section">,
+      "loading" | "member" | "uptime" | "storage" | "plan" | "seats" | "style"
+    > & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, [
+    "loading",
+    "member",
+    "uptime",
+    "storage",
+    "plan",
+    "seats",
+    "class",
+  ]);
+
   return (
     <section
       class={props.class ? `account-summary ${props.class}` : "account-summary"}
       aria-label="Account"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <Switch>
         <Match when={props.loading}>
@@ -91,13 +114,6 @@ export default function AccountSummary(
       </ul>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

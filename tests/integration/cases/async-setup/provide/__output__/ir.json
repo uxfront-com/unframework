@@ -101,7 +101,18 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "span"
+            "rootTag": "span",
+            "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "badge"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "span"
           }
         ],
         "keys": [
@@ -156,7 +167,21 @@
             "inheritAttrs": true,
             "root": "element",
             "async": true,
-            "rootTag": "section"
+            "rootTag": "section",
+            "fallthroughTag": "section",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "panel"
+                },
+                {
+                  "name": "aria-label"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "section"
           }
         ],
         "keys": []

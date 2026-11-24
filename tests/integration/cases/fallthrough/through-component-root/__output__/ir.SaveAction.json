@@ -1,0 +1,192 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/through-component-root/SaveAction.uf.tsx",
+  "components": [
+    {
+      "name": "SaveAction",
+      "span": {
+        "start": 134,
+        "end": 249
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 187,
+              "end": 193
+            }
+          },
+          "binding": "text@171",
+          "span": {
+            "start": 181,
+            "end": 193
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 179,
+            "end": 195
+          }
+        },
+        "span": {
+          "start": 169,
+          "end": 195
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@171",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 171,
+            "end": 175
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Pressable",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 225,
+                    "end": 229
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@171",
+                      "span": {
+                        "start": 225,
+                        "end": 229
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 219,
+                  "end": 230
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "save",
+                    "span": {
+                      "start": 231,
+                      "end": 243
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 231,
+                  "end": 243
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 208,
+              "end": 246
+            }
+          }
+        ],
+        "span": {
+          "start": 208,
+          "end": 246
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SaveAction",
+      "span": {
+        "start": 134,
+        "end": 249
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Pressable.uf.tsx",
+      "file": "Pressable.uf.tsx",
+      "api": {
+        "file": "Pressable.uf.tsx",
+        "components": [
+          {
+            "name": "Pressable",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "button",
+            "fallthroughTag": "button",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "type",
+                  "value": "button"
+                },
+                {
+                  "name": "class",
+                  "value": "pressable"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "button"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Pressable",
+          "span": {
+            "start": 7,
+            "end": 16
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 43
+      }
+    }
+  ]
+}

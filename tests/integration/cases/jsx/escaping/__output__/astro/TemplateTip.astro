@@ -1,26 +1,22 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface TemplateTipProps {
   example: string;
   note: string;
   path: string;
 }
 
-interface Props extends TemplateTipProps {
+interface Props
+  extends TemplateTipProps, Omit<HTMLAttributes<"figure">, "example" | "note" | "path"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { example, note, path, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { example, note, path, class: className, style, ...attrs } = Astro.props;
 ---
 
-<figure class:list={["template-tip", className]} style={style} {...scopeAttributes(Astro.props)}>
+<figure class:list={["template-tip", className]} style={style} {...attrs}>
   <figcaption
     title="Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) &amp; JSX {name}"
   >Template syntax &amp; escaping</figcaption>

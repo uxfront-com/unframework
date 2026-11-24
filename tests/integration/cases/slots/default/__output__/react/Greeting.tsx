@@ -1,10 +1,10 @@
 import Panel from "./Panel";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-export interface GreetingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type GreetingAttributes = Omit<
+  ComponentPropsWithRef<typeof Panel>,
+  "name" | "children" | "title"
+>;
 
 export default function Greeting({
   name,
@@ -13,20 +13,11 @@ export default function Greeting({
   ...attributes
 }: { name: string } & GreetingAttributes) {
   return (
-    <Panel title="Welcome" className={className} style={style} {...scopeAttributes(attributes)}>
+    <Panel title="Welcome" className={className} style={style} {...attributes}>
       <p>
         Hello, <strong>{name}</strong>!
       </p>
       <p>Your children render in the panel.</p>
     </Panel>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

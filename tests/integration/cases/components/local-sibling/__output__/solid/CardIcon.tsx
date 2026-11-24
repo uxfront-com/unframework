@@ -1,23 +1,15 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export function CardIcon(
-  props: { symbol: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { symbol: string } & Omit<ComponentProps<"span">, "symbol" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["symbol", "class"]);
+
   return (
-    <span
-      class={props.class ? `icon ${props.class}` : "icon"}
-      aria-hidden="true"
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <span class={props.class ? `icon ${props.class}` : "icon"} aria-hidden="true" {...others}>
       {props.symbol}
     </span>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

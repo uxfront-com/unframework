@@ -3,6 +3,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useComputed$,
@@ -14,7 +15,11 @@ export interface PriceTagEvents {
 }
 
 export default component$<
-  { cents: number } & PriceTagEvents & { class?: ClassList; style?: CSSProperties }
+  { cents: number } & PriceTagEvents &
+    Omit<PropsOf<"section">, "cents" | "onOrder$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ cents, onOrder$, class: className, style, ...attributes }) => {
   const quantity = useSignal(1);
   const total = useComputed$(() => formatPrice(cents * quantity.value));
@@ -24,12 +29,7 @@ export default component$<
   });
 
   return (
-    <section
-      class={["price-tag", className]}
-      aria-label="Price"
-      {...scopeAttributes(attributes)}
-      style={style}
-    >
+    <section class={["price-tag", className]} aria-label="Price" style={style} {...attributes}>
       <p>Each: {formatPrice(cents)}</p>
       <p role="status">
         {pluralise(quantity.value, "item")}: {total.value}
@@ -43,12 +43,3 @@ export default component$<
     </section>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

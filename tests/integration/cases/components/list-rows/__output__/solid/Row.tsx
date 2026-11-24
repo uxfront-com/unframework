@@ -1,15 +1,15 @@
-import type { JSX } from "solid-js";
+import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
 export default function Row(
-  props: { name: string; done: boolean } & { class?: string; style?: JSX.CSSProperties },
+  props: { name: string; done: boolean } & Omit<
+    ComponentProps<"div">,
+    "name" | "done" | "style"
+  > & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["name", "done", "class"]);
+
   return (
-    <div
-      role="listitem"
-      class={cx("row", { done: props.done }, props.class)}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div role="listitem" class={cx("row", { done: props.done }, props.class)} {...others}>
       {props.name}
       {props.done ? " (done)" : ""}
     </div>
@@ -26,11 +26,4 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

@@ -1,4 +1,10 @@
-import { type CSSProperties, type ClassList, type QRL, component$ } from "@qwik.dev/core";
+import {
+  type CSSProperties,
+  type ClassList,
+  type PropsOf,
+  type QRL,
+  component$,
+} from "@qwik.dev/core";
 
 export type Source =
   | { kind: "link"; id: string; title: string; href: string }
@@ -13,15 +19,15 @@ export interface ReadingEvents {
 }
 
 export default component$<
-  ReadingProps & ReadingEvents & { class?: ClassList; style?: CSSProperties }
+  ReadingProps &
+    ReadingEvents &
+    Omit<PropsOf<"ul">, "sources" | "onOpen$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
 >(({ sources, onOpen$, class: className, style, ...attributes }) => {
   return (
-    <ul
-      class={["reading", className]}
-      aria-label="Reading list"
-      {...scopeAttributes(attributes)}
-      style={style}
-    >
+    <ul class={["reading", className]} aria-label="Reading list" style={style} {...attributes}>
       {sources.map((source, index) => (
         <li key={source.id} title={source.kind === "link" ? source.href : source.title}>
           {index + 1}. {source.title}
@@ -37,12 +43,3 @@ export default component$<
     </ul>
   );
 });
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}

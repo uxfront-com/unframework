@@ -1,30 +1,31 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface NoticeProps {
   message: string;
 }
 
-interface Props extends NoticeProps {
+interface Props extends NoticeProps, Omit<HTMLAttributes<"section">, "message"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  message: _message,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
 
 const dismissed = 0 as number;
 ---
 
 <section
   class:list={["inbox", className]}
-  aria-label="Inbox"
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Inbox"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <p>Dismissed {dismissed} times</p>
 </section>

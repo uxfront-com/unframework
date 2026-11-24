@@ -1,12 +1,17 @@
 import Toast from "./Toast";
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import { Show, createSignal, getObserver } from "solid-js";
 
-export default function Inbox(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function Inbox(
+  props: Omit<ComponentProps<"section">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
   const [shown, setShown] = createState(true);
 
   return (
-    <section aria-label="Inbox" class={props.class} style={props.style} {...scopeAttributes(props)}>
+    <section aria-label="Inbox" {...props}>
       <button type="button" onClick={() => setShown(!shown())}>
         {shown() ? "Hide" : "Show"}
       </button>
@@ -15,13 +20,6 @@ export default function Inbox(props: { class?: string; style?: JSX.CSSProperties
       </Show>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /**

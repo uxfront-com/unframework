@@ -1,7 +1,12 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
 import { createRenderEffect, createSignal, getObserver, untrack } from "solid-js";
 
-export default function NumberText(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function NumberText(
+  props: Omit<ComponentProps<"input">, "class" | "style"> & {
+    class?: string;
+    style?: JSX.CSSProperties;
+  },
+) {
   const [weight, setWeight] = createState(1);
 
   return (
@@ -9,18 +14,9 @@ export default function NumberText(props: { class?: string; style?: JSX.CSSPrope
       aria-label="Weight"
       value={untrack(weight)}
       ref={modelText(weight, setWeight, { number: true })}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...props}
     />
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** Binds a text field to a signal as Vue's `vModelText` does: see its modifiers. */

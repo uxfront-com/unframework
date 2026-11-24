@@ -2,11 +2,19 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { onclosed?: () => void; class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onclosed" | "children" | "class" | "style" | "ref"
+  > & {
+    onclosed?: () => void;
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { onclosed, class: className, style, ...attributes }: Props = $props();
+  let { onclosed, class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let open = $state(false);
   let menu: HTMLDivElement | null = null;
@@ -26,20 +34,14 @@
   onMount(() => () => {
     document.removeEventListener("click", onDocumentClick);
   });
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["profile-menu", className]}
   aria-label="Profile"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <div class="menu" bind:this={menu}>
     <button type="button" aria-expanded={open} onclick={() => (open = !open)}>Account</button

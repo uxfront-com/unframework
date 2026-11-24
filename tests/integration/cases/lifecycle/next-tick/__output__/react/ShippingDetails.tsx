@@ -1,5 +1,5 @@
 import {
-  type CSSProperties,
+  type ComponentPropsWithRef,
   useEffect,
   useLayoutEffect,
   useReducer,
@@ -11,10 +11,10 @@ export interface ShippingDetailsEvents {
   onToggled?: (items: number) => void;
 }
 
-export interface ShippingDetailsAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type ShippingDetailsAttributes = Omit<
+  ComponentPropsWithRef<"section">,
+  "onToggled" | "children"
+>;
 
 export default function ShippingDetails({
   onToggled,
@@ -44,7 +44,7 @@ export default function ShippingDetails({
       className={cx("shipping-details", className)}
       aria-label="Shipping"
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     >
       <button type="button" aria-expanded={open} onClick={toggle}>
         Shipping details
@@ -124,13 +124,4 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
 }

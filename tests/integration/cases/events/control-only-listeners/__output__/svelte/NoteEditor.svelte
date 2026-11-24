@@ -1,15 +1,23 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, HTMLFormAttributes } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<HTMLFormAttributes, "onsaved" | "children" | "class" | "style" | "ref"> & {
     onsaved?: (title: string, bold: boolean) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["form"] | null;
   };
 
-  let { onsaved, class: className, style, ...attributes }: Props = $props();
+  let {
+    onsaved,
+    class: className,
+    style,
+    ref = $bindable(null),
+    onsubmit,
+    ...attributes
+  }: Props = $props();
 
   let title = $state("");
   let bold = $state(false);
@@ -19,21 +27,18 @@
     saves += 1;
     onsaved?.(title, bold);
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <form
   class={["note-editor", className]}
   aria-label="Note"
-  onsubmit={(event) => event.preventDefault()}
+  onsubmit={(event) => {
+    event.preventDefault();
+    onsubmit?.(event);
+  }}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <label>Title<input
     name="title"

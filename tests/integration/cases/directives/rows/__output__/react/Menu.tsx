@@ -1,12 +1,16 @@
 import Picker from "./Picker";
 import { vMark } from "./vMark";
 import { vTrace } from "./vTrace";
-import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  type Ref,
+  type RefCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
-export interface MenuAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type MenuAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
 
 export default function Menu({ className, style, ...attributes }: MenuAttributes) {
   const [items, setItems] = useState<{ id: string; label: string; note?: string }[]>([
@@ -28,12 +32,7 @@ export default function Menu({ className, style, ...attributes }: MenuAttributes
   const withTrace_5 = useElementDirective(vTrace);
 
   return (
-    <section
-      className={cx("menu", className)}
-      aria-label="Menu"
-      style={style}
-      {...scopeAttributes(attributes)}
-    >
+    <section className={cx("menu", className)} aria-label="Menu" style={style} {...attributes}>
       <ul aria-label="Items">
         {items.map((item) => (
           <li key={item.id} data-name={item.id} ref={withTrace_1(item.label)}>
@@ -173,15 +172,6 @@ function listen<K extends keyof HTMLElementEventMap>(
   return () => element?.removeEventListener(type, listener as EventListener, options);
 }
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
-
 /** The hooks of a directive, which `useElementDirective` runs on its elements. */
 interface DirectiveHooks<E extends Element, T> {
   mounted?(el: E, value: T): unknown;
@@ -299,14 +289,21 @@ function queueHook(
   });
 }
 
-/** Joins an element's ref callbacks into one, whose cleanup runs each one's. */
-function mergeRefs<E extends Element>(
-  ...refs: ((element: E | null) => (() => void) | void)[]
-): (element: E | null) => () => void {
+/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+function mergeRefs<E extends Element>(...refs: (Ref<E> | undefined)[]): RefCallback<E> {
   return (element) => {
-    const cleanups = refs.map((ref) => ref(element));
+    const cleanups = refs.map((ref) => {
+      if (typeof ref === "function") {
+        const cleanup = ref(element);
+        return typeof cleanup === "function" ? cleanup : () => ref(null);
+      }
+      if (ref) ref.current = element;
+      return () => {
+        if (ref) ref.current = null;
+      };
+    });
     return () => {
-      for (const cleanup of cleanups) cleanup?.();
+      for (const cleanup of cleanups) cleanup();
     };
   };
 }

@@ -69,6 +69,9 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
       if (nextTick === undefined) throw new Error("`nextTick` is called, and no helper declared.");
       return `this.${nextTick}`;
     },
+    // The global `@angular/core` declares, which a production build defines as `false`; a test
+    // bed or a server may leave it undefined, which Angular reads as development (ADR-0117).
+    dev: () => 'typeof ngDevMode === "undefined" || ngDevMode',
   };
 }
 

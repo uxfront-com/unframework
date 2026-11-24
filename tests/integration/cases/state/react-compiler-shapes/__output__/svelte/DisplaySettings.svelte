@@ -13,16 +13,27 @@
 </script>
 
 <script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "onapplied" | "onsaved" | "children" | "class" | "style" | "ref"
+  > & {
     onapplied?: (theme: string, size: number) => void;
     onsaved?: (id: number) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { onapplied, onsaved, class: className, style, ...attributes }: Props = $props();
+  let {
+    onapplied,
+    onsaved,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   let settings = $state.raw<Settings>({ theme: "light", size: 14 });
   let maxSize = $state(20);
@@ -59,20 +70,14 @@
       saving = false;
     }
   }
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["display-settings", className]}
   aria-label="Display"
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p role="status">Theme {settings.theme}, size {settings.size}</p
   ><button type="button" onclick={() => apply({ theme: "dark" })}>Dark</button

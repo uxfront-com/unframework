@@ -1,6 +1,18 @@
-import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+} from "solid-js";
 
-export default function NetworkBadge(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function NetworkBadge(
+  props: Omit<ComponentProps<"p">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [online, setOnline] = createSignal<boolean>();
   const [label, setLabel] = createSignal("Checking the connection");
 
@@ -17,19 +29,11 @@ export default function NetworkBadge(props: { class?: string; style?: JSX.CSSPro
       class={props.class ? `network-badge ${props.class}` : "network-badge"}
       role="status"
       data-checked={online() === undefined ? "no" : "yes"}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       {label()}
     </p>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

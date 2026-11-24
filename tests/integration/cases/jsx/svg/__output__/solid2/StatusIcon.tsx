@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { merge } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { merge, omit } from "solid-js";
 
 export interface StatusIconProps {
   label: string;
@@ -8,7 +8,11 @@ export interface StatusIconProps {
 }
 
 export default function StatusIcon(
-  rawProps: StatusIconProps & { class?: string; style?: JSX.CSSProperties },
+  rawProps: StatusIconProps &
+    Omit<ComponentProps<"svg">, "label" | "size" | "colour" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = merge(rawProps, {
     get size() {
@@ -18,6 +22,8 @@ export default function StatusIcon(
       return rawProps.colour === undefined ? "#1f6feb" : rawProps.colour;
     },
   });
+  const others = omit(props, "label", "size", "colour", "class");
+
   return (
     <svg
       class={props.class ? `status-icon ${props.class}` : "status-icon"}
@@ -26,8 +32,7 @@ export default function StatusIcon(
       width={props.size}
       height={props.size}
       fill="none"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <title>{props.label}</title>
       <defs>
@@ -46,11 +51,4 @@ export default function StatusIcon(
       />
     </svg>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

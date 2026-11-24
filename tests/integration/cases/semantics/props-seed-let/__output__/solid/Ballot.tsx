@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   createMemo,
@@ -7,6 +8,7 @@ import {
   mergeProps,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
@@ -28,9 +30,24 @@ function isAnswer(value: string): value is "yes" | "no" {
 }
 
 export default function Ballot(
-  rawProps: BallotProps & BallotEvents & { class?: string; style?: JSX.CSSProperties },
+  rawProps: BallotProps &
+    BallotEvents &
+    Omit<ComponentProps<"section">, "limit" | "label" | "choices" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
   const props = mergeProps({ label: "Vote" } satisfies Partial<BallotProps>, rawProps);
+  const [, others] = splitProps(props, [
+    "limit",
+    "label",
+    "choices",
+    "onVoted",
+    "onMoved",
+    "onReport",
+    "onCounted",
+    "class",
+  ]);
+
   const [votes, setVotes] = createSignal(untrack(() => props.limit));
   const [picked, setPicked] = createSignal("none");
   let remaining = untrack(() => props.limit);
@@ -72,8 +89,7 @@ export default function Ballot(
     <section
       class={props.class ? `ballot ${props.class}` : "ballot"}
       aria-label={props.label}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p role="status">{votes()} votes left</p>
       <p>Picked: {picked()}</p>
@@ -93,13 +109,6 @@ export default function Ballot(
       </button>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

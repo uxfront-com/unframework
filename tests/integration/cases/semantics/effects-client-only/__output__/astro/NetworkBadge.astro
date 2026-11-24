@@ -1,17 +1,12 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"p"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { class: className, style, role, "data-checked": dataChecked, ...attrs } = Astro.props;
 
 const online = undefined as boolean | undefined;
 const label = "Checking the connection" as string;
@@ -19,8 +14,8 @@ const label = "Checking the connection" as string;
 
 <p
   class:list={["network-badge", className]}
-  role="status"
-  data-checked={online === undefined ? "no" : "yes"}
+  role={"role" in Astro.props ? role : "status"}
+  data-checked={"data-checked" in Astro.props ? dataChecked : online === undefined ? "no" : "yes"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label}</p>

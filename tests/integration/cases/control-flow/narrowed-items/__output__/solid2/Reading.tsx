@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
-import { For, Show, createMemo, untrack } from "solid-js";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { For, Show, createMemo, omit, untrack } from "solid-js";
 
 export type Source =
   | { kind: "link"; id: string; title: string; href: string }
@@ -14,14 +14,20 @@ export interface ReadingEvents {
 }
 
 export default function Reading(
-  props: ReadingProps & ReadingEvents & { class?: string; style?: JSX.CSSProperties },
+  props: ReadingProps &
+    ReadingEvents &
+    Omit<ComponentProps<"ul">, "sources" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const others = omit(props, "sources", "onOpen", "class");
+
   return (
     <ul
       class={props.class ? `reading ${props.class}` : "reading"}
       aria-label="Reading list"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <KeyedFor each={props.sources} by={(source) => source.id}>
         {(source) => (
@@ -43,13 +49,6 @@ export default function Reading(
       </KeyedFor>
     </ul>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

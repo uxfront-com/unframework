@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   For,
   type JSX,
   createMemo,
@@ -6,10 +7,15 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
 } from "solid-js";
 
-export default function ZoomControl(props: { class?: string; style?: JSX.CSSProperties }) {
+export default function ZoomControl(
+  props: Omit<ComponentProps<"section">, "style"> & { style?: JSX.CSSProperties },
+) {
+  const [, others] = splitProps(props, ["class"]);
+
   const [zoom, setZoom] = createSignal(100);
   const [history, setHistory] = createSignal<string[]>([]);
 
@@ -21,8 +27,7 @@ export default function ZoomControl(props: { class?: string; style?: JSX.CSSProp
     <section
       class={props.class ? `zoom-control ${props.class}` : "zoom-control"}
       aria-label="Zoom"
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <output>{zoom()}%</output>
       <button type="button" onClick={() => setZoom(zoom() + 25)}>
@@ -41,13 +46,6 @@ export default function ZoomControl(props: { class?: string; style?: JSX.CSSProp
       </ol>
     </section>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */

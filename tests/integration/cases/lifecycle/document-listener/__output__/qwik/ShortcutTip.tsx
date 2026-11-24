@@ -2,6 +2,7 @@ import {
   $,
   type CSSProperties,
   type ClassList,
+  type PropsOf,
   type QRL,
   component$,
   useConstant,
@@ -14,88 +15,83 @@ export interface ShortcutTipEvents {
   onShortcut$?: QRL<(key: string, count: number) => void>;
 }
 
-export default component$<ShortcutTipEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onDismissed$, onShortcut$, class: className, style, ...attributes }) => {
-    const open = useSignal(true);
-    const enabled = useSignal(false);
-    const count = useSignal(0);
+export default component$<
+  ShortcutTipEvents &
+    Omit<PropsOf<"section">, "onDismissed$" | "onShortcut$" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ onDismissed$, onShortcut$, class: className, style, ...attributes }) => {
+  const open = useSignal(true);
+  const enabled = useSignal(false);
+  const count = useSignal(0);
 
-    const onEscape = useConstant(() =>
-      $((event: KeyboardEvent) => {
-        if (event.key === "Escape") {
-          open.value = false;
-          onDismissed$?.();
-        }
-      }),
-    );
+  const onEscape = useConstant(() =>
+    $((event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        open.value = false;
+        onDismissed$?.();
+      }
+    }),
+  );
 
-    const onShortcut = useConstant(() =>
-      $((event: KeyboardEvent) => {
-        if (event.key === "k") {
-          count.value += 1;
-          onShortcut$?.(event.key, count.value);
-        }
-      }),
-    );
+  const onShortcut = useConstant(() =>
+    $((event: KeyboardEvent) => {
+      if (event.key === "k") {
+        count.value += 1;
+        onShortcut$?.(event.key, count.value);
+      }
+    }),
+  );
 
-    const toggle = $(() => {
-      enabled.value = !enabled.value;
-    });
+  const toggle = $(() => {
+    enabled.value = !enabled.value;
+  });
 
-    const previousEnabled = useSignal(() => enabled.value);
-    useVisibleTask$(
-      ({ track }) => {
-        const on = track(enabled);
-        if (Object.is(on, previousEnabled.value)) return;
-        previousEnabled.value = on;
-        if (on) {
-          document.addEventListener("keydown", onShortcut);
-        } else {
-          document.removeEventListener("keydown", onShortcut);
-        }
-      },
-      { strategy: "document-ready" },
-    );
+  const previousEnabled = useSignal(() => enabled.value);
+  useVisibleTask$(
+    ({ track }) => {
+      const on = track(enabled);
+      if (Object.is(on, previousEnabled.value)) return;
+      previousEnabled.value = on;
+      if (on) {
+        document.addEventListener("keydown", onShortcut);
+      } else {
+        document.removeEventListener("keydown", onShortcut);
+      }
+    },
+    { strategy: "document-ready" },
+  );
 
-    useVisibleTask$(
-      () => {
-        document.addEventListener("keydown", onEscape);
-      },
-      { strategy: "document-ready" },
-    );
+  useVisibleTask$(
+    () => {
+      document.addEventListener("keydown", onEscape);
+    },
+    { strategy: "document-ready" },
+  );
 
-    useVisibleTask$(
-      ({ cleanup }) => {
-        cleanup(() => {
-          document.removeEventListener("keydown", onEscape);
-          document.removeEventListener("keydown", onShortcut);
-        });
-      },
-      { strategy: "document-ready" },
-    );
+  useVisibleTask$(
+    ({ cleanup }) => {
+      cleanup(() => {
+        document.removeEventListener("keydown", onEscape);
+        document.removeEventListener("keydown", onShortcut);
+      });
+    },
+    { strategy: "document-ready" },
+  );
 
-    return (
-      <section
-        class={["shortcut-tip", className]}
-        aria-label="Shortcuts"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <p>{open.value ? "Press Escape to hide this tip." : "Tip hidden."}</p>
-        <button type="button" aria-pressed={enabled.value} onClick$={toggle}>
-          Shortcut K
-        </button>
-        <p role="status">Used: {count.value}</p>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section
+      class={["shortcut-tip", className]}
+      aria-label="Shortcuts"
+      style={style}
+      {...attributes}
+    >
+      <p>{open.value ? "Press Escape to hide this tip." : "Tip hidden."}</p>
+      <button type="button" aria-pressed={enabled.value} onClick$={toggle}>
+        Shortcut K
+      </button>
+      <p role="status">Used: {count.value}</p>
+    </section>
+  );
+});

@@ -2,35 +2,40 @@
 
 <script lang="ts">
   import { useTeardown } from "./useTeardown.svelte";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = {
+  type Props = Omit<
+    SvelteHTMLElements["section"],
+    "name" | "onclosed" | "children" | "class" | "style" | "ref"
+  > & {
     name: string;
     onclosed?: (entry: string) => void;
     class?: ClassValue;
     style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
   };
 
-  let { name, onclosed, class: className, style, ...attributes }: Props = $props();
+  let {
+    name,
+    onclosed,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 
   const teardown = useTeardown(
     () => name,
     (entry) => onclosed?.(entry),
   );
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 </script>
 
 <section
   class={["panel", className]}
   aria-label={teardown.title}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <h2>{teardown.title}</h2>
 </section>

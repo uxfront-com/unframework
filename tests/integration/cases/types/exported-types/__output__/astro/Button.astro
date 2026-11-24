@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export type ButtonTone = "primary" | "secondary";
 
 export type ButtonSize = "small" | "large";
@@ -8,24 +10,17 @@ export interface ButtonProps {
   tone?: ButtonTone;
 }
 
-interface Props extends ButtonProps {
+interface Props extends ButtonProps, Omit<HTMLAttributes<"button">, "label" | "tone"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, tone = "primary", class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { label, tone = "primary", class: className, style, type, ...attrs } = Astro.props;
 ---
 
 <button
-  type="button"
+  type={"type" in Astro.props ? type : "button"}
   class:list={[`button button-${tone}`, className]}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{label}</button>

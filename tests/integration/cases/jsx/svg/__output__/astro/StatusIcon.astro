@@ -1,34 +1,41 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface StatusIconProps {
   label: string;
   size?: number;
   colour?: string;
 }
 
-interface Props extends StatusIconProps {
+interface Props extends StatusIconProps, Omit<HTMLAttributes<"svg">, "label" | "size" | "colour"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, size = 24, colour = "#1f6feb", class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  label,
+  size = 24,
+  colour = "#1f6feb",
+  class: className,
+  style,
+  role,
+  viewBox,
+  width,
+  height,
+  fill,
+  ...attrs
+} = Astro.props;
 ---
 
 <svg
   class:list={["status-icon", className]}
-  role="img"
-  viewBox="0 0 24 24"
-  width={size}
-  height={size}
-  fill="none"
+  role={"role" in Astro.props ? role : "img"}
+  viewBox={"viewBox" in Astro.props ? viewBox : "0 0 24 24"}
+  width={"width" in Astro.props ? width : size}
+  height={"height" in Astro.props ? height : size}
+  fill={"fill" in Astro.props ? fill : "none"}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <title>{label}</title>
   <defs>

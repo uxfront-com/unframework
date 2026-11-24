@@ -1,4 +1,11 @@
-import { $, type CSSProperties, type ClassList, component$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type PropsOf,
+  component$,
+  useSignal,
+} from "@qwik.dev/core";
 
 export interface Task {
   id: string;
@@ -9,86 +16,73 @@ export interface TaskListProps {
   initial: Task[];
 }
 
-export default component$<TaskListProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ initial, class: className, style, ...attributes }) => {
-    const tasks = useSignal(initial);
-    const selected = useSignal<string>();
-    const added = useSignal(0);
+export default component$<
+  TaskListProps &
+    Omit<PropsOf<"section">, "initial" | "class" | "style"> & {
+      class?: ClassList;
+      style?: CSSProperties;
+    }
+>(({ initial, class: className, style, ...attributes }) => {
+  const tasks = useSignal(initial);
+  const selected = useSignal<string>();
+  const added = useSignal(0);
 
-    const add = $(() => {
-      added.value += 1;
-      tasks.value = [
-        ...tasks.value,
-        { id: `new-${added.value}`, label: `New task ${added.value}` },
-      ];
-    });
+  const add = $(() => {
+    added.value += 1;
+    tasks.value = [...tasks.value, { id: `new-${added.value}`, label: `New task ${added.value}` }];
+  });
 
-    const select = $((id: string) => {
-      selected.value = id;
-    });
+  const select = $((id: string) => {
+    selected.value = id;
+  });
 
-    const remove = $((id: string) => {
-      tasks.value = tasks.value.filter((entry) => entry.id !== id);
-    });
+  const remove = $((id: string) => {
+    tasks.value = tasks.value.filter((entry) => entry.id !== id);
+  });
 
-    const moveUp = $(() => {
-      const index = tasks.value.findIndex((entry) => entry.id === selected.value);
-      const above = tasks.value[index - 1];
-      const current = tasks.value[index];
-      if (index > 0 && above && current) {
-        tasks.value = tasks.value.toSpliced(index - 1, 2, current, above);
-      }
-    });
+  const moveUp = $(() => {
+    const index = tasks.value.findIndex((entry) => entry.id === selected.value);
+    const above = tasks.value[index - 1];
+    const current = tasks.value[index];
+    if (index > 0 && above && current) {
+      tasks.value = tasks.value.toSpliced(index - 1, 2, current, above);
+    }
+  });
 
-    return (
-      <section
-        class={["task-list", className]}
-        aria-label="Tasks"
-        {...scopeAttributes(attributes)}
-        style={style}
-      >
-        <>
-          {tasks.value.length === 0 ? (
-            <p>No tasks yet.</p>
-          ) : (
-            <ul>
-              {tasks.value.map((task) => (
-                <li key={task.id}>
-                  <button
-                    type="button"
-                    aria-pressed={selected.value === task.id}
-                    onClick$={() => select(task.id)}
-                  >
-                    {task.label}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${task.label}`}
-                    onClick$={() => remove(task.id)}
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-        <button type="button" onClick$={add}>
-          Add task
-        </button>
-        <button type="button" onClick$={moveUp}>
-          Move up
-        </button>
-      </section>
-    );
-  },
-);
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}
+  return (
+    <section class={["task-list", className]} aria-label="Tasks" style={style} {...attributes}>
+      <>
+        {tasks.value.length === 0 ? (
+          <p>No tasks yet.</p>
+        ) : (
+          <ul>
+            {tasks.value.map((task) => (
+              <li key={task.id}>
+                <button
+                  type="button"
+                  aria-pressed={selected.value === task.id}
+                  onClick$={() => select(task.id)}
+                >
+                  {task.label}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove ${task.label}`}
+                  onClick$={() => remove(task.id)}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+      <button type="button" onClick$={add}>
+        Add task
+      </button>
+      <button type="button" onClick$={moveUp}>
+        Move up
+      </button>
+    </section>
+  );
+});

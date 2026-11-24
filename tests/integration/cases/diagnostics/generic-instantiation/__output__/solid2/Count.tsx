@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 interface Fruit {
   id: string;
@@ -6,17 +7,13 @@ interface Fruit {
   children: Fruit[];
 }
 
-export function Count(props: { items: Fruit[] } & { class?: string; style?: JSX.CSSProperties }) {
-  return (
-    <p class={props.class} style={props.style} {...scopeAttributes(props)}>
-      {props.items.length} fruits
-    </p>
-  );
-}
+export function Count(
+  props: { items: Fruit[] } & Omit<ComponentProps<"p">, "items" | "class" | "style"> & {
+      class?: string;
+      style?: JSX.CSSProperties;
+    },
+) {
+  const others = omit(props, "items");
 
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
+  return <p {...others}>{props.items.length} fruits</p>;
 }

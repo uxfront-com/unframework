@@ -1,9 +1,19 @@
 import { loadUser } from "./api";
-import { type JSX, Show, Suspense, createResource, createSignal } from "solid-js";
+import {
+  type ComponentProps,
+  type JSX,
+  Show,
+  Suspense,
+  createResource,
+  createSignal,
+  splitProps,
+} from "solid-js";
 
 export default function Profile(
-  props: { id: string } & { class?: string; style?: JSX.CSSProperties },
+  props: { id: string } & Omit<ComponentProps<"p">, "id" | "style"> & { style?: JSX.CSSProperties },
 ) {
+  const [, others] = splitProps(props, ["id", "class"]);
+
   const [awaited] = createResource(async () => {
     const user = await loadUser(props.id);
     return { user };
@@ -17,11 +27,7 @@ export default function Profile(
           const [visits, setVisits] = createSignal(user.visits);
 
           return (
-            <p
-              class={props.class ? `profile ${props.class}` : "profile"}
-              style={props.style}
-              {...scopeAttributes(props)}
-            >
+            <p class={props.class ? `profile ${props.class}` : "profile"} {...others}>
               {user.name}{" "}
               <button type="button" onClick={() => setVisits(visits() + 1)}>
                 Visits: {visits()}
@@ -32,11 +38,4 @@ export default function Profile(
       </Show>
     </Suspense>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

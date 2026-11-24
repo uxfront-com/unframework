@@ -4,22 +4,19 @@
   import Note from "./Note.svelte";
   import { untrack } from "svelte";
   import type { Attachment } from "svelte/attachments";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
   const TRACE = "directive-trace";
 
-  type Props = { class?: ClassValue; style?: string };
+  type Props = Omit<SvelteHTMLElements["section"], "children" | "class" | "style" | "ref"> & {
+    class?: ClassValue;
+    style?: string;
+    ref?: HTMLElementTagNameMap["section"] | null;
+  };
 
-  let { class: className, style, ...attributes }: Props = $props();
+  let { class: className, style, ref = $bindable(null), ...attributes }: Props = $props();
 
   let shown = $state(true);
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 
   function vTrace(getValue: () => string): Attachment<HTMLElement> {
     const hooks = {
@@ -46,7 +43,8 @@
   data-name="outer"
   {@attach vTrace(() => "outer")}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >
   <p data-name="first" {@attach vTrace(() => "first")}>First</p
   ><Note

@@ -1,4 +1,5 @@
-import type { JSX } from "@solidjs/web";
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 
 export interface UsageMeterProps {
   label: string;
@@ -8,14 +9,16 @@ export interface UsageMeterProps {
 }
 
 export default function UsageMeter(
-  props: UsageMeterProps & { class?: string; style?: JSX.CSSProperties },
+  props: UsageMeterProps &
+    Omit<
+      ComponentProps<"div">,
+      "label" | "percent" | "colour" | "thickness" | "class" | "style"
+    > & { class?: string; style?: JSX.CSSProperties },
 ) {
+  const others = omit(props, "label", "percent", "colour", "thickness", "class");
+
   return (
-    <div
-      class={props.class ? `usage-meter ${props.class}` : "usage-meter"}
-      style={props.style}
-      {...scopeAttributes(props)}
-    >
+    <div class={props.class ? `usage-meter ${props.class}` : "usage-meter"} {...others}>
       <p
         style={{
           color: props.colour,
@@ -63,11 +66,4 @@ export default function UsageMeter(
 /** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
 function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }

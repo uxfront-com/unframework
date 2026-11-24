@@ -1,22 +1,17 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface ArticlePreviewProps {
   title: string;
   text: string;
 }
 
-interface Props extends ArticlePreviewProps {
+interface Props extends ArticlePreviewProps, Omit<HTMLAttributes<"article">, "title" | "text"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { title, text, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { title, text, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const characters = 0 as number;
 const counted = false as boolean;
@@ -24,9 +19,9 @@ const counted = false as boolean;
 
 <article
   class:list={["article-preview", className]}
-  aria-label={title}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
   style={style}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >
   <h2>{title}</h2>
   <p>{text}</p>

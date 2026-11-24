@@ -1,4 +1,4 @@
-import { type JSX, children } from "solid-js";
+import { type ComponentProps, type JSX, children, splitProps } from "solid-js";
 
 export interface NoticeSlots {
   children?: JSX.Element;
@@ -6,26 +6,23 @@ export interface NoticeSlots {
 }
 
 export default function Notice(
-  props: { label: string } & NoticeSlots & { class?: string; style?: JSX.CSSProperties },
+  props: { label: string } & NoticeSlots &
+    Omit<ComponentProps<"div">, "label" | "children" | "action" | "style"> & {
+      style?: JSX.CSSProperties;
+    },
 ) {
+  const [, others] = splitProps(props, ["label", "children", "action", "class"]);
+
   const content = children(() => props.children);
   return (
     <div
       role="note"
       aria-label={props.label}
       class={props.class ? `notice ${props.class}` : "notice"}
-      style={props.style}
-      {...scopeAttributes(props)}
+      {...others}
     >
       <p>{content() ?? <em>Nothing to report.</em>}</p>
       {props.action ?? <span class="muted">No action</span>}
     </div>
   );
-}
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
 }
