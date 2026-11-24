@@ -34,7 +34,6 @@ export default defineConfig({
     "no-promise-executor-return": "off",
     "no-regex-spaces": "off",
     "no-useless-assignment": "off",
-    "object-shorthand": "off",
     "oxc/no-accumulating-spread": "off",
     "prefer-promise-reject-errors": "off",
     "quality/no-array-filter-map": "off",

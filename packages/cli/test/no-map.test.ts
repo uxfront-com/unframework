@@ -23,7 +23,7 @@ vi.mock("node:fs/promises", async (original) => {
   const actual = await original<typeof FsPromises>();
   return {
     ...actual,
-    glob: async function* (...args: Parameters<typeof actual.glob>) {
+    async *glob(...args: Parameters<typeof actual.glob>) {
       const entries = [];
       for await (const entry of actual.glob(...args)) {
         entries.push(entry);

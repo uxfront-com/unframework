@@ -25,7 +25,7 @@ describe("the script", () => {
     expect(out).toContain("measured");
     expect(status).toBe(3);
     expect(report).toMatchObject({
-      label: label,
+      label,
       command: ["sh", "-c", "sleep 2.2; echo measured; exit 3"],
       outcome: "completed",
       exitStatus: 3,
