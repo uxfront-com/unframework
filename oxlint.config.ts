@@ -21,6 +21,10 @@ export default defineConfig({
     "packages/unframework/src/vendor/**",
   ],
   rules: {
+    // A catch names what it caught, like `cleanup` beside the render's `error`, or a `failure`
+    // sent on as a reply's field. The rule's fix renames such shorthand properties too, which
+    // changes the object it builds.
+    "unicorn/catch-error-name": "off",
     // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
@@ -59,7 +63,6 @@ export default defineConfig({
     "typescript/no-unsafe-type-assertion": "off",
     "typescript/switch-exhaustiveness-check": "off",
     "typescript/use-unknown-in-catch-callback-variable": "off",
-    "unicorn/catch-error-name": "off",
     "unicorn/consistent-function-scoping": "off",
     "unicorn/no-array-fill-with-reference-type": "off",
     "unicorn/no-hex-escape": "off",
