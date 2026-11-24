@@ -486,8 +486,8 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    * of the path, or a helper module's import of its sibling, which is already beside the id.
    */
   const helperId = (path: string): string | undefined => {
-    for (const extension of HELPER_EXTENSIONS) {
-      const candidate = `${path}${extension}`;
+    for (const ending of HELPER_EXTENSIONS) {
+      const candidate = `${path}${ending}`;
       if (helperModules.has(candidate)) return candidate;
       if (helperModules.has(helperIdOf(candidate))) return helperIdOf(candidate);
     }
