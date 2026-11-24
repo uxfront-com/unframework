@@ -182,11 +182,28 @@ export function solidJsx(
       ? plan.root.attributes.some((attribute) => attribute.kind === "Ref")
       : listeners.carries(element);
   /** `ref={props.ref}`: the consumer's, on a root without a `ref` callback of its own. */
-  const forwardedRef = (context: JsxContext): JsxAttributeItem =>
-    js.jsxAttribute(
+  const forwardedRef = (context: JsxContext): JsxAttributeItem => {
+    // A `<component is>` root's renders one of several tags, each of which types its `ref` for
+    // itself: a callback of whichever renders hands it the element (ADR-0122).
+    const dynamic = plan?.root?.kind === "Dynamic" ? plan.root : undefined;
+    if (dynamic) {
+      const tags = dynamic.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
+      const element = `HTMLElementTagNameMap[${[...new Set(tags)].map((tag) => JSON.stringify(tag)).join(" | ")}]`;
+      const ref = `${object!}.ref`;
+      return js.jsxAttribute(
+        "ref",
+        js.jsxExpressionContainer(
+          context.placeholders.expression(
+            `(element: ${element}) => {\n  if (typeof ${ref} === "function") ${ref}(element);\n}`,
+          ),
+        ),
+      );
+    }
+    return js.jsxAttribute(
       "ref",
       js.jsxExpressionContainer(context.placeholders.expression(`${object!}.ref`)),
     );
+  };
   /** The scope attributes of the styled parents, picked out of the props for the root. */
   const scopeSpread = (context: JsxContext): JsxAttributeItem => {
     scopeHelper ??= imports.claim(SCOPE_HELPER);
@@ -324,7 +341,13 @@ export function solidJsx(
       // own (ADR-0118).
       const prop = isTarget(element) ? plan!.composed.get(attribute) : undefined;
       return prop
-        ? listeners.composedEventAttribute(attribute, element, prop, `${object!}.${prop}`)
+        ? listeners.composedEventAttribute(
+            attribute,
+            element,
+            prop,
+            `${object!}.${prop}`,
+            plan!.target?.kind === "Dynamic",
+          )
         : listeners.eventAttribute(attribute, element, context);
     },
     directiveAttribute: (attribute, element, context) =>
