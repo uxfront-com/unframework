@@ -9,7 +9,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lighthouse": "pnpm dlx @lhci/cli autorun",
+    "lighthouse": "pnpm dlx @lhci/cli@0.16.1 autorun",
     "check:seo": "node scripts/check-seo.ts",
     "test": "node --test \"scripts/**/*.test.ts\""
   },
