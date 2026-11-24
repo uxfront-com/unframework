@@ -167,6 +167,8 @@ function collect(node: AST.Expression, parts: Array<Part>, context: RenderContex
         return;
       }
       break;
+    default:
+      break;
   }
   // A dynamic part, where a pass-through name (an engine's class function) may be called.
   const value = checkExpression(node, { ...context, classPart: true });

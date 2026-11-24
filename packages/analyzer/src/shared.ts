@@ -794,6 +794,8 @@ export function lowerConstants(
             reference(typed as AST.IdentifierReference, load);
           }
           return;
+        default:
+          break;
       }
       walkChildren(typed, load);
     };

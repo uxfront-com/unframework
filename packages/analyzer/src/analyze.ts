@@ -1371,6 +1371,8 @@ function checkTopLevelStatement(
         return;
       }
       break;
+    default:
+      break;
   }
   reporter.unsupported(
     statement,

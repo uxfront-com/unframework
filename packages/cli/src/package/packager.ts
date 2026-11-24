@@ -131,9 +131,11 @@ export async function runScript(
   const { stderr } = await promisify(execFile)(process.execPath, [script, ...args], {
     cwd,
     maxBuffer: 2 ** 28,
-  }).catch((error: { stdout?: string; stderr?: string; message: string }) => {
-    const printed = errors === "stderr" ? error.stderr : error.stdout || error.stderr;
-    throw new Error(printed || error.message);
+  }).catch((error: unknown) => {
+    // execFile rejects with an Error that carries the child's output.
+    const failed = error as Error & { stdout?: string; stderr?: string };
+    const printed = errors === "stderr" ? failed.stderr : failed.stdout || failed.stderr;
+    throw new Error(printed || failed.message);
   });
   return stderr;
 }

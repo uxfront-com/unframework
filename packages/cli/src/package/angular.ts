@@ -102,10 +102,15 @@ export const angular: Packager = {
       ["-p", "ng-package.json", "-c", "tsconfig.json"],
       work,
       "stderr",
-    ).catch((error: Error) => {
+    ).catch((error: unknown) => {
       // Its spinner's lines, which say nothing about the failure. With colour on, each starts with
       // a control code, so those go first.
-      throw new Error(stripVTControlCharacters(error.message).replaceAll(/^[-✖✔] .*\n/gm, ""));
+      throw new Error(
+        stripVTControlCharacters(String(error instanceof Error ? error.message : error)).replaceAll(
+          /^[-✖✔] .*\n/gm,
+          "",
+        ),
+      );
     });
     // ng-packagr always writes maps, and a package ships none (ADR-0077).
     for await (const file of glob("**/*.map", { cwd: out })) {

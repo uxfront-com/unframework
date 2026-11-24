@@ -58,6 +58,7 @@ function runner() {
       queue: "queueHook",
     }).join("\n\n"),
   );
+  // oxlint-disable-next-line typescript/no-implied-eval -- runs the emitted helpers, which is what the test checks
   const make = new Function(
     "MutationObserver",
     "WeakRef",

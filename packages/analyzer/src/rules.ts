@@ -521,6 +521,8 @@ class Rules {
         case "Emit":
         case "Event":
           break;
+        default:
+          break;
       }
     }
   }

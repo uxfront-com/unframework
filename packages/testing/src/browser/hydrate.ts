@@ -163,6 +163,7 @@ export async function hydrateInto(
  * rewrites a dynamic `import()` of a computed URL to add `?import`, which the page loads as a
  * module of its own.
  */
+// oxlint-disable-next-line typescript/no-implied-eval -- an import() of a computed URL that Vite does not rewrite
 const importModule = new Function("url", "return import(url);") as (
   url: string,
 ) => Promise<unknown>;

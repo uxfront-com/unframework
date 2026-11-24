@@ -349,7 +349,7 @@ describe("vite", () => {
   it("compiles TypeScript by file name with Analog, whatever the directories are called", async () => {
     const config = await toolchain.vite("browser", context);
     const plugin = config.plugins
-      ?.flat(2)
+      ?.flat(2 /* a plugin array, and the array inside it */)
       .find(
         (entry): entry is Plugin =>
           typeof entry === "object" &&

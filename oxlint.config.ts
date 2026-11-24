@@ -49,24 +49,14 @@ export default defineConfig({
     "quality/no-object-parameters": "off",
     "quality/no-unknown-returns": "off",
     "quality/no-unsafe-dictionary-type": "off",
-    "typescript/no-implied-eval": "off",
     "typescript/no-non-null-assertion": "off",
     "typescript/no-unsafe-argument": "off",
     "typescript/no-unsafe-assignment": "off",
     "typescript/no-unsafe-call": "off",
-    "typescript/no-unsafe-function-type": "off",
     "typescript/no-unsafe-member-access": "off",
     "typescript/no-unsafe-return": "off",
     "typescript/no-unsafe-type-assertion": "off",
-    "typescript/switch-exhaustiveness-check": "off",
-    "typescript/use-unknown-in-catch-callback-variable": "off",
     "unicorn/consistent-function-scoping": "off",
-    "unicorn/no-array-fill-with-reference-type": "off",
-    "unicorn/no-magic-array-flat-depth": "off",
-    "unicorn/prefer-array-flat-map": "off",
-    "unicorn/prefer-native-coercion-functions": "off",
-    "unicorn/prefer-structured-clone": "off",
-    "unicorn/prefer-top-level-await": "off",
   },
   overrides: [
     {
@@ -177,6 +167,29 @@ export default defineConfig({
       rules: {
         // The globals and fields read have no declared type to read them through.
         "quality/no-reflect-get": "off",
+      },
+    },
+    {
+      // These tests send a value through JSON to check that it's plain JSON (P5), which
+      // `structuredClone` would carry through whatever it is.
+      files: [
+        "packages/ir/test/**",
+        "packages/type-oracle/test/**",
+        "packages/type-oracle/src/contract.ts",
+        "packages/visual/test/**",
+      ],
+      rules: {
+        // A JSON round trip is the check itself.
+        "unicorn/prefer-structured-clone": "off",
+      },
+    },
+    {
+      // Angular's toolchain mounts on domino, Angular's own DOM, in its server render and in its
+      // Node tests, and domino has `appendChild` but not `append`.
+      files: ["packages/target-angular/src/toolchain/**", "packages/target-angular/test/**"],
+      rules: {
+        // domino has no `append`.
+        "unicorn/prefer-dom-node-append": "off",
       },
     },
   ],

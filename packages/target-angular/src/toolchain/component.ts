@@ -32,7 +32,7 @@ export function angularComponent(component: unknown): Type<unknown> {
  * Whether ngtsc defined the component: AOT output declares `static ɵcmp = ɵɵdefineComponent(…)`,
  * an own data property, where a JIT-decorated class gets a getter that compiles on first read.
  */
-function isAotCompiled(type: Function): boolean {
+function isAotCompiled(type: object): boolean {
   const definition = Object.getOwnPropertyDescriptor(type, "ɵcmp");
   return definition !== undefined && "value" in definition;
 }

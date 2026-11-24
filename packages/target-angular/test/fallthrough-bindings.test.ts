@@ -79,7 +79,7 @@ beforeEach(() => {
   vi.spyOn(console, "warn").mockImplementation((...args) => void logged.push(args));
   vi.spyOn(console, "error").mockImplementation((...args) => void logged.push(args));
   container = document.createElement("div");
-  document.body.append(container);
+  document.body.appendChild(container);
 });
 
 afterEach(async () => {

@@ -52,6 +52,7 @@ type Queue = (element: FakeElement, run: () => void, hook: Hook) => void;
 /** The queue's code, with its types stripped, as a function of the globals it reads. */
 function queue(): Queue {
   const code = stripTypeScriptTypes(hookQueueCode("queueHook"));
+  // oxlint-disable-next-line typescript/no-implied-eval -- runs the emitted helper, which is what the test checks
   const make = new Function("Node", "reportError", `${code}\nreturn queueHook;`) as (
     node: { DOCUMENT_POSITION_FOLLOWING: number },
     report: (error: unknown) => void,

@@ -13,6 +13,7 @@ import type { AngularCompiler, CompilerOptions, Diagnostic, NgtscProgram } from 
 
 const { toolchainDir } = workerData as { toolchainDir: string };
 /** The compiler, and the strict options L3 checks with, set to emit. */
+// oxlint-disable-next-line unicorn/prefer-top-level-await -- the worker takes its messages while the compiler loads, and each awaits it
 const loaded = loadCompiler(toolchainDir).then((compiler) => {
   const options: CompilerOptions = {
     ...strictOptions(compiler),

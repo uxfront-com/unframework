@@ -44,6 +44,8 @@ function assertJsonValue(value: unknown, path: string, why: string): void {
       }
       break;
     }
+    default:
+      break;
   }
   throw new TypeError(`${why}, so props must be JSON values; \`${path}\` is ${describe(value)}.`);
 }

@@ -531,6 +531,8 @@ function lowerChild(
       }
       break;
     }
+    default:
+      break;
   }
   children.flush();
   children.binds = true;

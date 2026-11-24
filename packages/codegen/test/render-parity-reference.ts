@@ -460,6 +460,7 @@ function evaluate(expression: Expression, scope: Scope, role: string): unknown {
   let run = compiled.get(key);
   if (!run) {
     // A line break before the closing parenthesis ends a trailing line comment.
+    // oxlint-disable-next-line typescript/no-implied-eval -- evaluates the IR's expressions, the reference semantics
     run = new Function(...names, `"use strict";\nreturn (\n${expression.code}\n);`) as (
       ...values: Array<unknown>
     ) => unknown;

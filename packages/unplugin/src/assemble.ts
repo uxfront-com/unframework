@@ -217,6 +217,8 @@ function patternNames(pattern: AST.BindingPattern | AST.BindingRestElement): Arr
       return patternNames(pattern.argument);
     case "ArrayPattern":
       return pattern.elements.flatMap((element) => (element ? patternNames(element) : []));
+    default:
+      break;
   }
   return pattern.properties.flatMap((property) =>
     patternNames(property.type === "RestElement" ? property : property.value),

@@ -31,9 +31,7 @@ export function diffLines(expected: string, actual: string, options: DiffOptions
   let lastPrinted = -1;
   const changed = ops.map((op) => op.kind !== " ");
   for (let index = 0; index < ops.length; index += 1) {
-    const near = changed
-      .slice(Math.max(0, index - context), index + context + 1)
-      .some((isChange) => isChange);
+    const near = changed.slice(Math.max(0, index - context), index + context + 1).some(Boolean);
     if (!near) {
       continue;
     }

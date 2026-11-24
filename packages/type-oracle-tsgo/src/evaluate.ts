@@ -176,6 +176,8 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
         }
         break;
       }
+      default:
+        break;
     }
     return id;
   };

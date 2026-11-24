@@ -149,12 +149,14 @@ export function harnessProjects(setup: HarnessSetup): Array<TestProjectConfigura
     ...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
     ...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
     ...setup.targets.map((target) => lazyProject(setup, "hydrate", target, hydrateProject)),
-    ...Object.keys(setup.referencesOnly ?? {})
-      .filter((target) => !setup.targets.includes(target))
-      .flatMap((target) => [
-        lazyProject(setup, "ssr", target, ssrProject),
-        lazyProject(setup, "browser", target, browserProject),
-      ]),
+    ...Object.keys(setup.referencesOnly ?? {}).flatMap((target) =>
+      setup.targets.includes(target)
+        ? []
+        : [
+            lazyProject(setup, "ssr", target, ssrProject),
+            lazyProject(setup, "browser", target, browserProject),
+          ],
+    ),
   ];
 }
 

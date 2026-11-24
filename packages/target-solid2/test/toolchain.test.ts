@@ -85,7 +85,7 @@ describe("solid2 toolchain", () => {
     const browser = await toolchain.vite("browser", context);
     // @solidjs/vite-plugin is an array of plugins, `solid` the one that compiles.
     const names = (browser.plugins ?? [])
-      .flat(2)
+      .flat(2 /* the plugin array, and the array inside it */)
       .map((plugin) => (plugin && "name" in plugin ? plugin.name : undefined));
     expect(names).toContain("solid");
     expect(names).toEqual(

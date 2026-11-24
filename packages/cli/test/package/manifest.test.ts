@@ -109,7 +109,9 @@ describe("build --package: the manifest", () => {
       "solid-js": "^1.9.0",
       vue: "^3.5.0",
     });
-    expect(Object.values(peerDependenciesMeta)).toEqual(Array(5).fill({ optional: true }));
+    expect(Object.values(peerDependenciesMeta)).toEqual(
+      Array.from({ length: 5 }, () => ({ optional: true })),
+    );
   });
 
   it("packages only package.targets, and still builds every target's tree", async () => {
