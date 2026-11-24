@@ -49,6 +49,13 @@ import { solidProps } from "./props.ts";
 import { forSolid } from "./render.ts";
 import { SolidCode, solidSetup } from "./setup.ts";
 import type { SolidResource } from "./setup.ts";
+import {
+  printHelper,
+  reserveSharedNames,
+  SHARED_HELPER_NAMES,
+  SharedHelpers,
+} from "./shared-names.ts";
+import { importShared } from "./shared.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
@@ -214,9 +221,11 @@ export const solid: Target = defineTarget({
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
     for (const name of moduleValueNames(context.module)) names.add(name);
+    // With `helper`, the helpers one text serves are shared modules (ADR-0121); without it, inline.
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-    // the class, scope, style, keyed list, teleport and directive queue helpers from bases of its own (`cx_1`), past the
-    // names any other component declares.
+    // the helpers it prints inline from bases of its own (`cx_1`), past the names any other
+    // component declares.
+    const shared = context.helper ? new SharedHelpers() : undefined;
     const index = context.module.components.findIndex((each) => each.name === component.name);
     const reserved = context.module.components.map((each) => {
       const taken = sourceNames(each, context.module);
@@ -231,11 +240,16 @@ export const solid: Target = defineTarget({
       TELEPORT_HELPER,
       QUEUE_HELPER,
       REST_HELPER,
-    ].map((helper) => {
-      const { base, others } = moduleHelperName(helper, reserved, index);
-      for (const name of others) names.add(name);
-      return [helper, base] as const;
-    });
+    ]
+      .filter((helper) => !shared || !SHARED_HELPER_NAMES.includes(helper))
+      .map((helper) => {
+        const { base, others } = moduleHelperName(helper, reserved, index);
+        for (const name of others) names.add(name);
+        return [helper, base] as const;
+      });
+    // A shared helper (ADR-0121) is imported by every component of the source under one name,
+    // the module's own unless a component declares it, so their imports are one line in the join.
+    if (shared) reserveSharedNames(names, reserved);
     const scope = new NameScope(names);
     for (const [helper, base] of bases) scope.rebase(helper, base);
     const imports = new ImportSet(scope);
@@ -255,7 +269,7 @@ export const solid: Target = defineTarget({
       types: composition.parameterTypes(),
       reads: composition.reads,
     });
-    const code = new SolidCode(component, imports, props, composition);
+    const code = new SolidCode(component, imports, props, composition, shared);
     const setup = solidSetup(code, placeholders);
     const types = componentTypes(component, context.module);
     // The branch callbacks around what prints, which listeners read through too.
@@ -265,7 +279,7 @@ export const solid: Target = defineTarget({
       component,
       new BindingTypes(component, context.module.types),
     );
-    const models = new ModelHelpers(imports);
+    const models = new ModelHelpers(imports, shared);
     // What falls through (ADR-0118): the props but what the component declares and what the
     // element that takes them merges itself, `const [, others] = splitProps(props, ["title"]);`.
     const { plan } = composition;
@@ -356,9 +370,16 @@ export const solid: Target = defineTarget({
     const sheet = component.styles
       ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
       : [];
+    const printed = [
+      ...helpers(),
+      ...code.helpers(),
+      ...(queue ? printHelper(shared, QUEUE_HELPER, queue.name, hookQueueCode) : []),
+    ];
+    const path = `${component.name}.tsx`;
+    if (context.helper && shared) importShared(context.helper, path, imports, shared.used);
     return [
       {
-        path: `${component.name}.tsx`,
+        path,
         contents: printComponentModule(
           {
             types: [
@@ -367,11 +388,7 @@ export const solid: Target = defineTarget({
               ...composition.types,
             ],
             body: [...keys, ...reads.constants, ...directives, ...setup.hoisted, ...statements],
-            helpers: [
-              ...helpers(),
-              ...code.helpers(),
-              ...(queue ? [hookQueueCode(queue.name)] : []),
-            ],
+            helpers: printed,
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],
             placeholders,

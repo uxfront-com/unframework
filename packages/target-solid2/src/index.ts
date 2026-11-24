@@ -49,6 +49,14 @@ import { solidProps } from "./props.ts";
 import { forSolid } from "./render.ts";
 import { SolidCode, solidSetup } from "./setup.ts";
 import type { SolidResource } from "./setup.ts";
+import {
+  printHelper,
+  reserveSharedNames,
+  SHARED_HELPER_NAMES,
+  sharedName,
+  SharedHelpers,
+} from "./shared-names.ts";
+import { importShared } from "./shared.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
@@ -226,9 +234,14 @@ export const solid2: Target = defineTarget({
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
     for (const name of moduleValueNames(context.module)) names.add(name);
+    // With `helper`, the helpers one text serves are shared modules (ADR-0121); without it, inline.
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-    // the class, scope, style, keyed list, teleport and directive queue helpers from bases of its own (`cx_1`), past the
-    // names any other component declares.
+    // the helpers it prints inline from bases of its own (`cx_1`), past the names any other
+    // component declares.
+    const shared = context.helper ? new SharedHelpers() : undefined;
+    const watches = component.setup.some(
+      (item) => item.kind === "Watch" || item.kind === "WatchEffect",
+    );
     const index = context.module.components.findIndex((each) => each.name === component.name);
     const reserved = context.module.components.map((each) => {
       const taken = sourceNames(each, context.module);
@@ -245,11 +258,25 @@ export const solid2: Target = defineTarget({
       QUEUE_HELPER,
       STATE_HELPER,
       REF_HELPER,
-    ].map((helper) => {
-      const { base, others } = moduleHelperName(helper, reserved, index);
-      for (const name of others) names.add(name);
-      return [helper, base] as const;
-    });
+    ]
+      .filter(
+        (helper) =>
+          !shared || !SHARED_HELPER_NAMES.includes(helper) || (helper === STATE_HELPER && watches),
+      )
+      .map((helper) => {
+        const { base, others } = moduleHelperName(helper, reserved, index);
+        for (const name of others) names.add(name);
+        return [helper, base] as const;
+      });
+    // A shared helper (ADR-0121) is imported by every component of the source under one name,
+    // the module's own unless a component declares it, so their imports are one line in the join.
+    if (shared) reserveSharedNames(names, reserved);
+    // A component with watchers prints its own `createState`, whose write requests their flush
+    // (R1): from its base, past the name the others import the shared one under, where the
+    // source has others.
+    if (shared && watches && reserved.length > 1) {
+      names.add(sharedName(STATE_HELPER, reserved, moduleValueNames(context.module)));
+    }
     const scope = new NameScope(names);
     for (const [helper, base] of bases) scope.rebase(helper, base);
     const imports = new ImportSet(scope);
@@ -269,7 +296,7 @@ export const solid2: Target = defineTarget({
       types: composition.parameterTypes(),
       reads: composition.reads,
     });
-    const code = new SolidCode(component, imports, props, composition);
+    const code = new SolidCode(component, imports, props, composition, shared);
     const setup = solidSetup(code, placeholders);
     const types = componentTypes(component, context.module);
     // The branch callbacks around what prints, which listeners read through too.
@@ -279,7 +306,7 @@ export const solid2: Target = defineTarget({
       component,
       new BindingTypes(component, context.module.types),
     );
-    const models = new ModelHelpers(imports);
+    const models = new ModelHelpers(imports, shared);
     // What falls through (ADR-0118): the props but what the component declares and what the
     // element that takes them merges itself, `const others = omit(props, "title");`.
     const { plan } = composition;
@@ -377,9 +404,16 @@ export const solid2: Target = defineTarget({
     const sheet = component.styles
       ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
       : [];
+    const printed = [
+      ...helpers(),
+      ...code.helpers(),
+      ...(queue ? printHelper(shared, QUEUE_HELPER, queue.name, hookQueueCode) : []),
+    ];
+    const path = `${component.name}.tsx`;
+    if (context.helper && shared) importShared(context.helper, path, imports, shared.used);
     return [
       {
-        path: `${component.name}.tsx`,
+        path,
         contents: printComponentModule(
           {
             types: [
@@ -388,11 +422,7 @@ export const solid2: Target = defineTarget({
               ...composition.types,
             ],
             body: [...keys, ...reads.constants, ...directives, ...setup.hoisted, ...statements],
-            helpers: [
-              ...helpers(),
-              ...code.helpers(),
-              ...(queue ? [hookQueueCode(queue.name)] : []),
-            ],
+            helpers: [...printed],
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],
             placeholders,

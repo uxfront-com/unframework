@@ -28,14 +28,20 @@ import type { ElementNode, ModelAttribute, UfComponent } from "@unframework.dev/
 import { genericModelType } from "./generics.ts";
 import { unmarkedOptions } from "./render.ts";
 import type { SolidCode } from "./setup.ts";
+import { printHelper } from "./shared-names.ts";
+import type { SharedHelpers } from "./shared-names.ts";
 
 type AstExpression = Parameters<typeof js.callExpression>[0];
 type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
 type JsxAttributeItem = JsxAttribute | ReturnType<typeof js.jsxSpreadAttribute>;
 
-/** The inline helpers a file's `v-model`s call, each claimed when first used. */
+/**
+ * The helpers a file's `v-model`s call, each claimed when first used: inline, or imported from
+ * `_unframework/` where the file shares them (ADR-0121).
+ */
 export class ModelHelpers {
   readonly #imports: ImportSet;
+  readonly #shared: SharedHelpers | undefined;
   #event: string | undefined;
   #toggle: string | undefined;
   #selectedValues: string | undefined;
@@ -44,8 +50,9 @@ export class ModelHelpers {
   #selectOptions: string | undefined;
   #textCaret: string | undefined;
 
-  constructor(imports: ImportSet) {
+  constructor(imports: ImportSet, shared?: SharedHelpers) {
     this.#imports = imports;
+    this.#shared = shared;
   }
 
   /** The name of a listener's event parameter. */
@@ -93,17 +100,23 @@ export class ModelHelpers {
   helpers(): string[] {
     const helpers: string[] = [];
     if (this.#modelText) {
-      helpers.push(modelTextHelperCode(this.#modelText, this.solid("createRenderEffect")));
+      helpers.push(
+        ...printHelper(this.#shared, "modelText", this.#modelText, (name) =>
+          modelTextHelperCode(name, this.solid("createRenderEffect")),
+        ),
+      );
     }
     if (this.#toggle) helpers.push(toggleHelperCode(this.#toggle));
     if (this.#textCaret) helpers.push(textCaretHelperCode(this.#textCaret));
     if (this.#selectedValues) helpers.push(selectedValuesHelperCode(this.#selectedValues));
     if (this.#selectOptions) {
       helpers.push(
-        selectOptionsHelperCode(this.#selectOptions, {
-          createEffect: this.solid("createEffect"),
-          onCleanup: this.solid("onCleanup"),
-        }),
+        ...printHelper(this.#shared, "selectOptions", this.#selectOptions, (name) =>
+          selectOptionsHelperCode(name, {
+            createEffect: this.solid("createEffect"),
+            onCleanup: this.solid("onCleanup"),
+          }),
+        ),
       );
     }
     return helpers;
@@ -343,7 +356,7 @@ function own(element: ElementNode, context: JsxContext): AstExpression {
  * where the text already reads as it, or while the user is typing in a trimmed field what it
  * reads as trimmed.
  */
-function modelTextHelperCode(name: string, createRenderEffect: string): string {
+export function modelTextHelperCode(name: string, createRenderEffect: string): string {
   return `/** Binds a text field to a signal as Vue's \`vModelText\` does: see its modifiers. */
 function ${name}<T extends string | number | null | undefined>(
   value: () => T,
@@ -409,7 +422,7 @@ function ${name}(select: HTMLSelectElement): string[] {
  * options come and go or change their value. A single value is compared as a string, as Vue's
  * `looseEqual` compares an option's value with it.
  */
-function selectOptionsHelperCode(
+export function selectOptionsHelperCode(
   name: string,
   solid: { createEffect: string; onCleanup: string },
 ): string {

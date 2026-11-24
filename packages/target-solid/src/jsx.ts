@@ -58,6 +58,7 @@ import type { Frame, Narrowings, ReferencePath } from "./narrowing.ts";
 import { eventProp } from "./props.ts";
 import { escapedOnServer } from "./render.ts";
 import type { SolidCode } from "./setup.ts";
+import { printHelper } from "./shared-names.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type AstExpression = Parameters<typeof js.callExpression>[0];
@@ -427,16 +428,25 @@ export function solidJsx(
       return [...fallthrough, js.jsxSpreadAttribute(picked)];
     },
   };
+  /** A helper's code, or none where the file imports it from `_unframework/` (ADR-0121). */
+  const share = (name: string, local: string, print: (local: string) => string) =>
+    printHelper(code.shared, name, local, print);
   return {
     dialect,
     helpers: () => [
-      ...(helper ? [classHelperCode(helper, collections)] : []),
-      ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
-      ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
+      ...(helper ? share(CLASS_HELPER, helper, (name) => classHelperCode(name, collections)) : []),
+      ...(styleHelper ? share(STYLE_HELPER, styleHelper, (name) => styleHelperCode(name)) : []),
+      ...(scopeHelper ? share(SCOPE_HELPER, scopeHelper, (name) => scopeHelperCode(name)) : []),
       ...(restHelper ? [restHelperCode(restHelper)] : []),
-      ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
-      ...(teleportHelper ? [teleportHelperCode(teleportHelper, imports)] : []),
-      ...(transitionHelper ? [transitionHelperCode(transitionHelper, imports)] : []),
+      ...(keyedHelper
+        ? share(KEYED_HELPER, keyedHelper, (name) => keyedHelperCode(name, imports))
+        : []),
+      ...(teleportHelper
+        ? share(TELEPORT_HELPER, teleportHelper, (name) => teleportHelperCode(name, imports))
+        : []),
+      ...(transitionHelper
+        ? share(TRANSITION_HELPER, transitionHelper, (name) => transitionHelperCode(name, imports))
+        : []),
       ...models.helpers(),
     ],
   };
@@ -1125,7 +1135,7 @@ function numberLiteral(expression: Expression): AstExpression | undefined {
  * of an object's truthy entries, joined with spaces. Its parameters are `unknown`, so a part of
  * any type the analyser accepts type-checks.
  */
-function classHelperCode(name: string, collections: boolean): string {
+export function classHelperCode(name: string, collections: boolean): string {
   return `/** Joins class names: strings as they are, and the names of an object's truthy entries. */
 function ${name}(...parts: unknown[]): string {
   const names: string[] = [];
@@ -1154,7 +1164,7 @@ function ${name}(...parts: unknown[]): string {
  * property or a CSS identifier is kept as a property, since Solid's server escapes an object's
  * values, not its keys.
  */
-function styleHelperCode(name: string): string {
+export function styleHelperCode(name: string): string {
   // Raw, so the regular expressions keep their escapes.
   return String.raw`/** A style bound to a value as an object of CSS properties. */
 function ${name}(style: object | string | null | undefined): Record<string, string> | undefined {
@@ -1195,7 +1205,7 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
  * the map has dropped: Solid disposes of the row first, as `<For>` reruns before the computations
  * its rows own.
  */
-function keyedHelperCode(name: string, imports: ImportSet): string {
+export function keyedHelperCode(name: string, imports: ImportSet): string {
   const For = imports.add("solid-js", "For");
   const createMemo = imports.add("solid-js", "createMemo");
   const untrack = imports.add("solid-js", "untrack");
@@ -1242,7 +1252,7 @@ function ${name}<T>(props: {
  * they read its context. On cleanup, a signal empties the insertion before the root is disposed,
  * since disposing a root removes no node. It renders nothing in place.
  */
-function teleportHelperCode(name: string, imports: ImportSet): string {
+export function teleportHelperCode(name: string, imports: ImportSet): string {
   const createRoot = imports.add("solid-js", "createRoot");
   const createSignal = imports.add("solid-js", "createSignal");
   const getOwner = imports.add("solid-js", "getOwner");
@@ -1278,7 +1288,7 @@ function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Elemen
  * on a client mount, never while it hydrates, and the server renders the child as it is, which it
  * resolves nowhere else. When its owner goes, it goes with it at once, as on Vue.
  */
-function transitionHelperCode(name: string, imports: ImportSet): string {
+export function transitionHelperCode(name: string, imports: ImportSet): string {
   const children = imports.add("solid-js", "children");
   const createComputed = imports.add("solid-js", "createComputed");
   const createSignal = imports.add("solid-js", "createSignal");
@@ -1373,7 +1383,7 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
  * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
  * component declares.
  */
-function scopeHelperCode(name: string): string {
+export function scopeHelperCode(name: string): string {
   return `/** The scope attributes of the styled parents that render this component, for its root. */
 function ${name}(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
