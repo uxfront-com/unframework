@@ -1,3 +1,5 @@
+import { clearedRef } from "./_unframework/clearedRef";
+import { nextTick } from "./_unframework/nextTick";
 import type { ComponentProps, JSX } from "@solidjs/web";
 import {
   createReaction,
@@ -6,7 +8,6 @@ import {
   flush,
   getObserver,
   omit,
-  onCleanup,
   onSettled,
   runWithOwner,
   untrack,
@@ -460,20 +461,6 @@ function createWatchEffect(
 
 /** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
 type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };
-
-/**
- * Resolves once the DOM has updated and the watchers have run: Solid applies writes on a microtask
- * queued at the first write, which queues the watchers of a write the component didn't make.
- */
-function nextTick(): Promise<void> {
-  return new Promise((resolve) => queueMicrotask(() => queueMicrotask(resolve)));
-}
-
-/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
-function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
-  onCleanup(clear);
-  return callback;
-}
 
 /**
  * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the

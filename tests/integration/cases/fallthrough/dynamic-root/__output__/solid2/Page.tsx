@@ -1,7 +1,10 @@
 import Base from "./Base";
 import Primary from "./Primary";
+import { KeyedFor } from "./_unframework/KeyedFor";
+import { createState } from "./_unframework/createState";
+import { cx } from "./_unframework/cx";
 import { type ComponentProps, Dynamic, type JSX } from "@solidjs/web";
-import { For, createMemo, createSignal, getObserver, omit, untrack } from "solid-js";
+import { omit } from "solid-js";
 import "./Page.uf.tsx.css";
 
 export default function Page(
@@ -71,71 +74,4 @@ export default function Page(
       <output data-uf-64cf7c28="">{pressed()}</output>
     </section>
   );
-}
-
-/** Joins class names: strings as they are, and the names of an object's truthy entries. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") names.push(part);
-    else if (part && typeof part === "object") {
-      for (const [name, on] of Object.entries(part)) if (on) names.push(name);
-    }
-  }
-  return names.join(" ");
-}
-
-/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
-function KeyedFor<T>(props: {
-  each: readonly T[];
-  by: (item: T, index: number) => unknown;
-  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
-}): JSX.Element {
-  const items = createMemo(() => {
-    const rows = new Map<unknown, T>();
-    props.each.forEach((item, index) => {
-      const key = props.by(item, index);
-      rows.set(rows.has(key) ? {} : key, item);
-    });
-    return rows;
-  });
-  return (
-    <For each={[...items().keys()]}>
-      {(key, index) => {
-        const item = createMemo(() => items().get(key) as T);
-        return untrack(() =>
-          props.children({
-            get value() {
-              return item();
-            },
-            get index() {
-              return index();
-            },
-          }),
-        );
-      }}
-    </For>
-  );
-}
-
-/**
- * Vue's `ref`: a signal whose read returns the value last written, as Vue's does, and tracks the
- * signal where something observes it. Solid applies a write when it flushes.
- */
-function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
-function createState<T>(initial: T): [() => T, (value: T) => void];
-function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
-  let current = initial;
-  // A version, never the value: `createSignal` would take a function for a computation.
-  const [tracked, notify] = createSignal(0, { ownedWrite: true });
-  function read(): T | undefined {
-    if (getObserver()) tracked();
-    return current;
-  }
-  function write(value: T | undefined): void {
-    if (Object.is(value, current)) return;
-    current = value;
-    notify((version) => version + 1);
-  }
-  return [read, write];
 }

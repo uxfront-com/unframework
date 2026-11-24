@@ -43,6 +43,8 @@ import { SolidComposition } from "./composition.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import type { SolidProps } from "./props.ts";
 import { moduleMain, nameOf, solidSetup, SolidCode } from "./setup.ts";
+import { SharedHelpers } from "./shared-names.ts";
+import { importShared } from "./shared.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type Statement = ReturnType<Placeholders["statements"]>;
@@ -64,7 +66,9 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const composition = new SolidComposition(owner, module, imports);
   // A composable takes parameters, never props.
   const props: SolidProps = { parameters: [], statements: [], read: (_binding, text) => text };
-  const code = new SolidCode(owner, imports, props, composition);
+  // With `helper`, the helpers one text serves are shared modules (ADR-0121); without it, inline.
+  const shared = context.helper ? new SharedHelpers() : undefined;
+  const code = new SolidCode(owner, imports, props, composition, shared);
   const setup = solidSetup(code, placeholders);
   const bindings = new Map(owner.bindings.map((binding) => [binding.id, binding.name]));
   const returned = composable.returns.map(({ name, binding }) => {
@@ -94,9 +98,12 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
     imports,
     new Set(parameterTypes.flatMap((type) => [...typeNames(type)])),
   );
+  const helpers = code.helpers();
+  const path = `${composable.name}.ts`;
+  if (context.helper && shared) importShared(context.helper, path, imports, shared.used);
   return [
     {
-      path: `${composable.name}.ts`,
+      path,
       contents: printComponentModule({
         types: [...componentTypes(owner, module), ...reads.types].toSorted(
           (a, b) => a.span.start - b.span.start,
@@ -106,7 +113,7 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
           ...setup.hoisted,
           ...exportDeclaration(composable.name, fn, exportsOf(composable.name, [])),
         ],
-        helpers: code.helpers(),
+        helpers,
         // Collected last: the helpers import what they call.
         imports: imports.toDeclarations(),
         placeholders,

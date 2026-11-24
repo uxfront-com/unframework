@@ -1,3 +1,4 @@
+import { nextTick } from "./_unframework/nextTick";
 import {
   type ComponentProps,
   type JSX,
@@ -136,11 +137,3 @@ function createWatcher(
 
 /** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
 type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };
-
-/**
- * Resolves once the DOM has updated and the watchers have run: Solid applies writes as it makes
- * them, and the watchers run in a microtask queued at the first write, before this one.
- */
-function nextTick(): Promise<void> {
-  return Promise.resolve();
-}

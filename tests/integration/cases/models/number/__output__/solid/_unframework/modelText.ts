@@ -1,0 +1,33 @@
+import { createRenderEffect } from "solid-js";
+
+/** Binds a text field to a signal as Vue's `vModelText` does: see its modifiers. */
+export function modelText<T extends string | number | null | undefined>(
+  value: () => T,
+  setValue: (value: T) => void,
+  modifiers: { trim?: boolean; lazy?: boolean; number?: boolean },
+): (field: HTMLInputElement | HTMLTextAreaElement) => void {
+  const cast = (text: string): string | number => {
+    const number = Number.parseFloat(text);
+    return Number.isNaN(number) ? text : number;
+  };
+  return (field) => {
+    field.addEventListener(modifiers.lazy ? "change" : "input", () => {
+      const text = modifiers.trim ? field.value.trim() : field.value;
+      setValue((modifiers.number ? cast(text) : text) as T);
+    });
+    if (modifiers.trim || modifiers.number) {
+      field.addEventListener("change", () => {
+        const text = modifiers.trim ? field.value.trim() : field.value;
+        field.value = String(modifiers.number ? cast(text) : text);
+      });
+    }
+    createRenderEffect(() => {
+      const next = value() ?? "";
+      const shown = modifiers.number && !/^0\d/.test(field.value) ? cast(field.value) : field.value;
+      if (shown === next) return;
+      const typing = document.activeElement === field && field.type !== "range";
+      if (typing && modifiers.trim && field.value.trim() === next) return;
+      field.value = String(next);
+    });
+  };
+}

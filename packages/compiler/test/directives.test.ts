@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { compile, createFileResolver, createSyntacticOracle, TARGET_NAMES } from "../src/index.ts";
 import type { TargetName, TypeOracle } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 const TRAP = `import { defineDirective } from "@uxfront/unframework";
 
@@ -58,7 +59,8 @@ describe("a module of directives on each target", () => {
     async (target) => {
       const result = await compile(TRAP, { filename: "focusTrap.uf.ts", targets: [target] });
       expect(result.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      const files = result.outputs[target] ?? [];
+      // Its own files: a target may also put the helpers it calls in `_unframework/` (ADR-0121).
+      const files = ownOutputs(result, target);
       const expected = MODULES[target];
       if (!expected) {
         expect(files).toEqual([]);

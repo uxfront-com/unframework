@@ -380,7 +380,7 @@ describe("compile with sourceMap", () => {
 
   // Each mapped right until its line was split at its braces first, which gave the text to another.
   it.each<[string, TargetName, number, string, number]>([
-    ["control-flow/keyed-map/ContributorTable", "solid", 36, ".login", 26],
+    ["control-flow/keyed-map/ContributorTable", "solid", 37, ".login", 26],
     ["control-flow/keyed-map/ContributorTable", "astro", 36, ".login", 26],
     ["lifecycle/teardown-order/SearchSession", "angular", 130, ".length", 53],
     ["lifecycle/unmount-timers/AutoRefresh", "react", 53, "setInterval", 25],

@@ -6,10 +6,17 @@ import { describe, expect, it } from "vitest";
 import { run, tree } from "../helpers.ts";
 import { check, consumer, designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
 
+// A title with a class bound to a value, so it imports the shared `cx` (ADR-0121).
+const TITLE = `export function CardTitle(props: { label: string }) {
+  return <h2 class={["card-title", { long: props.label.length > 8 }]}>{props.label}</h2>;
+}
+`;
+
 const packaged = async (under?: string) => {
   const root = designSystem({
     config: { targets: ["solid"], package: { resolveFrom: inRepository("packages/target-solid") } },
     frameworks: ["solid-js"],
+    files: { "src/CardTitle.uf.tsx": TITLE },
     ...(under ? { under } : {}),
   });
   const { code, stderr } = await run(root, "build", "--package");
@@ -32,6 +39,9 @@ describe("build --package: Solid", () => {
         "solid/CardTitle.d.ts",
         "solid/CardTitle.js",
         "solid/CardTitle.jsx",
+        // The shared helper modules the outputs import (ADR-0121), which no entry exports.
+        "solid/_unframework/cx.js",
+        "solid/_unframework/cx.jsx",
         "solid/index.d.ts",
         "solid/index.js",
         "solid/index.jsx",
@@ -53,6 +63,17 @@ describe("build --package: Solid", () => {
     expect(files["solid/Card.js"]).toContain('from "./CardTitle.js"');
     expect(files["solid/Card.jsx"]).toContain('from "./CardTitle.jsx"');
     expect(files["solid/Card.jsx"]).toContain('import "./Card.uf.tsx.css"');
+    // Each output imports a helper from the package's own `_unframework/`, on its side of the
+    // condition, and declares none of its own.
+    expect(files["solid/CardTitle.js"]).toContain('from "./_unframework/cx.js"');
+    expect(files["solid/CardTitle.js"]).not.toMatch(/function cx\b/);
+    expect(files["solid/CardTitle.jsx"]).toContain('from "./_unframework/cx.jsx"');
+    expect(files["solid/CardTitle.jsx"]).not.toMatch(/function cx\b/);
+    expect(files["solid/_unframework/cx.js"]).toMatch(/^export \{ cx \};$/m);
+    expect(files["solid/_unframework/cx.jsx"]).toMatch(/^export \{ cx \};$/m);
+    expect(JSON.stringify(JSON.parse(files["package.json"] ?? "").exports)).not.toContain(
+      "_unframework",
+    );
     const { exports } = JSON.parse(files["package.json"] ?? "");
     expect(exports["./solid"]).toEqual({
       types: "./solid/index.d.ts",
