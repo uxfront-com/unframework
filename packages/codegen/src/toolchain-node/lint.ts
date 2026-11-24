@@ -186,9 +186,12 @@ function withHelp(message: string, help: string | undefined): string {
  * installs (eslint-plugin-astro resolves its TypeScript parser from there), while the base path
  * (`cwd`, outside which ESLint lints nothing) is the files' common ancestor. The API never reads
  * a bulk-suppressions file either, which the command line would take from its working directory.
+ * It reads its request, as JSON, from standard input.
  */
 const ESLINT_RUN = `
-const { eslint, config, overrideConfig, cwd, files } = JSON.parse(process.argv[1]);
+let input = "";
+for await (const chunk of process.stdin.setEncoding("utf8")) input += chunk;
+const { eslint, config, overrideConfig, cwd, files } = JSON.parse(input);
 const api = await import(eslint);
 const { ESLint } = api.ESLint ? api : api.default;
 const linter = new ESLint({
@@ -277,10 +280,13 @@ export async function lintWithEslint(
       cwd: commonDirectory(paths),
       files: paths,
     };
+    // The request goes on standard input: it lists every file, and as one argument it would pass
+    // Linux's limit of 128 KiB on a large corpus (`spawn E2BIG`).
     run = await execute(
       process.execPath,
-      ["--input-type=module", "--eval", ESLINT_RUN, JSON.stringify(request)],
+      ["--input-type=module", "--eval", ESLINT_RUN],
       cwd,
+      JSON.stringify(request),
     );
   } finally {
     if (typed !== undefined) await rm(typed.directory, { recursive: true, force: true });
