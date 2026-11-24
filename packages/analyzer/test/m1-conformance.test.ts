@@ -115,7 +115,9 @@ describe("the SVG vocabulary", () => {
 
   it("is accepted by the analyser, each element in an <svg>", () => {
     for (const tag of SVG_ELEMENTS) {
-      if (tag === "svg") continue;
+      if (tag === "svg") {
+        continue;
+      }
       // `<title>` and `<desc>` hold text only; the others take text too, as their content.
       const { diagnostics } = component(`<svg><${tag} /></svg>`);
       expect(diagnostics, tag).toEqual([]);
@@ -159,7 +161,9 @@ describe("boolean attributes", () => {
           ([tag, names]) => names.has(name) && !UNRENDERABLE_ELEMENTS.has(tag),
         )?.[0] ?? "div";
       // Some belong to elements a component cannot render (`<template>`'s `shadowroot*`).
-      if (!isHtmlAttribute(owner, name)) continue;
+      if (!isHtmlAttribute(owner, name)) {
+        continue;
+      }
       const markup = VOID_ELEMENTS.has(owner)
         ? `<${owner} ${name}={on} />`
         : `<${owner} ${name}={on}></${owner}>`;
@@ -193,9 +197,13 @@ describe("attributes Angular cannot bind", () => {
   it("are exactly the attributes of the vocabulary in those security contexts", () => {
     const sensitive: string[] = [];
     for (const [tag, own] of ELEMENT_ATTRIBUTES) {
-      if (UNRENDERABLE_ELEMENTS.has(tag)) continue;
+      if (UNRENDERABLE_ELEMENTS.has(tag)) {
+        continue;
+      }
       for (const name of [...own, ...GLOBAL_ATTRIBUTES]) {
-        if (!isHtmlAttribute(tag, name)) continue;
+        if (!isHtmlAttribute(tag, name)) {
+          continue;
+        }
         const context = Math.max(
           registry.securityContext(tag, name, true),
           registry.securityContext(tag, name, false),
@@ -296,7 +304,9 @@ describe("string-only attributes", () => {
         aliases.has(name) ? `(${aliases.get(name)})` : name,
       );
     }
-    if (/\[/.test(text)) return false;
+    if (/\[/.test(text)) {
+      return false;
+    }
     const parts = text
       .replace(/[()]/g, "")
       .split("|")
@@ -308,15 +318,21 @@ describe("string-only attributes", () => {
   /** Every interface's members, through `extends`. */
   function members(name: string, seen = new Set<string>()): Map<string, string> {
     const header = new RegExp(`export interface ${name}(?: extends ([^{]+))? \\{`).exec(VENDORED);
-    if (!header || seen.has(name)) return new Map();
+    if (!header || seen.has(name)) {
+      return new Map();
+    }
     seen.add(name);
     const result = new Map<string, string>();
     for (const parent of (header[1] ?? "")
       .split(",")
       .map((item) => item.trim().replace(/<.*$/, ""))) {
-      for (const [key, value] of members(parent, seen)) result.set(key, value);
+      for (const [key, value] of members(parent, seen)) {
+        result.set(key, value);
+      }
     }
-    for (const [key, value] of interfaceMembers(name)) result.set(key, value);
+    for (const [key, value] of interfaceMembers(name)) {
+      result.set(key, value);
+    }
     return result;
   }
 
@@ -336,11 +352,15 @@ describe("string-only attributes", () => {
     const tags = /export interface IntrinsicElementAttributes \{([\s\S]*?)\n\}/.exec(VENDORED)![1]!;
     for (const match of tags.matchAll(/^\s{4}(\w+): (\w+);/gm)) {
       const [, tag, type] = match as unknown as [string, string, string];
-      if (type === "SVGAttributes" || type === "HTMLAttributes") continue;
+      if (type === "SVGAttributes" || type === "HTMLAttributes") {
+        continue;
+      }
       const own = [...members(type)]
         .filter(([name, value]) => !global.has(name) && stringOnly(value))
         .map(([name]) => ALIASES.get(name) ?? name);
-      if (tag === "webview") continue;
+      if (tag === "webview") {
+        continue;
+      }
       expect([...(STRING_ATTRIBUTES.get(tag) ?? [])].toSorted(), tag).toEqual(own.toSorted());
     }
   });
@@ -364,7 +384,9 @@ describe("expressions Angular reads", () => {
         // do nothing (UF3023): TypeScript narrows no call.
         () => pick(['(maybe ?? "x")', "maybe?.trim().length", "maybe?.trim()", "items[0]"]),
       ])();
-    if (depth <= 0) return leaf();
+    if (depth <= 0) {
+      return leaf();
+    }
     const inner = () => expression(next, depth - 1, locals);
     return pick([
       leaf,
@@ -402,7 +424,9 @@ describe("expressions Angular reads", () => {
       const { diagnostics } = component(`<p>{${code}}</p>`, { props: PROPS });
       expect(diagnostics, code).toEqual([]);
       const { errors } = parseTemplate(`<p>{{ ${code} }}</p>`, "test.html", {});
-      if (errors?.length) failures.push(`${code}: ${errors.map((error) => error.msg).join("; ")}`);
+      if (errors?.length) {
+        failures.push(`${code}: ${errors.map((error) => error.msg).join("; ")}`);
+      }
     }
     expect(failures).toEqual([]);
   }, 60_000);
@@ -422,6 +446,8 @@ describe("expressions Angular reads", () => {
     expect(codes(diagnostics)).toContain("UF1002");
     const { errors } = parseTemplate(`<p>{{ String(${code}) }}</p>`, "test.html", {});
     // `|` is Angular's pipe: it parses, as a pipe named `1`, which is no number.
-    if (!code.includes("|")) expect(errors?.length, code).toBeGreaterThan(0);
+    if (!code.includes("|")) {
+      expect(errors?.length, code).toBeGreaterThan(0);
+    }
   });
 });

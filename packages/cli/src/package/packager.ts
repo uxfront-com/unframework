@@ -64,7 +64,9 @@ export const KEEP_IMPORTS: object = {
   name: "unframework:keep-imports",
   enforce: "pre",
   resolveId(id: string, importer: string | undefined) {
-    if (importer === undefined) return null;
+    if (importer === undefined) {
+      return null;
+    }
     const local = id.startsWith(".") || isAbsolute(id) || id.startsWith("\0");
     return local ? null : { id, external: true };
   },
@@ -106,7 +108,9 @@ export async function binOf(manifest: string, ...names: readonly string[]): Prom
     await readFile(manifest, "utf8"),
   );
   const script = names.map((name) => bin[name]).find((path) => path !== undefined);
-  if (script === undefined) throw new Error(`${owner} has no ${names.join(" or ")} binary.`);
+  if (script === undefined) {
+    throw new Error(`${owner} has no ${names.join(" or ")} binary.`);
+  }
   return join(dirname(manifest), script);
 }
 

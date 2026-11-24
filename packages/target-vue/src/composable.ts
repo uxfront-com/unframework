@@ -87,7 +87,9 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   });
   // What its setup prints names, beside its parameters' and its constants' types.
   const read = liveTypeNames(owner, module, { client: true });
-  for (const name of [...parameterTypes, ...reads.typeNames]) read.add(name);
+  for (const name of [...parameterTypes, ...reads.typeNames]) {
+    read.add(name);
+  }
   addReadTypeImports(module, imports, read);
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const body = laidOut(statements).replaceAll("\n", "\n  ");
@@ -146,10 +148,15 @@ export function moduleBindings(
   const constants = module.constants ?? [];
   for (const entry of module.moduleImports ?? []) {
     for (const name of entry.names) {
-      if (!reached.has(name.local)) continue;
+      if (!reached.has(name.local)) {
+        continue;
+      }
       const local = names.moduleLocal(name.local);
-      if (name.imported === "default") imports.addDefault(entry.specifier, local, { exact: true });
-      else imports.add(entry.specifier, name.imported, { local, exact: true });
+      if (name.imported === "default") {
+        imports.addDefault(entry.specifier, local, { exact: true });
+      } else {
+        imports.add(entry.specifier, name.imported, { local, exact: true });
+      }
     }
   }
   const declared = constants.filter((constant) => reached.has(constant.name));
@@ -173,9 +180,17 @@ export function constantTypes(
 ): Pick<ModuleReads, "types" | "typeNames"> {
   const read = new Set<string>();
   for (const constant of module.constants ?? []) {
-    if (!reached.has(constant.name)) continue;
-    if (constant.type) for (const name of typeNames(constant.type)) read.add(name);
-    for (const name of codeNames(constant.value.code)) read.add(name);
+    if (!reached.has(constant.name)) {
+      continue;
+    }
+    if (constant.type) {
+      for (const name of typeNames(constant.type)) {
+        read.add(name);
+      }
+    }
+    for (const name of codeNames(constant.value.code)) {
+      read.add(name);
+    }
   }
   // The module's declarations those names reach, and the names they read in turn.
   const own = new Set(owner.types);
@@ -183,10 +198,16 @@ export function constantTypes(
   for (let size = -1; size !== types.size;) {
     size = types.size;
     for (const declaration of module.types) {
-      if (own.has(declaration.name) || types.has(declaration.name)) continue;
-      if (!read.has(declaration.name)) continue;
+      if (own.has(declaration.name) || types.has(declaration.name)) {
+        continue;
+      }
+      if (!read.has(declaration.name)) {
+        continue;
+      }
       types.set(declaration.name, declaration);
-      for (const name of codeNames(declaration.code, "statements")) read.add(name);
+      for (const name of codeNames(declaration.code, "statements")) {
+        read.add(name);
+      }
     }
   }
   return {
@@ -203,7 +224,9 @@ export function addReadTypeImports(
 ): void {
   for (const entry of module.typeImports ?? []) {
     for (const name of entry.names) {
-      if (!read.has(name.local)) continue;
+      if (!read.has(name.local)) {
+        continue;
+      }
       const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.vue`);
       imports.add(specifier, name.imported, { type: true, local: name.local, exact: true });
     }
@@ -219,10 +242,14 @@ function renamed(value: Code, names: VueNames): string {
   const edits: { start: number; end: number; text: string }[] = [];
   let shorthand: ReadonlySet<number> | undefined;
   for (const reference of value.refs) {
-    if (reference.kind !== "Binding") continue;
+    if (reference.kind !== "Binding") {
+      continue;
+    }
     const name = nameOf(reference.binding);
     const local = names.moduleLocal(name);
-    if (local === name) continue;
+    if (local === name) {
+      continue;
+    }
     const start = reference.span.start - value.span.start;
     shorthand ??= shorthandValues(value.code);
     const key = reference.shorthand || shorthand.has(start) ? `${name}: ` : "";
@@ -230,7 +257,9 @@ function renamed(value: Code, names: VueNames): string {
   }
   for (const { name, start, end } of typeQueries(value.code, "expression")) {
     const local = names.moduleLocal(name);
-    if (local !== name) edits.push({ start, end, text: local });
+    if (local !== name) {
+      edits.push({ start, end, text: local });
+    }
   }
   let written = "";
   let last = 0;
@@ -249,10 +278,14 @@ function shorthandValues(code: string): Set<number> {
   const found = new Set<number>();
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     const each = node as { type?: unknown; shorthand?: unknown; value?: { start?: unknown } };
     if (
       each.type === "Property" &&
@@ -261,7 +294,11 @@ function shorthandValues(code: string): Set<number> {
     ) {
       found.add(each.value.start);
     }
-    for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value);
+    for (const [key, value] of Object.entries(node)) {
+      if (key !== "parent") {
+        visit(value);
+      }
+    }
   };
   visit(parseExpressionSource(code).expression);
   return found;

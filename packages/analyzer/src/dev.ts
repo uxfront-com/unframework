@@ -27,7 +27,9 @@ export function devTest(
   scope: DevScope,
 ): AST.IdentifierReference | undefined {
   const { test } = node;
-  if (node.alternate || test.type !== "Identifier") return undefined;
+  if (node.alternate || test.type !== "Identifier") {
+    return undefined;
+  }
   return isDevIdentifier(test, scope) ? test : undefined;
 }
 
@@ -70,13 +72,17 @@ export function reportDevShadows(
 ): void {
   let reads = false;
   visit(fn, (node) => {
-    if (reads) return false;
+    if (reads) {
+      return false;
+    }
     if (node.type === "Identifier" && scope.scopes.isReference(node)) {
       reads = isDevIdentifier(node as AST.IdentifierReference, scope);
     }
     return !reads;
   });
-  if (!reads) return;
+  if (!reads) {
+    return;
+  }
   const [parameter] = fn.params;
   const inProps = (node: { start: number }) =>
     parameter !== undefined && node.start >= parameter.start && node.start < parameter.end;

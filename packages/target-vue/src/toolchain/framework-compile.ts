@@ -89,8 +89,11 @@ function privateCompilerSfc(require: NodeJS.Require, path: string): CompilerSfc 
   try {
     return require(path) as CompilerSfc;
   } finally {
-    if (shared) require.cache[path] = shared;
-    else delete require.cache[path];
+    if (shared) {
+      require.cache[path] = shared;
+    } else {
+      delete require.cache[path];
+    }
   }
 }
 
@@ -115,7 +118,9 @@ export async function frameworkCompile(
   const tree = outputTree(files);
   const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
   for (const file of files) {
-    if (!file.path.endsWith(".ts")) results.set(file.path, compileSfc(loaded, file, tree));
+    if (!file.path.endsWith(".ts")) {
+      results.set(file.path, compileSfc(loaded, file, tree));
+    }
   }
   return results;
 }
@@ -264,7 +269,9 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): Frame
 
   for (const style of descriptor.styles) {
     // An external stylesheet is a separate file, not part of this component's source.
-    if (style.src) continue;
+    if (style.src) {
+      continue;
+    }
     try {
       const result = capturingConsole(logged, () =>
         sfc.compileStyle({
@@ -329,7 +336,9 @@ function fromCompilerError(
   base: number,
   codeNames: VueCompilers["codeNames"],
 ): ToolchainMessage {
-  if (typeof error === "string") return { message: error };
+  if (typeof error === "string") {
+    return { message: error };
+  }
   const { code, loc } = error as Partial<CompilerError>;
   return {
     message: error.message,
@@ -351,7 +360,9 @@ function scriptError(error: unknown, descriptor: SFCDescriptor, source: string):
 
 /** A thrown error; `pos` (Babel's offset) is located when the block's offset is known. */
 function thrown(error: unknown, base?: number, source?: string): ToolchainMessage {
-  if (!(error instanceof Error)) return { message: String(error) };
+  if (!(error instanceof Error)) {
+    return { message: String(error) };
+  }
   const { code, pos } = error as Error & { code?: unknown; pos?: unknown };
   return {
     message: error.message.trim(),
@@ -372,7 +383,9 @@ function styleError(error: Error, start: { line: number; column: number }): Tool
     column?: unknown;
     reason?: unknown;
   };
-  if (typeof line !== "number" || typeof column !== "number") return thrown(error);
+  if (typeof line !== "number" || typeof column !== "number") {
+    return thrown(error);
+  }
   return {
     message: typeof reason === "string" ? reason : error.message.trim(),
     line: start.line + line - 1,
@@ -392,7 +405,9 @@ function unique(messages: ToolchainMessage[]): ToolchainMessage[] {
   const seen = new Set<string>();
   return messages.filter((item) => {
     const key = JSON.stringify([item.code, item.line, item.column, item.message]);
-    if (seen.has(key)) return false;
+    if (seen.has(key)) {
+      return false;
+    }
     seen.add(key);
     return true;
   });

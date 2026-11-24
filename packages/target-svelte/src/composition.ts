@@ -55,9 +55,13 @@ export function slotProp(slot: string): string {
  * conditional or a list takes neither (UF3045).
  */
 export function takesFallthrough(component: UfComponent): boolean {
-  if (component.inheritAttrs === false) return restElement(component) !== undefined;
+  if (component.inheritAttrs === false) {
+    return restElement(component) !== undefined;
+  }
   const { render } = component;
-  if (render.kind === "Element") return true;
+  if (render.kind === "Element") {
+    return true;
+  }
   const [only, ...rest] = render.children;
   // A lone component or `<component is>` over tags (ADR-0119) is a fragment of one child in the
   // IR, with the fragment's own span; a written fragment around it (`<><Base /></>`) is wider.
@@ -147,16 +151,26 @@ function chosenComponent(
  * (`ComponentApi.fallthroughTag`).
  */
 export function rootTakesFallthrough(component: UfComponent, module: UfModule): boolean {
-  if (component.inheritAttrs === false) return restElement(component) !== undefined;
+  if (component.inheritAttrs === false) {
+    return restElement(component) !== undefined;
+  }
   const { render } = component;
-  if (render.kind === "Element") return true;
+  if (render.kind === "Element") {
+    return true;
+  }
   const [root] = render.children;
-  if (isTagDynamic(root)) return true;
-  if (root?.kind !== "Component") return false;
+  if (isTagDynamic(root)) {
+    return true;
+  }
+  if (root?.kind !== "Component") {
+    return false;
+  }
   const name = root.component;
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((each) => each.kind === "Component" && each.local === name);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     const api = entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"
@@ -310,7 +324,9 @@ export function composedRender(
   const root = component.inheritAttrs === false ? undefined : fallthrough;
   if (render.kind === "Element") {
     const element = rewriteElement(render);
-    if (!root) return { render: element, candidates };
+    if (!root) {
+      return { render: element, candidates };
+    }
     return { render: rootElement(element, root, code), candidates };
   }
   const fragment: FragmentNode = { ...render, children: rewrite(render.children) };
@@ -333,7 +349,9 @@ export function composedRender(
       candidates,
     };
   }
-  if (!root || only?.kind !== "Component") return { render: fragment, candidates };
+  if (!root || only?.kind !== "Component") {
+    return { render: fragment, candidates };
+  }
   return {
     render: { ...fragment, children: [rootComponent(only, root, code)] },
     candidates,
@@ -352,7 +370,9 @@ function mergedStyle(
   { style, mergeStyle, styleText }: Fallthrough,
   code: (expression: Expression) => string,
 ): string {
-  if (!attribute) return style;
+  if (!attribute) {
+    return style;
+  }
   if (attribute.value) {
     return `${mergeStyle!}({}, [${styleText!}(${code(attribute.value)}), ${style}].join("; "))`;
   }
@@ -411,12 +431,15 @@ function rootElement(
           { kind: "Dynamic", value: written(className), span: attribute.span },
         ],
       });
-    } else if (attribute.kind === "Style") own = attribute;
-    else if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
+    } else if (attribute.kind === "Style") {
+      own = attribute;
+    } else if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
       // A spread's `style` is the root's own (ADR-0065), merged with the consumer's in one.
       own = spreadStyle(attribute);
       attributes.push({ ...attribute, keys: attribute.keys.filter((key) => key.name !== "style") });
-    } else attributes.push(attribute);
+    } else {
+      attributes.push(attribute);
+    }
   }
   if (!classed) {
     attributes.push({
@@ -464,8 +487,11 @@ function rootComponent(
           { kind: "Dynamic", value: written(className), span: attribute.span },
         ],
       });
-    } else if (attribute.kind === "Style") own = attribute;
-    else attributes.push(attribute);
+    } else if (attribute.kind === "Style") {
+      own = attribute;
+    } else {
+      attributes.push(attribute);
+    }
   }
   if (!classed) {
     attributes.push({

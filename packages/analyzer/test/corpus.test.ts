@@ -40,10 +40,15 @@ const FIXTURES = new URL("./fixtures/cases/", import.meta.url).pathname;
 function sources(root: string, directory = root): string[] {
   const found: string[] = [];
   for (const name of readdirSync(directory)) {
-    if (name.startsWith("__") || name.startsWith(".")) continue;
+    if (name.startsWith("__") || name.startsWith(".")) {
+      continue;
+    }
     const path = join(directory, name);
-    if (statSync(path).isDirectory()) found.push(...sources(root, path));
-    else if (name.endsWith(".uf.tsx") || name.endsWith(".uf.ts")) found.push(relative(root, path));
+    if (statSync(path).isDirectory()) {
+      found.push(...sources(root, path));
+    } else if (name.endsWith(".uf.tsx") || name.endsWith(".uf.ts")) {
+      found.push(relative(root, path));
+    }
   }
   return found.toSorted();
 }
@@ -149,7 +154,9 @@ function sharedModule(
   specifier: string,
 ): SharedModule | undefined {
   const first = fileOf(directory, specifier);
-  if (first === undefined || caseFile(root, first) === undefined) return undefined;
+  if (first === undefined || caseFile(root, first) === undefined) {
+    return undefined;
+  }
   const local = (file: string) => relative(directory, file).split(sep).join("/");
   const module: SharedModule = { file: local(first) };
   const files = [first];
@@ -157,8 +164,9 @@ function sharedModule(
     const file = files[index]!;
     const parsed = parseModule(file, caseFile(root, file)!);
     const [unfollowed] = unfollowedImports(parsed);
-    if (unfollowed !== undefined)
+    if (unfollowed !== undefined) {
       module.unresolved ??= { specifier: unfollowed, file: local(file) };
+    }
     for (const imported of moduleSpecifiers(parsed)) {
       if (frameworkOf(imported) || isAuthoringModule(imported)) {
         module.framework ??= { specifier: imported, file: local(file) };
@@ -196,7 +204,9 @@ async function analyzeCase(file: string, root = CASES) {
       const child = join(directory, specifier);
       let source: string;
       try {
-        if (reading.has(child)) throw new Error("cycle");
+        if (reading.has(child)) {
+          throw new Error("cycle");
+        }
         source = readFileSync(join(root, child), "utf8");
       } catch {
         imports.set(specifier, undefined);

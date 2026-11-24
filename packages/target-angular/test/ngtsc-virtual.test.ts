@@ -473,7 +473,9 @@ describe("compilePool", () => {
     const pending = [pool.compile(request(7, "A")), pool.compile(request(7, "B"))];
     pool.release(7);
     expect(threads).toHaveLength(2);
-    for (const thread of threads) expect(thread.received.at(-1)).toEqual({ release: 7 });
+    for (const thread of threads) {
+      expect(thread.received.at(-1)).toEqual({ release: 7 });
+    }
     threads[0]!.reply("A", "a");
     threads[1]!.reply("B", "b");
     await Promise.all(pending);

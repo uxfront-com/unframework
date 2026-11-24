@@ -44,7 +44,9 @@ export default function Tasks() {
     const text = await new Promise<string>((resolve) => {
       reply = resolve;
     });
-    if (!cancelled) answer.value = `${value}: ${text}`;
+    if (!cancelled) {
+      answer.value = `${value}: ${text}`;
+    }
   });
 
   watch(query, (value) => {

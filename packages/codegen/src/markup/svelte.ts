@@ -232,7 +232,9 @@ const styleDirective = (property: string, value: string) =>
 export const svelteDialect: MarkupDialect = {
   name: "svelte",
   escapeText: (text, position) => {
-    if (keepsWhitespace(position)) return escapeBraces(escapeHtmlText(text));
+    if (keepsWhitespace(position)) {
+      return escapeBraces(escapeHtmlText(text));
+    }
     const atEdge =
       (position.first && HTML_WHITESPACE.test(text.charAt(0))) ||
       (position.last && HTML_WHITESPACE.test(text.charAt(text.length - 1)));
@@ -393,7 +395,9 @@ export const svelteDialect: MarkupDialect = {
         );
       }
       const content: MarkupPiece = { kind: "nodes", nodes: fill.children, container: fill };
-      if (fill.slot === "default" && parameter === undefined) return content;
+      if (fill.slot === "default" && parameter === undefined) {
+        return content;
+      }
       return {
         kind: "block",
         segments: [
@@ -406,7 +410,9 @@ export const svelteDialect: MarkupDialect = {
   slotOutlet: ({ node, props }) => {
     const name = svelteSlotProp(node.slot);
     const args = props?.code ?? "";
-    if (!node.fallback.length) return [{ kind: "code", code: `{@render ${name}?.(${args})}` }];
+    if (!node.fallback.length) {
+      return [{ kind: "code", code: `{@render ${name}?.(${args})}` }];
+    }
     return [
       {
         kind: "block",

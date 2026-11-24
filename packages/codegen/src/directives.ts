@@ -36,7 +36,9 @@ export function directiveHook(
 export function hookParameters(hook: DirectiveHook): string[] {
   const read = codeNames(hook.body.code, "statements");
   let count = hook.parameters.length;
-  while (count > 0 && !read.has(hook.parameters[count - 1]!)) count--;
+  while (count > 0 && !read.has(hook.parameters[count - 1]!)) {
+    count--;
+  }
   return hook.parameters.slice(0, count);
 }
 
@@ -74,12 +76,16 @@ export function wrapperNames<const K extends string>(
 ): Record<K, string> {
   const taken = new Set<string>();
   for (const hook of directive.hooks) {
-    for (const name of codeNames(hook.body.code, "statements")) taken.add(name);
+    for (const name of codeNames(hook.body.code, "statements")) {
+      taken.add(name);
+    }
   }
   const names = {} as Record<K, string>;
   for (const base of bases) {
     let name: string = base;
-    for (let index = 1; taken.has(name); index++) name = `${base}_${index}`;
+    for (let index = 1; taken.has(name); index++) {
+      name = `${base}_${index}`;
+    }
     taken.add(name);
     names[base] = name;
   }
@@ -112,7 +118,9 @@ export function directiveDependencies(
   for (let size = -1; size !== values.size;) {
     size = values.size;
     for (const constant of constants) {
-      if (!values.has(constant.name)) continue;
+      if (!values.has(constant.name)) {
+        continue;
+      }
       for (const reference of constant.value.refs) {
         if (reference.kind === "Binding") {
           values.add(reference.binding.slice(0, reference.binding.lastIndexOf("@")));
@@ -126,20 +134,34 @@ export function directiveDependencies(
     ...directive.types,
   ]);
   for (const hook of directive.hooks) {
-    for (const name of codeNames(hook.body.code, "statements")) named.add(name);
+    for (const name of codeNames(hook.body.code, "statements")) {
+      named.add(name);
+    }
   }
   for (const constant of constants) {
-    if (!values.has(constant.name)) continue;
-    if (constant.type) for (const name of typeNames(constant.type)) named.add(name);
-    for (const name of codeNames(constant.value.code)) named.add(name);
+    if (!values.has(constant.name)) {
+      continue;
+    }
+    if (constant.type) {
+      for (const name of typeNames(constant.type)) {
+        named.add(name);
+      }
+    }
+    for (const name of codeNames(constant.value.code)) {
+      named.add(name);
+    }
   }
   const declared = new Set<string>();
   for (let size = -1; size !== declared.size;) {
     size = declared.size;
     for (const declaration of module.types) {
-      if (declared.has(declaration.name) || !named.has(declaration.name)) continue;
+      if (declared.has(declaration.name) || !named.has(declaration.name)) {
+        continue;
+      }
       declared.add(declaration.name);
-      for (const name of codeNames(declaration.code, "statements")) named.add(name);
+      for (const name of codeNames(declaration.code, "statements")) {
+        named.add(name);
+      }
     }
   }
   return {
@@ -182,9 +204,13 @@ export function directiveModuleNames(
     ...dependencies.types,
     ...dependencies.constants,
   ]) {
-    for (const name of codeNames(code, "statements")) taken.add(name);
+    for (const name of codeNames(code, "statements")) {
+      taken.add(name);
+    }
   }
-  for (const { local } of [...dependencies.imports, ...dependencies.typeImports]) taken.add(local);
+  for (const { local } of [...dependencies.imports, ...dependencies.typeImports]) {
+    taken.add(local);
+  }
   return taken;
 }
 
@@ -227,7 +253,9 @@ export function moduleDirectives(
     { directive?: UfDirective; specifier?: string; imported?: string }
   >();
   for (const directive of module.directives ?? []) {
-    if (!directive.exported) found.set(directive.name, { directive });
+    if (!directive.exported) {
+      found.set(directive.name, { directive });
+    }
   }
   for (const entry of module.imports ?? []) {
     for (const name of entry.names) {
@@ -260,9 +288,13 @@ export function appliedDirectives(component: UfComponent): Set<string> {
   const names = new Set<string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Directive") names.add(attribute.name);
+        if (attribute.kind === "Directive") {
+          names.add(attribute.name);
+        }
       }
     },
   });
@@ -319,12 +351,18 @@ export function importedDirectives(
 export function assertedValue(value: Expression): Expression {
   const ends = new Set<number>();
   for (const reference of value.refs) {
-    if (reference.kind !== "Binding") continue;
+    if (reference.kind !== "Binding") {
+      continue;
+    }
     for (const path of reference.narrowed ?? []) {
-      if (path.scope === "template") ends.add(path.span.end);
+      if (path.scope === "template") {
+        ends.add(path.span.end);
+      }
     }
   }
-  if (!ends.size) return value;
+  if (!ends.size) {
+    return value;
+  }
   const sorted = [...ends].toSorted((a, b) => a - b);
   let code = "";
   let last = value.span.start;
@@ -345,7 +383,9 @@ export function assertedValue(value: Expression): Expression {
           end: reference.span.end + shift(reference.span.end),
         },
       };
-      if (moved.kind === "Binding") delete moved.narrowed;
+      if (moved.kind === "Binding") {
+        delete moved.narrowed;
+      }
       return moved;
     }),
   };

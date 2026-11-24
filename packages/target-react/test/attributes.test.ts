@@ -108,7 +108,9 @@ function gapsOf(pairs: readonly Pair[], gaps: Readonly<Record<string, Elements>>
   const found = new Map<string, string[]>();
   for (const [tag, name] of pairs) {
     const elements = gaps[name];
-    if (!elements) continue;
+    if (!elements) {
+      continue;
+    }
     if ("on" in elements ? elements.on.includes(tag) : !elements.except.includes(tag)) {
       found.set(name, [...(found.get(name) ?? []), tag]);
     }
@@ -218,7 +220,9 @@ describe("React's attribute types", { timeout: 120_000 }, () => {
       (contents) => contents.replace(/=\{1\}/g, '="1"'),
     );
     // Every message says so, as the next test reads them.
-    for (const message of strings.values()) expect(message).toMatch(NUMBER_ONLY);
+    for (const message of strings.values()) {
+      expect(message).toMatch(NUMBER_ONLY);
+    }
     const taken = pairs.filter((_, index) => !strings.has(index)).map((pair) => pair.join(" "));
     expect(taken).toEqual([
       "img height",

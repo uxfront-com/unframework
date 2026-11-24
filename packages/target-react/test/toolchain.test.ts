@@ -51,7 +51,9 @@ const clean = { errors: [], warnings: [] };
 /** The names of the plugins in a Vite `plugins` option, however nested. */
 function pluginNames(options: readonly PluginOption[]): string[] {
   return options.flatMap((option): string[] => {
-    if (Array.isArray(option)) return pluginNames(option);
+    if (Array.isArray(option)) {
+      return pluginNames(option);
+    }
     return option && typeof option === "object" && "name" in option
       ? [(option as Plugin).name]
       : [];
@@ -280,7 +282,9 @@ function bailout(statements: string, fallback = '"x"'): string | undefined {
   const body = contents.slice(contents.indexOf("{\n", contents.indexOf("Probe(")) + 1, -2);
   const code = [{ code: body, kind: "statements" as const }];
   const locals = declaredNames(code);
-  for (const name of ["onSaved", "value", "opts", "label"]) locals.add(name);
+  for (const name of ["onSaved", "value", "opts", "label"]) {
+    locals.add(name);
+  }
   return compilerBailout([{ code: fallback, kind: "default" }, ...code], locals);
 }
 

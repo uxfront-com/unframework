@@ -48,16 +48,21 @@ export function transitionNotTag(node: AST.IdentifierReference, reporter: Report
 /** What a transition's child is, as written: its children that render something. */
 function contentOf(items: readonly AST.JSXChild[]): AST.JSXChild[] {
   return items.filter((item) => {
-    if (item.type === "JSXText") return readJsxText(item.value).value !== "";
-    if (item.type === "JSXExpressionContainer")
+    if (item.type === "JSXText") {
+      return readJsxText(item.value).value !== "";
+    }
+    if (item.type === "JSXExpressionContainer") {
       return item.expression.type !== "JSXEmptyExpression";
+    }
     return true;
   });
 }
 
 /** Whether a node is a plain element: a lower-case tag, not `<component is>`. */
 function isPlainElement(item: AST.JSXChild | AST.Expression): item is AST.JSXElement {
-  if (item.type !== "JSXElement") return false;
+  if (item.type !== "JSXElement") {
+    return false;
+  }
   const { name } = item.openingElement;
   return name.type === "JSXIdentifier" && /^[a-z]/.test(name.name) && name.name !== "component";
 }
@@ -73,7 +78,9 @@ function isNothing(node: AST.Expression): boolean {
 /** Strips the parentheses around an expression. */
 function unwrap(node: AST.Expression): AST.Expression {
   let current = node;
-  while (current.type === "ParenthesizedExpression") current = current.expression;
+  while (current.type === "ParenthesizedExpression") {
+    current = current.expression;
+  }
   return current;
 }
 
@@ -99,7 +106,9 @@ function branchesOf(expression: AST.Expression): AST.Expression[] | undefined {
       branches.push(unwrap(current.right));
       return branches;
     }
-    if (current.type !== "ConditionalExpression") return branches;
+    if (current.type !== "ConditionalExpression") {
+      return branches;
+    }
     branches.push(unwrap(current.consequent));
     const next = unwrap(current.alternate);
     if (
@@ -207,11 +216,15 @@ export function lowerTransition(
     }
     let valid = true;
     for (const branch of branches) {
-      if (isPlainElement(branch) || isNothing(branch)) continue;
+      if (isPlainElement(branch) || isNothing(branch)) {
+        continue;
+      }
       valid = false;
       report(branch, `has a branch that ${describeChild(branch)}`, true);
     }
-    if (!valid) return undefined;
+    if (!valid) {
+      return undefined;
+    }
     children = lowerChildren([first], place, render);
     if (!children.length) {
       report(first, "renders nothing in any branch");
@@ -221,7 +234,9 @@ export function lowerTransition(
     report(first, describeChild(first));
     return undefined;
   }
-  if (!props || reporter.hasErrorsSince(mark)) return undefined;
+  if (!props || reporter.hasErrorsSince(mark)) {
+    return undefined;
+  }
   return createTransitionNode(props.name, props.appear, children, span(node));
 }
 

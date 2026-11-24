@@ -89,7 +89,9 @@ async function render(
     const { default: component } = await importScratch<{ default: unknown }>(`${id}.ts`, code);
     return { html: await renderToString(component, { props: parityProps(suite) }), logged };
   } finally {
-    for (const spy of spies) spy.mockRestore();
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
   }
 }
 

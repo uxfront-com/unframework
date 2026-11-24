@@ -40,7 +40,9 @@ export function closest(name: string, names: readonly string[]): string | undefi
   for (const candidate of names) {
     const distance = editDistance(name.toLowerCase(), candidate.toLowerCase());
     if (distance <= Math.max(1, Math.floor(candidate.length / 3))) {
-      if (!best || distance < best.distance) best = { name: candidate, distance };
+      if (!best || distance < best.distance) {
+        best = { name: candidate, distance };
+      }
     }
   }
   return best?.name;
@@ -59,7 +61,9 @@ export function renameFix(
   at: Located,
   others: readonly string[] | undefined,
 ): Fix[] {
-  if (!others || others.some((other) => closest(other, [meant]) !== undefined)) return [];
+  if (!others || others.some((other) => closest(other, [meant]) !== undefined)) {
+    return [];
+  }
   return [{ title: `Write \`${text}\``, confidence: "likely", edits: [{ span: span(at), text }] }];
 }
 
@@ -87,7 +91,9 @@ export function literalOutsideUnion(
   }
   const literals =
     literalsOf(prop.type) ?? (prop.literals && literalsOf(prop.literals.join(" | ")));
-  if (!literals || literals.some((literal) => literal.value === written)) return false;
+  if (!literals || literals.some((literal) => literal.value === written)) {
+    return false;
+  }
   const strings = literals.flatMap((literal) =>
     typeof literal.value === "string" ? [literal.value] : [],
   );
@@ -129,7 +135,9 @@ export function literalOutsideUnion(
  */
 function meantString(value: string, literals: readonly string[]): string | undefined {
   const near = closest(value, literals);
-  if (near !== undefined) return near;
+  if (near !== undefined) {
+    return near;
+  }
   const started = literals.filter((literal) => value && literal.startsWith(value));
   return started.length === 1 ? started[0] : undefined;
 }
@@ -159,8 +167,12 @@ function literalsOf(type: string): { value: LiteralValue; text: string }[] | und
   const members = annotation.type === "TSUnionType" ? annotation.types : [annotation];
   const literals: { value: LiteralValue; text: string }[] = [];
   for (const member of members) {
-    if (member.type === "TSUndefinedKeyword" || member.type === "TSNullKeyword") continue;
-    if (member.type !== "TSLiteralType" || member.literal.type !== "Literal") return undefined;
+    if (member.type === "TSUndefinedKeyword" || member.type === "TSNullKeyword") {
+      continue;
+    }
+    if (member.type !== "TSLiteralType" || member.literal.type !== "Literal") {
+      return undefined;
+    }
     const { value } = member.literal;
     if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
       return undefined;

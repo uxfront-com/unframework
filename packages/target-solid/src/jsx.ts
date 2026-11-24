@@ -209,7 +209,9 @@ export function solidJsx(
     );
   };
   const rootClass = (element: ElementNode, context: JsxContext): AstExpression[] => {
-    if (!isRoot(element)) return [];
+    if (!isRoot(element)) {
+      return [];
+    }
     printed.class = true;
     return [passed("class", context)];
   };
@@ -241,7 +243,9 @@ export function solidJsx(
           const all = [...reads, ...rootClass(element, context)];
           return [classCall(classHelper(), [js.stringLiteral(attribute.value), ...all])];
         }
-        if (isRoot(element)) return [mergedClass(attribute.value, context)];
+        if (isRoot(element)) {
+          return [mergedClass(attribute.value, context)];
+        }
       }
       if (!isUntyped(element.tag, attribute.name)) {
         return staticJsxAttribute(attribute, element, context);
@@ -297,11 +301,15 @@ export function solidJsx(
     styleAttribute(attribute, element, context) {
       if (attribute.value) {
         const value = styleValue(jsxExpression(attribute.value, context));
-        if (!isRoot(element)) return [js.jsxAttribute("style", js.jsxExpressionContainer(value))];
+        if (!isRoot(element)) {
+          return [js.jsxAttribute("style", js.jsxExpressionContainer(value))];
+        }
         printed.style = true;
         return [mergedStyle(value, passed("style", context))];
       }
-      if (!isRoot(element)) return [styleAttribute(attribute, context)];
+      if (!isRoot(element)) {
+        return [styleAttribute(attribute, context)];
+      }
       printed.style = true;
       return [styleAttribute(attribute, context, () => passed("style", context))];
     },
@@ -322,7 +330,9 @@ export function solidJsx(
     directiveAttribute: (attribute, element, context) =>
       listeners.directiveAttribute(attribute, element, context),
     refAttribute(attribute, element, context) {
-      if (!isComponentTag(element.tag)) return listeners.refAttribute(attribute, element, context);
+      if (!isComponentTag(element.tag)) {
+        return listeners.refAttribute(attribute, element, context);
+      }
       // A ref on a child that exposes nothing holds its root element (ADR-0118).
       const held = holdsElement(composition.module, element.tag);
       return listeners.componentRef(
@@ -355,7 +365,9 @@ export function solidJsx(
       const slot = code.slot(node.slot);
       const rendered = node.props ? `${slot}?.(${expressionCode(node.props, context)})` : slot;
       const value = context.placeholders.expression(rendered, "operand");
-      if (!node.fallback.length) return value;
+      if (!node.fallback.length) {
+        return value;
+      }
       return js.logicalExpression("??", value, jsxBranch(node.fallback, context));
     },
     modelAttribute(attribute, element, context) {
@@ -367,14 +379,20 @@ export function solidJsx(
         models,
         listeners.carries(element),
       );
-      if (!isTarget(element) || !plan!.models.size) return own;
+      if (!isTarget(element) || !plan!.models.size) {
+        return own;
+      }
       // The element's `v-model` listens with an event prop the consumer's listener would
       // replace: it calls the consumer's after its own (ADR-0118).
       return own.map((item) => {
-        if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") return item;
+        if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") {
+          return item;
+        }
         const prop = item.name.name;
         const value = item.value?.type === "JSXExpressionContainer" ? item.value.expression : null;
-        if (!plan!.models.has(prop) || value?.type !== "ArrowFunctionExpression") return item;
+        if (!plan!.models.has(prop) || value?.type !== "ArrowFunctionExpression") {
+          return item;
+        }
         const [first] = value.params;
         const event = first?.type === "Identifier" ? first.name : models.event();
         const body =
@@ -439,7 +457,9 @@ export function solidJsx(
           ...(target ? [spread(context)] : []),
         ];
       }
-      if (!pending.delete(key)) return [];
+      if (!pending.delete(key)) {
+        return [];
+      }
       const fallthrough = isRoot(element)
         ? (["class", "style"] as const)
             .filter((name) => !printed[name])
@@ -521,7 +541,9 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
       flow.narrowings.types,
     ),
   );
-  if (carried.every((paths) => !paths.length)) return plain(node, context, flow.imports);
+  if (carried.every((paths) => !paths.length)) {
+    return plain(node, context, flow.imports);
+  }
   const last = branches.at(-1)!;
   // The analyser drops an empty else.
   const otherwise = last.condition ? undefined : last;
@@ -533,7 +555,9 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
     if (!otherwise || !carried[1]!.length) {
       const shown = narrowed([test], true, first!.children, carried[0]!, context, flow);
       const attributes = branchAttributes(shown);
-      if (otherwise) attributes.push(fallbackAttribute(otherwise.children, context));
+      if (otherwise) {
+        attributes.push(fallbackAttribute(otherwise.children, context));
+      }
       return element("Show", attributes, [shown.callback]);
     }
     // `!user ? <i>anon</i> : <p>{user.name}</p>`: the else shows where the operand holds.
@@ -548,7 +572,9 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
       );
       const shown = narrowed([operand], true, otherwise.children, paths, context, flow);
       const attributes = branchAttributes(shown);
-      if (first!.children.length) attributes.push(fallbackAttribute(first!.children, context));
+      if (first!.children.length) {
+        attributes.push(fallbackAttribute(first!.children, context));
+      }
       return element("Show", attributes, [shown.callback]);
     }
     if (!first!.children.length) {
@@ -558,7 +584,9 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
     }
   }
   const matches = branches.flatMap((branch, index) => {
-    if (!branch.condition && !carried[index]!.length) return [];
+    if (!branch.condition && !carried[index]!.length) {
+      return [];
+    }
     if (!carried[index]!.length) {
       // An empty branch still stops the chain, with `{null}`: `<Match>` requires children.
       return [
@@ -623,7 +651,9 @@ function show(
   imports: ImportSet,
 ): AstExpression {
   const attributes = [when(test)];
-  if (fallback) attributes.push(fallbackAttribute(fallback, context));
+  if (fallback) {
+    attributes.push(fallbackAttribute(fallback, context));
+  }
   return js.jsxElement(imports.add("solid-js", "Show"), attributes, jsxChildren(children, context));
 }
 
@@ -761,7 +791,9 @@ function holdsListeners(nodes: readonly RenderNode[]): boolean {
   for (const node of nodes) {
     walk(node, {
       enter(visited) {
-        if (visited.kind !== "Element") return;
+        if (visited.kind !== "Element") {
+          return;
+        }
         if (visited.attributes.some((item) => item.kind === "Event" || item.kind === "Ref")) {
           found = true;
         }
@@ -888,7 +920,9 @@ function untypedJsxAttribute(
  * children, or an attribute (a spread's key included) the type declares.
  */
 function hasTypedProps(element: ElementNode): boolean {
-  if (element.children.length) return true;
+  if (element.children.length) {
+    return true;
+  }
   return element.attributes.some((attribute) => {
     switch (attribute.kind) {
       case "Static":
@@ -958,7 +992,9 @@ function classAttribute(
       : [],
   );
   const attributes: JsxAttribute[] = [];
-  if (names.length) attributes.push(js.jsxAttribute("class", jsxAttributeValue(names.join(" "))));
+  if (names.length) {
+    attributes.push(js.jsxAttribute("class", jsxAttributeValue(names.join(" "))));
+  }
   if (toggles.length) {
     attributes.push(
       js.jsxAttribute("classList", js.jsxExpressionContainer(js.objectExpression(toggles))),
@@ -981,7 +1017,9 @@ function classCall(helper: string, parts: AstExpression[]): JsxAttribute {
  */
 function toggleCondition(condition: Expression, context: JsxContext): AstExpression {
   const code = jsxExpression(condition, context);
-  if (isBoolean(condition, context.component)) return code;
+  if (isBoolean(condition, context.component)) {
+    return code;
+  }
   return js.callExpression(js.identifier("Boolean"), [code]);
 }
 
@@ -996,7 +1034,9 @@ const COMPARISONS = new Set(["==", "!=", "===", "!==", "<", "<=", ">", ">="]);
  */
 function isBoolean(expression: Expression, component: UfComponent): boolean {
   const type = propType(expression, component);
-  if (type !== undefined) return type === "boolean";
+  if (type !== undefined) {
+    return type === "boolean";
+  }
   return isBooleanSyntax(parseExpression(expression.code));
 }
 
@@ -1031,7 +1071,9 @@ const STRING_TYPE = /^(?:string|"[^"\\]*"|'[^'\\]*')(?:\s*\|\s*(?:string|"[^"\\]
  */
 function isString(expression: Expression, component: UfComponent): boolean {
   const type = propType(expression, component);
-  if (type !== undefined) return STRING_TYPE.test(type);
+  if (type !== undefined) {
+    return STRING_TYPE.test(type);
+  }
   return isStringSyntax(parseExpression(expression.code));
 }
 
@@ -1126,7 +1168,9 @@ function mergedStyle(own: AstExpression, passed: AstExpression): JsxAttribute {
 
 /** A number literal (`1.5`, `-1`) as the string it renders as, or `undefined`. */
 function numberLiteral(expression: Expression): AstExpression | undefined {
-  if (expression.refs.length) return undefined;
+  if (expression.refs.length) {
+    return undefined;
+  }
   const node = parseExpression(expression.code);
   const value =
     node.type === "Literal" && typeof node.value === "number"

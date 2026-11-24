@@ -37,7 +37,9 @@ const SCAFFOLD = [
 const roots: string[] = [];
 
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 function temporary(): string {
@@ -84,8 +86,12 @@ describe("create-unframework", () => {
       "app",
     );
     expect(created).toMatchObject({ status: 0 });
-    for (const file of SCAFFOLD) expect(created.output).toContain(`Wrote ${file}\n`);
-    for (const file of SCAFFOLD) expect(existsSync(join(project, file)), file).toBe(true);
+    for (const file of SCAFFOLD) {
+      expect(created.output).toContain(`Wrote ${file}\n`);
+    }
+    for (const file of SCAFFOLD) {
+      expect(existsSync(join(project, file)), file).toBe(true);
+    }
 
     const bin = join(project, "node_modules", "@uxfront", "unframework", "bin", "unframework.js");
     const check = node(project, bin, "check", "--format", "json");
@@ -266,7 +272,9 @@ describe("create-unframework", () => {
     ["a package.json already there", ["."], 2],
   ])("exits with main's code through the bin, on %s", (_, argv, status) => {
     const root = temporary();
-    if (status === 2 && argv.length > 0) writeFileSync(join(root, "package.json"), "{}\n");
+    if (status === 2 && argv.length > 0) {
+      writeFileSync(join(root, "package.json"), "{}\n");
+    }
     const bin = join(packageDirectory, "bin", "create-unframework.js");
     expect(node(root, bin, ...argv).status).toBe(status);
   });

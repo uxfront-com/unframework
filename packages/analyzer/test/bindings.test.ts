@@ -30,18 +30,25 @@ function spreadsOf(module: UfModule | undefined): string[] {
   const visit = (node: RenderNode): void => {
     if (node.kind === "Element") {
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Spread") found.push(describeAttribute(attribute));
+        if (attribute.kind === "Spread") {
+          found.push(describeAttribute(attribute));
+        }
       }
       node.children.forEach(visit);
     } else if (node.kind === "If") {
-      for (const branch of node.branches) branch.children.forEach(visit);
+      for (const branch of node.branches) {
+        branch.children.forEach(visit);
+      }
     } else if (node.kind === "For") {
       visit(node.body);
     }
   };
   const { render } = only(module);
-  if (render.kind === "Fragment") render.children.forEach(visit);
-  else visit(render);
+  if (render.kind === "Fragment") {
+    render.children.forEach(visit);
+  } else {
+    visit(render);
+  }
   return found;
 }
 
@@ -69,7 +76,9 @@ function describeAttribute(attribute: Attribute): string {
         )
         .join(", ")}]`;
     case "Style":
-      if (attribute.value) return `style={${attribute.value.code}}`;
+      if (attribute.value) {
+        return `style={${attribute.value.code}}`;
+      }
       return `style[${attribute.declarations
         .map((declaration) =>
           declaration.kind === "Static"
@@ -138,7 +147,9 @@ describe("bound attributes", () => {
   ])("binds %s: %s", (jsx, accepted) => {
     const { diagnostics } = attributes(jsx);
     expect(diagnostics.length === 0).toBe(accepted);
-    if (!accepted) expect(codes(diagnostics)).toEqual(["UF1002"]);
+    if (!accepted) {
+      expect(codes(diagnostics)).toEqual(["UF1002"]);
+    }
   });
 
   it("keeps the M0 checks of a name for a binding: events, form state, `is`", () => {
@@ -589,7 +600,9 @@ describe("style", () => {
     const { found, diagnostics } = attributes(jsx);
     expect(found).toEqual([`UF3022 ${at}`]);
     expect(diagnostics[0]!.message).toContain("is not a CSS property: no browser applies it.");
-    if (help) expect(diagnostics[0]!.help).toBe(help);
+    if (help) {
+      expect(diagnostics[0]!.help).toBe(help);
+    }
   });
 
   it("accepts every property Chromium knows, and custom properties", () => {
@@ -1028,8 +1041,11 @@ describe("spreads", () => {
     ["<input {...attrs} />", undefined],
   ])("checks the keys of the spread in %s", (jsx, code) => {
     const { diagnostics } = attributes(jsx);
-    if (code) expect(codes(diagnostics)).toContain(code);
-    else expect(diagnostics).toEqual([]);
+    if (code) {
+      expect(codes(diagnostics)).toContain(code);
+    } else {
+      expect(diagnostics).toEqual([]);
+    }
   });
 
   it.each([

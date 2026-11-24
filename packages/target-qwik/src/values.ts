@@ -120,7 +120,9 @@ export function isPrimitiveValue(
   const propKinds = propReads(expression, component, module);
   const primitive = (node: Node): boolean => {
     const kinds = propKinds(node);
-    if (kinds) return !kinds.has("other");
+    if (kinds) {
+      return !kinds.has("other");
+    }
     switch (node.type) {
       case "Literal":
         // Not a regular expression (an object) or a BigInt (not M1 syntax).
@@ -165,7 +167,9 @@ export function isTextValue(
   const propKinds = propReads(expression, component, module);
   const textual = (node: Node): boolean => {
     const kinds = propKinds(node);
-    if (kinds) return [...kinds].every((kind) => kind === "string" || kind === "undefined");
+    if (kinds) {
+      return [...kinds].every((kind) => kind === "string" || kind === "undefined");
+    }
     switch (node.type) {
       case "Literal":
         return typeof node.value === "string";
@@ -179,7 +183,9 @@ export function isTextValue(
         return textual(node.left) && textual(node.right);
       case "CallExpression": {
         const { callee } = node;
-        if (callee.type === "Identifier") return callee.name === "String";
+        if (callee.type === "Identifier") {
+          return callee.name === "String";
+        }
         return (
           callee.type === "MemberExpression" &&
           !callee.computed &&
@@ -301,17 +307,25 @@ function propReads(
 ): (node: Node) => Set<DeclaredKind> | undefined {
   const references = new Map<string, BindingReference>();
   for (const reference of expression.refs) {
-    if (reference.kind !== "Binding") continue;
+    if (reference.kind !== "Binding") {
+      continue;
+    }
     const start = reference.span.start - expression.span.start;
     references.set(`${start}:${reference.span.end - expression.span.start}`, reference);
   }
   return (node) => {
     const reference = references.get(`${node.start}:${node.end}`);
-    if (!reference || !isProp(bindingOf(component, reference.binding).kind)) return undefined;
+    if (!reference || !isProp(bindingOf(component, reference.binding).kind)) {
+      return undefined;
+    }
     const prop = component.props.find((candidate) => candidate.binding === reference.binding);
-    if (!prop) return undefined;
+    if (!prop) {
+      return undefined;
+    }
     const kinds = declaredKinds(prop.type.code, module);
-    if (prop.optional && prop.default === undefined) kinds.add("undefined");
+    if (prop.optional && prop.default === undefined) {
+      kinds.add("undefined");
+    }
     return kinds;
   };
 }
@@ -350,11 +364,19 @@ function isProp(kind: BindingKind): boolean {
 
 /** Whether a call of `callee` returns a primitive whatever its arguments. */
 function primitiveCall(callee: Node): boolean {
-  if (callee.type === "Identifier") return PRIMITIVE_FUNCTIONS.has(callee.name);
-  if (callee.type !== "MemberExpression" || callee.computed) return false;
-  if (callee.property.type !== "Identifier") return false;
+  if (callee.type === "Identifier") {
+    return PRIMITIVE_FUNCTIONS.has(callee.name);
+  }
+  if (callee.type !== "MemberExpression" || callee.computed) {
+    return false;
+  }
+  if (callee.property.type !== "Identifier") {
+    return false;
+  }
   const { object } = callee;
-  if (object.type === "Identifier" && PRIMITIVE_NAMESPACES.has(object.name)) return true;
+  if (object.type === "Identifier" && PRIMITIVE_NAMESPACES.has(object.name)) {
+    return true;
+  }
   return PRIMITIVE_METHODS.has(callee.property.name);
 }
 
@@ -379,22 +401,36 @@ export function declaredKinds(
   const kinds = new Set<DeclaredKind>();
   for (const [token] of code.matchAll(TYPE_TOKEN)) {
     // Space, comments, unions and grouping.
-    if (/^(?:\s|\/[/*])/.test(token) || /^[|()]$/.test(token)) continue;
+    if (/^(?:\s|\/[/*])/.test(token) || /^[|()]$/.test(token)) {
+      continue;
+    }
     const primitive = PRIMITIVE_TYPES.get(token);
-    if (/^["']/.test(token)) kinds.add("string");
-    else if (/^-?\d/.test(token)) kinds.add("number");
-    else if (!/^[A-Za-z_$]/.test(token)) kinds.add("other");
-    else if (primitive) kinds.add(primitive);
-    else for (const kind of aliasKinds(token, module, seen)) kinds.add(kind);
+    if (/^["']/.test(token)) {
+      kinds.add("string");
+    } else if (/^-?\d/.test(token)) {
+      kinds.add("number");
+    } else if (!/^[A-Za-z_$]/.test(token)) {
+      kinds.add("other");
+    } else if (primitive) {
+      kinds.add(primitive);
+    } else {
+      for (const kind of aliasKinds(token, module, seen)) {
+        kinds.add(kind);
+      }
+    }
   }
   return kinds;
 }
 
 /** The kinds of a local type alias (`type Tone = "info" | "warn"`), or `other`. */
 function aliasKinds(name: string, module: UfModule, seen: ReadonlySet<string>): Set<DeclaredKind> {
-  if (seen.has(name)) return new Set(["other"]);
+  if (seen.has(name)) {
+    return new Set(["other"]);
+  }
   const alias = module.types.find((declaration) => declaration.name === name);
   const right = alias && /^type\s+[A-Za-z_$][\w$]*\s*=([\s\S]*?);?\s*$/.exec(alias.code)?.[1];
-  if (right === undefined) return new Set(["other"]);
+  if (right === undefined) {
+    return new Set(["other"]);
+  }
   return declaredKinds(right, module, new Set([...seen, name]));
 }

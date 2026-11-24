@@ -43,23 +43,34 @@ export function isLater(position: number, regions: readonly Span[]): boolean {
 }
 
 function walkFunction(fn: FunctionNode, suspensions: Suspensions, regions: Span[]): void {
-  if (!fn.body) return;
+  if (!fn.body) {
+    return;
+  }
   const path: AST.Node[] = [];
   const visit = (value: unknown): void => {
-    if (!value || typeof value !== "object") return;
+    if (!value || typeof value !== "object") {
+      return;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
     const node = value as AST.Node;
-    if (typeof node.type !== "string") return;
+    if (typeof node.type !== "string") {
+      return;
+    }
     if (
       node.type === "ArrowFunctionExpression" ||
       node.type === "FunctionExpression" ||
       node.type === "FunctionDeclaration"
     ) {
-      if (suspensions.deferred(node)) regions.push({ start: node.start, end: node.end });
-      else walkFunction(node, suspensions, regions);
+      if (suspensions.deferred(node)) {
+        regions.push({ start: node.start, end: node.end });
+      } else {
+        walkFunction(node, suspensions, regions);
+      }
       return;
     }
     path.push(node);
@@ -83,7 +94,9 @@ function dominatedEnd(node: AST.Node, path: readonly AST.Node[]): number {
   let child = node;
   for (let index = path.length - 1; index >= 0; index--) {
     const parent = path[index]!;
-    if (runsUnderCondition(parent, child)) return end;
+    if (runsUnderCondition(parent, child)) {
+      return end;
+    }
     end = parent.end;
     child = parent;
   }
@@ -136,18 +149,26 @@ export function deferredFunctions(render: RenderContext): ReadonlySet<FunctionNo
   const held: { name: AST.BindingIdentifier; value: FunctionNode }[] = [];
   const references = new Map<object, AST.IdentifierReference[]>();
   const visit = (value: unknown, depth: number): void => {
-    if (!value || typeof value !== "object") return;
+    if (!value || typeof value !== "object") {
+      return;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) visit(item, depth);
+      for (const item of value) {
+        visit(item, depth);
+      }
       return;
     }
     const node = value as AST.Node;
-    if (typeof node.type !== "string") return;
+    if (typeof node.type !== "string") {
+      return;
+    }
     const fn =
       node.type === "ArrowFunctionExpression" ||
       node.type === "FunctionExpression" ||
       node.type === "FunctionDeclaration";
-    if (fn && passed.has(node.start)) found.add(node);
+    if (fn && passed.has(node.start)) {
+      found.add(node);
+    }
     if (
       node.type === "VariableDeclarator" &&
       depth > 0 &&
@@ -172,7 +193,9 @@ export function deferredFunctions(render: RenderContext): ReadonlySet<FunctionNo
   for (const { name, value } of held) {
     // The declaration's own identifier is the initialising write of it.
     const uses = (references.get(name) ?? []).filter((use) => use !== (name as object));
-    if (uses.length && uses.every((use) => passed.has(use.start))) found.add(value);
+    if (uses.length && uses.every((use) => passed.has(use.start))) {
+      found.add(value);
+    }
   }
   return found;
 }
@@ -187,14 +210,18 @@ export function markLater(
   render: RenderContext,
   deferred: ReadonlySet<FunctionNode>,
 ): void {
-  if (!deferred.size) return;
+  if (!deferred.size) {
+    return;
+  }
   const regions = laterRegions(render.component, {
     awaits: () => false,
     deferred: (node) => deferred.has(node),
   });
   for (const { function: fn } of functionsOf(component)) {
     for (const ref of fn.body.refs) {
-      if (ref.kind === "Binding" && isLater(ref.span.start, regions)) ref.later = true;
+      if (ref.kind === "Binding" && isLater(ref.span.start, regions)) {
+        ref.later = true;
+      }
     }
   }
 }

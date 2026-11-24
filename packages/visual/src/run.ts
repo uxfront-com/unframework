@@ -113,10 +113,16 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
     cli: process.env.UF_TEST_CLI,
   };
   const exitCode = process.exitCode;
-  if (options.targets?.length) process.env.UF_TARGETS = options.targets.join(",");
-  else delete process.env.UF_TARGETS;
-  if (update) process.env.UF_UPDATE = "1";
-  else delete process.env.UF_UPDATE;
+  if (options.targets?.length) {
+    process.env.UF_TARGETS = options.targets.join(",");
+  } else {
+    delete process.env.UF_TARGETS;
+  }
+  if (update) {
+    process.env.UF_UPDATE = "1";
+  } else {
+    delete process.env.UF_UPDATE;
+  }
   // The command line is the CLI's: defineTestConfig must not read Vitest's `--update` from it.
   process.env.UF_TEST_CLI = "1";
   try {
@@ -138,7 +144,9 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
       for (const target of config.targets) {
         const key = cellKey(example, target);
         const known = errors.get(key);
-        if (known === undefined) continue;
+        if (known === undefined) {
+          continue;
+        }
         const lines = failed.map((each) => `${each.code}: ${each.message}`);
         errors.set(key, [...lines, known].join("\n"));
       }
@@ -161,9 +169,12 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
     // The page to browse it, beside it, so its relative image paths hold (plan §8.6).
     const pagePath = join(out, "report.html");
     writeFileSync(pagePath, renderReport(report));
-    for (const line of formatReport(report)) print(`${line}\n`);
-    for (const error of unhandled)
+    for (const line of formatReport(report)) {
+      print(`${line}\n`);
+    }
+    for (const error of unhandled) {
       print(`unhandled error: ${String((error as Error)?.message ?? error)}\n`);
+    }
     print(`report: ${relative(process.cwd(), reportPath) || reportPath}\n`);
     // A reader of a CI log learns from this line that the run left a page to open.
     print(`page: ${relative(process.cwd(), pagePath) || pagePath}\n`);
@@ -197,7 +208,9 @@ export function checkRunDirectory(root: string, out: string): void {
       `--out ${out} overlaps ${SPECS_DIR}, where the run writes its specs before it empties the run directory: name another, such as ${DEFAULT_OUT}.`,
     );
   }
-  if (!existsSync(out)) return;
+  if (!existsSync(out)) {
+    return;
+  }
   const entries = readdirSync(out);
   if (entries.length && !entries.includes(RUN_MARKER)) {
     throw new VisualUsageError(
@@ -298,7 +311,9 @@ async function visualConfig(
       };
     });
   const first = browsers[0]?.test?.provide as { ufHarness?: HarnessContext } | undefined;
-  if (!first?.ufHarness) throw new Error("[uf:visual] defineTestConfig built no browser project.");
+  if (!first?.ufHarness) {
+    throw new Error("[uf:visual] defineTestConfig built no browser project.");
+  }
   // defineTestConfig builds the projects in the project's order of targets.
   const targets = browsers.map((project) => nameOf(project).slice("browser:".length) as TargetName);
   return { vite: { test: { projects: browsers } }, harness: first.ufHarness, targets };
@@ -320,12 +335,16 @@ export function testErrors(modules: readonly TestModule[], specs: Specs): Map<st
   const errors = new Map<string, string>();
   for (const module of modules) {
     const example = byFile.get(resolve(module.moduleId));
-    if (example === undefined) continue;
+    if (example === undefined) {
+      continue;
+    }
     const target = module.project.name.replace(/^browser:/, "");
     const tests = [...module.children.allTests()];
     const failed =
       module.state() === "failed" || tests.some((test) => test.result().state === "failed");
-    if (!failed) continue;
+    if (!failed) {
+      continue;
+    }
     const messages = [
       ...module.errors().map(describeError),
       ...tests.flatMap((test) => (test.result().errors ?? []).map(describeError)),
@@ -343,13 +362,18 @@ function describeError(error: { message: string; cause?: unknown }): string {
   const lines = [error.message];
   let cause = error.cause as { message?: unknown; cause?: unknown } | undefined;
   for (let depth = 0; cause && depth < 5; depth += 1) {
-    if (typeof cause.message === "string" && cause.message) lines.push(cause.message);
+    if (typeof cause.message === "string" && cause.message) {
+      lines.push(cause.message);
+    }
     cause = cause.cause as typeof cause;
   }
   return lines.join("\n");
 }
 
 function restore(name: string, value: string | undefined): void {
-  if (value === undefined) delete process.env[name];
-  else process.env[name] = value;
+  if (value === undefined) {
+    delete process.env[name];
+  } else {
+    process.env[name] = value;
+  }
 }

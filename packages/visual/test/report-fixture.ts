@@ -21,7 +21,9 @@ export function fixtureOutput(name: ReportFixture): string {
 
 /** Copies a fixture to `.output/<name>/` and writes its page: the report and the HTML. */
 export function writeReportFixture(name: ReportFixture): { report: VisualReport; html: string } {
-  if (!REPORT_FIXTURES.includes(name)) throw new Error(`No report fixture named ${String(name)}.`);
+  if (!REPORT_FIXTURES.includes(name)) {
+    throw new Error(`No report fixture named ${String(name)}.`);
+  }
   const out = join(PACKAGE, fixtureOutput(name));
   rmSync(out, { recursive: true, force: true });
   cpSync(join(PACKAGE, "test/fixtures", name), out, { recursive: true });

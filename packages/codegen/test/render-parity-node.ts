@@ -154,13 +154,17 @@ export function lowerSources(
           )
           .map(({ code }) => code),
       );
-      if (rejected === "drop") return undefined;
+      if (rejected === "drop") {
+        return undefined;
+      }
       throw new Error(`The analyser does not accept the case ${describe(index)}`);
     }
     const props = spec.props ?? {};
     const declared = new Map(component.props.map((prop) => [prop.name, prop]));
     for (const name of Object.keys(props)) {
-      if (!declared.has(name)) throw new Error(`${spec.name}: \`${name}\` is no prop.`);
+      if (!declared.has(name)) {
+        throw new Error(`${spec.name}: \`${name}\` is no prop.`);
+      }
     }
     for (const prop of component.props) {
       if (!prop.optional && props[prop.name] === undefined) {
@@ -212,7 +216,9 @@ const suiteModules = new WeakMap<ParitySuite, UfModule>();
  */
 export function parityModule(suite: ParitySuite): UfModule {
   let module = suiteModules.get(suite);
-  if (module) return module;
+  if (module) {
+    return module;
+  }
   const sources = suite.cases.filter((parityCase) => parityCase.lowered).length;
   if (sources && sources !== suite.cases.length) {
     throw new Error(`${suite.title}: a suite is all source cases or all static ones.`);
@@ -263,7 +269,9 @@ function sourceModule(suite: ParitySuite): UfModule {
           `${parityCase.name}: a props object cannot give \`${prop.name}\` a default.`,
         );
       }
-      if (prop.binding === undefined) continue;
+      if (prop.binding === undefined) {
+        continue;
+      }
       pattern.push(prop.default ? `${name} = ${prop.default.code}` : name);
       spelling.set(prop.binding, form === "object" ? `props.${name}` : name);
     }
@@ -291,8 +299,9 @@ function sourceModule(suite: ParitySuite): UfModule {
     throw new Error(`The analyser does not accept ${suite.title}:\n${reported.join("\n")}`);
   }
   const broken = checkInvariants(module);
-  if (broken.length)
+  if (broken.length) {
     throw new Error(`${suite.title} lowers to invalid IR: ${JSON.stringify(broken)}`);
+  }
   const [component] = module.components as [UfComponent];
   if (suite.root !== "self") {
     const { render } = component;
@@ -315,9 +324,13 @@ function respelled(lowered: LoweredCase, spelling: ReadonlyMap<string, string>):
   const edits = new Map<number, { end: number; replacement: string }>();
   for (const { expression } of expressionsOf(component)) {
     for (const reference of expression.refs) {
-      if (reference.kind !== "Binding" || !spelling.has(reference.binding)) continue;
+      if (reference.kind !== "Binding" || !spelling.has(reference.binding)) {
+        continue;
+      }
       const { start, end } = reference.span;
-      if (start < jsx.start || end > jsx.end) continue;
+      if (start < jsx.start || end > jsx.end) {
+        continue;
+      }
       const binding = component.bindings.find(({ id }) => id === reference.binding)!;
       const spelled = spelling.get(reference.binding)!;
       const shorthand = reference.shorthand || shorthands.has(start);
@@ -339,14 +352,20 @@ const shorthandCache = new Map<string, ReadonlySet<number>>();
 /** Where each shorthand property's value starts in a module's source. */
 function shorthandValues(text: string): ReadonlySet<number> {
   let found = shorthandCache.get(text);
-  if (found) return found;
+  if (found) {
+    return found;
+  }
   const starts = new Set<number>();
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
-    if (typeof node !== "object" || node === null) return;
+    if (typeof node !== "object" || node === null) {
+      return;
+    }
     const record = node as { type?: unknown; shorthand?: unknown; value?: { start?: number } };
     if (
       record.type === "Property" &&
@@ -355,7 +374,11 @@ function shorthandValues(text: string): ReadonlySet<number> {
     ) {
       starts.add(record.value.start);
     }
-    for (const value of Object.values(node)) if (typeof value === "object") visit(value);
+    for (const value of Object.values(node)) {
+      if (typeof value === "object") {
+        visit(value);
+      }
+    }
   };
   visit(parseModule("Cases.uf.tsx", text).program);
   found = starts;
@@ -420,11 +443,15 @@ export async function emitParity(
     const reports = reported.map(({ code, message }) => `${code} (${message})`).join(", ");
     throw new Error(`${target.name} reported ${reports} for ${suite.title}.`);
   }
-  if (!format) return files;
+  if (!format) {
+    return files;
+  }
   return Promise.all(
     files.map(async (file) => {
       const outcome = await formatOutput(file);
-      if (outcome.error) throw new Error(`${file.path} does not format: ${outcome.error}`);
+      if (outcome.error) {
+        throw new Error(`${file.path} does not format: ${outcome.error}`);
+      }
       return outcome.file;
     }),
   );
@@ -497,7 +524,9 @@ function sweepCandidates(): SweepCandidate[] {
     namespace: Namespace = "html",
     extra?: Record<string, string>,
   ) => {
-    if (name === "style") return;
+    if (name === "style") {
+      return;
+    }
     candidates.push({ key, tag, name, namespace, ...(extra ? { extra } : {}) });
   };
   for (const name of [...GLOBAL_ATTRIBUTES, ...ARIA_ATTRIBUTES, "data-x"]) {
@@ -506,7 +535,9 @@ function sweepCandidates(): SweepCandidate[] {
   for (const tag of HTML_ELEMENTS) {
     // Every element once, so each renderer creates each one.
     add(`<${tag}>`, tag, "title");
-    for (const name of ELEMENT_ATTRIBUTES.get(tag) ?? []) add(`<${tag} ${name}>`, tag, name);
+    for (const name of ELEMENT_ATTRIBUTES.get(tag) ?? []) {
+      add(`<${tag} ${name}>`, tag, name);
+    }
   }
   for (const type of FIXED_VALUE_TYPES) {
     add(`<input type="${type}" value>`, "input", "value", "html", { type });
@@ -521,7 +552,9 @@ function sweepCandidates(): SweepCandidate[] {
     }
   }
   for (const name of SVG_GLOBAL_ATTRIBUTES) {
-    if (name !== "class") add(`<svg:${SVG_SWEEP_ELEMENT} ${name}>`, SVG_SWEEP_ELEMENT, name, "svg");
+    if (name !== "class") {
+      add(`<svg:${SVG_SWEEP_ELEMENT} ${name}>`, SVG_SWEEP_ELEMENT, name, "svg");
+    }
   }
   return candidates;
 }
@@ -535,12 +568,24 @@ function sweepCandidates(): SweepCandidate[] {
 function sweepValues({ tag, name, namespace }: SweepCandidate): (string | true)[] {
   const keyword = staticTokens(tag, namespace, name)?.[0];
   const first = keyword === undefined ? [] : [keyword];
-  if (namespace === "svg") return [...first, "1", "x"];
-  if (isBooleanAttribute(name)) return [true];
-  if (keyword !== undefined) return first;
-  if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) return ["2"];
-  if (TRUE_VALUED_ATTRIBUTES.has(name)) return ["true", "false"];
-  if (URL_ATTRIBUTES.has(name) || name.endsWith("srcset")) return ["data:,", "/x"];
+  if (namespace === "svg") {
+    return [...first, "1", "x"];
+  }
+  if (isBooleanAttribute(name)) {
+    return [true];
+  }
+  if (keyword !== undefined) {
+    return first;
+  }
+  if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) {
+    return ["2"];
+  }
+  if (TRUE_VALUED_ATTRIBUTES.has(name)) {
+    return ["true", "false"];
+  }
+  if (URL_ATTRIBUTES.has(name) || name.endsWith("srcset")) {
+    return ["data:,", "/x"];
+  }
   return ["x", "1", "true"];
 }
 
@@ -565,7 +610,9 @@ function sweepSource(candidate: SweepCandidate, written: string): string {
     ? `<${tag}${attributes} />`
     : `<${tag}${attributes}>${SWEEP_CONTENT[tag] ?? ""}</${tag}>`;
   const context = SWEEP_CONTEXT[tag];
-  if (context) source = `<${context}>${source}</${context}>`;
+  if (context) {
+    source = `<${context}>${source}</${context}>`;
+  }
   for (
     let child = tag, parents = REQUIRED_PARENTS.get(child);
     parents;
@@ -602,7 +649,9 @@ export function sweepDrops(): {
  * accepting is rendered by every target from then on.
  */
 export function attributeSweep(): readonly StaticCase[] {
-  if (sweep) return sweep;
+  if (sweep) {
+    return sweep;
+  }
   const tries = sweepCandidates().flatMap((candidate) =>
     sweepValues(candidate).map((value) => ({
       candidate,
@@ -617,24 +666,31 @@ export function attributeSweep(): readonly StaticCase[] {
   });
   // A component the analyzer rejects is left out of the module; its siblings are not.
   const { module, diagnostics } = analyze(parseModule("Sweep.uf.tsx", source));
-  if (!module) throw new Error("The analyzer rejected the whole attribute sweep.");
+  if (!module) {
+    throw new Error("The analyzer rejected the whole attribute sweep.");
+  }
   const seen = new Set<string>();
   const cases: StaticCase[] = [];
   const invalid = new Set<string>();
   for (const component of module.components) {
     const { candidate } = tries[Number(component.name.slice("Sweep".length))]!;
-    if (seen.has(candidate.key)) continue;
+    if (seen.has(candidate.key)) {
+      continue;
+    }
     if (checkInvariants(componentModule("Sweep.uf.tsx", module, component)).length) {
       invalid.add(candidate.key);
       continue;
     }
     seen.add(candidate.key);
-    if (component.render.kind !== "Element")
+    if (component.render.kind !== "Element") {
       throw new Error(`${candidate.key} has no root element`);
+    }
     cases.push({ name: candidate.key, render: component.render });
   }
   tries.forEach(({ candidate }, index) => {
-    if (seen.has(candidate.key)) return;
+    if (seen.has(candidate.key)) {
+      return;
+    }
     const { start, end } = ranges[index]!;
     const reported = diagnostics
       .filter(({ span: where }) => where.start >= start && where.end <= end)
@@ -676,21 +732,35 @@ function boundSweepValues({ tag, name, namespace }: SweepCandidate): BoundValue[
   const union = enumerated?.tokens.map((token) => JSON.stringify(token)).join(" | ");
   const keyword = (value: string): BoundValue => ({ type: union ?? "string", value });
   if (namespace === "svg") {
-    if (isNumberTypedAttribute(tag, name)) return [[number(2)]];
+    if (isNumberTypedAttribute(tag, name)) {
+      return [[number(2)]];
+    }
     return [enumerated ? [keyword(enumerated.tokens[0]!)] : [string("1"), number(2)]];
   }
-  if (isBooleanAttribute(name)) return [[boolean(true)], [boolean(false)]];
+  if (isBooleanAttribute(name)) {
+    return [[boolean(true)], [boolean(false)]];
+  }
   if (TRUE_VALUED_ATTRIBUTES.has(name)) {
     return [
       [boolean(true), keyword("true")],
       [boolean(false), keyword("false")],
     ];
   }
-  if (enumerated) return [[keyword(enumerated.tokens[0]!)]];
-  if (isNumberTypedAttribute(tag, name)) return [[number(2)]];
-  if (URL_ATTRIBUTES.has(name)) return [[string("about:blank")]];
-  if (name.endsWith("srcset")) return [[string("about:blank 1x")]];
-  if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) return [[number(2), string("2")]];
+  if (enumerated) {
+    return [[keyword(enumerated.tokens[0]!)]];
+  }
+  if (isNumberTypedAttribute(tag, name)) {
+    return [[number(2)]];
+  }
+  if (URL_ATTRIBUTES.has(name)) {
+    return [[string("about:blank")]];
+  }
+  if (name.endsWith("srcset")) {
+    return [[string("about:blank 1x")]];
+  }
+  if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) {
+    return [[number(2), string("2")]];
+  }
   return [[string("x"), number(1)]];
 }
 
@@ -704,11 +774,15 @@ let boundSweep: readonly ParityCase[] | undefined;
  * booleans and numbers render by rules a static value never meets.
  */
 export function boundAttributeSweep(): readonly ParityCase[] {
-  if (boundSweep) return boundSweep;
+  if (boundSweep) {
+    return boundSweep;
+  }
   const slots: { key: string; first: number; count: number }[] = [];
   const specs: SourceCase[] = [];
   for (const candidate of sweepCandidates()) {
-    if (candidate.name === "class") continue;
+    if (candidate.name === "class") {
+      continue;
+    }
     for (const alternatives of boundSweepValues(candidate)) {
       const [{ value: shown }] = alternatives as [BoundValue];
       slots.push({
@@ -731,8 +805,11 @@ export function boundAttributeSweep(): readonly ParityCase[] {
   const cases: ParityCase[] = [];
   for (const { key, first, count } of slots) {
     const accepted = lowered.slice(first, first + count).find((each) => each !== undefined);
-    if (accepted) cases.push({ ...accepted, name: key });
-    else drops.bound.set(key, codes.get(first + count - 1) ?? []);
+    if (accepted) {
+      cases.push({ ...accepted, name: key });
+    } else {
+      drops.bound.set(key, codes.get(first + count - 1) ?? []);
+    }
   }
   if (cases.length < 400) {
     throw new Error(`The analyzer accepts only ${cases.length} pairs of the bound sweep.`);
@@ -749,7 +826,9 @@ let allSuites: readonly ParitySuite[] | undefined;
  * component's root, the seeded random components, and the bound attribute sweep.
  */
 export function paritySuites(): readonly ParitySuite[] {
-  if (allSuites) return allSuites;
+  if (allSuites) {
+    return allSuites;
+  }
   const tricky = sourceCases(TRICKY_SOURCES);
   const roots = sourceCases([
     ...ROOT_SOURCES,
@@ -853,14 +932,20 @@ export function renderParityModules(options: ParityModulesOptions): Plugin {
   let suites: readonly ParitySuite[] | undefined;
   /** The suites, built when first needed, not whenever the configuration loads. */
   const suitesServed = () => {
-    if (suites) return suites;
+    if (suites) {
+      return suites;
+    }
     suites = options.suites ?? clientParitySuites();
     suites.forEach(({ cases }, suite) => {
-      if (!target) return;
+      if (!target) {
+        return;
+      }
       for (const format of options.formatted ? [true, false] : [false]) {
         const base = `${PARITY_DIRECTORY}${suite}-${format ? "formatted" : "printed"}`;
         served.set(`${base}${extension}`, { suite, format });
-        if (!options.perCase) continue;
+        if (!options.perCase) {
+          continue;
+        }
         cases.forEach((_, only) =>
           served.set(`${base}-${only}${extension}`, { suite, format, only }),
         );
@@ -871,7 +956,9 @@ export function renderParityModules(options: ParityModulesOptions): Plugin {
   let root = "";
   /** The served path of an id or URL with its query, or `undefined` when it is not one. */
   const servedPath = (id: string) => {
-    if (!id.includes(PARITY_DIRECTORY)) return undefined;
+    if (!id.includes(PARITY_DIRECTORY)) {
+      return undefined;
+    }
     suitesServed();
     const [path = ""] = id.split("?");
     const relative = root && path.startsWith(`${root}/`) ? path.slice(root.length) : path;
@@ -886,16 +973,24 @@ export function renderParityModules(options: ParityModulesOptions): Plugin {
     },
     resolveId(source) {
       const path = servedPath(source);
-      if (path === undefined) return null;
+      if (path === undefined) {
+        return null;
+      }
       // Queries are the framework plugin's requests for parts of the module (`?vue&type=…`).
       const query = source.includes("?") ? source.slice(source.indexOf("?")) : "";
       return `${root}${path}${query}`;
     },
     async load(id) {
-      if (id === MANIFEST) return manifest(target, suitesServed(), served);
-      if (id.includes("?")) return null;
+      if (id === MANIFEST) {
+        return manifest(target, suitesServed(), served);
+      }
+      if (id.includes("?")) {
+        return null;
+      }
       const path = servedPath(id);
-      if (path === undefined || !target) return null;
+      if (path === undefined || !target) {
+        return null;
+      }
       const { suite, format, only } = served.get(path)!;
       const [file, ...rest] = await emitParity(target, servedSuite(suitesServed()[suite]!, only), {
         format,
@@ -941,17 +1036,27 @@ function manifest(
  * `-0`, `NaN`, the infinities). Props hold only these and plain arrays and objects.
  */
 export function jsLiteral(value: unknown): string {
-  if (value === undefined) return "undefined";
+  if (value === undefined) {
+    return "undefined";
+  }
   if (typeof value === "number") {
-    if (Object.is(value, -0)) return "-0";
-    if (Number.isNaN(value)) return "NaN";
-    if (!Number.isFinite(value)) return value > 0 ? "Infinity" : "-Infinity";
+    if (Object.is(value, -0)) {
+      return "-0";
+    }
+    if (Number.isNaN(value)) {
+      return "NaN";
+    }
+    if (!Number.isFinite(value)) {
+      return value > 0 ? "Infinity" : "-Infinity";
+    }
     return String(value);
   }
   if (typeof value === "string" || typeof value === "boolean" || value === null) {
     return JSON.stringify(value);
   }
-  if (Array.isArray(value)) return `[${value.map(jsLiteral).join(", ")}]`;
+  if (Array.isArray(value)) {
+    return `[${value.map(jsLiteral).join(", ")}]`;
+  }
   if (typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
     const entries = Object.entries(value).map(
       ([key, item]) => `${JSON.stringify(key)}: ${jsLiteral(item)}`,

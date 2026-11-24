@@ -108,7 +108,9 @@ async function loadOrExplain(
   try {
     return await load();
   } catch (error) {
-    if (!isMissingModule(error)) throw error;
+    if (!isMissingModule(error)) {
+      throw error;
+    }
     return { run: (_args, io) => Promise.resolve(missing(name, packages, error, io)) };
   }
 }

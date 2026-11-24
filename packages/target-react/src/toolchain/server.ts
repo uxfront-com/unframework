@@ -29,7 +29,9 @@ export const renderToString: SsrRenderer = async (component, options) => {
   }
   const document = await new Response(prelude).text();
   const body = DOCUMENT.exec(document);
-  if (!body) throw new Error(`React's prerender produced an unexpected document:\n${document}`);
+  if (!body) {
+    throw new Error(`React's prerender produced an unexpected document:\n${document}`);
+  }
   return body[1] ?? "";
 };
 

@@ -88,7 +88,9 @@ const KEYWORDS: Record<string, Extract<TypeNode, { kind: "primitive" }>["name"]>
 export function resolveQuery(modules: ModuleSource, query: ShapeQuery, follow: boolean): Resolved {
   const module = modules.get(query.file);
   const found = module ? findType(module.program, query.span) : undefined;
-  if (!module || !found) return { shape: undefined, missing: [], files: new Set([query.file]) };
+  if (!module || !found) {
+    return { shape: undefined, missing: [], files: new Set([query.file]) };
+  }
   const resolution = new Resolution(modules, module, follow);
   const root = resolution.convert(found.type, {
     module,
@@ -175,19 +177,31 @@ class Resolution {
   shape(root: number): TypeShape {
     const reachable = new Set<number>();
     const visit = (id: number | undefined): void => {
-      if (id === undefined || reachable.has(id)) return;
+      if (id === undefined || reachable.has(id)) {
+        return;
+      }
       reachable.add(id);
       const node = this.#nodes[id]!;
-      if (node.kind === "union") node.types.forEach(visit);
-      else if (node.kind === "array") visit(node.element);
-      else if (node.kind === "tuple") for (const element of node.elements) visit(element.type);
-      else if (node.kind === "object") {
-        for (const member of node.members) visit(member.type);
+      if (node.kind === "union") {
+        node.types.forEach(visit);
+      } else if (node.kind === "array") {
+        visit(node.element);
+      } else if (node.kind === "tuple") {
+        for (const element of node.elements) {
+          visit(element.type);
+        }
+      } else if (node.kind === "object") {
+        for (const member of node.members) {
+          visit(member.type);
+        }
         // A cycle prints the arguments: `Tree<string>`.
         node.typeArguments?.forEach(visit);
-      } else if (node.kind === "typeParameter") visit(node.constraint);
-      else if (node.kind === "function") {
-        for (const parameter of node.parameters) visit(parameter.type);
+      } else if (node.kind === "typeParameter") {
+        visit(node.constraint);
+      } else if (node.kind === "function") {
+        for (const parameter of node.parameters) {
+          visit(parameter.type);
+        }
         visit(node.returns);
       }
     };
@@ -205,12 +219,16 @@ class Resolution {
 
   /** Runs the merges, so every object holds its members. */
   finish(): void {
-    for (const id of this.#merges.keys()) this.#merge(id);
+    for (const id of this.#merges.keys()) {
+      this.#merge(id);
+    }
   }
 
   #merge(id: number): void {
     const merge = this.#merges.get(id);
-    if (!merge || this.#merged.has(id)) return;
+    if (!merge || this.#merged.has(id)) {
+      return;
+    }
     this.#merged.set(id, "merging");
     const node = this.#nodes[id] as ObjectNode;
     const members = [...node.members];
@@ -221,27 +239,36 @@ class Resolution {
         continue;
       }
       this.#merge(part.id);
-      if (this.#open.has(part.id)) this.#open.add(id);
+      if (this.#open.has(part.id)) {
+        this.#open.add(id);
+      }
     }
     // A computed key of unknown name may override any member another object brings in.
     const open = this.#open.has(id);
     for (const part of merge.parts) {
-      if (this.#merged.get(part.id) !== "done" && this.#merges.has(part.id)) continue;
+      if (this.#merged.get(part.id) !== "done" && this.#merges.has(part.id)) {
+        continue;
+      }
       // What the part lost, the object that takes its members loses too.
       for (const carriers of this.#carriers) {
-        if (carriers.includes(part.id) && !carriers.includes(id)) carriers.push(id);
+        if (carriers.includes(part.id) && !carriers.includes(id)) {
+          carriers.push(id);
+        }
       }
       for (const written of (this.#nodes[part.id] as ObjectNode).members) {
         // A utility maps its part's members, and has none of its own.
         const member = merge.utility ? this.#mapped(merge.utility, written) : written;
-        if (!member) continue;
+        if (!member) {
+          continue;
+        }
         const index = members.findIndex((other) => other.name === member.name);
         const first = members[index];
         // An interface's own member wins over its base's, and the first base over a later one.
         if (!first) {
           members.push(open ? { ...member, type: this.#kept(member, "unsupported") } : member);
-        } else if (merge.kind === "extends" || open) continue;
-        else if (!this.#same(first.type, member.type)) {
+        } else if (merge.kind === "extends" || open) {
+          continue;
+        } else if (!this.#same(first.type, member.type)) {
           // TypeScript intersects the two types; the member's type is kept as written.
           members[index] = { ...first, type: this.#kept(first, "conflict") };
         } else {
@@ -267,8 +294,9 @@ class Resolution {
       // A key the object lacks is an error (TS2344), so what `Pick` gives is not known.
       const missing =
         name === "Pick" && [...keys].some((key) => !members.some((m) => m.name === key));
-      if (numeric || missing)
+      if (numeric || missing) {
         this.#unsupported(`utility:${name}`, part.use.module, part.use.node, id);
+      }
     }
     node.members = members;
     this.#merged.set(id, "done");
@@ -304,13 +332,19 @@ class Resolution {
       const type = this.#nodes[id]!;
       return type.kind === "typeParameter" || (type.kind === "primitive" && type.name === "void");
     });
-    if (unknown) return this.#kept(member, "unsupported");
+    if (unknown) {
+      return this.#kept(member, "unsupported");
+    }
     const defined = types.filter((id) => {
       const type = this.#nodes[id]!;
       return !(type.kind === "primitive" && type.name === "undefined");
     });
-    if (defined.length === types.length) return member.type;
-    if (!defined.length) return this.#intern({ kind: "primitive", name: "never" });
+    if (defined.length === types.length) {
+      return member.type;
+    }
+    if (!defined.length) {
+      return this.#intern({ kind: "primitive", name: "never" });
+    }
     return defined.length === 1 ? defined[0]! : this.#intern({ kind: "union", types: defined });
   }
 
@@ -325,11 +359,17 @@ class Resolution {
     const known = new Map<string, boolean>();
     const lossy = new Set(this.#carriers.flat());
     const same = (x: number, y: number): boolean => {
-      if (x === y) return true;
+      if (x === y) {
+        return true;
+      }
       const key = `${x}:${y}`;
       const cached = known.get(key);
-      if (cached !== undefined) return cached;
-      if (known.size >= PAIRS) return false;
+      if (cached !== undefined) {
+        return cached;
+      }
+      if (known.size >= PAIRS) {
+        return false;
+      }
       known.set(key, false);
       const result = compare(x, y);
       known.set(key, result);
@@ -354,16 +394,21 @@ class Resolution {
     const prints = new Map<number, string>();
     const fingerprint = (id: number, depth = 3): string => {
       const cached = depth === 3 ? prints.get(id) : undefined;
-      if (cached !== undefined) return cached;
+      if (cached !== undefined) {
+        return cached;
+      }
       const node = this.#nodes[id]!;
       const inner = (child: number) => fingerprint(child, depth - 1);
       let text: string;
-      if (scalar(id)) text = `#${id}`;
-      else if (depth === 0) text = node.kind;
-      else if (node.kind === "union") {
+      if (scalar(id)) {
+        text = `#${id}`;
+      } else if (depth === 0) {
+        text = node.kind;
+      } else if (node.kind === "union") {
         text = `|${[...new Set(node.types.map(inner))].toSorted().join(",")}`;
-      } else if (node.kind === "array") text = `[${node.readonly}]${inner(node.element)}`;
-      else if (node.kind === "tuple") {
+      } else if (node.kind === "array") {
+        text = `[${node.readonly}]${inner(node.element)}`;
+      } else if (node.kind === "tuple") {
         const elements = node.elements.map((e) => `${e.optional}${e.rest}${inner(e.type)}`);
         text = `(${node.readonly}${elements.join(",")})`;
       } else if (node.kind === "function") {
@@ -375,17 +420,24 @@ class Resolution {
           .toSorted();
         text = `{${members.join(";")}}`;
       }
-      if (depth === 3) prints.set(id, text);
+      if (depth === 3) {
+        prints.set(id, text);
+      }
       return text;
     };
     const covered = (from: readonly number[], to: readonly number[]) => {
       const ids = new Set(to);
       const byPrint = new Map<string, number[]>();
       for (const u of to) {
-        if (scalar(u)) continue;
+        if (scalar(u)) {
+          continue;
+        }
         const list = byPrint.get(fingerprint(u));
-        if (list) list.push(u);
-        else byPrint.set(fingerprint(u), [u]);
+        if (list) {
+          list.push(u);
+        } else {
+          byPrint.set(fingerprint(u), [u]);
+        }
       }
       return from.every(
         (t) =>
@@ -475,7 +527,9 @@ class Resolution {
 
   convert(type: AST.TSType, scope: Scope): number {
     const keyword = KEYWORDS[type.type];
-    if (keyword) return this.#intern({ kind: "primitive", name: keyword });
+    if (keyword) {
+      return this.#intern({ kind: "primitive", name: keyword });
+    }
     switch (type.type) {
       case "TSLiteralType":
         return this.#literal(type, scope);
@@ -571,7 +625,9 @@ class Resolution {
       const id = this.convert(member, scope);
       const node = this.#nodes[id]!;
       for (const part of node.kind === "union" ? node.types : [id]) {
-        if (!types.includes(part)) types.push(part);
+        if (!types.includes(part)) {
+          types.push(part);
+        }
       }
     }
     return types.length === 1 ? types[0]! : this.#intern({ kind: "union", types });
@@ -593,7 +649,9 @@ class Resolution {
       } else {
         // What was unresolved in it, the object that lost it carries too.
         for (let index = before; index < this.#carriers.length; index++) {
-          if (!this.#carriers[index]!.includes(id)) this.#carriers[index]!.push(id);
+          if (!this.#carriers[index]!.includes(id)) {
+            this.#carriers[index]!.push(id);
+          }
         }
       }
     }
@@ -680,7 +738,9 @@ class Resolution {
     const parameter = scope.parameters.get(name);
     if (bound !== undefined || parameter) {
       // A type parameter takes no arguments (TS2315).
-      if (args) return this.#unsupported("generic", scope.module, type);
+      if (args) {
+        return this.#unsupported("generic", scope.module, type);
+      }
       return bound ?? this.#parameter(parameter!, scope);
     }
     return this.#named(scope, name, args, type);
@@ -704,7 +764,9 @@ class Resolution {
           readonly: name === "ReadonlyArray",
         });
       }
-      if (UTILITIES.has(name)) return this.#utility(name, args, scope, at);
+      if (UTILITIES.has(name)) {
+        return this.#utility(name, args, scope, at);
+      }
     }
     // A utility takes its arguments (TS2314).
     if (!args && UTILITIES.has(name) && !this.#bound(scope.module, name)) {
@@ -722,7 +784,9 @@ class Resolution {
   #utility(name: string, args: readonly AST.TSType[], scope: Scope, at: AST.TSType): number {
     const construct = `utility:${name}`;
     const keyed = name === "Pick" || name === "Omit";
-    if (args.length !== (keyed ? 2 : 1)) return this.#unsupported(construct, scope.module, at);
+    if (args.length !== (keyed ? 2 : 1)) {
+      return this.#unsupported(construct, scope.module, at);
+    }
     this.#construction.add(construct);
     const before = this.#unresolved.length;
     const part = this.convert(args[0]!, scope);
@@ -734,7 +798,9 @@ class Resolution {
       // An argument that failed is reported once, where it failed; the utility carries it.
       const id = this.#opaque(scope.module, at);
       for (let index = before; index < this.#carriers.length; index++) {
-        if (!this.#carriers[index]!.includes(id)) this.#carriers[index]!.push(id);
+        if (!this.#carriers[index]!.includes(id)) {
+          this.#carriers[index]!.push(id);
+        }
       }
       return id;
     }
@@ -751,11 +817,15 @@ class Resolution {
   /** The names a key type holds: a literal, a union of literals, or `never` for none. */
   #keys(id: number): Set<string> | undefined {
     const node = this.#nodes[id]!;
-    if (node.kind === "primitive" && node.name === "never") return new Set();
+    if (node.kind === "primitive" && node.name === "never") {
+      return new Set();
+    }
     const keys = new Set<string>();
     for (const type of node.kind === "union" ? node.types : [id]) {
       const key = this.#nodes[type]!;
-      if (key.kind !== "literal" || typeof key.value === "boolean") return undefined;
+      if (key.kind !== "literal" || typeof key.value === "boolean") {
+        return undefined;
+      }
       keys.add(String(key.value));
     }
     return keys;
@@ -768,7 +838,9 @@ class Resolution {
 
   #parameter(parameter: AST.TSTypeParameter, scope: Scope): number {
     const cached = this.#parameters.get(parameter);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+      return cached;
+    }
     const id = this.#nodes.push({ kind: "typeParameter", name: parameter.name.name }) - 1;
     this.#parameters.set(parameter, id);
     if (parameter.constraint) {
@@ -784,16 +856,22 @@ class Resolution {
    */
   #name(module: SourceModule, name: string, at: AST.TSType, args?: readonly number[]): number {
     // A class or an enum, alone or merged with an interface, is not a type this adapter reads.
-    if (module.values.has(name)) return this.#unsupported("class-or-enum", module, at);
+    if (module.values.has(name)) {
+      return this.#unsupported("class-or-enum", module, at);
+    }
     const use = { module, node: at };
     const declarations = module.declarations.get(name);
-    if (declarations) return this.#declaration(module, declarations, use, args);
+    if (declarations) {
+      return this.#declaration(module, declarations, use, args);
+    }
     const imported = module.imports.get(name);
     if (imported) {
       return this.#import(module, imported.specifier, imported.imported, use, new Set(), args);
     }
     // A generic global (`Record`, `Map`) is a type the adapter cannot evaluate.
-    if (args) return this.#unsupported("generic", module, at);
+    if (args) {
+      return this.#unsupported("generic", module, at);
+    }
     // Neither declared nor imported: a global of TypeScript's lib, which the type-checker judges.
     return this.#opaque(module, at);
   }
@@ -807,11 +885,19 @@ class Resolution {
     seen: Set<string>,
     args?: readonly number[],
   ): number {
-    if (!this.follow) return this.#report("external", use.module, use.node);
-    if (specifier.startsWith("/")) return this.#report("missing-module", use.module, use.node);
+    if (!this.follow) {
+      return this.#report("external", use.module, use.node);
+    }
+    if (specifier.startsWith("/")) {
+      return this.#report("missing-module", use.module, use.node);
+    }
     const target = this.#module(from.file, specifier);
-    if (target === undefined) return this.#opaque(use.module, use.node);
-    if (target === null) return this.#report("missing-module", use.module, use.node);
+    if (target === undefined) {
+      return this.#opaque(use.module, use.node);
+    }
+    if (target === null) {
+      return this.#report("missing-module", use.module, use.node);
+    }
     this.#construction.add("import");
     return this.#exported(target, imported, use, seen, args);
   }
@@ -825,7 +911,9 @@ class Resolution {
     args?: readonly number[],
   ): number {
     const key = `${module.file}#${name}`;
-    if (seen.has(key)) return this.#report("missing-export", use.module, use.node);
+    if (seen.has(key)) {
+      return this.#report("missing-export", use.module, use.node);
+    }
     seen.add(key);
     const entry = module.exports.get(name);
     if (entry?.kind === "reexport") {
@@ -836,7 +924,9 @@ class Resolution {
         return this.#unsupported("class-or-enum", use.module, use.node);
       }
       const declarations = module.declarations.get(entry.local);
-      if (declarations) return this.#declaration(module, declarations, use, args);
+      if (declarations) {
+        return this.#declaration(module, declarations, use, args);
+      }
       const imported = module.imports.get(entry.local);
       if (imported) {
         return this.#import(module, imported.specifier, imported.imported, use, seen, args);
@@ -845,7 +935,9 @@ class Resolution {
     }
     for (const specifier of module.starExports) {
       const target = this.#module(module.file, specifier);
-      if (target === undefined) return this.#opaque(use.module, use.node);
+      if (target === undefined) {
+        return this.#opaque(use.module, use.node);
+      }
       if (target && this.#exports(target, name, new Set())) {
         return this.#exported(target, name, use, seen, args);
       }
@@ -855,8 +947,12 @@ class Resolution {
 
   /** Whether a module exports a name, directly or through `export *`; true while it can't tell. */
   #exports(module: SourceModule, name: string, seen: Set<string>): boolean {
-    if (module.exports.has(name)) return true;
-    if (seen.has(module.file)) return false;
+    if (module.exports.has(name)) {
+      return true;
+    }
+    if (seen.has(module.file)) {
+      return false;
+    }
     seen.add(module.file);
     return module.starExports.some((specifier) => {
       const target = this.#module(module.file, specifier);
@@ -872,7 +968,9 @@ class Resolution {
   #module(importer: string, specifier: string): SourceModule | null | undefined {
     // A subpath import (`#types`) maps through `package.json`, which this adapter does not read,
     // and an absolute path is outside the root.
-    if (specifier.startsWith("#") || specifier.startsWith("/")) return null;
+    if (specifier.startsWith("#") || specifier.startsWith("/")) {
+      return null;
+    }
     if (!isRelative(specifier)) {
       const name = `${PACKAGE}${packageName(specifier)}`;
       this.#construction.add("package");
@@ -885,7 +983,9 @@ class Resolution {
         ? candidates(importer, specifier)
         : [this.modules.resolve?.(importer, specifier) ?? null];
     for (const file of files) {
-      if (file === null) return null;
+      if (file === null) {
+        return null;
+      }
       this.files.add(file);
       const module = this.modules.get(file);
       if (module === undefined) {
@@ -895,7 +995,9 @@ class Resolution {
       if (module) {
         if (file.startsWith(PACKAGE)) {
           this.#dependencies.add(packageOf(file));
-        } else if (file !== this.query.file) this.#dependencies.add(file);
+        } else if (file !== this.query.file) {
+          this.#dependencies.add(file);
+        }
         return module;
       }
     }
@@ -926,14 +1028,22 @@ class Resolution {
     }
     const ref = this.declarationRef(module, declaration);
     const bindings = this.#arguments(module, declaration, ref, args);
-    if (!bindings) return this.#unsupported("generic", use.module, use.node);
-    if (bindings.size) this.#construction.add("generic");
+    if (!bindings) {
+      return this.#unsupported("generic", use.module, use.node);
+    }
+    if (bindings.size) {
+      this.#construction.add("generic");
+    }
     const typeArguments = [...bindings.values()];
     const key = this.#key(declaration, typeArguments);
     const cached = this.#instances.get(key);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+      return cached;
+    }
     const nesting = this.#nesting.get(declaration) ?? 0;
-    if (nesting >= DEPTH) return this.#unsupported("generic", use.module, use.node);
+    if (nesting >= DEPTH) {
+      return this.#unsupported("generic", use.module, use.node);
+    }
     this.#nesting.set(declaration, nesting + 1);
     const scope: Scope = { module, parameters: new Map(), bindings, declaration: ref };
     const id = this.#instantiate(declarations, scope, typeArguments, key, use);
@@ -954,18 +1064,24 @@ class Resolution {
   ): Map<string, number> | undefined {
     const parameters = declaration.typeParameters?.params ?? [];
     const bindings = new Map<string, number>();
-    if (args.length > parameters.length) return undefined;
+    if (args.length > parameters.length) {
+      return undefined;
+    }
     if (args.length === parameters.length) {
       parameters.forEach((parameter, index) => bindings.set(parameter.name.name, args[index]!));
       return bindings;
     }
     // A default that needs its own declaration's defaults is an error (TS2744).
-    if (this.#defaulting.has(declaration)) return undefined;
+    if (this.#defaulting.has(declaration)) {
+      return undefined;
+    }
     this.#defaulting.add(declaration);
     const scope: Scope = { module, parameters: new Map(), bindings, declaration: ref };
     for (const [index, parameter] of parameters.entries()) {
       const arg = args[index];
-      if (arg === undefined && !parameter.default) break;
+      if (arg === undefined && !parameter.default) {
+        break;
+      }
       bindings.set(parameter.name.name, arg ?? this.convert(parameter.default!, scope));
     }
     this.#defaulting.delete(declaration);
@@ -1017,7 +1133,9 @@ class Resolution {
       const node = this.#nodes[id]!;
       if (id >= start && node.kind === "object" && !node.declaration) {
         node.declaration = ref;
-        if (typeArguments.length) node.typeArguments = typeArguments;
+        if (typeArguments.length) {
+          node.typeArguments = typeArguments;
+        }
       }
       this.#instances.set(key, id);
       return id;
@@ -1038,7 +1156,9 @@ class Resolution {
         parts.push({ id: base, use: { module, node: heritage as unknown as AST.TSType } });
       }
     }
-    if (parts.length) this.#merges.set(id, { kind: "extends", parts });
+    if (parts.length) {
+      this.#merges.set(id, { kind: "extends", parts });
+    }
     return id;
   }
 
@@ -1060,12 +1180,16 @@ class Resolution {
     }
     const before = this.#unresolved.length;
     const id = this.#named(scope, expression.name, heritage.typeArguments?.params, at);
-    if (this.#nodes[id]!.kind === "object") return id;
+    if (this.#nodes[id]!.kind === "object") {
+      return id;
+    }
     if (this.#unresolved.length === before && !this.missing.size) {
       this.#report("unsupported", scope.module, at, owner);
     }
     for (let index = before; index < this.#carriers.length; index++) {
-      if (!this.#carriers[index]!.includes(owner)) this.#carriers[index]!.push(owner);
+      if (!this.#carriers[index]!.includes(owner)) {
+        this.#carriers[index]!.push(owner);
+      }
     }
     return undefined;
   }
@@ -1086,10 +1210,14 @@ class Resolution {
       const first = members[index];
       if (!first) {
         members.push(member);
-        if (method) methods.set(member.name, at);
+        if (method) {
+          methods.set(member.name, at);
+        }
         return;
       }
-      if (written.has(member.name)) return;
+      if (written.has(member.name)) {
+        return;
+      }
       written.add(member.name);
       const overloaded = methods.get(member.name);
       if (method && overloaded) {
@@ -1138,8 +1266,11 @@ class Resolution {
           // Opaque whichever signature of the name comes first, an overload's included.
           const type = this.#unsupported(construct, scope.module, at);
           const index = members.findIndex((member) => member.name === name);
-          if (index === -1) members.push({ ...common, readonly: false, type, references: [] });
-          else if (!written.has(name)) members[index] = { ...members[index]!, type };
+          if (index === -1) {
+            members.push({ ...common, readonly: false, type, references: [] });
+          } else if (!written.has(name)) {
+            members[index] = { ...members[index]!, type };
+          }
           written.add(name);
           continue;
         }
@@ -1180,7 +1311,9 @@ class Resolution {
   #intern(node: TypeNode): number {
     const key = JSON.stringify(node);
     const cached = this.#interned.get(key);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+      return cached;
+    }
     const id = this.#nodes.push(node) - 1;
     this.#interned.set(key, id);
     return id;
@@ -1230,7 +1363,9 @@ function withoutName(element: TupleElement): TupleElement {
 
 /** A member key's name: an identifier, a string literal (`"aria-label"`) or a number. */
 function memberName(key: AST.PropertyKey): string | undefined {
-  if (key.type === "Identifier") return key.name;
+  if (key.type === "Identifier") {
+    return key.name;
+  }
   if (key.type === "Literal" && (typeof key.value === "string" || typeof key.value === "number")) {
     return String(key.value);
   }
@@ -1242,18 +1377,28 @@ function references(nodes: readonly unknown[]): string[] {
   const names: string[] = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
-    if (!value || typeof value !== "object") return;
+    if (!value || typeof value !== "object") {
+      return;
+    }
     const node = value as { type?: unknown; typeName?: AST.TSTypeName };
     if (node.type === "TSTypeReference" && node.typeName) {
       let name: AST.TSTypeName = node.typeName;
-      while (name.type === "TSQualifiedName") name = name.left;
-      if (name.type === "Identifier" && !names.includes(name.name)) names.push(name.name);
+      while (name.type === "TSQualifiedName") {
+        name = name.left;
+      }
+      if (name.type === "Identifier" && !names.includes(name.name)) {
+        names.push(name.name);
+      }
     }
     for (const [key, child] of Object.entries(value)) {
-      if (key !== "type" && typeof child === "object") visit(child);
+      if (key !== "type" && typeof child === "object") {
+        visit(child);
+      }
     }
   };
   visit(nodes);
@@ -1274,14 +1419,20 @@ function findType(program: AST.Program, span: Span): Found | undefined {
   const ancestors: object[] = [];
   let found: AST.TSType | undefined;
   const visit = (value: unknown): void => {
-    if (found || !value || typeof value !== "object") return;
+    if (found || !value || typeof value !== "object") {
+      return;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
     const node = value as { type?: unknown; start?: number; end?: number };
     if (typeof node.start === "number" && typeof node.end === "number") {
-      if (node.end < span.start || node.start > span.end) return;
+      if (node.end < span.start || node.start > span.end) {
+        return;
+      }
       if (
         node.start === span.start &&
         node.end === span.end &&
@@ -1295,12 +1446,18 @@ function findType(program: AST.Program, span: Span): Found | undefined {
     }
     ancestors.push(node);
     for (const [key, child] of Object.entries(node)) {
-      if (key !== "type" && typeof child === "object") visit(child);
+      if (key !== "type" && typeof child === "object") {
+        visit(child);
+      }
     }
-    if (!found) ancestors.pop();
+    if (!found) {
+      ancestors.pop();
+    }
   };
   visit(program);
-  if (!found) return undefined;
+  if (!found) {
+    return undefined;
+  }
   const parameters = new Map<string, AST.TSTypeParameter>();
   let declaration: Declaration | undefined;
   for (const ancestor of ancestors) {

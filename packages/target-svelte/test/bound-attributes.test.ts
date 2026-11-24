@@ -57,14 +57,21 @@ function candidates(): Candidate[] {
       found.set(key, { key, tag, name, kind, svg });
     }
   };
-  for (const name of [...GLOBAL_ATTRIBUTES, ...ARIA_ATTRIBUTES, "data-x"]) add("div", name);
-  for (const tag of HTML_ELEMENTS) {
-    for (const name of ELEMENT_ATTRIBUTES.get(tag) ?? []) add(tag, name);
+  for (const name of [...GLOBAL_ATTRIBUTES, ...ARIA_ATTRIBUTES, "data-x"]) {
+    add("div", name);
   }
-  for (const name of [...SVG_GLOBAL_ATTRIBUTES, ...SVG_PRESENTATION_ATTRIBUTES])
+  for (const tag of HTML_ELEMENTS) {
+    for (const name of ELEMENT_ATTRIBUTES.get(tag) ?? []) {
+      add(tag, name);
+    }
+  }
+  for (const name of [...SVG_GLOBAL_ATTRIBUTES, ...SVG_PRESENTATION_ATTRIBUTES]) {
     add("g", name, true);
+  }
   for (const tag of SVG_ELEMENTS) {
-    for (const name of SVG_ELEMENT_ATTRIBUTES.get(tag) ?? []) add(tag, name, true);
+    for (const name of SVG_ELEMENT_ATTRIBUTES.get(tag) ?? []) {
+      add(tag, name, true);
+    }
   }
   return [...found.values()];
 }
@@ -73,7 +80,9 @@ function candidates(): Candidate[] {
 function markup({ tag, name, svg }: Candidate): string {
   let source =
     isVoidElement(tag) || svg ? `<${tag} ${name}={v} />` : `<${tag} ${name}={v}></${tag}>`;
-  if (svg) return tag === "svg" ? source : `<svg>${source}</svg>`;
+  if (svg) {
+    return tag === "svg" ? source : `<svg>${source}</svg>`;
+  }
   for (let child = tag, parents = REQUIRED_PARENTS.get(child); parents;) {
     child = [...parents][0]!;
     source = `<${child}>${source}</${child}>`;
@@ -158,7 +167,9 @@ describe("svelte attribute types", () => {
       const checked = new Map<string, string>();
       for (const component of module!.components) {
         const index = Number(component.name.slice(1));
-        if (rejected.has(index)) continue;
+        if (rejected.has(index)) {
+          continue;
+        }
         const context = { module: module!, options: undefined, report: () => {} };
         for (const file of target.emit(component, context)) {
           const path = join(outputs, file.path);

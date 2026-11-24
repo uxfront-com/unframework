@@ -232,7 +232,9 @@ describe("ufInput", () => {
         keyboard: {
           down: async (key: string) => {
             // Playwright's refusal, as its client rethrows it.
-            if (unknown.includes(key)) throw new Error(`keyboard.down: Unknown key: "${key}"`);
+            if (unknown.includes(key)) {
+              throw new Error(`keyboard.down: Unknown key: "${key}"`);
+            }
             calls.push(`keydown ${key}`);
           },
           up: async (key: string) => void calls.push(`keyup ${key}`),

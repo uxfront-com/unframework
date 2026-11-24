@@ -103,7 +103,9 @@ function compileFile(compiler: SolidCompiler, file: ToolchainFile): FrameworkCom
  * which becomes the message's position.
  */
 function fromCompilerError(error: unknown): ToolchainMessage {
-  if (!(error instanceof Error)) return { message: String(error) };
+  if (!(error instanceof Error)) {
+    return { message: String(error) };
+  }
   const [first = error.message, ...rest] = error.message.split("\n");
   const at = /\s\((\d+):(\d+)\)$/.exec(first);
   const message = [at ? first.slice(0, at.index) : first, ...rest].join("\n").trim();

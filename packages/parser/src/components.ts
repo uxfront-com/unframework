@@ -56,7 +56,9 @@ export function findComponents(program: Program): ComponentDeclaration[] {
     ) {
       declaration = statement.declaration;
       const name = declaration.id?.name;
-      if (name) direct = { kind: "named", name, span };
+      if (name) {
+        direct = { kind: "named", name, span };
+      }
     } else if (
       statement.type === "ExportDefaultDeclaration" &&
       statement.declaration.type === "FunctionDeclaration"
@@ -69,7 +71,9 @@ export function findComponents(program: Program): ComponentDeclaration[] {
       statement.exportKind !== "type"
     ) {
       for (const specifier of statement.specifiers) {
-        if (specifier.local.type !== "Identifier" || specifier.exportKind === "type") continue;
+        if (specifier.local.type !== "Identifier" || specifier.exportKind === "type") {
+          continue;
+        }
         const exported = exportName(specifier.exported);
         addExport(specifier.local.name, {
           kind: exported === "default" ? "default" : "named",

@@ -11,7 +11,9 @@ async function outputs(source: string, file: string): Promise<Record<string, str
   const entries = await Promise.all(
     emitSource(source, file).map(async (output) => {
       const { file: formatted, error } = await formatOutput(output);
-      if (error) throw new Error(error);
+      if (error) {
+        throw new Error(error);
+      }
       return [output.path, formatted.contents] as const;
     }),
   );

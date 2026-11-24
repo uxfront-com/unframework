@@ -96,7 +96,9 @@ export default function Internals({ label, items, cache = 1, openBlock = false }
 describe("vue output shapes (L3, L4, L5)", { timeout: 60_000 }, () => {
   it("compile, type-check and lint clean", async () => {
     const emitted: Record<string, string> = {};
-    for (const [name, source] of Object.entries(SHAPES)) emitted[name] = await emitSource(source);
+    for (const [name, source] of Object.entries(SHAPES)) {
+      emitted[name] = await emitSource(source);
+    }
     const paths = writeScratch(emitted);
     const files = Object.entries(paths).map(([name, path]) => ({ path, contents: emitted[name]! }));
     const [compiled, typed, linted] = await Promise.all([

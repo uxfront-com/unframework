@@ -26,7 +26,9 @@ export function typeParameterDeclaration(
   component: UfComponent,
   placeholders: Placeholders,
 ): TypeParameterDeclaration | null {
-  if (!component.typeParameters?.length) return null;
+  if (!component.typeParameters?.length) {
+    return null;
+  }
   return {
     type: "TSTypeParameterDeclaration",
     params: component.typeParameters.map((parameter) => ({
@@ -89,7 +91,9 @@ export function genericModelType(component: UfComponent, binding: BindingId): st
   const item = component.setup.find(
     (each) => (each.kind === "Model" || each.kind === "State") && each.binding === binding,
   );
-  if ((item?.kind !== "Model" && item?.kind !== "State") || !item.type) return undefined;
+  if ((item?.kind !== "Model" && item?.kind !== "State") || !item.type) {
+    return undefined;
+  }
   return readsTypeParameter(component, typeNames(item.type)) ? item.type.code : undefined;
 }
 
@@ -104,17 +108,27 @@ export function genericModelType(component: UfComponent, binding: BindingId): st
  */
 export function typedByParameters(component: UfComponent): Set<BindingId> {
   const found = new Set<BindingId>();
-  if (!component.typeParameters?.length) return found;
+  if (!component.typeParameters?.length) {
+    return found;
+  }
   for (const item of component.setup) {
     if (item.kind === "Const") {
       const names = codeNames(item.value.code);
-      if (item.type) for (const name of typeNames(item.type)) names.add(name);
-      if (readsTypeParameter(component, names)) found.add(item.binding);
+      if (item.type) {
+        for (const name of typeNames(item.type)) {
+          names.add(name);
+        }
+      }
+      if (readsTypeParameter(component, names)) {
+        found.add(item.binding);
+      }
     } else if (item.kind === "Function") {
       const named = functionTypeNames(component, item.function);
       const inferred = parameterTypeNames(item.function);
       const parameters = component.typeParameters.filter(({ name }) => named.has(name));
-      if (parameters.some(({ name }) => !inferred.has(name))) found.add(item.binding);
+      if (parameters.some(({ name }) => !inferred.has(name))) {
+        found.add(item.binding);
+      }
     }
   }
   return found;
@@ -136,8 +150,14 @@ export function moduleTypeParameters(
 /** Every name a function's parameter types, return type and body read. */
 function functionTypeNames(component: UfComponent, fn: FunctionCode): Set<string> {
   const names = parameterTypeNames(fn);
-  if (fn.returnType) for (const name of typeNames(fn.returnType)) names.add(name);
-  for (const name of codeNames(fn.body.code, codeKind(fn.body, component))) names.add(name);
+  if (fn.returnType) {
+    for (const name of typeNames(fn.returnType)) {
+      names.add(name);
+    }
+  }
+  for (const name of codeNames(fn.body.code, codeKind(fn.body, component))) {
+    names.add(name);
+  }
   return names;
 }
 
@@ -145,7 +165,11 @@ function functionTypeNames(component: UfComponent, fn: FunctionCode): Set<string
 function parameterTypeNames(fn: FunctionCode): Set<string> {
   const names = new Set<string>();
   for (const parameter of fn.parameters) {
-    if (parameter.type) for (const name of typeNames(parameter.type)) names.add(name);
+    if (parameter.type) {
+      for (const name of typeNames(parameter.type)) {
+        names.add(name);
+      }
+    }
   }
   return names;
 }
@@ -162,9 +186,15 @@ function namedParameters(component: UfComponent, read: Set<string>): TypeParamet
   for (let size = -1; size !== names.size;) {
     size = names.size;
     for (const parameter of parameters) {
-      if (!names.has(parameter.name)) continue;
+      if (!names.has(parameter.name)) {
+        continue;
+      }
       for (const text of [parameter.constraint, parameter.default]) {
-        if (text) for (const each of typeNames(text)) names.add(each);
+        if (text) {
+          for (const each of typeNames(text)) {
+            names.add(each);
+          }
+        }
       }
     }
   }
@@ -173,7 +203,9 @@ function namedParameters(component: UfComponent, read: Set<string>): TypeParamet
 
 /** `<T extends Item = Item>`, or `""`; `<T,>` for an arrow, which TSX would read as a tag. */
 function parametersText(parameters: readonly TypeParameter[], arrow = false): string {
-  if (!parameters.length) return "";
+  if (!parameters.length) {
+    return "";
+  }
   const [only] = parameters;
   const lone = arrow && parameters.length === 1 && !only!.constraint && !only!.default;
   return `<${parameters.map(parameterText).join(", ")}${lone ? "," : ""}>`;

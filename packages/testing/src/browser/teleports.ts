@@ -63,7 +63,9 @@ export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
       }
       owners.set(element, owner);
     }
-    if (owners.get(element) === owner) found.push(element);
+    if (owners.get(element) === owner) {
+      found.push(element);
+    }
   }
   return found;
 }
@@ -74,11 +76,15 @@ export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
  */
 export function withoutStamps<T>(elements: readonly Element[], stamp: string, read: () => T): T {
   const stamped = elements.filter((element) => element.getAttribute("data-testid") === stamp);
-  for (const element of stamped) element.removeAttribute("data-testid");
+  for (const element of stamped) {
+    element.removeAttribute("data-testid");
+  }
   try {
     return read();
   } finally {
-    for (const element of stamped) element.setAttribute("data-testid", stamp);
+    for (const element of stamped) {
+      element.setAttribute("data-testid", stamp);
+    }
   }
 }
 

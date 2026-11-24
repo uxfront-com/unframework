@@ -75,7 +75,9 @@ describe("typecheck (L4, tsgo)", () => {
     expect(results.get(template)).toEqual([
       { message: "Cannot find name 'greet'.", line: 4, column: 14, code: "TS2304" },
     ]);
-    for (const golden of goldens) expect(results.get(golden)).toEqual([]);
+    for (const golden of goldens) {
+      expect(results.get(golden)).toEqual([]);
+    }
     expect(results.size).toBe(goldens.length + 6);
   }, 60_000);
 

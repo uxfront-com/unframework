@@ -77,16 +77,24 @@ const packageOf = (module: string) =>
 async function realDirectory(directory: string): Promise<string> {
   for (let at = directory; ; at = dirname(at)) {
     const real = await realpath(at).catch(() => undefined);
-    if (real !== undefined) return join(real, relative(at, directory));
-    if (dirname(at) === at) return directory;
+    if (real !== undefined) {
+      return join(real, relative(at, directory));
+    }
+    if (dirname(at) === at) {
+      return directory;
+    }
   }
 }
 
 /** Whether a package is in the `node_modules` of a directory or of one of its parents. */
 function isInstalled(directory: string, name: string): boolean {
   for (let at = directory; ; at = dirname(at)) {
-    if (existsSync(join(at, "node_modules", name))) return true;
-    if (dirname(at) === at) return false;
+    if (existsSync(join(at, "node_modules", name))) {
+      return true;
+    }
+    if (dirname(at) === at) {
+      return false;
+    }
   }
 }
 
@@ -163,7 +171,9 @@ function manifest(
   const ranges = new Map<string, string[]>();
   for (const { name, range } of packagers.flatMap(([, { peer }]) => peer)) {
     const each = ranges.get(name) ?? [];
-    if (!each.includes(range)) each.push(range);
+    if (!each.includes(range)) {
+      each.push(range);
+    }
     ranges.set(name, each);
   }
   const peers = [...ranges].map(([name, each]) => ({ name, range: each.join(" || ") }));

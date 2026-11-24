@@ -186,7 +186,9 @@ describe("unframework preview build", () => {
     const written = filesUnder(out);
     expect(written).toContain("index.html");
     expect(written).toContain(PREVIEW_MARKER);
-    for (const target of TARGETS) expect(written).toContain(join(target, "frame.html"));
+    for (const target of TARGETS) {
+      expect(written).toContain(join(target, "frame.html"));
+    }
     expect(written).toContain(EMBED_FILE);
     expect(written.filter((file) => file.startsWith(join("astro", "renders")))).toHaveLength(
       EXAMPLES.length + 4,
@@ -201,7 +203,9 @@ describe("unframework preview build", () => {
       for (const path of [REPOSITORY, homedir(), tmpdir(), realpathSync(tmpdir())]) {
         expect(text.includes(path), `${file} holds ${path}`).toBe(false);
       }
-      if (file.endsWith(".html")) expect(text, file).not.toMatch(/\b(?:src|href)="\/(?!\/)/);
+      if (file.endsWith(".html")) {
+        expect(text, file).not.toMatch(/\b(?:src|href)="\/(?!\/)/);
+      }
     }
   });
 

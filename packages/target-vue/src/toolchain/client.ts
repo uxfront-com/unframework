@@ -30,7 +30,9 @@ export const mount: MountAdapter = async (component, container, { props, on }) =
     },
     async rerender(next) {
       for (const key of Object.keys(current)) {
-        if (!Object.hasOwn(next, key)) Reflect.deleteProperty(current, key);
+        if (!Object.hasOwn(next, key)) {
+          Reflect.deleteProperty(current, key);
+        }
       }
       Object.assign(current, next);
       await nextTick();

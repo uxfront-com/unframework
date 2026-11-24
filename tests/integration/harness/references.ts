@@ -30,8 +30,11 @@ export function referencePasses(
   const args: string[] = [];
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]!;
-    if (arg === "--project" || arg === "-p") index += 1;
-    else if (!arg.startsWith("--project=") && !arg.startsWith("-p=")) args.push(arg);
+    if (arg === "--project" || arg === "-p") {
+      index += 1;
+    } else if (!arg.startsWith("--project=") && !arg.startsWith("-p=")) {
+      args.push(arg);
+    }
   }
   const targets = new Set(cases.flatMap(({ config }) => config.reference ?? []));
   return [...targets].sort().map((target) => ({ target, args: [...args] }));

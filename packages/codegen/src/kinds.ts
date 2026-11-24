@@ -144,8 +144,12 @@ export function isPrimitiveState(
   module: UfModule,
 ): boolean {
   const kinds = new Kinds(component, module);
-  if (item.type) return kinds.type(item.type.code);
-  if (!item.initial) return true;
+  if (item.type) {
+    return kinds.type(item.type.code);
+  }
+  if (!item.initial) {
+    return true;
+  }
   return kinds.code(item.initial);
 }
 
@@ -178,7 +182,9 @@ class Kinds {
   }
 
   #typeNode(node: Node): boolean {
-    if (PRIMITIVE_TYPES.has(node.type)) return true;
+    if (PRIMITIVE_TYPES.has(node.type)) {
+      return true;
+    }
     switch (node.type) {
       case "TSUnionType":
         return (node["types"] as Node[]).every((each) => this.#typeNode(each));
@@ -186,7 +192,9 @@ class Kinds {
         return this.#typeNode(node["typeAnnotation"] as Node);
       case "TSTypeReference": {
         const name = node["typeName"] as Node;
-        if (name.type !== "Identifier" || node["typeArguments"]) return false;
+        if (name.type !== "Identifier" || node["typeArguments"]) {
+          return false;
+        }
         return this.#alias(name["name"] as string);
       }
       default:
@@ -199,9 +207,13 @@ class Kinds {
     const declaration = this.#foreign
       ? undefined
       : this.#module.types.find((each) => each.name === name);
-    if (!declaration || this.#reading.has(name)) return false;
+    if (!declaration || this.#reading.has(name)) {
+      return false;
+    }
     const alias = /^type\s+[A-Za-z_$][\w$]*\s*=\s*([\s\S]*?);?\s*$/.exec(declaration.code);
-    if (!alias) return false;
+    if (!alias) {
+      return false;
+    }
     this.#reading.add(name);
     try {
       return this.type(alias[1]!);
@@ -276,10 +288,14 @@ class Kinds {
     const callee = node["callee"] as Node;
     const binding = this.#bindingAt(callee, code);
     if (binding === undefined) {
-      if (callee.type === "MemberExpression") return this.#method(callee, code);
+      if (callee.type === "MemberExpression") {
+        return this.#method(callee, code);
+      }
       return PRIMITIVE_FUNCTIONS.has(this.#global(callee, code) ?? "");
     }
-    if (binding.kind !== "localFn") return false;
+    if (binding.kind !== "localFn") {
+      return false;
+    }
     const item = this.#component.setup.find(
       (each): each is FunctionItem => each.kind === "Function" && each.binding === binding.id,
     );
@@ -289,10 +305,16 @@ class Kinds {
   /** A method call's callee (`label.trim`, `Math.round`): whether the call gives a primitive. */
   #method(callee: Node, code: Code): boolean {
     const name = memberName(callee);
-    if (name === undefined) return false;
+    if (name === undefined) {
+      return false;
+    }
     const object = callee["object"] as Node;
-    if (this.#globalMember(object, name, code)) return true;
-    if (PRIMITIVE_METHODS.has(name)) return true;
+    if (this.#globalMember(object, name, code)) {
+      return true;
+    }
+    if (PRIMITIVE_METHODS.has(name)) {
+      return true;
+    }
     return PRIMITIVE_RECEIVER_METHODS.has(name) && this.#expression(object, code);
   }
 
@@ -302,7 +324,9 @@ class Kinds {
    */
   #member(node: Node, code: Code): boolean {
     const name = memberName(node);
-    if (name === undefined) return false;
+    if (name === undefined) {
+      return false;
+    }
     return name === "length" || this.#globalMember(node["object"] as Node, name, code);
   }
 
@@ -314,7 +338,9 @@ class Kinds {
 
   /** The name of the global an identifier reads, if it reads one. */
   #global(node: Node, code: Code): string | undefined {
-    if (node.type !== "Identifier") return undefined;
+    if (node.type !== "Identifier") {
+      return undefined;
+    }
     const [start, end] = span(node);
     const reference = code.refs.find(
       (each) =>
@@ -331,10 +357,18 @@ class Kinds {
    * statements gives.
    */
   #returns(fn: FunctionCode, getter = false): boolean {
-    if (fn.async) return false;
-    if (fn.returnType) return this.type(fn.returnType.code);
-    if (!getter) return false;
-    if (fn.expression) return this.code(fn.body);
+    if (fn.async) {
+      return false;
+    }
+    if (fn.returnType) {
+      return this.type(fn.returnType.code);
+    }
+    if (!getter) {
+      return false;
+    }
+    if (fn.expression) {
+      return this.code(fn.body);
+    }
     let statements;
     try {
       ({ statements } = parseStatementsSource(fn.body.code));
@@ -354,10 +388,16 @@ class Kinds {
    * primitive global (`NaN`); or a member read that is no binding's (`items.value.length`).
    */
   #reference(node: Node, code: Code): boolean {
-    if (node.type === "Identifier" && node["name"] === "undefined") return true;
+    if (node.type === "Identifier" && node["name"] === "undefined") {
+      return true;
+    }
     const binding = this.#bindingAt(node, code);
-    if (binding !== undefined) return this.#binding(binding);
-    if (node.type === "MemberExpression") return this.#member(node, code);
+    if (binding !== undefined) {
+      return this.#binding(binding);
+    }
+    if (node.type === "MemberExpression") {
+      return this.#member(node, code);
+    }
     return PRIMITIVE_GLOBALS.has(this.#global(node, code) ?? "");
   }
 
@@ -370,21 +410,29 @@ class Kinds {
         each.span.start - code.span.start === start &&
         each.span.end - code.span.start === end,
     );
-    if (reference?.kind !== "Binding") return undefined;
+    if (reference?.kind !== "Binding") {
+      return undefined;
+    }
     return this.#component.bindings.find(({ id }) => id === reference.binding);
   }
 
   #binding(binding: Binding): boolean {
-    if (this.#reading.has(binding.id)) return false;
+    if (this.#reading.has(binding.id)) {
+      return false;
+    }
     this.#reading.add(binding.id);
     try {
       switch (binding.kind) {
         case "prop": {
           const prop = this.#component.props.find((each) => each.binding === binding.id);
-          if (prop === undefined) return false;
+          if (prop === undefined) {
+            return false;
+          }
           // A member another file declares is written in that file's names (ADR-0067): none of
           // the module's own aliases is the one it names.
-          if (!prop.declaredBy) return this.type(prop.type.code);
+          if (!prop.declaredBy) {
+            return this.type(prop.type.code);
+          }
           this.#foreign = true;
           try {
             return this.type(prop.type.code);
@@ -396,16 +444,24 @@ class Kinds {
           const item = this.#component.setup.find(
             (each): each is StateItem => each.kind === "State" && each.binding === binding.id,
           );
-          if (!item) return false;
-          if (item.type) return this.type(item.type.code);
+          if (!item) {
+            return false;
+          }
+          if (item.type) {
+            return this.type(item.type.code);
+          }
           return item.initial === undefined || this.code(item.initial);
         }
         case "localConst": {
           const item = this.#component.setup.find(
             (each) => (each.kind === "Const" || each.kind === "Id") && each.binding === binding.id,
           );
-          if (item?.kind === "Id") return true;
-          if (item?.kind !== "Const") return false;
+          if (item?.kind === "Id") {
+            return true;
+          }
+          if (item?.kind !== "Const") {
+            return false;
+          }
           return item.type ? this.type(item.type.code) : this.code(item.value);
         }
         // An awaited value's type is its annotation's, or what the promise resolves to, which
@@ -420,7 +476,9 @@ class Kinds {
           const item = this.#component.setup.find(
             (each): each is DerivedItem => each.kind === "Derived" && each.binding === binding.id,
           );
-          if (!item) return false;
+          if (!item) {
+            return false;
+          }
           return item.type ? this.type(item.type.code) : this.#returns(item.getter, true);
         }
         case "loopVar":
@@ -456,7 +514,9 @@ class Kinds {
 
 /** A member expression's property name, when it is written `object.name` (or `object?.name`). */
 function memberName(node: Node): string | undefined {
-  if (node["computed"]) return undefined;
+  if (node["computed"]) {
+    return undefined;
+  }
   const property = node["property"] as Node;
   return property.type === "Identifier" ? (property["name"] as string) : undefined;
 }
@@ -467,18 +527,26 @@ function memberName(node: Node): string | undefined {
  */
 function collectReturns(root: unknown, returned: (Node | null)[]): void {
   if (Array.isArray(root)) {
-    for (const each of root) collectReturns(each, returned);
+    for (const each of root) {
+      collectReturns(each, returned);
+    }
     return;
   }
-  if (typeof root !== "object" || root === null || typeof (root as Node).type !== "string") return;
+  if (typeof root !== "object" || root === null || typeof (root as Node).type !== "string") {
+    return;
+  }
   const node = root as Node;
-  if (FUNCTION_TYPES.has(node.type)) return;
+  if (FUNCTION_TYPES.has(node.type)) {
+    return;
+  }
   if (node.type === "ReturnStatement") {
     returned.push((node["argument"] as Node | null) ?? null);
     return;
   }
   for (const [key, value] of Object.entries(node)) {
-    if (key !== "type" && typeof value === "object") collectReturns(value, returned);
+    if (key !== "type" && typeof value === "object") {
+      collectReturns(value, returned);
+    }
   }
 }
 

@@ -54,7 +54,9 @@ interface ServerConfig {
  * says why.
  */
 async function serverConfig(vite: ProjectVite, context: ViteContext): Promise<ServerConfig> {
-  if (!vite) return { plugins: [], rest: {} };
+  if (!vite) {
+    return { plugins: [], rest: {} };
+  }
   let made: unknown;
   try {
     made = await vite(context);
@@ -125,7 +127,9 @@ async function flattenPlugins(option: unknown): Promise<Plugin[]> {
   } catch (error) {
     throw failed("gave a promise that rejected", error);
   }
-  if (value === false || value === null || value === undefined) return [];
+  if (value === false || value === null || value === undefined) {
+    return [];
+  }
   if (Array.isArray(value)) {
     return (await Promise.all(value.map((each: unknown) => flattenPlugins(each)))).flat();
   }
@@ -155,8 +159,12 @@ function describeValue(value: unknown): string {
     case "string":
       return JSON.stringify(value);
     case "object":
-      if (value === null) return "null";
-      if (Array.isArray(value)) return "a list";
+      if (value === null) {
+        return "null";
+      }
+      if (Array.isArray(value)) {
+        return "a list";
+      }
       return "name" in value ? "an object whose name is no string" : "an object without a name";
     case "function":
       return "a function";

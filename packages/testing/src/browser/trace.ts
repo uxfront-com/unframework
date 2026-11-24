@@ -88,7 +88,9 @@ export class Trace {
 
   /** The steps not taken yet, as a message, or nothing. */
   leftover(): string | undefined {
-    if (!this.#steps.length) return undefined;
+    if (!this.#steps.length) {
+      return undefined;
+    }
     const actions = this.#steps.map((step) => step.action).join("; ");
     return `${this.#steps.length} step(s) of ${this.#source.root} were never compared (${actions}): every view.user action and rerender is followed by an expectParity, which compares its trace.`;
   }

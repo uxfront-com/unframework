@@ -25,7 +25,9 @@ vi.mock("node:fs/promises", async (original) => {
     ...actual,
     glob: async function* (...args: Parameters<typeof actual.glob>) {
       const entries = [];
-      for await (const entry of actual.glob(...args)) entries.push(entry);
+      for await (const entry of actual.glob(...args)) {
+        entries.push(entry);
+      }
       yield* entries.toReversed();
     },
   };
@@ -153,8 +155,12 @@ vi.mock("@unframework.dev/compiler", async (original) => {
         },
         copies: (file: string) => {
           const contents = "export const shared = 1;\n";
-          if (file === "src/copy-clash.uf.tsx") return [{ path: "C.ts", contents }];
-          if (file === "src/a-copy.uf.tsx") return [{ path: "E.ts", contents }];
+          if (file === "src/copy-clash.uf.tsx") {
+            return [{ path: "C.ts", contents }];
+          }
+          if (file === "src/a-copy.uf.tsx") {
+            return [{ path: "E.ts", contents }];
+          }
           if (file === "src/copy-case.uf.tsx") {
             return [
               { path: "d.ts", contents },

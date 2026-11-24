@@ -1374,9 +1374,13 @@ describe("narrowed reads (ADR-0046)", () => {
     expect(problems(source, diagnostics)).toEqual([]);
     const written: string[] = [];
     const visit = (value: unknown): void => {
-      if (!value || typeof value !== "object") return;
+      if (!value || typeof value !== "object") {
+        return;
+      }
       if (Array.isArray(value)) {
-        for (const item of value) visit(item);
+        for (const item of value) {
+          visit(item);
+        }
         return;
       }
       const node = value as { kind?: string; operator?: string; narrowed?: NarrowedPath[] };
@@ -1386,7 +1390,9 @@ describe("narrowed reads (ADR-0046)", () => {
         );
         written.push(`${node.operator} ${paths.join(", ") || "-"}`);
       }
-      for (const item of Object.values(value)) visit(item);
+      for (const item of Object.values(value)) {
+        visit(item);
+      }
     };
     visit(module?.components[0]?.setup);
     expect(written).toEqual([

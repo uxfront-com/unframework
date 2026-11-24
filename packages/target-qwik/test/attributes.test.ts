@@ -215,7 +215,9 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
     );
     const gaps = new Map<string, string[]>();
     pairs.forEach(([tag, attribute], index) => {
-      if (failing.has(index)) gaps.set(attribute, [...(gaps.get(attribute) ?? []), tag]);
+      if (failing.has(index)) {
+        gaps.set(attribute, [...(gaps.get(attribute) ?? []), tag]);
+      }
     });
     expect(Object.fromEntries(gaps)).toEqual(gapsOf(pairs));
   });

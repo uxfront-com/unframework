@@ -101,7 +101,9 @@ export function assertedCode(
       reference.kind === "Binding" ? assertedPathEnds(reference, bindingOf(reference)) : [],
     )
     .toSorted((a, b) => a - b);
-  if (at.length === 0) return code;
+  if (at.length === 0) {
+    return code;
+  }
   const offset = code.span.start;
   let text = "";
   let from = 0;

@@ -79,7 +79,9 @@ function singleQuoted(raw: string): string {
       const next = raw[index + 1]!;
       body += next === '"' ? '"' : `\\${next}`;
       index++;
-    } else body += character === "'" ? "\\'" : character;
+    } else {
+      body += character === "'" ? "\\'" : character;
+    }
   }
   return `'${body}'`;
 }
@@ -92,8 +94,12 @@ function singleQuoted(raw: string): string {
 export function vueClassValue(parts: readonly ClassPart[]): string {
   const bound = parts.filter((part) => part.kind !== "Static");
   const [only, ...more] = bound;
-  if (only?.kind === "Dynamic" && more.length === 0) return only.value;
-  if (bound.every((part) => part.kind === "Toggle")) return toggleObject(bound);
+  if (only?.kind === "Dynamic" && more.length === 0) {
+    return only.value;
+  }
+  if (bound.every((part) => part.kind === "Toggle")) {
+    return toggleObject(bound);
+  }
   return `[${classArrayItems(bound, false).join(", ")}]`;
 }
 
@@ -148,18 +154,34 @@ const BUILT_IN_DIRECTIVES = new Set([
  * order.
  */
 function vueRank({ name }: PrintedAttribute): number {
-  if (name === ":is") return -1;
-  if (name === "v-for") return 0;
-  if (name === "v-if" || name === "v-else-if" || name === "v-else") return 1;
-  if (name === "id") return 2;
-  if (name === "key" || name === "ref") return 3;
-  if (name === "v-model" || name.startsWith("v-model:")) return 3.5;
+  if (name === ":is") {
+    return -1;
+  }
+  if (name === "v-for") {
+    return 0;
+  }
+  if (name === "v-if" || name === "v-else-if" || name === "v-else") {
+    return 1;
+  }
+  if (name === "id") {
+    return 2;
+  }
+  if (name === "key" || name === "ref") {
+    return 3;
+  }
+  if (name === "v-model" || name.startsWith("v-model:")) {
+    return 3.5;
+  }
   // Content, which comes after the listeners.
-  if (name === "v-html") return 6;
+  if (name === "v-html") {
+    return 6;
+  }
   if (/^v-[a-z]/.test(name) && !BUILT_IN_DIRECTIVES.has(name) && !name.startsWith("v-on:")) {
     return 3.75;
   }
-  if (name.startsWith("@") || name.startsWith("v-on:")) return 5;
+  if (name.startsWith("@") || name.startsWith("v-on:")) {
+    return 5;
+  }
   return 4;
 }
 
@@ -202,7 +224,9 @@ export const vueDialect: MarkupDialect = {
       : VUE_CONDENSED.test(text) ||
         ((position.first || position.last) && VUE_WHITESPACE_ONLY.test(text)) ||
         atRootEdge(position);
-    if (condensed) return `{{ ${stringLiteral(text)} }}`;
+    if (condensed) {
+      return `{{ ${stringLiteral(text)} }}`;
+    }
     const escaped = escapeHtmlText(text).replace(/\{\{/g, "{&#123;");
     // A `{` right before an interpolation would open it early (`{{{ x }}`).
     return position.next === "Interpolation" && escaped.endsWith("{")
@@ -229,7 +253,9 @@ export const vueDialect: MarkupDialect = {
   styleAttribute: (written) => {
     // A whole style, an object or a declaration list, is Vue's own `:style` (ADR-0065).
     const whole = written.find((part) => part.property === "");
-    if (whole) return [{ name: "style", text: `:style="${vueAttributeCode(whole.value)}"` }];
+    if (whole) {
+      return [{ name: "style", text: `:style="${vueAttributeCode(whole.value)}"` }];
+    }
     // A static declaration Vue would misread joins the bound ones, whose values it takes whole.
     const parts = written.map((part): StylePart =>
       part.kind === "Static" && !vueReadsStatic(part.value)

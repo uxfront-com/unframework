@@ -31,7 +31,9 @@ const SCRIPT = /\.[cm]?[jt]sx?$/;
 const KEEP_IMPORTS = {
   name: "unframework:keep-imports",
   resolveId(id: string, importer: string | undefined) {
-    if (importer === undefined) return null;
+    if (importer === undefined) {
+      return null;
+    }
     const local = id.startsWith(".") || isAbsolute(id);
     return !local || id.endsWith(".css") ? { id, external: true } : null;
   },
@@ -48,7 +50,9 @@ async function checkDeclarations(tsdown: string, work: string): Promise<void> {
   const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
     await readFile(manifest, "utf8"),
   );
-  if (!version.startsWith("7.")) return;
+  if (!version.startsWith("7.")) {
+    return;
+  }
   await runScript(join(dirname(manifest), bin.tsc), ["--declaration", "--noCheck"], work);
 }
 

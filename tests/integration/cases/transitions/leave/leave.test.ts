@@ -16,7 +16,9 @@ function everyFrame(root: Element, selector: string, prefix: string): { stop: ()
   const frames: string[] = [];
   let running = true;
   const read = () => {
-    if (!running) return;
+    if (!running) {
+      return;
+    }
     const elements = [...root.querySelectorAll(selector)];
     frames.push(
       elements

@@ -48,7 +48,9 @@ export class Scopes {
     for (const scope of manager.scopes) {
       for (const reference of scope.references) {
         this.#references.set(reference.identifier, resolutionOf(reference.resolved));
-        if (reference.isValueReference) this.#values.add(reference.identifier);
+        if (reference.isValueReference) {
+          this.#values.add(reference.identifier);
+        }
       }
       for (const variable of scope.variables) {
         for (const definition of variable.defs) {
@@ -82,9 +84,13 @@ export class Scopes {
 type Variable = ReturnType<typeof analyze>["variables"][number];
 
 function resolutionOf(variable: Variable | null): Resolution {
-  if (!variable) return { kind: "global" };
+  if (!variable) {
+    return { kind: "global" };
+  }
   const [definition] = variable.defs;
-  if (!definition) return { kind: "other" };
+  if (!definition) {
+    return { kind: "other" };
+  }
   switch (definition.type as string) {
     case "Parameter":
       return { kind: "parameter", function: definition.node, declaration: definition.name };

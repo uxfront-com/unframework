@@ -191,7 +191,9 @@ function declaredProperties(nodes: readonly DomNode[]): string[] {
 /** Every element of some read nodes, outermost first. */
 function* elementsOf(nodes: readonly DomNode[]): Generator<Exclude<DomNode, string>> {
   for (const node of nodes) {
-    if (typeof node === "string") continue;
+    if (typeof node === "string") {
+      continue;
+    }
     yield node;
     yield* elementsOf(node.children);
   }

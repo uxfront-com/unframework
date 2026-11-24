@@ -15,13 +15,19 @@ import type { RenderContext } from "./render.ts";
 export function checkTypeQueries(render: RenderContext): void {
   const { component, reporter, source } = render;
   const visit = (node: unknown): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
     const typed = node as AST.Node;
-    if (typeof typed.type !== "string") return;
+    if (typeof typed.type !== "string") {
+      return;
+    }
     if (typed.type === "TSTypeQuery") {
       const root = entityRoot(typed.exprName);
       const what = root ? componentValue(root, render) : undefined;

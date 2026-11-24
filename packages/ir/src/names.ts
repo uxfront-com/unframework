@@ -130,10 +130,16 @@ const DOCUMENT_OTHER_MEMBERS: ReadonlySet<string> = words(`
  * `location`, `fetch`, the timers and the observers read nothing a render changes.
  */
 export function readsDom(name: string, following: string): boolean {
-  if (DOM_GLOBALS.has(name)) return true;
-  if (name !== "document" && name !== "window") return false;
+  if (DOM_GLOBALS.has(name)) {
+    return true;
+  }
+  if (name !== "document" && name !== "window") {
+    return false;
+  }
   const member = /^\s*\??\.\s*([A-Za-z_$][\w$]*)/.exec(following)?.[1];
-  if (name === "document") return member === undefined || !DOCUMENT_OTHER_MEMBERS.has(member);
+  if (name === "document") {
+    return member === undefined || !DOCUMENT_OTHER_MEMBERS.has(member);
+  }
   return member === undefined || WINDOW_DOM_MEMBERS.has(member);
 }
 
@@ -218,11 +224,15 @@ export function reservedPropName(name: string): string | undefined {
     return `\`${name}\` is not ASCII letters and digits starting with a letter, which every target can declare.`;
   }
   const reserved = RESERVED_PROP_NAMES.get(name);
-  if (reserved) return reserved;
+  if (reserved) {
+    return reserved;
+  }
   if (/^on[A-Z]/.test(name)) {
     return `\`${name}\` is an event's name: a component declares its events with \`defineEmits\`, and the targets name their props by them (ADR-0012).`;
   }
-  if (/^ng[A-Z]/.test(name)) return `\`${name}\` is a name Angular reserves for its directives.`;
+  if (/^ng[A-Z]/.test(name)) {
+    return `\`${name}\` is a name Angular reserves for its directives.`;
+  }
   return undefined;
 }
 
@@ -237,8 +247,9 @@ export function reservedPropName(name: string): string | undefined {
  * every other target's prop (`onDelete`) may take it.
  */
 export function reservedEventName(name: string): string | undefined {
-  if (ANGULAR_KEYWORDS.has(name))
+  if (ANGULAR_KEYWORDS.has(name)) {
     return `\`${name}\` is a keyword in Angular's template expressions.`;
+  }
   return name === "constructor" || ALLOWED_GLOBALS.has(name)
     ? RESERVED_PROP_NAMES.get(name)
     : undefined;
@@ -267,14 +278,24 @@ export function reservedPropsParameterName(name: string): string | undefined {
  * object form's parameter or of a loop variable around it either.
  */
 export function reservedParameterName(name: string): string | undefined {
-  if (ALLOWED_GLOBALS.has(name)) return `it would shadow the global \`${name}\``;
-  if (name === "props" || name === "rawProps") return `some outputs declare \`${name}\``;
-  if (name === "Fragment") return "Astro's output renders `<>` with the `Fragment` it imports";
-  if (name.startsWith("$")) return "Angular's `@for` declares the names starting with `$`";
+  if (ALLOWED_GLOBALS.has(name)) {
+    return `it would shadow the global \`${name}\``;
+  }
+  if (name === "props" || name === "rawProps") {
+    return `some outputs declare \`${name}\``;
+  }
+  if (name === "Fragment") {
+    return "Astro's output renders `<>` with the `Fragment` it imports";
+  }
+  if (name.startsWith("$")) {
+    return "Angular's `@for` declares the names starting with `$`";
+  }
   if (name.length > 1 && name.startsWith("_")) {
     return "Vue's compiled render functions declare names starting with `_` (`_ctx`, `__props`)";
   }
-  if (ANGULAR_KEYWORDS.has(name)) return "it is a keyword in Angular's template expressions";
+  if (ANGULAR_KEYWORDS.has(name)) {
+    return "it is a keyword in Angular's template expressions";
+  }
   return undefined;
 }
 
@@ -295,16 +316,24 @@ export function reservedSetupName(name: string): string | undefined {
     return "it is not an ASCII identifier, which Angular's expression lexer reads";
   }
   const parameter = reservedParameterName(name);
-  if (parameter) return parameter;
-  if (RESERVED_WORDS.has(name)) return "it is a reserved word in JavaScript's strict mode";
-  if (name === "constructor") return "Angular's output declares the component class's constructor";
+  if (parameter) {
+    return parameter;
+  }
+  if (RESERVED_WORDS.has(name)) {
+    return "it is a reserved word in JavaScript's strict mode";
+  }
+  if (name === "constructor") {
+    return "Angular's output declares the component class's constructor";
+  }
   if (/^ng[A-Z]/.test(name)) {
     return "Angular reserves the names starting with `ng` and a capital for its lifecycle hooks (`ngOnInit`) and directives";
   }
   if (/^use[A-Z0-9]/.test(name)) {
     return "React's lint rules read a name starting with `use` and a capital as a hook, which a handler cannot call";
   }
-  if (name.endsWith("$")) return "Qwik's optimizer reads a name ending in `$` as a QRL";
+  if (name.endsWith("$")) {
+    return "Qwik's optimizer reads a name ending in `$` as a QRL";
+  }
   return undefined;
 }
 

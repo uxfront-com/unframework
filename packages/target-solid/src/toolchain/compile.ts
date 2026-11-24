@@ -151,8 +151,11 @@ function groupWarnings(printed: readonly string[]): string[] {
   for (const entry of printed) {
     const text = entry.trim();
     const current = groups.at(-1);
-    if (current && !text.startsWith(MALFORMED)) current.push(text);
-    else groups.push([text]);
+    if (current && !text.startsWith(MALFORMED)) {
+      current.push(text);
+    } else {
+      groups.push([text]);
+    }
   }
   return groups.map((group) => group.join("\n"));
 }
@@ -162,15 +165,21 @@ function groupWarnings(printed: readonly string[]): string[] {
  * `(line:column)` Babel appends, which the message's own 1-based position replaces.
  */
 function fromBabelError(error: unknown, filename: string): ToolchainMessage {
-  if (!(error instanceof Error)) return { message: String(error) };
+  if (!(error instanceof Error)) {
+    return { message: String(error) };
+  }
   const { loc, reasonCode, code } = error as Error & {
     loc?: { line: number; column: number };
     reasonCode?: string;
     code?: string;
   };
   let message = error.message.split("\n")[0] ?? error.message;
-  if (message.startsWith(`${filename}: `)) message = message.slice(filename.length + 2);
-  if (loc) message = message.replace(` (${loc.line}:${loc.column})`, "");
+  if (message.startsWith(`${filename}: `)) {
+    message = message.slice(filename.length + 2);
+  }
+  if (loc) {
+    message = message.replace(` (${loc.line}:${loc.column})`, "");
+  }
   return {
     message,
     ...(loc ? { line: loc.line, column: loc.column + 1 } : {}),

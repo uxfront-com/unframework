@@ -69,7 +69,9 @@ export function childTags(
       continue;
     }
     const local = imports.addDefault(child.specifier, child.local, { exact: true });
-    if (local !== child.local) tags.set(child.local, local);
+    if (local !== child.local) {
+      tags.set(child.local, local);
+    }
   }
   return tags;
 }
@@ -131,7 +133,11 @@ export function frontmatterOf(
   const imported = (module.typeImports ?? []).flatMap(({ names }) =>
     names.map(({ local }) => local),
   );
-  for (const name of imported) if (name !== "Props") spelling.scope.reserve(name);
+  for (const name of imported) {
+    if (name !== "Props") {
+      spelling.scope.reserve(name);
+    }
+  }
   const types = [...liveTypes(view, module, SERVER), ...reads.types].toSorted(
     (a, b) => a.span.start - b.span.start,
   );
@@ -162,7 +168,9 @@ export function frontmatterOf(
         ? `export ${declaration.code}`
         : typeDeclarationCode(declaration);
     code = ownCode(reads.renamed(code, "statements"));
-    if (ownProps && declaration.name === "Props") code = code.replace(/\bProps\b/, ownProps);
+    if (ownProps && declaration.name === "Props") {
+      code = code.replace(/\bProps\b/, ownProps);
+    }
     return { code, span: declaration.span };
   });
   const typeExports = typeExportsCode(component, module, (name) => `${name}.astro`).map(
@@ -174,7 +182,9 @@ export function frontmatterOf(
     sections.push([code]);
   }
   const keys = keyTypes(component, module, new Set(types.map(({ name }) => name))).map(ownCode);
-  for (const statement of keys) sections.push([statement]);
+  for (const statement of keys) {
+    sections.push([statement]);
+  }
   keyTypeImports(module, keys, imports, local);
   const annotation = parameter && own(parameter.type.code);
   const alias = propsDeclaration(
@@ -194,33 +204,55 @@ export function frontmatterOf(
   const helpers = setup.helpers.map(ownCode);
   const statements = setup.statements.map(ownCode);
   // The module's constants, which read only the module, before the component's own values.
-  if (reads.constants.length) sections.push(reads.constants);
+  if (reads.constants.length) {
+    sections.push(reads.constants);
+  }
   const scoped = typeParameterAliases(component, [...propsReads, ...helpers, ...statements], own);
-  if (scoped.length) sections.push(scoped);
-  if (propsReads.length) sections.push(propsReads);
-  for (const helper of helpers) sections.push([helper]);
-  if (scope) sections.push([scopeAttributesHelper(scope)]);
+  if (scoped.length) {
+    sections.push(scoped);
+  }
+  if (propsReads.length) {
+    sections.push(propsReads);
+  }
+  for (const helper of helpers) {
+    sections.push([helper]);
+  }
+  if (scope) {
+    sections.push([scopeAttributesHelper(scope)]);
+  }
   const scopeless = render.fallthrough?.scopeless;
-  if (scopeless) sections.push([withoutScopeHelper(scopeless)]);
-  if (styleObject) sections.push([styleObjectHelper(styleObject)]);
-  if (statements.length) sections.push(statements);
+  if (scopeless) {
+    sections.push([withoutScopeHelper(scopeless)]);
+  }
+  if (styleObject) {
+    sections.push([styleObjectHelper(styleObject)]);
+  }
+  if (statements.length) {
+    sections.push(statements);
+  }
   // Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
   const constants = new Map<string, string>();
   for (const [node, { name, hoisted }] of render.dynamics) {
-    if (!hoisted || constants.has(name)) continue;
+    if (!hoisted || constants.has(name)) {
+      continue;
+    }
     constants.set(
       name,
       `const ${name} = ${rewriteExpression(node.is, component, spelling.rules)};`,
     );
   }
-  if (constants.size) sections.push([...constants.values()]);
+  if (constants.size) {
+    sections.push([...constants.values()]);
+  }
   // Imported last: the setup adds the types an injected value names. The sheet follows the
   // children's outputs.
   const declarations = [
     ...(imports.size ? [printProgram(js.program(imports.toDeclarations())).trim()] : []),
     ...(sheet ? [`import ${JSON.stringify(sheet)};`] : []),
   ];
-  if (declarations.length) sections.unshift([declarations.join("\n")]);
+  if (declarations.length) {
+    sections.unshift([declarations.join("\n")]);
+  }
   return frontmatterCode(sections);
 }
 
@@ -244,7 +276,9 @@ function composableImports(
   for (const entry of module.imports ?? []) {
     const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
     for (const name of entry.names) {
-      if (name.kind !== "Composable" || !called.has(name.local)) continue;
+      if (name.kind !== "Composable" || !called.has(name.local)) {
+        continue;
+      }
       imports.add(`${directory}${name.imported}`, name.imported, {
         local: name.local,
         exact: true,
@@ -347,7 +381,9 @@ function propsHeritage(
   imports: ImportSet,
 ): string | undefined {
   const tag = render.fallthrough?.tag;
-  if (tag === undefined || tag.includes("-")) return undefined;
+  if (tag === undefined || tag.includes("-")) {
+    return undefined;
+  }
   const attributes = imports.add("astro/types", "HTMLAttributes", { type: true });
   // A `<component is>` root's are what every tag takes (ADR-0122).
   const type = (render.fallthrough?.tags ?? [tag])
@@ -384,7 +420,9 @@ function propsRead(
     if (component.props.some(isLive)) {
       statements.push(`const ${spelling.propsObject ?? parameter.name!} = Astro.props;`);
     }
-    if (rest) names.push(...component.props.map(({ name }) => unread(name)));
+    if (rest) {
+      names.push(...component.props.map(({ name }) => unread(name)));
+    }
   } else if (parameter) {
     // In the order the source destructures them, then the ones it does not, in its type's order.
     const start = (prop: Prop) =>
@@ -404,15 +442,23 @@ function propsRead(
     );
   }
   for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
-    if (live.has(item.binding)) names.push(modelRead(item, spelling));
-    else if (rest) names.push(unread(item.name));
+    if (item.kind !== "Model") {
+      continue;
+    }
+    if (live.has(item.binding)) {
+      names.push(modelRead(item, spelling));
+    } else if (rest) {
+      names.push(unread(item.name));
+    }
   }
   const read = renderPropsRead(component);
   for (const [slot, local] of spelling.renderProps) {
     const prop = renderPropName(slot, ownProps(component));
-    if (read.has(slot)) names.push(prop === local ? prop : `${prop}: ${local}`);
-    else if (rest) names.push(unread(prop));
+    if (read.has(slot)) {
+      names.push(prop === local ? prop : `${prop}: ${local}`);
+    } else if (rest) {
+      names.push(unread(prop));
+    }
   }
   if (fallthrough) {
     const { className, style, own, attributes } = fallthrough;
@@ -423,9 +469,13 @@ function propsRead(
       const key = isIdentifier(attribute.name) ? attribute.name : JSON.stringify(attribute.name);
       names.push(key === local ? local : `${key}: ${local}`);
     }
-    if (attributes !== undefined) names.push(`...${attributes}`);
+    if (attributes !== undefined) {
+      names.push(`...${attributes}`);
+    }
   }
-  if (names.length) statements.push(`const { ${names.join(", ")} } = Astro.props;`);
+  if (names.length) {
+    statements.push(`const { ${names.join(", ")} } = Astro.props;`);
+  }
   return statements;
 }
 
@@ -441,17 +491,24 @@ function renderPropsRead(component: UfComponent): Set<string> {
   const read = new Set<string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind === "SlotOutlet" && node.props) read.add(node.slot);
+      if (node.kind === "SlotOutlet" && node.props) {
+        read.add(node.slot);
+      }
       if (node.kind === "Component" || node.kind === "Dynamic") {
         for (const fill of node.fills ?? []) {
-          if (fill.forward !== undefined && isRenderProp(fill, component)) read.add(fill.forward);
+          if (fill.forward !== undefined && isRenderProp(fill, component)) {
+            read.add(fill.forward);
+          }
         }
       }
     },
   });
   for (const { expression } of expressionsOf(component)) {
-    for (const reference of expression.refs)
-      if (reference.kind === "Slot") read.add(reference.slot);
+    for (const reference of expression.refs) {
+      if (reference.kind === "Slot") {
+        read.add(reference.slot);
+      }
+    }
   }
   return read;
 }
@@ -469,7 +526,9 @@ function injectedType(
   const key = keyImports(component, module, (name) => `${name}.astro`).find(
     (each) => each.local === item.key,
   )!;
-  if (!key.specifier) return key.name;
+  if (!key.specifier) {
+    return key.name;
+  }
   return imports.add(key.specifier, key.name, { type: true, local: key.local, exact: true });
 }
 
@@ -485,7 +544,9 @@ function keyTypeImports(
   imports: ImportSet,
   local: (name: string) => string,
 ): void {
-  if (!keys.length || !module.typeImports?.length) return;
+  if (!keys.length || !module.typeImports?.length) {
+    return;
+  }
   const read = new Set<string>();
   for (const statement of keys) {
     forEachFreeTypeReference(parseStatementsSource(statement).statements, ({ name }) => {
@@ -495,7 +556,9 @@ function keyTypeImports(
   for (const entry of module.typeImports) {
     for (const name of entry.names) {
       const named = local(name.local);
-      if (!read.has(named)) continue;
+      if (!read.has(named)) {
+        continue;
+      }
       const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.astro`);
       imports.add(specifier, name.imported, { type: true, local: named, exact: true });
     }
@@ -523,7 +586,9 @@ function keyTypes(
     const type = key.ref
       ? key.type.code.slice(key.type.code.indexOf("<") + 1, key.type.code.lastIndexOf(">"))
       : key.type.code;
-    for (const name of typeNames(type)) named.add(name);
+    for (const name of typeNames(type)) {
+      named.add(name);
+    }
     statements.push(`export type ${key.name} = ${type};`);
   }
   // The module types the aliases reach, through the types they name in turn, as `liveTypes`
@@ -536,7 +601,9 @@ function keyTypes(
   const pending = [...named];
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
     const declaration = owned.get(name);
-    if (!declaration) continue;
+    if (!declaration) {
+      continue;
+    }
     for (const next of declarationNames(declaration.code)) {
       if (!named.has(next)) {
         named.add(next);
@@ -555,10 +622,14 @@ function declarationNames(code: string): Set<string> {
   const names = new Set<string>();
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
-      for (const each of node) visit(each);
+      for (const each of node) {
+        visit(each);
+      }
       return;
     }
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     const record = node as Record<string, unknown>;
     const reference =
       record.type === "TSTypeReference"
@@ -570,8 +641,14 @@ function declarationNames(code: string): Set<string> {
     while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
       head = (head.left ?? head.object) as Record<string, unknown>;
     }
-    if (head?.type === "Identifier") names.add(head.name as string);
-    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value);
+    if (head?.type === "Identifier") {
+      names.add(head.name as string);
+    }
+    for (const [key, value] of Object.entries(record)) {
+      if (key !== "parent") {
+        visit(value);
+      }
+    }
   };
   visit(parseStatementsSource(code).statements);
   return names;
@@ -626,10 +703,13 @@ function unwrapped(annotation: string): { type: string; kind: string | undefined
   const prefix = "type T = ";
   const source = `${prefix}${annotation.trim()};`;
   const [statement] = parseStatementsSource(source).statements;
-  if (statement?.type !== "TSTypeAliasDeclaration")
+  if (statement?.type !== "TSTypeAliasDeclaration") {
     return { type: annotation.trim(), kind: undefined };
+  }
   let node = statement.typeAnnotation;
-  while (node.type === "TSParenthesizedType") node = node.typeAnnotation;
+  while (node.type === "TSParenthesizedType") {
+    node = node.typeAnnotation;
+  }
   return { type: source.slice(node.start, node.end), kind: node.type };
 }
 
@@ -650,7 +730,9 @@ function renameTypeReferences(
   const source = kind === "type" ? `${prefix}${code};` : code;
   const starts: number[] = [];
   forEachFreeTypeReference(parseStatementsSource(source).statements, ({ name, start }) => {
-    if (name === from) starts.push(start);
+    if (name === from) {
+      starts.push(start);
+    }
   });
   let renamed = source;
   for (const start of starts.toSorted((a, b) => b - a)) {
@@ -671,10 +753,14 @@ function forEachFreeTypeReference(
 ): void {
   const visit = (node: unknown, bound: ReadonlySet<string>): void => {
     if (Array.isArray(node)) {
-      for (const each of node) visit(each, bound);
+      for (const each of node) {
+        visit(each, bound);
+      }
       return;
     }
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     const record = node as Record<string, unknown>;
     const declared = declaredTypeParameters(record);
     const inner = declared.length ? new Set([...bound, ...declared]) : bound;
@@ -699,7 +785,11 @@ function forEachFreeTypeReference(
     if (head?.type === "Identifier" && !inner.has(head.name as string)) {
       found({ name: head.name as string, start: head.start as number });
     }
-    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value, inner);
+    for (const [key, value] of Object.entries(record)) {
+      if (key !== "parent") {
+        visit(value, inner);
+      }
+    }
   };
   visit(root, new Set());
 }
@@ -712,17 +802,25 @@ function declaredTypeParameters(node: Record<string, unknown>): string[] {
     const key = (node.key ?? (node.typeParameter as { name?: unknown } | undefined)?.name) as
       | { name?: string }
       | undefined;
-    if (key?.name) names.push(key.name);
+    if (key?.name) {
+      names.push(key.name);
+    }
   }
   return names;
 }
 
 /** The names a conditional type's extends clause infers (`infer Props`), but a nested one's. */
 function inferred(node: unknown): string[] {
-  if (Array.isArray(node)) return node.flatMap(inferred);
-  if (!node || typeof node !== "object") return [];
+  if (Array.isArray(node)) {
+    return node.flatMap(inferred);
+  }
+  if (!node || typeof node !== "object") {
+    return [];
+  }
   const record = node as Record<string, unknown>;
-  if (record.type === "TSConditionalType") return inferred(record.checkType);
+  if (record.type === "TSConditionalType") {
+    return inferred(record.checkType);
+  }
   const own =
     record.type === "TSInferType"
       ? [(record.typeParameter as { name?: { name?: string } } | undefined)?.name?.name]
@@ -748,7 +846,9 @@ function typeParameterAliases(
   own: (type: string) => string,
 ): string[] {
   const parameters = component.typeParameters ?? [];
-  if (!parameters.length) return [];
+  if (!parameters.length) {
+    return [];
+  }
   const named = new Set<string>();
   for (const each of code) {
     forEachFreeTypeReference(parseStatementsSource(each).statements, ({ name }) => named.add(name));
@@ -774,12 +874,18 @@ function reachBounds(
   const pending = [...named];
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
     const parameter = byName.get(name);
-    if (!parameter) continue;
+    if (!parameter) {
+      continue;
+    }
     for (const bound of [parameter.constraint, defaults ? parameter.default : undefined]) {
-      if (!bound) continue;
+      if (!bound) {
+        continue;
+      }
       const { statements } = parseStatementsSource(`type T = ${bound.code};`);
       forEachFreeTypeReference(statements, ({ name: next }) => {
-        if (named.has(next)) return;
+        if (named.has(next)) {
+          return;
+        }
         named.add(next);
         pending.push(next);
       });
@@ -800,10 +906,14 @@ function propsTypeParameters(
 ): Set<string> {
   const named = new Set<string>();
   const parameters = component.typeParameters ?? [];
-  if (!parameters.length) return named;
+  if (!parameters.length) {
+    return named;
+  }
   const types = [annotation, extras.length ? `{ ${extras.join("; ")} }` : undefined];
   for (const type of types) {
-    if (type === undefined) continue;
+    if (type === undefined) {
+      continue;
+    }
     const { statements } = parseStatementsSource(`type T = ${type};`);
     forEachFreeTypeReference(statements, ({ name }) => named.add(name));
   }
@@ -822,7 +932,9 @@ function typeParametersCode(
   used: ReadonlySet<string>,
 ): string {
   const kept = (parameters ?? []).filter(({ name }) => used.has(name));
-  if (!kept.length) return "";
+  if (!kept.length) {
+    return "";
+  }
   const written = kept.map(({ name, constraint, default: fallback }) => {
     const bound = constraint ? ` extends ${own(constraint.code)}` : "";
     return `${name}${bound}${fallback ? ` = ${own(fallback.code)}` : ""}`;

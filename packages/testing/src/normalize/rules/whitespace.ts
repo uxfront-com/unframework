@@ -166,9 +166,13 @@ function formatBlock(
     afterRuby: false,
   };
   const keep = holdsInlineTable(container, { ...context, inline: false });
-  if (quotes) renderContent(line);
+  if (quotes) {
+    renderContent(line);
+  }
   flow(container, line, { ...context, inline: false, keep, previous: quotes ? "inline" : "none" });
-  if (quotes) renderContent(line);
+  if (quotes) {
+    renderContent(line);
+  }
   endLine(line);
 }
 
@@ -191,10 +195,16 @@ function holdsInlineTable(
   context: Pick<Context, "blockify" | "ruby" | "rubyContainer" | "inline">,
 ): boolean {
   return childrenOf(parent).some((node) => {
-    if (!isElement(node)) return false;
+    if (!isElement(node)) {
+      return false;
+    }
     const box = childBox(node, context);
-    if (inInlineTable(box, context)) return true;
-    if (box.outer === "contents") return holdsInlineTable(node, context);
+    if (inInlineTable(box, context)) {
+      return true;
+    }
+    if (box.outer === "contents") {
+      return holdsInlineTable(node, context);
+    }
     return (
       box.outer === "inline" &&
       holdsInlineTable(node, {
@@ -234,22 +244,33 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
   for (const node of childrenOf(parent)) {
     if (isText(node)) {
       // A line kept as written renders its texts as they are (see `holdsInlineTable`).
-      if (context.keep) continue;
+      if (context.keep) {
+        continue;
+      }
       const text = node.value;
       if (!rendersText(text, previous, context)) {
         node.value = "";
         continue;
       }
-      if (context.preserve) renderPreserved(node, line, context.ruby);
-      else collapseText(node, line);
-      if (node.value === "") emptied(node, line);
+      if (context.preserve) {
+        renderPreserved(node, line, context.ruby);
+      } else {
+        collapseText(node, line);
+      }
+      if (node.value === "") {
+        emptied(node, line);
+      }
       previous = ENDS_WITH_WHITESPACE.test(text) ? "text-ending-in-whitespace" : "text";
       continue;
     }
-    if (!isElement(node)) continue;
+    if (!isElement(node)) {
+      continue;
+    }
     const box = childBox(node, context);
     // Its content is kept as written too.
-    if (inInlineTable(box, context)) continue;
+    if (inInlineTable(box, context)) {
+      continue;
+    }
     const inner = {
       preserve: preservesWhitespace(node, context.preserve),
       blockify: box.blockifiesChildren,
@@ -269,11 +290,17 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
         previous = flow(node, line, { ...context, preserve: inner.preserve, previous });
         break;
       case "inline":
-        if (quotes) renderContent(line);
+        if (quotes) {
+          renderContent(line);
+        }
         // Its edges hide a zero-width space from a line break on the other side (see `Box`).
-        if (box.opaqueStart) line.afterZeroWidthSpace = false;
+        if (box.opaqueStart) {
+          line.afterZeroWidthSpace = false;
+        }
         // A text that collapsed away right before a ruby stays (see `emptied`).
-        if (box.rubyContent && line.emptied) keptEmpty.add(line.emptied);
+        if (box.rubyContent && line.emptied) {
+          keptEmpty.add(line.emptied);
+        }
         if (box.listItem) {
           // Its marker (`• `) is content, and its space takes the whitespace that follows.
           renderContent(line);
@@ -288,9 +315,15 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
           keep: context.keep,
           previous: quotes ? "inline" : "none",
         });
-        if (quotes) renderContent(line);
-        if (box.opaqueEnd) line.afterZeroWidthSpace = false;
-        if (box.rubyContent) line.afterRuby = true;
+        if (quotes) {
+          renderContent(line);
+        }
+        if (box.opaqueEnd) {
+          line.afterZeroWidthSpace = false;
+        }
+        if (box.rubyContent) {
+          line.afterRuby = true;
+        }
         if (isHtml(node, "wbr")) {
           // Its layout object is an empty text: a whitespace-only text after it renders.
           line.afterZeroWidthSpace = true;
@@ -337,10 +370,18 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
  * after an inline box, or first in an inline box.
  */
 function rendersText(text: string, previous: Previous, context: Context): boolean {
-  if (text === "") return false;
-  if (context.preserve || !WHITESPACE_ONLY.test(text)) return true;
-  if (previous === "text") return true;
-  if (context.dropsWhitespace) return false;
+  if (text === "") {
+    return false;
+  }
+  if (context.preserve || !WHITESPACE_ONLY.test(text)) {
+    return true;
+  }
+  if (previous === "text") {
+    return true;
+  }
+  if (context.dropsWhitespace) {
+    return false;
+  }
   return previous === "inline" || (previous === "none" && context.inline);
 }
 
@@ -357,7 +398,9 @@ function collapseText(node: TreeText, line: Line): void {
   let previous = "";
   let index = 0;
   const glyphs = (text: string) => {
-    if (text === "") return;
+    if (text === "") {
+      return;
+    }
     // A text that starts with glyphs, after an earlier text's line break: next to a zero-width
     // space on either side, the space that break became goes.
     if (
@@ -382,12 +425,16 @@ function collapseText(node: TreeText, line: Line): void {
     const nextIsZeroWidthSpace = source.startsWith(ZWSP, index);
     if (!first) {
       // Between two pieces of this text: both neighbours are known.
-      if (segmentBreak && (previous.endsWith(ZWSP) || nextIsZeroWidthSpace)) continue;
+      if (segmentBreak && (previous.endsWith(ZWSP) || nextIsZeroWidthSpace)) {
+        continue;
+      }
       out += " ";
       pend(line, node, segmentBreak, previous.endsWith(ZWSP));
       continue;
     }
-    if (line.atStart) continue;
+    if (line.atStart) {
+      continue;
+    }
     if (line.trailing !== null) {
       const breaks = segmentBreak || line.trailingBreak;
       if (segmentBreak && line.trailingAfterUncollapsed) {
@@ -411,7 +458,9 @@ function collapseText(node: TreeText, line: Line): void {
       renderUncollapsed(line);
       continue;
     }
-    if (segmentBreak && (line.afterZeroWidthSpace || nextIsZeroWidthSpace)) continue;
+    if (segmentBreak && (line.afterZeroWidthSpace || nextIsZeroWidthSpace)) {
+      continue;
+    }
     out += " ";
     pend(line, node, segmentBreak, line.afterZeroWidthSpace);
   }
@@ -467,7 +516,9 @@ function renderUncollapsed(line: Line): void {
  * stays in the tree, empty.
  */
 function emptied(node: TreeText, line: Line): void {
-  if (line.afterRuby) keptEmpty.add(node);
+  if (line.afterRuby) {
+    keptEmpty.add(node);
+  }
   line.emptied = node;
 }
 
@@ -486,7 +537,9 @@ function renderContent(line: Line): void {
 
 /** Ends the line: its trailing collapsible space is not rendered. */
 function endLine(line: Line): void {
-  if (line.trailing !== null) line.trailing.value = line.trailing.value.slice(0, -1);
+  if (line.trailing !== null) {
+    line.trailing.value = line.trailing.value.slice(0, -1);
+  }
   renderContent(line);
   line.atStart = true;
 }
@@ -514,6 +567,8 @@ function removeEmptyText(parent: TreeParent): void {
     );
   }
   for (const node of childrenOf(parent)) {
-    if (isElement(node)) removeEmptyText(node);
+    if (isElement(node)) {
+      removeEmptyText(node);
+    }
   }
 }

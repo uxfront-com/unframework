@@ -73,9 +73,13 @@ export const builtinTargets: Readonly<Record<TargetName, Target>> = {
 
 /** Resolves a target selector, or passes a target object through (third-party targets). */
 export function resolveTarget(target: TargetSelector | Target): Target {
-  if (typeof target !== "string") return target;
+  if (typeof target !== "string") {
+    return target;
+  }
   // A string a JavaScript caller passed, which the type rules out.
   const name: string = target;
-  if (!isTargetSelector(name)) throw new TypeError(`Unknown target "${name}".`);
+  if (!isTargetSelector(name)) {
+    throw new TypeError(`Unknown target "${name}".`);
+  }
   return builtinTargets[targetName(name)];
 }

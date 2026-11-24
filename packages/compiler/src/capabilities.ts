@@ -23,9 +23,13 @@ export function checkCapabilities(module: UfModule, target: Target): Diagnostic[
     return support === "native" || support === "emulated";
   };
   for (const [capability, span] of required) {
-    if (supports(capability)) continue;
+    if (supports(capability)) {
+      continue;
+    }
     const prerequisite = CAPABILITY_PREREQUISITES[capability];
-    if (prerequisite && required.has(prerequisite) && !supports(prerequisite)) continue;
+    if (prerequisite && required.has(prerequisite) && !supports(prerequisite)) {
+      continue;
+    }
     const cell = cellOf(capability);
     const at = { file: module.file, span, target: target.name };
     diagnostics.push(

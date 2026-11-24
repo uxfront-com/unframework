@@ -285,7 +285,9 @@ describe("callbacks that return", () => {
   it("run as the source's, and every `onUnmounted` runs whatever an earlier one returned", async () => {
     const view = await render(Teardowns, TeardownsEvents);
     expect(view.get("p").textContent).toBe("1");
-    for (let click = 0; click < 3; click++) await view.click("button", "More");
+    for (let click = 0; click < 3; click++) {
+      await view.click("button", "More");
+    }
     expect(view.emitted("counted")).toEqual([[1], [2]]);
     expect(view.get("p").textContent).toBe("2");
     await view.unmount();
@@ -304,7 +306,9 @@ const marks = () =>
 
 describe("async setup (ADR-0101)", () => {
   afterEach(() => {
-    for (const name of Object.keys(marks())) document.body.removeAttribute(name);
+    for (const name of Object.keys(marks())) {
+      document.body.removeAttribute(name);
+    }
     vi.restoreAllMocks();
   });
 

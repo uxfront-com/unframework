@@ -30,7 +30,9 @@ async function renderComponents(
   for (const [path, contents] of Object.entries(outputs(source, `${main}.uf.tsx`))) {
     const name = path.replace(/\.astro$/, "");
     const written = writeAstroModule(directory, contents.replace(/\.astro";/g, '.mjs";'), name);
-    if (name === main) file = written;
+    if (name === main) {
+      file = written;
+    }
   }
   const module: { default: unknown } = await import(file);
   return renderToString(module.default, { props });

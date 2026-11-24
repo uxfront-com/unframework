@@ -212,7 +212,9 @@ export function loadViteTools(toolchainDir: string): Promise<AngularViteTools> {
  */
 export function packageVersion(directory: string, name: string): string {
   const manifest = resolveInstalled(directory, `${name}/package.json`);
-  if (!manifest) throw new Error(`Cannot resolve ${name} from ${directory}: install it there.`);
+  if (!manifest) {
+    throw new Error(`Cannot resolve ${name} from ${directory}: install it there.`);
+  }
   return (JSON.parse(readFileSync(manifest, "utf8")) as { version: string }).version;
 }
 

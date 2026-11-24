@@ -24,7 +24,7 @@
   let aBWatched = false;
   $effect.pre(() => {
     const values: [typeof a, typeof b] = [a, b];
-    if (aBWatched && values.every((value, index) => Object.is(value, previousAB[index]))) return;
+    if (aBWatched && values.every((value, index) => Object.is(value, previousAB[index]))) {return;}
     const [before]: [number | undefined, number | undefined] = (aBWatched ? previousAB : []) as [typeof a | undefined, typeof b | undefined];
     aBWatched = true;
     previousAB = values;
@@ -36,13 +36,13 @@
 
   const watchedSum = $derived.by(() => {
     let sum = 0;
-    for (const item of items) sum += item;
+    for (const item of items) {sum += item;}
     return sum;
   });
   let previousSum = untrack(() => watchedSum);
   $effect.pre(() => {
     const sum: number = watchedSum;
-    if (Object.is(sum, previousSum)) return;
+    if (Object.is(sum, previousSum)) {return;}
     const previous: number = previousSum;
     previousSum = sum;
     untrack(async () => {
@@ -57,7 +57,7 @@
       cleanups.push(cleanup);
     };
     const cleanUp = () => {
-      for (const cleanup of cleanups) cleanup();
+      for (const cleanup of cleanups) {cleanup();}
     };
     void (async () => {
       const first = a;

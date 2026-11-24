@@ -81,7 +81,9 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
 
   const bound = composable.parameters.map(({ name }) => name);
   const locals = declaredNames(body.map(({ text }) => ({ code: text, kind: "statements" })));
-  for (const name of bound) locals.add(name);
+  for (const name of bound) {
+    locals.add(name);
+  }
   const reason = compilerBailout(
     body.map(({ text }) => ({ code: text, kind: "statements" as const })),
     locals,
@@ -149,32 +151,50 @@ function heldArgument(composable: UfComposable): Span | undefined {
     composable.parameters.flatMap(({ kind, binding }) => (kind === "value" ? [] : [binding])),
   );
   for (const item of composable.setup) {
-    if (item.kind !== "Const") continue;
+    if (item.kind !== "Const") {
+      continue;
+    }
     const { value } = item;
     const references = value.refs.filter(
       (each) => each.kind === "Binding" && functions.has(each.binding),
     );
-    if (!references.length) continue;
+    if (!references.length) {
+      continue;
+    }
     // Where the argument is a callee or a member's object, by its start in the code.
     const used = new Set<number>();
     const visit = (node: unknown): void => {
       if (Array.isArray(node)) {
-        for (const each of node) visit(each);
+        for (const each of node) {
+          visit(each);
+        }
         return;
       }
-      if (!node || typeof node !== "object") return;
+      if (!node || typeof node !== "object") {
+        return;
+      }
       const fields = node as {
         type?: unknown;
         callee?: { start: number };
         object?: { start: number };
       };
-      if (fields.type === "CallExpression") used.add(fields.callee!.start);
-      if (fields.type === "MemberExpression") used.add(fields.object!.start);
-      for (const [key, child] of Object.entries(node)) if (key !== "parent") visit(child);
+      if (fields.type === "CallExpression") {
+        used.add(fields.callee!.start);
+      }
+      if (fields.type === "MemberExpression") {
+        used.add(fields.object!.start);
+      }
+      for (const [key, child] of Object.entries(node)) {
+        if (key !== "parent") {
+          visit(child);
+        }
+      }
     };
     visit(parseExpressionSource(value.code).expression);
     const held = references.find((reference) => !used.has(reference.span.start - value.span.start));
-    if (held) return held.span;
+    if (held) {
+      return held.span;
+    }
   }
   return undefined;
 }
@@ -216,7 +236,9 @@ function addParameterTypeImports(
   const read = new Set(texts.flatMap((type) => [...typeNames(type)]));
   for (const entry of module.typeImports ?? []) {
     for (const name of entry.names) {
-      if (!read.has(name.local)) continue;
+      if (!read.has(name.local)) {
+        continue;
+      }
       const specifier = typeSpecifier(entry.specifier, module, (each) => each);
       imports.add(specifier, name.imported, { type: true, local: name.local, exact: true });
     }

@@ -45,8 +45,11 @@ function memoryProject(initial: Record<string, string>) {
   const typeOracle = createSyntacticOracle({ root: "/project", readFile });
   const project = createProject({ root: "/project", readFile, typeOracle, targets: ["vue"] });
   const write = (path: string, text: string | undefined) => {
-    if (text === undefined) files.delete(`/project/${path}`);
-    else files.set(`/project/${path}`, text);
+    if (text === undefined) {
+      files.delete(`/project/${path}`);
+    } else {
+      files.set(`/project/${path}`, text);
+    }
   };
   return { project, write };
 }
@@ -426,7 +429,9 @@ describe("updates", () => {
       root: "/project",
       targets: ["vue"],
       readFile: (path) => {
-        if (locked && path === "/project/Child.uf.tsx") return Promise.reject(new Error("EACCES"));
+        if (locked && path === "/project/Child.uf.tsx") {
+          return Promise.reject(new Error("EACCES"));
+        }
         return Promise.resolve(files.get(path));
       },
     });
@@ -471,7 +476,9 @@ describe("updates", () => {
       root: "/project",
       targets: ["vue"],
       readFile: (path) => {
-        if (locked && path === "/project/tone.ts") return Promise.reject(new Error("EACCES"));
+        if (locked && path === "/project/tone.ts") {
+          return Promise.reject(new Error("EACCES"));
+        }
         return Promise.resolve(files.get(path));
       },
     });
@@ -790,7 +797,9 @@ describe("a child's own children (ADR-0118)", () => {
       createProject({
         root: "/project",
         readFile: async (path) => {
-          if (delayed) await delay();
+          if (delayed) {
+            await delay();
+          }
           return files.get(path);
         },
         targets: [],

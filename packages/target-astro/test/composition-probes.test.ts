@@ -195,7 +195,9 @@ async function render(name: string, props: Record<string, unknown>): Promise<str
   for (const { path, contents } of await outputs(name)) {
     const stem = path.replace(/\.astro$/, "");
     const file = writeAstroModule(directory, contents.replace(/\.astro";/g, '.mjs";'), stem);
-    if (stem === name) main = file;
+    if (stem === name) {
+      main = file;
+    }
   }
   const module: { default: unknown } = await import(main);
   return renderToString(module.default, { props });

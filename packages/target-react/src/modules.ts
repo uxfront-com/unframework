@@ -58,7 +58,9 @@ export function moduleReads(
   );
   const query = (text: string, kind: CodeKind | "type", shadowed: ReadonlySet<string>) => {
     for (const name of typeQueries(text, kind)) {
-      if (moduleValues.has(name) && !shadowed.has(name)) values.add(name);
+      if (moduleValues.has(name) && !shadowed.has(name)) {
+        values.add(name);
+      }
     }
   };
   const shadowed = new Set(
@@ -66,9 +68,15 @@ export function moduleReads(
       .filter(({ kind }) => kind !== "moduleConst" && kind !== "import")
       .map(({ name }) => name),
   );
-  for (const { code } of codeOf(owner)) query(code.code, codeKind(code, owner), shadowed);
-  for (const text of ownTypes(owner)) query(text.code, "type", shadowed);
-  for (const text of typeTexts) query(text.code, "type", new Set());
+  for (const { code } of codeOf(owner)) {
+    query(code.code, codeKind(code, owner), shadowed);
+  }
+  for (const text of ownTypes(owner)) {
+    query(text.code, "type", shadowed);
+  }
+  for (const text of typeTexts) {
+    query(text.code, "type", new Set());
+  }
   // The constants reached, what their values and types read, and the declarations those name.
   const own = new Set(owner.types);
   const named = new Set<string>();
@@ -76,37 +84,57 @@ export function moduleReads(
   for (let size = -1; size !== values.size + declared.size;) {
     size = values.size + declared.size;
     for (const constant of constants) {
-      if (!values.has(constant.name)) continue;
+      if (!values.has(constant.name)) {
+        continue;
+      }
       for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") values.add(nameOf(reference.binding));
+        if (reference.kind === "Binding") {
+          values.add(nameOf(reference.binding));
+        }
       }
       if (constant.type) {
-        for (const name of typeNames(constant.type)) named.add(name);
+        for (const name of typeNames(constant.type)) {
+          named.add(name);
+        }
         query(constant.type.code, "type", new Set());
       }
-      for (const name of codeNames(constant.value.code)) named.add(name);
+      for (const name of codeNames(constant.value.code)) {
+        named.add(name);
+      }
       query(constant.value.code, "expression", new Set());
     }
     // The owner's own declarations are copied too, so what they query is declared with them.
     for (const declaration of module.types) {
-      if (!own.has(declaration.name) && !named.has(declaration.name)) continue;
-      if (!own.has(declaration.name)) declared.add(declaration.name);
-      for (const name of codeNames(declaration.code, "statements")) named.add(name);
+      if (!own.has(declaration.name) && !named.has(declaration.name)) {
+        continue;
+      }
+      if (!own.has(declaration.name)) {
+        declared.add(declaration.name);
+      }
+      for (const name of codeNames(declaration.code, "statements")) {
+        named.add(name);
+      }
       query(declaration.code, "statements", new Set());
     }
   }
   for (const entry of module.moduleImports ?? []) {
     for (const name of entry.names) {
-      if (!values.has(name.local)) continue;
+      if (!values.has(name.local)) {
+        continue;
+      }
       if (name.imported === "default") {
         imports.addDefault(entry.specifier, name.local, { exact: true });
-      } else imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
+      } else {
+        imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
+      }
     }
   }
   // The types the constants and their declarations name, imported as the source imports them.
   for (const entry of module.typeImports ?? []) {
     for (const name of entry.names) {
-      if (!named.has(name.local)) continue;
+      if (!named.has(name.local)) {
+        continue;
+      }
       imports.add(
         typeSpecifier(entry.specifier, module, (each) => each),
         name.imported,
@@ -135,17 +163,37 @@ export function moduleReads(
  */
 function ownTypes(owner: UfComponent): TypeText[] {
   const found: TypeText[] = [];
-  if (owner.propsParameter) found.push(owner.propsParameter.type);
-  for (const prop of owner.props) found.push(prop.type);
-  for (const item of owner.setup) if ("type" in item && item.type) found.push(item.type);
-  for (const { function: fn } of functionsOf(owner)) {
-    for (const parameter of fn.parameters) if (parameter.type) found.push(parameter.type);
-    if (fn.returnType) found.push(fn.returnType);
+  if (owner.propsParameter) {
+    found.push(owner.propsParameter.type);
   }
-  if (owner.emits) found.push(owner.emits.type);
+  for (const prop of owner.props) {
+    found.push(prop.type);
+  }
+  for (const item of owner.setup) {
+    if ("type" in item && item.type) {
+      found.push(item.type);
+    }
+  }
+  for (const { function: fn } of functionsOf(owner)) {
+    for (const parameter of fn.parameters) {
+      if (parameter.type) {
+        found.push(parameter.type);
+      }
+    }
+    if (fn.returnType) {
+      found.push(fn.returnType);
+    }
+  }
+  if (owner.emits) {
+    found.push(owner.emits.type);
+  }
   for (const parameter of owner.typeParameters ?? []) {
-    if (parameter.constraint) found.push(parameter.constraint);
-    if (parameter.default) found.push(parameter.default);
+    if (parameter.constraint) {
+      found.push(parameter.constraint);
+    }
+    if (parameter.default) {
+      found.push(parameter.default);
+    }
   }
   return found;
 }
@@ -167,18 +215,28 @@ function typeQueries(text: string, kind: CodeKind | "type"): string[] {
   const found: string[] = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
-      for (const each of node) visit(each);
+      for (const each of node) {
+        visit(each);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     if (node.type === "TSTypeQuery") {
       let name = node["exprName"];
-      while (isNode(name) && name.type === "TSQualifiedName") name = name["left"];
+      while (isNode(name) && name.type === "TSQualifiedName") {
+        name = name["left"];
+      }
       if (isNode(name) && name.type === "Identifier" && typeof name["name"] === "string") {
         found.push(name["name"]);
       }
     }
-    for (const [key, child] of Object.entries(node)) if (key !== "parent") visit(child);
+    for (const [key, child] of Object.entries(node)) {
+      if (key !== "parent") {
+        visit(child);
+      }
+    }
   };
   visit(root);
   return found;

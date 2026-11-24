@@ -69,8 +69,11 @@ function readSeoData(rootDir: string, logger: ReturnType<typeof useLogger>): Seo
   const lastmod: Record<string, string> = {};
   for (const { path, file } of sources) {
     const date = git(rootDir, "log", "-1", "--format=%cs", "--", file);
-    if (date) lastmod[path] = date;
-    else logger.warn(`${file} has no commit yet, so ${path} gets no <lastmod>.`);
+    if (date) {
+      lastmod[path] = date;
+    } else {
+      logger.warn(`${file} has no commit yet, so ${path} gets no <lastmod>.`);
+    }
   }
 
   return { lastmod, sections: docsSections(rootDir) };
@@ -87,7 +90,9 @@ function ensureHistory(rootDir: string, logger: ReturnType<typeof useLogger>) {
       { cause: error },
     );
   }
-  if (!shallow) return;
+  if (!shallow) {
+    return;
+  }
 
   logger.info("Shallow clone: fetching the history for the sitemap's dates.");
   let failure: unknown;
@@ -126,7 +131,9 @@ export function contentPath(file: string) {
     .replace(/\.md$/, "")
     .split("/")
     .map((segment) => segment.replace(/^\d+\./, "").toLowerCase());
-  if (segments.at(-1) === "index") segments.pop();
+  if (segments.at(-1) === "index") {
+    segments.pop();
+  }
   return `/${segments.join("/")}`;
 }
 
@@ -140,7 +147,9 @@ function docsSections(rootDir: string) {
   const sections: Record<string, string> = {};
   const docsDir = join(rootDir, DOCS_DIR);
   for (const entry of readdirSync(docsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory()) {
+      continue;
+    }
     const first = readdirSync(join(docsDir, entry.name), { recursive: true, encoding: "utf8" })
       .filter((file) => file.endsWith(".md"))
       .sort(byName)[0];

@@ -61,7 +61,9 @@ function resolveTsgo(toolchainDir: string): string {
     );
   }
   const bin = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.tsc;
-  if (!bin) throw new Error(`TypeScript at ${dirname(manifestPath)} declares no tsc binary.`);
+  if (!bin) {
+    throw new Error(`TypeScript at ${dirname(manifestPath)} declares no tsc binary.`);
+  }
   return join(dirname(manifestPath), bin);
 }
 
@@ -73,7 +75,9 @@ function collect(
   const printed: Printed[] = [];
   const unparsed: string[] = [];
   for (const line of stdout.split(/\r?\n/)) {
-    if (line.trim() === "") continue;
+    if (line.trim() === "") {
+      continue;
+    }
     const located = LOCATED.exec(line);
     if (located) {
       const [, path = "", row, column, tsCode, message = ""] = located;
@@ -101,9 +105,13 @@ function collect(
   }
 
   const output = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
-  if (signal) throw new Error(`tsc was killed by ${signal}.\n${output}`);
+  if (signal) {
+    throw new Error(`tsc was killed by ${signal}.\n${output}`);
+  }
   // A clean or failing run writes only to stdout; stderr means a crash or a launcher problem.
-  if (stderr.trim() !== "") throw new Error(`tsc wrote to stderr (exit code ${code}):\n${output}`);
+  if (stderr.trim() !== "") {
+    throw new Error(`tsc wrote to stderr (exit code ${code}):\n${output}`);
+  }
   if (unparsed.length > 0) {
     throw new Error(`tsc printed output this toolchain cannot read:\n${unparsed.join("\n")}`);
   }
@@ -113,6 +121,8 @@ function collect(
 
   // Report against the paths the caller gave, even when tsgo saw them through a symlink.
   const diagnostics = diagnosticsByFile(files, tsconfig);
-  for (const { path, ...message } of printed) diagnostics.add(path, message);
+  for (const { path, ...message } of printed) {
+    diagnostics.add(path, message);
+  }
   return diagnostics.results;
 }

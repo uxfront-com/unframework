@@ -58,7 +58,9 @@ export function parseHtml(source: string): TreeFragment {
   const fragment = parseFragment(context, source, {
     sourceCodeLocationInfo: true,
     onParseError: (error) => {
-      if (!CHARACTER_ERRORS.has(error.code)) errors.push(error);
+      if (!CHARACTER_ERRORS.has(error.code)) {
+        errors.push(error);
+      }
     },
   });
   const problems = [
@@ -91,7 +93,9 @@ function treeRepairs(source: string, fragment: TreeFragment): Problem[] {
   // The located node furthest into the source so far, in tree order.
   let furthest: Token.Location | undefined;
   const locate = (location: Token.Location | null | undefined) => {
-    if (!location) return;
+    if (!location) {
+      return;
+    }
     covered.fill(1, location.startOffset, location.endOffset);
     if (furthest && location.startOffset < furthest.startOffset) {
       problems.push({
@@ -125,10 +129,14 @@ function treeRepairs(source: string, fragment: TreeFragment): Problem[] {
   let start = -1;
   for (let index = 0; index <= source.length; index++) {
     if (index < source.length && covered[index] === 0) {
-      if (start < 0) start = index;
+      if (start < 0) {
+        start = index;
+      }
     } else if (start >= 0) {
       const text = source.slice(start, index);
-      if (text.trim() !== "") problems.push({ offset: start, message: `dropped ${excerpt(text)}` });
+      if (text.trim() !== "") {
+        problems.push({ offset: start, message: `dropped ${excerpt(text)}` });
+      }
       start = -1;
     }
   }

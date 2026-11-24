@@ -129,8 +129,9 @@ function stubHydrationRender(
   request: { case: string; props: Record<string, unknown> },
 ): { html: string; console: []; module: string } {
   const html = request.props.server;
-  if (typeof html !== "string")
+  if (typeof html !== "string") {
     throw new Error("A hydrate fixture passes its server HTML as `server`.");
+  }
   return { html, console: [], module: `/test/parity/cases/${request.case}/component.ts` };
 }
 

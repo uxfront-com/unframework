@@ -95,7 +95,9 @@ export class VueNames {
           : [],
       ),
     );
-    if (apis.length > 0 && apis.every((name) => name === "nextTick")) reserved.delete("nextTick");
+    if (apis.length > 0 && apis.every((name) => name === "nextTick")) {
+      reserved.delete("nextTick");
+    }
     this.scope = new NameScope(reserved);
     this.scope.reserve(...VUE_RESERVED);
     // The module's names the output declares sit beside the setup's at the top of
@@ -112,8 +114,9 @@ export class VueNames {
     this.scope.reserve(...moduleNames);
     // A renamed module name must not take a name its constants' own code uses.
     for (const constant of module.constants ?? []) {
-      if (this.reach.values.has(constant.name))
+      if (this.reach.values.has(constant.name)) {
         this.scope.reserve(...codeNames(constant.value.code));
+      }
     }
     // The setup keeps its names, which its macros, slots and template refs are keyed by; a
     // module name one of them shadows is renamed instead, as one Vue reserves is.
@@ -133,7 +136,9 @@ export class VueNames {
     for (const binding of component.bindings) {
       if (binding.kind === "moduleConst" || binding.kind === "import") {
         const local = this.#module.get(binding.name);
-        if (local !== undefined && local !== binding.name) this.#locals.set(binding.id, local);
+        if (local !== undefined && local !== binding.name) {
+          this.#locals.set(binding.id, local);
+        }
       } else if (declaredBySetup(binding.kind) && VUE_RESERVED.has(binding.name)) {
         this.#locals.set(binding.id, this.scope.claim(binding.name));
       }
@@ -314,17 +319,25 @@ export function moduleReach(
       .map((binding) => binding.name),
   );
   const query = (name: string) => {
-    if (moduleValues.has(name)) values.add(name);
+    if (moduleValues.has(name)) {
+      values.add(name);
+    }
   };
   for (const { text, kind, bound } of ownText(owner)) {
-    for (const { name } of typeQueries(text, kind, bound)) if (!shadowed.has(name)) query(name);
+    for (const { name } of typeQueries(text, kind, bound)) {
+      if (!shadowed.has(name)) {
+        query(name);
+      }
+    }
   }
   // A composable's parameter list sees its parameters, never its body's locals.
   const parameters = owner.bindings
     .filter((binding) => binding.kind === "argument")
     .map((binding) => binding.name);
   for (const { code } of typeTexts) {
-    for (const { name } of typeQueries(code, "type", parameters)) query(name);
+    for (const { name } of typeQueries(code, "type", parameters)) {
+      query(name);
+    }
   }
   // The module's declarations the output prints: the owner's own, and those its constants name.
   const declared = new Set(owner.types);
@@ -332,23 +345,41 @@ export function moduleReach(
   for (let size = -1; size !== values.size + declared.size;) {
     size = values.size + declared.size;
     for (const constant of module.constants ?? []) {
-      if (!values.has(constant.name)) continue;
+      if (!values.has(constant.name)) {
+        continue;
+      }
       // A constant's references name a binding by `name@offset`; a module's names are unique.
       for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") values.add(nameOf(reference.binding));
+        if (reference.kind === "Binding") {
+          values.add(nameOf(reference.binding));
+        }
       }
       if (constant.type) {
-        for (const name of typesOf(constant.type)) named.add(name);
-        for (const { name } of typeQueries(constant.type.code, "type")) query(name);
+        for (const name of typesOf(constant.type)) {
+          named.add(name);
+        }
+        for (const { name } of typeQueries(constant.type.code, "type")) {
+          query(name);
+        }
       }
-      for (const name of codeNames(constant.value.code)) named.add(name);
-      for (const { name } of typeQueries(constant.value.code, "expression")) query(name);
+      for (const name of codeNames(constant.value.code)) {
+        named.add(name);
+      }
+      for (const { name } of typeQueries(constant.value.code, "expression")) {
+        query(name);
+      }
     }
     for (const declaration of module.types) {
-      if (!declared.has(declaration.name) && !named.has(declaration.name)) continue;
+      if (!declared.has(declaration.name) && !named.has(declaration.name)) {
+        continue;
+      }
       declared.add(declaration.name);
-      for (const name of codeNames(declaration.code, "statements")) named.add(name);
-      for (const { name } of typeQueries(declaration.code, "statements")) query(name);
+      for (const name of codeNames(declaration.code, "statements")) {
+        named.add(name);
+      }
+      for (const { name } of typeQueries(declaration.code, "statements")) {
+        query(name);
+      }
     }
   }
   return { values };
@@ -373,10 +404,14 @@ function ownText(
   const found: { text: string; kind: CodeKind | "type"; bound: readonly string[] }[] = [];
   const visit = (node: unknown, bound: readonly string[]): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, bound);
+      for (const item of node) {
+        visit(item, bound);
+      }
       return;
     }
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     // A function's parameters are in scope over its parameters' types and its body.
     if ("parameters" in node && "body" in node && Array.isArray(node.parameters)) {
       const fn = node as FunctionCode;
@@ -387,9 +422,13 @@ function ownText(
         ),
       ];
       for (const parameter of fn.parameters) {
-        if (parameter.type) found.push({ text: parameter.type.code, kind: "type", bound: inner });
+        if (parameter.type) {
+          found.push({ text: parameter.type.code, kind: "type", bound: inner });
+        }
       }
-      if (fn.returnType) found.push({ text: fn.returnType.code, kind: "type", bound: inner });
+      if (fn.returnType) {
+        found.push({ text: fn.returnType.code, kind: "type", bound: inner });
+      }
       found.push({ text: fn.body.code, kind: codeKind(fn.body, owner), bound: inner });
       return;
     }
@@ -402,7 +441,9 @@ function ownText(
       );
       return;
     }
-    for (const value of Object.values(node)) visit(value, bound);
+    for (const value of Object.values(node)) {
+      visit(value, bound);
+    }
   };
   visit(
     [
@@ -448,17 +489,25 @@ export function typeQueries(
     return [];
   }
   // Statements are a block's body, whose declarations they bind.
-  if (Array.isArray(root)) root = { type: "BlockStatement", body: root };
+  if (Array.isArray(root)) {
+    root = { type: "BlockStatement", body: root };
+  }
   const found: { name: string; start: number; end: number }[] = [];
   const visit = (node: unknown, scope: ReadonlySet<string>): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, scope);
+      for (const item of node) {
+        visit(item, scope);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     if (node.type === "TSTypeQuery") {
       let name = node.exprName;
-      while (isNode(name) && name.type === "TSQualifiedName") name = name.left;
+      while (isNode(name) && name.type === "TSQualifiedName") {
+        name = name.left;
+      }
       if (isNode(name) && name.type === "Identifier" && typeof name.name === "string") {
         if (!scope.has(name.name)) {
           found.push({
@@ -471,7 +520,11 @@ export function typeQueries(
     }
     const binds = bindings(node);
     const inner = binds.length ? new Set([...scope, ...binds]) : scope;
-    for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value, inner);
+    for (const [key, value] of Object.entries(node)) {
+      if (key !== "parent") {
+        visit(value, inner);
+      }
+    }
   };
   visit(root, new Set(bound));
   return found;
@@ -503,14 +556,19 @@ function bindings(node: Node): string[] {
   const names: string[] = [];
   // A type parameter is a type, which a `typeof` never reads: only value bindings count.
   if (FUNCTIONS.has(node.type)) {
-    for (const parameter of (node.params as unknown[] | undefined) ?? [])
+    for (const parameter of (node.params as unknown[] | undefined) ?? []) {
       patternNames(parameter, names);
+    }
   } else if (node.type === "BlockStatement" || node.type === "StaticBlock") {
-    for (const statement of (node.body as unknown[] | undefined) ?? []) declared(statement, names);
+    for (const statement of (node.body as unknown[] | undefined) ?? []) {
+      declared(statement, names);
+    }
   } else if (node.type === "SwitchStatement") {
     // A `switch`'s cases share one block.
     for (const each of (node.cases as unknown[] | undefined) ?? []) {
-      if (!isNode(each)) continue;
+      if (!isNode(each)) {
+        continue;
+      }
       for (const statement of (each.consequent as unknown[] | undefined) ?? []) {
         declared(statement, names);
       }
@@ -527,10 +585,14 @@ function bindings(node: Node): string[] {
 
 /** The names a statement declares in its block: its variables, its function's or class's name. */
 function declared(statement: unknown, names: string[]): void {
-  if (!isNode(statement)) return;
+  if (!isNode(statement)) {
+    return;
+  }
   if (statement.type === "VariableDeclaration") {
     for (const each of (statement.declarations as unknown[] | undefined) ?? []) {
-      if (isNode(each)) patternNames(each.id, names);
+      if (isNode(each)) {
+        patternNames(each.id, names);
+      }
     }
   } else if (statement.type === "FunctionDeclaration" || statement.type === "ClassDeclaration") {
     patternNames(statement.id, names);
@@ -539,10 +601,14 @@ function declared(statement: unknown, names: string[]): void {
 
 /** The names a binding pattern binds: `a`, `{ b, c: d }`, `[e, ...f]`, `g = 1`. */
 function patternNames(pattern: unknown, names: string[]): void {
-  if (!isNode(pattern)) return;
+  if (!isNode(pattern)) {
+    return;
+  }
   switch (pattern.type) {
     case "Identifier":
-      if (typeof pattern.name === "string") names.push(pattern.name);
+      if (typeof pattern.name === "string") {
+        names.push(pattern.name);
+      }
       return;
     case "AssignmentPattern":
       patternNames(pattern.left, names);
@@ -586,7 +652,9 @@ export function renamedQueries(
   const queries = typeQueries(text, kind, bound).toSorted((a, b) => a.start - b.start);
   for (const { name, start, end } of queries) {
     const local = skip.has(name) ? name : names.moduleLocal(name);
-    if (local === name) continue;
+    if (local === name) {
+      continue;
+    }
     written += `${text.slice(last, start)}${local}`;
     last = end;
   }

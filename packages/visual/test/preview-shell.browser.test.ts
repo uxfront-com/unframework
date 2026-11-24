@@ -28,11 +28,15 @@ async function open(name: ShellFixture, targets?: string[], hash = ""): Promise<
     ...shell.head.querySelectorAll("script"),
     ...document.body.querySelectorAll("script"),
   ]) {
-    if (parsed.type === "application/json") continue;
+    if (parsed.type === "application/json") {
+      continue;
+    }
     const script = document.createElement("script");
     script.textContent = parsed.textContent;
     document.body.append(script);
-    if (parsed.isConnected) parsed.remove();
+    if (parsed.isConnected) {
+      parsed.remove();
+    }
   }
 }
 
@@ -58,7 +62,9 @@ const focused = () => document.activeElement;
 const renders: { entry: unknown; props: unknown }[] = [];
 addEventListener("message", (event) => {
   const data = event.data as { kind?: unknown; entry?: unknown; props?: unknown } | null;
-  if (data?.kind === "rendered") renders.push({ entry: data.entry, props: data.props });
+  if (data?.kind === "rendered") {
+    renders.push({ entry: data.entry, props: data.props });
+  }
 });
 
 /** The heading text of each control group, in order. */
@@ -339,11 +345,15 @@ describe("the Open link", () => {
       .toBeVisible();
     // A component takes props, which no URL holds: no caption links it.
     (item("src/Button").element() as HTMLElement).click();
-    for (const link of links()) expect(link!.checkVisibility()).toBe(false);
+    for (const link of links()) {
+      expect(link!.checkVisibility()).toBe(false);
+    }
     expect(page.getByRole("link").query()).toBeNull();
     // An example again brings them back.
     (item("Card").element() as HTMLElement).click();
-    for (const link of links()) expect(link!.checkVisibility()).toBe(true);
+    for (const link of links()) {
+      expect(link!.checkVisibility()).toBe(true);
+    }
   });
 
   it("keeps each caption on one line in the grid's narrowest cell", async () => {

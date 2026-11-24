@@ -36,7 +36,9 @@ export interface ThrownStepHost {
  */
 export async function expectThrown(host: ThrownStepHost, step: () => Promise<void>): Promise<void> {
   const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) throw new Error("expectThrown must be called inside a test.");
+  if (!test) {
+    throw new Error("expectThrown must be called inside a test.");
+  }
   const harness = inject("ufHarness");
   const subject = {
     case: caseOfFile(test.file.filepath, harness),
@@ -49,12 +51,16 @@ export async function expectThrown(host: ThrownStepHost, step: () => Promise<voi
   let thrown: Error | undefined;
   let logged: Error | undefined;
   const take = (value: unknown) => {
-    if (value instanceof Error) thrown ??= value;
+    if (value instanceof Error) {
+      thrown ??= value;
+    }
   };
   const onError = (event: ErrorEvent) => take(event.error);
   const onRejection = (event: PromiseRejectionEvent) => take(event.reason);
   const unwatch = watchConsoleErrors((value) => {
-    if (value instanceof Error) logged ??= value;
+    if (value instanceof Error) {
+      logged ??= value;
+    }
   });
   window.addEventListener("error", onError);
   window.addEventListener("unhandledrejection", onRejection);
@@ -89,7 +95,9 @@ export async function expectThrown(host: ThrownStepHost, step: () => Promise<voi
 
 /** What is wrong with the captured error's mapped stack, or nothing. */
 async function problem(caseId: string, error: Error | undefined): Promise<string | undefined> {
-  if (!error) return "The step threw no Error.";
+  if (!error) {
+    return "The step threw no Error.";
+  }
   const { message } = await commands.ufMapStack({ case: caseId, stack: error.stack ?? "" });
   return message;
 }

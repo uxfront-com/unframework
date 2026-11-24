@@ -98,7 +98,9 @@ export class ParityReporter {
     reason: string,
   ): void {
     const vitest = this.#vitest;
-    if (!vitest) throw new Error("[uf:parity] onTestRunEnd ran before onInit.");
+    if (!vitest) {
+      throw new Error("[uf:parity] onTestRunEnd ran before onInit.");
+    }
     if (reason === "interrupted") {
       vitest.logger.error("[uf:parity] The run was interrupted: no parity matrix written.");
       return;
@@ -119,7 +121,9 @@ export class ParityReporter {
     const named = new Set<string>();
     for (const module of testModules) {
       const fileRecord = module.meta().uf;
-      if (fileRecord) records.push({ project: module.project.name, record: fileRecord });
+      if (fileRecord) {
+        records.push({ project: module.project.name, record: fileRecord });
+      }
       for (const test of module.children.allTests()) {
         counts.set(test.project.name, (counts.get(test.project.name) ?? 0) + 1);
         // A record carries the parity scenarios the test checked too: a scenario one target
@@ -239,7 +243,9 @@ function filterOf(vitest: ReportedVitest): string | null {
   if (vitest.filenamePattern?.length) {
     reasons.push(`files matching ${vitest.filenamePattern.join(", ")}`);
   }
-  if (vitest.config.testNamePattern) reasons.push(`tests named ${vitest.config.testNamePattern}`);
+  if (vitest.config.testNamePattern) {
+    reasons.push(`tests named ${vitest.config.testNamePattern}`);
+  }
   const { changed, related, tagsFilter } = vitest.config;
   if (changed) {
     reasons.push(
@@ -248,8 +254,12 @@ function filterOf(vitest: ReportedVitest): string | null {
   } else if (related?.length) {
     reasons.push(`tests related to ${related.join(", ")}`);
   }
-  if (tagsFilter?.length) reasons.push(`tests tagged ${tagsFilter.join(" ")}`);
-  if (vitest.config.watch) reasons.push("watch mode, which reruns only what changed");
+  if (tagsFilter?.length) {
+    reasons.push(`tests tagged ${tagsFilter.join(" ")}`);
+  }
+  if (vitest.config.watch) {
+    reasons.push("watch mode, which reruns only what changed");
+  }
   return reasons.length ? reasons.join("; ") : null;
 }
 
@@ -274,16 +284,21 @@ function skipsWithReasons(record: UfLayerMeta | undefined): boolean {
 /** A file-name-safe name for the selected projects: `all`, or the project names. */
 export function runName(projects: readonly string[], allProjects?: readonly string[]): string {
   const selected = [...new Set(projects)].sort();
-  if (allProjects && [...new Set(allProjects)].sort().join("\n") === selected.join("\n"))
+  if (allProjects && [...new Set(allProjects)].sort().join("\n") === selected.join("\n")) {
     return "all";
+  }
   const joined = selected.map((name) => name.replace(/[^a-zA-Z0-9-]+/g, "-")).join("+");
-  if (joined.length <= 80) return joined || "none";
+  if (joined.length <= 80) {
+    return joined || "none";
+  }
   return `${joined.slice(0, 60)}+${hash(joined)}`;
 }
 
 function hash(text: string): string {
   let value = 0;
-  for (const char of text) value = (Math.imul(value, 31) + char.charCodeAt(0)) >>> 0;
+  for (const char of text) {
+    value = (Math.imul(value, 31) + char.charCodeAt(0)) >>> 0;
+  }
   return value.toString(36);
 }
 
@@ -299,9 +314,13 @@ export function isPartialMatrixFile(name: string): boolean {
 /** The partial matrices in a directory, by file. Throws on one that is not a current matrix. */
 export function readPartialMatrices(reportsDir: string): Map<string, PartialMatrix> {
   const matrices = new Map<string, PartialMatrix>();
-  if (!existsSync(reportsDir)) return matrices;
+  if (!existsSync(reportsDir)) {
+    return matrices;
+  }
   for (const name of readdirSync(reportsDir).sort()) {
-    if (!isPartialMatrixFile(name)) continue;
+    if (!isPartialMatrixFile(name)) {
+      continue;
+    }
     const file = join(reportsDir, name);
     const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;
     if (matrix.version !== MATRIX_VERSION || !matrix.byProject) {
@@ -376,9 +395,13 @@ function supersede(
 ): string[] {
   const done: string[] = [];
   for (const name of readdirSync(reportsDir).sort()) {
-    if (!isPartialMatrixFile(name)) continue;
+    if (!isPartialMatrixFile(name)) {
+      continue;
+    }
     const file = join(reportsDir, name);
-    if (file === written) continue;
+    if (file === written) {
+      continue;
+    }
     const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;
     if (matrix.version !== MATRIX_VERSION || !matrix.byProject) {
       rmSync(file);
@@ -386,7 +409,9 @@ function supersede(
       continue;
     }
     const kept = withoutProjects(matrix, projects, scopes);
-    if (kept === matrix) continue;
+    if (kept === matrix) {
+      continue;
+    }
     if (kept) {
       writeFileSync(file, stringifyMatrix(kept));
       const superseded = matrix.projects.filter(

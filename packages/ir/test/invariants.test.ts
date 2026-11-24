@@ -2117,8 +2117,12 @@ function codeAt(
   const whole = span(start, start + text.length);
   const locate = (part: string, nth = 0): Span => {
     let offset = -1;
-    for (let found = 0; found <= nth; found++) offset = text.indexOf(part, offset + 1);
-    if (offset === -1) throw new Error(`"${part}" is not in "${text}"`);
+    for (let found = 0; found <= nth; found++) {
+      offset = text.indexOf(part, offset + 1);
+    }
+    if (offset === -1) {
+      throw new Error(`"${part}" is not in "${text}"`);
+    }
     return span(start + offset, start + offset + part.length);
   };
   return createCode(text, whole, refs(locate, whole));
@@ -3213,7 +3217,9 @@ describe("checkInvariants on the setup, events and template refs", () => {
       () =>
         counterChanged((counter) => {
           const [ref] = setupItem(counter, 1, "Derived").getter.body.refs;
-          if (ref?.kind === "Binding") ref.later = true;
+          if (ref?.kind === "Binding") {
+            ref.later = true;
+          }
         }),
       "/components/1/setup/1/getter/body/refs/0/later",
       "must be absent in a getter, which runs nothing later",
@@ -3351,11 +3357,15 @@ describe("checkInvariants on a composable's narrowed result", () => {
     const read = findInModule("on.value");
     walk(module.components[0]!.render, {
       enter(entered) {
-        if (entered.kind !== "Interpolation") return;
+        if (entered.kind !== "Interpolation") {
+          return;
+        }
         const ref = entered.value.refs.find(
           (each) => each.kind === "Binding" && each.span.start === read.start,
         );
-        if (ref?.kind === "Binding") ref.narrowed = [createNarrowedPath(read, "local")];
+        if (ref?.kind === "Binding") {
+          ref.narrowed = [createNarrowedPath(read, "local")];
+        }
       },
     });
     expect(JSON.stringify(module.components[0]!.render)).toContain('"narrowed"');
@@ -3882,7 +3892,9 @@ describe("checkInvariants on styles (ADR-0063)", () => {
     const module = extraConst("styled");
     module.passThroughImports = [recipes()];
     const extra = module.components[1]!.setup.at(-1);
-    if (extra?.kind !== "Const") throw new Error("Expected the extra const.");
+    if (extra?.kind !== "Const") {
+      throw new Error("Expected the extra const.");
+    }
     const { start } = extra.value.span;
     extra.value = createCode("button", span(start, start + 6), [
       createImportReference("button", span(start, start + 6)),

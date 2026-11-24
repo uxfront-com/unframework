@@ -20,7 +20,11 @@ function productionBuild(config: string): { status: number | null; output: strin
   const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: "production" };
   // Styleframe reads `STYLEFRAME_KEY`, and the same name behind a framework's public prefix
   // (`VITE_STYLEFRAME_KEY`, `NUXT_STYLEFRAME_KEY`…).
-  for (const name of Object.keys(env)) if (name.endsWith("STYLEFRAME_KEY")) delete env[name];
+  for (const name of Object.keys(env)) {
+    if (name.endsWith("STYLEFRAME_KEY")) {
+      delete env[name];
+    }
+  }
   const result = spawnSync(
     process.execPath,
     [join(ROOT, "scripts", "styleframe-build.ts"), "build", config],
@@ -54,7 +58,9 @@ describe("the Styleframe licence", () => {
 describe("the declarations of Styleframe's virtual modules", () => {
   it("are those Styleframe writes for the corpus's configuration", async () => {
     const expected = await styleframeDeclarations();
-    if (inject("ufHarness").update) writeFileSync(STYLEFRAME_DECLARATIONS, expected);
+    if (inject("ufHarness").update) {
+      writeFileSync(STYLEFRAME_DECLARATIONS, expected);
+    }
     expect(
       readFileSync(STYLEFRAME_DECLARATIONS, "utf8"),
       "tests/integration/styleframe.d.ts differs from the configuration's: run `pnpm test:update`.",

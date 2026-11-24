@@ -330,7 +330,9 @@ export async function captureAt(
       ["reference", expectedBuffer, expected],
       ["actual", png, actual],
     ];
-    if (diff) images.push(["diff", PNG.sync.write(diff), diff]);
+    if (diff) {
+      images.push(["diff", PNG.sync.write(diff), diff]);
+    }
     for (const [name, buffer, image] of images) {
       const file = join(paths.diffs, `${name}.png`);
       writeIfChanged(file, buffer);
@@ -406,7 +408,9 @@ async function stableCapture(
   let previous = await shoot();
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const next = await shoot();
-    if (next.equals(previous)) return next;
+    if (next.equals(previous)) {
+      return next;
+    }
     previous = next;
   }
   return undefined;
@@ -420,7 +424,9 @@ async function unionClip(
   const boxes = [];
   for (const { selector } of [request.element, ...(request.teleported ?? [])]) {
     const box = await context.iframe.locator(selector).boundingBox({ timeout: 5_000 });
-    if (!box) throw new Error(`[uf:visual] ${selector} has no box to capture.`);
+    if (!box) {
+      throw new Error(`[uf:visual] ${selector} has no box to capture.`);
+    }
     boxes.push(box);
   }
   const left = Math.min(...boxes.map(({ x }) => x));
@@ -493,8 +499,9 @@ async function fontAudit(
     }
   };
   find(root);
-  if (!containers.length)
+  if (!containers.length) {
     throw new Error(`[uf:visual] The font audit could not find the capture container ${marker}.`);
+  }
 
   // Every element under the container, with the element a reader would name for it: a node in
   // a user-agent shadow root is its host's rendering, a pseudo-element its owner's.
@@ -505,11 +512,19 @@ async function fontAudit(
       label = node.pseudoType ? `${host}::${node.pseudoType}` : (host ?? `<${node.localName}>`);
       elements.push({ nodeId: node.nodeId, label });
     }
-    for (const child of node.children ?? []) collect(child, host);
-    for (const shadow of node.shadowRoots ?? []) collect(shadow, label);
-    for (const pseudo of node.pseudoElements ?? []) collect(pseudo, label);
+    for (const child of node.children ?? []) {
+      collect(child, host);
+    }
+    for (const shadow of node.shadowRoots ?? []) {
+      collect(shadow, label);
+    }
+    for (const pseudo of node.pseudoElements ?? []) {
+      collect(pseudo, label);
+    }
   };
-  for (const container of containers) collect(container, undefined);
+  for (const container of containers) {
+    collect(container, undefined);
+  }
 
   // Every element's request is sent before any answer is awaited. CDP answers one session's
   // requests in the order they were sent, so the audit waits for one round trip, not one per
@@ -522,8 +537,12 @@ async function fontAudit(
   for (const [index, { fonts }] of answers.entries()) {
     const { label } = elements[index]!;
     for (const font of fonts) {
-      if (font.isCustomFont && ALLOWED_FONTS.includes(font.familyName)) continue;
-      if (families.includes(font.familyName)) continue;
+      if (font.isCustomFont && ALLOWED_FONTS.includes(font.familyName)) {
+        continue;
+      }
+      if (families.includes(font.familyName)) {
+        continue;
+      }
       violations.add(
         `${label} rendered ${font.glyphCount} glyph(s) with "${font.familyName}"${font.isCustomFont ? "" : " (system font)"}`,
       );
@@ -597,13 +616,17 @@ export function formatGeometryDiff(
   against = "the reference",
   limit = 12,
 ): string[] {
-  if (!deltas.length) return [];
+  if (!deltas.length) {
+    return [];
+  }
   const lines = deltas
     .slice(0, limit)
     .map(
       (delta) =>
         `  ${delta.path}  ${delta.property}: ${JSON.stringify(delta.expected)} → ${JSON.stringify(delta.actual)}`,
     );
-  if (deltas.length > limit) lines.push(`  … ${deltas.length - limit} more`);
+  if (deltas.length > limit) {
+    lines.push(`  … ${deltas.length - limit} more`);
+  }
   return [`Geometry and computed styles differ from ${against} (${deltas.length}):`, ...lines];
 }

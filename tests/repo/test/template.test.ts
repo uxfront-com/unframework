@@ -16,10 +16,14 @@ interface PackageFiles {
 function checkPackage(pkg: PackageFiles): string[] {
   const problems: string[] = [];
   const raw = pkg.read("package.json");
-  if (!raw) return ["has no package.json"];
+  if (!raw) {
+    return ["has no package.json"];
+  }
   const manifest = JSON.parse(raw);
   const expect = (condition: unknown, problem: string) => {
-    if (!condition) problems.push(problem);
+    if (!condition) {
+      problems.push(problem);
+    }
   };
 
   expect(manifest.type === "module", "is not an ES module package");
@@ -40,8 +44,9 @@ function checkPackage(pkg: PackageFiles): string[] {
     "publishes different subpaths than it exports in the workspace",
   );
   for (const [subpath, target] of Object.entries(exportsMap)) {
-    if (subpath === "./package.json" || (typeof target === "string" && target.endsWith(".json")))
+    if (subpath === "./package.json" || (typeof target === "string" && target.endsWith(".json"))) {
       continue;
+    }
     expect(
       typeof target === "string" && /^\.\/src\/.+\.tsx?$/.test(target),
       `exports ${subpath} from somewhere other than src`,

@@ -19,7 +19,11 @@ class FakeElement {
   }
 
   contains(other: FakeElement): boolean {
-    for (let at: FakeElement | undefined = other; at; at = at.parent) if (at === this) return true;
+    for (let at: FakeElement | undefined = other; at; at = at.parent) {
+      if (at === this) {
+        return true;
+      }
+    }
     return false;
   }
 
@@ -27,13 +31,16 @@ class FakeElement {
   compareDocumentPosition(other: FakeElement): number {
     const order = (element: FakeElement): number[] => {
       const path: number[] = [];
-      for (let at = element; at.parent; at = at.parent)
+      for (let at = element; at.parent; at = at.parent) {
         path.unshift(at.parent.children.indexOf(at));
+      }
       return path;
     };
     const [a, b] = [order(this), order(other)];
     for (let index = 0; index < Math.min(a.length, b.length); index++) {
-      if (a[index] !== b[index]) return a[index]! < b[index]! ? 4 : 2;
+      if (a[index] !== b[index]) {
+        return a[index]! < b[index]! ? 4 : 2;
+      }
     }
     return a.length < b.length ? 4 : 2;
   }

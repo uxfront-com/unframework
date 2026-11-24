@@ -184,7 +184,9 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
   return Promise.all(
     emitModule(module).map(async (file) => {
       const outcome = await formatOutput(file);
-      if (outcome.error) throw new Error(`${file.path} does not format: ${outcome.error}`);
+      if (outcome.error) {
+        throw new Error(`${file.path} does not format: ${outcome.error}`);
+      }
       return outcome.file;
     }),
   );
@@ -202,7 +204,9 @@ export function lower(source: string, file = "Card.uf.tsx", warnings = false): U
     throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics, null, 2)}`);
   }
   const broken = checkInvariants(module);
-  if (broken.length) throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
+  if (broken.length) {
+    throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
+  }
   return module;
 }
 
@@ -218,7 +222,9 @@ function caseSheets(
   return new Map(
     stylesheetImports(parsed).map((specifier) => {
       const path = join(casesDir, dirname(file), specifier);
-      if (!existsSync(path)) return [specifier, undefined];
+      if (!existsSync(path)) {
+        return [specifier, undefined];
+      }
       const source = readFileSync(path, "utf8");
       return [
         specifier,
@@ -231,14 +237,18 @@ function caseSheets(
 /** The one file a single-component source emits, as `emit` prints it (unformatted). */
 export function emitted(source: string): string {
   const [file, ...more] = emitModule(lower(source));
-  if (!file || more.length) throw new Error("Expected one file.");
+  if (!file || more.length) {
+    throw new Error("Expected one file.");
+  }
   return file.contents;
 }
 
 /** The one file a single-component source emits, formatted as the compiler writes it. */
 export async function formatted(source: string): Promise<OutputFile> {
   const [file, ...more] = await emitFormatted(lower(source));
-  if (!file || more.length) throw new Error("Expected one file.");
+  if (!file || more.length) {
+    throw new Error("Expected one file.");
+  }
   return file;
 }
 
@@ -261,7 +271,9 @@ export function isolatedDir(): string {
 
 /** Deletes every scratch directory this test file created. */
 export function removeScratch(): void {
-  for (const directory of scratch.splice(0)) rmSync(directory, { recursive: true, force: true });
+  for (const directory of scratch.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 /** Writes files into a directory and returns their absolute paths by name. */
@@ -376,7 +388,9 @@ export async function ngtscPlugin(
     },
     load: async ({ id }: { id: string }) => {
       loaded.push(id);
-      if (vite.loadError !== undefined) throw new Error(vite.loadError);
+      if (vite.loadError !== undefined) {
+        throw new Error(vite.loadError);
+      }
       return transform(id);
     },
   };

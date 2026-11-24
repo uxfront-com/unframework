@@ -38,7 +38,9 @@ const FLAG_MODULES: ReadonlySet<string> = new Set([
 /** The warning each case logs: the text of its source's `console.warn`. */
 function warningOf(source: string): string {
   const match = /console\.warn\("([^"]+)"\)/.exec(readFileSync(source, "utf8"));
-  if (!match) throw new Error(`${source} logs no warning to look for.`);
+  if (!match) {
+    throw new Error(`${source} logs no warning to look for.`);
+  }
   return match[1]!;
 }
 
@@ -49,7 +51,9 @@ function warningOf(source: string): string {
  */
 function rendered(source: string): string {
   const match = / d="([^"]+)"/.exec(readFileSync(source, "utf8"));
-  if (!match) throw new Error(`${source} renders no path to look for.`);
+  if (!match) {
+    throw new Error(`${source} renders no path to look for.`);
+  }
   return match[1]!;
 }
 
@@ -95,7 +99,9 @@ async function bundled(modules: readonly ToolchainFile[], build: Build): Promise
   const memory: Plugin = {
     name: "uf-dev-only:memory",
     async resolveId(source, importer) {
-      if (!importer && byKey.has(moduleKey(source))) return moduleKey(source);
+      if (!importer && byKey.has(moduleKey(source))) {
+        return moduleKey(source);
+      }
       if (FLAG_MODULES.has(source)) {
         return this.resolve(source, base, { skipSelf: true });
       }
@@ -104,12 +110,16 @@ async function bundled(modules: readonly ToolchainFile[], build: Build): Promise
         return byKey.has(key) ? key : { id: source, external: true };
       }
       // A flag module's own relative imports resolve; every package stays external.
-      if (/^\.\.?\//.test(source) || source.startsWith("/")) return null;
+      if (/^\.\.?\//.test(source) || source.startsWith("/")) {
+        return null;
+      }
       return { id: source, external: true };
     },
     load(id) {
       const module = byKey.get(id);
-      if (!module) return undefined;
+      if (!module) {
+        return undefined;
+      }
       return { code: module.contents, moduleType: /\.[jt]sx$/.test(module.path) ? "tsx" : "ts" };
     },
   };

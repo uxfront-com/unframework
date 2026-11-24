@@ -37,7 +37,9 @@ describe("portability diagnostics", () => {
     expect(result.diagnostics[0]!.message).toMatch(
       /^The vue target does not support listbox: runtime-dom's `nodeOps.createElement` /,
     );
-    for (const target of TARGET_NAMES) expect(result.outputs[target], target).toHaveLength(1);
+    for (const target of TARGET_NAMES) {
+      expect(result.outputs[target], target).toHaveLength(1);
+    }
   });
 
   it("reports a listener that falls through a component once on Astro, and prints none", async () => {

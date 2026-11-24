@@ -50,7 +50,9 @@ export function offsetOf(source: string, line: number, column: number): number {
     const end = /\r\n|[\n\r\f]/g;
     end.lastIndex = offset;
     const match = end.exec(source);
-    if (!match) return source.length;
+    if (!match) {
+      return source.length;
+    }
     offset = match.index + match[0].length;
   }
   return Math.min(source.length, offset + column - 1);

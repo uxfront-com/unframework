@@ -82,7 +82,9 @@ interface Directive {
 
 /** The checker: an explicit executable, or the `tsc` of the TypeScript this package depends on. */
 function tscCommand(tsc: string | undefined): { command: string; args: string[] } {
-  if (tsc) return { command: tsc, args: [] };
+  if (tsc) {
+    return { command: tsc, args: [] };
+  }
   const require = createRequire(import.meta.url);
   const manifestPath = require.resolve("typescript/package.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { bin: { tsc: string } };
@@ -142,7 +144,9 @@ function readLayout(
   const directives: Directive[] = [];
   const problems: string[] = [];
   for (const file of files) {
-    if (!/\.[cm]?tsx?$/.test(file)) continue;
+    if (!/\.[cm]?tsx?$/.test(file)) {
+      continue;
+    }
     const inCaught = file.startsWith("caught/");
     let count = 0;
     readFileSync(join(directory, file), "utf8")
@@ -155,7 +159,9 @@ function readLayout(
             `layout: ${where}: @ts-ignore and @ts-nocheck hide errors; pin them with @ts-expect-error`,
           );
         }
-        if (!DIRECTIVE.test(trimmed)) return;
+        if (!DIRECTIVE.test(trimmed)) {
+          return;
+        }
         count++;
         const pinned = PINNED_DIRECTIVE.exec(trimmed);
         if (!inCaught) {
@@ -235,11 +241,13 @@ export function runProbes(options: ProbeOptions = {}): ProbeReport {
     }
     for (const { target, code, text } of directives) {
       const codes = (actual.get(target) ?? []).map((diagnostic) => diagnostic.code);
-      if (codes.length === 1 && codes[0] === code) pinned++;
-      else
+      if (codes.length === 1 && codes[0] === code) {
+        pinned++;
+      } else {
         problems.push(
           `pin: ${target}: expected ${code}, got ${codes.join(", ") || "nothing"} (${text})`,
         );
+      }
       actual.delete(target);
     }
     for (const [key, diagnostics] of actual) {
@@ -268,7 +276,9 @@ if (import.meta.main) {
     ?.slice("--tsc=".length);
   const report = runProbes({ tsc });
   if (!report.ok) {
-    for (const problem of report.problems) console.error(problem);
+    for (const problem of report.problems) {
+      console.error(problem);
+    }
     console.error(`probes: FAIL, ${report.problems.length} problem(s)`);
     process.exit(1);
   }

@@ -141,8 +141,9 @@ describe("checkFixes (L1)", () => {
 describe("nondeterminism (L2)", () => {
   it("passes two compiles of one source", async () => {
     const [first, second] = await Promise.all([compileWith(fixable), compileWith(fixable)]);
-    for (const target of TARGET_NAMES)
+    for (const target of TARGET_NAMES) {
       expect(nondeterminism(first, second, target)).toBe(undefined);
+    }
   });
 
   it("names the difference between two compiles that differ", async () => {
@@ -562,7 +563,9 @@ async function copyWithIdentityMap(contents: string): Promise<OutputFile> {
     }),
   });
   const copy = result.outputs.react!.find(({ path }) => path === "size.ts");
-  if (!copy) throw new Error(JSON.stringify(result.diagnostics));
+  if (!copy) {
+    throw new Error(JSON.stringify(result.diagnostics));
+  }
   return copy;
 }
 
@@ -579,6 +582,8 @@ async function styledSheet(): Promise<OutputFile> {
     }),
   });
   const sheet = result.outputs.react!.find(({ path }) => path.endsWith(".css"));
-  if (!sheet) throw new Error(JSON.stringify(result.diagnostics));
+  if (!sheet) {
+    throw new Error(JSON.stringify(result.diagnostics));
+  }
   return sheet;
 }

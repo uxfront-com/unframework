@@ -101,7 +101,9 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
   const vite = (browser as { project?: { browser?: { vite?: ViteDevServer } } } | undefined)
     ?.project?.browser?.vite;
   const client: DevEnvironment | undefined = vite?.environments.client;
-  if (!client) return undefined;
+  if (!client) {
+    return undefined;
+  }
   return {
     async resolve(specifier, importer) {
       return (await client.pluginContainer.resolveId(specifier, importer))?.id;
@@ -110,7 +112,9 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
       await client.moduleGraph.ensureEntryFromUrl(id);
       const loaded = await client.pluginContainer.load(id);
       const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (code == null) return;
+      if (code == null) {
+        return;
+      }
       const transformed = (await client.pluginContainer.transform(code, id)).code;
       if (transformed !== `export default ${JSON.stringify(astroComponentRef(id))};\n`) {
         const thrown = /^throw new Error\((".*")\);$/m.exec(transformed)?.[1];
@@ -120,15 +124,17 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
     async sheet(id) {
       const loaded = await client.pluginContainer.load(id);
       const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (code == null)
+      if (code == null) {
         throw new Error(`ufAstroRender: the browser project serves no sheet ${id}.`);
+      }
       return code;
     },
     async composable(id) {
       const loaded = await client.pluginContainer.load(id);
       const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (code == null)
+      if (code == null) {
         throw new Error(`ufAstroRender: the browser project serves no composables ${id}.`);
+      }
       return code;
     },
   };
@@ -189,7 +195,9 @@ async function render(
     const current = COMPOSABLE_ID.test(served)
       ? await children?.composable(served).catch(() => undefined)
       : compiledAstroSource(served);
-    if (current !== previous) invalidate(server.ssr, served);
+    if (current !== previous) {
+      invalidate(server.ssr, served);
+    }
   }
 
   const module: { default?: unknown } = await server.ssr.runner.import(`${id}?container`);
@@ -222,12 +230,19 @@ function importedSheets(ssr: RunnableDevEnvironment, id: string): string[] {
   const sheets = new Set<string>();
   const seen = new Set<string>();
   const visit = (node: EnvironmentModuleNode | undefined) => {
-    if (!node?.id || seen.has(node.id)) return;
+    if (!node?.id || seen.has(node.id)) {
+      return;
+    }
     seen.add(node.id);
     for (const imported of node.importedModules) {
-      if (!imported.id) continue;
-      if (ASTRO_VIRTUAL_ID.test(imported.id)) visit(imported);
-      else if (STYLESHEET_ID.test(imported.id)) sheets.add(splitQuery(imported.id)[0]);
+      if (!imported.id) {
+        continue;
+      }
+      if (ASTRO_VIRTUAL_ID.test(imported.id)) {
+        visit(imported);
+      } else if (STYLESHEET_ID.test(imported.id)) {
+        sheets.add(splitQuery(imported.id)[0]);
+      }
     }
   };
   visit(ssr.moduleGraph.getModuleById(id));
@@ -238,7 +253,9 @@ function importedSheets(ssr: RunnableDevEnvironment, id: string): string[] {
 async function stylesheet(ssr: RunnableDevEnvironment, id: string): Promise<string> {
   const loaded = await ssr.pluginContainer.load(id);
   const code = typeof loaded === "object" ? loaded?.code : loaded;
-  if (code == null) throw new Error(`ufAstroRender: no plugin serves the sheet ${id}.`);
+  if (code == null) {
+    throw new Error(`ufAstroRender: no plugin serves the sheet ${id}.`);
+  }
   return code;
 }
 
@@ -311,17 +328,29 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
     name: "unframework:astro-render-source",
     enforce: "pre",
     async resolveId(id, importer) {
-      if (ASTRO_VIRTUAL_ID.test(id)) return id;
+      if (ASTRO_VIRTUAL_ID.test(id)) {
+        return id;
+      }
       const [parent] = splitQuery(importer ?? "");
-      if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) return null;
+      if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) {
+        return null;
+      }
       const child = await children.resolve(id, parent);
       // A served module's sheet (ADR-0063): the render reads it from the browser project.
-      if (child !== undefined && SHEET_ID.test(child)) return splitQuery(child)[0];
+      if (child !== undefined && SHEET_ID.test(child)) {
+        return splitQuery(child)[0];
+      }
       // A module of composables (ADR-0069): its static module, as the browser project compiles it.
-      if (child !== undefined && COMPOSABLE_ID.test(child)) return splitQuery(child)[0];
-      if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) return null;
+      if (child !== undefined && COMPOSABLE_ID.test(child)) {
+        return splitQuery(child)[0];
+      }
+      if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) {
+        return null;
+      }
       const [path] = splitQuery(child);
-      if (compiledAstroSource(path) === undefined) await children.load(path);
+      if (compiledAstroSource(path) === undefined) {
+        await children.load(path);
+      }
       return path;
     },
     load: {
@@ -329,17 +358,23 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
       async handler(id) {
         // The render puts the sheet before the markup itself (`importedSheets`): the module is
         // only an edge of the graph, whatever the sheet holds.
-        if (SHEET_ID.test(id)) return "";
+        if (SHEET_ID.test(id)) {
+          return "";
+        }
         // A plain TypeScript module, which the server's own transform takes from here.
         if (COMPOSABLE_ID.test(id)) {
-          if (!children) throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+          if (!children) {
+            throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+          }
           const [file] = splitQuery(id);
           const code = await children.composable(file);
           served.set(file, code);
           return code;
         }
         const [path, query] = splitQuery(id);
-        if (ASTRO_SUB_REQUEST.test(query)) return null;
+        if (ASTRO_SUB_REQUEST.test(query)) {
+          return null;
+        }
         const source = compiledAstroSource(path);
         if (source === undefined) {
           throw new Error(`ufAstroRender: no compiled source for ${path}.`);
@@ -389,7 +424,10 @@ async function captureConsole<T>(
 function capturing(level: CapturedConsoleMessage["level"], original: Console["warn"]) {
   return (...args: unknown[]): void => {
     const sink = renders.getStore();
-    if (sink) sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
-    else original(...args);
+    if (sink) {
+      sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
+    } else {
+      original(...args);
+    }
   };
 }

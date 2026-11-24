@@ -62,7 +62,9 @@ async function click(text: string): Promise<void> {
   const button = [...container.querySelectorAll("button")].find(
     (each) => each.textContent === text,
   );
-  if (!button) throw new Error(`No button "${text}".`);
+  if (!button) {
+    throw new Error(`No button "${text}".`);
+  }
   await userEvent.click(button);
   await mounted!.settle();
 }

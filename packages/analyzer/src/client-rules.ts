@@ -81,8 +81,12 @@ function awaitFix(call: AST.CallExpression, context: ClientRulesContext): Fix | 
   const statement = path.at(-2);
   const block = path.at(-3);
   const fn = path.at(-4);
-  if (statement?.type !== "ExpressionStatement" || statement.expression !== call) return undefined;
-  if (block?.type !== "BlockStatement") return undefined;
+  if (statement?.type !== "ExpressionStatement" || statement.expression !== call) {
+    return undefined;
+  }
+  if (block?.type !== "BlockStatement") {
+    return undefined;
+  }
   if (fn?.type !== "ArrowFunctionExpression" && fn?.type !== "FunctionDeclaration") {
     return undefined;
   }
@@ -99,13 +103,19 @@ function awaitFix(call: AST.CallExpression, context: ClientRulesContext): Fix | 
     return undefined;
   }
   const written = source.slice(callback.start, callback.end);
-  if (/(?<![\w$])(?:preventDefault|stopPropagation)(?![\w$])/.test(written)) return undefined;
-  if (!canBecomeAsync(fn, path, callback, context)) return undefined;
+  if (/(?<![\w$])(?:preventDefault|stopPropagation)(?![\w$])/.test(written)) {
+    return undefined;
+  }
+  if (!canBecomeAsync(fn, path, callback, context)) {
+    return undefined;
+  }
   // The callback's own declarations join the function's body: no name of theirs may be used there.
   const outside = source.slice(fn.start, callback.start) + " " + source.slice(callback.end, fn.end);
   if (callback.body.type === "BlockStatement") {
     for (const each of callback.body.body) {
-      if (each.type !== "VariableDeclaration") continue;
+      if (each.type !== "VariableDeclaration") {
+        continue;
+      }
       for (const declarator of each.declarations) {
         for (const name of patternNames(declarator.id)) {
           if (new RegExp(`(?<![\\w$])${name.name.replace(/\$/g, "\\$")}(?![\\w$])`).test(outside)) {
@@ -124,7 +134,9 @@ function awaitFix(call: AST.CallExpression, context: ClientRulesContext): Fix | 
     comment.start >= call.start &&
     comment.end <= statement.end &&
     !(comment.start >= body.start && comment.end <= body.end);
-  if (render.comments.some(dropped)) return undefined;
+  if (render.comments.some(dropped)) {
+    return undefined;
+  }
   const lineStart = source.lastIndexOf("\n", statement.start - 1) + 1;
   const before = source.slice(lineStart, statement.start);
   const ownLine = /^\s*$/.test(before);
@@ -138,7 +150,9 @@ function awaitFix(call: AST.CallExpression, context: ClientRulesContext): Fix | 
     .map((line, index) => (index && ownLine && line ? `${indent}${line}` : line))
     .join(ownLine ? "\n" : " ");
   const edits: TextEdit[] = [];
-  if (!fn.async) edits.push({ span: { start: fn.start, end: fn.start }, text: "async " });
+  if (!fn.async) {
+    edits.push({ span: { start: fn.start, end: fn.start }, text: "async " });
+  }
   edits.push({ span: { start: call.start, end: statement.end }, text });
   return { title: `Await \`${name}()\` in an \`async\` function`, confidence: "safe", edits };
 }
@@ -164,8 +178,12 @@ function canBecomeAsync(
     const resolution = render.scopes.resolve(parent.callee);
     const api =
       resolution.kind === "import" ? render.setup.authoring.get(resolution.declaration) : undefined;
-    if (api === "onMounted") return parent.arguments[0] === fn;
-    if (api !== "watch" || parent.arguments[1] !== fn) return false;
+    if (api === "onMounted") {
+      return parent.arguments[0] === fn;
+    }
+    if (api !== "watch" || parent.arguments[1] !== fn) {
+      return false;
+    }
     const watcher = component.setup.find(
       (item) => item.kind === "Watch" && item.callback.span.start === fn.start,
     );
@@ -180,7 +198,9 @@ function canBecomeAsync(
     );
   }
   // A local function: a function declaration or an arrow `const` of the setup that no code calls.
-  if (input.failed) return false;
+  if (input.failed) {
+    return false;
+  }
   const identifier =
     fn.type === "FunctionDeclaration"
       ? parent === render.component.body
@@ -192,7 +212,9 @@ function canBecomeAsync(
         ? parent.id
         : undefined;
   const binding = identifier ? render.setup.bindings.get(identifier) : undefined;
-  if (binding?.kind !== "localFn") return false;
+  if (binding?.kind !== "localFn") {
+    return false;
+  }
   const refs = [
     ...expressionsOf(component).flatMap(({ expression }) => expression.refs),
     ...codeOf(component).flatMap(({ code }) => code.refs),
@@ -203,10 +225,16 @@ function canBecomeAsync(
 /** A block's inner text as lines without their common indentation, blank lines at its ends gone. */
 function dedented(inner: string): string[] {
   const lines = inner.split("\n").map((line) => line.trimEnd());
-  if (lines.length === 1) return lines[0]!.trim() ? [lines[0]!.trim()] : [];
+  if (lines.length === 1) {
+    return lines[0]!.trim() ? [lines[0]!.trim()] : [];
+  }
   const first = lines.shift()!.trim();
-  while (lines.length && !lines.at(-1)) lines.pop();
-  while (lines.length && !lines[0]) lines.shift();
+  while (lines.length && !lines.at(-1)) {
+    lines.pop();
+  }
+  while (lines.length && !lines[0]) {
+    lines.shift();
+  }
   const indents = lines.filter(Boolean).map((line) => /^\s*/.exec(line)![0].length);
   const least = indents.length ? Math.min(...indents) : 0;
   return [...(first ? [first] : []), ...lines.map((line) => line.slice(least))];
@@ -243,7 +271,9 @@ function localFunctions(
   );
   const nodes = new Map<BindingId, FunctionNode>();
   for (const binding of render.setup.bindings.values()) {
-    if (binding.function) nodes.set(binding.id, binding.function);
+    if (binding.function) {
+      nodes.set(binding.id, binding.function);
+    }
   }
   return { code, nodes };
 }
@@ -268,7 +298,9 @@ function teardown(context: ClientRulesContext, bindings: ReadonlyMap<BindingId, 
   /** Whether running a local function reads a template ref, itself or through what it runs. */
   const readsRef = (id: BindingId): boolean => {
     const known = readsElement.get(id);
-    if (known !== undefined) return known;
+    if (known !== undefined) {
+      return known;
+    }
     readsElement.set(id, false);
     const found = (code.get(id)?.body.refs ?? []).some(
       (ref) =>
@@ -290,8 +322,12 @@ function teardown(context: ClientRulesContext, bindings: ReadonlyMap<BindingId, 
   /** Judges the references of code that runs at teardown, from `from` to `to`. */
   const judge = (refs: readonly CodeReference[], what: string, unmount: boolean, within?: Span) => {
     for (const ref of refs) {
-      if (ref.kind !== "Binding" || reported.has(ref.span.start)) continue;
-      if (within && (ref.span.start < within.start || ref.span.end > within.end)) continue;
+      if (ref.kind !== "Binding" || reported.has(ref.span.start)) {
+        continue;
+      }
+      if (within && (ref.span.start < within.start || ref.span.end > within.end)) {
+        continue;
+      }
       const kind = bindings.get(ref.binding)?.kind;
       if (!ref.call && kind === "templateRef") {
         reported.add(ref.span.start);
@@ -303,9 +339,13 @@ function teardown(context: ClientRulesContext, bindings: ReadonlyMap<BindingId, 
         );
         continue;
       }
-      if (!runsFunction(ref, bindings, render)) continue;
+      if (!runsFunction(ref, bindings, render)) {
+        continue;
+      }
       const summary = summaries.get(ref.binding);
-      if (!summary) continue;
+      if (!summary) {
+        continue;
+      }
       if (readsRef(ref.binding)) {
         reported.add(ref.span.start);
         reporter.report(
@@ -352,11 +392,15 @@ function teardown(context: ClientRulesContext, bindings: ReadonlyMap<BindingId, 
       judge(callback.body.refs, "An `onUnmounted` callback", true);
       continue;
     }
-    if (item.kind !== "Watch" && item.kind !== "WatchEffect") continue;
+    if (item.kind !== "Watch" && item.kind !== "WatchEffect") {
+      continue;
+    }
     const fn = item.kind === "Watch" ? item.callback : item.effect;
     const node = input.setup.sources.get(item)?.callback;
     const parameter = node?.params[item.kind === "Watch" ? 2 : 0];
-    if (!node || parameter?.type !== "Identifier") continue;
+    if (!node || parameter?.type !== "Identifier") {
+      continue;
+    }
     for (const registered of cleanupCallbacks(node, parameter, render, new Set())) {
       if (registered.type === "ArrowFunctionExpression") {
         // The callback's references are the watcher's own, where it is written.
@@ -364,12 +408,16 @@ function teardown(context: ClientRulesContext, bindings: ReadonlyMap<BindingId, 
           judge(fn.body.refs, "An `onCleanup` callback", false, registered);
         } else {
           const holder = localFunctionHolding(registered, component);
-          if (holder) judge(holder.body.refs, "An `onCleanup` callback", false, registered);
+          if (holder) {
+            judge(holder.body.refs, "An `onCleanup` callback", false, registered);
+          }
         }
       } else {
         // A local function passed whole runs at teardown itself.
         const binding = setupBindingOf(registered, render);
-        if (binding?.kind !== "localFn") continue;
+        if (binding?.kind !== "localFn") {
+          continue;
+        }
         const ref: CodeReference = {
           kind: "Binding",
           binding: binding.id,
@@ -395,12 +443,16 @@ function cleanupCallbacks(
   seen.add(fn);
   const found: (AST.ArrowFunctionExpression | AST.IdentifierReference)[] = [];
   const isParameter = (node: AST.Node) => {
-    if (node.type !== "Identifier") return false;
+    if (node.type !== "Identifier") {
+      return false;
+    }
     const resolution = render.scopes.resolve(node as AST.IdentifierReference);
     return resolution.kind === "parameter" && resolution.declaration === parameter;
   };
   visit(fn.body, (node) => {
-    if (node.type !== "CallExpression") return;
+    if (node.type !== "CallExpression") {
+      return;
+    }
     if (isParameter(node.callee)) {
       for (const argument of node.arguments) {
         if (argument.type === "ArrowFunctionExpression" || argument.type === "Identifier") {
@@ -410,10 +462,14 @@ function cleanupCallbacks(
       return;
     }
     // `onCleanup` passed on to a local function, whose parameter receives it.
-    if (node.callee.type !== "Identifier") return;
+    if (node.callee.type !== "Identifier") {
+      return;
+    }
     const callee = setupBindingOf(node.callee, render);
     const target = callee?.function;
-    if (!target || seen.has(target)) return;
+    if (!target || seen.has(target)) {
+      return;
+    }
     for (const [index, argument] of node.arguments.entries()) {
       const received = target.params[index];
       if (isParameter(argument) && received?.type === "Identifier") {
@@ -430,9 +486,13 @@ function localFunctionHolding(
   component: UfComponent,
 ): { body: { refs: readonly CodeReference[] } } | undefined {
   for (const item of component.setup) {
-    if (item.kind !== "Function") continue;
+    if (item.kind !== "Function") {
+      continue;
+    }
     const { body } = item.function;
-    if (at.start >= body.span.start && at.end <= body.span.end) return item.function;
+    if (at.start >= body.span.start && at.end <= body.span.end) {
+      return item.function;
+    }
   }
   return undefined;
 }
@@ -474,7 +534,9 @@ function selfTriggeringEffects(
     (ref.call === true || !render.facts.passed.has(ref.span.start));
   /** The references of a function that run while a call of it runs, before it gives control back. */
   const synchronous = (refs: readonly CodeReference[], node: FunctionNode | undefined) => {
-    if (!node) return refs;
+    if (!node) {
+      return refs;
+    }
     const regions = laterRegions(node, suspensions);
     // A write happens once its value is computed, where its span ends.
     return refs.filter(
@@ -491,13 +553,21 @@ function selfTriggeringEffects(
     for (const ref of refs) {
       if (ref.kind === "Write") {
         writes.add(ref.binding);
-        if (ref.operator !== "=") reads.add(ref.binding);
+        if (ref.operator !== "=") {
+          reads.add(ref.binding);
+        }
       } else if (ref.kind === "Binding" && runsNow(ref)) {
-        if (seen.has(ref.binding)) continue;
+        if (seen.has(ref.binding)) {
+          continue;
+        }
         seen.add(ref.binding);
         const inner = functionFacts(ref.binding, seen);
-        for (const id of inner.reads) reads.add(id);
-        for (const id of inner.writes) writes.add(id);
+        for (const id of inner.reads) {
+          reads.add(id);
+        }
+        for (const id of inner.writes) {
+          writes.add(id);
+        }
       } else if (ref.kind === "Binding" && (!ref.call || !code.has(ref.binding))) {
         reads.add(ref.binding);
       }
@@ -507,13 +577,19 @@ function selfTriggeringEffects(
   const functionFacts = (id: BindingId, seen: Set<BindingId>) =>
     runFacts(synchronous(code.get(id)?.body.refs ?? [], nodes.get(id)), seen);
   for (const item of component.setup) {
-    if (item.kind !== "WatchEffect") continue;
+    if (item.kind !== "WatchEffect") {
+      continue;
+    }
     const own = synchronous(item.effect.body.refs, input.setup.sources.get(item)?.callback);
     const { reads } = runFacts(own, new Set());
     // A `computed` the effect reads is read through: its getter's reads are the effect's too.
     for (const id of reads) {
       const getter = getters.get(id);
-      if (getter) for (const read of summarizeCode(getter.body, component).reads) reads.add(read);
+      if (getter) {
+        for (const read of summarizeCode(getter.body, component).reads) {
+          reads.add(read);
+        }
+      }
     }
     const state = (id: BindingId) =>
       (bindings.get(id)?.kind === "state" || bindings.get(id)?.kind === "model") && reads.has(id);
@@ -535,7 +611,9 @@ function selfTriggeringEffects(
         const written = [...functionFacts(ref.binding, new Set([ref.binding])).writes].find(
           (id) => state(id) && !reported.has(id),
         );
-        if (written === undefined) continue;
+        if (written === undefined) {
+          continue;
+        }
         reported.add(written);
         reporter.report(
           "UF2027",
@@ -563,7 +641,9 @@ function passivePrevention(
   const { input, component } = context;
   const { render } = input;
   const { reporter, source } = render;
-  if (!component.render) return;
+  if (!component.render) {
+    return;
+  }
   const functions = new Map(
     component.setup.flatMap((item) =>
       item.kind === "Function" ? [[item.binding, item.function] as const] : [],
@@ -578,18 +658,26 @@ function passivePrevention(
     seen: Set<BindingId>,
   ): Extract<CodeReference, { kind: "Event" }>[] => {
     const found: Extract<CodeReference, { kind: "Event" }>[] = [];
-    if (event === undefined) return found;
+    if (event === undefined) {
+      return found;
+    }
     for (const ref of fn.body.refs) {
       if (ref.kind === "Event" && ref.member === "preventDefault" && ref.call) {
         found.push(ref);
         continue;
       }
-      if (ref.kind !== "Binding" || !ref.call || seen.has(ref.binding)) continue;
-      if (bindings.get(ref.binding)?.kind !== "localFn") continue;
+      if (ref.kind !== "Binding" || !ref.call || seen.has(ref.binding)) {
+        continue;
+      }
+      if (bindings.get(ref.binding)?.kind !== "localFn") {
+        continue;
+      }
       const node = nodes.get(ref.binding);
       const parameter = node ? render.setup.eventParameters.get(node) : undefined;
       const callee = functions.get(ref.binding);
-      if (!parameter || !callee || !passesEvent(ref.span, parameter.index, event, render)) continue;
+      if (!parameter || !callee || !passesEvent(ref.span, parameter.index, event, render)) {
+        continue;
+      }
       seen.add(ref.binding);
       found.push(...preventions(callee, callee.parameters[parameter.index]?.name, seen));
     }
@@ -598,23 +686,31 @@ function passivePrevention(
   const listeners: EventAttribute[] = [];
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Event" && attribute.passive) listeners.push(attribute);
+        if (attribute.kind === "Event" && attribute.passive) {
+          listeners.push(attribute);
+        }
       }
     },
   });
   for (const listener of listeners) {
     const { handler } = listener;
     const fn = handler.kind === "Inline" ? handler.function : functions.get(handler.binding);
-    if (!fn) continue;
+    if (!fn) {
+      continue;
+    }
     const parameter =
       handler.kind === "Inline"
         ? 0
         : render.setup.eventParameters.get(nodes.get(handler.binding)!)?.index;
     const event = parameter === undefined ? undefined : fn.parameters[parameter]?.name;
     for (const call of preventions(fn, event, new Set())) {
-      if (reported.has(call.span.start)) continue;
+      if (reported.has(call.span.start)) {
+        continue;
+      }
       reported.add(call.span.start);
       const path = pathTo(call.span, render.component);
       const whole = path.at(-2);
@@ -650,7 +746,9 @@ function removalFix(
   const arrow = path.findLast(
     (node): node is AST.ArrowFunctionExpression => node.type === "ArrowFunctionExpression",
   );
-  if (!arrow || arrow.start !== fn.span.start) return undefined;
+  if (!arrow || arrow.start !== fn.span.start) {
+    return undefined;
+  }
   const statement = path.at(-3);
   const body = arrow.body;
   const statements =
@@ -673,7 +771,9 @@ function removalFix(
       edits: [{ span: { start, end: listener.span.end }, text: "" }],
     };
   }
-  if (statement?.type !== "ExpressionStatement" || path.at(-4) !== body) return undefined;
+  if (statement?.type !== "ExpressionStatement" || path.at(-4) !== body) {
+    return undefined;
+  }
   const lineStart = source.lastIndexOf("\n", statement.start - 1) + 1;
   const ownLine = /^\s*$/.test(source.slice(lineStart, statement.start));
   const start = ownLine
@@ -701,7 +801,9 @@ function removalFix(
 function passesEvent(callee: Span, index: number, event: string, render: RenderContext): boolean {
   const path = pathTo(callee, render.component);
   const call = path.at(-2);
-  if (call?.type !== "CallExpression" || call.callee !== path.at(-1)) return false;
+  if (call?.type !== "CallExpression" || call.callee !== path.at(-1)) {
+    return false;
+  }
   const argument = call.arguments[index];
   return argument?.type === "Identifier" && argument.name === event;
 }
@@ -712,16 +814,22 @@ function pathTo(at: Span, root: AST.Node): AST.Node[] {
   let found: AST.Node[] = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
     if (!value || typeof value !== "object" || typeof (value as AST.Node).type !== "string") {
       return;
     }
     const node = value as AST.Node;
-    if (node.start > at.start || node.end < at.end) return;
+    if (node.start > at.start || node.end < at.end) {
+      return;
+    }
     path.push(node);
-    if (node.start === at.start && node.end === at.end) found = [...path];
+    if (node.start === at.start && node.end === at.end) {
+      found = [...path];
+    }
     for (const key of visitorKeys[node.type] ?? []) {
       visit((node as unknown as Record<string, unknown>)[key]);
     }
@@ -735,13 +843,19 @@ function pathTo(at: Span, root: AST.Node): AST.Node[] {
 function containsAwait(node: unknown): boolean {
   let found = false;
   const walk = (value: unknown): void => {
-    if (found || !value || typeof value !== "object") return;
+    if (found || !value || typeof value !== "object") {
+      return;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) walk(item);
+      for (const item of value) {
+        walk(item);
+      }
       return;
     }
     const typed = value as AST.Node;
-    if (typeof typed.type !== "string") return;
+    if (typeof typed.type !== "string") {
+      return;
+    }
     if (
       typed.type === "ArrowFunctionExpression" ||
       typed.type === "FunctionExpression" ||
@@ -763,13 +877,19 @@ function containsAwait(node: unknown): boolean {
 
 /** Visits every node in a tree, depth first. */
 function visit(node: unknown, enter: (node: AST.Node) => void): void {
-  if (!node || typeof node !== "object") return;
+  if (!node || typeof node !== "object") {
+    return;
+  }
   if (Array.isArray(node)) {
-    for (const item of node) visit(item, enter);
+    for (const item of node) {
+      visit(item, enter);
+    }
     return;
   }
   const typed = node as AST.Node;
-  if (typeof typed.type !== "string") return;
+  if (typeof typed.type !== "string") {
+    return;
+  }
   enter(typed);
   for (const key of visitorKeys[typed.type] ?? []) {
     visit((typed as unknown as Record<string, unknown>)[key], enter);
@@ -780,16 +900,24 @@ function visit(node: unknown, enter: (node: AST.Node) => void): void {
 function ancestors(target: AST.Node, root: AST.Node): AST.Node[] {
   const path: AST.Node[] = [];
   const walk = (value: unknown): boolean => {
-    if (Array.isArray(value)) return value.some(walk);
+    if (Array.isArray(value)) {
+      return value.some(walk);
+    }
     if (!value || typeof value !== "object" || typeof (value as AST.Node).type !== "string") {
       return false;
     }
     const node = value as AST.Node;
-    if (node.start > target.start || node.end < target.end) return false;
+    if (node.start > target.start || node.end < target.end) {
+      return false;
+    }
     path.push(node);
-    if (node === target) return true;
+    if (node === target) {
+      return true;
+    }
     for (const key of visitorKeys[node.type] ?? []) {
-      if (walk((node as unknown as Record<string, unknown>)[key])) return true;
+      if (walk((node as unknown as Record<string, unknown>)[key])) {
+        return true;
+      }
     }
     path.pop();
     return false;

@@ -258,12 +258,16 @@ async function toolchainMessages(
   sheets: readonly OutputFile[] = [],
 ): Promise<Record<string, string[]>> {
   const directory = scratchDir();
-  for (const sheet of sheets) writeFileSync(join(directory, sheet.path), sheet.contents);
+  for (const sheet of sheets) {
+    writeFileSync(join(directory, sheet.path), sheet.contents);
+  }
   const written = files.map((file) => ({
     path: join(directory, `${file.prefix ?? ""}${file.path}`),
     contents: file.contents,
   }));
-  for (const file of written) writeFileSync(file.path, file.contents);
+  for (const file of written) {
+    writeFileSync(file.path, file.contents);
+  }
   const paths = written.map((file) => file.path);
   const [compiledFiles, checked, linted] = await Promise.all([
     toolchain.frameworkCompile(written, context),
@@ -559,7 +563,9 @@ async function render(name: string, props: Record<string, unknown>): Promise<str
   try {
     html = await renderToString(component, { props });
   } finally {
-    for (const spy of spies) spy.mockRestore();
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
   }
   expect(logged).toEqual([]);
   const selector = /^<(uf-[a-z-]+) style="display: contents;">([\s\S]*)<\/\1>$/.exec(html);

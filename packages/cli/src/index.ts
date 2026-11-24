@@ -97,7 +97,9 @@ export async function main(
   }
   const command = name === undefined ? undefined : commands.get(name);
   if (!command) {
-    if (name !== undefined) io.stderr(`unframework: unknown command "${name}".\n\n`);
+    if (name !== undefined) {
+      io.stderr(`unframework: unknown command "${name}".\n\n`);
+    }
     io.stderr(usageOf(commands));
     return 2;
   }

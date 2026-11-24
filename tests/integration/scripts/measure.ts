@@ -54,10 +54,16 @@ export interface MeasureReport {
 export function parseProcesses(output: string): ProcessInfo[] {
   const processes: ProcessInfo[] = [];
   for (const line of output.split("\n")) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
     const match = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(.+?)\s*$/.exec(line);
-    if (!match) throw new Error(`Cannot read this line of ps: ${JSON.stringify(line)}`);
-    if (match[5]!.startsWith("Z")) continue;
+    if (!match) {
+      throw new Error(`Cannot read this line of ps: ${JSON.stringify(line)}`);
+    }
+    if (match[5]!.startsWith("Z")) {
+      continue;
+    }
     processes.push({
       pid: Number(match[1]),
       ppid: Number(match[2]),
@@ -121,7 +127,9 @@ export function parseArgs(argv: readonly string[]): {
     (flag === undefined || flag === "--max-rss-gib") &&
     Number.isFinite(maxRssGib) &&
     maxRssGib > 0;
-  if (!valid) throw new Error(USAGE);
+  if (!valid) {
+    throw new Error(USAGE);
+  }
   return { label, maxRssGib, command };
 }
 
@@ -130,8 +138,12 @@ function listProcesses(): ProcessInfo[] {
   // One -o per field: POSIX reads everything after `=` in one as that field's header.
   const args = ["-A", ...fields.flatMap((field) => ["-o", `${field}=`])];
   const result = spawnSync("ps", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`ps exited ${result.status}: ${result.stderr}`);
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`ps exited ${result.status}: ${result.stderr}`);
+  }
   return parseProcesses(result.stdout);
 }
 
@@ -146,7 +158,9 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
   // process before its SIGKILL.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     process.on(signal, () => {
-      if (child.pid !== undefined) stop(child.pid, `interrupted by ${signal}`);
+      if (child.pid !== undefined) {
+        stop(child.pid, `interrupted by ${signal}`);
+      }
     });
   }
   // A session and a process group of its own, so the tree can be stopped without touching this
@@ -170,7 +184,9 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
   /** The tree now. What it finds stays known, so an orphan is still found once it reparents. */
   const observe = (pid: number): ProcessInfo[] => {
     const members = membersOf(listProcesses(), pid, seen);
-    for (const member of members) seen.add(identityOf(member));
+    for (const member of members) {
+      seen.add(identityOf(member));
+    }
     return members;
   };
 
@@ -179,7 +195,9 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
   let stopping: Promise<void> | undefined;
   let timer: NodeJS.Timeout | undefined;
   const stop = (pid: number, reason: string) => {
-    if (stopping) return;
+    if (stopping) {
+      return;
+    }
     console.error(`[uf] ${label}: ${reason}: stopping its process tree.`);
     clearInterval(timer);
     stopping = stopTree(pid, observe);
@@ -204,7 +222,9 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
 
   if (root !== undefined) {
     sample(root);
-    if (!stopping) timer = setInterval(() => sample(root), SAMPLE_MS);
+    if (!stopping) {
+      timer = setInterval(() => sample(root), SAMPLE_MS);
+    }
   }
 
   const exitStatus = await exited;
@@ -277,7 +297,9 @@ async function stopTree(root: number, observe: (pid: number) => ProcessInfo[]): 
   while (performance.now() < deadline) {
     await delay(POLL_MS);
     try {
-      if (observe(root).length === 0) return;
+      if (observe(root).length === 0) {
+        return;
+      }
     } catch {
       // Keep waiting: SIGKILL follows.
     }
@@ -297,4 +319,6 @@ async function main(argv: readonly string[]): Promise<number> {
   return measure(options);
 }
 
-if (import.meta.main) process.exitCode = await main(process.argv.slice(2));
+if (import.meta.main) {
+  process.exitCode = await main(process.argv.slice(2));
+}

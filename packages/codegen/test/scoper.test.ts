@@ -20,9 +20,15 @@ const trim: AcceptedPlugin = {
   postcssPlugin: "trim",
   Once(root) {
     root.walk(({ type, raws }) => {
-      if (type !== "rule" && type !== "atrule") return;
-      if (raws.before) raws.before = "\n";
-      if ("after" in raws && raws.after) raws.after = "\n";
+      if (type !== "rule" && type !== "atrule") {
+        return;
+      }
+      if (raws.before) {
+        raws.before = "\n";
+      }
+      if ("after" in raws && raws.after) {
+        raws.after = "\n";
+      }
     });
   },
 };
@@ -314,7 +320,9 @@ function rejected(source: string): string[] {
     expect(diagnostic.code).toBe("UF5004");
     expect(diagnostic.file).toBe("src/Card.css");
   }
-  if (diagnostics.length) expect(code).toBe("");
+  if (diagnostics.length) {
+    expect(code).toBe("");
+  }
   return diagnostics.map(({ span }) => source.slice(span.start, span.end));
 }
 

@@ -783,6 +783,8 @@ describe("solid nextTick and names the output takes", () => {
       probe("defineEmits", "  const emit = defineEmits<{ done: [] }>();\n  void emit;", "<p>x</p>"),
     ).catch(() => undefined);
     // The analyser may reject an unused `emit`; when it lowers one, nothing reads the props.
-    if (silent) expect(silent).toContain("(_props: ProbeEvents)");
+    if (silent) {
+      expect(silent).toContain("(_props: ProbeEvents)");
+    }
   });
 });

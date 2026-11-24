@@ -81,7 +81,9 @@ export function budgetProblems(
   size: OutputSize,
 ): string[] {
   const limit = budget?.sizes[target];
-  if (!budget || !limit) return ["No budget for this cell. Run `pnpm test:budgets:update`."];
+  if (!budget || !limit) {
+    return ["No budget for this cell. Run `pnpm test:budgets:update`."];
+  }
   const update = "Run `pnpm test:budgets:update` if the change is intended.";
   const problems: string[] = [];
   if (time > budget.time * TIME_MARGIN) {
@@ -107,7 +109,9 @@ export function staleBudgets(budgets: Budgets, cases: readonly CaseInfo[]): stri
   const known = new Map(cases.map((info) => [info.id, info]));
   return Object.entries(budgets.cases).flatMap(([id, budget]) => {
     const info = known.get(id);
-    if (!info) return [id];
+    if (!info) {
+      return [id];
+    }
     return Object.keys(budget.sizes)
       .filter((target) => errorState(info, target) !== false)
       .map((target) => `${id} › ${target}`);
@@ -140,7 +144,9 @@ export async function measureTimes(
     now: cpuTime,
   });
   const calibration = cases.find((info) => info.id === CALIBRATION);
-  if (!calibration) throw new Error(`The corpus has no ${CALIBRATION}, which every time divides.`);
+  if (!calibration) {
+    throw new Error(`The corpus has no ${CALIBRATION}, which every time divides.`);
+  }
   const measured = cases.filter((info) => info !== calibration);
   const before = (id: string) => `${CALIBRATION} before ${id}`;
   for (const info of measured) {
@@ -150,7 +156,9 @@ export async function measureTimes(
   await bench.run();
   const median = (name: string): number => {
     const result = bench.getTask(name)?.result;
-    if (result?.state !== "completed") throw new Error(`The compile "${name}" did not complete.`);
+    if (result?.state !== "completed") {
+      throw new Error(`The compile "${name}" did not complete.`);
+    }
     return result.latency.p50;
   };
   const calibrations = measured.map((info) => median(before(info.id))).toSorted((a, b) => a - b);
@@ -241,17 +249,23 @@ export async function bundleSize(
   const memory: Plugin = {
     name: "uf-budgets:memory",
     resolveId(source, importer) {
-      if (!importer && modules.has(moduleKey(source))) return moduleKey(source);
+      if (!importer && modules.has(moduleKey(source))) {
+        return moduleKey(source);
+      }
       if (!/^\.\.?\//.test(source) || /\.css(?:\?|$)/.test(source)) {
         return { id: source, external: true };
       }
       const key = moduleKey(posix.join(dirname(importer ?? ""), source));
-      if (modules.has(key)) return key;
+      if (modules.has(key)) {
+        return key;
+      }
       throw new Error(`${importer ?? ""} imports ${source}, which no module of the case provides.`);
     },
     load(id) {
       const module = modules.get(id);
-      if (!module) return undefined;
+      if (!module) {
+        return undefined;
+      }
       const moduleType = /\.[jt]sx$/.test(module.path) ? "tsx" : "ts";
       return { code: module.contents, moduleType };
     },
@@ -292,7 +306,9 @@ async function update(): Promise<void> {
   for (const target of TARGET_NAMES) {
     const toolchain = await loadToolchain(target);
     for (const info of cases) {
-      if (errorState(info, target) !== false) continue;
+      if (errorState(info, target) !== false) {
+        continue;
+      }
       const files = committedOutputFiles(info, target);
       budgets.cases[info.id]!.sizes[target] = await measureSize(toolchain, target, files);
     }
@@ -320,4 +336,6 @@ async function main(): Promise<number> {
   return 0;
 }
 
-if (import.meta.main) process.exitCode = await main();
+if (import.meta.main) {
+  process.exitCode = await main();
+}

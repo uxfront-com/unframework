@@ -105,17 +105,25 @@ export function ngtscVirtual(
       for (const [, specifier = ""] of text.matchAll(STYLE_URL)) {
         const path = resolve(dirname(file), specifier);
         const sheet = api!.getSheet(path.slice(0, -".css".length));
-        if (sheet !== undefined) sheets.set(path, sheet);
+        if (sheet !== undefined) {
+          sheets.set(path, sheet);
+        }
       }
       for (const [, specifier = ""] of text.matchAll(RELATIVE_IMPORT)) {
         const key = childKey(file, specifier);
         const child = COMPONENT_IMPORT.test(specifier)
           ? `${resolve(dirname(file), specifier)}.ts`
           : children.get(key);
-        if (!child) continue;
-        if (!COMPONENT_IMPORT.test(specifier)) resolved.set(key, child);
+        if (!child) {
+          continue;
+        }
+        if (!COMPONENT_IMPORT.test(specifier)) {
+          resolved.set(key, child);
+        }
         const source = sources.has(child) ? undefined : api!.getCompiled(child);
-        if (source !== undefined) sources.set(child, source);
+        if (source !== undefined) {
+          sources.set(child, source);
+        }
       }
     }
     return compilePoolOf(compiler).compile({
@@ -157,12 +165,18 @@ export function ngtscVirtual(
         const client =
           this.environment.mode === "dev" && this.environment.config.consumer === "client";
         for (const [, fileName = ""] of code.matchAll(RELATIVE_IMPORT)) {
-          if (COMPONENT_IMPORT.test(fileName)) continue;
+          if (COMPONENT_IMPORT.test(fileName)) {
+            continue;
+          }
           const resolved = await this.resolve(fileName, id);
           const child = resolved?.id.split("?")[0];
-          if (!resolved || !child || !VIRTUAL_ID.test(child)) continue;
+          if (!resolved || !child || !VIRTUAL_ID.test(child)) {
+            continue;
+          }
           children.set(childKey(id, fileName), child);
-          if (api!.getCompiled(child) !== undefined) continue;
+          if (api!.getCompiled(child) !== undefined) {
+            continue;
+          }
           try {
             await this.load({ id: resolved.id });
           } catch (error) {
@@ -170,7 +184,9 @@ export function ngtscVirtual(
             // guard's, say), which a page would otherwise get only as a failed fetch.
             const reason = error instanceof Error ? error.message : String(error);
             const message = `${id} imports ${fileName}, which failed to load:\n${reason}`;
-            if (!client) this.error(message);
+            if (!client) {
+              this.error(message);
+            }
             this.environment.logger.error(message);
             return { code: failingModule(message, exportedNames(code)), map: null };
           }
@@ -180,7 +196,9 @@ export function ngtscVirtual(
         // holds them, and the worker reads nothing else of the plugin. Two transforms that
         // compile at once go to two workers, or wait in one, each with its own outcome.
         const compiled = await compile(id, code);
-        if (compiled.warnings) this.warn(compiled.warnings);
+        if (compiled.warnings) {
+          this.warn(compiled.warnings);
+        }
         if (compiled.codes.length) {
           const message = `ngtsc rejected ${id} (${compiled.codes.join(", ")}):\n${compiled.errors}`;
           // A page gets a module that failed to transform only as "Failed to fetch dynamically
@@ -192,7 +210,9 @@ export function ngtscVirtual(
           }
           this.error(message);
         }
-        if (compiled.code === undefined) this.error(`ngtsc emitted no JavaScript for ${id}`);
+        if (compiled.code === undefined) {
+          this.error(`ngtsc emitted no JavaScript for ${id}`);
+        }
         return { code: compiled.code, map: compiled.map ?? null };
       },
     },
@@ -265,16 +285,27 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
     const slot: Slot = { thread, pending: new Map() };
     thread.on("message", (reply: WorkerReply) => {
       const waiting = slot.pending.get(reply.request);
-      if (!waiting) return;
+      if (!waiting) {
+        return;
+      }
       slot.pending.delete(reply.request);
-      if (!slot.pending.size) thread.unref();
-      if ("failure" in reply) waiting.reject(reply.failure);
-      else waiting.resolve(reply.compiled);
+      if (!slot.pending.size) {
+        thread.unref();
+      }
+      if ("failure" in reply) {
+        waiting.reject(reply.failure);
+      } else {
+        waiting.resolve(reply.compiled);
+      }
     });
     const end = (error: unknown) => {
       const index = slots.indexOf(slot);
-      if (index !== -1) slots.splice(index, 1);
-      for (const waiting of slot.pending.values()) waiting.reject(error);
+      if (index !== -1) {
+        slots.splice(index, 1);
+      }
+      for (const waiting of slot.pending.values()) {
+        waiting.reject(error);
+      }
       slot.pending.clear();
     };
     thread.on("error", end);
@@ -286,8 +317,12 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
 
   function pick(): Slot {
     const idle = slots.find((slot) => !slot.pending.size);
-    if (idle) return idle;
-    if (slots.length < size) return open();
+    if (idle) {
+      return idle;
+    }
+    if (slots.length < size) {
+      return open();
+    }
     return slots.reduce((least, slot) => (slot.pending.size < least.pending.size ? slot : least));
   }
 
@@ -295,15 +330,18 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
     compile(request) {
       const slot = pick();
       const number = nextRequest++;
-      if (!slot.pending.size) slot.thread.ref();
+      if (!slot.pending.size) {
+        slot.thread.ref();
+      }
       return new Promise((fulfil, reject) => {
         slot.pending.set(number, { resolve: fulfil, reject });
         slot.thread.postMessage({ ...request, request: number } satisfies WorkerRequest);
       });
     },
     release(plugin) {
-      for (const { thread } of slots)
+      for (const { thread } of slots) {
         thread.postMessage({ release: plugin } satisfies WorkerRequest);
+      }
     },
     get threads() {
       return slots.length;
@@ -321,7 +359,9 @@ const released = new FinalizationRegistry<() => void>((release) => release());
  */
 function compilePoolOf(compiler: AngularCompiler): CompilePool {
   const existing = pools.get(compiler);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   // `angularScope` is the toolchain directory's `node_modules/@angular` (tools.ts).
   const toolchainDir = dirname(dirname(compiler.angularScope));
   const pool = compilePool(

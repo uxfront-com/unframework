@@ -57,15 +57,21 @@ const CONTEXT: Readonly<Record<string, readonly string[]>> = {
 /** A nesting, outermost first, as a template (Svelte, Vue) or JSX: the two read alike. */
 function markup(tags: readonly string[]): string {
   const [tag, ...inner] = tags;
-  if (!tag) return "";
-  if (isVoidElement(tag) && !inner.length) return `<${tag} />`;
+  if (!tag) {
+    return "";
+  }
+  if (isVoidElement(tag) && !inner.length) {
+    return `<${tag} />`;
+  }
   return `<${tag}>${markup(inner)}</${tag}>`;
 }
 
 /** The same nesting as HTML source, where a void element has no end tag. */
 function html(tags: readonly string[]): string {
   const [tag, ...inner] = tags;
-  if (!tag) return "";
+  if (!tag) {
+    return "";
+  }
   return isVoidElement(tag) ? `<${tag}>${html(inner)}` : `<${tag}>${html(inner)}</${tag}>`;
 }
 
@@ -81,7 +87,9 @@ function parserRepairs(tags: readonly string[]): boolean {
 /** Whether a node's subtree is exactly one element per tag, each the only child of the last. */
 function isChain(node: DefaultTreeAdapterTypes.ParentNode, tags: readonly string[]): boolean {
   const [tag, ...inner] = tags;
-  if (tag === undefined) return node.childNodes.length === 0;
+  if (tag === undefined) {
+    return node.childNodes.length === 0;
+  }
   const [child] = node.childNodes;
   return (
     node.childNodes.length === 1 &&
@@ -221,9 +229,15 @@ describe("the nesting rules", () => {
           svelteRejects(tags) && "Svelte",
           vueReports(tags) && "Vue",
         ].filter((tool) => tool !== false);
-        if (tools.includes("the parser")) flagged.parser++;
-        if (tools.includes("Svelte")) flagged.svelte++;
-        if (tools.includes("Vue")) flagged.vue++;
+        if (tools.includes("the parser")) {
+          flagged.parser++;
+        }
+        if (tools.includes("Svelte")) {
+          flagged.svelte++;
+        }
+        if (tools.includes("Vue")) {
+          flagged.vue++;
+        }
         if (tools.length && !analyzerRejects(tags)) {
           missed.push(`${html(tags)} (${tools.join(", ")})`);
         }

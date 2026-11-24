@@ -60,13 +60,21 @@ export function coverageProblems(results: readonly CoveredCompile[]): string[] {
   const codes = new Set<string>();
   const cells = new Set<string>();
   for (const result of results) {
-    for (const diagnostic of result.diagnostics) codes.add(diagnostic.code);
-    if (!result.ir) continue;
+    for (const diagnostic of result.diagnostics) {
+      codes.add(diagnostic.code);
+    }
+    if (!result.ir) {
+      continue;
+    }
     features.push(collectFeatures(result.ir));
     const capabilities = [...requiredCapabilities(result.ir).keys()];
     for (const target of TARGET_NAMES) {
-      if (hasErrors(result.diagnostics, target) || !result.outputs[target]?.length) continue;
-      for (const capability of capabilities) cells.add(`${target}:${capability}`);
+      if (hasErrors(result.diagnostics, target) || !result.outputs[target]?.length) {
+        continue;
+      }
+      for (const capability of capabilities) {
+        cells.add(`${target}:${capability}`);
+      }
     }
   }
   return [...kindProblems(features), ...capabilityProblems(cells), ...codeProblems(codes)];
@@ -153,14 +161,18 @@ function codeProblems(codes: ReadonlySet<string>): string[] {
   const problems: string[] = [];
   const catalogued: ReadonlyMap<string, unknown> = catalogue;
   for (const code of Object.keys(EXEMPT_CODES)) {
-    if (!catalogued.has(code)) problems.push(`The exemption for ${code} names no catalogued code.`);
+    if (!catalogued.has(code)) {
+      problems.push(`The exemption for ${code} names no catalogued code.`);
+    }
   }
   for (const code of catalogue.keys()) {
     const covered = codes.has(code);
     const exempt = EXEMPT_CODES[code];
-    if (covered && exempt)
+    if (covered && exempt) {
       problems.push(`A case triggers ${code} now: remove its coverage exemption.`);
-    else if (!covered && !exempt) problems.push(`No case triggers ${code}.`);
+    } else if (!covered && !exempt) {
+      problems.push(`No case triggers ${code}.`);
+    }
   }
   return problems;
 }

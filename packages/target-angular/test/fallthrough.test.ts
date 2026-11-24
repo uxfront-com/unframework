@@ -38,7 +38,9 @@ function reportedFor(source: string): string[] {
     options: undefined,
     report: ({ code, message }) => messages.push(`${code}: ${message}`),
   };
-  for (const component of module.components) target.emit(component, emitContext);
+  for (const component of module.components) {
+    target.emit(component, emitContext);
+  }
   return messages;
 }
 

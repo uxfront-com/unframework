@@ -236,7 +236,9 @@ describe("random mixes of fixable pieces", () => {
           const tag = pick(["p", "div", "a", "svg", "pre", "select", "table", "ul", "button"]);
           const jsx = `<${tag} ${attributes.join(" ")}>${children.join("")}</${tag}>`;
           const { source, diagnostics } = component(jsx, { props: PROPS });
-          if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+          if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) {
+            continue;
+          }
           applyAndRecheck(source, diagnostics);
           checked++;
         }
@@ -295,7 +297,9 @@ describe("random mixes of fixable pieces in a setup's component", () => {
             before: API,
             setup: SETUP,
           });
-          if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+          if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) {
+            continue;
+          }
           applyAndRecheck(source, diagnostics);
           checked++;
         }

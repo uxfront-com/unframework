@@ -60,7 +60,9 @@ export interface ProbeCache {
 const checksum = (text: string): string => createHash("sha256").update(text).digest("hex");
 
 export function probeCache(directory: string, env: Env = process.env): ProbeCache {
-  if (!cacheEnabled(env)) return { read: () => undefined, write: () => {} };
+  if (!cacheEnabled(env)) {
+    return { read: () => undefined, write: () => {} };
+  }
   const file = (key: string) => join(directory, `${key}.txt`);
   return {
     read(key) {

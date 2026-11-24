@@ -29,7 +29,9 @@ describe("init", () => {
     expect(stderr).toBe("");
     const files = tree(root);
     expect(Object.keys(files)).toEqual(SCAFFOLD);
-    for (const file of SCAFFOLD) expect(stdout).toContain(`Wrote ${file}\n`);
+    for (const file of SCAFFOLD) {
+      expect(stdout).toContain(`Wrote ${file}\n`);
+    }
     expect(files["src/Button.uf.tsx"]).toContain('import "./Button.css";');
     expect(files["unframework.config.ts"]).toContain('from "@uxfront/unframework/config"');
     for (const target of ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"]) {

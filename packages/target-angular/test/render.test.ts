@@ -151,7 +151,9 @@ describe("effects on the server", () => {
       expect(await serverHtml("effects/watch-effect", { appName: "Inbox" })).toContain("0 unread");
       expect(await serverHtml("lifecycle/unmount-timers", { interval: 1000 })).toContain("Paused");
     } finally {
-      for (const spy of spies) spy.mockRestore();
+      for (const spy of spies) {
+        spy.mockRestore();
+      }
     }
     expect(logged).toEqual([]);
   });

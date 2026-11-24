@@ -70,7 +70,9 @@ export async function expectParity(
     throw new Error(`expectParity("${name}"): a pixel tolerance needs a reason.`);
   }
   const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) throw new Error("expectParity must be called inside a test.");
+  if (!test) {
+    throw new Error("expectParity must be called inside a test.");
+  }
   // One scenario, one name: a second check under a name would settle the same trace (and DOM)
   // twice, maybe once with steps and once without.
   const names = checked.get(test.file.filepath) ?? new Set<string>();
@@ -100,7 +102,9 @@ export async function expectParity(
         file: `dom.${name}.html`,
         contents: asFile(html),
       });
-      if (!dom.pass) failures.push(dom.message);
+      if (!dom.pass) {
+        failures.push(dom.message);
+      }
       // A generated id in the tree's text or a link's URL reads as the DOM's renaming has it.
       const snapshot = renameGeneratedIds(await view.aria(), new Map(ids));
       const aria = await commands.ufArtefact({
@@ -108,8 +112,12 @@ export async function expectParity(
         file: `aria.${name}.yaml`,
         contents: asFile(snapshot),
       });
-      if (!aria.pass) failures.push(aria.message);
-      if (failures.length) throw new Error(failures.join("\n\n"));
+      if (!aria.pass) {
+        failures.push(aria.message);
+      }
+      if (failures.length) {
+        throw new Error(failures.join("\n\n"));
+      }
     },
     async L9() {
       // With no steps, no trace: the reference deletes a stale one, and a follower fails on it.
@@ -118,7 +126,9 @@ export async function expectParity(
         file: `trace.${name}.json`,
         contents: steps.length ? traceFile(steps) : null,
       });
-      if (!trace.pass) throw new Error(trace.message);
+      if (!trace.pass) {
+        throw new Error(trace.message);
+      }
       return steps.length ? undefined : { skip: NO_INTERACTION_SKIP };
     },
     ...(pixels
@@ -154,7 +164,9 @@ export async function expectParity(
         declaredAxe,
         view.teleported().map(({ element }) => element),
       );
-      if (pass) return;
+      if (pass) {
+        return;
+      }
       const lines = [...unexpected];
       if (missing.length) {
         lines.push(`  declared in case.json but not reported: ${missing.join(", ")}`);

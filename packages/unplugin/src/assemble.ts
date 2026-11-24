@@ -52,7 +52,9 @@ export function assembleModule(input: AssemblyInput): Assembly {
     };
   }
   if (SCRIPT.test(extension)) {
-    if (matching.length === 1) return loaded(matching[0]!, target);
+    if (matching.length === 1) {
+      return loaded(matching[0]!, target);
+    }
     const paths = matching.map((file) => file.path).join(", ");
     return joinModules(
       matching,
@@ -81,7 +83,9 @@ export function assembleModule(input: AssemblyInput): Assembly {
 
 /** What one file loads: its text, and its map when it has one. */
 function loaded({ contents, map }: OutputFile, target: string): Assembly {
-  if (!map) return { code: contents };
+  if (!map) {
+    return { code: contents };
+  }
   // Astro's compiler traces a frontmatter line from its column 0 (ADR-0074).
   return { code: contents, map: target === "astro" ? withLineStarts(map) : map };
 }
@@ -129,8 +133,12 @@ export function joinModules(
         }
         continue;
       }
-      for (const name of declaredNames(statement)) record(declaredBy, name, file.path);
-      for (const name of exportedNames(statement)) record(exportedBy, name, file.path);
+      for (const name of declaredNames(statement)) {
+        record(declaredBy, name, file.path);
+      }
+      for (const name of exportedNames(statement)) {
+        record(exportedBy, name, file.path);
+      }
     }
     bundle.addSource({ filename: file.path, content: part });
   }
@@ -145,7 +153,9 @@ export function joinModules(
     };
   }
   const code = bundle.toString();
-  if (!files.some((file) => file.map)) return { code };
+  if (!files.some((file) => file.map)) {
+    return { code };
+  }
   // At every character, so the join's map holds each segment the files' maps have.
   return { code, map: composeJoinedMap(bundle.generateMap({ hires: true }), files) };
 }
@@ -153,7 +163,9 @@ export function joinModules(
 /** Notes that the file at `path` declares or exports `name`. */
 function record(names: Map<string, string[]>, name: string, path: string): void {
   const paths = names.get(name) ?? [];
-  if (!paths.includes(path)) paths.push(path);
+  if (!paths.includes(path)) {
+    paths.push(path);
+  }
   names.set(name, paths);
 }
 

@@ -119,17 +119,22 @@ export async function lintWithOxlint(
     );
   }
   const diagnostics = diagnosticsByFile(files, config);
-  for (const problem of report.diagnostics)
+  for (const problem of report.diagnostics) {
     diagnostics.add(problem.filename, oxlintMessage(problem));
+  }
   return sortMessages(diagnostics.results);
 }
 
 /** Reads oxlint's report, rejecting a run that did not end with one. */
 function readOxlintReport(run: ProcessRun): OxlintReport {
-  if (run.signal) throw checkerFailed("oxlint", run, "it did not finish.");
+  if (run.signal) {
+    throw checkerFailed("oxlint", run, "it did not finish.");
+  }
   // A run prints its report to stdout and nothing else. A configuration oxlint cannot read, or
   // a path it cannot find, is plain text instead.
-  if (run.stderr.trim() !== "") throw checkerFailed("oxlint", run, "it wrote to stderr.");
+  if (run.stderr.trim() !== "") {
+    throw checkerFailed("oxlint", run, "it wrote to stderr.");
+  }
   let report: unknown;
   try {
     report = JSON.parse(run.stdout);
@@ -143,7 +148,9 @@ function readOxlintReport(run: ProcessRun): OxlintReport {
 }
 
 function isOxlintReport(value: unknown): value is OxlintReport {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
   const { diagnostics, number_of_files: count } = value as Partial<OxlintReport>;
   return (
     typeof count === "number" &&
@@ -168,14 +175,18 @@ function oxlintMessage(problem: OxlintDiagnostic): ToolchainMessage {
 /** `eslint(no-debugger)` as `no-debugger`, `react(jsx-key)` as `react/jsx-key`: config names. */
 function ruleName(code: string): string {
   const match = OXLINT_CODE.exec(code);
-  if (!match) return code;
+  if (!match) {
+    return code;
+  }
   const [, plugin = "", rule = ""] = match;
   return plugin === "eslint" ? rule : `${plugin}/${rule}`;
 }
 
 /** A problem's message and oxlint's advice on it, as one text. */
 function withHelp(message: string, help: string | undefined): string {
-  if (!help) return message;
+  if (!help) {
+    return message;
+  }
   return `${/[.?!]$/.test(message) ? message : `${message}.`} ${help}`;
 }
 
@@ -283,7 +294,9 @@ export async function lintWithEslint(
       cwd,
     );
   } finally {
-    if (typed !== undefined) await rm(typed.directory, { recursive: true, force: true });
+    if (typed !== undefined) {
+      await rm(typed.directory, { recursive: true, force: true });
+    }
   }
   const results = readEslintResults(run);
   const diagnostics = diagnosticsByFile(files, config);
@@ -354,16 +367,24 @@ function resolveEslint(toolchainDir: string): string {
     );
   }
   const entry = resolveInstalled(toolchainDir, "eslint");
-  if (!entry) throw new Error(`eslint at ${dirname(manifestPath)} has no entry point.`);
+  if (!entry) {
+    throw new Error(`eslint at ${dirname(manifestPath)} has no entry point.`);
+  }
   return entry;
 }
 
 /** Reads ESLint's results, rejecting a run that did not end with them. */
 function readEslintResults(run: ProcessRun): EslintResult[] {
-  if (run.signal) throw checkerFailed("ESLint", run, "it did not finish.");
+  if (run.signal) {
+    throw checkerFailed("ESLint", run, "it did not finish.");
+  }
   // A configuration or a plugin that fails to load throws: the run ends with its stack.
-  if (run.code !== 0) throw checkerFailed("ESLint", run, "it could not lint the files.");
-  if (run.stderr.trim() !== "") throw checkerFailed("ESLint", run, "it wrote to stderr.");
+  if (run.code !== 0) {
+    throw checkerFailed("ESLint", run, "it could not lint the files.");
+  }
+  if (run.stderr.trim() !== "") {
+    throw checkerFailed("ESLint", run, "it wrote to stderr.");
+  }
   let results: unknown;
   try {
     results = JSON.parse(run.stdout);
@@ -377,7 +398,9 @@ function readEslintResults(run: ProcessRun): EslintResult[] {
 }
 
 function isEslintResult(value: unknown): value is EslintResult {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
   const { filePath, messages, suppressedMessages } = value as Partial<EslintResult>;
   return (
     typeof filePath === "string" &&
@@ -437,7 +460,9 @@ function commonDirectory(paths: readonly string[]): string {
   let length = first.length;
   for (const parts of rest) {
     let shared = 0;
-    while (shared < length && parts[shared] === first[shared]) shared++;
+    while (shared < length && parts[shared] === first[shared]) {
+      shared++;
+    }
     length = shared;
   }
   return first.slice(0, length).join(sep) || sep;
@@ -448,7 +473,9 @@ function commonDirectory(paths: readonly string[]): string {
  * threads (oxlint) or its rules' order, and the results must not.
  */
 function sortMessages(results: Map<string, ToolchainMessage[]>): Map<string, ToolchainMessage[]> {
-  for (const [path, messages] of results) results.set(path, messages.toSorted(compareMessages));
+  for (const [path, messages] of results) {
+    results.set(path, messages.toSorted(compareMessages));
+  }
   return results;
 }
 

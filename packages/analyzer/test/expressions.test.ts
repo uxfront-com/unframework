@@ -18,7 +18,9 @@ function refsOf(expression: string, props = PROPS) {
   const { source, module, diagnostics } = component(`<p>{${expression}}</p>`, { props });
   expect(diagnostics).toEqual([]);
   const [child] = root(module).children;
-  if (child?.kind !== "Interpolation") throw new Error("Expected an interpolation.");
+  if (child?.kind !== "Interpolation") {
+    throw new Error("Expected an interpolation.");
+  }
   return child.value.refs.map((ref) =>
     ref.kind === "Global"
       ? `global ${ref.name}`

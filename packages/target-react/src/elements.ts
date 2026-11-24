@@ -193,6 +193,8 @@ const SVG_INTERFACES: ReadonlyMap<string, string> = new Map(
 
 /** The DOM interface of an element: `HTMLInputElement`, `SVGCircleElement`, `HTMLElement`. */
 export function elementInterface(tag: string): string {
-  if (PLAIN_ELEMENTS.has(tag)) return "HTMLElement";
+  if (PLAIN_ELEMENTS.has(tag)) {
+    return "HTMLElement";
+  }
   return HTML_INTERFACES.get(tag) ?? SVG_INTERFACES.get(tag) ?? "Element";
 }

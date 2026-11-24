@@ -45,8 +45,11 @@ describeTargets("stub/raster", () => {
     for (const [index, box] of boxes.entries()) {
       box.style.background = "#e5e5e5";
       // The repaint is real and inside the capture: the pixels change while it lasts.
-      if (index === 0) expect(await capture(view)).not.toBe(fresh);
-      else await view.settle();
+      if (index === 0) {
+        expect(await capture(view)).not.toBe(fresh);
+      } else {
+        await view.settle();
+      }
       box.style.background = "#efefef";
       await view.settle();
     }

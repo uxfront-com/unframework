@@ -54,7 +54,9 @@ export function isFrameworkAttribute(name: string, target: NormalizeTarget): boo
  * reference's output is never normalised by another framework's rules.
  */
 export function removeFrameworkAttributes(root: TreeParent, target?: NormalizeTarget): void {
-  if (target === undefined) return;
+  if (target === undefined) {
+    return;
+  }
   forEachElement(root, (element) => {
     element.attrs = element.attrs.filter(
       (attribute) => !isFrameworkAttribute(attributeName(attribute), target),

@@ -79,7 +79,9 @@ export async function run(args: string[], io: TestIo): Promise<number> {
   const help = parsed.vitest.some((arg) => arg === "--help" || arg === "-h");
   const { filter, options } = parseCLI(["vitest", ...parsed.vitest]);
   // `-- --help` is Vitest's help, which parseCLI has printed: nothing to run.
-  if (help) return 0;
+  if (help) {
+    return 0;
+  }
   if (options.update !== undefined && options.update !== false) {
     throw new Error(
       "Vitest's --update does not update the shared expectations: run unframework test --update.",
@@ -94,10 +96,16 @@ export async function run(args: string[], io: TestIo): Promise<number> {
     cli: process.env.UF_TEST_CLI,
   };
   const exitCode = process.exitCode;
-  if (parsed.targets.length) process.env.UF_TARGETS = parsed.targets.join(",");
-  else delete process.env.UF_TARGETS;
-  if (parsed.update) process.env.UF_UPDATE = "1";
-  else delete process.env.UF_UPDATE;
+  if (parsed.targets.length) {
+    process.env.UF_TARGETS = parsed.targets.join(",");
+  } else {
+    delete process.env.UF_TARGETS;
+  }
+  if (parsed.update) {
+    process.env.UF_UPDATE = "1";
+  } else {
+    delete process.env.UF_UPDATE;
+  }
   process.env.UF_TEST_CLI = "1";
   try {
     // An invalid configuration is a configuration error, before Vitest starts.
@@ -122,6 +130,9 @@ export async function run(args: string[], io: TestIo): Promise<number> {
 }
 
 function restore(name: string, value: string | undefined): void {
-  if (value === undefined) delete process.env[name];
-  else process.env[name] = value;
+  if (value === undefined) {
+    delete process.env[name];
+  } else {
+    process.env[name] = value;
+  }
 }

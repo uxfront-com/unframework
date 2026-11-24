@@ -104,7 +104,9 @@ class Declarations {
   claim(property: string, at: Span, reporter: Reporter): void {
     const other = this.#seen.find((seen) => cssPropertiesOverlap(seen.property, property));
     this.#seen.push({ property, at });
-    if (!other) return;
+    if (!other) {
+      return;
+    }
     reporter.report(
       "UF3022",
       at,
@@ -142,12 +144,18 @@ export function lowerStaticStyle(
       },
     );
   }
-  if (parsed.errors.length) return { attribute: undefined, empty: false, binds: false };
-  if (!parsed.declarations.length) return { attribute: undefined, empty: true, binds: false };
+  if (parsed.errors.length) {
+    return { attribute: undefined, empty: false, binds: false };
+  }
+  if (!parsed.declarations.length) {
+    return { attribute: undefined, empty: true, binds: false };
+  }
   const declarations = new Declarations();
   for (const declaration of parsed.declarations) {
     const property = propertyOf(declaration.property, where(declaration.propertySpan), reporter);
-    if (property === undefined) continue;
+    if (property === undefined) {
+      continue;
+    }
     declarations.claim(property, where(declaration.propertySpan), reporter);
     if (staticValueProblem(property, declaration.value, where(declaration.valueSpan), reporter)) {
       continue;
@@ -169,10 +177,15 @@ export function lowerStaticStyle(
 function mapper(value: string, pieces: readonly Piece[], at: Span): (range: Span) => Span {
   // Each UTF-16 unit of the value, and the piece that wrote it.
   const origins: Piece[] = [];
-  for (const piece of pieces)
-    for (let unit = 0; unit < piece.value.length; unit++) origins.push(piece);
+  for (const piece of pieces) {
+    for (let unit = 0; unit < piece.value.length; unit++) {
+      origins.push(piece);
+    }
+  }
   return (range) => {
-    if (origins.length !== value.length) return at;
+    if (origins.length !== value.length) {
+      return at;
+    }
     const first = origins[range.start];
     const last = origins[range.end - 1];
     if (range.start === range.end) {
@@ -194,7 +207,9 @@ function propertyOf(written: string, at: Span, reporter: Reporter): string | und
   }
   const property = written.toLowerCase();
   if (isCssPropertyName(property)) {
-    if (CSS_PROPERTIES.has(property)) return property;
+    if (CSS_PROPERTIES.has(property)) {
+      return property;
+    }
     reportUnknownProperty(written, property, at, reporter);
     return undefined;
   }
@@ -211,7 +226,9 @@ function propertyOf(written: string, at: Span, reporter: Reporter): string | und
  * on the server and not in a client.
  */
 function vendorProperty(written: string, property: string, at: Span, reporter: Reporter): boolean {
-  if (VENDOR_PROPERTIES.has(property)) return true;
+  if (VENDOR_PROPERTIES.has(property)) {
+    return true;
+  }
   const standard = property.replace(/^-[a-z]+-/, "");
   reporter.report(
     "UF3022",
@@ -235,7 +252,9 @@ function vendorProperty(written: string, property: string, at: Span, reporter: R
  * it there.
  */
 function lowerCaseCustomProperty(property: string, at: Span, reporter: Reporter): boolean {
-  if (!angularLowercases(property)) return true;
+  if (!angularLowercases(property)) {
+    return true;
+  }
   reporter.report(
     "UF3022",
     at,
@@ -270,7 +289,9 @@ function nearestProperty(name: string): string | undefined {
   let best: string | undefined;
   let distance = 3;
   for (const property of CSS_PROPERTIES) {
-    if (Math.abs(property.length - name.length) >= distance) continue;
+    if (Math.abs(property.length - name.length) >= distance) {
+      continue;
+    }
     const found = editDistance(name, property);
     if (found < distance) {
       best = property;
@@ -341,7 +362,9 @@ function staticValueProblem(
 
 /** A style object's key's property: camel case for standard properties, quoted custom ones. */
 function keyProperty(key: string): { property: string; kebab: boolean; vendor: boolean } {
-  if (key.startsWith("--")) return { property: key, kebab: false, vendor: false };
+  if (key.startsWith("--")) {
+    return { property: key, kebab: false, vendor: false };
+  }
   if (key.includes("-")) {
     return { property: key.toLowerCase(), kebab: true, vendor: key.startsWith("-") };
   }
@@ -400,12 +423,15 @@ export function lowerStyleObject(node: AST.ObjectExpression, context: RenderCont
     return [{ property, key, name, read: keyProperty(name) }];
   });
   const counts = new Map<string, number>();
-  for (const { read } of properties)
+  for (const { read } of properties) {
     counts.set(read.property, (counts.get(read.property) ?? 0) + 1);
+  }
   for (const { property, key, name, read } of properties) {
     const at = span(key);
     if (read.vendor) {
-      if (!vendorProperty(name, read.property, at, reporter)) continue;
+      if (!vendorProperty(name, read.property, at, reporter)) {
+        continue;
+      }
     } else if (!isCssPropertyName(read.property)) {
       reporter.report("UF3022", at, `\`${name}\` is not a CSS property name.`);
       continue;
@@ -440,8 +466,12 @@ export function lowerStyleObject(node: AST.ObjectExpression, context: RenderCont
     const value = property.value;
     if (isStaticString(value)) {
       const text = valueOf(value).trim();
-      if (reportCharacters(value, source, reporter)) continue;
-      if (staticValueProblem(read.property, text, span(value), reporter)) continue;
+      if (reportCharacters(value, source, reporter)) {
+        continue;
+      }
+      if (staticValueProblem(read.property, text, span(value), reporter)) {
+        continue;
+      }
       declarations.declarations.push(createStaticStyle(read.property, text, span(property)));
       continue;
     }
@@ -516,8 +546,12 @@ export function lowerStyleObject(node: AST.ObjectExpression, context: RenderCont
           !UNITLESS_PROPERTIES.has(read.property)
         ),
     );
-  if (reporter.hasErrorsSince(mark)) return { attribute: undefined, empty: false, binds };
-  if (!properties.length) return { attribute: undefined, empty: true, binds };
+  if (reporter.hasErrorsSince(mark)) {
+    return { attribute: undefined, empty: false, binds };
+  }
+  if (!properties.length) {
+    return { attribute: undefined, empty: true, binds };
+  }
   return {
     attribute: createStyleAttribute(declarations.declarations, span(node)),
     empty: false,
@@ -536,7 +570,9 @@ export function lowerStyleValue(node: AST.Expression, context: RenderContext): L
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(node, context);
   const leaves = objectLeaves(node);
-  for (const leaf of leaves) checkObjectLeaf(leaf, context, mark);
+  for (const leaf of leaves) {
+    checkObjectLeaf(leaf, context, mark);
+  }
   const problem = styleValueProblem(checked.kinds, leaves.map(span));
   if (problem) {
     reporter.report("UF3018", problem.at ?? node, problem.message, {
@@ -546,7 +582,9 @@ export function lowerStyleValue(node: AST.Expression, context: RenderContext): L
         : {}),
     });
   }
-  if (reporter.hasErrorsSince(mark)) return { attribute: undefined, empty: false, binds: true };
+  if (reporter.hasErrorsSince(mark)) {
+    return { attribute: undefined, empty: false, binds: true };
+  }
   return {
     attribute: createStyleAttribute([], span(node), checked.expression),
     empty: false,
@@ -608,10 +646,14 @@ function checkObjectLeaf(leaf: AST.ObjectExpression, context: RenderContext, mar
   );
   for (const diagnostic of scratch.diagnostics) {
     const key = `${diagnostic.code} ${diagnostic.span.start}:${diagnostic.span.end} ${diagnostic.message}`;
-    if (!reported.has(key)) reporter.diagnostics.push(diagnostic);
+    if (!reported.has(key)) {
+      reporter.diagnostics.push(diagnostic);
+    }
   }
   for (const property of leaf.properties) {
-    if (property.type === "SpreadElement" || property.computed) continue;
+    if (property.type === "SpreadElement" || property.computed) {
+      continue;
+    }
     const { key } = property;
     const name =
       key.type === "Identifier"
@@ -619,7 +661,9 @@ function checkObjectLeaf(leaf: AST.ObjectExpression, context: RenderContext, mar
         : key.type === "Literal" && typeof key.value === "string"
           ? key.value
           : undefined;
-    if (name === undefined || !keyProperty(name).vendor) continue;
+    if (name === undefined || !keyProperty(name).vendor) {
+      continue;
+    }
     reporter.report(
       "UF3018",
       key,
@@ -645,13 +689,17 @@ export function styleValueProblem(
     };
   }
   for (const shape of kinds.objects ?? []) {
-    if (shape.interface) return interfaceProblem("style");
+    if (shape.interface) {
+      return interfaceProblem("style");
+    }
     // An object literal the value is checked as in place: its own checks cover its members.
     const members = [...shape.members().values()];
     const literal = members.some(({ key }) =>
       inPlace.some((at) => key.start >= at.start && key.end <= at.end),
     );
-    if (literal) continue;
+    if (literal) {
+      continue;
+    }
     // A declared type's members, or an object literal's anywhere in the value (a conditional's
     // branch, a `computed`), each checked as a key and a value written in place.
     for (const [name, member] of shape.members()) {

@@ -116,12 +116,16 @@ describe("react output in the browser", () => {
     const field = (label: string) =>
       container.querySelector<HTMLElement>(`[aria-label="${label}"]`)!;
     await act(() => userEvent.selectOptions(field("Size"), "s"));
-    for (let click = 0; click < 3; click++) await act(() => userEvent.click(field("Agree")));
+    for (let click = 0; click < 3; click++) {
+      await act(() => userEvent.click(field("Agree")));
+    }
     await act(() => userEvent.type(field("Name"), "Al"));
     // React's onChange on a checkbox or a radio fires on click, before the DOM's input: a listener
     // of input reads the model after its write, where Vue's reads it before (the declared
     // difference of two-way-binding).
-    for (let click = 0; click < 2; click++) await act(() => userEvent.click(field("Notify")));
+    for (let click = 0; click < 2; click++) {
+      await act(() => userEvent.click(field("Notify")));
+    }
     await act(() => userEvent.click(field("B")));
     expect(events).toEqual([
       ["seen", "select:s"],
@@ -141,8 +145,9 @@ describe("react output in the browser", () => {
     await start(await component("DirtyForm"), []);
     const field = (label: string) =>
       container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
-    for (const label of ["Agree", "B", "Solo", "Veto"])
+    for (const label of ["Agree", "B", "Solo", "Veto"]) {
       await act(() => userEvent.click(field(label)));
+    }
     expect(container.querySelector("output")!.textContent).toBe("true|b|true|2|1|false");
     expect([field("Agree").checked, field("A").checked, field("B").checked]).toEqual([
       true,
@@ -160,7 +165,9 @@ describe("react output in the browser", () => {
       value: 5,
       onValueChange: (value: unknown) => void changes.push(value),
     });
-    for (let click = 0; click < 4; click++) await act(() => userEvent.click(button("Fewer")));
+    for (let click = 0; click < 4; click++) {
+      await act(() => userEvent.click(button("Fewer")));
+    }
     expect(changes).toEqual([4, 4, 4, 4]);
     expect(logged).toEqual([]);
   });
@@ -585,7 +592,9 @@ describe("react output in the browser", () => {
       try {
         root.render(createElement(await component("DirtyForm")));
         await vi.waitFor(() => expect(output()).toBe("false|a|false|0|0|false"));
-        for (const label of ["Agree", "B", "Solo", "Veto"]) await userEvent.click(field(label));
+        for (const label of ["Agree", "B", "Solo", "Veto"]) {
+          await userEvent.click(field(label));
+        }
         await vi.waitFor(() => expect(output()).toBe("true|b|true|2|1|false"));
         expect(["Agree", "B", "Solo", "Veto"].map((label) => field(label).checked)).toEqual([
           true,

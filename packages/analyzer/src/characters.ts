@@ -35,7 +35,9 @@ export function unportableCharacters(
   const origin: number[] = [];
   pieces.forEach((piece, index) => {
     value += piece.value;
-    for (let unit = 0; unit < piece.value.length; unit++) origin.push(index);
+    for (let unit = 0; unit < piece.value.length; unit++) {
+      origin.push(index);
+    }
   });
   const found = new Map<number, UnportableCharacter>();
   for (let unit = 0; unit < value.length;) {

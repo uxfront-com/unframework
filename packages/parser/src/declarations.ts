@@ -29,7 +29,9 @@ export function findTypeDeclarations(program: Program): TypeDeclarationStatement
   const found: TypeDeclarationStatement[] = [];
   for (const statement of program.body) {
     const declaration = typeDeclarationOf(statement);
-    if (!declaration) continue;
+    if (!declaration) {
+      continue;
+    }
     found.push({
       name: declaration.id.name,
       node: declaration,

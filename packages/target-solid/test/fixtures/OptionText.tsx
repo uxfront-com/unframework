@@ -67,7 +67,9 @@ function selectOptions(select: HTMLSelectElement, value: () => unknown): void {
       );
       return;
     }
-    for (const option of select.options) option.selected = current.includes(option.value);
+    for (const option of select.options) {
+      option.selected = current.includes(option.value);
+    }
   };
   createEffect(choose);
   const observer = new MutationObserver(choose);

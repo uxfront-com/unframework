@@ -17,7 +17,9 @@ const FUNCTIONS = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFu
  */
 export function awaitsAtTop(parse: Parse, code: string): boolean {
   // Most files hold no `await` at all: no parse for them.
-  if (!code.includes("await")) return false;
+  if (!code.includes("await")) {
+    return false;
+  }
   let root: AST.Root;
   try {
     root = parse(code, { modern: true });
@@ -34,13 +36,25 @@ export function componentOptions(parse: Parse, code: string): Partial<CompileOpt
 
 /** Whether an ESTree node holds an `await` its own scope runs, outside any nested function. */
 function holdsAwait(node: unknown): boolean {
-  if (Array.isArray(node)) return node.some(holdsAwait);
-  if (typeof node !== "object" || node === null) return false;
+  if (Array.isArray(node)) {
+    return node.some(holdsAwait);
+  }
+  if (typeof node !== "object" || node === null) {
+    return false;
+  }
   const { type } = node as { type?: unknown };
-  if (typeof type !== "string") return false;
-  if (type === "AwaitExpression") return true;
-  if (type === "ForOfStatement" && (node as { await?: boolean }).await) return true;
-  if (FUNCTIONS.has(type)) return false;
+  if (typeof type !== "string") {
+    return false;
+  }
+  if (type === "AwaitExpression") {
+    return true;
+  }
+  if (type === "ForOfStatement" && (node as { await?: boolean }).await) {
+    return true;
+  }
+  if (FUNCTIONS.has(type)) {
+    return false;
+  }
   return Object.entries(node).some(
     ([key, value]) => key !== "metadata" && typeof value === "object" && holdsAwait(value),
   );

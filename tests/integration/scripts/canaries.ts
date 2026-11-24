@@ -42,11 +42,17 @@ const PROJECTS: Record<ProjectKind, string> = {
  * An unknown name, or a layer without canaries, throws: a typo never runs nothing.
  */
 export function selectCanaries(names: readonly string[]): Canary[] {
-  if (!names.length) return [...CANARIES];
+  if (!names.length) {
+    return [...CANARIES];
+  }
   const selected = names.flatMap((name) => {
-    if (!LAYERS.includes(name as LayerName)) return [findCanary(name)];
+    if (!LAYERS.includes(name as LayerName)) {
+      return [findCanary(name)];
+    }
     const ofLayer = CANARIES.filter((canary) => canary.layer === name);
-    if (!ofLayer.length) throw new Error(`No canary proves ${name}: it is not live.`);
+    if (!ofLayer.length) {
+      throw new Error(`No canary proves ${name}: it is not live.`);
+    }
     return ofLayer;
   });
   return [...new Set(selected)];
@@ -67,13 +73,17 @@ export function parseArguments(argv: readonly string[]): {
   let shard: CanaryShard | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]!;
-    if (argument === "--") continue;
+    if (argument === "--") {
+      continue;
+    }
     const option = /^--shard(?:=(.*))?$/s.exec(argument);
     if (!option) {
       names.push(argument);
       continue;
     }
-    if (shard) throw new Error("--shard is given twice.");
+    if (shard) {
+      throw new Error("--shard is given twice.");
+    }
     const value = option[1] ?? argv[(index += 1)] ?? "";
     const match = /^(\d+)\/(\d+)$/.exec(value);
     const [part, count] = [Number(match?.[1]), Number(match?.[2])];
@@ -218,15 +228,21 @@ function main(): number {
   // Every kind of project is judged on the shard's cases: shards 1 to n judge each case once.
   const cases = shardCases(listCases(), shard).map(canaryCase);
   const print = (line: string) => process.stdout.write(`${line}\n`);
-  if (shard) print(`[uf:canaries] Shard ${shard.index}/${shard.count}: ${cases.length} cases.`);
+  if (shard) {
+    print(`[uf:canaries] Shard ${shard.index}/${shard.count}: ${cases.length} cases.`);
+  }
   const missed: string[] = [];
   for (const canary of canaries) {
     const verdict = runCanary(canary, targets, cases, shard);
     print(
       `[uf:canaries] ${canary.id} (${canary.layer}, ${canaryProjects(canary).join(" + ")}): ${verdict.caught ? "caught" : "NOT CAUGHT"} in ${verdict.seconds.toFixed(1)} s`,
     );
-    for (const note of verdict.notes) print(`    (${note})`);
-    for (const problem of verdict.problems) print(`    ${problem}`);
+    for (const note of verdict.notes) {
+      print(`    (${note})`);
+    }
+    for (const problem of verdict.problems) {
+      print(`    ${problem}`);
+    }
     if (!verdict.caught) {
       print(`    log: ${relative(ROOT, verdict.log)}`);
       missed.push(canary.id);
@@ -240,4 +256,6 @@ function main(): number {
   return missed.length ? 1 : 0;
 }
 
-if (import.meta.main) process.exitCode = main();
+if (import.meta.main) {
+  process.exitCode = main();
+}

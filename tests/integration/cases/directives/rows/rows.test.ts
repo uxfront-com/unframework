@@ -33,11 +33,15 @@ function record(): {
     mark: () => traces.length,
     since: (view, mark) => {
       for (const { call, el } of traces) {
-        if (call.includes(" mounted ") && view.container.contains(el)) own.add(el);
+        if (call.includes(" mounted ") && view.container.contains(el)) {
+          own.add(el);
+        }
       }
       const found = new Map<Element, string[]>();
       for (const { call, el } of traces.slice(mark)) {
-        if (!own.has(el)) continue;
+        if (!own.has(el)) {
+          continue;
+        }
         found.set(el, [...(found.get(el) ?? []), call]);
       }
       return [...found].map(([el, calls]) => ({ name: el.getAttribute("data-name"), calls }));
@@ -139,7 +143,9 @@ describeTargets("directives/rows", () => {
         await view.expectParity("reversed");
         expect(trace.since(view, mark)).toEqual([]);
         const after = elements(view, names);
-        for (const [index, element] of before.entries()) expect(after[index]).toBe(element);
+        for (const [index, element] of before.entries()) {
+          expect(after[index]).toBe(element);
+        }
 
         mark = trace.mark();
         await view.user.click(view.getByRole("button", { name: "Remove second" }));
@@ -184,7 +190,9 @@ describeTargets("directives/rows", () => {
         expect(firstOption(view)).toBe("option-y");
         expect(trace.since(view, mark)).toEqual([]);
         const reversed = elements(view, ["option-x", "option-y"]);
-        for (const [index, element] of options.entries()) expect(reversed[index]).toBe(element);
+        for (const [index, element] of options.entries()) {
+          expect(reversed[index]).toBe(element);
+        }
         mark = trace.mark();
         await view.user.click(view.getByRole("button", { name: "Remove option" }));
         await view.expectParity("options-removed");

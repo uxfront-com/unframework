@@ -110,7 +110,9 @@ function emptyCalls(
   fn: FunctionCode,
   empty: ReadonlySet<BindingId>,
 ): { statement: Span; callee: number }[] {
-  if (!empty.size) return [];
+  if (!empty.size) {
+    return [];
+  }
   const base = fn.body.span.start;
   const callees = new Set(
     fn.body.refs.flatMap((reference) =>
@@ -119,7 +121,9 @@ function emptyCalls(
         : [],
     ),
   );
-  if (!callees.size) return [];
+  if (!callees.size) {
+    return [];
+  }
   const called = (node: CallNode | undefined): number | undefined => {
     let inner = node;
     while (
@@ -134,7 +138,9 @@ function emptyCalls(
     if (inner?.type === "LogicalExpression") {
       return inner.operator === "&&" && eventTest(inner.left) ? called(inner.right) : undefined;
     }
-    if (inner?.type !== "CallExpression" || inner.callee?.type !== "Identifier") return undefined;
+    if (inner?.type !== "CallExpression" || inner.callee?.type !== "Identifier") {
+      return undefined;
+    }
     const inert = (inner.arguments ?? []).every(
       (argument) => argument.type === "Identifier" || argument.type === "Literal",
     );
@@ -142,14 +148,20 @@ function emptyCalls(
   };
   // A test that reads only the event and changes nothing: no call, no assignment.
   const eventTest = (node: CallNode | undefined): boolean => {
-    if (!node) return false;
+    if (!node) {
+      return false;
+    }
     const start = base + node.start;
     const end = base + node.end;
     let pure = true;
     const visit = (value: unknown): void => {
-      if (!pure || !value || typeof value !== "object") return;
+      if (!pure || !value || typeof value !== "object") {
+        return;
+      }
       if (Array.isArray(value)) {
-        for (const item of value) visit(item);
+        for (const item of value) {
+          visit(item);
+        }
         return;
       }
       const type = (value as { type?: unknown }).type;
@@ -163,7 +175,11 @@ function emptyCalls(
         pure = false;
         return;
       }
-      for (const [key, child] of Object.entries(value)) if (key !== "parent") visit(child);
+      for (const [key, child] of Object.entries(value)) {
+        if (key !== "parent") {
+          visit(child);
+        }
+      }
     };
     visit(node);
     return (
@@ -214,7 +230,9 @@ export function readsName(code: string, name: string): boolean {
  * removed span move back by what was removed, and a reference inside one goes with it.
  */
 export function removeSpans(code: Code, spans: readonly Span[]): Code {
-  if (!spans.length) return code;
+  if (!spans.length) {
+    return code;
+  }
   const { code: text, span } = code;
   const removed = spans
     .map(({ start, end }) => widen(text, start - span.start, end - span.start))
@@ -229,7 +247,11 @@ export function removeSpans(code: Code, spans: readonly Span[]): Code {
   const shift = (offset: number): number => {
     const local = offset - span.start;
     let delta = 0;
-    for (const { start, end } of removed) if (end <= local) delta += end - start;
+    for (const { start, end } of removed) {
+      if (end <= local) {
+        delta += end - start;
+      }
+    }
     return offset - delta;
   };
   const inside = (reference: CodeReference) =>
@@ -296,7 +318,9 @@ function listenerFunctions(component: UfComponent): Set<string> {
   const named = new Set<string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") {
+        return;
+      }
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Function") {
           named.add(attribute.handler.binding);
@@ -324,7 +348,9 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
     switch (item.kind) {
       case "State":
       case "Variable":
-        if (item.initial) visit(item.initial.refs);
+        if (item.initial) {
+          visit(item.initial.refs);
+        }
         break;
       case "Const":
       case "Await":
@@ -337,8 +363,11 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
         visit(item.function.body.refs);
         break;
       case "Watch":
-        for (const source of item.sources)
-          if (source.kind === "Getter") visit(source.getter.body.refs);
+        for (const source of item.sources) {
+          if (source.kind === "Getter") {
+            visit(source.getter.body.refs);
+          }
+        }
         visit(item.callback.body.refs);
         break;
       case "WatchEffect":
@@ -351,7 +380,9 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
         visit(item.value.refs);
         break;
       case "Inject":
-        if (item.fallback) visit(item.fallback.refs);
+        if (item.fallback) {
+          visit(item.fallback.refs);
+        }
         break;
       case "TemplateRef":
       case "Id":
@@ -359,9 +390,13 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
         break;
       case "Use":
         for (const argument of item.arguments) {
-          if (argument.kind === "Value") visit(argument.value.refs);
-          else if (argument.kind === "Getter") visit(argument.getter.body.refs);
-          else visit(argument.callback.body.refs);
+          if (argument.kind === "Value") {
+            visit(argument.value.refs);
+          } else if (argument.kind === "Getter") {
+            visit(argument.getter.body.refs);
+          } else {
+            visit(argument.callback.body.refs);
+          }
         }
         break;
       case "DevCheck":
@@ -373,7 +408,9 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") {
+        return;
+      }
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
           visit(attribute.handler.function.body.refs);

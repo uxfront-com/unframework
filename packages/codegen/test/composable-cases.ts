@@ -55,7 +55,9 @@ export function locateCase(id: string, integrationDir: string = INTEGRATION_DIR)
   for (const directory of ["pending", "cases"]) {
     const root = join(integrationDir, directory);
     const dir = join(root, id);
-    if (existsSync(dir)) return { id, root, dir };
+    if (existsSync(dir)) {
+      return { id, root, dir };
+    }
   }
   throw new Error(
     `The case ${id} is in neither tests/integration/pending/ nor tests/integration/cases/.`,
@@ -96,7 +98,9 @@ export async function compileComposableCases(
     const readFile = async (path: string): Promise<string | undefined> => {
       const file = join(path);
       const inCase = relative(location.dir, dirname(file)) === "";
-      if (!inCase && !file.split(sep).includes("node_modules")) return undefined;
+      if (!inCase && !file.split(sep).includes("node_modules")) {
+        return undefined;
+      }
       return readText(file, "utf8").catch(() => undefined);
     };
     const names = readdirSync(location.dir)

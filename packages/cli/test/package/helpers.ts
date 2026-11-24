@@ -103,7 +103,9 @@ export function designSystem(options: DesignSystem): string {
 const consumers: string[] = [];
 
 afterEach(() => {
-  for (const directory of consumers.splice(0)) rmSync(directory, { recursive: true, force: true });
+  for (const directory of consumers.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 /**

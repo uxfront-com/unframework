@@ -220,8 +220,12 @@ function isHtmlElement(node: TreeElement["parentNode"], tag: string): boolean {
  * inputs, and `<noscript>` (the parser and the browser both run with scripting enabled).
  */
 function forcedBox(element: TreeElement): Box | undefined {
-  if (element.namespaceURI !== HTML_NAMESPACE) return undefined;
-  if (element.tagName === "noscript") return box("none");
+  if (element.namespaceURI !== HTML_NAMESPACE) {
+    return undefined;
+  }
+  if (element.tagName === "noscript") {
+    return box("none");
+  }
   if (element.tagName === "input" && getAttribute(element, "type")?.toLowerCase() === "hidden") {
     return box("none");
   }
@@ -232,35 +236,61 @@ function forcedBox(element: TreeElement): Box | undefined {
 function defaultBox(element: TreeElement): Box {
   const tag = element.tagName;
   if (element.namespaceURI === SVG_NAMESPACE) {
-    if (tag === "svg") return box("atomic");
-    if (tag === "style" || tag === "script") return box("none");
+    if (tag === "svg") {
+      return box("atomic");
+    }
+    if (tag === "style" || tag === "script") {
+      return box("none");
+    }
     return box(SVG_INLINE_TAGS.has(tag) ? "inline" : "block");
   }
   if (element.namespaceURI === MATHML_NAMESPACE) {
     // MathML lays out its own children and ignores whitespace between them.
-    if (tag !== "math") return box("block");
+    if (tag !== "math") {
+      return box("block");
+    }
     return box(getAttribute(element, "display")?.toLowerCase() === "block" ? "block" : "atomic");
   }
   const hidden = getAttribute(element, "hidden");
   if (hidden !== undefined && hidden.toLowerCase() !== "until-found" && tag !== "embed") {
     return box("none");
   }
-  if (tag === "dialog" && getAttribute(element, "open") === undefined) return box("none");
-  if (tag === "audio" && getAttribute(element, "controls") === undefined) return box("none");
-  if (tag === "br") return box("break");
-  if (tag === "slot") return box("contents");
+  if (tag === "dialog" && getAttribute(element, "open") === undefined) {
+    return box("none");
+  }
+  if (tag === "audio" && getAttribute(element, "controls") === undefined) {
+    return box("none");
+  }
+  if (tag === "br") {
+    return box("break");
+  }
+  if (tag === "slot") {
+    return box("contents");
+  }
   // `ruby { display: ruby }`, and `ruby > rt { display: ruby-text }`: an `<rt>` elsewhere is
   // an ordinary inline.
-  if (tag === "ruby") return box("inline", { rubyContent: true });
+  if (tag === "ruby") {
+    return box("inline", { rubyContent: true });
+  }
   if (tag === "rt" && isHtmlElement(element.parentNode, "ruby")) {
     return box("inline", { rubyContent: true, rubyAnnotation: true });
   }
-  if (tag === "li") return box("block", { listItem: true });
-  if (NONE_TAGS.has(tag)) return box("none");
+  if (tag === "li") {
+    return box("block", { listItem: true });
+  }
+  if (NONE_TAGS.has(tag)) {
+    return box("none");
+  }
   const tableInternal = TABLE_INTERNAL_TAGS.has(tag);
-  if (TABLE_TAGS.has(tag)) return box("block", { dropsWhitespaceChildren: true, tableInternal });
-  if (BLOCK_TAGS.has(tag)) return box("block", { tableInternal });
-  if (ATOMIC_TAGS.has(tag)) return box("atomic");
+  if (TABLE_TAGS.has(tag)) {
+    return box("block", { dropsWhitespaceChildren: true, tableInternal });
+  }
+  if (BLOCK_TAGS.has(tag)) {
+    return box("block", { tableInternal });
+  }
+  if (ATOMIC_TAGS.has(tag)) {
+    return box("atomic");
+  }
   // Every other element, custom elements included, has the initial `display: inline`.
   return box("inline");
 }
@@ -323,7 +353,9 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
     }
   }
   const has = (keyword: string) => keywords.includes(keyword);
-  if (has("run-in")) return undefined;
+  if (has("run-in")) {
+    return undefined;
+  }
   const inner = keywords.find((keyword) =>
     ["flow", "flow-root", "table", "flex", "grid", "ruby", "math"].includes(keyword),
   );
@@ -334,8 +366,12 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
     listItem: has("list-item"),
   };
   const flows = inner === undefined || inner === "flow" || (inner === "math" && !mathml);
-  if (has("inline")) return box(flows || inner === "ruby" ? "inline" : "atomic", traits);
-  if (has("block") || has("list-item")) return box("block", traits);
+  if (has("inline")) {
+    return box(flows || inner === "ruby" ? "inline" : "atomic", traits);
+  }
+  if (has("block") || has("list-item")) {
+    return box("block", traits);
+  }
   return undefined;
 }
 
@@ -407,13 +443,17 @@ function computedBox(element: TreeElement, display: string): Box {
 /** The element's box, laid out by its parent (see `boxOf`), its edges aside. */
 function placedBox(element: TreeElement, parent: ParentLayout): Box {
   const forced = forcedBox(element);
-  if (forced) return forced;
+  if (forced) {
+    return forced;
+  }
   const computed = computedLayouts.get(element);
   const style = getAttribute(element, "style");
   const declared = computed
     ? computedBox(element, computed.display)
     : declaredBox(element, styleValue(style, "display"));
-  if (declared.outer === "none" || declared.outer === "contents") return declared;
+  if (declared.outer === "none" || declared.outer === "contents") {
+    return declared;
+  }
   const position = computed ? computed.position : styleValue(style, "position");
   const float = computed ? computed.float : styleValue(style, "float");
   const floats = float !== undefined && FLOATING_KEYWORDS.has(float);
@@ -422,7 +462,9 @@ function placedBox(element: TreeElement, parent: ParentLayout): Box {
   // display becomes `flow` (CSS Display 3 §2.7), so its children are laid out as a block's.
   const own =
     declared.tableInternal && (floats || positioned || parent.blockifies) ? box("block") : declared;
-  if (positioned) return { ...own, outer: "out-of-flow" };
+  if (positioned) {
+    return { ...own, outer: "out-of-flow" };
+  }
   if (parent.ruby) {
     // A float is blockified before the ruby drops its float, so it is inlinified as a block.
     if (floats || own.outer === "block") {
@@ -430,7 +472,9 @@ function placedBox(element: TreeElement, parent: ParentLayout): Box {
     }
     return own.outer === "break" ? { ...own, outer: "ruby-break" } : own;
   }
-  if (floats) return { ...own, outer: "out-of-flow" };
+  if (floats) {
+    return { ...own, outer: "out-of-flow" };
+  }
   if (
     parent.blockifies &&
     (own.outer === "inline" || own.outer === "atomic" || own.outer === "break")
@@ -448,11 +492,19 @@ function placedBox(element: TreeElement, parent: ParentLayout): Box {
  */
 function isolatesBidi(element: TreeElement): boolean {
   const computed = computedLayouts.get(element);
-  if (computed) return BIDI_KEYWORDS.has(computed.unicodeBidi);
+  if (computed) {
+    return BIDI_KEYWORDS.has(computed.unicodeBidi);
+  }
   const value = styleValue(getAttribute(element, "style"), "unicode-bidi");
-  if (value === "normal" || value === "initial" || value === "unset") return false;
-  if (value !== undefined && BIDI_KEYWORDS.has(value)) return true;
-  if (element.namespaceURI !== HTML_NAMESPACE) return false;
+  if (value === "normal" || value === "initial" || value === "unset") {
+    return false;
+  }
+  if (value !== undefined && BIDI_KEYWORDS.has(value)) {
+    return true;
+  }
+  if (element.namespaceURI !== HTML_NAMESPACE) {
+    return false;
+  }
   const dir = getAttribute(element, "dir")?.toLowerCase();
   return BIDI_TAGS.has(element.tagName) || (dir !== undefined && DIRECTIONS.has(dir));
 }
@@ -474,8 +526,12 @@ export function preservesWhitespace(element: TreeElement, inherited: boolean): b
   }
   const value = styleValue(getAttribute(element, "style"), "white-space", "white-space-collapse");
   const keywords = value?.split(/\s+/) ?? [];
-  if (keywords.some((keyword) => PRESERVING_KEYWORDS.has(keyword))) return true;
-  if (keywords.some((keyword) => COLLAPSING_KEYWORDS.has(keyword))) return false;
+  if (keywords.some((keyword) => PRESERVING_KEYWORDS.has(keyword))) {
+    return true;
+  }
+  if (keywords.some((keyword) => COLLAPSING_KEYWORDS.has(keyword))) {
+    return false;
+  }
   return (
     inherited ||
     keepsText(element) ||

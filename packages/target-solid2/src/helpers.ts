@@ -155,7 +155,9 @@ export function watcherHelperCode(uses: WatcherUses, names: HelperNames): string
       : "before the DOM updates";
   const parts = [schedulerCode(names, both)];
   const effect = names.watchEffect ? [watchEffectCode(names.watchEffect, names, both)] : [];
-  if (!names.watcher) return [...parts, ...effect].join("\n\n");
+  if (!names.watcher) {
+    return [...parts, ...effect].join("\n\n");
+  }
   const name = names.watcher;
   const doc = docComment(
     [
@@ -469,7 +471,9 @@ function docComment(text: string): string {
       line = line ? `${line} ${word}` : word;
     }
   }
-  if (line) lines.push(line);
+  if (line) {
+    lines.push(line);
+  }
   return `/**\n${lines.map((each) => ` * ${each}`).join("\n")}\n */`;
 }
 

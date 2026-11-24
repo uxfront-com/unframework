@@ -107,7 +107,9 @@ export async function checkEnvironment(colorScheme: ColorScheme): Promise<void> 
 async function matchesWithin(query: string, timeout: number): Promise<boolean> {
   const deadline = Date.now() + timeout;
   while (!matchMedia(query).matches) {
-    if (Date.now() >= deadline) return false;
+    if (Date.now() >= deadline) {
+      return false;
+    }
     await new Promise((resolve) => setTimeout(resolve, COLOR_SCHEME_POLL_MS));
   }
   return true;
@@ -151,7 +153,9 @@ export async function settleAnimations(): Promise<void> {
     const running = document
       .getAnimations()
       .filter((animation) => animation.playState === "running" || animation.pending);
-    if (!running.length) return;
+    if (!running.length) {
+      return;
+    }
     const left = deadline - performance.now();
     if (left <= 0) {
       throw new Error(
@@ -169,9 +173,12 @@ export async function settleAnimations(): Promise<void> {
 function describeAnimation(animation: Animation): string {
   const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
   const on = target ? ` on <${target.tagName.toLowerCase()}>` : "";
-  if (animation instanceof CSSTransition)
+  if (animation instanceof CSSTransition) {
     return `a transition of ${animation.transitionProperty}${on}`;
-  if (animation instanceof CSSAnimation) return `the animation ${animation.animationName}${on}`;
+  }
+  if (animation instanceof CSSAnimation) {
+    return `the animation ${animation.animationName}${on}`;
+  }
   return `a Web Animation${on}`;
 }
 

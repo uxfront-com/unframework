@@ -76,8 +76,12 @@ describe("qwik composable cases", () => {
       // Each source's own output, and each `.ts` of the case as its copy, and nothing else.
       const expected = readdirSync(dir)
         .flatMap((name) => {
-          if (name.endsWith(".uf.ts")) return [`${name.slice(0, -6)}.ts`];
-          if (name.endsWith(".uf.tsx")) return [`${name.slice(0, -7)}.tsx`];
+          if (name.endsWith(".uf.ts")) {
+            return [`${name.slice(0, -6)}.ts`];
+          }
+          if (name.endsWith(".uf.tsx")) {
+            return [`${name.slice(0, -7)}.tsx`];
+          }
           return name.endsWith(".ts") && !name.endsWith(".test.ts") ? [name] : [];
         })
         .toSorted();
@@ -105,9 +109,13 @@ async function expectToolchainClean(name: string, outputs: readonly OutputFile[]
   }
   const paths = files.map(({ path }) => path);
   const checked = await toolchain.typecheck(paths, context);
-  for (const path of paths) expect(checked.get(path) ?? [], path).toEqual([]);
+  for (const path of paths) {
+    expect(checked.get(path) ?? [], path).toEqual([]);
+  }
   const linted = await toolchain.lint(paths, context);
-  for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+  for (const [path, messages] of linted) {
+    expect(messages, path).toEqual([]);
+  }
 }
 
 /** A composable module's source compiled for Qwik, its diagnostics' codes and spans with it. */
@@ -732,7 +740,9 @@ async function compileProject(files: Record<string, string>) {
         text: source.slice(span.start, span.end),
       })),
     );
-    for (const file of result.outputs.qwik ?? []) outputs.set(file.path, file.contents);
+    for (const file of result.outputs.qwik ?? []) {
+      outputs.set(file.path, file.contents);
+    }
   }
   return {
     diagnostics,
@@ -1153,8 +1163,9 @@ ${relay}  return (
         isServer: true,
       });
       expect(modules.length).toBeGreaterThan(0);
-      for (const { code } of modules)
+      for (const { code } of modules) {
         expect(() => parseCodeSource(code, "statements")).not.toThrow();
+      }
     },
   );
 });

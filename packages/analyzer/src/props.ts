@@ -128,7 +128,9 @@ export function analyzeProps(
   };
   const mark = reporter.diagnostics.length;
   const [parameter, ...others] = fn.params;
-  if (!parameter) return result;
+  if (!parameter) {
+    return result;
+  }
   if (others.length) {
     reporter.report(
       "UF2001",
@@ -137,7 +139,9 @@ export function analyzeProps(
       { help: "Declare every prop as a member of the props type." },
     );
   }
-  if (parameter.type === "TSParameterProperty") return result;
+  if (parameter.type === "TSParameterProperty") {
+    return result;
+  }
   if (parameter.type !== "Identifier" && parameter.type !== "ObjectPattern") {
     reporter.report(
       "UF2001",
@@ -192,7 +196,9 @@ export function analyzeProps(
   // A problem in a member's type fails the component, and its other members are still read,
   // so their own problems are reported too.
   const { members } = read;
-  if (read.failed) result.failed = true;
+  if (read.failed) {
+    result.failed = true;
+  }
   const object = parameter.type === "Identifier";
   result.types = closure(annotation, types.table);
   result.propsParameter = createPropsParameter(
@@ -209,7 +215,9 @@ export function analyzeProps(
   const at = object
     ? { start: parameter.start, end: parameter.start + parameter.name.length }
     : undefined;
-  if (object) result.object = { declaration: parameter, name: parameter.name };
+  if (object) {
+    result.object = { declaration: parameter, name: parameter.name };
+  }
   const names = new Set<string>();
   for (const member of members) {
     const { name } = member;
@@ -264,10 +272,14 @@ export function analyzeProps(
         : declaration?.type === "Identifier"
           ? createBinding(name, "prop", span(declaration))
           : undefined;
-    if (binding) result.bindings.push(binding);
+    if (binding) {
+      result.bindings.push(binding);
+    }
     const prop: PropBinding = { name, id: binding?.id, kinds };
     result.byName.set(name, prop);
-    if (declaration?.type === "Identifier") result.byDeclaration.set(declaration, prop);
+    if (declaration?.type === "Identifier") {
+      result.byDeclaration.set(declaration, prop);
+    }
     result.props.push(
       createProp(
         name,
@@ -283,7 +295,9 @@ export function analyzeProps(
     );
   }
   result.bindings.sort((a, b) => a.span.start - b.span.start);
-  if (reporter.hasErrorsSince(mark)) result.failed = true;
+  if (reporter.hasErrorsSince(mark)) {
+    result.failed = true;
+  }
   return result;
 }
 
@@ -300,7 +314,9 @@ export function checkTypeParameters(
   reporter: Reporter,
 ): void {
   const parameters = fn.typeParameters?.params ?? [];
-  if (!parameters.length) return;
+  if (!parameters.length) {
+    return;
+  }
   const { source, comments } = parsed;
   const scoped: ModuleTypes = {
     ...types,
@@ -354,7 +370,9 @@ export function checkTypeParameters(
       [parameter.constraint, "A type parameter's constraint"],
       [parameter.default, "A type parameter's default"],
     ] as const) {
-      if (!type) continue;
+      if (!type) {
+        continue;
+      }
       checkDirectives(span(type), comments, reporter);
       checkCopiedText(span(type), source, reporter, what);
       // Checked as the syntax reads a setup's types: its members are not.
@@ -415,7 +433,9 @@ function shapeMembers(
   const lost = new Set<AST.TSIntersectionType>();
   let lostElsewhere = false;
   const textOf = (entry: UnresolvedType) => {
-    if (entry.file === file) return source.slice(entry.span.start, entry.span.end);
+    if (entry.file === file) {
+      return source.slice(entry.span.start, entry.span.end);
+    }
     const node = shape.nodes.find(
       (each) =>
         each.kind === "opaque" &&
@@ -456,7 +476,9 @@ function shapeMembers(
     check(probe);
     for (const diagnostic of probe.diagnostics) {
       const { start, end } = diagnostic.span;
-      if (diagnostic.code === "UF6001" && unresolvedHere.has(`${start}:${end}`)) continue;
+      if (diagnostic.code === "UF6001" && unresolvedHere.has(`${start}:${end}`)) {
+        continue;
+      }
       checked.push(diagnostic.span);
       // The syntax names a construct it does not know "This type", and an operator by itself
       // (`keyof`); the source text names it whole.
@@ -478,7 +500,9 @@ function shapeMembers(
    * declares, which the syntax did not check as a prop's type (that reports its problem itself).
    */
   const namedAlone = (part: AST.TSType) => {
-    if (part.type !== "TSTypeReference" || part.typeName.type !== "Identifier") return false;
+    if (part.type !== "TSTypeReference" || part.typeName.type !== "Identifier") {
+      return false;
+    }
     const declaration = part.typeArguments
       ? undefined
       : types.table.declaration(part.typeName.name);
@@ -493,7 +517,9 @@ function shapeMembers(
     );
   for (const entry of shape.unresolved) {
     // A construct this module writes is the syntax's to report, in the catalogue's words.
-    if (entry.reason === "unsupported" && entry.file === file && reportedAt(entry.span)) continue;
+    if (entry.reason === "unsupported" && entry.file === file && reportedAt(entry.span)) {
+      continue;
+    }
     const text = quoted(textOf(entry));
     const where = entry.file === file ? "" : ` in \`${entry.file}\``;
     switch (entry.reason) {
@@ -541,7 +567,9 @@ function shapeMembers(
         } else {
           // A primitive resolves on its own, so one another file leaves unresolved may be an
           // intersection's part there, whose object parts the oracle merged.
-          if (entry.file !== file && PRIMITIVE.test(textOf(entry))) lostElsewhere = true;
+          if (entry.file !== file && PRIMITIVE.test(textOf(entry))) {
+            lostElsewhere = true;
+          }
           problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
         }
         break;
@@ -556,7 +584,9 @@ function shapeMembers(
         // (`overrides`), which compares types by structure: the oracle calls two types the same
         // only when it is sure, so an object written again in place is a conflict to it. Where
         // the syntax could not read a part, the oracle's conflict stands.
-        if (member && member.file === file && complete) break;
+        if (member && member.file === file && complete) {
+          break;
+        }
         if (member) {
           if (!conflicting.has(member.name)) {
             conflicting.set(member.name, declarers(shape, member.name));
@@ -609,7 +639,9 @@ function shapeMembers(
   }
   if (root.kind !== "object") {
     if (root.kind === "opaque") {
-      if (!shape.unresolved.length) problem("UF6001", at, ...undeclared(root.text));
+      if (!shape.unresolved.length) {
+        problem("UF6001", at, ...undeclared(root.text));
+      }
     } else {
       problem(
         "UF6004",
@@ -633,12 +665,18 @@ function shapeMembers(
    * An empty object such a member's shape holds may be what the oracle merged of it.
    */
   const leavesEmpty = (member: ShapeMember): boolean => {
-    if (member.file !== file) return lostElsewhere;
+    if (member.file !== file) {
+      return lostElsewhere;
+    }
     const type = signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation;
-    if (!type || (!lost.size && !lostElsewhere)) return false;
+    if (!type || (!lost.size && !lostElsewhere)) {
+      return false;
+    }
     let found = false;
     const enter = (node: AST.Node): boolean => {
-      if (node.type === "TSIntersectionType" && lost.has(node)) found = true;
+      if (node.type === "TSIntersectionType" && lost.has(node)) {
+        found = true;
+      }
       if (
         lostElsewhere &&
         node.type === "TSTypeReference" &&
@@ -683,21 +721,29 @@ function shapeMembers(
    * problem in it, which the shape would report again.
    */
   const syntaxCovers = (member: ShapeMember): boolean => {
-    if (!scope.signatures.has(member.span.start)) return false;
+    if (!scope.signatures.has(member.span.start)) {
+      return false;
+    }
     const type = signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation;
-    if (!type) return true;
+    if (!type) {
+      return true;
+    }
     const spans = [
       span(type),
       ...closure(type, types.table).map((name) => types.table.declaration(name)!.span),
     ];
-    if (spans.some(reportedAt)) return true;
+    if (spans.some(reportedAt)) {
+      return true;
+    }
     // An import, or a utility or generic type, is the shape's to resolve and check.
     let imported = false;
     const enter = (node: AST.Node): boolean => {
       if (node.type === "TSTypeReference" && node.typeName.type === "Identifier") {
         const { name } = node.typeName;
         const array = name === "Array" || name === "ReadonlyArray";
-        if (imports.has(name) || (node.typeArguments && !array)) imported = true;
+        if (imports.has(name) || (node.typeArguments && !array)) {
+          imported = true;
+        }
       }
       return !imported;
     };
@@ -713,7 +759,9 @@ function shapeMembers(
    * instantiates (`G<object>`), and at the use for another file's member.
    */
   const place: Place = (member, where) => {
-    if (member.file !== file) return where;
+    if (member.file !== file) {
+      return where;
+    }
     const parameters = types.declarations.flatMap(({ node }) =>
       node.typeParameters && node.start <= member.span.start && member.span.end <= node.end
         ? node.typeParameters.params.map((parameter) => parameter.name.name)
@@ -809,7 +857,9 @@ function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
     return declaration && !declaration.node.typeParameters ? declaration : undefined;
   };
   const mark = (list: readonly AST.TSSignature[]) => {
-    for (const member of list) scope.signatures.add(member.start);
+    for (const member of list) {
+      scope.signatures.add(member.start);
+    }
   };
   /** A list of members, each a prop or a member of a prop's object type. */
   const members = (list: readonly AST.TSSignature[]) => {
@@ -823,7 +873,9 @@ function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
   };
   /** An interface: its members, and the bases it extends, which build its object. */
   const reachInterface = (node: AST.TSInterfaceDeclaration) => {
-    if (interfaces.has(node.id.name)) return;
+    if (interfaces.has(node.id.name)) {
+      return;
+    }
     interfaces.add(node.id.name);
     members(node.body.body);
     for (const heritage of node.extends) {
@@ -838,9 +890,12 @@ function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
    */
   const part = (name: string, whole = false) => {
     const declaration = declared(name);
-    if (!declaration) return;
-    if (declaration.node.type === "TSInterfaceDeclaration") reachInterface(declaration.node);
-    else if (!parts.has(name)) {
+    if (!declaration) {
+      return;
+    }
+    if (declaration.node.type === "TSInterfaceDeclaration") {
+      reachInterface(declaration.node);
+    } else if (!parts.has(name)) {
       parts.add(name);
       structure(declaration.node.typeAnnotation, whole, true);
     }
@@ -856,10 +911,14 @@ function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
         structure(type.typeAnnotation, whole, aliased);
         return;
       case "TSIntersectionType":
-        for (const each of type.types) structure(each);
+        for (const each of type.types) {
+          structure(each);
+        }
         return;
       case "TSTypeLiteral":
-        if (whole && aliased && !type.members.length) scope.types.push(type);
+        if (whole && aliased && !type.members.length) {
+          scope.types.push(type);
+        }
         members(type.members);
         return;
       case "TSTypeReference":
@@ -878,13 +937,20 @@ function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
         mark(node.members);
         return true;
       }
-      if (node.type !== "TSTypeReference") return true;
-      if (node.typeName.type !== "Identifier") return false;
+      if (node.type !== "TSTypeReference") {
+        return true;
+      }
+      if (node.typeName.type !== "Identifier") {
+        return false;
+      }
       const { name } = node.typeName;
-      if (node.typeArguments) return name === "Array" || name === "ReadonlyArray";
+      if (node.typeArguments) {
+        return name === "Array" || name === "ReadonlyArray";
+      }
       const declaration = declared(name);
-      if (declaration?.node.type === "TSInterfaceDeclaration") reachInterface(declaration.node);
-      else if (declaration && !aliases.has(name)) {
+      if (declaration?.node.type === "TSInterfaceDeclaration") {
+        reachInterface(declaration.node);
+      } else if (declaration && !aliases.has(name)) {
         aliases.add(name);
         scope.types.push(declaration.node.typeAnnotation);
         memberType(declaration.node.typeAnnotation);
@@ -916,9 +982,13 @@ function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string
       return names;
     }
     const declaration = types.table.declaration(type.typeName.name);
-    if (!declaration || !ownArguments(type, declaration.node)) return names;
+    if (!declaration || !ownArguments(type, declaration.node)) {
+      return names;
+    }
     names.add(type.typeName.name);
-    if (declaration.node.type === "TSInterfaceDeclaration") return names;
+    if (declaration.node.type === "TSInterfaceDeclaration") {
+      return names;
+    }
     type = declaration.node.typeAnnotation;
   }
 }
@@ -938,7 +1008,9 @@ function ownArguments(
   return (
     passed.length === declared.length &&
     passed.every((argument, index) => {
-      if (argument.type !== "TSTypeReference" || argument.typeArguments) return false;
+      if (argument.type !== "TSTypeReference" || argument.typeArguments) {
+        return false;
+      }
       const { typeName } = argument;
       return typeName.type === "Identifier" && typeName.name === declared[index]!.name.name;
     })
@@ -1065,7 +1137,9 @@ function overrides(
   // Every member the shape holds, by where it is written in this module.
   const written = new Map<number, ShapeMember>();
   for (const node of shape.nodes) {
-    if (node.kind !== "object") continue;
+    if (node.kind !== "object") {
+      continue;
+    }
     for (const member of node.members) {
       if (member.file === file && !written.has(member.span.start)) {
         written.set(member.span.start, member);
@@ -1076,7 +1150,9 @@ function overrides(
   const named = (name: string): ObjectNode | undefined => {
     const local = types.table.declaration(name) !== undefined;
     const target = local ? name : imported.get(name);
-    if (target === undefined) return undefined;
+    if (target === undefined) {
+      return undefined;
+    }
     return shape.nodes.find(
       (node): node is ObjectNode =>
         node.kind === "object" &&
@@ -1090,7 +1166,9 @@ function overrides(
     const members = new Map<string, PartMember>();
     for (const signature of list) {
       const member = written.get(signature.start);
-      if (member && !members.has(member.name)) members.set(member.name, partOf(member));
+      if (member && !members.has(member.name)) {
+        members.set(member.name, partOf(member));
+      }
     }
     return members;
   };
@@ -1110,7 +1188,9 @@ function overrides(
     }
     const [inner, keys] = args;
     const base = inner && members(inner, seen);
-    if (!base) return undefined;
+    if (!base) {
+      return undefined;
+    }
     const literals = keys && keyNames(keys);
     switch (name) {
       case "Partial":
@@ -1130,7 +1210,9 @@ function overrides(
         );
       case "Pick":
       case "Omit":
-        if (!literals) return undefined;
+        if (!literals) {
+          return undefined;
+        }
         return new Map([...base].filter(([key]) => literals.has(key) === (name === "Pick")));
       default:
         return undefined;
@@ -1147,7 +1229,9 @@ function overrides(
         const merged = new Map<string, PartMember>();
         for (const part of type.types) {
           const read = members(part, seen);
-          if (!read) complete = false;
+          if (!read) {
+            complete = false;
+          }
           for (const [key, member] of read ?? []) {
             const first = merged.get(key);
             merged.set(
@@ -1176,7 +1260,9 @@ function overrides(
     }
     for (const [name, member] of left) {
       const other = right.get(name);
-      if (!other || member.origin === other.origin || sameMember(shape, member, other)) continue;
+      if (!other || member.origin === other.origin || sameMember(shape, member, other)) {
+        continue;
+      }
       const by = found.get(name) ?? new Set<string>();
       by.add(member.by);
       by.add(other.by);
@@ -1192,20 +1278,30 @@ function overrides(
       case "TSIntersectionType": {
         const parts = type.types.map((part) => members(part, seen));
         for (const [index, part] of parts.entries()) {
-          for (const other of parts.slice(index + 1)) compare(part, other);
+          for (const other of parts.slice(index + 1)) {
+            compare(part, other);
+          }
         }
-        for (const part of type.types) build(part, seen);
+        for (const part of type.types) {
+          build(part, seen);
+        }
         return;
       }
       case "TSTypeReference": {
-        if (type.typeName.type !== "Identifier") return;
+        if (type.typeName.type !== "Identifier") {
+          return;
+        }
         const name = type.typeName.name;
         if (type.typeArguments) {
-          for (const argument of type.typeArguments.params) build(argument, seen);
+          for (const argument of type.typeArguments.params) {
+            build(argument, seen);
+          }
           return;
         }
         const declaration = types.table.declaration(name);
-        if (!declaration || seen.has(name)) return;
+        if (!declaration || seen.has(name)) {
+          return;
+        }
         const next = new Set(seen).add(name);
         if (declaration.node.type === "TSTypeAliasDeclaration") {
           build(declaration.node.typeAnnotation, next);
@@ -1219,11 +1315,17 @@ function overrides(
         );
         for (const [index, base] of bases.entries()) {
           compare(own, base);
-          for (const other of bases.slice(index + 1)) compare(base, other);
+          for (const other of bases.slice(index + 1)) {
+            compare(base, other);
+          }
         }
         for (const heritage of declaration.node.extends) {
-          if (heritage.expression.type !== "Identifier") continue;
-          for (const argument of heritage.typeArguments?.params ?? []) build(argument, next);
+          if (heritage.expression.type !== "Identifier") {
+            continue;
+          }
+          for (const argument of heritage.typeArguments?.params ?? []) {
+            build(argument, next);
+          }
           const base = types.table.declaration(heritage.expression.name);
           if (base && !heritage.typeArguments) {
             build(
@@ -1263,8 +1365,12 @@ function keyNames(type: AST.TSType): Set<string> | undefined {
   const parts = type.type === "TSUnionType" ? type.types : [type];
   const names = new Set<string>();
   for (const part of parts) {
-    if (part.type !== "TSLiteralType" || part.literal.type !== "Literal") return undefined;
-    if (typeof part.literal.value !== "string") return undefined;
+    if (part.type !== "TSLiteralType" || part.literal.type !== "Literal") {
+      return undefined;
+    }
+    if (typeof part.literal.value !== "string") {
+      return undefined;
+    }
     names.add(part.literal.value);
   }
   return names;
@@ -1274,9 +1380,13 @@ function keyNames(type: AST.TSType): Set<string> | undefined {
 function typeImportsOf(program: AST.Program): Map<string, string> {
   const names = new Map<string, string>();
   for (const statement of program.body) {
-    if (statement.type !== "ImportDeclaration") continue;
+    if (statement.type !== "ImportDeclaration") {
+      continue;
+    }
     for (const specifier of statement.specifiers) {
-      if (specifier.type === "ImportNamespaceSpecifier") continue;
+      if (specifier.type === "ImportNamespaceSpecifier") {
+        continue;
+      }
       if (
         statement.importKind !== "type" &&
         !(specifier.type === "ImportSpecifier" && specifier.importKind === "type")
@@ -1300,7 +1410,9 @@ function typeImportsOf(program: AST.Program): Map<string, string> {
  * `exactOptionalPropertyTypes`), and `Required`'s takes it out, as TypeScript does.
  */
 function sameMember(shape: TypeShape, left: PartMember, right: PartMember): boolean {
-  if (left.optional !== right.optional) return false;
+  if (left.optional !== right.optional) {
+    return false;
+  }
   const drop = (member: PartMember) => member.optional || member.required;
   return sameAlternatives(
     shape,
@@ -1318,9 +1430,15 @@ function alternatives(shape: TypeShape, id: number, dropUndefined: boolean): (nu
   if (node.kind === "union") {
     return node.types.flatMap((each) => alternatives(shape, each, dropUndefined));
   }
-  if (node.kind === "primitive" && node.name === "boolean") return [true, false];
-  if (node.kind === "literal" && typeof node.value === "boolean") return [node.value];
-  if (dropUndefined && node.kind === "primitive" && node.name === "undefined") return [];
+  if (node.kind === "primitive" && node.name === "boolean") {
+    return [true, false];
+  }
+  if (node.kind === "literal" && typeof node.value === "boolean") {
+    return [node.value];
+  }
+  if (dropUndefined && node.kind === "primitive" && node.name === "undefined") {
+    return [];
+  }
   return [id];
 }
 
@@ -1341,8 +1459,14 @@ function sameAlternatives(
 function declarers(shape: TypeShape, name: string): Set<string> {
   const found = new Set<string>();
   for (const node of shape.nodes) {
-    if (node.kind !== "object") continue;
-    for (const member of node.members) if (member.name === name) found.add(declarer(member));
+    if (node.kind !== "object") {
+      continue;
+    }
+    for (const member of node.members) {
+      if (member.name === name) {
+        found.add(declarer(member));
+      }
+    }
   }
   return found;
 }
@@ -1353,9 +1477,13 @@ function declarer(member: ShapeMember): string {
 
 /** Whether two nodes of a shape are one type, as far as the shape can tell. */
 function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): boolean {
-  if (a === b) return true;
+  if (a === b) {
+    return true;
+  }
   const key = `${a}:${b}`;
-  if (seen.has(key)) return true;
+  if (seen.has(key)) {
+    return true;
+  }
   seen.add(key);
   const left = shape.nodes[a]!;
   const right = shape.nodes[b]!;
@@ -1389,7 +1517,9 @@ function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): bo
         })
       );
     case "object":
-      if (right.kind !== "object") return false;
+      if (right.kind !== "object") {
+        return false;
+      }
       if (left.declaration && right.declaration && !left.typeArguments && !right.typeArguments) {
         return (
           left.declaration.file === right.declaration.file &&
@@ -1436,29 +1566,47 @@ function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem
     for (const member of signatures) {
       // A method may be overloaded, and an accessor pair writes one name twice: TypeScript takes
       // both, and the targets reject methods and accessors on their own (UF1002, UF6002).
-      if (member.type !== "TSPropertySignature") continue;
+      if (member.type !== "TSPropertySignature") {
+        continue;
+      }
       const name = member.computed ? undefined : memberName(member.key);
-      if (name === undefined) continue;
-      if (names.has(name)) problem("UF2001", span(member.key), ...declaredTwice(name));
+      if (name === undefined) {
+        continue;
+      }
+      if (names.has(name)) {
+        problem("UF2001", span(member.key), ...declaredTwice(name));
+      }
       names.add(name);
     }
   };
   const visit = (node: unknown): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
     const typed = node as AST.Node;
-    if (typeof typed.type !== "string") return;
-    if (typed.type === "TSTypeLiteral") check(typed.members);
-    if (typed.type === "TSInterfaceBody") check(typed.body);
+    if (typeof typed.type !== "string") {
+      return;
+    }
+    if (typed.type === "TSTypeLiteral") {
+      check(typed.members);
+    }
+    if (typed.type === "TSInterfaceBody") {
+      check(typed.body);
+    }
     for (const key of visitorKeys[typed.type] ?? []) {
       visit((node as unknown as Record<string, unknown>)[key]);
     }
   };
   visit(annotation);
-  for (const name of closure(annotation, types.table)) visit(types.table.declaration(name)!.node);
+  for (const name of closure(annotation, types.table)) {
+    visit(types.table.declaration(name)!.node);
+  }
 }
 
 /**
@@ -1501,7 +1649,9 @@ function checkShapeType(
       problem("UF6002", at, ...notAProp("A tuple type"));
       return;
     case "object":
-      if (seen.has(id)) return;
+      if (seen.has(id)) {
+        return;
+      }
       seen.add(id);
       if (!node.declaration && !node.members.length && !leavesEmpty) {
         problem("UF6002", at, ...notAProp("The empty object type `{}`"));
@@ -1526,7 +1676,9 @@ function checkShapeType(
           entry.span.end === node.span.end,
       );
       // An unresolved one is reported with the shape; any other is a global type.
-      if (!unresolved) problem("UF6001", at, ...undeclared(node.text));
+      if (!unresolved) {
+        problem("UF6001", at, ...undeclared(node.text));
+      }
     }
   }
 }
@@ -1542,7 +1694,9 @@ function checkExported(
   file: string,
   problem: Problem,
 ): void {
-  if (member.file === file) return;
+  if (member.file === file) {
+    return;
+  }
   for (const name of member.references) {
     const hidden = shape.nodes.some(
       (node) =>
@@ -1551,7 +1705,9 @@ function checkExported(
         node.declaration.name === name &&
         !node.declaration.exported,
     );
-    if (!hidden) continue;
+    if (!hidden) {
+      continue;
+    }
     problem(
       "UF6003",
       at,
@@ -1616,19 +1772,29 @@ const SIGNATURES = new WeakMap<AST.Program, Signatures>();
 
 function signaturesOf(program: AST.Program): Signatures {
   const cached = SIGNATURES.get(program);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const found = new Map<number, AST.TSPropertySignature>();
   const callables = new Set<number>();
   const intersections = new Map<number, AST.TSIntersectionType>();
   const visit = (node: unknown): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
     const typed = node as AST.Node;
-    if (typeof typed.type !== "string") return;
-    if (typed.type === "TSPropertySignature") found.set(typed.start, typed);
+    if (typeof typed.type !== "string") {
+      return;
+    }
+    if (typed.type === "TSPropertySignature") {
+      found.set(typed.start, typed);
+    }
     if (
       typed.type === "TSCallSignatureDeclaration" ||
       typed.type === "TSConstructSignatureDeclaration"
@@ -1636,7 +1802,9 @@ function signaturesOf(program: AST.Program): Signatures {
       callables.add(typed.start);
     }
     if (typed.type === "TSIntersectionType") {
-      for (const part of typed.types) intersections.set(part.start, typed);
+      for (const part of typed.types) {
+        intersections.set(part.start, typed);
+      }
     }
     for (const key of visitorKeys[typed.type] ?? []) {
       visit((node as unknown as Record<string, unknown>)[key]);
@@ -1798,7 +1966,9 @@ export function isStatic(node: AST.Expression): boolean {
  * case to `true`. A union of string literals that holds neither renders as the others do.
  */
 function castsToTrue(declared: Kinds, name: string): boolean {
-  if (!has(declared, "boolean") || !has(declared, "string")) return false;
+  if (!has(declared, "boolean") || !has(declared, "string")) {
+    return false;
+  }
   const { strings } = declared;
   const kebab = name.replaceAll(/\B([A-Z])/g, "-$1").toLowerCase();
   return !strings || strings.has("") || strings.has(kebab);

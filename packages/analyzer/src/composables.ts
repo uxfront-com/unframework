@@ -93,7 +93,9 @@ export function findComposables(
             statement.declaration?.type === "FunctionDeclaration"
           ? statement.declaration
           : undefined;
-    if (fn?.id) functions.set(fn.id.name, fn);
+    if (fn?.id) {
+      functions.set(fn.id.name, fn);
+    }
   }
   for (const statement of program.body) {
     switch (statement.type) {
@@ -109,8 +111,9 @@ export function findComposables(
       case "FunctionDeclaration":
       case "ExportNamedDeclaration": {
         let fn: AST.Function | undefined;
-        if (statement.type === "FunctionDeclaration") fn = statement;
-        else {
+        if (statement.type === "FunctionDeclaration") {
+          fn = statement;
+        } else {
           const named = statement as AST.ExportNamedDeclaration;
           if (named.declaration?.type !== "FunctionDeclaration") {
             exportedValue(named);
@@ -118,7 +121,9 @@ export function findComposables(
           }
           fn = named.declaration;
         }
-        if (!fn?.id) continue;
+        if (!fn?.id) {
+          continue;
+        }
         const { name } = fn.id;
         const isExported = statement.type === "ExportNamedDeclaration" || exported.has(name);
         if (COMPOSABLE_NAME.test(name) && isExported) {
@@ -161,7 +166,9 @@ export function findComposables(
           (declarator.init?.type === "ArrowFunctionExpression" ||
             declarator.init?.type === "FunctionExpression"),
       );
-      if (!values.length) return;
+      if (!values.length) {
+        return;
+      }
       statements.add(statement.start);
       for (const declarator of values) {
         reporter.report(
@@ -173,14 +180,18 @@ export function findComposables(
       }
       return;
     }
-    if (declaration || statement.source || statement.exportKind === "type") return;
+    if (declaration || statement.source || statement.exportKind === "type") {
+      return;
+    }
     const own = statement.specifiers.filter(
       (specifier) =>
         specifier.exportKind !== "type" &&
         specifier.local.type === "Identifier" &&
         functions.has(specifier.local.name),
     );
-    if (!own.length || own.length !== statement.specifiers.length) return;
+    if (!own.length || own.length !== statement.specifiers.length) {
+      return;
+    }
     statements.add(statement.start);
     for (const specifier of own) {
       const local = (specifier.local as AST.IdentifierReference).name;
@@ -267,7 +278,9 @@ export function analyzeComposable(
       { help: "End the composable with `return { on, toggle };`." },
     );
   }
-  if (calledComposables(fn, candidate, module)) return undefined;
+  if (calledComposables(fn, candidate, module)) {
+    return undefined;
+  }
   const props: PropsAnalysis = {
     props: [],
     propsParameter: undefined,
@@ -335,7 +348,9 @@ export function analyzeComposable(
     program: parsed.program,
     failed: reporter.hasErrorsSince(mark),
   });
-  if (reporter.hasErrorsSince(mark)) return undefined;
+  if (reporter.hasErrorsSince(mark)) {
+    return undefined;
+  }
   const bindings = render.bindings.toSorted((a, b) => a.span.start - b.span.start);
   const names = new Set(closure([fn.typeParameters, fn.params, fn.body], types.table));
   const composable = createComposable(candidate.name, candidate.span, parameters.parameters, {
@@ -471,7 +486,9 @@ function composableParameters(
  * getter, any other function type a callback, and anything else a value.
  */
 function parameterKind(annotation: AST.TSType): ComposableParameterKind {
-  if (annotation.type !== "TSFunctionType") return "value";
+  if (annotation.type !== "TSFunctionType") {
+    return "value";
+  }
   return annotation.params.length ? "callback" : "getter";
 }
 
@@ -491,13 +508,17 @@ function functionLike(type: AST.TSType, table: TypeTable, seen = new Set<string>
     case "TSIntersectionType":
       return type.types.some((each) => functionLike(each, table, seen));
     case "TSTypeReference": {
-      if (type.typeName.type !== "Identifier") return false;
+      if (type.typeName.type !== "Identifier") {
+        return false;
+      }
       const { name } = type.typeName;
       if (name === "Function" || name === "CallableFunction" || name === "NewableFunction") {
         return true;
       }
       const declaration = table.declaration(name)?.node;
-      if (!declaration || seen.has(name)) return false;
+      if (!declaration || seen.has(name)) {
+        return false;
+      }
       seen.add(name);
       return declaration.type === "TSTypeAliasDeclaration"
         ? functionLike(declaration.typeAnnotation, table, seen)
@@ -543,7 +564,9 @@ function calledComposables(
 ): boolean {
   let found = false;
   visit(fn.body, (node) => {
-    if (node.type !== "CallExpression" || node.callee.type !== "Identifier") return;
+    if (node.type !== "CallExpression" || node.callee.type !== "Identifier") {
+      return;
+    }
     const { callee } = node;
     const resolution = module.scopes.resolve(callee);
     const imported =
@@ -553,8 +576,12 @@ function calledComposables(
       resolution.declares === "function" &&
       (resolution.scope as AST.Node).type === "Program" &&
       COMPOSABLE_NAME.test(callee.name);
-    if (!imported && !own) return;
-    if (imported) module.called.add(resolution.declaration);
+    if (!imported && !own) {
+      return;
+    }
+    if (imported) {
+      module.called.add(resolution.declaration);
+    }
     found = true;
     module.reporter.report(
       "UF2035",
@@ -613,7 +640,9 @@ function returnedMembers(
     const own = resolution.kind === "variable" && resolution.scope === render.component;
     const binding = own ? setup.bindings.get(resolution.declaration) : undefined;
     // A declaration the setup rejected is reported where it is written.
-    if (own && !binding) continue;
+    if (own && !binding) {
+      continue;
+    }
     if (!binding || RETURNED[binding.kind] === undefined) {
       reporter.report(
         "UF2035",
@@ -733,13 +762,19 @@ function composableApi(
 
 /** Visits every node under a node, in source order. */
 function visit(node: unknown, enter: (node: AST.Node) => void): void {
-  if (!node || typeof node !== "object") return;
+  if (!node || typeof node !== "object") {
+    return;
+  }
   if (Array.isArray(node)) {
-    for (const item of node) visit(item, enter);
+    for (const item of node) {
+      visit(item, enter);
+    }
     return;
   }
   const typed = node as AST.Node;
-  if (typeof typed.type !== "string") return;
+  if (typeof typed.type !== "string") {
+    return;
+  }
   enter(typed);
   for (const key of visitorKeys[typed.type] ?? []) {
     visit((typed as unknown as Record<string, unknown>)[key], enter);

@@ -30,10 +30,14 @@ export function frameLayout(frame: FrameLocator | Page): Promise<FrameLayout> {
       [...node.childNodes].flatMap((child): DOMRect[] => {
         if (child instanceof Element) {
           const display = getComputedStyle(child).display;
-          if (display === "contents") return boxes(child);
+          if (display === "contents") {
+            return boxes(child);
+          }
           return display === "none" ? [] : [child.getBoundingClientRect()];
         }
-        if (child.nodeType !== Node.TEXT_NODE || !child.textContent?.trim()) return [];
+        if (child.nodeType !== Node.TEXT_NODE || !child.textContent?.trim()) {
+          return [];
+        }
         const range = document.createRange();
         range.selectNodeContents(child);
         return [range.getBoundingClientRect()];

@@ -197,8 +197,11 @@ describe("startPreview", () => {
           body: JSON.stringify({ id: "x", props: { text: "x".repeat(2_000_000) } }),
         }).catch((error: unknown) => error);
         // The server answers 413 and drops the rest of the body, which a client may see as a reset.
-        if (huge instanceof Response) expect(huge.status).toBe(413);
-        else expect(huge).toBeInstanceOf(TypeError);
+        if (huge instanceof Response) {
+          expect(huge.status).toBe(413);
+        } else {
+          expect(huge).toBeInstanceOf(TypeError);
+        }
         expect((await fetch(`${astro}${FRAME_PATH}`)).status).toBe(200);
         // A target with a client runtime has no render endpoint.
         const react = preview.frames.find((each) => each.target === "react")!.origin;
@@ -210,7 +213,9 @@ describe("startPreview", () => {
         await browser.close();
         await preview.close();
       }
-      for (const port of ports) expect(await listening(port), String(port)).toBe(false);
+      for (const port of ports) {
+        expect(await listening(port), String(port)).toBe(false);
+      }
       // A second close does nothing more.
       await preview.close();
     },
@@ -348,8 +353,12 @@ describe("startPreview", () => {
               .toMatchObject(expected[name]!);
             const layout = await frameLayout(frame(target));
             const at = `${name} on ${target}: ${JSON.stringify(layout)}`;
-            if (name === "Plain") expect(layout.height, at).toBe(layout.innerHeight);
-            if (name === "Default" || name === "Broken") expect(centred(layout), at).toBe(true);
+            if (name === "Plain") {
+              expect(layout.height, at).toBe(layout.innerHeight);
+            }
+            if (name === "Default" || name === "Broken") {
+              expect(centred(layout), at).toBe(true);
+            }
             if (name === "Column") {
               const [one, two] = await Promise.all(
                 ["One", "Two"].map((text) =>
@@ -794,7 +803,9 @@ describe("unframework preview", () => {
         await new Promise<void>((done, fail) => {
           child.stdout.on("data", (chunk) => {
             stdout += String(chunk);
-            if (stdout.includes("Press Ctrl+C to stop.")) done();
+            if (stdout.includes("Press Ctrl+C to stop.")) {
+              done();
+            }
           });
           void exited.then((code) => fail(new Error(`exited with ${code}:\n${stdout}\n${stderr}`)));
         });
@@ -802,16 +813,22 @@ describe("unframework preview", () => {
         const origins = [...stdout.matchAll(/^ {2}(\w+): (http:\/\/\S+)$/gm)];
         expect(origins.map((match) => match[1])).toEqual(TARGETS);
         const ports = [port, ...origins.map((match) => Number(new URL(match[2]!).port))];
-        for (const each of ports) expect(await listening(each), String(each)).toBe(true);
+        for (const each of ports) {
+          expect(await listening(each), String(each)).toBe(true);
+        }
         const page = await fetch(`http://${PREVIEW_HOST}:${port}/`);
         expect(await page.text()).toContain("<title>unframework preview</title>");
 
         child.kill("SIGINT");
         expect(await exited, stderr).toBe(0);
         expect(stdout).toContain("unframework preview: stopped.");
-        for (const each of ports) expect(await listening(each), String(each)).toBe(false);
+        for (const each of ports) {
+          expect(await listening(each), String(each)).toBe(false);
+        }
       } finally {
-        if (child.exitCode === null) child.kill("SIGKILL");
+        if (child.exitCode === null) {
+          child.kill("SIGKILL");
+        }
       }
     },
   );

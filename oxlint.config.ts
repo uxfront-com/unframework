@@ -26,7 +26,6 @@ export default defineConfig({
     // with its reason.
     "@nkzw/no-instanceof": "off",
     "array-callback-return": "off",
-    curly: "off",
     eqeqeq: "off",
     "import/consistent-type-specifier-style": "off",
     "import/no-namespace": "off",
@@ -142,6 +141,16 @@ export default defineConfig({
             ],
           },
         ],
+      },
+    },
+    {
+      // A case's source is the input the corpus compiles, and its golden outputs on seven targets,
+      // and the docs pages that quote them verbatim, follow its form. So it's written the way
+      // authors write components, and a style rule doesn't rewrite it.
+      files: ["tests/integration/cases/**/*.uf.{ts,tsx}"],
+      rules: {
+        // The compiler must keep lowering the braceless `if` that authors write.
+        curly: "off",
       },
     },
   ],

@@ -146,7 +146,9 @@ describe("angular child-root rule, rendered by Angular", () => {
       const [code] = await emitFormatted(module);
       // The sheet `compile()` scopes and emits beside the outputs.
       const { scopeId } = module.components[0]!;
-      if (sheet) sheets[join(directory, file)] = scopeStylesheet(css, sheet, scopeId!).code;
+      if (sheet) {
+        sheets[join(directory, file)] = scopeStylesheet(css, sheet, scopeId!).code;
+      }
       const name = code!.path.replace(/\.ts$/, "");
       outputs.set(join(directory, `${file}.ts`), { name, code: code!.contents });
     }

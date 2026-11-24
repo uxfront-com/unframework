@@ -240,7 +240,9 @@ function exampleMetadata(
   filename: string,
 ): { example: Example; diagnostics: Diagnostic[] } {
   const comment = docComment(source, filename);
-  if (!comment) return { example, diagnostics: [] };
+  if (!comment) {
+    return { example, diagnostics: [] };
+  }
   const { description, tags } = comment;
   const derived = derivedMetadata(example.id, example.name);
   const diagnostics: Diagnostic[] = [];
@@ -256,7 +258,9 @@ function exampleMetadata(
         `Keep one @${name}.`,
       );
     }
-    if (given.length === 1) values[name] = given[0]!.value;
+    if (given.length === 1) {
+      values[name] = given[0]!.value;
+    }
   }
   const tagOf = (name: KnownTag) => tags.find((tag) => tag.name === name)!;
   const result: Example = { ...example, ...derived };
@@ -307,7 +311,9 @@ function exampleMetadata(
       result.layout = layout;
     }
   }
-  if (description) result.description = description;
+  if (description) {
+    result.description = description;
+  }
   return { example: result, diagnostics };
 }
 
@@ -357,9 +363,13 @@ const GAP_WORD = /^gap-(0|\d+(?:\.\d+)?(?:px|rem|em))$/;
  */
 function parseLayout(value: string): PreviewLayout | string {
   const words = value.split(/\s+/).filter(Boolean);
-  if (!words.length) return "is empty";
+  if (!words.length) {
+    return "is empty";
+  }
   if (words.includes("none")) {
-    if (words.length === 1) return { display: "block" };
+    if (words.length === 1) {
+      return { display: "block" };
+    }
     return words.every((word) => word === "none")
       ? "gives none twice"
       : "gives none with other words";
@@ -369,8 +379,12 @@ function parseLayout(value: string): PreviewLayout | string {
   for (const word of words) {
     const gap = GAP_WORD.exec(word)?.[1];
     const known = gap === undefined ? LAYOUT_WORDS.get(word) : { kind: "the gap", sets: { gap } };
-    if (!known) return `has the unknown word ${word}`;
-    if (seen.has(known.kind)) return `sets ${known.kind} twice`;
+    if (!known) {
+      return `has the unknown word ${word}`;
+    }
+    if (seen.has(known.kind)) {
+      return `sets ${known.kind} twice`;
+    }
     seen.add(known.kind);
     layout = { ...layout, ...known.sets };
   }
@@ -388,7 +402,9 @@ function docComment(
 ): { description: string; tags: DocTag[] } | undefined {
   const { program, comments } = parseModule(filename, source);
   const statement = program.body.find((node) => node.type === "ExportDefaultDeclaration");
-  if (!statement) return undefined;
+  if (!statement) {
+    return undefined;
+  }
   const comment = comments.findLast((each) => each.end <= statement.start);
   if (
     !comment ||
@@ -414,7 +430,9 @@ function docComment(
     } else if (tags.length) {
       // A tag's value goes on until the next tag.
       const last = tags.at(-1)!;
-      if (line) last.value = last.value ? `${last.value} ${line}` : line;
+      if (line) {
+        last.value = last.value ? `${last.value} ${line}` : line;
+      }
     } else {
       text.push(line);
     }

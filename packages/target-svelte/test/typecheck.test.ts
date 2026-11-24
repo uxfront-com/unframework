@@ -65,7 +65,9 @@ describe("svelte typecheck", () => {
     for (const { modules, outputDir } of corpus()) {
       const emitted: Record<string, string> = {};
       for (const module of modules) {
-        for (const file of await emitFormatted(module)) emitted[file.path] = file.contents;
+        for (const file of await emitFormatted(module)) {
+          emitted[file.path] = file.contents;
+        }
       }
       // The case's `.ts` modules, which `compile()` copies into the output tree unchanged
       // (ADR-0070), so the types an output imports from them resolve (ADR-0067); and the
@@ -91,7 +93,9 @@ describe("svelte typecheck", () => {
     const results = await toolchain.typecheck([...clean, broken!], context);
 
     expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());
-    for (const path of clean) expect(results.get(path), path).toEqual([]);
+    for (const path of clean) {
+      expect(results.get(path), path).toEqual([]);
+    }
     // The `<img>` without `alt` is the Svelte compiler's warning, which L3 reports: not a type.
     expect(results.get(broken!)).toEqual([
       {

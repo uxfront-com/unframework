@@ -768,7 +768,9 @@ export function typeOracleContract(
       }
     });
     afterAll(async () => {
-      for (const oracle of oracles.values()) await oracle.dispose();
+      for (const oracle of oracles.values()) {
+        await oracle.dispose();
+      }
     });
 
     it.each(CONTRACT_CASES.map((testCase) => [testCase.name, testCase] as const))(
@@ -780,7 +782,9 @@ export function typeOracleContract(
         const observed = observe(shape, testCase.project);
         expect(JSON.parse(JSON.stringify(shape))).toEqual(shape);
         expect(observed.expected).toBe(testCase.expected);
-        if (testCase.members) expect(observed.members).toEqual(testCase.members);
+        if (testCase.members) {
+          expect(observed.members).toEqual(testCase.members);
+        }
         expect(observed.dependencies).toEqual(testCase.dependencies);
         expect(observed.unresolved).toEqual(testCase.unresolved ?? []);
         expect(shape.construction).toEqual(expect.arrayContaining(testCase.construction ?? []));

@@ -26,13 +26,17 @@ type TestError = NonNullable<NonNullable<RunnerTestCase["result"]>["errors"]>[nu
  */
 export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
   const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) throw new Error("expectLayerFailure must be called inside a test.");
+  if (!test) {
+    throw new Error("expectLayerFailure must be called inside a test.");
+  }
   const outcome = test.meta.uf?.layers[layer];
   expect(outcome, `${layer}'s recorded outcome`).toEqual({
     status: "fail",
     message: expect.stringMatching(new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, ""))),
   });
-  if (outcome?.status !== "fail") throw new Error(`${layer} did not fail.`);
+  if (outcome?.status !== "fail") {
+    throw new Error(`${layer} did not fail.`);
+  }
   const layers = consumed.get(test) ?? new Set<LayerName>();
   layers.add(layer);
   consumed.set(test, layers);
@@ -86,11 +90,15 @@ export function judgeTest(
   if (recorded.status === "quarantined" && task.result) {
     const kept = errors.filter((error) => !own.includes(error));
     task.result.errors = kept.length ? kept : undefined;
-    if (!kept.length && !failures.length) task.result.state = "pass";
+    if (!kept.length && !failures.length) {
+      task.result.state = "pass";
+    }
   } else if (recorded.status === "fail" && unseen.length) {
     failures.push(...unseen.map((message) => `L8: ${message}`));
   }
-  if (failures.length) throw new LayerFailure(subject, failures);
+  if (failures.length) {
+    throw new LayerFailure(subject, failures);
+  }
 }
 
 /** Terminal colours, which Vitest's element errors carry. */

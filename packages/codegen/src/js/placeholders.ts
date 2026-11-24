@@ -43,7 +43,9 @@ export class Placeholders {
     if (comments.some((comment) => comment.type === "Line" && comment.end === code.length)) {
       text = `${text}\n`;
     }
-    if (parenthesesNeeded(expression, code, slot)) text = `(${text})`;
+    if (parenthesesNeeded(expression, code, slot)) {
+      text = `(${text})`;
+    }
     return this.#add(text) as AST.IdentifierReference;
   }
 
@@ -131,22 +133,32 @@ export class Placeholders {
       }
       return output;
     };
-    if (count === 0) return printed();
+    if (count === 0) {
+      return printed();
+    }
     // Each prefix the output's own text spells takes one of its `$uf`s beside the
     // placeholders', so a free prefix turns up within that many attempts; past them, a
     // placeholder was printed twice.
     let attempts = Infinity;
     for (let attempt = 0; ; attempt++) {
       const prefix = `$uf${attempt}$`;
-      for (const [index, { node }] of this.#slots.entries()) node.name = `${prefix}${index}$`;
+      for (const [index, { node }] of this.#slots.entries()) {
+        node.name = `${prefix}${index}$`;
+      }
       const output = printed();
-      if (attempts === Infinity) attempts = output.split("$uf").length - 1 - count;
+      if (attempts === Infinity) {
+        attempts = output.split("$uf").length - 1 - count;
+      }
       const found = locate(output, prefix, this.#slots.length);
-      if (found === "collision" && attempt < attempts) continue;
+      if (found === "collision" && attempt < attempts) {
+        continue;
+      }
       if (found === "collision") {
         throw new Error("A placeholder was printed twice: use each placeholder node once.");
       }
-      if (typeof found === "string") throw new Error(found);
+      if (typeof found === "string") {
+        throw new Error(found);
+      }
       let result = "";
       let last = 0;
       for (const { index, start, end } of found) {
@@ -192,7 +204,9 @@ function locate(output: string, prefix: string, count: number): Occurrence[] | s
   for (let start = output.indexOf(prefix); start >= 0; start = output.indexOf(prefix, start + 1)) {
     const match = /^(\d+)\$/.exec(output.slice(start + prefix.length));
     const index = match ? Number(match[1]) : -1;
-    if (!match || index >= count || seen.has(index)) return "collision";
+    if (!match || index >= count || seen.has(index)) {
+      return "collision";
+    }
     seen.add(index);
     found.push({ index, start, end: start + prefix.length + match[0].length });
   }

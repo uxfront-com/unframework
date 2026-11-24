@@ -22,7 +22,9 @@ export function noErrorBroadcast(): Plugin {
       hot.send = (...args: unknown[]) => {
         const [payload] = args;
         if (typeof payload === "object" && payload !== null && "type" in payload) {
-          if (payload.type === "error") return;
+          if (payload.type === "error") {
+            return;
+          }
         }
         Reflect.apply(send, undefined, args);
       };

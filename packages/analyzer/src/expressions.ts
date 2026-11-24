@@ -750,17 +750,23 @@ class Walk {
         this.#skip(node);
         return UNKNOWN;
       case "AssignmentExpression":
-        if (render) return this.#impure(node, "An assignment changes state");
+        if (render) {
+          return this.#impure(node, "An assignment changes state");
+        }
         return this.#assignment(node, position);
       case "UpdateExpression":
-        if (render) return this.#impure(node, `\`${node.operator}\` changes state`);
+        if (render) {
+          return this.#impure(node, `\`${node.operator}\` changes state`);
+        }
         return this.#update(node, position);
       case "SequenceExpression": {
         if (render) {
           return this.#impure(node, "The comma operator exists for its operands' side effects");
         }
         let last: Kinds = UNKNOWN;
-        for (const expression of node.expressions) last = this.value(expression, "value", false);
+        for (const expression of node.expressions) {
+          last = this.value(expression, "value", false);
+        }
         return last;
       }
       case "AwaitExpression":
@@ -775,16 +781,22 @@ class Walk {
         }
         return this.#rejected(node, "Generators are not supported in setup code.");
       case "ThisExpression":
-        if (render) return this.#impure(node, "`this` is not the component on every target");
+        if (render) {
+          return this.#impure(node, "`this` is not the component on every target");
+        }
         return this.#rejected(
           node,
           "`this` is not supported in setup code: it is not the component on every target.",
         );
       case "Super":
-        if (render) return this.#impure(node, "`super` is not the component's on every target");
+        if (render) {
+          return this.#impure(node, "`super` is not the component's on every target");
+        }
         return this.#rejected(node, "`super` is not supported in setup code.");
       case "ImportExpression":
-        if (render) return this.#impure(node, "`import()` loads a module");
+        if (render) {
+          return this.#impure(node, "`import()` loads a module");
+        }
         return this.#rejected(
           node,
           "Dynamic imports are not supported: a component imports a shared module's values with an `import` declaration.",
@@ -841,9 +853,13 @@ class Walk {
    * unread (UF3024), whose fix removes it.
    */
   #skip(node: unknown): void {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) this.#skip(item);
+      for (const item of node) {
+        this.#skip(item);
+      }
       return;
     }
     const type = (node as { type?: string }).type ?? "";
@@ -854,7 +870,9 @@ class Walk {
         resolution.kind === "parameter" || resolution.kind === "variable"
           ? this.#locals.get(resolution.declaration)
           : undefined;
-      if (local) local.read = true;
+      if (local) {
+        local.read = true;
+      }
     }
     for (const key of visitorKeys[type] ?? []) {
       this.#skip((node as Record<string, unknown>)[key]);
@@ -888,8 +906,12 @@ class Walk {
       return kinds("bigint");
     }
     const { value } = node;
-    if (value === null) return NULL;
-    if (typeof value === "boolean") return booleanLiteral(value);
+    if (value === null) {
+      return NULL;
+    }
+    if (typeof value === "boolean") {
+      return booleanLiteral(value);
+    }
     if (typeof value === "number") {
       const raw = source.slice(node.start, node.end);
       if (render && /^0[xXoObB]/.test(raw)) {
@@ -922,9 +944,13 @@ class Walk {
 
   #template(node: AST.TemplateLiteral): Kinds {
     for (const [index, quasi] of node.quasis.entries()) {
-      if (this.#mode === "render") this.#codePointEscapes(quasi.value.raw, quasi.start + 1, true);
+      if (this.#mode === "render") {
+        this.#codePointEscapes(quasi.value.raw, quasi.start + 1, true);
+      }
       const expression = node.expressions[index];
-      if (expression) this.value(expression, "value", false);
+      if (expression) {
+        this.value(expression, "value", false);
+      }
     }
     return node.expressions.length
       ? STRING
@@ -955,7 +981,9 @@ class Walk {
   #identifier(node: AST.IdentifierReference, shorthand: boolean, position: Position): Kinds {
     const context = this.#context;
     const render = this.#mode === "render";
-    if (render && !this.#asciiName(node)) return UNKNOWN;
+    if (render && !this.#asciiName(node)) {
+      return UNKNOWN;
+    }
     const resolution = context.scopes.resolve(node);
     switch (resolution.kind) {
       case "global":
@@ -971,7 +999,9 @@ class Walk {
             return UNKNOWN;
           }
           const prop = context.propsByDeclaration.get(resolution.declaration);
-          if (prop?.id === undefined) return UNKNOWN;
+          if (prop?.id === undefined) {
+            return UNKNOWN;
+          }
           if (prop.callback && this.#mode !== "client") {
             context.reporter.report(
               "UF2035",
@@ -1030,7 +1060,9 @@ class Walk {
             return UNKNOWN;
           }
           const value = context.shared.values.get(resolution.declaration);
-          if (value) return this.#sharedRead(node, value, shorthand);
+          if (value) {
+            return this.#sharedRead(node, value, shorthand);
+          }
           this.#unsupported(
             node,
             `\`${node.name}\` is declared at the module's top level, and is not a \`const\` a component reads: an injection key is read only by \`provide\` and \`inject\`.`,
@@ -1038,7 +1070,9 @@ class Walk {
           return UNKNOWN;
         }
         const local = this.#locals.get(resolution.declaration);
-        if (!local) return UNKNOWN;
+        if (!local) {
+          return UNKNOWN;
+        }
         local.read = true;
         return local.kinds;
       }
@@ -1180,7 +1214,9 @@ class Walk {
         );
         return UNKNOWN;
       case "localVar":
-        if (this.#nonReactive(node, binding)) return binding.kinds;
+        if (this.#nonReactive(node, binding)) {
+          return binding.kinds;
+        }
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
       case "localConst":
@@ -1226,7 +1262,9 @@ class Walk {
         : this.#mode === "pure"
           ? "a getter or an initial value"
           : undefined;
-    if (where === undefined) return false;
+    if (where === undefined) {
+      return false;
+    }
     const { name } = binding;
     this.#context.reporter.report(
       "UF2010",
@@ -1283,8 +1321,12 @@ class Walk {
       return UNKNOWN;
     }
     const value = this.#context.shared.values.get(declaration);
-    if (value) return this.#sharedRead(node, value, shorthand);
-    if (this.#context.shared.failed.has(declaration)) return UNKNOWN;
+    if (value) {
+      return this.#sharedRead(node, value, shorthand);
+    }
+    if (this.#context.shared.failed.has(declaration)) {
+      return UNKNOWN;
+    }
     if (this.#context.setup.composables.has(declaration)) {
       // One its import reported says nothing more.
       if (this.#context.setup.composables.get(declaration)) {
@@ -1303,7 +1345,9 @@ class Walk {
       return UNKNOWN;
     }
     const api = authoring.get(declaration);
-    if (api === undefined) return UNKNOWN;
+    if (api === undefined) {
+      return UNKNOWN;
+    }
     if (api === "isDev") {
       misplacedDev(node, this.#context.reporter);
       return kinds("boolean");
@@ -1359,7 +1403,9 @@ class Walk {
   #passThroughValue(node: AST.IdentifierReference, declaration: object): void {
     const { passThrough } = this.#context;
     const name = passThrough.names.get(declaration);
-    if (name === undefined) return;
+    if (name === undefined) {
+      return;
+    }
     passThrough.read.add(declaration);
     this.#context.reporter.report(
       "UF5006",
@@ -1400,7 +1446,9 @@ class Walk {
   /** Whether an identifier is written in ASCII as its name, which Angular's lexer reads. */
   #asciiName(node: { name: string; start: number; end: number }): boolean {
     const { source } = this.#context;
-    if (isIdentifier(node.name) && source.slice(node.start, node.end) === node.name) return true;
+    if (isIdentifier(node.name) && source.slice(node.start, node.end) === node.name) {
+      return true;
+    }
     this.#unsupported(
       node,
       `\`${source.slice(node.start, node.end)}\` is not written in ASCII letters, digits, \`_\` and \`$\`: Angular's expression lexer reads no other.`,
@@ -1460,20 +1508,32 @@ class Walk {
             : undefined;
         if (!prop?.id) {
           this.#wholeProps(node);
-          if (node.computed) this.value(node.property, "value", false);
+          if (node.computed) {
+            this.value(node.property, "value", false);
+          }
           return UNKNOWN;
         }
         // The reference spans the member, whose text the targets splice as `props.label`.
-        if (object.start !== node.start) this.#parenthesisedProps(node, object);
-        if (node.optional) this.#optional(object, node.property.start, NOTHING, ".");
+        if (object.start !== node.start) {
+          this.#parenthesisedProps(node, object);
+        }
+        if (node.optional) {
+          this.#optional(object, node.property.start, NOTHING, ".");
+        }
         const narrowed = render ? [] : this.#narrowingRule(node, { kind: "prop", prop }, true);
         this.refs.push(createBindingReference(prop.id, span(node), false, false, narrowed));
         return this.#narrowed(node, prop.kinds);
       }
       const binding = setupBindingOf(object, context);
-      if (binding && isRef(binding)) return this.#refValue(node, object, binding);
-      if (binding?.kind === "slots") return this.#slotPresence(node, binding);
-      if (this.#isEvent(object)) return this.#eventMember(node, false);
+      if (binding && isRef(binding)) {
+        return this.#refValue(node, object, binding);
+      }
+      if (binding?.kind === "slots") {
+        return this.#slotPresence(node, binding);
+      }
+      if (this.#isEvent(object)) {
+        return this.#eventMember(node, false);
+      }
     }
     this.#memberChain.push(node);
     let receiver: Kinds;
@@ -1485,10 +1545,16 @@ class Walk {
     const name = this.#memberName(node);
     this.#random(node, name);
     if (node.optional) {
-      if (render) this.#optional(object, node.property.start, receiver, node.computed ? "" : ".");
-      if (mayBeNullish(receiver)) this.shortCircuits = true;
+      if (render) {
+        this.#optional(object, node.property.start, receiver, node.computed ? "" : ".");
+      }
+      if (mayBeNullish(receiver)) {
+        this.shortCircuits = true;
+      }
     }
-    if (render) this.#readAbsent(object, receiver);
+    if (render) {
+      this.#readAbsent(object, receiver);
+    }
     let result: Kinds;
     if (object.type === "Identifier" && this.#isGlobal(object) && name !== undefined) {
       result = globalMember(object.name, name, false);
@@ -1558,7 +1624,9 @@ class Walk {
               ? `\`${this.#context.source.slice(node.start, node.end)}\` is no plain read of a slot`
               : `\`${slot ?? "this"}\` is no slot of this component`,
       );
-      if (node.computed) this.value(node.property, "value", false);
+      if (node.computed) {
+        this.value(node.property, "value", false);
+      }
       return UNKNOWN;
     }
     this.refs.push(createSlotReference(slot!, span(node)));
@@ -1594,7 +1662,9 @@ class Walk {
         `\`${name}\` is a ref, which holds its value in \`${name}.value\` and has no other member.`,
         { help: `Read \`${name}.value\`, and the value's members through it.` },
       );
-      if (node.computed) this.value(node.property, "value", false);
+      if (node.computed) {
+        this.value(node.property, "value", false);
+      }
       return UNKNOWN;
     }
     if (object.start !== node.start) {
@@ -1640,7 +1710,9 @@ class Walk {
       return binding.kinds;
     }
     const narrowed = this.#refRules(node, binding, true);
-    if (!narrowed) return binding.kinds;
+    if (!narrowed) {
+      return binding.kinds;
+    }
     this.refs.push(createBindingReference(binding.id, span(node), false, false, narrowed));
     return this.#narrowed(node, binding.kinds);
   }
@@ -1656,7 +1728,9 @@ class Walk {
     binding: SetupBinding,
     fixable: boolean,
   ): NarrowedPath[] | undefined {
-    if (binding.kind === "templateRef" && this.#nonReactive(node, binding)) return undefined;
+    if (binding.kind === "templateRef" && this.#nonReactive(node, binding)) {
+      return undefined;
+    }
     return this.#narrowingRule(node, { kind: "ref", binding }, fixable);
   }
 
@@ -1674,7 +1748,9 @@ class Walk {
   ): NarrowedPath[] {
     const context = this.#context;
     const root = referencePath(node, context);
-    if (!root) return [];
+    if (!root) {
+      return [];
+    }
     // The read, then each member read off it with no parentheses or `?.` between, as the walk
     // reads it, with its kinds.
     const paths: { node: AST.Expression; members: string[]; kinds: Kinds }[] = [
@@ -1687,20 +1763,28 @@ class Walk {
     for (let index = this.#memberChain.length - 1; index >= 0; index--) {
       const parent = this.#memberChain[index]!;
       const last = paths.at(-1)!;
-      if (parent.object !== last.node || parent.optional) break;
+      if (parent.object !== last.node || parent.optional) {
+        break;
+      }
       const key = pathKey(parent);
-      if (key === undefined || !isMemberPath(context.source.slice(node.end, parent.end))) break;
+      if (key === undefined || !isMemberPath(context.source.slice(node.end, parent.end))) {
+        break;
+      }
       paths.push({
         node: parent,
         members: [...last.members, key],
         kinds: pathMember(last.kinds, key, parent.computed),
       });
     }
-    if (!paths.some(({ kinds }) => narrowable(kinds))) return [];
+    if (!paths.some(({ kinds }) => narrowable(kinds))) {
+      return [];
+    }
     const ancestors = ancestorsOf(node, context.component);
     const narrowed: NarrowedPath[] = [];
     for (const [index, path] of paths.entries()) {
-      if (ancestors.at(-1 - index) !== path.node) break;
+      if (ancestors.at(-1 - index) !== path.node) {
+        break;
+      }
       const scope = this.#pathRule(
         path.node,
         ancestors.slice(0, ancestors.length - index),
@@ -1710,8 +1794,9 @@ class Walk {
         path.members,
         fixable,
       );
-      if (scope)
+      if (scope) {
         narrowed.push(createNarrowedPath({ start: node.start, end: path.node.end }, scope));
+      }
     }
     return narrowed;
   }
@@ -1737,7 +1822,9 @@ class Walk {
     members: readonly string[],
     fixable: boolean,
   ): NarrowedPath["scope"] | undefined {
-    if (!narrowable(declared)) return undefined;
+    if (!narrowable(declared)) {
+      return undefined;
+    }
     const nullable = mayBeAbsent(declared);
     const present = nullable ? without(declared, "null", "undefined") : declared;
     const shapes = severalShapes(present);
@@ -1763,7 +1850,9 @@ class Walk {
         (fact) =>
           fact.present && !(render && fact.child && !outside) && (fact.scope !== "closure" || prop),
       );
-      if (found) return outside && found.child ? "template" : found.scope;
+      if (found) {
+        return outside && found.child ? "template" : found.scope;
+      }
     }
     // A handler's read that relies on the template's conditional around it narrowing a union of
     // kinds (`{typeof value === "string" && <input onInput={() => use(value)} />}`), which a
@@ -1797,7 +1886,9 @@ class Walk {
     for (let index = ancestors.length - 1; index > 0; index--) {
       const child = ancestors[index]!;
       const parent = ancestors[index - 1]!;
-      if (literal && parent.type === "MemberExpression" && parent.object === child) return LITERAL;
+      if (literal && parent.type === "MemberExpression" && parent.object === child) {
+        return LITERAL;
+      }
       switch (parent.type) {
         case "ParenthesizedExpression":
         case "ChainExpression":
@@ -1805,7 +1896,9 @@ class Walk {
         case "ObjectExpression":
           continue;
         case "Property":
-          if (parent.value !== child) return undefined;
+          if (parent.value !== child) {
+            return undefined;
+          }
           literal = true;
           continue;
         case "ArrayExpression":
@@ -1833,13 +1926,19 @@ class Walk {
             ? undefined
             : RESULT;
         case "ArrowFunctionExpression":
-          if (parent.body !== child) return "an expression that relies on it";
+          if (parent.body !== child) {
+            return "an expression that relies on it";
+          }
           return this.#returnsAll(ancestors.slice(0, index), declared, literal)
             ? undefined
             : RESULT;
         case "MemberExpression": {
-          if (parent.object !== child) return "a computed member's key";
-          if (parent.optional) return undefined;
+          if (parent.object !== child) {
+            return "a computed member's key";
+          }
+          if (parent.optional) {
+            return undefined;
+          }
           const name =
             !parent.computed && parent.property.type === "Identifier"
               ? parent.property.name
@@ -1858,11 +1957,15 @@ class Walk {
           return "a member read through `.`";
         }
         case "CallExpression": {
-          if (parent.callee === child) return parent.optional ? undefined : "a call";
+          if (parent.callee === child) {
+            return parent.optional ? undefined : "a call";
+          }
           const index = parent.arguments.indexOf(child as AST.Argument);
           // A literal goes whole to a parameter whose type the model does not read, but to the
           // globals that take anything (`console.log`, `JSON.stringify`).
-          if (literal) return this.#takesAnything(parent) ? undefined : LITERAL;
+          if (literal) {
+            return this.#takesAnything(parent) ? undefined : LITERAL;
+          }
           return (
             several
               ? this.#takesAll(parent, index, declared)
@@ -1874,10 +1977,14 @@ class Walk {
         case "NewExpression":
           return literal ? LITERAL : "a call's argument";
         case "LogicalExpression":
-          if (parent.left === child) return undefined;
+          if (parent.left === child) {
+            return undefined;
+          }
           continue;
         case "ConditionalExpression":
-          if (parent.test === child) return undefined;
+          if (parent.test === child) {
+            return undefined;
+          }
           continue;
         case "UnaryExpression":
           return parent.operator === "!" ||
@@ -1886,8 +1993,12 @@ class Walk {
             ? undefined
             : `the operand of \`${parent.operator}\``;
         case "BinaryExpression":
-          if (EQUALITY.has(parent.operator)) return undefined;
-          if (parent.operator === "instanceof" && parent.left === child) return undefined;
+          if (EQUALITY.has(parent.operator)) {
+            return undefined;
+          }
+          if (parent.operator === "instanceof" && parent.left === child) {
+            return undefined;
+          }
           if (parent.operator === "+") {
             const other = parent.left === child ? parent.right : parent.left;
             if (
@@ -1899,19 +2010,29 @@ class Walk {
           }
           return `an operand of \`${parent.operator}\``;
         case "VariableDeclarator": {
-          if (parent.init !== child || parent.id.type !== "Identifier") return "a destructuring";
+          if (parent.init !== child || parent.id.type !== "Identifier") {
+            return "a destructuring";
+          }
           // A literal's annotation types the literal, and so the member, as the author wrote it.
           const annotation = parent.id.typeAnnotation?.typeAnnotation;
-          if (annotation && literal) return undefined;
+          if (annotation && literal) {
+            return undefined;
+          }
           return annotation && fits(declared, this.#context.types.kindsOf(annotation))
             ? undefined
             : LOCAL;
         }
         case "AssignmentExpression": {
-          if (parent.right !== child) return "an assignment's target";
-          if (literal) return ASSIGNED;
+          if (parent.right !== child) {
+            return "an assignment's target";
+          }
+          if (literal) {
+            return ASSIGNED;
+          }
           const target = this.#assignedKinds(parent.left);
-          if (target) return fits(declared, target) ? undefined : ASSIGNED;
+          if (target) {
+            return fits(declared, target) ? undefined : ASSIGNED;
+          }
           return this.#assignsNullish(parent.left) ? undefined : ASSIGNED;
         }
         case "SpreadElement": {
@@ -1972,7 +2093,9 @@ class Walk {
     const id = subject.kind === "ref" ? subject.binding.id : subject.prop.id;
     if (anchor) {
       const key = `${anchor.statement.start}:${id}:${members.join(".")}`;
-      if (this.#narrowingReported.has(key)) return;
+      if (this.#narrowingReported.has(key)) {
+        return;
+      }
       this.#narrowingReported.add(key);
     }
     const kind = severalShapes(present)
@@ -2028,8 +2151,9 @@ class Walk {
         if (
           child.type !== "MemberExpression" ||
           found.some((read) => read.end >= child.end && read.start <= child.start)
-        )
+        ) {
           return;
+        }
         const path = referencePath(child, this.#context);
         if (
           path &&
@@ -2098,9 +2222,13 @@ class Walk {
 
   /** What declares the root of a value's reads: the ref, the destructured prop or `props`. */
   #rootOf(subject: Narrowable): object {
-    if (subject.kind === "ref") return subject.binding.declaration;
+    if (subject.kind === "ref") {
+      return subject.binding.declaration;
+    }
     for (const [declaration, prop] of this.#context.propsByDeclaration) {
-      if (prop === subject.prop) return declaration;
+      if (prop === subject.prop) {
+        return declaration;
+      }
     }
     return this.#context.propsObject!.declaration;
   }
@@ -2157,14 +2285,18 @@ class Walk {
         }
       });
     }
-    if (changes) return undefined;
+    if (changes) {
+      return undefined;
+    }
     const text = source.slice(component.start, component.end);
     // A name another fix declares in the same block is taken too.
     const declared = this.#fixLocals.get(anchor.block) ?? new Set<string>();
     const taken = (candidate: string) =>
       declared.has(candidate) || new RegExp(`(?<![\\w$])${candidate}(?![\\w$])`).test(text);
     const local = this.#localName(subject, members).find((candidate) => !taken(candidate));
-    if (!local) return undefined;
+    if (!local) {
+      return undefined;
+    }
     declared.add(local);
     this.#fixLocals.set(anchor.block, declared);
     const { statement } = anchor;
@@ -2174,7 +2306,9 @@ class Walk {
     const shorthand = new Set<object>();
     for (const each of anchor.region) {
       visitNodes(each, (child) => {
-        if (child.type === "Property" && child.shorthand) shorthand.add(child.value);
+        if (child.type === "Property" && child.shorthand) {
+          shorthand.add(child.value);
+        }
       });
     }
     return {
@@ -2207,7 +2341,9 @@ class Walk {
         node.type === "FunctionDeclaration",
     ) as AST.Function | AST.ArrowFunctionExpression | undefined;
     const annotation = fn?.returnType?.typeAnnotation;
-    if (annotation === undefined) return false;
+    if (annotation === undefined) {
+      return false;
+    }
     // A literal's type is the written result type's, member and all.
     return literal || fits(declared, this.#context.types.kindsOf(annotation));
   }
@@ -2219,7 +2355,9 @@ class Walk {
   #assignedKinds(target: AST.AssignmentTarget): Kinds | undefined {
     if (target.type === "Identifier") {
       const binding = setupBindingOf(target, this.#context);
-      if (binding) return binding.kinds;
+      if (binding) {
+        return binding.kinds;
+      }
       const resolution = this.#context.scopes.resolve(target);
       return resolution.kind === "variable" || resolution.kind === "parameter"
         ? this.#locals.get(resolution.declaration)?.kinds
@@ -2233,7 +2371,9 @@ class Walk {
       target.property.name === "value"
     ) {
       const binding = setupBindingOf(target.object, this.#context);
-      if (binding && isRef(binding)) return binding.kinds;
+      if (binding && isRef(binding)) {
+        return binding.kinds;
+      }
     }
     return undefined;
   }
@@ -2252,14 +2392,24 @@ class Walk {
     const literals = literalUnion(declared);
     if (callee.type === "Identifier") {
       const resolution = this.#context.scopes.resolve(callee);
-      if (resolution.kind === "global") return ANY_GLOBALS.has(callee.name) || literals;
+      if (resolution.kind === "global") {
+        return ANY_GLOBALS.has(callee.name) || literals;
+      }
       const binding = setupBindingOf(callee, this.#context);
       if (binding?.kind === "localFn") {
         const parameter = binding.function?.params[index];
-        if (!parameter) return false;
-        if (parameter.type === "AssignmentPattern") return true;
-        if (parameter.type !== "Identifier") return false;
-        if (!parameter.typeAnnotation) return true;
+        if (!parameter) {
+          return false;
+        }
+        if (parameter.type === "AssignmentPattern") {
+          return true;
+        }
+        if (parameter.type !== "Identifier") {
+          return false;
+        }
+        if (!parameter.typeAnnotation) {
+          return true;
+        }
         return fits(declared, this.#context.types.kindsOf(parameter.typeAnnotation.typeAnnotation));
       }
       return literals;
@@ -2273,7 +2423,9 @@ class Walk {
       ANY_GLOBAL_METHODS.has(callee.object.name)
     ) {
       const methods = ANY_GLOBAL_METHODS.get(callee.object.name);
-      if (!methods || methods.has(callee.property.name)) return true;
+      if (!methods || methods.has(callee.property.name)) {
+        return true;
+      }
     }
     return literals;
   }
@@ -2286,7 +2438,9 @@ class Walk {
     }
     if (callee.type === "Identifier") {
       const resolution = this.#context.scopes.resolve(callee);
-      if (resolution.kind === "global") return ANY_GLOBALS.has(callee.name);
+      if (resolution.kind === "global") {
+        return ANY_GLOBALS.has(callee.name);
+      }
       const binding = setupBindingOf(callee, this.#context);
       if (binding?.kind === "emit") {
         const first = call.arguments[0];
@@ -2297,10 +2451,18 @@ class Walk {
       }
       if (binding?.kind === "localFn") {
         const parameter = binding.function?.params[index];
-        if (!parameter) return false;
-        if (parameter.type === "AssignmentPattern") return true;
-        if (parameter.type !== "Identifier") return false;
-        if (parameter.optional || !parameter.typeAnnotation) return true;
+        if (!parameter) {
+          return false;
+        }
+        if (parameter.type === "AssignmentPattern") {
+          return true;
+        }
+        if (parameter.type !== "Identifier") {
+          return false;
+        }
+        if (parameter.optional || !parameter.typeAnnotation) {
+          return true;
+        }
         const kindsOf = this.#context.types.kindsOf(parameter.typeAnnotation.typeAnnotation);
         return mayBeNullish(kindsOf);
       }
@@ -2324,7 +2486,9 @@ class Walk {
   #assignsNullish(target: AST.AssignmentTarget): boolean {
     if (target.type === "Identifier") {
       const binding = setupBindingOf(target, this.#context);
-      if (binding) return mayBeNullish(binding.kinds);
+      if (binding) {
+        return mayBeNullish(binding.kinds);
+      }
       const resolution = this.#context.scopes.resolve(target);
       const local =
         resolution.kind === "variable" || resolution.kind === "parameter"
@@ -2334,14 +2498,18 @@ class Walk {
     }
     if (target.type === "MemberExpression" && target.object.type === "Identifier") {
       const binding = setupBindingOf(target.object, this.#context);
-      if (binding && isRef(binding)) return mayBeNullish(binding.kinds);
+      if (binding && isRef(binding)) {
+        return mayBeNullish(binding.kinds);
+      }
     }
     return target.type === "MemberExpression";
   }
 
   /** Whether an identifier reads the event parameter of the function being lowered. */
   #isEvent(node: AST.IdentifierReference): boolean {
-    if (!this.#event) return false;
+    if (!this.#event) {
+      return false;
+    }
     const resolution = this.#context.scopes.resolve(node);
     return resolution.kind === "parameter" && resolution.declaration === this.#event.declaration;
   }
@@ -2356,9 +2524,13 @@ class Walk {
     const { reporter, source } = this.#context;
     const event = this.#event!;
     const local = this.#locals.get(event.declaration);
-    if (local) local.read = true;
+    if (local) {
+      local.read = true;
+    }
     if (node.computed || node.property.type !== "Identifier") {
-      if (node.computed) this.value(node.property, "value", false);
+      if (node.computed) {
+        this.value(node.property, "value", false);
+      }
       this.#eventProblem(
         node,
         "A handler's event is read through its members by name: React's synthetic event and the DOM's share only some members, which the compiler checks by name.",
@@ -2425,18 +2597,26 @@ class Walk {
    * code, which TypeScript checks as the source.
    */
   #narrowed(node: AST.Expression, kindsOf: Kinds): Kinds {
-    if (this.#mode !== "render") return kindsOf;
+    if (this.#mode !== "render") {
+      return kindsOf;
+    }
     const nullable = has(kindsOf, "null") || has(kindsOf, "undefined");
     const several = isUnion(kindsOf);
-    if (!nullable && !several && !hasLiterals(kindsOf)) return kindsOf;
+    if (!nullable && !several && !hasLiterals(kindsOf)) {
+      return kindsOf;
+    }
     const context = this.#context;
     const path = referencePath(node, context);
-    if (!path) return kindsOf;
+    if (!path) {
+      return kindsOf;
+    }
     const narrowing: Narrowing =
       nullable || several ? narrowingAt(node, path, context) : { kind: "declared" };
     // A value a condition shows absent keeps its kinds: what reads it is reported for that
     // (`#readAbsent`, a spread's UF3004).
-    if (narrowing.kind === "absent") return kindsOf;
+    if (narrowing.kind === "absent") {
+      return kindsOf;
+    }
     const narrowed = narrowedKinds(node, path, kindsOf, context);
     if (narrowing.kind === "unfollowed" && narrowing.reason !== "form") {
       this.#readApart(node, narrowing);
@@ -2454,15 +2634,23 @@ class Walk {
    * reference (NG8107, NG8102), and some target's checker rejects the reference without it.
    */
   #narrowedApart(operand: AST.Expression | AST.Super, at: Span, operator: "?." | "??"): boolean {
-    if (operand.type === "Super") return false;
+    if (operand.type === "Super") {
+      return false;
+    }
     const context = this.#context;
     const path = referencePath(operand, context);
-    if (!path || !angularChecks(path, context)) return false;
+    if (!path || !angularChecks(path, context)) {
+      return false;
+    }
     const narrowing = narrowingAt(operand, path, context);
     // Angular forgets a member's narrowing in an arrow function, and never narrows a prop its
     // `track` reads: the operator passes it there.
-    if (narrowing.kind !== "unfollowed") return false;
-    if (narrowing.reason === "closure" || narrowing.reason === "key") return false;
+    if (narrowing.kind !== "unfollowed") {
+      return false;
+    }
+    if (narrowing.reason === "closure" || narrowing.reason === "key") {
+      return false;
+    }
     const { message, help } = narrowedApart(operator, narrowing.reason);
     context.reporter.report("UF1002", at, message, {
       help,
@@ -2481,7 +2669,9 @@ class Walk {
    * condition, every target narrows as TypeScript does, and the source's own type check decides.
    */
   #readApart(node: AST.Expression, narrowing: Extract<Narrowing, { kind: "unfollowed" }>): void {
-    if (narrowing.reason === "form") return;
+    if (narrowing.reason === "form") {
+      return;
+    }
     // A member of a value reported already says nothing new.
     let object: AST.Expression | AST.Super = node;
     while (object.type === "MemberExpression" || object.type === "ChainExpression") {
@@ -2493,7 +2683,9 @@ class Walk {
     }
     const context = this.#context;
     const use = usedLoosely(node, context);
-    if (use === true) return;
+    if (use === true) {
+      return;
+    }
     this.#apart.add(node);
     const path = referencePath(node, context)!;
     const { message, help } = readApart(narrowing.reason, angularChecks(path, context));
@@ -2503,8 +2695,11 @@ class Walk {
         related: [{ span: span(narrowing.condition), message: "The condition tests it here" }],
       });
     // A `+` concatenates where its other side is a string, which `#binary` knows once read.
-    if (use === false) report();
-    else this.#concatenations.set(use, [...(this.#concatenations.get(use) ?? []), report]);
+    if (use === false) {
+      report();
+    } else {
+      this.#concatenations.set(use, [...(this.#concatenations.get(use) ?? []), report]);
+    }
   }
 
   /**
@@ -2513,12 +2708,18 @@ class Walk {
    * the read, through `?.` too.
    */
   #readAbsent(object: AST.Expression | AST.Super, receiver: Kinds): void {
-    if (object.type === "Super" || !receiver.objects?.length) return;
+    if (object.type === "Super" || !receiver.objects?.length) {
+      return;
+    }
     const context = this.#context;
     const path = referencePath(object, context);
-    if (!path) return;
+    if (!path) {
+      return;
+    }
     const narrowing = narrowingAt(object, path, context);
-    if (narrowing.kind !== "absent") return;
+    if (narrowing.kind !== "absent") {
+      return;
+    }
     context.reporter.report(
       "UF1002",
       object,
@@ -2572,7 +2773,9 @@ class Walk {
 
   /** A method that reads the machine's locale (UF3019), in a getter, an initial value or client code. */
   #locale(property: AST.Node, name: string): void {
-    if (this.#mode === "render" || !LOCALE_METHODS.has(name)) return;
+    if (this.#mode === "render" || !LOCALE_METHODS.has(name)) {
+      return;
+    }
     this.#nondeterminism(property, `\`${name}\` formats by the machine's locale`);
   }
 
@@ -2602,7 +2805,9 @@ class Walk {
     const { property } = node;
     if (node.computed) {
       this.value(property as AST.Expression, "value", false);
-      if (property.type === "Literal" && typeof property.value === "string") return property.value;
+      if (property.type === "Literal" && typeof property.value === "string") {
+        return property.value;
+      }
       return undefined;
     }
     if (property.type !== "Identifier") {
@@ -2614,7 +2819,9 @@ class Walk {
       );
       return undefined;
     }
-    if (this.#mode !== "render") return property.name;
+    if (this.#mode !== "render") {
+      return property.name;
+    }
     return this.#asciiName(property) ? property.name : undefined;
   }
 
@@ -2641,7 +2848,9 @@ class Walk {
     replacement: string,
   ): void {
     const token = findToken(this.#context.source, operand.end, next, "?.");
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     if (mayBeNullish(kindsOf)) {
       this.#narrowedApart(operand, { start: token.start, end: token.start + 2 }, "?.");
       return;
@@ -2726,16 +2935,23 @@ class Walk {
         const api = context.setup.authoring.get(resolution.declaration);
         // A call the import reports, or a macro in the wrong place, whose arguments would say
         // nothing more.
-        if (api === "Teleport") teleportNotTag(callee, context.reporter);
-        else if (api === "Transition") transitionNotTag(callee, context.reporter);
-        else if (api === "defineDirective") misplacedDirective(callee, context.reporter);
-        else if (api !== undefined) this.#misplaced(callee, api, true);
+        if (api === "Teleport") {
+          teleportNotTag(callee, context.reporter);
+        } else if (api === "Transition") {
+          transitionNotTag(callee, context.reporter);
+        } else if (api === "defineDirective") {
+          misplacedDirective(callee, context.reporter);
+        } else if (api !== undefined) {
+          this.#misplaced(callee, api, true);
+        }
         this.#skip(node.arguments);
         return UNKNOWN;
       }
       if (resolution.kind === "variable" && resolution.scope === context.component) {
         const binding = context.setup.bindings.get(resolution.declaration);
-        if (binding?.kind === "emit") return this.#emit(node, binding, position);
+        if (binding?.kind === "emit") {
+          return this.#emit(node, binding, position);
+        }
         if (binding?.kind === "localFn") {
           if (node.optional) {
             const token = findToken(context.source, callee.end, node.end, "?.");
@@ -2797,8 +3013,11 @@ class Walk {
           : undefined;
       this.#random(callee, name);
       if (name !== undefined) {
-        if (render) this.#checkMethod(callee, name);
-        else this.#mutatingCall(node, callee, name, position);
+        if (render) {
+          this.#checkMethod(callee, name);
+        } else {
+          this.#mutatingCall(node, callee, name, position);
+        }
         this.#locale(callee.property, name);
       }
       const global =
@@ -2833,15 +3052,21 @@ class Walk {
     }
     if (node.optional) {
       const next = node.arguments[0]?.start ?? node.end - 1;
-      if (render) this.#optional(callee, next, calleeKinds, "");
-      if (mayBeNullish(calleeKinds)) this.shortCircuits = true;
+      if (render) {
+        this.#optional(callee, next, calleeKinds, "");
+      }
+      if (mayBeNullish(calleeKinds)) {
+        this.shortCircuits = true;
+      }
     }
     this.#noteArrowUses(node);
     this.#arguments(node.arguments, parameters, this.#runs(callee), {
       name: calleeName(callee),
       arrayMethod: parameters.length > 0,
     });
-    if (node.optional && mayBeNullish(calleeKinds)) result = union(result, UNDEFINED);
+    if (node.optional && mayBeNullish(calleeKinds)) {
+      result = union(result, UNDEFINED);
+    }
     return result;
   }
 
@@ -2862,7 +3087,9 @@ class Walk {
     ) {
       inner = inner.expression;
     }
-    if (inner.type !== "Identifier") return undefined;
+    if (inner.type !== "Identifier") {
+      return undefined;
+    }
     const resolution = this.#context.scopes.resolve(inner);
     return resolution.kind === "import" &&
       this.#context.setup.authoring.get(resolution.declaration) === "nextTick"
@@ -2884,7 +3111,9 @@ class Walk {
       end = next + 1;
     }
     const at = { start: node.start, end };
-    if (at.start === tick.start && at.end === tick.end) return;
+    if (at.start === tick.start && at.end === tick.end) {
+      return;
+    }
     // The fix would drop a comment written inside.
     const commented = this.#context.comments.some(
       (comment) => comment.start >= at.start && comment.end <= at.end,
@@ -2912,7 +3141,9 @@ class Walk {
 
   /** Notes the arrows a call is given that it does nothing with the value of (`#arrowUses`). */
   #noteArrowUses(node: AST.CallExpression): void {
-    if (this.#mode !== "client") return;
+    if (this.#mode !== "client") {
+      return;
+    }
     const { callee } = node;
     let use: "callback" | "discarded" | undefined;
     if (callee.type === "Identifier") {
@@ -2930,9 +3161,13 @@ class Walk {
     ) {
       use = "discarded";
     }
-    if (!use) return;
+    if (!use) {
+      return;
+    }
     for (const argument of node.arguments) {
-      if (argument.type === "ArrowFunctionExpression") this.#arrowUses.set(argument, use);
+      if (argument.type === "ArrowFunctionExpression") {
+        this.#arrowUses.set(argument, use);
+      }
     }
   }
 
@@ -2946,7 +3181,9 @@ class Walk {
     if (callee.type === "Identifier") {
       const resolution = this.#context.scopes.resolve(callee);
       if (resolution.kind === "global") {
-        if (DEFERRING_GLOBALS.has(callee.name)) return "later";
+        if (DEFERRING_GLOBALS.has(callee.name)) {
+          return "later";
+        }
         return NON_CALLING_GLOBALS.has(callee.name) ? "never" : "now";
       }
       return resolution.kind === "parameter" && resolution.declaration === this.#onCleanup
@@ -2966,7 +3203,9 @@ class Walk {
       callee.object.type === "Identifier" &&
       callee.object.name === "window" &&
       this.#context.scopes.resolve(callee.object).kind === "global";
-    if (DEFERRING_METHODS.has(name) || (global && DEFERRING_GLOBALS.has(name))) return "later";
+    if (DEFERRING_METHODS.has(name) || (global && DEFERRING_GLOBALS.has(name))) {
+      return "later";
+    }
     return NON_CALLING_METHODS.has(name) || (global && NON_CALLING_GLOBALS.has(name))
       ? "never"
       : "now";
@@ -3000,10 +3239,14 @@ class Walk {
   #passEvent(node: AST.CallExpression, binding: SetupBinding): void {
     const event = this.#event;
     const fn = binding.function;
-    if (!event || !fn) return;
+    if (!event || !fn) {
+      return;
+    }
     const parameter = this.#context.setup.eventParameters.get(fn);
     const argument = parameter ? node.arguments[parameter.index] : undefined;
-    if (argument?.type !== "Identifier") return;
+    if (argument?.type !== "Identifier") {
+      return;
+    }
     const resolution = this.#context.scopes.resolve(argument);
     if (resolution.kind === "parameter" && resolution.declaration === event.declaration) {
       this.#wholeEvents.add(argument);
@@ -3023,7 +3266,9 @@ class Walk {
     position: Position,
   ): void {
     const { object } = callee;
-    if (object.type === "Super") return;
+    if (object.type === "Super") {
+      return;
+    }
     if (
       MUTATING_OBJECT_FUNCTIONS.has(name) &&
       object.type === "Identifier" &&
@@ -3032,7 +3277,9 @@ class Walk {
     ) {
       const [target] = node.arguments;
       // Freezing a module's value changes nothing anyone reads, as module level holds (ADR-0070).
-      if (name === "freeze" && target && this.#isModuleValue(target)) return;
+      if (name === "freeze" && target && this.#isModuleValue(target)) {
+        return;
+      }
       if (target && target.type !== "SpreadElement") {
         this.#mutation(node, target, `\`Object.${name}\` changes`, position, undefined);
       }
@@ -3044,7 +3291,9 @@ class Walk {
       return;
     }
     // An element's `classList.add(…)` or `style.setProperty(…)` changes no collection state holds.
-    if (part && PART_METHODS[part.part].has(name)) return;
+    if (part && PART_METHODS[part.part].has(name)) {
+      return;
+    }
     if (ATTRIBUTE_METHODS.has(name) && this.#rendered(object)) {
       // Only the `class` and `style` attributes are a binding's to patch (see `#renderedChange`).
       const [first] = node.arguments;
@@ -3055,7 +3304,9 @@ class Walk {
         ["style", "style"],
       ] as const) {
         if (named === undefined || named.toLowerCase() === attribute) {
-          if (this.#renderedChange(node, `\`${name}()\``, owned, object)) break;
+          if (this.#renderedChange(node, `\`${name}()\``, owned, object)) {
+            break;
+          }
         }
       }
       return;
@@ -3083,7 +3334,9 @@ class Walk {
     call: { node: AST.CallExpression; callee: AST.MemberExpression; name: string } | undefined,
   ): void {
     const origin = this.#originOf(object, new Set());
-    if (mutable(origin)) return;
+    if (mutable(origin)) {
+      return;
+    }
     const { source, reporter } = this.#context;
     const text = source.slice(object.start, object.end);
     const fix = this.#replaceWhole(node, object, position, call);
@@ -3105,9 +3358,13 @@ class Walk {
    * imports from a shared module (ADR-0070).
    */
   #isModuleValue(node: AST.Expression | AST.SpreadElement): boolean {
-    if (node.type === "SpreadElement") return false;
+    if (node.type === "SpreadElement") {
+      return false;
+    }
     const inner = unwrapExpression(node);
-    if (inner.type !== "Identifier") return false;
+    if (inner.type !== "Identifier") {
+      return false;
+    }
     const resolution = this.#context.scopes.resolve(inner);
     const declared =
       resolution.kind === "import" ||
@@ -3122,8 +3379,12 @@ class Walk {
     position: Position,
     call: { node: AST.CallExpression; callee: AST.MemberExpression; name: string } | undefined,
   ): Fix | undefined {
-    if (position !== "statement" && position !== "discarded") return undefined;
-    if (object.type !== "MemberExpression" || object.object.type !== "Identifier") return undefined;
+    if (position !== "statement" && position !== "discarded") {
+      return undefined;
+    }
+    if (object.type !== "MemberExpression" || object.object.type !== "Identifier") {
+      return undefined;
+    }
     const binding = setupBindingOf(object.object, this.#context);
     const { source } = this.#context;
     const written = `${binding?.name}.value`;
@@ -3135,9 +3396,13 @@ class Walk {
     if (call) {
       const { callee, name } = call;
       const args = call.node.arguments;
-      if (call.node.optional || callee.optional || callee.computed) return undefined;
+      if (call.node.optional || callee.optional || callee.computed) {
+        return undefined;
+      }
       if (name === "push" || name === "unshift") {
-        if (!args.length) return undefined;
+        if (!args.length) {
+          return undefined;
+        }
         const first = args[0]!;
         const last = args.at(-1)!;
         edits.push(
@@ -3156,7 +3421,9 @@ class Walk {
             : `Write \`${written} = […, ...${written}]\``;
       } else {
         const copy = MUTATING_METHODS.get(name);
-        if (!copy) return undefined;
+        if (!copy) {
+          return undefined;
+        }
         edits.push(
           { span: { start: object.end, end: object.end }, text: ` = ${written}` },
           { span: span(callee.property), text: copy },
@@ -3164,9 +3431,13 @@ class Walk {
         title = `Write \`${written} = ${written}.${copy}(…)\``;
       }
     } else {
-      if (node.type !== "AssignmentExpression" || node.operator !== "=") return undefined;
+      if (node.type !== "AssignmentExpression" || node.operator !== "=") {
+        return undefined;
+      }
       const target = node.left;
-      if (target.type !== "MemberExpression" || target.computed) return undefined;
+      if (target.type !== "MemberExpression" || target.computed) {
+        return undefined;
+      }
       const key = target.property.type === "Identifier" ? target.property.name : undefined;
       if (
         key === undefined ||
@@ -3179,7 +3450,9 @@ class Walk {
       if (key === "length" && has(held, "array") && !outside(held, ["array"]).length) {
         // An array's `length` cuts it short: a copy of its start, or none of it.
         const right = unwrapExpression(node.right);
-        if (right.type === "SequenceExpression") return undefined;
+        if (right.type === "SequenceExpression") {
+          return undefined;
+        }
         const empty = right.type === "Literal" && right.value === 0;
         edits.push({
           span: { start: object.end, end: node.end },
@@ -3252,13 +3525,17 @@ class Walk {
     part: "classList" | "style" | "dataset",
     owner: AST.Expression | AST.Super,
   ): boolean {
-    if (part === "dataset") return false;
+    if (part === "dataset") {
+      return false;
+    }
     const attribute = part === "classList" ? "class" : "style";
     const elements = this.#elementsOf(owner, new Set());
     const binds = [...(elements ?? templateElements(this.#context))].some(
       (element) => element[attribute],
     );
-    if (!binds) return false;
+    if (!binds) {
+      return false;
+    }
     const whose = elements
       ? `an element whose \`${attribute}\` the template binds`
       : `an element that may be one whose \`${attribute}\` the template binds`;
@@ -3299,22 +3576,34 @@ class Walk {
     const context = this.#context;
     switch (inner.type) {
       case "MemberExpression": {
-        if (inner.object.type !== "Identifier" || inner.computed) return undefined;
+        if (inner.object.type !== "Identifier" || inner.computed) {
+          return undefined;
+        }
         const name = memberName(inner);
         const binding = setupBindingOf(inner.object, context);
         if (binding?.kind === "templateRef") {
-          if (name !== "value") return undefined;
+          if (name !== "value") {
+            return undefined;
+          }
           return new Set(
             templateElements(context).filter((element) => element.refs.includes(binding)),
           );
         }
-        if (name !== "currentTarget" && name !== "target") return undefined;
+        if (name !== "currentTarget" && name !== "target") {
+          return undefined;
+        }
         const resolution = context.scopes.resolve(inner.object);
-        if (resolution.kind !== "parameter") return undefined;
+        if (resolution.kind !== "parameter") {
+          return undefined;
+        }
         const fn = resolution.function as AST.Function | AST.ArrowFunctionExpression;
         const own = listenerElements(context).get(fn);
-        if (!own || fn.params[own.index] !== resolution.declaration) return undefined;
-        if (name === "currentTarget") return new Set(own.elements);
+        if (!own || fn.params[own.index] !== resolution.declaration) {
+          return undefined;
+        }
+        if (name === "currentTarget") {
+          return new Set(own.elements);
+        }
         // The target is the element or a node it holds.
         return new Set(
           templateElements(context).filter((element) =>
@@ -3339,12 +3628,18 @@ class Walk {
             );
       case "Identifier": {
         const resolution = context.scopes.resolve(inner);
-        if (resolution.kind !== "variable") return undefined;
-        if (visiting.has(resolution.declaration)) return new Set();
+        if (resolution.kind !== "variable") {
+          return undefined;
+        }
+        if (visiting.has(resolution.declaration)) {
+          return new Set();
+        }
         const values = assignedValues(context.component, context.scopes).get(
           resolution.declaration,
         );
-        if (!values?.length) return undefined;
+        if (!values?.length) {
+          return undefined;
+        }
         visiting.add(resolution.declaration);
         let found: Set<TemplateElement> | undefined = new Set();
         for (const value of values) {
@@ -3356,7 +3651,9 @@ class Walk {
                 ? new Set<TemplateElement>()
                 : this.#elementsOf(value, visiting);
           found = unionOf(found, each);
-          if (!found) break;
+          if (!found) {
+            break;
+          }
         }
         visiting.delete(resolution.declaration);
         return found;
@@ -3374,7 +3671,9 @@ class Walk {
   #rendered(node: AST.Expression | AST.Super): boolean {
     // Elsewhere a template ref is not read at all (UF2010), and there is no event; `watchEffect`
     // reads one only in what it hands on to run later.
-    if (this.#mode !== "client") return false;
+    if (this.#mode !== "client") {
+      return false;
+    }
     return this.#originOf(node, new Set()).origins.has("element");
   }
 
@@ -3405,7 +3704,9 @@ class Walk {
           : either(this.#originOf(inner.left, visiting), this.#originOf(inner.right, visiting));
       case "AssignmentExpression": {
         // `a = b` gives `b`; `a ??= b`, `a ||= b` and `a &&= b` give `a` or `b`.
-        if (inner.operator === "=") return this.#originOf(inner.right, visiting);
+        if (inner.operator === "=") {
+          return this.#originOf(inner.right, visiting);
+        }
         const { left } = inner;
         if (
           LOGICAL_ASSIGNMENTS.has(inner.operator) &&
@@ -3423,7 +3724,9 @@ class Walk {
             ? CLONE
             : other("a value a call returns,");
         }
-        if (callee.type !== "MemberExpression" || callee.object.type === "Super") return other();
+        if (callee.type !== "MemberExpression" || callee.object.type === "Super") {
+          return other();
+        }
         const method = memberName(callee);
         const receiver = unwrapExpression(callee.object);
         if (
@@ -3432,7 +3735,9 @@ class Walk {
           context.scopes.resolve(receiver).kind === "global"
         ) {
           const result = globalCallProvenance(receiver.name, method);
-          if (result) return result;
+          if (result) {
+            return result;
+          }
           const [target] = inner.arguments;
           return target && target.type !== "SpreadElement"
             ? this.#originOf(target, visiting)
@@ -3445,16 +3750,22 @@ class Walk {
       }
       case "MemberExpression": {
         const { object } = inner;
-        if (object.type === "Super") return other();
+        if (object.type === "Super") {
+          return other();
+        }
         if (object.type === "Identifier") {
           const binding = setupBindingOf(object, context);
           if (binding && isRef(binding) && !inner.computed) {
-            if (binding.kind === "templateRef") return ELEMENT;
+            if (binding.kind === "templateRef") {
+              return ELEMENT;
+            }
             return other(
               `\`${binding.name}.value\`, ${binding.kind === "derived" ? "a computed value" : binding.kind === "context" ? "an injected ref's value" : "a ref's value"},`,
             );
           }
-          if (this.#isPropsObject(object)) return other("a prop");
+          if (this.#isPropsObject(object)) {
+            return other("a prop");
+          }
         }
         const name = memberName(inner);
         return memberProvenance(this.#originOf(object, visiting), name, text(), () =>
@@ -3467,7 +3778,9 @@ class Walk {
           case "global":
             return inner.name === "undefined" ? NONE : GLOBAL;
           case "parameter": {
-            if (this.#event?.declaration === resolution.declaration) return EVENT;
+            if (this.#event?.declaration === resolution.declaration) {
+              return EVENT;
+            }
             if (resolution.function === context.component) {
               return other(`the prop \`${inner.name}\``);
             }
@@ -3476,9 +3789,13 @@ class Walk {
             }
             // An array method's callback is given the array's items (`items.forEach((li) => …)`).
             const items = this.#iteratedItems(resolution, visiting);
-            if (items) return items;
+            if (items) {
+              return items;
+            }
             const accumulator = this.#accumulated(resolution, visiting);
-            if (accumulator) return accumulator;
+            if (accumulator) {
+              return accumulator;
+            }
             return other(`the parameter \`${inner.name}\``);
           }
           case "variable": {
@@ -3520,13 +3837,19 @@ class Walk {
       visiting.add(declaration);
       const items = this.#membersOf(iterable, undefined, visiting);
       visiting.delete(declaration);
-      if (items.origins.size && !items.origins.has("other")) return items;
+      if (items.origins.size && !items.origins.has("other")) {
+        return items;
+      }
     }
     // A name met again on the way (`list = byKind.get(kind) ?? []`, then `byKind.set(kind, list)`)
     // holds nothing new there: what it holds comes from its other values.
-    if (visiting.has(declaration)) return NONE;
+    if (visiting.has(declaration)) {
+      return NONE;
+    }
     const values = assignedValues(this.#context.component, this.#context.scopes).get(declaration);
-    if (!values?.length) return other(`\`${name}\`, which holds a value from elsewhere,`);
+    if (!values?.length) {
+      return other(`\`${name}\`, which holds a value from elsewhere,`);
+    }
     visiting.add(declaration);
     const held = values.map((value) => (value ? this.#originOf(value, visiting) : other()));
     visiting.delete(declaration);
@@ -3557,13 +3880,19 @@ class Walk {
         for (const item of inner.properties.toReversed()) {
           if (item.type === "SpreadElement") {
             found.push(this.#membersOf(item.argument, property, visiting));
-            if (property !== undefined) return either(...found);
+            if (property !== undefined) {
+              return either(...found);
+            }
             continue;
           }
           const key = item.computed ? undefined : propertyKey(item.key);
-          if (property !== undefined && key !== undefined && key !== property) continue;
+          if (property !== undefined && key !== undefined && key !== property) {
+            continue;
+          }
           found.push(this.#originOf(item.value as AST.Expression, visiting));
-          if (property !== undefined && key === property) return either(...found);
+          if (property !== undefined && key === property) {
+            return either(...found);
+          }
         }
         return found.length ? either(...found) : NONE;
       }
@@ -3593,10 +3922,14 @@ class Walk {
             );
       case "CallExpression": {
         const { callee } = inner;
-        if (callee.type !== "MemberExpression" || callee.object.type === "Super") break;
+        if (callee.type !== "MemberExpression" || callee.object.type === "Super") {
+          break;
+        }
         const method = memberName(callee);
         const receiver = unwrapExpression(callee.object);
-        if (method === undefined) break;
+        if (method === undefined) {
+          break;
+        }
         if (receiver.type === "Identifier" && context.scopes.resolve(receiver).kind === "global") {
           const [first] = inner.arguments;
           const copies =
@@ -3618,9 +3951,13 @@ class Walk {
           // A `reduce` callback's accumulator holds what its first value and every value the
           // callback returns hold, and what the callback writes into it.
           const call = this.#reduceCall(resolution);
-          if (!call) break;
+          if (!call) {
+            break;
+          }
           const token = this.#memberToken(resolution.declaration);
-          if (visiting.has(token)) return NONE;
+          if (visiting.has(token)) {
+            return NONE;
+          }
           visiting.add(token);
           const given = [
             call.arguments[1] as AST.Expression,
@@ -3639,14 +3976,20 @@ class Walk {
           break;
         }
         if (resolution.scope === context.component) {
-          if (context.setup.bindings.get(resolution.declaration)?.kind !== "localVar") break;
+          if (context.setup.bindings.get(resolution.declaration)?.kind !== "localVar") {
+            break;
+          }
         }
         const { declaration } = resolution;
         // A loop's variable holds an item of what it walks: judged by where that comes from.
-        if (loopSources(context.component).has(declaration)) break;
+        if (loopSources(context.component).has(declaration)) {
+          break;
+        }
         const token = this.#memberToken(declaration);
         // A name met again on the way holds nothing new there.
-        if (visiting.has(token)) return NONE;
+        if (visiting.has(token)) {
+          return NONE;
+        }
         visiting.add(token);
         const given = (
           assignedValues(context.component, context.scopes).get(declaration) ?? []
@@ -3662,7 +4005,9 @@ class Walk {
         break;
     }
     const own = this.#originOf(inner, visiting);
-    if (own.origins.has("other")) return own;
+    if (own.origins.has("other")) {
+      return own;
+    }
     // The DOM's, a global's and a deep copy's items are their own.
     return own.origins.has("fresh") ? shared(text) : own;
   }
@@ -3688,8 +4033,12 @@ class Walk {
     visiting: Set<object>,
   ): Provenance | undefined {
     const call = this.#reduceCall(resolution);
-    if (!call) return undefined;
-    if (visiting.has(resolution.declaration)) return NONE;
+    if (!call) {
+      return undefined;
+    }
+    if (visiting.has(resolution.declaration)) {
+      return NONE;
+    }
     visiting.add(resolution.declaration);
     const fn = call.arguments[0] as AST.Function | AST.ArrowFunctionExpression;
     const all = [call.arguments[1] as AST.Expression, ...returnedOf(fn)].map((value) =>
@@ -3711,14 +4060,22 @@ class Walk {
     if (fn?.type !== "ArrowFunctionExpression" && fn?.type !== "FunctionExpression") {
       return undefined;
     }
-    if (fn.params[0] !== resolution.declaration) return undefined;
+    if (fn.params[0] !== resolution.declaration) {
+      return undefined;
+    }
     const ancestors = ancestorsOf(fn, this.#context.component);
     const call = ancestors.at(-2);
-    if (call?.type !== "CallExpression" || call.arguments[0] !== fn) return undefined;
+    if (call?.type !== "CallExpression" || call.arguments[0] !== fn) {
+      return undefined;
+    }
     const initial = call.arguments[1];
-    if (!initial || initial.type === "SpreadElement") return undefined;
+    if (!initial || initial.type === "SpreadElement") {
+      return undefined;
+    }
     const { callee } = call;
-    if (callee.type !== "MemberExpression" || callee.object.type === "Super") return undefined;
+    if (callee.type !== "MemberExpression" || callee.object.type === "Super") {
+      return undefined;
+    }
     const method = memberName(callee);
     return method === "reduce" || method === "reduceRight" ? call : undefined;
   }
@@ -3736,14 +4093,22 @@ class Walk {
     if (fn?.type !== "ArrowFunctionExpression" && fn?.type !== "FunctionExpression") {
       return undefined;
     }
-    if (fn.params[0] !== resolution.declaration) return undefined;
+    if (fn.params[0] !== resolution.declaration) {
+      return undefined;
+    }
     const ancestors = ancestorsOf(fn, this.#context.component);
     const call = ancestors.at(-2);
-    if (call?.type !== "CallExpression" || call.arguments[0] !== fn) return undefined;
+    if (call?.type !== "CallExpression" || call.arguments[0] !== fn) {
+      return undefined;
+    }
     const { callee } = call;
-    if (callee.type !== "MemberExpression" || callee.object.type === "Super") return undefined;
+    if (callee.type !== "MemberExpression" || callee.object.type === "Super") {
+      return undefined;
+    }
     const method = memberName(callee);
-    if (method === undefined || !ITERATING_METHODS.has(method)) return undefined;
+    if (method === undefined || !ITERATING_METHODS.has(method)) {
+      return undefined;
+    }
     const items = this.#membersOf(callee.object, undefined, visiting);
     return items.origins.size && !items.origins.has("other") ? items : undefined;
   }
@@ -3829,7 +4194,9 @@ class Walk {
         ),
       );
     }
-    if (first && name === undefined) this.#arguments([first], []);
+    if (first && name === undefined) {
+      this.#arguments([first], []);
+    }
     this.#arguments(payload, []);
     return UNDEFINED;
   }
@@ -3845,15 +4212,22 @@ class Walk {
   #receiverOf(callee: AST.MemberExpression): Kinds {
     const render = this.#mode === "render";
     const receiver = this.value(callee.object, "value", false);
-    if (callee.computed) this.value(callee.property, "value", false);
-    else if (callee.property.type === "Identifier" && render) this.#asciiName(callee.property);
+    if (callee.computed) {
+      this.value(callee.property, "value", false);
+    } else if (callee.property.type === "Identifier" && render) {
+      this.#asciiName(callee.property);
+    }
     if (callee.optional) {
       if (render) {
         this.#optional(callee.object, callee.property.start, receiver, callee.computed ? "" : ".");
       }
-      if (mayBeNullish(receiver)) this.shortCircuits = true;
+      if (mayBeNullish(receiver)) {
+        this.shortCircuits = true;
+      }
     }
-    if (render) this.#readAbsent(callee.object, receiver);
+    if (render) {
+      this.#readAbsent(callee.object, receiver);
+    }
     return receiver;
   }
 
@@ -3929,8 +4303,9 @@ class Walk {
       if (runs !== "now" && this.#mode === "client" && item.type !== "SpreadElement") {
         this.#context.facts.passed.set(item.start, runs);
       }
-      if (item.type === "SpreadElement") this.value(item.argument, "value", false);
-      else if (item.type === "ArrowFunctionExpression") {
+      if (item.type === "SpreadElement") {
+        this.value(item.argument, "value", false);
+      } else if (item.type === "ArrowFunctionExpression") {
         this.#arrow(item, "argument", parameters, runs !== "now");
       } else {
         if (item.type === "Identifier" && runs === "now" && this.#mode === "client") {
@@ -3955,7 +4330,9 @@ class Walk {
     for (const element of node.elements) {
       if (element === null) {
         hole = true;
-        if (this.#mode !== "render") elements.push(UNDEFINED);
+        if (this.#mode !== "render") {
+          elements.push(UNDEFINED);
+        }
       } else if (element.type === "SpreadElement") {
         elements.push(elementsOf(this.value(element.argument, "value", false)));
       } else {
@@ -4002,14 +4379,19 @@ class Walk {
         }
         this.value(property.key as AST.Expression, "value", false);
         this.value(property.value, "value", false);
-        if (!render) spread = true;
+        if (!render) {
+          spread = true;
+        }
         continue;
       }
       const { key } = property;
       let name: string | undefined;
       if (key.type === "Identifier") {
-        if (!property.shorthand && render) name = this.#asciiName(key) ? key.name : undefined;
-        else name = key.name;
+        if (!property.shorthand && render) {
+          name = this.#asciiName(key) ? key.name : undefined;
+        } else {
+          name = key.name;
+        }
       } else if (key.type === "Literal" && (typeof key.value === "string" || !render)) {
         name = String(key.value);
       } else {
@@ -4032,7 +4414,9 @@ class Walk {
     parameters: readonly Kinds[],
     deferred = false,
   ): Kinds {
-    if (this.#mode !== "render") return this.#nestedArrow(node, position, parameters, deferred);
+    if (this.#mode !== "render") {
+      return this.#nestedArrow(node, position, parameters, deferred);
+    }
     const context = this.#context;
     const { reporter } = context;
     if (position !== "argument") {
@@ -4106,8 +4490,11 @@ class Walk {
             }
           : { help: "Write the returned expression as the body: `(item) => item.on`." },
       );
-      if (returned) this.value(returned, "value", false);
-      else this.#skip(body);
+      if (returned) {
+        this.value(returned, "value", false);
+      } else {
+        this.#skip(body);
+      }
     } else {
       this.value(body, "value", false);
     }
@@ -4115,7 +4502,9 @@ class Walk {
     const inBody = reporter.diagnostics.splice(mark);
     this.#parameters(node, declared, true);
     reporter.diagnostics.push(...inBody);
-    for (const { node: parameter } of declared) this.#locals.delete(parameter);
+    for (const { node: parameter } of declared) {
+      this.#locals.delete(parameter);
+    }
     return FUNCTION;
   }
 
@@ -4156,7 +4545,9 @@ class Walk {
       // callback is UF2025.
       this.#bodies.set(body, arrowBodySpan(node, this.#context.source));
       const use = this.#arrowUses.get(node);
-      if (use) this.#arrowUses.set(body, use);
+      if (use) {
+        this.#arrowUses.set(body, use);
+      }
       this.value(
         body,
         position !== "argument"
@@ -4198,11 +4589,17 @@ class Walk {
       this.value(parameter.right, "value", false);
       this.#declareParameter(parameter.left, kindsOf, declared);
       // A parameter with a default is read by the caller's omission: never reported unread.
-      for (const item of declared) if (item.node === parameter.left) item.local.read = true;
+      for (const item of declared) {
+        if (item.node === parameter.left) {
+          item.local.read = true;
+        }
+      }
       return;
     }
     this.#computedKeys(parameter);
-    for (const value of patternDefaults(parameter)) this.value(value, "value", false);
+    for (const value of patternDefaults(parameter)) {
+      this.value(value, "value", false);
+    }
     for (const name of patternNames(parameter)) {
       this.#locals.set(name, { kinds: UNKNOWN, read: true });
       shadowing(name, this.#context);
@@ -4226,7 +4623,9 @@ class Walk {
     let lastRead = -1;
     for (const [index, parameter] of all.entries()) {
       const entry = declared.find((item) => item.node === parameter);
-      if (!entry || entry.local.read) lastRead = index;
+      if (!entry || entry.local.read) {
+        lastRead = index;
+      }
     }
     const open = skipTrivia(
       source,
@@ -4235,7 +4634,9 @@ class Walk {
     const parenthesised = node.type !== "ArrowFunctionExpression" || source[open] === "(";
     for (const [index, parameter] of all.entries()) {
       const entry = declared.find((item) => item.node === parameter);
-      if (!entry) continue;
+      if (!entry) {
+        continue;
+      }
       const { name } = entry.node;
       if (index > lastRead) {
         const previous = all[index - 1];
@@ -4280,8 +4681,12 @@ class Walk {
     const { role } = options;
     const limits = ROLE_PARAMETERS[role];
     const cleanup = role === "watch" ? fn.params[2] : role === "watchEffect" ? fn.params[0] : null;
-    if (cleanup?.type === "Identifier") this.#onCleanup = cleanup;
-    if (fn.generator) this.#unsupported(fn, "Generator functions are not supported in setup code.");
+    if (cleanup?.type === "Identifier") {
+      this.#onCleanup = cleanup;
+    }
+    if (fn.generator) {
+      this.#unsupported(fn, "Generator functions are not supported in setup code.");
+    }
     if (fn.typeParameters) {
       this.#unsupported(
         fn.typeParameters,
@@ -4307,7 +4712,9 @@ class Walk {
     const declared: { node: AST.BindingIdentifier; local: Local }[] = [];
     for (const [index, parameter] of fn.params.entries()) {
       const lowered = this.#parameter(parameter, index, options, declared);
-      if (lowered) parameters.push(lowered);
+      if (lowered) {
+        parameters.push(lowered);
+      }
     }
     this.#returns = [];
     const { body } = fn;
@@ -4329,7 +4736,11 @@ class Walk {
       code = createCode("", span(fn), []);
       returned = [];
     }
-    for (const item of declared) if (excess.has(item.node)) item.local.read = true;
+    for (const item of declared) {
+      if (excess.has(item.node)) {
+        item.local.read = true;
+      }
+    }
     this.#parameters(fn, declared, role !== "function");
     const eventControls = this.#eventControls(fn, code.span);
     const refs = sortReferences(this.refs);
@@ -4499,7 +4910,9 @@ class Walk {
    * lexer reads no other letter.
    */
   #asciiParameter(name: AST.BindingIdentifier): void {
-    if (isIdentifier(name.name)) return;
+    if (isIdentifier(name.name)) {
+      return;
+    }
     this.#context.reporter.report(
       "UF2003",
       { start: name.start, end: name.start + name.name.length },
@@ -4519,7 +4932,9 @@ class Walk {
     bodySpan: Span,
   ): { method: EventControl["method"]; span: Span; condition?: Span }[] {
     const event = this.#event;
-    if (!event || !fn.body) return [];
+    if (!event || !fn.body) {
+      return [];
+    }
     const { scopes, reporter } = this.#context;
     const isEvent = (identifier: AST.IdentifierReference) => {
       const resolution = scopes.resolve(identifier);
@@ -4551,7 +4966,9 @@ class Walk {
 
   /** Walks statements of setup code, in order. */
   #statements(statements: readonly (AST.Statement | AST.Directive)[]): void {
-    for (const statement of statements) this.#statement(statement);
+    for (const statement of statements) {
+      this.#statement(statement);
+    }
   }
 
   /**
@@ -4577,10 +4994,15 @@ class Walk {
                 authoring: this.#context.setup.authoring,
               })
             : undefined;
-        if (dev) this.refs.push(createDevReference(span(dev)));
-        else this.value(node.test, "value", false);
+        if (dev) {
+          this.refs.push(createDevReference(span(dev)));
+        } else {
+          this.value(node.test, "value", false);
+        }
         this.#statement(node.consequent);
-        if (node.alternate) this.#statement(node.alternate);
+        if (node.alternate) {
+          this.#statement(node.alternate);
+        }
         return;
       }
       case "BlockStatement":
@@ -4593,16 +5015,25 @@ class Walk {
         }
         return;
       case "ForStatement":
-        if (node.init?.type === "VariableDeclaration") this.#declaration(node.init);
-        else if (node.init) this.value(node.init, "value", false);
-        if (node.test) this.value(node.test, "value", false);
-        if (node.update) this.value(node.update, "value", false);
+        if (node.init?.type === "VariableDeclaration") {
+          this.#declaration(node.init);
+        } else if (node.init) {
+          this.value(node.init, "value", false);
+        }
+        if (node.test) {
+          this.value(node.test, "value", false);
+        }
+        if (node.update) {
+          this.value(node.update, "value", false);
+        }
         this.#statement(node.body);
         return;
       case "ForOfStatement": {
         const items = elementsOf(this.value(node.right, "value", false));
         if (node.left.type === "VariableDeclaration") {
-          if (node.left.kind === "var") this.#unsupported(node.left, VAR);
+          if (node.left.kind === "var") {
+            this.#unsupported(node.left, VAR);
+          }
           for (const declarator of node.left.declarations) {
             this.#computedKeys(declarator.id);
             for (const name of patternNames(declarator.id)) {
@@ -4622,7 +5053,9 @@ class Walk {
             this.value(left as AST.Expression, "value", false);
             this.#patternWrite(left, [member], "value");
           }
-          if (target.members) this.#patternWrite(left, target.members, "value");
+          if (target.members) {
+            this.#patternWrite(left, target.members, "value");
+          }
         }
         this.#statement(node.body);
         return;
@@ -4645,7 +5078,9 @@ class Walk {
       case "SwitchStatement":
         this.value(node.discriminant, "value", false);
         for (const item of node.cases) {
-          if (item.test) this.value(item.test, "value", false);
+          if (item.test) {
+            this.value(item.test, "value", false);
+          }
           this.#statements(item.consequent);
         }
         return;
@@ -4673,7 +5108,9 @@ class Walk {
           }
           this.#statements(node.handler.body.body);
         }
-        if (node.finalizer) this.#statements(node.finalizer.body);
+        if (node.finalizer) {
+          this.#statements(node.finalizer.body);
+        }
         return;
       case "EmptyStatement":
         return;
@@ -4709,8 +5146,9 @@ class Walk {
 
   /** A `const` or a `let` in setup code: names local to it, with the kinds of their values. */
   #declaration(node: AST.VariableDeclaration): void {
-    if (node.kind === "var") this.#unsupported(node, VAR);
-    else if (node.kind !== "const" && node.kind !== "let") {
+    if (node.kind === "var") {
+      this.#unsupported(node, VAR);
+    } else if (node.kind !== "const" && node.kind !== "let") {
       this.#unsupported(node, `\`${node.kind}\` declarations are not supported in setup code.`);
     }
     for (const declarator of node.declarations) {
@@ -4732,7 +5170,9 @@ class Walk {
         continue;
       }
       this.#computedKeys(id);
-      for (const fallback of patternDefaults(id)) this.value(fallback, "value", false);
+      for (const fallback of patternDefaults(id)) {
+        this.value(fallback, "value", false);
+      }
       for (const name of patternNames(id)) {
         this.#locals.set(name, { kinds: UNKNOWN, read: false });
         localShadowing(name, this.#context);
@@ -4753,7 +5193,9 @@ class Walk {
       this.value(node.left as AST.Expression, "value", false);
       this.#memberWrite(node, withoutAssertions(node.left) as AST.MemberExpression, position);
     }
-    if (target.members) this.#patternWrite(node, target.members, position);
+    if (target.members) {
+      this.#patternWrite(node, target.members, position);
+    }
     if (target.kind === "binding" && this.#write(node, target.binding, node.operator, position)) {
       const at = this.#bodies.get(node);
       this.refs.push(
@@ -4785,7 +5227,9 @@ class Walk {
       return [];
     }
     const path = referencePath(target as AST.Expression, this.#context);
-    if (!path) return [];
+    if (!path) {
+      return [];
+    }
     const facts = pathFacts(target, path, binding.kinds, this.#context, this.knownOf);
     return facts.some((fact) => fact.present && fact.scope === "local")
       ? [createNarrowedPath(span(target), "local")]
@@ -4826,7 +5270,9 @@ class Walk {
     target: AST.MemberExpression,
     position: Position,
   ): void {
-    if (target.type !== "MemberExpression" || target.object.type === "Super") return;
+    if (target.type !== "MemberExpression" || target.object.type === "Super") {
+      return;
+    }
     const name = memberName(target);
     const part = elementPart(target.object);
     if (part && this.#rendered(part.owner)) {
@@ -4877,7 +5323,9 @@ class Walk {
   ): void {
     let first: { member: AST.MemberExpression; origin: Provenance } | undefined;
     for (const member of members) {
-      if (member.object.type === "Super") continue;
+      if (member.object.type === "Super") {
+        continue;
+      }
       const name = memberName(member);
       const part = elementPart(member.object);
       if (part && this.#rendered(part.owner)) {
@@ -4912,9 +5360,13 @@ class Walk {
         continue;
       }
       const origin = this.#originOf(member.object, new Set());
-      if (!mutable(origin)) first ??= { member, origin };
+      if (!mutable(origin)) {
+        first ??= { member, origin };
+      }
     }
-    if (!first) return;
+    if (!first) {
+      return;
+    }
     const { source, reporter } = this.#context;
     const object = first.member.object as AST.Expression;
     const text = source.slice(object.start, object.end);
@@ -4943,7 +5395,9 @@ class Walk {
     members: readonly AST.MemberExpression[],
     position: Position,
   ): Fix | undefined {
-    if (position !== "statement" || node.operator !== "=") return undefined;
+    if (position !== "statement" || node.operator !== "=") {
+      return undefined;
+    }
     const { source, component } = this.#context;
     let binding: SetupBinding | undefined;
     for (const member of members) {
@@ -4958,10 +5412,14 @@ class Walk {
         return undefined;
       }
       const found = setupBindingOf(object.object, this.#context);
-      if (!found || !isWritableRef(found) || (binding && binding !== found)) return undefined;
+      if (!found || !isWritableRef(found) || (binding && binding !== found)) {
+        return undefined;
+      }
       binding = found;
     }
-    if (!binding) return undefined;
+    if (!binding) {
+      return undefined;
+    }
     const held = binding.kinds;
     const array = has(held, "array") && !outside(held, ["array"]).length;
     const shape =
@@ -4969,7 +5427,9 @@ class Walk {
       !has(held, "unknown") &&
       !outside(held, ["object"]).length &&
       (held.objects?.length ?? 0) > 0;
-    if (!array && !shape) return undefined;
+    if (!array && !shape) {
+      return undefined;
+    }
     const ancestors = ancestorsOf(node, component);
     const statement = ancestors.at(-2);
     if (statement?.type !== "ExpressionStatement" || ancestors.at(-3)?.type !== "BlockStatement") {
@@ -4979,7 +5439,9 @@ class Walk {
     const local = ["next", "copy", "updated"].find(
       (candidate) => !new RegExp(`(?<![\\w$])${candidate}(?![\\w$])`).test(text),
     );
-    if (!local) return undefined;
+    if (!local) {
+      return undefined;
+    }
     const written = `${binding.name}.value`;
     const lineStart = source.lastIndexOf("\n", statement.start - 1) + 1;
     const indent = /^[\t ]*/.exec(source.slice(lineStart, statement.start))![0];
@@ -5047,9 +5509,15 @@ class Walk {
         const resolution = context.scopes.resolve(node);
         if (resolution.kind === "variable" && resolution.scope === context.component) {
           const binding = context.setup.bindings.get(resolution.declaration);
-          if (!binding) return { kind: "invalid" };
-          if (binding.kind === "localVar") return { kind: "binding", binding };
-          if (binding.kind === "context") return this.#contextWrite(node, binding);
+          if (!binding) {
+            return { kind: "invalid" };
+          }
+          if (binding.kind === "localVar") {
+            return { kind: "binding", binding };
+          }
+          if (binding.kind === "context") {
+            return this.#contextWrite(node, binding);
+          }
           if (binding.kind === "usedState" || binding.kind === "usedDerived") {
             return this.#resultWrite(node, binding);
           }
@@ -5128,8 +5596,12 @@ class Walk {
             object.start === node.start &&
             !node.optional
           ) {
-            if (isWritableRef(binding)) return { kind: "binding", binding };
-            if (binding.kind === "context") return this.#contextWrite(node, binding);
+            if (isWritableRef(binding)) {
+              return { kind: "binding", binding };
+            }
+            if (binding.kind === "context") {
+              return this.#contextWrite(node, binding);
+            }
             if (binding.kind === "usedState" || binding.kind === "usedDerived") {
               return this.#resultWrite(node, binding);
             }
@@ -5144,7 +5616,9 @@ class Walk {
         }
         const root = memberRoot(node);
         const rooted = root ? setupBindingOf(root, context) : undefined;
-        if (rooted?.kind === "context") return this.#contextWrite(node, rooted);
+        if (rooted?.kind === "context") {
+          return this.#contextWrite(node, rooted);
+        }
         return { kind: "member" };
       }
       case "ArrayPattern":
@@ -5156,12 +5630,16 @@ class Walk {
         let result: Target = { kind: "local" };
         const members: AST.MemberExpression[] = [];
         for (const { target, fallback } of assignedTargets(node)) {
-          if (fallback) this.value(fallback, "value", false);
+          if (fallback) {
+            this.value(fallback, "value", false);
+          }
           const found = this.#target(target);
           if (found.kind === "member") {
             this.value(target as AST.Expression, "value", false);
             const member = withoutAssertions(target as AST.Expression);
-            if (member.type === "MemberExpression") members.push(member);
+            if (member.type === "MemberExpression") {
+              members.push(member);
+            }
           }
           members.push(...(found.members ?? []));
           if (found.kind === "binding") {
@@ -5171,7 +5649,9 @@ class Walk {
               "A destructuring assignment writes this value: a write of state is a statement of its own, `x.value = …`.",
             );
           }
-          if (found.kind === "binding" || found.kind === "invalid") result = { kind: "invalid" };
+          if (found.kind === "binding" || found.kind === "invalid") {
+            result = { kind: "invalid" };
+          }
         }
         return members.length ? { ...result, members } : result;
       }
@@ -5181,7 +5661,9 @@ class Walk {
       case "TSTypeAssertion": {
         // Judged as the target it asserts, so that its fix reveals nothing new.
         const found = this.#target(node.expression as AST.SimpleAssignmentTarget);
-        if (found.kind === "binding") this.#assertedTarget(node);
+        if (found.kind === "binding") {
+          this.#assertedTarget(node);
+        }
         return found;
       }
       default:
@@ -5235,7 +5717,9 @@ class Walk {
       );
       return false;
     }
-    if (position === "statement" || position === "discarded") return true;
+    if (position === "statement" || position === "discarded") {
+      return true;
+    }
     const body = this.#bodies.get(node);
     if (body && (position === "nested" || position === "value")) {
       // The arrow's value is a call's to use: `map` and `then` use it, and the setter of React,
@@ -5339,11 +5823,15 @@ class Walk {
         this.value(node.argument, "value", false);
         return NUMBER;
       case "void":
-        if (render) return this.#impure(node, "`void` exists for its operand's side effects");
+        if (render) {
+          return this.#impure(node, "`void` exists for its operand's side effects");
+        }
         this.value(node.argument, "value", false);
         return UNDEFINED;
       default: {
-        if (render) return this.#impure(node, "`delete` changes an object");
+        if (render) {
+          return this.#impure(node, "`delete` changes an object");
+        }
         this.value(node.argument, "value", false);
         const argument = unwrapExpression(node.argument);
         if (argument.type === "MemberExpression" && argument.object.type !== "Super") {
@@ -5390,9 +5878,15 @@ class Walk {
     const pending = this.#concatenations.get(node);
     if (pending) {
       this.#concatenations.delete(node);
-      if (!(onlyStrings(left) || onlyStrings(right))) for (const report of pending) report();
+      if (!(onlyStrings(left) || onlyStrings(right))) {
+        for (const report of pending) {
+          report();
+        }
+      }
     }
-    if (COMPARISON.has(operator)) return BOOLEAN;
+    if (COMPARISON.has(operator)) {
+      return BOOLEAN;
+    }
     if (!ARITHMETIC.has(operator)) {
       if (render) {
         this.#unsupported(
@@ -5404,7 +5898,9 @@ class Walk {
       }
       return NUMBER;
     }
-    if (operator !== "+") return NUMBER;
+    if (operator !== "+") {
+      return NUMBER;
+    }
     if (left.primitives.has("string") || right.primitives.has("string")) {
       return left.primitives.has("unknown") || right.primitives.has("unknown")
         ? union(STRING, UNKNOWN)
@@ -5433,7 +5929,9 @@ class Walk {
       const { reporter, source } = this.#context;
       const mark = reporter.diagnostics.length;
       const right = this.value(node.right, "value", false);
-      if (this.#mode !== "render") return union(without(left, "null", "undefined"), right);
+      if (this.#mode !== "render") {
+        return union(without(left, "null", "undefined"), right);
+      }
       const token = findToken(source, node.left.end, node.right.start, "??");
       if (mayBeNullish(left)) {
         if (token) {
@@ -5476,7 +5974,9 @@ class Walk {
       return left;
     }
     const right = this.#test(node.right, this.#presence);
-    if (node.operator === "||") return union(without(left, "null", "undefined"), right);
+    if (node.operator === "||") {
+      return union(without(left, "null", "undefined"), right);
+    }
     return union(falsyPart(left), right);
   }
 
@@ -5501,7 +6001,9 @@ class Walk {
    * assignment alike: their names are read.
    */
   #computedKeys(pattern: unknown): void {
-    if (!pattern || typeof pattern !== "object") return;
+    if (!pattern || typeof pattern !== "object") {
+      return;
+    }
     const node = pattern as AST.Node;
     switch (node.type) {
       case "AssignmentPattern":
@@ -5511,7 +6013,9 @@ class Walk {
         this.#computedKeys(node.argument);
         return;
       case "ArrayPattern":
-        for (const element of node.elements) this.#computedKeys(element);
+        for (const element of node.elements) {
+          this.#computedKeys(element);
+        }
         return;
       case "ObjectPattern":
         for (const property of node.properties) {
@@ -5519,7 +6023,9 @@ class Walk {
             this.#computedKeys(property);
             continue;
           }
-          if (property.computed) this.value(property.key as AST.Expression, "value", false);
+          if (property.computed) {
+            this.value(property.key as AST.Expression, "value", false);
+          }
           this.#computedKeys(property.value);
         }
         return;
@@ -5551,9 +6057,13 @@ class Walk {
     let end = node.end;
     for (;;) {
       let before = start - 1;
-      while (before >= 0 && /\s/.test(source[before]!)) before--;
+      while (before >= 0 && /\s/.test(source[before]!)) {
+        before--;
+      }
       const after = skipTrivia(source, end);
-      if (source[before] !== "(" || source[after] !== ")") break;
+      if (source[before] !== "(" || source[after] !== ")") {
+        break;
+      }
       start = before;
       end = after + 1;
     }
@@ -5648,7 +6158,9 @@ export function isWritableRef(binding: SetupBinding | undefined): boolean {
 /** The identifier a member chain starts from, `theme` in `theme.colors.primary`. */
 function memberRoot(node: AST.MemberExpression): AST.IdentifierReference | undefined {
   let object: AST.Expression | AST.Super = node.object;
-  while (object.type === "MemberExpression") object = object.object;
+  while (object.type === "MemberExpression") {
+    object = object.object;
+  }
   return object.type === "Identifier" ? object : undefined;
 }
 
@@ -5658,14 +6170,18 @@ function assignedTargets(
 ): { target: AST.AssignmentTarget; fallback?: AST.Expression }[] {
   const found: { target: AST.AssignmentTarget; fallback?: AST.Expression }[] = [];
   const add = (node: unknown): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     const typed = node as AST.Node;
     if (typed.type === "AssignmentPattern") {
       found.push({ target: typed.left as AST.AssignmentTarget, fallback: typed.right });
     } else if (typed.type === "RestElement") {
       add(typed.argument);
     } else if (typed.type === "ArrayPattern") {
-      for (const element of typed.elements) add(element);
+      for (const element of typed.elements) {
+        add(element);
+      }
     } else if (typed.type === "ObjectPattern") {
       for (const property of typed.properties) {
         add(property.type === "RestElement" ? property : property.value);
@@ -5684,17 +6200,27 @@ function assignedTargets(
  * block, outside the functions in it.
  */
 function returnedOf(fn: AST.Function | AST.ArrowFunctionExpression): AST.Expression[] {
-  if (!fn.body) return [];
-  if (fn.body.type !== "BlockStatement") return [fn.body];
+  if (!fn.body) {
+    return [];
+  }
+  if (fn.body.type !== "BlockStatement") {
+    return [fn.body];
+  }
   const found: AST.Expression[] = [];
   const visit = (node: unknown): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
     const typed = node as AST.Node;
-    if (typeof typed.type !== "string") return;
+    if (typeof typed.type !== "string") {
+      return;
+    }
     if (
       typed.type === "ArrowFunctionExpression" ||
       typed.type === "FunctionExpression" ||
@@ -5702,7 +6228,9 @@ function returnedOf(fn: AST.Function | AST.ArrowFunctionExpression): AST.Express
     ) {
       return;
     }
-    if (typed.type === "ReturnStatement" && typed.argument) found.push(typed.argument);
+    if (typed.type === "ReturnStatement" && typed.argument) {
+      found.push(typed.argument);
+    }
     for (const key of visitorKeys[typed.type] ?? []) {
       visit((typed as unknown as Record<string, unknown>)[key]);
     }
@@ -5745,10 +6273,14 @@ const TEMPLATE_ELEMENTS = new WeakMap<object, TemplateElement[]>();
  */
 function templateElements(context: RenderContext): TemplateElement[] {
   const known = TEMPLATE_ELEMENTS.get(context.component);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   const found: TemplateElement[] = [];
   visitNodes(context.component, (jsx) => {
-    if (jsx.type !== "JSXElement") return;
+    if (jsx.type !== "JSXElement") {
+      return;
+    }
     const node = jsx.openingElement;
     const element: TemplateElement = {
       span: span(jsx),
@@ -5763,24 +6295,35 @@ function templateElements(context: RenderContext): TemplateElement[] {
         element.style = true;
         continue;
       }
-      if (attribute.name.type !== "JSXIdentifier") continue;
+      if (attribute.name.type !== "JSXIdentifier") {
+        continue;
+      }
       const { name } = attribute.name;
       const value = attribute.value;
-      if (value?.type !== "JSXExpressionContainer") continue;
+      if (value?.type !== "JSXExpressionContainer") {
+        continue;
+      }
       const { expression } = value;
       if (name === "ref" && expression.type === "Identifier") {
         const binding = setupBindingOf(expression, context);
-        if (binding?.kind === "templateRef") element.refs.push(binding);
+        if (binding?.kind === "templateRef") {
+          element.refs.push(binding);
+        }
       } else if (/^on[A-Z]/.test(name)) {
-        if (expression.type === "ArrowFunctionExpression") element.listeners.push(expression);
-        else if (expression.type === "Identifier") {
+        if (expression.type === "ArrowFunctionExpression") {
+          element.listeners.push(expression);
+        } else if (expression.type === "Identifier") {
           const fn = setupBindingOf(expression, context)?.function;
-          if (fn) element.listeners.push(fn);
+          if (fn) {
+            element.listeners.push(fn);
+          }
         }
       } else if (name === "class" || name === "style") {
         // A string written in braces binds nothing that changes.
         const literal = expression.type === "Literal" && typeof expression.value === "string";
-        if (!literal) element[name] = true;
+        if (!literal) {
+          element[name] = true;
+        }
       }
     }
     found.push(element);
@@ -5804,7 +6347,9 @@ interface ListenerElements {
  */
 function listenerElements(context: RenderContext): ReadonlyMap<object, ListenerElements> {
   const known = LISTENER_ELEMENTS.get(context.component);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   const found = new Map<object, ListenerElements>();
   const queue: object[] = [];
   const reach = (fn: object, index: number, elements: Iterable<TemplateElement>) => {
@@ -5816,23 +6361,37 @@ function listenerElements(context: RenderContext): ReadonlyMap<object, ListenerE
       return;
     }
     const size = entry.elements.size;
-    for (const element of elements) entry.elements.add(element);
-    if (entry.elements.size !== size) queue.push(fn);
+    for (const element of elements) {
+      entry.elements.add(element);
+    }
+    if (entry.elements.size !== size) {
+      queue.push(fn);
+    }
   };
   for (const element of templateElements(context)) {
-    for (const fn of element.listeners) reach(fn, 0, [element]);
+    for (const fn of element.listeners) {
+      reach(fn, 0, [element]);
+    }
   }
   while (queue.length) {
     const fn = queue.pop() as AST.Function | AST.ArrowFunctionExpression;
     const { index, elements } = found.get(fn)!;
     const parameter = fn.params[index];
-    if (parameter?.type !== "Identifier" || !fn.body) continue;
+    if (parameter?.type !== "Identifier" || !fn.body) {
+      continue;
+    }
     visitNodes(fn.body, (node) => {
-      if (node.type !== "CallExpression" || node.callee.type !== "Identifier") return;
+      if (node.type !== "CallExpression" || node.callee.type !== "Identifier") {
+        return;
+      }
       const callee = setupBindingOf(node.callee, context)?.function;
-      if (!callee) return;
+      if (!callee) {
+        return;
+      }
       for (const [at, argument] of node.arguments.entries()) {
-        if (argument.type !== "Identifier") continue;
+        if (argument.type !== "Identifier") {
+          continue;
+        }
         const resolution = context.scopes.resolve(argument);
         if (resolution.kind === "parameter" && resolution.declaration === parameter) {
           reach(callee, at, elements);
@@ -5846,7 +6405,9 @@ function listenerElements(context: RenderContext): ReadonlyMap<object, ListenerE
 
 /** An object literal's static key: `name`, `"name"`, `0`. */
 function propertyKey(key: AST.PropertyKey): string | undefined {
-  if (key.type === "Identifier") return key.name;
+  if (key.type === "Identifier") {
+    return key.name;
+  }
   return key.type === "Literal" && (typeof key.value === "string" || typeof key.value === "number")
     ? String(key.value)
     : undefined;
@@ -5891,7 +6452,9 @@ function unwrapExpression(node: AST.Expression | AST.Super): AST.Expression | AS
 
 /** A member's name, written as a name or as a string in brackets. */
 function memberName(node: AST.MemberExpression): string | undefined {
-  if (!node.computed) return node.property.type === "Identifier" ? node.property.name : undefined;
+  if (!node.computed) {
+    return node.property.type === "Identifier" ? node.property.name : undefined;
+  }
   return node.property.type === "Literal" && typeof node.property.value === "string"
     ? node.property.value
     : undefined;
@@ -5905,7 +6468,9 @@ function elementPart(
   node: AST.Expression | AST.Super,
 ): { part: "classList" | "style" | "dataset"; owner: AST.Expression } | undefined {
   const inner = unwrapExpression(node);
-  if (inner.type !== "MemberExpression" || inner.object.type === "Super") return undefined;
+  if (inner.type !== "MemberExpression" || inner.object.type === "Super") {
+    return undefined;
+  }
   const name = memberName(inner);
   return name === "classList" || name === "style" || name === "dataset"
     ? { part: name, owner: inner.object }
@@ -5914,13 +6479,19 @@ function elementPart(
 
 /** Visits every node in a tree, depth first. */
 function visitNodes(node: unknown, enter: (node: AST.Node) => void): void {
-  if (!node || typeof node !== "object") return;
+  if (!node || typeof node !== "object") {
+    return;
+  }
   if (Array.isArray(node)) {
-    for (const item of node) visitNodes(item, enter);
+    for (const item of node) {
+      visitNodes(item, enter);
+    }
     return;
   }
   const typed = node as AST.Node;
-  if (typeof typed.type !== "string") return;
+  if (typeof typed.type !== "string") {
+    return;
+  }
   enter(typed);
   for (const key of visitorKeys[typed.type] ?? []) {
     visitNodes((typed as unknown as Record<string, unknown>)[key], enter);
@@ -6056,17 +6627,23 @@ function narrowingAnchor(
       break;
     }
   }
-  if (first < 0) return undefined;
+  if (first < 0) {
+    return undefined;
+  }
   let found: NarrowingAnchor | undefined;
   for (const { condition } of facts) {
     for (let index = ancestors.length - 2; index >= first; index--) {
       const block = ancestors[index]!;
-      if (block.type !== "BlockStatement") continue;
+      if (block.type !== "BlockStatement") {
+        continue;
+      }
       const statements = block.body as AST.Statement[];
       const holder = statements.find(
         (statement) => statement.start <= condition.start && condition.end <= statement.end,
       );
-      if (!holder) continue;
+      if (!holder) {
+        continue;
+      }
       const around = ancestors[index + 1] === holder;
       if (!found || holder.start < found.statement.start) {
         found = {
@@ -6086,7 +6663,9 @@ function narrowingAnchor(
  * object shapes, or a union of kinds or of literals.
  */
 function narrowable(kindsOf: Kinds): boolean {
-  if (mayBeAbsent(kindsOf)) return true;
+  if (mayBeAbsent(kindsOf)) {
+    return true;
+  }
   return severalShapes(kindsOf) || isUnion(kindsOf) || literalUnion(kindsOf);
 }
 
@@ -6123,7 +6702,9 @@ function literalUnion(kindsOf: Kinds): boolean {
 
 /** Whether every kind of a value has a member, which reads alike whichever it is. */
 function sharedMember(kindsOf: Kinds, name: string): boolean {
-  if (name === "toString" || name === "valueOf") return true;
+  if (name === "toString" || name === "valueOf") {
+    return true;
+  }
   return name === "length" && !outside(kindsOf, ["string", "array"]).length;
 }
 
@@ -6133,9 +6714,13 @@ function sharedMember(kindsOf: Kinds, name: string): boolean {
  * takes literals only. Objects and arrays are taken to fit; `unknown` fits anything.
  */
 function fits(value: Kinds, target: Kinds): boolean {
-  if (has(target, "unknown")) return true;
+  if (has(target, "unknown")) {
+    return true;
+  }
   for (const primitive of value.primitives) {
-    if (primitive !== "unknown" && !has(target, primitive)) return false;
+    if (primitive !== "unknown" && !has(target, primitive)) {
+      return false;
+    }
   }
   const literals = <T>(own: ReadonlySet<T> | undefined, taken: ReadonlySet<T> | undefined) =>
     !taken || (own !== undefined && [...own].every((item) => taken.has(item)));
@@ -6155,9 +6740,15 @@ function isUnion(kindsOf: Kinds): boolean {
 
 /** A call's callee by name (`observe` for `observer.observe(…)`), for a message. */
 function calleeName(callee: AST.Expression | AST.Super): string | undefined {
-  if (callee.type === "Identifier") return callee.name;
-  if (callee.type !== "MemberExpression") return undefined;
-  if (!callee.computed && callee.property.type === "Identifier") return callee.property.name;
+  if (callee.type === "Identifier") {
+    return callee.name;
+  }
+  if (callee.type !== "MemberExpression") {
+    return undefined;
+  }
+  if (!callee.computed && callee.property.type === "Identifier") {
+    return callee.property.name;
+  }
   return callee.property.type === "Literal" && typeof callee.property.value === "string"
     ? callee.property.value
     : undefined;
@@ -6216,24 +6807,34 @@ export function shadowing(parameter: AST.BindingIdentifier, context: RenderConte
   }
   let what: string | undefined;
   const setup = [...context.setup.bindings.values()].find((binding) => binding.name === name);
-  if (context.props.has(name)) what = `the prop \`${name}\``;
-  else if (context.propsObject?.name === name) what = `the props parameter \`${name}\``;
-  else if (setup) what = `${WHAT[setup.kind]} the setup declares, \`${name}\``;
-  else if (context.enclosing.some((variable) => variable.name === name)) {
+  if (context.props.has(name)) {
+    what = `the prop \`${name}\``;
+  } else if (context.propsObject?.name === name) {
+    what = `the props parameter \`${name}\``;
+  } else if (setup) {
+    what = `${WHAT[setup.kind]} the setup declares, \`${name}\``;
+  } else if (context.enclosing.some((variable) => variable.name === name)) {
     what = `the list variable \`${name}\` around it`;
-  } else if (ALLOWED_GLOBALS.has(name)) what = `the global \`${name}\``;
-  else if (name === "props" || name === "rawProps")
+  } else if (ALLOWED_GLOBALS.has(name)) {
+    what = `the global \`${name}\``;
+  } else if (name === "props" || name === "rawProps") {
     what = `\`${name}\`, which some outputs declare`;
-  else if (name === "Fragment") what = "the `Fragment` Astro's output renders `<>` with";
+  } else if (name === "Fragment") {
+    what = "the `Fragment` Astro's output renders `<>` with";
+  }
   // Angular's `@for` declares `$index`, `$count`, `$first`, `$last`, `$even` and `$odd`.
-  else if (name.startsWith("$"))
+  else if (name.startsWith("$")) {
     what = "the names starting with `$` that Angular's `@for` declares";
+  }
   // Vue's compiled render and setup functions declare `_ctx`, `_cache`, `__props` and helpers
   // (`_toDisplayString`, `_ssrInterpolate`) beside the template's variables. A bare `_` is free.
-  else if (name.length > 1 && name.startsWith("_"))
+  else if (name.length > 1 && name.startsWith("_")) {
     what =
       "the names starting with `_` that Vue's compiled render functions declare (`_ctx`, `__props`)";
-  if (!what) return false;
+  }
+  if (!what) {
+    return false;
+  }
   context.reporter.report(
     "UF3024",
     parameter,
@@ -6264,7 +6865,9 @@ export function localShadowing(local: AST.BindingIdentifier, context: RenderCont
           : name === "props" || name === "rawProps"
             ? `\`${name}\`, which some outputs declare`
             : undefined;
-  if (!what) return false;
+  if (!what) {
+    return false;
+  }
   context.reporter.report(
     "UF3024",
     local,
@@ -6287,7 +6890,9 @@ export function findToken(
 ): { start: number; after: number } | undefined {
   let after = from;
   for (let index = from; index < to;) {
-    if (source.startsWith(token, index)) return { start: index, after };
+    if (source.startsWith(token, index)) {
+      return { start: index, after };
+    }
     const character = source[index]!;
     if (character === ")") {
       after = ++index;
@@ -6308,7 +6913,9 @@ export function findToken(
 
 /** Whether two names are one edit apart, as a misspelling is: `lable` for `label`. */
 function closeTo(a: string, b: string): boolean {
-  if (a === b || Math.abs(a.length - b.length) > 1) return false;
+  if (a === b || Math.abs(a.length - b.length) > 1) {
+    return false;
+  }
   if (a.length === b.length) {
     const differ = indices(a).filter((index) => a[index] !== b[index]);
     const [first, second] = differ;

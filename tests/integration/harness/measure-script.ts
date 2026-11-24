@@ -82,7 +82,9 @@ export function runTool(
   if (result.error) {
     throw new Error(`The tool did not exit within ${LIMIT_MS / 1000} s: ${result.error.message}`);
   }
-  if (result.signal) throw new Error(`The tool was ended by ${result.signal}`);
+  if (result.signal) {
+    throw new Error(`The tool was ended by ${result.signal}`);
+  }
   return { status: result.status, out: result.stdout, err: result.stderr };
 }
 
@@ -164,12 +166,16 @@ NF == 0 { print; next }
     env = { ...process.env, PATH: `${binDir}${delimiter}${process.env.PATH ?? ""}` };
   });
   afterEach(() => {
-    if (!declaredDir) return;
+    if (!declaredDir) {
+      return;
+    }
     rmSync(declaredDir, { recursive: true, force: true });
     mkdirSync(declaredDir);
   });
   afterAll(() => {
-    if (root) rmSync(root, { recursive: true, force: true });
+    if (root) {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
   return {
     env: () => env,

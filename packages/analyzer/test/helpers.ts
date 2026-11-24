@@ -56,11 +56,17 @@ export function run(
  * builders leave an absent optional field out (ADR-0032).
  */
 function undefinedKey(value: unknown, path: string): string | undefined {
-  if (!value || typeof value !== "object") return undefined;
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
   for (const [key, item] of Object.entries(value)) {
-    if (item === undefined) return `${path}/${key}`;
+    if (item === undefined) {
+      return `${path}/${key}`;
+    }
     const found = undefinedKey(item, `${path}/${key}`);
-    if (found !== undefined) return found;
+    if (found !== undefined) {
+      return found;
+    }
   }
   return undefined;
 }
@@ -102,14 +108,17 @@ function memberNames(members: string): string[] {
   let start = 0;
   for (let index = 0; index <= members.length; index++) {
     const character = members[index];
-    if (character === "{" || character === "(" || character === "[" || character === "<") depth++;
-    else if (character === "}" || character === ")" || character === "]" || character === ">")
+    if (character === "{" || character === "(" || character === "[" || character === "<") {
+      depth++;
+    } else if (character === "}" || character === ")" || character === "]" || character === ">") {
       depth--;
-    else if ((character === ";" || character === undefined) && depth === 0) {
+    } else if ((character === ";" || character === undefined) && depth === 0) {
       const name = /^\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)\??\s*:/.exec(
         members.slice(start, index),
       )?.[1];
-      if (name) names.push(name);
+      if (name) {
+        names.push(name);
+      }
       start = index + 1;
     }
   }
@@ -118,14 +127,18 @@ function memberNames(members: string): string[] {
 
 /** The one component of a module. */
 export function only(module: UfModule | undefined): UfComponent {
-  if (module?.components.length !== 1) throw new Error("Expected exactly one component.");
+  if (module?.components.length !== 1) {
+    throw new Error("Expected exactly one component.");
+  }
   return module.components[0]!;
 }
 
 /** The root element of a module's one component. */
 export function root(module: UfModule | undefined): ElementNode {
   const { render } = only(module);
-  if (render.kind !== "Element") throw new Error(`Expected an element root, got ${render.kind}.`);
+  if (render.kind !== "Element") {
+    throw new Error(`Expected an element root, got ${render.kind}.`);
+  }
   return render;
 }
 
@@ -225,9 +238,13 @@ export function functionOf(source: string, fn: FunctionCode): string {
 export function narrowedPaths(source: string, module: UfModule | undefined): string[] {
   const found: { start: number; end: number; text: string }[] = [];
   const visit = (value: unknown): void => {
-    if (!value || typeof value !== "object") return;
+    if (!value || typeof value !== "object") {
+      return;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
     const node = value as Partial<BindingReference>;
@@ -237,7 +254,9 @@ export function narrowedPaths(source: string, module: UfModule | undefined): str
         found.push({ start, end, text: `${source.slice(start, end)} (${path.scope})` });
       }
     }
-    for (const item of Object.values(value)) visit(item);
+    for (const item of Object.values(value)) {
+      visit(item);
+    }
   };
   visit(module);
   // A reference is reached once from its code, and once more from a copy (a handler's code).

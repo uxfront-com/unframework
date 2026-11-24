@@ -84,7 +84,9 @@ function buildAndPack(): Packed {
     [designSystem.name]: pack(designSystemPath),
   };
   const names = new Set([...CONSUMED, ...workspaceClosure([...roots, designSystem], packageDirs)]);
-  for (const name of [...names].toSorted()) tarballs[name] = pack(packageDirs.get(name) as string);
+  for (const name of [...names].toSorted()) {
+    tarballs[name] = pack(packageDirs.get(name) as string);
+  }
   const packed = { designSystem: designSystem.name, tarballs };
   writePacked(packed);
   return packed;
@@ -153,8 +155,9 @@ if (flags.length > 1 || flags.some((flag) => flag !== "--pack" && flag !== "--re
     `prepare-apps takes --pack or --reuse-tarballs, or neither, and --only, not: ${flags.join(" ")}`,
   );
 }
-if (flags[0] === "--pack" && only !== -1)
+if (flags[0] === "--pack" && only !== -1) {
   throw new Error("--pack installs no copy, so --only has nothing to select.");
+}
 
 if (flags[0] === "--pack") {
   buildAndPack();
@@ -162,6 +165,10 @@ if (flags[0] === "--pack") {
 } else {
   const packed = flags[0] === "--reuse-tarballs" ? readPacked() : buildAndPack();
   const work = workDir();
-  if (copies.includes("apps")) installApps(packed, work);
-  if (copies.includes("design-system")) installDesignSystem(packed, work);
+  if (copies.includes("apps")) {
+    installApps(packed, work);
+  }
+  if (copies.includes("design-system")) {
+    installDesignSystem(packed, work);
+  }
 }

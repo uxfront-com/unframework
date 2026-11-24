@@ -25,14 +25,14 @@
   let cleanupQuery: (() => void) | undefined;
   $effect.pre(() => {
     const value = query;
-    if (queryWatched && Object.is(value, previousQuery)) return;
+    if (queryWatched && Object.is(value, previousQuery)) {return;}
     queryWatched = true;
     previousQuery = value;
     untrack(() => {
       cleanupQuery?.();
       const cleanups: (() => void)[] = [];
       cleanupQuery = () => {
-        for (const cleanup of cleanups) cleanup();
+        for (const cleanup of cleanups) {cleanup();}
       };
       const onCleanup = (cleanup: () => void) => {
         cleanups.push(cleanup);

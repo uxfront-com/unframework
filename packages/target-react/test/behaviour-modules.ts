@@ -17,7 +17,9 @@ export const BEHAVIOUR_DIRECTORY = "/__uf_behaviour__/";
 /** The React output of one behaviour source, which the analyser must accept without a diagnostic. */
 export async function behaviourModule(name: string): Promise<string> {
   const source = BEHAVIOUR_SOURCES[name];
-  if (source === undefined) throw new Error(`No behaviour source is named ${name}.`);
+  if (source === undefined) {
+    throw new Error(`No behaviour source is named ${name}.`);
+  }
   const { module, diagnostics } = analyze(parseModule(`${name}.uf.tsx`, source), {
     imports: childApis(source),
   });
@@ -32,9 +34,13 @@ export async function behaviourModule(name: string): Promise<string> {
       throw new Error(`The React target reported ${diagnostic.code} on ${name}.`);
     },
   });
-  if (!file || rest.length) throw new Error(`The React target did not emit one file for ${name}.`);
+  if (!file || rest.length) {
+    throw new Error(`The React target did not emit one file for ${name}.`);
+  }
   const outcome = await formatOutput(file);
-  if (outcome.error) throw new Error(`oxfmt failed on ${name}: ${outcome.error}`);
+  if (outcome.error) {
+    throw new Error(`oxfmt failed on ${name}: ${outcome.error}`);
+  }
   return outcome.file.contents;
 }
 
@@ -46,9 +52,13 @@ function childApis(source: string): Map<string, ModuleApi> {
   const apis = new Map<string, ModuleApi>();
   for (const [, child] of source.matchAll(/from "\.\/(\w+)\.uf\.tsx"/g)) {
     const text = BEHAVIOUR_SOURCES[child!];
-    if (text === undefined) continue;
+    if (text === undefined) {
+      continue;
+    }
     const { api } = analyze(parseModule(`${child}.uf.tsx`, text), { imports: childApis(text) });
-    if (api) apis.set(`./${child}.uf.tsx`, api);
+    if (api) {
+      apis.set(`./${child}.uf.tsx`, api);
+    }
   }
   return apis;
 }
@@ -80,7 +90,9 @@ export function behaviourModules(): Plugin {
       return found === undefined ? null : `${root}${BEHAVIOUR_DIRECTORY}${found}.tsx`;
     },
     load(id) {
-      if (id.includes("?")) return null;
+      if (id.includes("?")) {
+        return null;
+      }
       const found = name(id);
       return found === undefined ? null : behaviourModule(found);
     },

@@ -35,7 +35,9 @@ function hookCode(hook: DirectiveHook): string {
   const taken = codeNames(hook.body.code, "statements");
   const fresh = (base: string) => {
     let name = base;
-    for (let index = 1; taken.has(name); index++) name = `${base}_${index}`;
+    for (let index = 1; taken.has(name); index++) {
+      name = `${base}_${index}`;
+    }
     taken.add(name);
     return name;
   };

@@ -80,10 +80,16 @@ export function startFrame(options: FrameOptions): void {
   };
 
   window.addEventListener("message", (event: MessageEvent<unknown>) => {
-    if (event.source !== window.parent || event.origin !== shell) return;
+    if (event.source !== window.parent || event.origin !== shell) {
+      return;
+    }
     const message = event.data as Partial<RenderMessage> | null;
-    if (message?.type !== PREVIEW_MESSAGE || message.kind !== "render") return;
-    if (typeof message.entry !== "string" || typeof message.seq !== "number") return;
+    if (message?.type !== PREVIEW_MESSAGE || message.kind !== "render") {
+      return;
+    }
+    if (typeof message.entry !== "string" || typeof message.seq !== "number") {
+      return;
+    }
     const props = message.props && typeof message.props === "object" ? message.props : {};
     queue = queue.then(() => answer({ ...(message as RenderMessage), props }));
   });
@@ -123,12 +129,20 @@ async function standalone(
     await render(entry, {});
   } catch (error) {
     document.body.textContent = errorMessage(error);
-    if (embed.resize) reportHeight();
+    if (embed.resize) {
+      reportHeight();
+    }
     return;
   }
-  if (embed.controls) page.listen(render);
-  if (embed.theme) takeTheme(page.setTheme);
-  if (embed.resize) reportHeight();
+  if (embed.controls) {
+    page.listen(render);
+  }
+  if (embed.theme) {
+    takeTheme(page.setTheme);
+  }
+  if (embed.resize) {
+    reportHeight();
+  }
 }
 
 /** The standalone page an embed's options lay out, before its first render. */
@@ -195,7 +209,9 @@ function embedPage(
   };
   const layout = embed.resize ? "natural" : embed.controls ? "fixed" : undefined;
   if (!layout) {
-    if (embed.theme) setTheme(embed.theme);
+    if (embed.theme) {
+      setTheme(embed.theme);
+    }
     return { layout, setTheme, listen: () => undefined };
   }
   const style = document.createElement("style");
@@ -233,10 +249,14 @@ function embedPage(
     shadow.append(sheet, section);
     area.after(host);
   }
-  if (embed.theme) setTheme(embed.theme);
+  if (embed.theme) {
+    setTheme(embed.theme);
+  }
 
   const listen = (render: ReturnType<typeof renderer>) => {
-    if (!section) return;
+    if (!section) {
+      return;
+    }
     const fields = section;
     // Renders run in order, as the shell's do: a rerender must finish before the next.
     let queue: Promise<void> = Promise.resolve();
@@ -275,13 +295,23 @@ function embedPage(
  */
 function takeTheme(setTheme: (theme: EmbedTheme) => void): void {
   window.addEventListener("message", (event: MessageEvent<unknown>) => {
-    if (event.source !== window.parent) return;
+    if (event.source !== window.parent) {
+      return;
+    }
     const data = event.data;
-    if (typeof data !== "object" || data === null || Array.isArray(data)) return;
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+      return;
+    }
     const message = data as Record<string, unknown>;
-    if (Object.keys(message).length !== 3) return;
-    if (message.type !== EMBED_MESSAGE || message.kind !== "theme") return;
-    if (message.theme === "light" || message.theme === "dark") setTheme(message.theme);
+    if (Object.keys(message).length !== 3) {
+      return;
+    }
+    if (message.type !== EMBED_MESSAGE || message.kind !== "theme") {
+      return;
+    }
+    if (message.theme === "light" || message.theme === "dark") {
+      setTheme(message.theme);
+    }
   });
 }
 
@@ -296,7 +326,9 @@ function reportHeight(): void {
   const report = () => {
     const scrollbar = Math.max(0, window.innerHeight - html.clientHeight);
     const height = Math.ceil(html.getBoundingClientRect().height + scrollbar);
-    if (height === last) return;
+    if (height === last) {
+      return;
+    }
     last = height;
     const message: EmbedResizeMessage = { type: EMBED_MESSAGE, kind: "resize", height };
     window.parent.postMessage(message, "*");
@@ -337,13 +369,17 @@ function renderer(
     const layout = Object.hasOwn(layouts, entry) ? layouts[entry] : undefined;
     for (const [property, value] of Object.entries(layoutStyle(layout))) {
       // An embed that reports its height takes its content's, never the frame's (ADR-0116).
-      if (!fill && property === "min-height") continue;
+      if (!fill && property === "min-height") {
+        continue;
+      }
       fresh.style.setProperty(property, value);
     }
     container.replaceWith(fresh);
     container = fresh;
     const load = Object.hasOwn(options.entries, entry) ? options.entries[entry] : undefined;
-    if (!load) throw new Error(`The preview has no entry ${JSON.stringify(entry)}.`);
+    if (!load) {
+      throw new Error(`The preview has no entry ${JSON.stringify(entry)}.`);
+    }
     const component = (await load()).default;
     if (component === undefined) {
       throw new Error(`${entry} has no default export to mount.`);
@@ -376,7 +412,9 @@ async function serverRender(request: {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(request),
   });
-  if (!response.ok) throw new Error(await response.text());
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
   return (await response.json()) as Awaited<ReturnType<typeof serverRender>>;
 }
 
@@ -390,17 +428,25 @@ function staticRender(
 ): (request: { props: Record<string, unknown> }) => Promise<{ html: string; console: [] }> {
   let read: Promise<StaticRender> | undefined;
   return async ({ props }) => {
-    if (file === undefined) throw new Error(STATIC_RENDER_MESSAGE);
+    if (file === undefined) {
+      throw new Error(STATIC_RENDER_MESSAGE);
+    }
     read ??= fetch(file).then(async (response) => {
-      if (!response.ok) throw new Error(`${file}: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`${file}: ${response.status} ${response.statusText}`);
+      }
       return (await response.json()) as StaticRender;
     });
     const rendered = await read.catch((error: unknown) => {
       read = undefined;
       throw error;
     });
-    if (!sameProps(rendered.props, props)) throw new Error(STATIC_RENDER_MESSAGE);
-    if ("error" in rendered) throw new Error(rendered.error);
+    if (!sameProps(rendered.props, props)) {
+      throw new Error(STATIC_RENDER_MESSAGE);
+    }
+    if ("error" in rendered) {
+      throw new Error(rendered.error);
+    }
     return { html: rendered.html, console: [] };
   };
 }
@@ -411,7 +457,9 @@ export function sameProps(
   b: Readonly<Record<string, unknown>>,
 ): boolean {
   const keys = Object.keys(a);
-  if (keys.length !== Object.keys(b).length) return false;
+  if (keys.length !== Object.keys(b).length) {
+    return false;
+  }
   return keys.every(
     (key) => Object.hasOwn(b, key) && JSON.stringify(a[key]) === JSON.stringify(b[key]),
   );

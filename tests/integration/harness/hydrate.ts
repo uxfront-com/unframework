@@ -138,7 +138,9 @@ export function hydrationRunners(): Plugin {
 /** The URL a page imports a source from: under the server's root, or through `/@fs/`. */
 export function moduleUrl(root: string, source: string): string {
   const path = relative(root, source);
-  if (path && !path.startsWith("..") && !isAbsolute(path)) return `/${path.split(sep).join("/")}`;
+  if (path && !path.startsWith("..") && !isAbsolute(path)) {
+    return `/${path.split(sep).join("/")}`;
+  }
   return `/@fs/${source.split(sep).join("/").replace(/^\/+/, "")}`;
 }
 
@@ -146,7 +148,9 @@ let installed = false;
 
 /** Routes `console.warn` and `console.error` to the render that logs them, once per process. */
 function installConsoleCapture(): void {
-  if (installed) return;
+  if (installed) {
+    return;
+  }
   installed = true;
   console.warn = capturing("warn", console.warn.bind(console));
   console.error = capturing("error", console.error.bind(console));
@@ -155,7 +159,10 @@ function installConsoleCapture(): void {
 function capturing(level: CapturedConsoleMessage["level"], original: Console["warn"]) {
   return (...args: unknown[]): void => {
     const sink = renders.getStore();
-    if (sink) sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
-    else original(...args);
+    if (sink) {
+      sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
+    } else {
+      original(...args);
+    }
   };
 }

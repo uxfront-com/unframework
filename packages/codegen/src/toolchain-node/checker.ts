@@ -149,8 +149,11 @@ export function diagnosticsByFile(files: readonly string[], tsconfig: string): D
     add(path, message) {
       const key = path === undefined ? tsconfig : keyOf(resolve(path));
       const list = results.get(key);
-      if (list) list.push(message);
-      else results.set(key, [message]);
+      if (list) {
+        list.push(message);
+      } else {
+        results.set(key, [message]);
+      }
     },
   };
 }
@@ -163,7 +166,9 @@ function pathKeys(files: readonly string[]): (path: string) => string {
   const keys = new Map<string, string>();
   for (const file of files) {
     keys.set(resolve(file), file);
-    if (existsSync(file)) keys.set(realpathSync(file), file);
+    if (existsSync(file)) {
+      keys.set(realpathSync(file), file);
+    }
   }
   return (path) =>
     keys.get(path) ?? (existsSync(path) ? keys.get(realpathSync(path)) : undefined) ?? path;

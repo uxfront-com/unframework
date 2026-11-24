@@ -289,8 +289,9 @@ export function lowerAttributes(
       }
     }
     if (name === "key") {
-      if (!element.listBody) misplacedKey(item, previous, reporter);
-      else if (key) {
+      if (!element.listBody) {
+        misplacedKey(item, previous, reporter);
+      } else if (key) {
         reporter.report("UF3007", nameNode, `\`key\` is set twice on this <${element.tag}>.`, {
           help: "Keep one: the targets disagree about which value wins.",
           related: [{ span: span(key.name), message: "First set here" }],
@@ -298,7 +299,9 @@ export function lowerAttributes(
       } else {
         // Only JSX's own `key` keys an element, and any other case of it is an ordinary
         // attribute in JSX: it is reported, and lifted all the same, so its fix reveals nothing.
-        if (authored !== "key") keyCase(item, nameNode, reporter);
+        if (authored !== "key") {
+          keyCase(item, nameNode, reporter);
+        }
         key = item;
       }
       continue;
@@ -309,7 +312,9 @@ export function lowerAttributes(
       continue;
     }
     const form = readForm(item, name, element);
-    if (form) entries.push({ name, authored, node: item, nameNode, after: previous, form });
+    if (form) {
+      entries.push({ name, authored, node: item, nameNode, after: previous, form });
+    }
   }
   const binds = entries.some(
     (entry) =>
@@ -328,8 +333,9 @@ export function lowerAttributes(
   // What falls through is checked with the fallthrough element's own attributes and listeners,
   // which the child's API gives (ADR-0118). The element's own handlers are its own compile's to
   // check, so a parent checks only where it passes a listener of its own.
-  if (!element.fallthrough) checkHandlers(opening, entries, element);
-  else if (element.fallthrough.own) {
+  if (!element.fallthrough) {
+    checkHandlers(opening, entries, element);
+  } else if (element.fallthrough.own) {
     checkHandlers(opening, entries, element, element.fallthrough.own);
   }
   return { attributes: checkAgainstElement(entries, element), key, binds, braces };
@@ -390,21 +396,31 @@ function checkHandlers(
   for (const entry of entries) {
     if ("own" in entry) {
       const event = entry.own === "listener" ? listenerName(entry.nameNode.name)?.event : undefined;
-      if (event) handlers.add(event);
+      if (event) {
+        handlers.add(event);
+      }
     } else if ("form" in entry) {
       const { form } = entry;
-      if (form.kind === "absent") continue;
+      if (form.kind === "absent") {
+        continue;
+      }
       attributes.set(
         entry.name,
         form.kind === "static" ? (form.value === null ? true : form.value) : null,
       );
     } else {
-      for (const { name } of entry.keys) attributes.set(name, null);
+      for (const { name } of entry.keys) {
+        attributes.set(name, null);
+      }
     }
   }
   // A parent that passes no listener changes nothing the element's own compile checked.
-  if (own && !handlers.size) return;
-  for (const event of own?.listeners ?? []) handlers.add(event);
+  if (own && !handlers.size) {
+    return;
+  }
+  for (const event of own?.listeners ?? []) {
+    handlers.add(event);
+  }
   for (const problem of handlerProblems(element.tag, attributes, handlers)) {
     element.render.reporter.report(
       "UF3030",
@@ -446,7 +462,9 @@ export function keyCase(
   reporter: Reporter,
 ): void {
   const authored = nameNode.type === "JSXIdentifier" ? nameNode.name : "";
-  if (item.value?.type !== "JSXExpressionContainer") return;
+  if (item.value?.type !== "JSXExpressionContainer") {
+    return;
+  }
   reporter.report(
     "UF3004",
     nameNode,
@@ -468,7 +486,9 @@ function readForm(item: AST.JSXAttribute, name: string, element: ElementContext)
   const { render } = element;
   const { reporter, source } = render;
   const value = item.value;
-  if (value === null) return { kind: "static", value: null, reported: false, references: [] };
+  if (value === null) {
+    return { kind: "static", value: null, reported: false, references: [] };
+  }
   if (value.type === "Literal") {
     const read = readValue(name, value, reporter);
     if (name === "style") {
@@ -533,7 +553,9 @@ function readForm(item: AST.JSXAttribute, name: string, element: ElementContext)
     };
   }
   const literal = literalForm(expression, name, element);
-  if (literal) return literal;
+  if (literal) {
+    return literal;
+  }
   return { kind: "bound", value: checkExpression(expression, render) };
 }
 
@@ -657,13 +679,17 @@ function readValue(
     start: literal.start + 1 + range.start,
     end: literal.start + 1 + range.end,
   });
-  for (const divergence of reading.divergences) reportDivergence(divergence, at, reporter);
+  for (const divergence of reading.divergences) {
+    reportDivergence(divergence, at, reporter);
+  }
   const rendered =
     name === "class"
       ? reading.kept.filter((piece) => !ASCII_WHITESPACE.test(piece.value))
       : reading.kept;
   const characters = unportableCharacters(raw, rendered, reading.divergences);
-  for (const character of characters) reportCharacter(character, at, reporter);
+  for (const character of characters) {
+    reportCharacter(character, at, reporter);
+  }
   return {
     value: reading.value,
     reported: reading.divergences.length > 0 || characters.length > 0,
@@ -904,7 +930,9 @@ function objectSpread(
       property.shorthand
     ) {
       fixable = false;
-      if (property.type === "SpreadElement") checkExpression(property.argument, render);
+      if (property.type === "SpreadElement") {
+        checkExpression(property.argument, render);
+      }
       continue;
     }
     const key = property.key;
@@ -931,19 +959,25 @@ function objectSpread(
     }
     written.add(name);
     if (isStaticString(value)) {
-      if (!rewritable(value, source)) fixable = false;
+      if (!rewritable(value, source)) {
+        fixable = false;
+      }
       attributes.push(`${name}="${valueOf(value)}"`);
       continue;
     }
     const checked = checkExpression(value, render);
-    if (!checked.clean || boundValueProblem(tag, namespace, name, checked.kinds)) fixable = false;
+    if (!checked.clean || boundValueProblem(tag, namespace, name, checked.kinds)) {
+      fixable = false;
+    }
     if (
       value.type === "Literal" ||
       value.type === "UnaryExpression" ||
       value.type === "Identifier"
     ) {
       // A literal would be written as a static attribute, which this fix does not decide.
-      if (value.type !== "Identifier" || value.name === "undefined") fixable = false;
+      if (value.type !== "Identifier" || value.name === "undefined") {
+        fixable = false;
+      }
     }
     attributes.push(`${name}={${source.slice(value.start, value.end)}}`);
   }
@@ -980,12 +1014,16 @@ function checkAgainstElement(
   // offered only where it changes no duplicate (a spread's `class` merges with the element's).
   const counts = new Map<string, number>();
   for (const entry of entries) {
-    if ("own" in entry) continue;
+    if ("own" in entry) {
+      continue;
+    }
     const names =
       "form" in entry
         ? [entry.name]
         : entry.keys.map((key) => key.name).filter((name) => name !== "class");
-    for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1);
+    for (const name of names) {
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
   }
   // `type` is an enumerated attribute, so its keywords are case-insensitive. A bound `type`
   // leaves it unknown.
@@ -1004,14 +1042,21 @@ function checkAgainstElement(
     if (name === "class") {
       first = fromSpread ? spreadClass : ownClass;
       if (!first) {
-        if (fromSpread) spreadClass = at;
-        else ownClass = at;
+        if (fromSpread) {
+          spreadClass = at;
+        } else {
+          ownClass = at;
+        }
       }
     } else {
       first = firsts.get(name);
-      if (!first) firsts.set(name, at);
+      if (!first) {
+        firsts.set(name, at);
+      }
     }
-    if (!first) return true;
+    if (!first) {
+      return true;
+    }
     reporter.report("UF3007", nameAt, `\`${name}\` is set twice on this <${tag}>.`, {
       help: fromSpread
         ? "Keep one: remove the attribute, or the key from the spread's type."
@@ -1068,16 +1113,22 @@ function checkAgainstElement(
           hasChildren,
           render: element.render,
         });
-        if (model) attributes.push(model);
+        if (model) {
+          attributes.push(model);
+        }
         continue;
       }
-      if (entry.attribute) attributes.push(entry.attribute);
+      if (entry.attribute) {
+        attributes.push(entry.attribute);
+      }
       continue;
     }
     if (!("form" in entry)) {
       let accepted = true;
       for (const key of entry.keys) {
-        if (!claim(key.name, span(entry.node), span(entry.node), true)) accepted = false;
+        if (!claim(key.name, span(entry.node), span(entry.node), true)) {
+          accepted = false;
+        }
         const problem = elementProblem(tag, namespace, key.name, type, staticType, hasChildren);
         if (problem) {
           report(reporter, entry.node, problem, [
@@ -1086,12 +1137,16 @@ function checkAgainstElement(
           accepted = false;
         }
       }
-      if (accepted && entry.attribute) attributes.push(entry.attribute);
+      if (accepted && entry.attribute) {
+        attributes.push(entry.attribute);
+      }
       continue;
     }
     const { name, form, nameNode, node } = entry;
     if (!claim(name, span(nameNode), span(nameNode), false)) {
-      if (form.kind === "static") reportReferences(entry, false, reporter);
+      if (form.kind === "static") {
+        reportReferences(entry, false, reporter);
+      }
       continue;
     }
     // Messages name the attribute by its HTML name, so they read the same once a rename is
@@ -1117,7 +1172,9 @@ function checkAgainstElement(
         form.kind === "bound" && elementFound === undefined && found.code !== "UF1002";
       report(reporter, atValue ? form.value.expression.span : nameNode, found);
     }
-    if (renamed) report(reporter, nameNode, renamed);
+    if (renamed) {
+      report(reporter, nameNode, renamed);
+    }
     if (
       form.kind === "static" ||
       form.kind === "absent" ||
@@ -1160,7 +1217,9 @@ function checkAgainstElement(
         reporter,
       );
     }
-    if (!accepted) continue;
+    if (!accepted) {
+      continue;
+    }
     switch (form.kind) {
       case "static":
         attributes.push(
@@ -1171,12 +1230,14 @@ function checkAgainstElement(
         attributes.push(createBoundAttribute(name, form.value.expression, span(node)));
         break;
       case "class":
-        if (form.lowered.attribute)
+        if (form.lowered.attribute) {
           attributes.push({ ...form.lowered.attribute, span: span(node) });
+        }
         break;
       case "style":
-        if (form.lowered.attribute)
+        if (form.lowered.attribute) {
           attributes.push({ ...form.lowered.attribute, span: span(node) });
+        }
         break;
       case "absent":
         break;
@@ -1204,7 +1265,9 @@ function literalProblem(
     form.kind === "static" || form.kind === "absent" || form.kind === "style"
       ? form.literal
       : undefined;
-  if (!literal || (form.kind !== "absent" && !literal.rewritable) || found?.fixes?.length) return;
+  if (!literal || (form.kind !== "absent" && !literal.rewritable) || found?.fixes?.length) {
+    return;
+  }
   const removal = literal.text === undefined;
   const fixable = !renamed?.fixes?.length && !(removal && (found || renamed || !unique));
   const written = source.slice(node.value!.start, node.value!.end);
@@ -1249,7 +1312,9 @@ function classForm(
 ): void {
   const { names, reported } = form.lowered;
   // A problem in a part may be fixed into a dynamic one: the class is static only without one.
-  if (!names || reported) return;
+  if (!names || reported) {
+    return;
+  }
   const fixable = !problems;
   if (!names.length) {
     reporter.report(
@@ -1298,7 +1363,9 @@ function classForm(
  */
 function caseProblem(read: Read, namespace: Namespace, unique: boolean): Problem | undefined {
   const { name, authored, nameNode } = read;
-  if (authored === name) return undefined;
+  if (authored === name) {
+    return undefined;
+  }
   return {
     code: "UF3004",
     message:
@@ -1322,7 +1389,9 @@ function caseProblem(read: Read, namespace: Namespace, unique: boolean): Problem
 /** Reports the references only HTML decodes in an attribute's value (UF3011). */
 function reportReferences(attribute: Read, fixable: boolean, reporter: Reporter): void {
   const { form } = attribute;
-  if (form.kind !== "static" || !form.references.length) return;
+  if (form.kind !== "static" || !form.references.length) {
+    return;
+  }
   const start = attribute.node.value!.start + 1;
   const at: RawSpan = (range) => ({ start: start + range.start, end: start + range.end });
   for (const reference of form.references) {
@@ -1333,7 +1402,9 @@ function reportReferences(attribute: Read, fixable: boolean, reporter: Reporter)
 /** An attribute's value with every reference only HTML decodes written as a numeric one. */
 function referencesFixed(attribute: Read): string | null {
   const { form } = attribute;
-  if (form.kind !== "static") return null;
+  if (form.kind !== "static") {
+    return null;
+  }
   let raw = (attribute.node.value as AST.StringLiteral).value;
   for (const reference of form.references.toReversed()) {
     raw = raw.slice(0, reference.start) + reference.numeric + raw.slice(reference.end);
@@ -1351,7 +1422,9 @@ function classNames(value: string): string {
 
 /** The value an accepted static attribute lowers to (see `StaticAttribute.value`). */
 function loweredValue(name: string, namespace: Namespace, value: string | null): string | true {
-  if (value === null) return namespace === "html" && isBooleanAttribute(name) ? true : "true";
+  if (value === null) {
+    return namespace === "html" && isBooleanAttribute(name) ? true : "true";
+  }
   return name === "class" ? classNames(value) : value;
 }
 
@@ -1374,7 +1447,9 @@ function elementProblem(
   staticType: boolean,
   hasChildren: boolean,
 ): Problem | undefined {
-  if (namespace !== "html") return undefined;
+  if (namespace !== "html") {
+    return undefined;
+  }
   if (isStateAttribute(tag, name, type)) {
     return name === "muted"
       ? unsupported(`\`muted\` on <${tag}> is not supported yet: ${MUTED_REASON}`)
@@ -1506,13 +1581,18 @@ export function boundValueProblem(
  * defines (UF3008), as a static one must.
  */
 function ariaBindingProblem(name: string, kinds: Kinds): Problem | undefined {
-  if (!name.startsWith("aria-") && name !== "role") return undefined;
+  if (!name.startsWith("aria-") && name !== "role") {
+    return undefined;
+  }
   const values: string[] = [];
   for (const primitive of kinds.primitives) {
-    if (primitive === "string" && kinds.strings) values.push(...kinds.strings);
-    else if (primitive === "boolean" && kinds.booleans)
+    if (primitive === "string" && kinds.strings) {
+      values.push(...kinds.strings);
+    } else if (primitive === "boolean" && kinds.booleans) {
       values.push(...[...kinds.booleans].map(String));
-    else if (primitive !== "null" && primitive !== "undefined") return undefined;
+    } else if (primitive !== "null" && primitive !== "undefined") {
+      return undefined;
+    }
   }
   for (const value of values) {
     const problem = name === "role" ? roleProblem(value) : ariaValueProblem(name, value);
@@ -1543,7 +1623,9 @@ function valueProblem(
 ): Problem | undefined {
   const { name, node } = attribute;
   if (namespace === "html" && isBooleanAttribute(name)) {
-    if (value === null) return undefined;
+    if (value === null) {
+      return undefined;
+    }
     if (name === "hidden" && value.toLowerCase() === "until-found") {
       return {
         code: "UF3008",
@@ -1569,7 +1651,9 @@ function valueProblem(
     };
   }
   if (value === null) {
-    if (TRUE_VALUED_ATTRIBUTES.has(name) || isDataAttribute(name)) return undefined;
+    if (TRUE_VALUED_ATTRIBUTES.has(name) || isDataAttribute(name)) {
+      return undefined;
+    }
     // HTML reads a bare attribute as the empty string, so that is the likely meaning, written as
     // the keyword HTML reads it as where the targets' types take no empty value
     // (`popover="auto"`). The fix is offered only where the compiler accepts the value (not
@@ -1597,8 +1681,12 @@ function valueProblem(
     };
   }
   const generated = generatedIdProblem(name, value);
-  if (generated) return generated;
-  if (name === "class") return classProblem(attribute, value, unique);
+  if (generated) {
+    return generated;
+  }
+  if (name === "class") {
+    return classProblem(attribute, value, unique);
+  }
   const unanalysable = unanalysableUrl(tag, name, value);
   if (unanalysable === "javascript") {
     return {
@@ -1624,7 +1712,9 @@ function valueProblem(
   const numeric = namespace === "html" ? NUMERIC_ATTRIBUTES.get(tag)?.get(name) : undefined;
   if (numeric) {
     const problem = numberProblem(attribute, value, numeric);
-    if (problem) return problem;
+    if (problem) {
+      return problem;
+    }
   }
   if (name.startsWith("aria-")) {
     const expected = ariaValueProblem(name, value);
@@ -1673,7 +1763,9 @@ function numberTypedProblem(attribute: Read, value: string): Problem | undefined
     };
   }
   const canonical = String(number);
-  if (canonical === value) return undefined;
+  if (canonical === value) {
+    return undefined;
+  }
   return {
     code: "UF3004",
     message: `\`${name}="${value}"\` is written \`${name}="${canonical}"\`: React and Qwik write it as the number literal \`${canonical}\`.`,
@@ -1696,7 +1788,9 @@ function numberTypedProblem(attribute: Read, value: string): Problem | undefined
  */
 function generatedIdProblem(name: string, value: string): Problem | undefined {
   const reserved = idReferencesIn(name, value).find((id) => id.startsWith(GENERATED_ID_PREFIX));
-  if (!reserved) return undefined;
+  if (!reserved) {
+    return undefined;
+  }
   return {
     code: "UF3005",
     message: `\`${reserved}\` is reserved: ids starting with \`${GENERATED_ID_PREFIX}\` are the ones the compiler generates.`,
@@ -1741,7 +1835,9 @@ function classProblem(attribute: Read, value: string, unique: boolean): Problem 
   // drops a repeated name the other targets keep, as a `class={…}` part's (UF3007).
   const names = classNames(value).split(" ");
   const repeated = names.find((name, index) => names.indexOf(name) !== index);
-  if (repeated === undefined) return undefined;
+  if (repeated === undefined) {
+    return undefined;
+  }
   const { form } = attribute;
   const once = [...new Set(names)].join(" ");
   const text = `"${once}"`;
@@ -1792,7 +1888,9 @@ function numberProblem(
       help: "Renderers that set the DOM property rewrite or reject any other value.",
     };
   }
-  if (canonical === value) return undefined;
+  if (canonical === value) {
+    return undefined;
+  }
   return {
     code: "UF3004",
     message: `\`${name}="${value}"\` is written \`${name}="${canonical}"\`: some renderers set it as a DOM property, which rewrites the number.`,

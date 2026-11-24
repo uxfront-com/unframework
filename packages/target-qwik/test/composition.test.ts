@@ -1463,7 +1463,9 @@ async function expectCheckedClean(
   for (const source of sources) {
     const dir = mkdtempSync(join(scratch, "checked-"));
     // The `.ts` modules a source imports, beside its outputs as in an output tree (ADR-0070).
-    for (const [name, code] of Object.entries(modules)) writeFileSync(join(dir, name), code);
+    for (const [name, code] of Object.entries(modules)) {
+      writeFileSync(join(dir, name), code);
+    }
     const module = lower(source);
     const reported: unknown[] = [];
     for (const component of module.components) {
@@ -1487,7 +1489,9 @@ async function expectCheckedClean(
     toolchain.lint(paths, context),
   ]);
   for (const results of [types, lint]) {
-    for (const [path, messages] of results) expect(messages, path).toEqual([]);
+    for (const [path, messages] of results) {
+      expect(messages, path).toEqual([]);
+    }
     expect([...results.keys()].toSorted()).toEqual(paths.toSorted());
   }
 }

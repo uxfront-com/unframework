@@ -77,7 +77,9 @@ export function unacceptedSkip(
   capabilities?: readonly string[],
 ): string | undefined {
   // A browser test of a case its target has no output for: the errors that case expects.
-  if (MECHANICAL_SKIPS.includes(reason) || NO_OUTPUT_TEST_SKIP.test(reason)) return undefined;
+  if (MECHANICAL_SKIPS.includes(reason) || NO_OUTPUT_TEST_SKIP.test(reason)) {
+    return undefined;
+  }
   const capability = REQUIRES_SKIP.exec(reason)?.[1];
   if (capability === undefined) {
     return `skipped (${reason}), which names no capability its target lacks and none of the mechanical causes (${[...MECHANICAL_SKIPS, "no output: <the expected errors>"].join("; ")}): a live layer skips only for a reason the matrix can show.`;
@@ -162,7 +164,9 @@ export function writeSummary(options: SummaryOptions): SummaryResult {
   const name = summaryName(options.browser ?? "chromium");
   writeFileSync(join(options.reportsDir, `${name}.json`), stringifyMatrix(result.matrix));
   writeFileSync(join(options.reportsDir, `${name}.md`), result.markdown);
-  if (options.stepSummary) appendFileSync(options.stepSummary, `${result.markdown}\n`);
+  if (options.stepSummary) {
+    appendFileSync(options.stepSummary, `${result.markdown}\n`);
+  }
   return result;
 }
 
@@ -219,8 +223,9 @@ export function summarise(
   settleQuarantine(merged.cases, quarantine, { stale: complete });
 
   for (const caseId of Object.keys(merged.cases)) {
-    if (!knownCases.has(caseId))
+    if (!knownCases.has(caseId)) {
       problems.push(`${caseId}: recorded, but not a case in the corpus.`);
+    }
   }
   for (const caseId of [...expected.cases].sort()) {
     const targets = (merged.cases[caseId] ??= {});
@@ -230,22 +235,29 @@ export function summarise(
         const cell = cells[layer];
         if (cell === undefined) {
           const recordedBy = expected.recordedOnlyBy?.[layer];
-          if (!live.has(layer)) cells[layer] = `skip(${expected.notLiveReason})`;
-          else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy))
+          if (!live.has(layer)) {
+            cells[layer] = `skip(${expected.notLiveReason})`;
+          } else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy)) {
             cells[layer] = `skip(${NOT_IN_THIS_RUN_SKIP})`;
-          else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer))
+          } else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer)) {
             problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
+          }
           continue;
         }
-        if (layer === "L10" && drops.blocks(caseId, target)) continue;
+        if (layer === "L10" && drops.blocks(caseId, target)) {
+          continue;
+        }
         // A skip on a live layer names a capability the target lacks or a mechanical cause
         // (plan §7.7); a quarantined cell is not a skip. They are listed under each table.
         const outcome = outcomeOfCell(cell);
-        if (outcome.status === "fail")
+        if (outcome.status === "fail") {
           problems.push(`${caseId} › ${target} › ${layer}: ${cellHeadline(cell)}`);
+        }
         if (outcome.status === "skip" && live.has(layer)) {
           const why = unacceptedSkip(outcome.reason, expected.capabilities);
-          if (why) problems.push(`${caseId} › ${target} › ${layer}: ${why}`);
+          if (why) {
+            problems.push(`${caseId} › ${target} › ${layer}: ${why}`);
+          }
         }
       }
       targets[target] = Object.fromEntries(
@@ -294,7 +306,9 @@ const cellKey = (caseId: string, target: string) => `${caseId}\u0000${target}`;
 
 /** The project a blocked L10 cell names, or none for any other cell. */
 function blockedBy(cell: string | undefined): string | undefined {
-  if (cell === undefined || !cell.startsWith("skip(")) return undefined;
+  if (cell === undefined || !cell.startsWith("skip(")) {
+    return undefined;
+  }
   const outcome = outcomeOfCell(cell);
   return outcome.status === "skip" ? REFERENCE_NOT_RUN_SKIP.exec(outcome.reason)?.[1] : undefined;
 }
@@ -306,7 +320,9 @@ function referenceDrops(cells: MatrixCells): ReferenceDrops {
   for (const [caseId, targets] of Object.entries(cells)) {
     for (const [target, layers] of Object.entries(targets)) {
       const project = blockedBy(layers.L10);
-      if (project === undefined) continue;
+      if (project === undefined) {
+        continue;
+      }
       const drop = drops.get(project) ?? { cases: new Set<string>(), cells: new Set<string>() };
       drop.cases.add(caseId);
       drop.cells.add(cellKey(caseId, target));
@@ -376,22 +392,30 @@ function scenarioProblems(
   reference: string,
   targets: readonly string[],
 ): string[] {
-  if (!targets.includes(reference)) return [];
+  if (!targets.includes(reference)) {
+    return [];
+  }
   const expected = matrix.tests[caseId]?.[reference] ?? {};
   const problems: string[] = [];
   for (const target of targets) {
-    if (target === reference) continue;
+    if (target === reference) {
+      continue;
+    }
     const actual = matrix.tests[caseId]?.[target] ?? {};
     const differences: string[] = [];
     for (const name of [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort()) {
       const theirs = expected[name];
       const ours = actual[name];
-      if (ours?.skipped !== undefined || ours?.standIn !== undefined) continue;
+      if (ours?.skipped !== undefined || ours?.standIn !== undefined) {
+        continue;
+      }
       const wanted = theirs?.skipped === undefined ? (theirs?.scenarios ?? []) : [];
       const checked = ours?.scenarios ?? [];
       const missing = wanted.filter((scenario) => !checked.includes(scenario));
       const extra = checked.filter((scenario) => !wanted.includes(scenario));
-      if (missing.length) differences.push(`"${name}" never checks ${missing.join(", ")}`);
+      if (missing.length) {
+        differences.push(`"${name}" never checks ${missing.join(", ")}`);
+      }
       if (extra.length) {
         const why =
           theirs?.skipped === undefined ? "" : ` (it skipped the test: ${theirs.skipped})`;
@@ -400,7 +424,9 @@ function scenarioProblems(
         );
       }
     }
-    if (!differences.length) continue;
+    if (!differences.length) {
+      continue;
+    }
     problems.push(
       `${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability, has no output for the case, or cannot compile it yet.`,
     );
@@ -423,7 +449,9 @@ export function coverageOf(merged: MergedMatrix, projects: readonly string[]): C
   const partialProjects = new Map<string, string[]>();
   const emptyProjects: string[] = [];
   for (const project of projects) {
-    if (!ran.has(project) || unfiltered.has(project)) continue;
+    if (!ran.has(project) || unfiltered.has(project)) {
+      continue;
+    }
     const ofProject = sets.filter((set) => set.projects.includes(project));
     const complete = ofProject.filter((set) => !set.missing.length);
     if (complete.length) {
@@ -473,7 +501,9 @@ function shardSets(runs: readonly RunInfo[]): ShardSet[] {
     { projects: string[]; count: number; runs: RunInfo[]; indices: Set<number> }
   >();
   for (const run of runs) {
-    if (run.shard === null || run.filtered !== null) continue;
+    if (run.shard === null || run.filtered !== null) {
+      continue;
+    }
     const key = JSON.stringify([run.shard.count, run.projects.toSorted()]);
     const group = groups.get(key) ?? {
       projects: run.projects,
@@ -600,7 +630,9 @@ export function renderMarkdown(
       for (const layer of layers) {
         const cell = cells[layer];
         const outcome = cell === undefined ? undefined : outcomeOfCell(cell);
-        if (outcome?.status !== "skip" && outcome?.status !== "quarantined") continue;
+        if (outcome?.status !== "skip" && outcome?.status !== "quarantined") {
+          continue;
+        }
         const note =
           outcome.status === "skip"
             ? `skipped: ${outcome.reason}`
@@ -636,10 +668,14 @@ export function renderMarkdown(
       ),
     );
     lines.push(...skipped);
-    if (notes.size || skipped.length) lines.push("");
+    if (notes.size || skipped.length) {
+      lines.push("");
+    }
   }
   lines.push(problems.length ? `### Problems (${problems.length})` : "### No problems", "");
-  for (const problem of problems) lines.push(`- ${escapeCell(problem)}`);
+  for (const problem of problems) {
+    lines.push(`- ${escapeCell(problem)}`);
+  }
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
@@ -659,7 +695,9 @@ function describeRun(run: RunInfo): string {
 
 /** A cell in a table: the status only; reasons are listed under the table. */
 function short(cell: string | undefined): string {
-  if (cell === undefined) return "**missing**";
+  if (cell === undefined) {
+    return "**missing**";
+  }
   const { status } = outcomeOfCell(cell);
   return status === "fail" ? "**FAIL**" : status;
 }

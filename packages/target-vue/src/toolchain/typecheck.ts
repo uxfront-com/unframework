@@ -41,21 +41,27 @@ export async function typecheck(
   let last: ToolchainMessage | undefined;
   let errors = 0;
   for (const line of run.stdout.split(/\r?\n/)) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
     const located = LOCATED.exec(line);
     const unlocated = located ? undefined : UNLOCATED.exec(line);
     if (located) {
       const [, path, row, column, category, code, message] = located;
       last = { message: message!, line: Number(row), column: Number(column), code: code! };
       diagnostics.add(resolve(run.cwd, path!), last);
-      if (category === "error") errors++;
+      if (category === "error") {
+        errors++;
+      }
       continue;
     }
     if (unlocated) {
       const [, category, code, message] = unlocated;
       last = { message: message!, code: code! };
       diagnostics.add(undefined, last);
-      if (category === "error") errors++;
+      if (category === "error") {
+        errors++;
+      }
       continue;
     }
     // tsc indents the rest of a multi-line message (its chained explanations).
@@ -66,7 +72,9 @@ export async function typecheck(
     unknown.push(line);
   }
 
-  if (run.signal || run.code === null) throw checkerFailed("vue-tsc", run, "it did not finish.");
+  if (run.signal || run.code === null) {
+    throw checkerFailed("vue-tsc", run, "it did not finish.");
+  }
   if (unknown.length > 0) {
     throw checkerFailed("vue-tsc", run, `it printed output this toolchain cannot read.`);
   }

@@ -593,7 +593,9 @@ describe("react composition beyond the corpus", () => {
 
   const emitted = new Map<string, Map<string, string>>();
   beforeAll(async () => {
-    for (const [name, source] of Object.entries(PROBES)) emitted.set(name, await outputs(source));
+    for (const [name, source] of Object.entries(PROBES)) {
+      emitted.set(name, await outputs(source));
+    }
   });
 
   it("passes L3, L4 and L5 on every probe", { timeout: 60_000 }, async () => {

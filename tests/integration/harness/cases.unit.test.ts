@@ -19,7 +19,9 @@ import {
 
 let corpus: string | undefined;
 afterEach(() => {
-  if (corpus) rmSync(corpus, { recursive: true, force: true });
+  if (corpus) {
+    rmSync(corpus, { recursive: true, force: true });
+  }
   corpus = undefined;
 });
 

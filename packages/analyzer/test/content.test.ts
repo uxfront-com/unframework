@@ -157,7 +157,9 @@ describe("the fixes of random text", () => {
       let checked = 0;
       for (const [index, text] of randomSamples(run.seed, run.size, PIECES).entries()) {
         const { source, diagnostics } = component(WRAPPERS[index % WRAPPERS.length]!(text));
-        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) {
+          continue;
+        }
         applyAndRecheck(source, diagnostics);
         checked++;
       }

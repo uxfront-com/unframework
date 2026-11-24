@@ -39,8 +39,12 @@ export function toJsonDiagnostics(
       end: position(file, diagnostic.span.end),
       url: docsUrl(diagnostic.code),
     };
-    if (diagnostic.help) json.help = diagnostic.help;
-    if (diagnostic.target) json.target = diagnostic.target;
+    if (diagnostic.help) {
+      json.help = diagnostic.help;
+    }
+    if (diagnostic.target) {
+      json.target = diagnostic.target;
+    }
     if (diagnostic.related) {
       json.related = diagnostic.related.map((related) => ({
         start: position(file, related.span.start),
@@ -48,7 +52,9 @@ export function toJsonDiagnostics(
         message: related.message,
       }));
     }
-    if (diagnostic.fixes) json.fixes = diagnostic.fixes;
+    if (diagnostic.fixes) {
+      json.fixes = diagnostic.fixes;
+    }
     return json;
   });
 }

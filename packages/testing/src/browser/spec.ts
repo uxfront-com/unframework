@@ -45,7 +45,9 @@ export const it: SpecTest = (
 ): void => {
   const options = typeof optionsOrFn === "function" ? {} : optionsOrFn;
   const fn = typeof optionsOrFn === "function" ? optionsOrFn : maybeFn;
-  if (!fn) throw new TypeError(`it("${name}"): a test needs a function.`);
+  if (!fn) {
+    throw new TypeError(`it("${name}"): a test needs a function.`);
+  }
   const refused = REFUSED.filter((key) => Object.hasOwn(options, key));
   if (refused.length) {
     throw new TypeError(
@@ -58,7 +60,9 @@ export const it: SpecTest = (
       throw new TypeError(`it("${name}"): requires names one or more capabilities.`);
     }
     // An unknown name throws here, when the tests are collected.
-    for (const capability of requires) capabilityCell(capability);
+    for (const capability of requires) {
+      capabilityCell(capability);
+    }
   }
   vitestIt(
     name,

@@ -62,7 +62,9 @@ describe("cpuTime", () => {
   it("counts this thread's own work", () => {
     const start = performance.now();
     const before = cpuTime();
-    while (cpuTime() - before < 100 && performance.now() - start < 10_000);
+    while (cpuTime() - before < 100 && performance.now() - start < 10_000) {
+      // Busy-waits, so the thread does its own work.
+    }
     const used = cpuTime() - before;
     const elapsed = performance.now() - start;
     expect(used).toBeGreaterThanOrEqual(100);
@@ -290,7 +292,9 @@ describe("each toolchain's frameworkEmit", () => {
     const [main, ...segments] = [...(await emit("qwik", "state/counter")).values()].flat();
     expect(segments.length).toBeGreaterThan(0);
     expect(main!.contents).toMatch(/import\(/);
-    for (const { path } of [main!, ...segments]) expect(dirname(path)).toContain("__output__");
+    for (const { path } of [main!, ...segments]) {
+      expect(dirname(path)).toContain("__output__");
+    }
   });
 
   it("angular leaves out what only JIT and TestBed read", async () => {

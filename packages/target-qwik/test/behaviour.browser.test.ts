@@ -33,7 +33,9 @@ async function settle(): Promise<void> {
     await frame();
     await frame();
     const snapshot = `${container.innerHTML}|${events.length}`;
-    if (snapshot === previous) return;
+    if (snapshot === previous) {
+      return;
+    }
     previous = snapshot;
   }
 }

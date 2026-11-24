@@ -22,7 +22,9 @@ export async function compileScriptModules(
   files: readonly ToolchainFile[],
 ): Promise<Map<string, FrameworkCompileResult>> {
   const results = new Map<string, FrameworkCompileResult>();
-  for (const file of files) results.set(file.path, (await transformScriptModule(file)).result);
+  for (const file of files) {
+    results.set(file.path, (await transformScriptModule(file)).result);
+  }
   return results;
 }
 

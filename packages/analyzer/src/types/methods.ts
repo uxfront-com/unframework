@@ -106,17 +106,29 @@ export function methodResult(receiver: Kinds, name: string): Kinds {
   let unknown = has(receiver, "unknown") || has(receiver, "object");
   const pick = (table: ReadonlyMap<string, Kinds>) => {
     const result = table.get(name);
-    if (result) results.push(result);
-    else unknown = true;
+    if (result) {
+      results.push(result);
+    } else {
+      unknown = true;
+    }
   };
-  if (has(receiver, "string")) pick(STRING_METHODS);
-  if (has(receiver, "number")) pick(NUMBER_METHODS);
+  if (has(receiver, "string")) {
+    pick(STRING_METHODS);
+  }
+  if (has(receiver, "number")) {
+    pick(NUMBER_METHODS);
+  }
   if (has(receiver, "array")) {
     const result = arrayMethod(name, receiver);
-    if (result) results.push(result);
-    else unknown = true;
+    if (result) {
+      results.push(result);
+    } else {
+      unknown = true;
+    }
   }
-  if (unknown || !results.length) results.push(UNKNOWN);
+  if (unknown || !results.length) {
+    results.push(UNKNOWN);
+  }
   return union(...results);
 }
 
@@ -190,6 +202,8 @@ export function globalCall(name: string): Kinds {
  * written with `call`): every `Math` function returns a number.
  */
 export function globalMember(global: string, member: string, call: boolean): Kinds {
-  if (global === "Math" && call) return NUMBER;
+  if (global === "Math" && call) {
+    return NUMBER;
+  }
   return GLOBAL_MEMBERS.get(`${global}.${member}${call ? "()" : ""}`) ?? UNKNOWN;
 }

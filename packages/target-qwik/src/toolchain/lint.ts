@@ -29,8 +29,12 @@ export async function lint(
     lintWithOxlint(files, context),
     lintTypes(files, context),
   ]);
-  if (oxlint.status === "rejected") throw oxlint.reason;
-  if (types.status === "rejected") throw types.reason;
+  if (oxlint.status === "rejected") {
+    throw oxlint.reason;
+  }
+  if (types.status === "rejected") {
+    throw types.reason;
+  }
   return mergeLintResults([oxlint.value, types.value]);
 }
 

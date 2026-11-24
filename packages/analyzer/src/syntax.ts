@@ -30,7 +30,9 @@ export interface SyntaxReport {
  */
 export function syntaxError(error: ParseError, parsed: ParsedModule): SyntaxReport {
   const token = textToken(error, parsed.source);
-  if (token === undefined) return { span: error.span, message: error.message, help: error.help };
+  if (token === undefined) {
+    return { span: error.span, message: error.message, help: error.help };
+  }
   const reference = REFERENCES.get(token)!;
   const why = `every JSX implementation decodes it${token === "}" ? ", and none decodes `&rbrace;`" : ""}; a string expression, \`{'${token}'}\`, renders the character too`;
   const edits = textRewrite(error, parsed);
@@ -84,21 +86,33 @@ function textRewrite(error: ParseError, parsed: ParsedModule): TextEdit[] | unde
     let end = from;
     for (; end < source.length && source[end] !== "<" && source[end] !== "{"; end++) {
       const text = REFERENCES.get(source[end]!);
-      if (text) edits.push({ span: { start: end, end: end + 1 }, text });
+      if (text) {
+        edits.push({ span: { start: end, end: end + 1 }, text });
+      }
     }
     const errors = parseModule(file, applyEdits(source, edits)).errors;
     const unexpected = [...errors];
     for (const other of expected) {
       const index = unexpected.findIndex((candidate) => key(candidate, edits) === other);
-      if (index !== -1) unexpected.splice(index, 1);
+      if (index !== -1) {
+        unexpected.splice(index, 1);
+      }
     }
-    if (errors.length - unexpected.length !== expected.length) return undefined;
-    if (!unexpected.length) return edits;
+    if (errors.length - unexpected.length !== expected.length) {
+      return undefined;
+    }
+    if (!unexpected.length) {
+      return edits;
+    }
     // Only the same error, in a text after this one, is the parser meeting the next raw one.
-    if (unexpected.length > 1) return undefined;
+    if (unexpected.length > 1) {
+      return undefined;
+    }
     const next = unexpected[0]!;
     const at = original(next.span.start, edits);
-    if (at <= end || textToken(next, source, at) === undefined) return undefined;
+    if (at <= end || textToken(next, source, at) === undefined) {
+      return undefined;
+    }
     from = at;
   }
 }
@@ -116,8 +130,12 @@ function original(offset: number, edits: readonly TextEdit[]): number {
   let shift = 0;
   for (const edit of edits) {
     const start = edit.span.start + shift;
-    if (offset < start) break;
-    if (offset < start + edit.text.length) return edit.span.start;
+    if (offset < start) {
+      break;
+    }
+    if (offset < start + edit.text.length) {
+      return edit.span.start;
+    }
     shift += edit.text.length - (edit.span.end - edit.span.start);
   }
   return offset - shift;

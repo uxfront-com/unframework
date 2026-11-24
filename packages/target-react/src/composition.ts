@@ -197,16 +197,26 @@ export function planComposition(
 ): CompositionPlan {
   const children = childImports(component, module, (name) => name);
   const keys = keyImports(component, module, (name) => name);
-  for (const child of children) names.reserve(child.local);
-  for (const key of keys) names.reserve(key.local);
+  for (const child of children) {
+    names.reserve(child.local);
+  }
+  for (const key of keys) {
+    names.reserve(key.local);
+  }
   const ownsKeys =
     (module.keys?.length ?? 0) > 0 &&
     keyOwner(module.components, module.exports) === component.name;
-  if (ownsKeys) for (const key of module.keys!) names.reserve(key.name);
+  if (ownsKeys) {
+    for (const key of module.keys!) {
+      names.reserve(key.name);
+    }
+  }
   const object = component.propsParameter?.form === "object" ? component.propsParameter.name! : "";
   // A prop's own name where nothing takes it, `<name>Prop` otherwise.
   const propLocal = (prop: string) => {
-    if (object) return `${object}.${prop}`;
+    if (object) {
+      return `${object}.${prop}`;
+    }
     return names.scope.has(prop) || RESERVED_WORDS.has(prop)
       ? names.claim(`${prop}Prop`)
       : names.claim(prop);
@@ -226,9 +236,13 @@ export function planComposition(
       for (const attribute of attributes) {
         if (attribute.kind === "Model" || attribute.kind === "ModelBinding") {
           const [reference] = attribute.value.refs;
-          if (reference?.kind !== "Binding") continue;
+          if (reference?.kind !== "Binding") {
+            continue;
+          }
           bound.add(reference.binding);
-          if (attribute.kind === "Model") controlled.add(reference.binding);
+          if (attribute.kind === "Model") {
+            controlled.add(reference.binding);
+          }
         }
       }
     },
@@ -236,7 +250,9 @@ export function planComposition(
 
   const mirrored = new Set<BindingId>();
   for (const { code, context } of codeOf(component)) {
-    if (context !== "client") continue;
+    if (context !== "client") {
+      continue;
+    }
     for (const reference of code.refs) {
       if (reference.kind === "Binding" && controlled.has(reference.binding)) {
         mirrored.add(reference.binding);
@@ -255,7 +271,9 @@ export function planComposition(
 
   const models = new Map<BindingId, ModelPlan>();
   for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
+    if (item.kind !== "Model") {
+      continue;
+    }
     const binding = component.bindings.find((each) => each.id === item.binding)!;
     const event = `on${pascalCase(item.name)}Change`;
     const writes = written.has(item.binding);
@@ -282,7 +300,9 @@ export function planComposition(
       const base = pascalCase(binding.name);
       plan.local = { value: names.claim(`local${base}`), setter: names.claim(`setLocal${base}`) };
     }
-    if (writes || mirrored.has(item.binding)) plan.mirror = names.claim(`${binding.name}Ref`);
+    if (writes || mirrored.has(item.binding)) {
+      plan.mirror = names.claim(`${binding.name}Ref`);
+    }
     models.set(item.binding, plan);
   }
 
@@ -340,7 +360,9 @@ export function planComposition(
 
   const provided = new Map<ProvideItem, string>();
   for (const item of component.setup) {
-    if (item.kind !== "Provide") continue;
+    if (item.kind !== "Provide") {
+      continue;
+    }
     const base = item.key.replace(/Key$/, "") || item.key;
     provided.set(item, names.claim(`${base.charAt(0).toLowerCase()}${base.slice(1)}Value`));
   }
@@ -353,14 +375,17 @@ export function planComposition(
           visit(node.children, scoped);
           break;
         case "If":
-          for (const branch of node.branches) visit(branch.children, true);
+          for (const branch of node.branches) {
+            visit(branch.children, true);
+          }
           break;
         case "For":
           visit([node.body], true);
           break;
         case "Component":
-          for (const fill of node.fills)
+          for (const fill of node.fills) {
             visit(fill.children, scoped || fill.parameter !== undefined);
+          }
           break;
         case "SlotOutlet":
           visit(node.fallback, scoped);
@@ -390,8 +415,12 @@ export function planComposition(
   );
 
   const interfaces: CompositionPlan["interfaces"] = {};
-  if (slots.size) interfaces.slots = names.claim(`${component.name}Slots`);
-  if (models.size) interfaces.models = names.claim(`${component.name}Models`);
+  if (slots.size) {
+    interfaces.slots = names.claim(`${component.name}Slots`);
+  }
+  if (models.size) {
+    interfaces.models = names.claim(`${component.name}Models`);
+  }
   if (fallthrough || expose || refRoot.refTags !== undefined) {
     interfaces.attributes = names.claim(`${component.name}Attributes`);
   }
@@ -444,7 +473,9 @@ const RESERVED_WORDS: ReadonlySet<string> = new Set(
 
 /** The prop a slot is passed as: `children`, its own name, or `render<Slot>` for a scoped one. */
 export function slotProp(slot: string, scoped: boolean): string {
-  if (scoped) return `render${pascalCase(slot)}`;
+  if (scoped) {
+    return `render${pascalCase(slot)}`;
+  }
   return slot === "default" ? "children" : slot;
 }
 
@@ -453,17 +484,31 @@ function readSlots(component: UfComponent): Set<string> {
   const found = new Set<string>();
   const references = (code: Code | undefined) => {
     for (const reference of code?.refs ?? []) {
-      if (reference.kind === "Slot") found.add(reference.slot);
+      if (reference.kind === "Slot") {
+        found.add(reference.slot);
+      }
     }
   };
   walk(component.render, {
     enter(node) {
-      if (node.kind === "SlotOutlet") found.add(node.slot);
-      if (node.kind === "Component" || node.kind === "Dynamic") {
-        for (const fill of node.fills ?? []) if (fill.forward) found.add(fill.forward);
+      if (node.kind === "SlotOutlet") {
+        found.add(node.slot);
       }
-      if (node.kind === "If") for (const branch of node.branches) references(branch.condition);
-      if (node.kind === "Interpolation") references(node.value);
+      if (node.kind === "Component" || node.kind === "Dynamic") {
+        for (const fill of node.fills ?? []) {
+          if (fill.forward) {
+            found.add(fill.forward);
+          }
+        }
+      }
+      if (node.kind === "If") {
+        for (const branch of node.branches) {
+          references(branch.condition);
+        }
+      }
+      if (node.kind === "Interpolation") {
+        references(node.value);
+      }
     },
   });
   return found;
@@ -479,12 +524,20 @@ function readSlots(component: UfComponent): Set<string> {
 function fallthroughRoot(
   component: UfComponent,
 ): ElementNode | ComponentNode | DynamicNode | undefined {
-  if (component.inheritAttrs === false) return restElement(component);
+  if (component.inheritAttrs === false) {
+    return restElement(component);
+  }
   const { render } = component;
-  if (render.kind === "Element") return render;
+  if (render.kind === "Element") {
+    return render;
+  }
   const [only] = render.children;
-  if (render.children.length !== 1) return undefined;
-  if (only?.kind === "Component") return only;
+  if (render.children.length !== 1) {
+    return undefined;
+  }
+  if (only?.kind === "Component") {
+    return only;
+  }
   return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
     ? only
     : undefined;
@@ -495,8 +548,12 @@ function restElement(component: UfComponent): ElementNode | undefined {
   let found: ElementNode | undefined;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" || found) return;
-      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+      if (node.kind !== "Element" || found) {
+        return;
+      }
+      if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+        found = node;
+      }
     },
   });
   return found;
@@ -513,12 +570,20 @@ function fallthroughTags(
   node: ElementNode | ComponentNode | DynamicNode,
   seen: Set<string>,
 ): readonly string[] | undefined {
-  if (node.kind === "Element") return [node.tag];
-  if (node.kind === "Dynamic") return candidateTags(node);
+  if (node.kind === "Element") {
+    return [node.tag];
+  }
+  if (node.kind === "Dynamic") {
+    return candidateTags(node);
+  }
   const api = childApi(module, node.component);
-  if (api) return apiFallthroughTags(api);
+  if (api) {
+    return apiFallthroughTags(api);
+  }
   const own = module.components.find((each) => each.name === node.component);
-  if (!own || seen.has(own.name)) return undefined;
+  if (!own || seen.has(own.name)) {
+    return undefined;
+  }
   seen.add(own.name);
   const root = fallthroughRoot(own);
   return root && fallthroughTags(module, root, seen);
@@ -526,7 +591,9 @@ function fallthroughTags(
 
 /** The tags what falls through to a component lands on, as its API gives them (ADR-0122). */
 function apiFallthroughTags(api: ComponentApi): readonly string[] | undefined {
-  if (api.fallthroughTag !== undefined) return [api.fallthroughTag];
+  if (api.fallthroughTag !== undefined) {
+    return [api.fallthroughTag];
+  }
   return api.inheritAttrs ? api.rootTags : undefined;
 }
 
@@ -558,7 +625,9 @@ export function componentFallthroughTag(module: UfModule, node: ComponentNode): 
 export function childApi(module: UfModule, local: string): ComponentApi | undefined {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     return entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"
@@ -579,22 +648,32 @@ function refTagsOf(component: UfComponent, module: UfModule): readonly string[] 
   while (current && !seen.has(current.name)) {
     seen.add(current.name);
     const render: UfComponent["render"] = current.render;
-    if (render.kind === "Element") return [render.tag];
+    if (render.kind === "Element") {
+      return [render.tag];
+    }
     const only: RenderNode | undefined = render.children[0];
-    if (render.children.length !== 1) return undefined;
+    if (render.children.length !== 1) {
+      return undefined;
+    }
     if (only?.kind === "Dynamic") {
       const tags = candidateTags(only);
       return tags.length === only.candidates.length ? tags : undefined;
     }
-    if (only?.kind !== "Component") return undefined;
+    if (only?.kind !== "Component") {
+      return undefined;
+    }
     const api = childApi(module, only.component);
     if (api) {
-      if (api.exposes.length) return undefined;
+      if (api.exposes.length) {
+        return undefined;
+      }
       return api.refTag !== undefined ? [api.refTag] : api.refTags;
     }
     const name: string = only.component;
     current = module.components.find((each) => each.name === name);
-    if (current?.exposes) return undefined;
+    if (current?.exposes) {
+      return undefined;
+    }
   }
   return undefined;
 }
@@ -606,9 +685,13 @@ function refTagsOf(component: UfComponent, module: UfModule): readonly string[] 
  */
 function declaredProps(component: UfComponent): string[] {
   const names = new Set<string>(component.props.map((prop) => prop.name));
-  for (const event of component.emits?.events ?? []) names.add(`on${pascalCase(event.name)}`);
+  for (const event of component.emits?.events ?? []) {
+    names.add(`on${pascalCase(event.name)}`);
+  }
   for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
+    if (item.kind !== "Model") {
+      continue;
+    }
     names.add(item.name);
     names.add(`on${pascalCase(item.name)}Change`);
   }
@@ -631,24 +714,32 @@ export function rootComponentProps(
 ): string[] {
   const names = new Set<string>();
   for (const attribute of node.attributes) {
-    if (attribute.kind === "Prop") names.add(attribute.name);
-    else if (attribute.kind === "Listener") names.add(`on${pascalCase(attribute.event)}`);
-    else if (attribute.kind === "ModelBinding") {
+    if (attribute.kind === "Prop") {
+      names.add(attribute.name);
+    } else if (attribute.kind === "Listener") {
+      names.add(`on${pascalCase(attribute.event)}`);
+    } else if (attribute.kind === "ModelBinding") {
       names.add(attribute.model);
       names.add(`on${pascalCase(attribute.model)}Change`);
     }
   }
-  for (const fill of node.fills) names.add(slotProp(fill.slot, scoped(node.component, fill.slot)));
+  for (const fill of node.fills) {
+    names.add(slotProp(fill.slot, scoped(node.component, fill.slot)));
+  }
   return [...names];
 }
 
 /** The authoring type of the ref a key holds, by the local name the setup uses. */
 export function keyRef(module: UfModule, local: string): RefType | undefined {
   const own = module.keys?.find((key) => key.name === local);
-  if (own) return own.ref;
+  if (own) {
+    return own.ref;
+  }
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Key" && name.local === local);
-    if (imported) return entry.api.keys.find((key) => key.name === imported.imported)?.ref;
+    if (imported) {
+      return entry.api.keys.find((key) => key.name === imported.imported)?.ref;
+    }
   }
   return undefined;
 }

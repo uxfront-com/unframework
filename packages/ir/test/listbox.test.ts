@@ -48,7 +48,9 @@ describe("listBoxSize", () => {
   });
 
   it("reads the display size with HTML's rules for parsing non-negative integers", () => {
-    for (const size of ["2", " 2", "\t+3", "2px", "007"]) expect(isListBox(size), size).toBe(true);
+    for (const size of ["2", " 2", "\t+3", "2px", "007"]) {
+      expect(isListBox(size), size).toBe(true);
+    }
     for (const size of ["1", "0", "-0", "-2", "", "x", "\u00a02", "01"]) {
       expect(isListBox(size), size).toBe(false);
     }
@@ -63,7 +65,9 @@ describe("listBoxSize", () => {
       el("select", { size: "2" }, el("optgroup", { label: "g", disabled: true }, option())),
       el("input", { size: "2" }),
     ];
-    for (const element of quiet) expect(listBoxSize(element)).toBeUndefined();
+    for (const element of quiet) {
+      expect(listBoxSize(element)).toBeUndefined();
+    }
   });
 });
 
@@ -128,6 +132,8 @@ describe("listBoxSize with bindings and control flow", () => {
       select([bound("name")], option()),
       createElement("input", [bound("size")], [], at),
     ];
-    for (const element of quiet) expect(listBoxSize(element)).toBeUndefined();
+    for (const element of quiet) {
+      expect(listBoxSize(element)).toBeUndefined();
+    }
   });
 });

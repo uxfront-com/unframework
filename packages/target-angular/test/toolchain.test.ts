@@ -50,8 +50,9 @@ describe("frameworkCompile (L3)", () => {
     expect(goldens.length).toBeGreaterThan(0);
     const results = await toolchain.frameworkCompile(goldens.map(read), context);
     expect([...results.keys()].toSorted()).toEqual(goldens.toSorted());
-    for (const [path, result] of results)
+    for (const [path, result] of results) {
       expect(result, path).toEqual({ errors: [], warnings: [] });
+    }
   }, 60_000);
 
   it("reports a mismatched closing tag as NG5002 on its file only", async () => {
@@ -92,7 +93,9 @@ describe("frameworkCompile (L3)", () => {
       ],
       warnings: [],
     });
-    for (const golden of goldens) expect(results.get(golden)!.errors, golden).toEqual([]);
+    for (const golden of goldens) {
+      expect(results.get(golden)!.errors, golden).toEqual([]);
+    }
   });
 
   // ngtsc silently skips template type-checking for a file whose directory TypeScript believes
@@ -147,7 +150,9 @@ describe("typecheck (L4)", () => {
   it("type-checks every committed golden output clean in one run", async () => {
     const results = await toolchain.typecheck(goldens, context);
     expect([...results.keys()].toSorted()).toEqual(goldens.toSorted());
-    for (const [path, messages] of results) expect(messages, path).toEqual([]);
+    for (const [path, messages] of results) {
+      expect(messages, path).toEqual([]);
+    }
   });
 
   it("reports a type error against the file that has it", async () => {
@@ -163,7 +168,9 @@ describe("typecheck (L4)", () => {
         code: "TS2322",
       },
     ]);
-    for (const golden of goldens) expect(results.get(golden), golden).toEqual([]);
+    for (const golden of goldens) {
+      expect(results.get(golden), golden).toEqual([]);
+    }
   });
 
   // The toolchain's tsconfig makes every extended template diagnostic an error.

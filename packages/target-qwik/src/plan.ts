@@ -253,26 +253,38 @@ export function planSetup(
   const consts = planConsts(component, hoisted, args);
   const qrls = new Set<string>();
   for (const plan of functions.values()) {
-    if (plan.form === "qrl" || plan.form === "both") qrls.add(plan.qrl);
+    if (plan.form === "qrl" || plan.form === "both") {
+      qrls.add(plan.qrl);
+    }
   }
   // A callback argument is the caller's QRL (./composable.ts): a statement call of one that
   // returns nothing or a promise floats, as an emit does, and any other call is awaited.
   const promiseQrls = new Set<string>();
   for (const parameter of args.values()) {
-    if (parameter.kind !== "callback") continue;
+    if (parameter.kind !== "callback") {
+      continue;
+    }
     qrls.add(parameter.name);
-    if (callbackFloats(parameter)) promiseQrls.add(parameter.name);
+    if (callbackFloats(parameter)) {
+      promiseQrls.add(parameter.name);
+    }
   }
   // A function a composable's call destructures is the hook's QRL (ADR-0069): a call of an async
   // one is its promise, awaited only where the source awaits it.
   for (const item of component.setup) {
-    if (item.kind !== "Use") continue;
+    if (item.kind !== "Use") {
+      continue;
+    }
     const api = composableApi(module, item.composable);
     for (const used of item.members) {
       const { name, kind } = bindingOf(component, used.binding);
-      if (kind !== "usedFn") continue;
+      if (kind !== "usedFn") {
+        continue;
+      }
       qrls.add(name);
-      if (api.members.find((member) => member.name === used.member)?.async) promiseQrls.add(name);
+      if (api.members.find((member) => member.name === used.member)?.async) {
+        promiseQrls.add(name);
+      }
     }
   }
   const emitted = emittedEvents(component);
@@ -280,8 +292,9 @@ export function planSetup(
   const objectForm = component.propsParameter?.form === "object";
   if (!objectForm) {
     for (const event of component.emits?.events ?? []) {
-      if (emitted.has(event.name))
+      if (emitted.has(event.name)) {
         eventLocals.set(event.name, names.fresh(qwikEventProp(event.name)));
+      }
     }
   }
   const eventProp = (event: string): string =>
@@ -293,14 +306,22 @@ export function planSetup(
   const listeners = planListeners(component, module);
   const qrlFunctions = new Map<string, BindingId>();
   for (const [id, fnPlan] of functions) {
-    if (fnPlan.form !== "qrl" && fnPlan.form !== "both") continue;
+    if (fnPlan.form !== "qrl" && fnPlan.form !== "both") {
+      continue;
+    }
     qrlFunctions.set(fnPlan.qrl, id);
-    if (returnsPromise(fnPlan.item.function)) promiseQrls.add(fnPlan.qrl);
+    if (returnsPromise(fnPlan.item.function)) {
+      promiseQrls.add(fnPlan.qrl);
+    }
   }
   const stable = planStable(component, functions, names);
   const wholeRefReads = refReadsUsedWhole(component);
   const composition = planComposition(component, module, names);
-  for (const model of composition.models.values()) if (model.written) qrls.add(model.setter);
+  for (const model of composition.models.values()) {
+    if (model.written) {
+      qrls.add(model.setter);
+    }
+  }
   const plan: SetupPlan = {
     component,
     module,
@@ -338,7 +359,9 @@ function planEventFunctions(
 ): { planned: Map<BindingId, EventFunction>; empty: Set<BindingId> } {
   const functions = new Map<BindingId, FunctionCode>();
   for (const item of component.setup) {
-    if (item.kind !== "Function") continue;
+    if (item.kind !== "Function") {
+      continue;
+    }
     if (item.function.parameters.some((parameter) => parameter.event !== undefined)) {
       functions.set(item.binding, item.function);
     }
@@ -360,11 +383,17 @@ function planEventFunctions(
   const removed = new Set([...splits.values()].flatMap((split) => split.removedCalls));
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
+        if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") {
+          continue;
+        }
         const split = splitHandler(attribute.handler.function, component, empty);
-        for (const offset of split.removedCalls) removed.add(offset);
+        for (const offset of split.removedCalls) {
+          removed.add(offset);
+        }
       }
     },
   });
@@ -389,7 +418,9 @@ function planEventFunctions(
     const split = splits.get(id)!;
     const takesElement = element.has(id);
     const base = { split, element: takesElement, passes: passes.get(id)! };
-    if (!split.controls.length && !split.removedCalls.length && !takesElement) continue;
+    if (!split.controls.length && !split.removedCalls.length && !takesElement) {
+      continue;
+    }
     if (split.empty && !used.has(id)) {
       planned.set(id, { ...base, code: null });
       continue;
@@ -402,8 +433,11 @@ function planEventFunctions(
     } else if (!split.usesEvent && index === parameters.length - 1) {
       // An event nothing reads any more: a function only listeners name drops it; one a handler
       // calls keeps its place, unused.
-      if (handlerOnly.has(id)) parameters.splice(index, 1);
-      else parameters[index] = { ...event, name: `_${event.name!}` };
+      if (handlerOnly.has(id)) {
+        parameters.splice(index, 1);
+      } else {
+        parameters[index] = { ...event, name: `_${event.name!}` };
+      }
     }
     const code: FunctionCode = { ...fn, parameters, body: split.body };
     delete code.eventControls;
@@ -451,7 +485,9 @@ function planStable(
   const stable = new Set<BindingId>();
   // The functions handed to `addEventListener`/`removeEventListener`, anywhere in client code.
   for (const { function: fn, context } of functionsOf(component)) {
-    if (context !== "client") continue;
+    if (context !== "client") {
+      continue;
+    }
     const base = fn.body.span.start;
     const values = new Map<number, BindingId>();
     for (const reference of fn.body.refs) {
@@ -459,7 +495,9 @@ function planStable(
         values.set(reference.span.start - base, reference.binding);
       }
     }
-    if (!values.size) continue;
+    if (!values.size) {
+      continue;
+    }
     walkNodes(
       parseCodeSource(fn.body.code, fn.expression ? "expression" : "statements").root,
       (node) => {
@@ -475,14 +513,18 @@ function planStable(
         }
         const listener = (node.arguments as SyntaxNode[])[1];
         const id = listener ? values.get(unwrappedNode(listener).start) : undefined;
-        if (id !== undefined) stable.add(id);
+        if (id !== undefined) {
+          stable.add(id);
+        }
       },
     );
   }
   // The references between client functions, and which function reaches which.
   const edges = new Map<BindingId, { to: BindingId; at: number; call: boolean }[]>();
   for (const [id, fnPlan] of functions) {
-    if (!qrl(id)) continue;
+    if (!qrl(id)) {
+      continue;
+    }
     edges.set(
       id,
       fnPlan.item.function.body.refs.flatMap((reference) =>
@@ -510,10 +552,14 @@ function planStable(
   for (const [from, list] of edges) {
     for (const edge of list) {
       // A reference by value that closes a cycle: the function it reads reaches back to this one.
-      if (edge.call || !reach(edge.to).has(from)) continue;
+      if (edge.call || !reach(edge.to).has(from)) {
+        continue;
+      }
       lazy.add(edge.at);
       stable.add(edge.to);
-      if (!members.includes(edge.to)) members.push(edge.to);
+      if (!members.includes(edge.to)) {
+        members.push(edge.to);
+      }
     }
   }
   return {
@@ -534,9 +580,13 @@ function refReadsUsedWhole(component: UfComponent): Set<number> {
   const refs = new Set(
     component.bindings.flatMap((binding) => (binding.kind === "templateRef" ? [binding.id] : [])),
   );
-  if (!refs.size) return found;
+  if (!refs.size) {
+    return found;
+  }
   for (const { function: fn, context } of functionsOf(component)) {
-    if (context !== "client") continue;
+    if (context !== "client") {
+      continue;
+    }
     const base = fn.body.span.start;
     // Each read's span in the body: the node of `field.value` itself, not of what starts with it.
     const reads = new Map(
@@ -546,13 +596,19 @@ function refReadsUsedWhole(component: UfComponent): Set<number> {
           : [],
       ),
     );
-    if (!reads.size) continue;
+    if (!reads.size) {
+      continue;
+    }
     const visit = (node: unknown, parent: SyntaxNode | undefined, key: string): void => {
       if (Array.isArray(node)) {
-        for (const item of node) visit(item, parent, key);
+        for (const item of node) {
+          visit(item, parent, key);
+        }
         return;
       }
-      if (!isSyntaxNode(node)) return;
+      if (!isSyntaxNode(node)) {
+        return;
+      }
       if (reads.get(node.start) === node.end && !usedPartly(parent, key)) {
         found.add(base + node.start);
       }
@@ -573,7 +629,9 @@ function refReadsUsedWhole(component: UfComponent): Set<number> {
 
 /** Whether a node at \`key\` of \`parent\` is used for its truth or its members only. */
 function usedPartly(parent: SyntaxNode | undefined, key: string): boolean {
-  if (!parent) return false;
+  if (!parent) {
+    return false;
+  }
   switch (parent.type) {
     case "MemberExpression":
       return key === "object";
@@ -615,20 +673,28 @@ function isSyntaxNode(value: unknown): value is SyntaxNode {
 /** Calls \`visit\` on every node of a tree, parents first. */
 function walkNodes(root: unknown, visit: (node: SyntaxNode) => void): void {
   if (Array.isArray(root)) {
-    for (const item of root) walkNodes(item, visit);
+    for (const item of root) {
+      walkNodes(item, visit);
+    }
     return;
   }
-  if (!isSyntaxNode(root)) return;
+  if (!isSyntaxNode(root)) {
+    return;
+  }
   visit(root);
   for (const [key, value] of Object.entries(root)) {
-    if (key !== "type" && key !== "parent" && typeof value === "object") walkNodes(value, visit);
+    if (key !== "type" && key !== "parent" && typeof value === "object") {
+      walkNodes(value, visit);
+    }
   }
 }
 
 /** An expression without its type assertions (\`onKey as EventListener\`). */
 function unwrappedNode(node: SyntaxNode): SyntaxNode {
   let current = node;
-  while (TYPED.has(current.type)) current = current.expression as SyntaxNode;
+  while (TYPED.has(current.type)) {
+    current = current.expression as SyntaxNode;
+  }
   return current;
 }
 
@@ -645,23 +711,37 @@ export function isPredicate(fn: FunctionCode): boolean {
  * awaits it only where the source does (./calls.ts).
  */
 export function returnsPromise(fn: FunctionCode): boolean {
-  if (fn.async === true) return true;
-  if (/^(?:Promise|PromiseLike)\s*</.test(fn.returnType?.code.trim() ?? "")) return true;
+  if (fn.async === true) {
+    return true;
+  }
+  if (/^(?:Promise|PromiseLike)\s*</.test(fn.returnType?.code.trim() ?? "")) {
+    return true;
+  }
   const returned: unknown[] = [];
   if (fn.expression) {
     returned.push(parseCodeSource(fn.body.code, "expression").root);
   } else {
     const visit = (node: unknown): void => {
-      if (!node || typeof node !== "object") return;
+      if (!node || typeof node !== "object") {
+        return;
+      }
       if (Array.isArray(node)) {
-        for (const item of node) visit(item);
+        for (const item of node) {
+          visit(item);
+        }
         return;
       }
       const typed = node as { type?: unknown; argument?: unknown };
-      if (typeof typed.type !== "string" || /Function/.test(typed.type)) return;
-      if (typed.type === "ReturnStatement") returned.push(typed.argument);
+      if (typeof typed.type !== "string" || /Function/.test(typed.type)) {
+        return;
+      }
+      if (typed.type === "ReturnStatement") {
+        returned.push(typed.argument);
+      }
       for (const [key, value] of Object.entries(typed)) {
-        if (key !== "type" && typeof value === "object") visit(value);
+        if (key !== "type" && typeof value === "object") {
+          visit(value);
+        }
       }
     };
     visit(parseCodeSource(fn.body.code, "statements").root);
@@ -681,13 +761,22 @@ function isPromiseExpression(node: unknown): boolean {
     };
     expression?: unknown;
   } | null;
-  if (!typed) return false;
-  if (TYPED.has(typed.type ?? "")) return isPromiseExpression(typed.expression);
+  if (!typed) {
+    return false;
+  }
+  if (TYPED.has(typed.type ?? "")) {
+    return isPromiseExpression(typed.expression);
+  }
   const callee = typed.callee;
-  if (typed.type === "NewExpression")
+  if (typed.type === "NewExpression") {
     return callee?.type === "Identifier" && callee.name === "Promise";
-  if (typed.type !== "CallExpression" || !callee) return false;
-  if (callee.type === "Identifier") return callee.name === "fetch";
+  }
+  if (typed.type !== "CallExpression" || !callee) {
+    return false;
+  }
+  if (callee.type === "Identifier") {
+    return callee.name === "fetch";
+  }
   return (
     callee.type === "MemberExpression" &&
     (callee.object?.name === "Promise" ||
@@ -728,7 +817,9 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
   const declared = target?.kind === "Element" ? declaredProps(component) : undefined;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") {
+        return;
+      }
       const phases = new Map<string, Set<boolean>>();
       const add = (event: string, capture: boolean, passively: boolean) => {
         const seen = phases.get(event) ?? new Set<boolean>();
@@ -739,15 +830,23 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
         passive.set(event, kinds);
       };
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event") continue;
+        if (attribute.kind !== "Event") {
+          continue;
+        }
         add(attribute.event, attribute.capture === true, attribute.passive === true);
       }
       if (declared && node === target) {
         for (const event of phases.keys()) {
-          if (!declared.has(qwikListenerProp(event))) add(event, false, false);
+          if (!declared.has(qwikListenerProp(event))) {
+            add(event, false, false);
+          }
         }
       }
-      for (const [event, seen] of phases) if (seen.size === 2) windowEvents.add(event);
+      for (const [event, seen] of phases) {
+        if (seen.size === 2) {
+          windowEvents.add(event);
+        }
+      }
     },
   });
   interface Entry {
@@ -762,7 +861,9 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
       case "Element": {
         const events = new Map<string, EventAttribute[]>();
         for (const attribute of node.attributes) {
-          if (attribute.kind !== "Event") continue;
+          if (attribute.kind !== "Event") {
+            continue;
+          }
           events.set(attribute.event, [...(events.get(attribute.event) ?? []), attribute]);
         }
         for (const [event, listeners] of events) {
@@ -784,11 +885,17 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
             });
           }
         }
-        for (const child of node.children) visit(child, [...path, node]);
+        for (const child of node.children) {
+          visit(child, [...path, node]);
+        }
         return;
       }
       case "If":
-        for (const branch of node.branches) for (const child of branch.children) visit(child, path);
+        for (const branch of node.branches) {
+          for (const child of branch.children) {
+            visit(child, path);
+          }
+        }
         return;
       case "For":
         visit(node.body, path);
@@ -804,7 +911,11 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
           (attribute): attribute is EventAttribute => attribute.kind === "Event",
         );
         if (!passed.length) {
-          for (const fill of node.fills) for (const child of fill.children) visit(child, path);
+          for (const fill of node.fills) {
+            for (const child of fill.children) {
+              visit(child, path);
+            }
+          }
           return;
         }
         const element: ElementNode = {
@@ -819,7 +930,9 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
         return;
       }
       case "SlotOutlet":
-        for (const child of node.fallback) visit(child, path);
+        for (const child of node.fallback) {
+          visit(child, path);
+        }
         return;
       case "Dynamic":
         // Its tag takes its listeners and children, as an element (codegen's `jsxDynamic`).
@@ -833,20 +946,31 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
           },
           path,
         );
-        for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
+        for (const fill of node.fills ?? []) {
+          for (const child of fill.children) {
+            visit(child, path);
+          }
+        }
         return;
       case "Teleport":
       // A transition's child renders in its place (ADR-0100).
       case "Transition":
-        for (const child of node.children) visit(child, path);
+        for (const child of node.children) {
+          visit(child, path);
+        }
         return;
       default:
         unreachable(node);
     }
   };
   const root = component.render;
-  if (root.kind === "Fragment") for (const child of root.children) visit(child, []);
-  else visit(root, []);
+  if (root.kind === "Fragment") {
+    for (const child of root.children) {
+      visit(child, []);
+    }
+  } else {
+    visit(root, []);
+  }
   const groups = new Map<EventAttribute, ListenerGroup>();
   for (const entry of entries) {
     const { element, event, listeners } = entry.group;
@@ -866,7 +990,9 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
       }
     });
     const group: ListenerGroup = { ...entry.group, synchronous: listeners.length > 1 || after };
-    for (const listener of listeners) groups.set(listener, group);
+    for (const listener of listeners) {
+      groups.set(listener, group);
+    }
   }
   const mixedPassive = new Set(
     [...passive].flatMap(([event, kinds]) => (kinds.size === 2 ? [event] : [])),
@@ -897,7 +1023,9 @@ function declaredQrls(
     const sites = callSites(code.code, kind, discarded);
     const reached = new Map<BindingId, { inPlace: boolean; local: boolean; other: boolean }>();
     for (const reference of code.refs) {
-      if (reference.kind !== "Binding" || !client(reference.binding)) continue;
+      if (reference.kind !== "Binding" || !client(reference.binding)) {
+        continue;
+      }
       const fn = functions.get(reference.binding)!.item.function;
       const site = reference.call ? sites.get(reference.span.start - code.span.start) : undefined;
       const entry = reached.get(reference.binding) ?? {
@@ -914,18 +1042,26 @@ function declaredQrls(
       reached.set(reference.binding, entry);
     }
     for (const [id, { inPlace, local, other }] of reached) {
-      if (inPlace) inline(id);
-      if (other && !local) need(id);
+      if (inPlace) {
+        inline(id);
+      }
+      if (other && !local) {
+        need(id);
+      }
     }
   };
   const body = (id: BindingId) => functions.get(id)!.item.function;
   const need = (id: BindingId) => {
-    if (declared.has(id)) return;
+    if (declared.has(id)) {
+      return;
+    }
     declared.add(id);
     visit(body(id).body, kindOf(body(id)), false, false);
   };
   const inline = (id: BindingId) => {
-    if (inlined.has(id)) return;
+    if (inlined.has(id)) {
+      return;
+    }
     inlined.add(id);
     visit(body(id).body, kindOf(body(id)), true, false);
   };
@@ -956,27 +1092,40 @@ function declaredQrls(
   // A fill declares a copy of each setup function it calls (./composition.ts `fillExpressions`).
   for (const expression of fillExpressions(component)) {
     for (const reference of expression.refs) {
-      if (reference.kind !== "Binding" || !client(reference.binding)) continue;
+      if (reference.kind !== "Binding" || !client(reference.binding)) {
+        continue;
+      }
       // Every call, a callback's included, runs the fill's own copy; a function passed on is a
       // QRL.
-      if (reference.call) inline(reference.binding);
-      else need(reference.binding);
+      if (reference.call) {
+        inline(reference.binding);
+      } else {
+        need(reference.binding);
+      }
     }
   }
   // What a component exposes, its consumer calls as QRLs (./composition.ts), and so does a
   // composable's caller what it returns.
   for (const id of [...(component.exposes?.functions ?? []), ...returned]) {
-    if (client(id)) need(id);
+    if (client(id)) {
+      need(id);
+    }
   }
   // A directive's value is read in its visible task (./directive.ts), and a function it names is
   // a QRL its hooks call (ADR-0099).
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Directive") continue;
+        if (attribute.kind !== "Directive") {
+          continue;
+        }
         for (const reference of attribute.value.refs) {
-          if (reference.kind === "Binding" && client(reference.binding)) need(reference.binding);
+          if (reference.kind === "Binding" && client(reference.binding)) {
+            need(reference.binding);
+          }
         }
       }
     },
@@ -1034,7 +1183,9 @@ export function eventCallees(
   const found: BindingId[] = [];
   for (const reference of refs) {
     if (reference.kind === "Binding" && reference.call && functions.has(reference.binding)) {
-      if (!found.includes(reference.binding)) found.push(reference.binding);
+      if (!found.includes(reference.binding)) {
+        found.push(reference.binding);
+      }
     }
   }
   return found;
@@ -1069,9 +1220,13 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
         case "component":
           return written;
         case "templateRef":
-          if (site !== "client") return written;
+          if (site !== "client") {
+            return written;
+          }
           // \`rendered()\` gives \`T | null\`; a read used whole converts Qwik's \`undefined\`.
-          if (plan.conditionalRefs.has(binding.id)) return `${names.once("rendered")}(${written})`;
+          if (plan.conditionalRefs.has(binding.id)) {
+            return `${names.once("rendered")}(${written})`;
+          }
           return plan.wholeRefReads.has(reference.span.start) ? `(${written} ?? null)` : written;
         case "localVar":
           return `${written}.value`;
@@ -1124,7 +1279,9 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
       return names.imports.add("@qwik.dev/core/build", "isDev");
     },
     event(reference) {
-      if (reference.member === "currentTarget") return names.once("element");
+      if (reference.member === "currentTarget") {
+        return names.once("element");
+      }
       if (event === undefined) {
         throw new Error(
           `\`${reference.member}\` of an event read where no event parameter is known.`,
@@ -1176,14 +1333,18 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
   const used = new Set(
     component.bindings.filter(({ kind }) => kind === "usedFn").map(({ id }) => id),
   );
-  if (!used.size) return [];
+  if (!used.size) {
+    return [];
+  }
   // A named or scoped slot's fill is a render prop the child calls as it renders: render code too.
   const codes: Code[] = expressionsOf(component).map(({ expression }) => expression);
   for (const item of component.setup) {
     switch (item.kind) {
       case "State":
       case "Variable":
-        if (item.initial) codes.push(item.initial);
+        if (item.initial) {
+          codes.push(item.initial);
+        }
         break;
       case "Const":
       case "Await":
@@ -1194,22 +1355,29 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
         break;
       case "Watch":
         for (const source of item.sources) {
-          if (source.kind === "Getter") codes.push(source.getter.body);
+          if (source.kind === "Getter") {
+            codes.push(source.getter.body);
+          }
         }
         break;
       case "Provide":
         codes.push(item.value);
         break;
       case "Inject":
-        if (item.fallback) codes.push(item.fallback);
+        if (item.fallback) {
+          codes.push(item.fallback);
+        }
         break;
       case "DevCheck":
         codes.push(item.code);
         break;
       case "Use":
         for (const argument of item.arguments) {
-          if (argument.kind === "Value") codes.push(argument.value);
-          else if (argument.kind === "Getter") codes.push(argument.getter.body);
+          if (argument.kind === "Value") {
+            codes.push(argument.value);
+          } else if (argument.kind === "Getter") {
+            codes.push(argument.getter.body);
+          }
         }
         break;
       case "Function":
@@ -1234,7 +1402,9 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
         continue;
       }
       const fn = functions.get(reference.binding);
-      if (!fn) continue;
+      if (!fn) {
+        continue;
+      }
       reached.add(reference.binding);
       codes.push(fn.function.body);
     }
@@ -1260,13 +1430,19 @@ export function selfReadingArguments(
   const declared = declarationReads(component);
   const found: { reference: BindingReference; member: BindingId }[] = [];
   for (const item of component.setup) {
-    if (item.kind !== "Use") continue;
+    if (item.kind !== "Use") {
+      continue;
+    }
     const members = new Set(item.members.map(({ binding }) => binding));
     for (const argument of item.arguments) {
       for (const reference of argumentCode(argument).refs) {
-        if (reference.kind !== "Binding") continue;
+        if (reference.kind !== "Binding") {
+          continue;
+        }
         const member = reachedMember(reference.binding, members, declared);
-        if (member !== undefined) found.push({ reference, member });
+        if (member !== undefined) {
+          found.push({ reference, member });
+        }
       }
     }
   }
@@ -1295,7 +1471,9 @@ export function hooksReadByOtherCalls(component: UfComponent): Set<string> {
           ),
         ),
     );
-    if (read) found.add(item.composable);
+    if (read) {
+      found.add(item.composable);
+    }
   }
   return found;
 }
@@ -1316,13 +1494,16 @@ function declarationReads(component: UfComponent): Map<BindingId, Code[]> {
         break;
       case "State":
       case "Variable":
-        if (item.initial) declared.set(item.binding, [item.initial]);
+        if (item.initial) {
+          declared.set(item.binding, [item.initial]);
+        }
         break;
       // Another call's member exists once that call returns, after its own arguments are made:
       // a cycle through it is a cycle too.
       case "Use":
-        for (const { binding } of item.members)
+        for (const { binding } of item.members) {
           declared.set(binding, item.arguments.map(argumentCode));
+        }
         break;
       default:
         break;
@@ -1354,11 +1535,17 @@ function reachedMember(
   const seen = new Set<BindingId>();
   const queue = [start];
   for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
-    if (members.has(id)) return id;
-    if (seen.has(id)) continue;
+    if (members.has(id)) {
+      return id;
+    }
+    if (seen.has(id)) {
+      continue;
+    }
     seen.add(id);
     for (const code of declared.get(id) ?? []) {
-      for (const next of referencedIds(code.refs)) queue.push(next);
+      for (const next of referencedIds(code.refs)) {
+        queue.push(next);
+      }
     }
   }
   return undefined;
@@ -1368,7 +1555,9 @@ function reachedMember(
 function composableApi(module: UfModule, local: string): ComposableApi {
   for (const entry of module.imports ?? []) {
     const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
-    if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;
+    if (name) {
+      return entry.api.composables!.find((each) => each.name === name.imported)!;
+    }
   }
   throw new Error(`No composable is imported as ${local}.`);
 }
@@ -1388,11 +1577,18 @@ function hoistable(
   // Code typed by a type parameter stays in the generic arrow, where `T` is (ADR-0068).
   const typed = typedByParameters(component);
   for (const item of component.setup) {
-    if ((item.kind === "Const" || item.kind === "Function") && typed.has(item.binding)) continue;
+    if ((item.kind === "Const" || item.kind === "Function") && typed.has(item.binding)) {
+      continue;
+    }
     // A function a composable returns is a QRL its caller's client code calls.
-    if (item.kind === "Function" && returned.has(item.binding)) continue;
-    if (item.kind === "Const") candidates.set(item.binding, item.value.refs);
-    else if (item.kind === "Function") candidates.set(item.binding, functionRefs(item.function));
+    if (item.kind === "Function" && returned.has(item.binding)) {
+      continue;
+    }
+    if (item.kind === "Const") {
+      candidates.set(item.binding, item.value.refs);
+    } else if (item.kind === "Function") {
+      candidates.set(item.binding, functionRefs(item.function));
+    }
   }
   const hoisted = new Set(candidates.keys());
   // A module's values are at module scope already (ADR-0070), but where the output imports them
@@ -1405,7 +1601,9 @@ function hoistable(
   for (let changed = true; changed;) {
     changed = false;
     for (const [id, refs] of candidates) {
-      if (!hoisted.has(id)) continue;
+      if (!hoisted.has(id)) {
+        continue;
+      }
       const captures = refs.some((reference) => {
         switch (reference.kind) {
           case "Binding":
@@ -1448,15 +1646,20 @@ function planFunctions(
   returned: ReadonlySet<BindingId>,
 ): Map<BindingId, FunctionPlan> {
   const items = new Map<BindingId, FunctionItem>();
-  for (const item of component.setup) if (item.kind === "Function") items.set(item.binding, item);
+  for (const item of component.setup) {
+    if (item.kind === "Function") {
+      items.set(item.binding, item);
+    }
+  }
   const render = new Set<BindingId>();
   const client = new Set<BindingId>();
   // Getters call plain functions as render code does, but declare a kept one themselves.
   const getters = new Set<BindingId>();
   const mark = (target: Set<BindingId>, refs: readonly CodeReference[]) => {
     for (const reference of refs) {
-      if (reference.kind === "Binding" && items.has(reference.binding))
+      if (reference.kind === "Binding" && items.has(reference.binding)) {
         target.add(reference.binding);
+      }
     }
   };
   // A fill's code runs as a `$` scope (./composition.ts `fillExpressions`): client code.
@@ -1465,9 +1668,13 @@ function planFunctions(
   const directed = new Set<Expression>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Directive") directed.add(attribute.value);
+        if (attribute.kind === "Directive") {
+          directed.add(attribute.value);
+        }
       }
     },
   });
@@ -1478,7 +1685,9 @@ function planFunctions(
     switch (item.kind) {
       case "State":
       case "Variable":
-        if (item.initial) mark(render, item.initial.refs);
+        if (item.initial) {
+          mark(render, item.initial.refs);
+        }
         break;
       case "Const":
       case "Await":
@@ -1489,7 +1698,9 @@ function planFunctions(
         break;
       case "Watch":
         for (const source of item.sources) {
-          if (source.kind === "Getter") mark(getters, source.getter.body.refs);
+          if (source.kind === "Getter") {
+            mark(getters, source.getter.body.refs);
+          }
         }
         mark(client, item.callback.body.refs);
         break;
@@ -1503,7 +1714,9 @@ function planFunctions(
         mark(render, item.value.refs);
         break;
       case "Inject":
-        if (item.fallback) mark(render, item.fallback.refs);
+        if (item.fallback) {
+          mark(render, item.fallback.refs);
+        }
         break;
       // Runs where the body does, as render code reads (ADR-0117).
       case "DevCheck":
@@ -1518,9 +1731,13 @@ function planFunctions(
       // `useComputed$`'s, and a callback is the QRL client code calls.
       case "Use":
         for (const argument of item.arguments) {
-          if (argument.kind === "Value") mark(render, argument.value.refs);
-          else if (argument.kind === "Getter") mark(getters, argument.getter.body.refs);
-          else mark(client, argument.callback.body.refs);
+          if (argument.kind === "Value") {
+            mark(render, argument.value.refs);
+          } else if (argument.kind === "Getter") {
+            mark(getters, argument.getter.body.refs);
+          } else {
+            mark(client, argument.callback.body.refs);
+          }
         }
         break;
       default:
@@ -1529,27 +1746,45 @@ function planFunctions(
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event") continue;
-        if (attribute.handler.kind === "Function") client.add(attribute.handler.binding);
-        else mark(client, attribute.handler.function.body.refs);
+        if (attribute.kind !== "Event") {
+          continue;
+        }
+        if (attribute.handler.kind === "Function") {
+          client.add(attribute.handler.binding);
+        } else {
+          mark(client, attribute.handler.function.body.refs);
+        }
       }
     },
   });
   for (const listener of componentListeners(component)) {
-    if (listener.handler.kind === "Function") client.add(listener.handler.binding);
-    else mark(client, listener.handler.function.body.refs);
+    if (listener.handler.kind === "Function") {
+      client.add(listener.handler.binding);
+    } else {
+      mark(client, listener.handler.function.body.refs);
+    }
   }
   // A function a component exposes, or a composable returns, is one its consumer calls: a QRL.
-  for (const id of component.exposes?.functions ?? []) client.add(id);
-  for (const id of returned) if (items.has(id)) client.add(id);
+  for (const id of component.exposes?.functions ?? []) {
+    client.add(id);
+  }
+  for (const id of returned) {
+    if (items.has(id)) {
+      client.add(id);
+    }
+  }
   // A function's calls take the forms of its callers.
   for (let changed = true; changed;) {
     changed = false;
     for (const [id, item] of items) {
       for (const set of [render, client, getters]) {
-        if (!set.has(id)) continue;
+        if (!set.has(id)) {
+          continue;
+        }
         for (const reference of functionRefs(item.function)) {
           if (
             reference.kind === "Binding" &&
@@ -1600,7 +1835,9 @@ function planConsts(
 ): Map<BindingId, ConstForm> {
   const forms = new Map<BindingId, ConstForm>();
   for (const item of component.setup) {
-    if (item.kind !== "Const") continue;
+    if (item.kind !== "Const") {
+      continue;
+    }
     forms.set(item.binding, constForm(item, component, hoisted, args));
   }
   return forms;
@@ -1612,7 +1849,9 @@ function constForm(
   hoisted: ReadonlySet<BindingId>,
   args: ReadonlyMap<BindingId, ComposableParameter>,
 ): ConstForm {
-  if (hoisted.has(item.binding)) return "module";
+  if (hoisted.has(item.binding)) {
+    return "module";
+  }
   return readsReactive(item.value, component, args) ? "constant" : "plain";
 }
 
@@ -1639,7 +1878,9 @@ export function isReactiveBinding(
   binding: Binding,
   args: ReadonlyMap<BindingId, ComposableParameter>,
 ): boolean {
-  if (binding.kind === "argument") return args.get(binding.id)?.kind === "getter";
+  if (binding.kind === "argument") {
+    return args.get(binding.id)?.kind === "getter";
+  }
   return isReactive(binding.kind);
 }
 
@@ -1724,7 +1965,11 @@ export function isReactive(kind: BindingKind): boolean {
 function emittedEvents(component: UfComponent): Set<string> {
   const found = new Set<string>();
   const visit = (refs: readonly CodeReference[]) => {
-    for (const reference of refs) if (reference.kind === "Emit") found.add(reference.event);
+    for (const reference of refs) {
+      if (reference.kind === "Emit") {
+        found.add(reference.event);
+      }
+    }
   };
   for (const item of component.setup) {
     switch (item.kind) {
@@ -1757,7 +2002,9 @@ function emittedEvents(component: UfComponent): Set<string> {
       // A composable's callback argument may emit (ADR-0069).
       case "Use":
         for (const argument of item.arguments) {
-          if (argument.kind === "Callback") visit(argument.callback.body.refs);
+          if (argument.kind === "Callback") {
+            visit(argument.callback.body.refs);
+          }
         }
         break;
       default:
@@ -1766,7 +2013,9 @@ function emittedEvents(component: UfComponent): Set<string> {
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") {
+        return;
+      }
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
           visit(attribute.handler.function.body.refs);
@@ -1775,7 +2024,9 @@ function emittedEvents(component: UfComponent): Set<string> {
     },
   });
   for (const listener of componentListeners(component)) {
-    if (listener.handler.kind === "Inline") visit(listener.handler.function.body.refs);
+    if (listener.handler.kind === "Inline") {
+      visit(listener.handler.function.body.refs);
+    }
   }
   return found;
 }
@@ -1785,9 +2036,13 @@ export function componentListeners(component: UfComponent): ListenerAttribute[] 
   const found: ListenerAttribute[] = [];
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Component" && node.kind !== "Dynamic") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Listener") found.push(attribute);
+        if (attribute.kind === "Listener") {
+          found.push(attribute);
+        }
       }
     },
   });
@@ -1802,14 +2057,20 @@ function refsInConditionals(component: UfComponent): Set<BindingId> {
       case "Element":
         if (conditional) {
           for (const attribute of node.attributes) {
-            if (attribute.kind === "Ref") found.add(attribute.binding);
+            if (attribute.kind === "Ref") {
+              found.add(attribute.binding);
+            }
           }
         }
-        for (const child of node.children) visit(child, conditional);
+        for (const child of node.children) {
+          visit(child, conditional);
+        }
         return;
       case "If":
         for (const branch of node.branches) {
-          for (const child of branch.children) visit(child, true);
+          for (const child of branch.children) {
+            visit(child, true);
+          }
         }
         return;
       case "For":
@@ -1820,30 +2081,51 @@ function refsInConditionals(component: UfComponent): Set<BindingId> {
         return;
       // A fill renders where its child puts it, which may be under a condition.
       case "Component":
-        for (const fill of node.fills) for (const child of fill.children) visit(child, true);
+        for (const fill of node.fills) {
+          for (const child of fill.children) {
+            visit(child, true);
+          }
+        }
         return;
       case "SlotOutlet":
-        for (const child of node.fallback) visit(child, true);
+        for (const child of node.fallback) {
+          visit(child, true);
+        }
         return;
       case "Dynamic":
-        for (const child of node.children) visit(child, conditional);
-        for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, true);
+        for (const child of node.children) {
+          visit(child, conditional);
+        }
+        for (const fill of node.fills ?? []) {
+          for (const child of fill.children) {
+            visit(child, true);
+          }
+        }
         return;
       // A teleport renders once the component has mounted (ADR-0098).
       case "Teleport":
-        for (const child of node.children) visit(child, true);
+        for (const child of node.children) {
+          visit(child, true);
+        }
         return;
       // A transition's element comes and goes as its branch does (ADR-0100).
       case "Transition":
-        for (const child of node.children) visit(child, conditional);
+        for (const child of node.children) {
+          visit(child, conditional);
+        }
         return;
       default:
         unreachable(node);
     }
   };
   const root = component.render;
-  if (root.kind === "Fragment") for (const child of root.children) visit(child, false);
-  else visit(root, false);
+  if (root.kind === "Fragment") {
+    for (const child of root.children) {
+      visit(child, false);
+    }
+  } else {
+    visit(root, false);
+  }
   return found;
 }
 

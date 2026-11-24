@@ -49,15 +49,22 @@ export function setupFunction(plan: ReactPlan, code: ReactCode, context: JsxCont
   const props = new Set<BindingId>();
   for (const item of awaits) {
     for (const reference of item.value.refs) {
-      if (reference.kind !== "Binding") continue;
+      if (reference.kind !== "Binding") {
+        continue;
+      }
       const kind = plan.bindings.get(reference.binding)?.kind;
-      if (kind === "awaited") needed.add(reference.binding);
-      else if (kind === "prop") props.add(reference.binding);
+      if (kind === "awaited") {
+        needed.add(reference.binding);
+      } else if (kind === "prop") {
+        props.add(reference.binding);
+      }
     }
   }
   const lines = awaits.map((item) => {
     const value = `await ${code.code(item.value, "pure")};`;
-    if (!needed.has(item.binding)) return value;
+    if (!needed.has(item.binding)) {
+      return value;
+    }
     const type = item.type ? `: ${item.type.code}` : "";
     return `const ${plan.bindings.get(item.binding)!.name}${type} = ${value}`;
   });
@@ -74,8 +81,12 @@ export function setupFunction(plan: ReactPlan, code: ReactCode, context: JsxCont
 /** The setup function's parameter: the props the awaits read, as the component declares them. */
 function setupParameter(component: UfComponent, read: ReadonlySet<BindingId>): string {
   const parameter = component.propsParameter;
-  if (!parameter || !read.size) return "";
-  if (parameter.form === "object") return `${parameter.name!}: ${parameter.type.code}`;
+  if (!parameter || !read.size) {
+    return "";
+  }
+  if (parameter.form === "object") {
+    return `${parameter.name!}: ${parameter.type.code}`;
+  }
   const properties = component.props.flatMap((prop) =>
     prop.binding !== undefined && read.has(prop.binding)
       ? [prop.default ? `${prop.name} = ${prop.default.code}` : prop.name]
@@ -92,16 +103,24 @@ function setupParameter(component: UfComponent, read: ReadonlySet<BindingId>): s
 function setupTypeParameters(component: UfComponent, takesProps: boolean): TypeParameter[] {
   const parameters = component.typeParameters ?? [];
   const type = component.propsParameter?.type;
-  if (!takesProps || !parameters.length || !type) return [];
+  if (!takesProps || !parameters.length || !type) {
+    return [];
+  }
   const named = new Set(typeNames(type));
   let kept: TypeParameter[] = [];
   while (true) {
     const next = parameters.filter(({ name }) => named.has(name));
-    if (next.length === kept.length) return kept;
+    if (next.length === kept.length) {
+      return kept;
+    }
     kept = next;
     for (const { constraint, default: initial } of kept) {
       for (const text of [constraint, initial]) {
-        if (text) for (const name of typeNames(text)) named.add(name);
+        if (text) {
+          for (const name of typeNames(text)) {
+            named.add(name);
+          }
+        }
       }
     }
   }

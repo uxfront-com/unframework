@@ -33,7 +33,9 @@ export const NO_OUTPUT_PREFIX = "\0uf-no-output:";
 export function noOutputCases(cases: readonly CaseInfo[], target: string): Record<string, string> {
   const found: Record<string, string> = {};
   for (const info of cases) {
-    if (!info.spec || errorState(info, target) !== true) continue;
+    if (!info.spec || errorState(info, target) !== true) {
+      continue;
+    }
     const errors = (expectedDiagnostics(info) ?? []).filter(
       (diagnostic) =>
         diagnostic.severity === "error" &&
@@ -63,12 +65,16 @@ export function standInCases(
   quarantine: readonly QuarantineEntry[],
 ): Record<string, string> {
   const found: Record<string, string> = {};
-  if (!TYPE_CHECKED_BUILDS.has(target)) return found;
+  if (!TYPE_CHECKED_BUILDS.has(target)) {
+    return found;
+  }
   for (const info of cases) {
     const entry = quarantine.find(
       (each) => each.case === info.id && each.target === target && each.layer === "L3",
     );
-    if (!info.spec || !entry) continue;
+    if (!info.spec || !entry) {
+      continue;
+    }
     found[info.id] =
       `${target} cannot compile this case yet, so its spec runs against a stand-in: its L3 is quarantined for ${entry.issue} (${entry.reason}), and its browser build type-checks the output.`;
   }
@@ -111,15 +117,21 @@ export function noOutputPlugin(
     name: "uf-harness:no-output",
     enforce: "pre",
     resolveId(source, importer, options) {
-      if (!importer || !/^\.\.?\//.test(source) || !source.endsWith(".uf.tsx")) return null;
+      if (!importer || !/^\.\.?\//.test(source) || !source.endsWith(".uf.tsx")) {
+        return null;
+      }
       // `scan` is set by Vite's dependency scanner and missing from the public type.
-      if ("scan" in options && options.scan === true) return null;
+      if ("scan" in options && options.scan === true) {
+        return null;
+      }
       const file = resolve(dirname(importer.replace(/\?.*$/s, "")), source);
       const id = byFile.get(file);
       return id === undefined ? null : `${NO_OUTPUT_PREFIX}${id}`;
     },
     load(id) {
-      if (!id.startsWith(NO_OUTPUT_PREFIX)) return null;
+      if (!id.startsWith(NO_OUTPUT_PREFIX)) {
+        return null;
+      }
       const reason = reasons[id.slice(NO_OUTPUT_PREFIX.length)];
       return reason === undefined ? null : standIn(reason);
     },

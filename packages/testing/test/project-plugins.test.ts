@@ -16,8 +16,11 @@ const SAVED = ["UF_TARGETS", "UF_UPDATE", "UF_TEST_CLI", "UF_PIXELS", "CI"] as c
 const env = Object.fromEntries(SAVED.map((name) => [name, process.env[name]]));
 afterEach(() => {
   for (const name of SAVED) {
-    if (env[name] === undefined) delete process.env[name];
-    else process.env[name] = env[name];
+    if (env[name] === undefined) {
+      delete process.env[name];
+    } else {
+      process.env[name] = env[name];
+    }
   }
 });
 
@@ -33,7 +36,9 @@ interface ModuleResult {
  * server logs why.
  */
 async function runProject(root: string): Promise<{ modules: ModuleResult[]; logged: string }> {
-  for (const name of SAVED) delete process.env[name];
+  for (const name of SAVED) {
+    delete process.env[name];
+  }
   // The command line is this package's test run's, whose arguments are no project's.
   process.env.UF_TEST_CLI = "1";
   const exitCode = process.exitCode;
@@ -94,7 +99,9 @@ describe("a project's vite config", () => {
     async () => {
       const { modules: results, logged } = await runProject(fixture("no-project-plugins"));
       expect(results.map((each) => each.project).toSorted()).toEqual(["browser:vue", "ssr:vue"]);
-      for (const result of results) expect(result.state, result.project).toBe("failed");
+      for (const result of results) {
+        expect(result.state, result.project).toBe("failed");
+      }
       const unresolved =
         /Failed to resolve import "virtual:uf-fixture" from "[^"]*Greeting\.uf\.tsx/;
       // The page's import fails, and the server says which module it could not resolve.

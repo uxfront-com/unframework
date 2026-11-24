@@ -24,11 +24,15 @@ import type { TreeParent } from "../tree.ts";
 export function canonicalizeStyles(root: TreeParent): void {
   forEachElement(root, (element) => {
     element.attrs = element.attrs.flatMap((attribute) => {
-      if (attributeName(attribute) !== "style") return [attribute];
+      if (attributeName(attribute) !== "style") {
+        return [attribute];
+      }
       const declarations = parseStyle(attribute.value).filter(
         (declaration) => declaration.value !== "",
       );
-      if (!declarations.length) return [];
+      if (!declarations.length) {
+        return [];
+      }
       attribute.value = printStyle(sortDeclarations(declarations));
       return [attribute];
     });
@@ -79,13 +83,19 @@ const BOOLEAN_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
  */
 export function canonicalizeBooleanAttributes(root: TreeParent): void {
   forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    if (element.namespaceURI !== HTML_NAMESPACE) {
+      return;
+    }
     const own = BOOLEAN_ATTRIBUTES[element.tagName] ?? [];
     for (const attribute of element.attrs) {
       const name = attributeName(attribute);
-      if (!GLOBAL_BOOLEAN_ATTRIBUTES.includes(name) && !own.includes(name)) continue;
+      if (!GLOBAL_BOOLEAN_ATTRIBUTES.includes(name) && !own.includes(name)) {
+        continue;
+      }
       const value = attribute.value.toLowerCase();
-      if (value === name) attribute.value = "";
+      if (value === name) {
+        attribute.value = "";
+      }
     }
   });
 }

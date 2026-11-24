@@ -18,10 +18,16 @@ export function ssrSkip(
 ): string | undefined {
   const [first, ...rest] = tests;
   for (const name of first?.requires ?? []) {
-    if (BEHAVIOURAL_CAPABILITIES.has(name as CapabilityName)) continue;
-    if (!rest.every((test) => test.requires.includes(name))) continue;
+    if (BEHAVIOURAL_CAPABILITIES.has(name as CapabilityName)) {
+      continue;
+    }
+    if (!rest.every((test) => test.requires.includes(name))) {
+      continue;
+    }
     const cell = cells[name];
-    if (cell?.support === "unsupported") return requiresSkip(name, cell.reason);
+    if (cell?.support === "unsupported") {
+      return requiresSkip(name, cell.reason);
+    }
   }
   return undefined;
 }

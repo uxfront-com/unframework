@@ -91,7 +91,9 @@ function valueBindings(statement: Directive | Statement): Binding[] {
     statement.type === "ExportNamedDeclaration" || statement.type === "ExportDefaultDeclaration"
       ? statement.declaration
       : statement;
-  if (!declaration) return [];
+  if (!declaration) {
+    return [];
+  }
   switch (declaration.type) {
     case "FunctionDeclaration":
     case "ClassDeclaration":
@@ -102,7 +104,9 @@ function valueBindings(statement: Directive | Statement): Binding[] {
     case "VariableDeclaration":
       return declaration.declare ? [] : variableBindings(declaration);
     case "ImportDeclaration":
-      if (declaration.importKind === "type") return [];
+      if (declaration.importKind === "type") {
+        return [];
+      }
       return declaration.specifiers
         .filter(
           (specifier) => specifier.type !== "ImportSpecifier" || specifier.importKind !== "type",
@@ -127,7 +131,9 @@ function variableBindings(declaration: VariableDeclaration): Binding[] {
 function patternNames(
   pattern: BindingPattern | BindingRestElement | null,
 ): { name: string; start: number; end: number }[] {
-  if (!pattern) return [];
+  if (!pattern) {
+    return [];
+  }
   switch (pattern.type) {
     case "Identifier":
       return [pattern];
@@ -152,7 +158,9 @@ function declaredNames(statement: Directive | Statement): string[] {
     statement.type === "ExportNamedDeclaration" || statement.type === "ExportDefaultDeclaration"
       ? statement.declaration
       : statement;
-  if (!declaration) return [];
+  if (!declaration) {
+    return [];
+  }
   switch (declaration.type) {
     case "FunctionDeclaration":
     case "TSDeclareFunction":
@@ -180,7 +188,9 @@ function exportedNames(
 ): { name: string; span: Span }[] {
   switch (statement.type) {
     case "ExportDefaultDeclaration": {
-      if (statement.declaration.type === "TSInterfaceDeclaration") return [];
+      if (statement.declaration.type === "TSInterfaceDeclaration") {
+        return [];
+      }
       // The span of `export default`: the declaration has no node for the keyword.
       const keyword = source.slice(statement.start, statement.declaration.start).trimEnd();
       return [
@@ -195,7 +205,9 @@ function exportedNames(
         ? [{ name: exportName(statement.exported), span: span(statement.exported) }]
         : [];
     case "ExportNamedDeclaration": {
-      if (statement.exportKind === "type") return [];
+      if (statement.exportKind === "type") {
+        return [];
+      }
       const declaration = statement.declaration;
       if (declaration) {
         if (declaration.type === "VariableDeclaration") {

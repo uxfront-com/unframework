@@ -23,7 +23,9 @@ const DIRECTORY = "/__uf_vue_behaviour__/";
 /** What this target emits for one behaviour source, formatted. */
 export async function emitBehaviour(name: string): Promise<string> {
   const source = BEHAVIOUR_SOURCES[name];
-  if (source === undefined) throw new Error(`No behaviour source is named ${name}.`);
+  if (source === undefined) {
+    throw new Error(`No behaviour source is named ${name}.`);
+  }
   const module = lower(source, `${name}.uf.tsx`);
   const [file, ...rest] = module.components.flatMap((component) =>
     target.emit(component, {
@@ -34,9 +36,13 @@ export async function emitBehaviour(name: string): Promise<string> {
       },
     }),
   );
-  if (!file || rest.length) throw new Error(`${name}: the target did not emit one file.`);
+  if (!file || rest.length) {
+    throw new Error(`${name}: the target did not emit one file.`);
+  }
   const outcome = await formatOutput(file);
-  if (outcome.error) throw new Error(`${name} does not format: ${outcome.error}`);
+  if (outcome.error) {
+    throw new Error(`${name} does not format: ${outcome.error}`);
+  }
   return outcome.file.contents;
 }
 
@@ -46,7 +52,9 @@ export function behaviourModules(): Plugin {
   const served = (id: string) => {
     const [path = ""] = id.split("?");
     const relative = root && path.startsWith(`${root}/`) ? path.slice(root.length) : path;
-    if (!relative.startsWith(DIRECTORY) || !relative.endsWith(".vue")) return undefined;
+    if (!relative.startsWith(DIRECTORY) || !relative.endsWith(".vue")) {
+      return undefined;
+    }
     const name = relative.slice(DIRECTORY.length, -".vue".length);
     return name in BEHAVIOUR_SOURCES ? { relative, name } : undefined;
   };
@@ -58,7 +66,9 @@ export function behaviourModules(): Plugin {
     },
     resolveId(source) {
       const path = served(source);
-      if (path === undefined) return null;
+      if (path === undefined) {
+        return null;
+      }
       // Queries are plugin-vue's requests for parts of the module (`?vue&type=…`).
       const query = source.includes("?") ? source.slice(source.indexOf("?")) : "";
       return `${root}${path.relative}${query}`;
@@ -71,7 +81,9 @@ export function behaviourModules(): Plugin {
         );
         return `export const components = {\n${loaders.join(",\n")}\n};\n`;
       }
-      if (id.includes("?")) return null;
+      if (id.includes("?")) {
+        return null;
+      }
       const path = served(id);
       return path === undefined ? null : emitBehaviour(path.name);
     },

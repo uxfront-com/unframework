@@ -37,7 +37,9 @@ export class NameScope {
 
   /** Marks names as taken, as they are: the source's own names, which never change. */
   reserve(...names: string[]): void {
-    for (const name of names) this.#taken.add(name);
+    for (const name of names) {
+      this.#taken.add(name);
+    }
   }
 
   /** Whether a name is taken. */
@@ -57,7 +59,9 @@ export class NameScope {
   claim(name: string): string {
     const base = this.#bases.get(name) ?? name;
     let local = base;
-    for (let suffix = 1; this.#taken.has(local); suffix++) local = `${base}_${suffix}`;
+    for (let suffix = 1; this.#taken.has(local); suffix++) {
+      local = `${base}_${suffix}`;
+    }
     this.#taken.add(local);
     return local;
   }
@@ -80,9 +84,19 @@ export function moduleHelperName(
 ): { base: string; others: string[] } {
   const own = new RegExp(`^${helper}(?:_\\d+)*$`);
   const others = new Set<string>();
-  for (const names of reserved) for (const name of names) if (own.test(name)) others.add(name);
+  for (const names of reserved) {
+    for (const name of names) {
+      if (own.test(name)) {
+        others.add(name);
+      }
+    }
+  }
   const base = (each: number) => (each ? `${helper}_${each}` : helper);
-  for (let each = 0; each < reserved.length; each++) if (each !== index) others.add(base(each));
+  for (let each = 0; each < reserved.length; each++) {
+    if (each !== index) {
+      others.add(base(each));
+    }
+  }
   return { base: base(index), others: [...others] };
 }
 
@@ -99,31 +113,53 @@ export function moduleHelperName(
 export function sourceNames(component: UfComponent, module: UfModule): Set<string> {
   const names = new Set<string>([component.name]);
   const add = (found: Iterable<string>) => {
-    for (const name of found) names.add(name);
+    for (const name of found) {
+      names.add(name);
+    }
   };
-  for (const declaration of module.types) names.add(declaration.name);
-  if (component.propsParameter?.name) names.add(component.propsParameter.name);
-  for (const binding of component.bindings) names.add(binding.name);
-  for (const { expression } of expressionsOf(component)) add(expressionNames(expression.code));
+  for (const declaration of module.types) {
+    names.add(declaration.name);
+  }
+  if (component.propsParameter?.name) {
+    names.add(component.propsParameter.name);
+  }
+  for (const binding of component.bindings) {
+    names.add(binding.name);
+  }
+  for (const { expression } of expressionsOf(component)) {
+    add(expressionNames(expression.code));
+  }
   for (const { code } of codeOf(component)) {
     add(codeNames(withoutDevTests(code), codeKind(code, component)));
   }
   for (const { function: fn } of functionsOf(component)) {
     for (const parameter of fn.parameters) {
-      if (parameter.name !== undefined) names.add(parameter.name);
+      if (parameter.name !== undefined) {
+        names.add(parameter.name);
+      }
       add(parameter.pattern?.names ?? []);
-      if (parameter.default) add(expressionNames(parameter.default.code));
-      if (parameter.type) add(typeNames(parameter.type));
+      if (parameter.default) {
+        add(expressionNames(parameter.default.code));
+      }
+      if (parameter.type) {
+        add(typeNames(parameter.type));
+      }
     }
-    if (fn.returnType) add(typeNames(fn.returnType));
+    if (fn.returnType) {
+      add(typeNames(fn.returnType));
+    }
   }
   for (const item of component.setup) {
-    if ("type" in item && item.type) add(typeNames(item.type));
+    if ("type" in item && item.type) {
+      add(typeNames(item.type));
+    }
   }
   if (component.emits) {
     add(typeNames(component.emits.type));
     for (const event of component.emits.events) {
-      for (const parameter of event.parameters) add(typeNames(parameter.type));
+      for (const parameter of event.parameters) {
+        add(typeNames(parameter.type));
+      }
     }
   }
   return names;
@@ -153,7 +189,9 @@ export function typeNames(type: TypeText | string): Set<string> {
 function withoutDevTests(code: Code): string {
   let text = code.code;
   for (const reference of code.refs) {
-    if (reference.kind !== "Dev") continue;
+    if (reference.kind !== "Dev") {
+      continue;
+    }
     const start = reference.span.start - code.span.start;
     const end = reference.span.end - code.span.start;
     text = `${text.slice(0, start)}${"0".padEnd(end - start)}${text.slice(end)}`;

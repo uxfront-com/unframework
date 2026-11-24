@@ -46,7 +46,9 @@ describe("spreadStyleExpression", () => {
       `${TYPES}export default function A(${PROPS}) { return <p {...(on ? attrs : undefined)}>a</p>; }`,
     );
     const spread = render.kind === "Element" ? render.attributes[0] : undefined;
-    if (spread?.kind !== "Spread") throw new Error("The element has no spread first.");
+    if (spread?.kind !== "Spread") {
+      throw new Error("The element has no spread first.");
+    }
     const read = spreadStyleExpression(spread);
     expect(read.code).toBe("(on ? attrs : undefined)?.style");
     // Each reference still spans its name in the code.

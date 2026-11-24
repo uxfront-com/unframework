@@ -49,7 +49,9 @@ function partial(
   const records: ProjectRecord[] = projects.flatMap((project) => {
     const [kind, target] = project.split(":") as [string, string | undefined];
     const layers = Object.fromEntries(LAYERS_OF[kind]!.map((layer) => [layer, { status: "pass" }]));
-    if (!Object.keys(layers).length) return [];
+    if (!Object.keys(layers).length) {
+      return [];
+    }
     return cases.flatMap((caseId) =>
       (target ? [target] : TARGETS).map((cellTarget) => ({
         project,
@@ -105,7 +107,9 @@ function ciJobs(): { runs: JobRun[]; parityNeeds: string[] } {
       continue;
     }
     const command = /vitest run((?: --project (?:"[^"]*"|\S+))+)/.exec(block);
-    if (!command) continue;
+    if (!command) {
+      continue;
+    }
     const patterns = [...command[1]!.matchAll(/--project (?:"([^"]*)"|(\S+))/g)].map(
       ([, quoted, bare]) => (quoted ?? bare)!,
     );
@@ -166,7 +170,9 @@ describe("CI's parity job", () => {
 
   it("leaves out the Baselines job: an update run, which no summary judges (ADR-0062)", () => {
     const baselines = jobBlocks().find((block) => block.startsWith("baselines:\n"));
-    if (!baselines) throw new Error("ci.yml has no baselines job.");
+    if (!baselines) {
+      throw new Error("ci.yml has no baselines job.");
+    }
     expect(baselines).toContain("run: bash tests/integration/scripts/baselines.sh ci\n");
     expect(baselines).not.toMatch(/^ {10}name: parity-/m);
     expect(parityNeeds).not.toContain("baselines");

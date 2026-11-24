@@ -54,7 +54,9 @@ export const svelte: Packager = {
       ["--input", "in", "--output", out, "--tsconfig", "tsconfig.json"],
       work,
     );
-    if (printed.includes(LOST_DECLARATION)) throw new Error(printed);
+    if (printed.includes(LOST_DECLARATION)) {
+      throw new Error(printed);
+    }
     await dropDeclarationSideEffects(out);
   },
 };

@@ -424,8 +424,12 @@ const VOID = new Set(["br", "wbr", "img"]);
  * and an `<rt>` or `<rp>` closes everything up to the ruby around it.
  */
 function fits(tag: string, ancestors: readonly string[]): boolean {
-  if (ancestors.includes("p") && ["div", "p", "li"].includes(tag)) return false;
-  if (ancestors.includes("li") && tag === "li") return false;
+  if (ancestors.includes("p") && ["div", "p", "li"].includes(tag)) {
+    return false;
+  }
+  if (ancestors.includes("li") && tag === "li") {
+    return false;
+  }
   if ((tag === "rt" || tag === "rp") && ancestors.includes("ruby")) {
     return ancestors.at(-1) === "ruby";
   }
@@ -452,7 +456,9 @@ function fragment(next: () => number): { items: Item[]; slots: number } {
         continue;
       }
       const children = VOID.has(tag) ? [] : level(depth + 1, [...ancestors, tag]);
-      if (!VOID.has(tag)) children.push({ kind: "slot", id: slots++ });
+      if (!VOID.has(tag)) {
+        children.push({ kind: "slot", id: slots++ });
+      }
       items.push({ kind: "element", open, tag, children });
     }
     items.push({ kind: "slot", id: slots++ });
@@ -464,9 +470,15 @@ function fragment(next: () => number): { items: Item[]; slots: number } {
 function render(items: readonly Item[], spaces: readonly string[]): string {
   return items
     .map((item) => {
-      if (item.kind === "slot") return spaces[item.id]!;
-      if (item.kind === "word") return item.word;
-      if (VOID.has(item.tag)) return item.open;
+      if (item.kind === "slot") {
+        return spaces[item.id]!;
+      }
+      if (item.kind === "word") {
+        return item.word;
+      }
+      if (VOID.has(item.tag)) {
+        return item.open;
+      }
       return `${item.open}${render(item.children, spaces)}</${item.tag}>`;
     })
     .join("");
@@ -491,16 +503,28 @@ describe("rule 6 against Chromium's layout, fuzzed", () => {
       }
       const a = `<div>${render(items, spaces)}</div>`;
       const b = `<div>${render(items, changed)}</div>`;
-      if (a === b) continue;
+      if (a === b) {
+        continue;
+      }
       const staticEquals = normalizeHtml(a) === normalizeHtml(b);
       const liveEquals = bothPaths(a).live === bothPaths(b).live;
-      if (!staticEquals && !liveEquals) continue;
-      if (staticEquals) equal += 1;
-      if (liveEquals) liveEqual += 1;
+      if (!staticEquals && !liveEquals) {
+        continue;
+      }
+      if (staticEquals) {
+        equal += 1;
+      }
+      if (liveEquals) {
+        liveEqual += 1;
+      }
       if (layout(a) !== layout(b)) {
         const pair = `seed ${seed}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`;
-        if (staticEquals) falseEquals.push(pair);
-        if (liveEquals) liveFalseEquals.push(pair);
+        if (staticEquals) {
+          falseEquals.push(pair);
+        }
+        if (liveEquals) {
+          liveFalseEquals.push(pair);
+        }
       }
     }
     // The fuzz has to exercise the rule: thousands of pairs it equates, each laid out twice.

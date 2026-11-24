@@ -128,8 +128,12 @@ describe("the canary path filter", () => {
   // The canaries job keeps its own gate (ADR-0073), so it must sit inside the tests' gate: a
   // docs path added to CANARY_PATHS fails here.
   it("never runs the canaries without the tests", () => {
-    for (const [glob, file] of ON_THE_LIST) expect(runsTests([file]), glob).toBe(true);
-    for (const [name, files] of DOCS_ONLY) expect(runsCanaries(files), name).toBe(false);
+    for (const [glob, file] of ON_THE_LIST) {
+      expect(runsTests([file]), glob).toBe(true);
+    }
+    for (const [name, files] of DOCS_ONLY) {
+      expect(runsCanaries(files), name).toBe(false);
+    }
   });
 
   it("never lets Markdown run the canaries, even under a listed path", () => {
@@ -152,13 +156,17 @@ describe("the canary path filter", () => {
     });
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) {
-      if (file === join("tests", "integration", "harness", "canary-paths.unit.test.ts")) continue;
+      if (file === join("tests", "integration", "harness", "canary-paths.unit.test.ts")) {
+        continue;
+      }
       const text = readFileSync(join(REPO_ROOT, file), "utf8");
       for (const [, path] of text.matchAll(
         /["'`]((?:apps\/web\/content|tests\/integration\/cases)\/[^"'`\s]*\.md)["'`]/g,
       )) {
         named.add(path!);
-        if (!tested.some((pattern) => pattern.test(path!))) unlisted.push(`${file}: ${path!}`);
+        if (!tested.some((pattern) => pattern.test(path!))) {
+          unlisted.push(`${file}: ${path!}`);
+        }
       }
     }
     // The two pages tests/repo reads, so the search finds what it looks for.

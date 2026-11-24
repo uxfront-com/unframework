@@ -120,7 +120,9 @@ export async function astroTypecheck(
       for (const diagnostic of errors) {
         // LSP leaves the severity out when it is an error.
         const severity = diagnostic.severity ?? error;
-        if (severity !== error && severity !== warning) continue;
+        if (severity !== error && severity !== warning) {
+          continue;
+        }
         diagnostics.add(file, fromDiagnostic(diagnostic, severity === warning));
       }
     }

@@ -852,8 +852,9 @@ describe("bindings", () => {
 
   it("writes a style of static declarations as a static attribute", () => {
     const style = printed({}, (b) => b.el("p", [b.style(["color", "red"], ["--gap", "1px"])], "x"));
-    for (const dialect of Object.values(style))
+    for (const dialect of Object.values(style)) {
       expect(dialect).toBe('<p style="color: red; --gap: 1px">x</p>');
+    }
   });
 
   // Vue's compiler parses a static `style` again and splits at a `;` in a string; it takes a

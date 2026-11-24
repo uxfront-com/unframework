@@ -123,9 +123,13 @@ export class Passed {
    * element runs it after its own.
    */
   listener(element: { span: Span }, event: string): string | undefined {
-    if (!this.isTarget(element)) return undefined;
+    if (!this.isTarget(element)) {
+      return undefined;
+    }
     const prop = qwikListenerProp(event);
-    if (this.declared.has(prop)) return undefined;
+    if (this.declared.has(prop)) {
+      return undefined;
+    }
     let local = this.listeners.get(prop);
     if (local === undefined) {
       local = this.#fresh(prop);
@@ -165,16 +169,22 @@ export function fallthroughTarget(
   component: UfComponent,
   module: UfModule,
 ): ElementNode | ComponentNode | DynamicNode | undefined {
-  if (component.inheritAttrs === false) return restElement(component);
+  if (component.inheritAttrs === false) {
+    return restElement(component);
+  }
   const root = singleRoot(component);
-  if (!root) return dynamicRoot(component);
+  if (!root) {
+    return dynamicRoot(component);
+  }
   return root.kind === "Element" || takesFallthrough(module, root.component) ? root : undefined;
 }
 
 /** The component's root, where it is one `<component is>` over tags (ADR-0119). */
 function dynamicRoot(component: UfComponent): DynamicNode | undefined {
   const { render } = component;
-  if (render.kind !== "Fragment") return undefined;
+  if (render.kind !== "Fragment") {
+    return undefined;
+  }
   const [root, ...others] = render.children;
   return root?.kind === "Dynamic" &&
     !others.length &&
@@ -198,19 +208,31 @@ export function classAndStyleRoot(
   module: UfModule,
   seen: ReadonlySet<string> = new Set(),
 ): DynamicNode | ComponentNode | undefined {
-  if (component.inheritAttrs === false) return undefined;
+  if (component.inheritAttrs === false) {
+    return undefined;
+  }
   const { render } = component;
-  if (render.kind !== "Fragment") return undefined;
+  if (render.kind !== "Fragment") {
+    return undefined;
+  }
   const [root, ...others] = render.children;
-  if (others.length) return undefined;
+  if (others.length) {
+    return undefined;
+  }
   if (root?.kind === "Dynamic") {
     return root.candidates.every((each) => each.kind === "Tag") ? root : undefined;
   }
-  if (root?.kind !== "Component") return undefined;
+  if (root?.kind !== "Component") {
+    return undefined;
+  }
   const api = importedApi(module, root.component);
-  if (api !== null) return api?.inheritAttrs && api.rootTags !== undefined ? root : undefined;
+  if (api !== null) {
+    return api?.inheritAttrs && api.rootTags !== undefined ? root : undefined;
+  }
   const own = module.components.find((each) => each.name === root.component);
-  if (!own || own === component || seen.has(own.name)) return undefined;
+  if (!own || own === component || seen.has(own.name)) {
+    return undefined;
+  }
   return classAndStyleRoot(own, module, new Set([...seen, component.name])) ? root : undefined;
 }
 
@@ -222,7 +244,9 @@ export function sameSpan(a: Span, b: Span): boolean {
 /** The component's one root: its root element, or the one component its fragment holds. */
 export function singleRoot(component: UfComponent): ElementNode | ComponentNode | undefined {
   const { render } = component;
-  if (render.kind === "Element") return render;
+  if (render.kind === "Element") {
+    return render;
+  }
   const [root, ...others] = render.children;
   return root?.kind === "Component" && !others.length ? root : undefined;
 }
@@ -232,8 +256,12 @@ export function restElement(component: UfComponent): ElementNode | undefined {
   let found: ElementNode | undefined;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" || found) return;
-      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+      if (node.kind !== "Element" || found) {
+        return;
+      }
+      if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+        found = node;
+      }
     },
   });
   return found;
@@ -248,9 +276,13 @@ export function fallthroughTag(
   module: UfModule,
   seen: ReadonlySet<string> = new Set(),
 ): string | undefined {
-  if (component.inheritAttrs === false) return restElement(component)?.tag;
+  if (component.inheritAttrs === false) {
+    return restElement(component)?.tag;
+  }
   const root = singleRoot(component);
-  if (root?.kind === "Element") return root.tag;
+  if (root?.kind === "Element") {
+    return root.tag;
+  }
   // A `<component is>` root's first tag stands for them all (ADR-0122).
   if (!root) {
     const dynamic = dynamicRoot(component);
@@ -292,9 +324,13 @@ export function landsOnTags(
     );
   }
   const own = module.components.find((each) => each.name === local);
-  if (!own || seen.has(own.name)) return false;
+  if (!own || seen.has(own.name)) {
+    return false;
+  }
   const target = fallthroughTarget(own, module);
-  if (target?.kind === "Dynamic") return dynamicTags(target).length > 1;
+  if (target?.kind === "Dynamic") {
+    return dynamicTags(target).length > 1;
+  }
   return (
     target?.kind === "Component" &&
     landsOnTags(module, target.component, new Set([...seen, own.name]))
@@ -319,17 +355,27 @@ function childTag(
   const api = importedApi(module, local);
   // A `<component is>` root's first tag stands for them all (ADR-0122).
   if (api !== null) {
-    if (!api) return undefined;
+    if (!api) {
+      return undefined;
+    }
     return tag === "fallthroughTag"
       ? (api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined))
       : (api.refTag ?? api.refTags?.[0]);
   }
   const own = module.components.find((each) => each.name === local);
-  if (!own || seen.has(own.name)) return undefined;
-  if (tag === "fallthroughTag") return fallthroughTag(own, module, seen);
-  if (own.exposes) return undefined;
+  if (!own || seen.has(own.name)) {
+    return undefined;
+  }
+  if (tag === "fallthroughTag") {
+    return fallthroughTag(own, module, seen);
+  }
+  if (own.exposes) {
+    return undefined;
+  }
   const root = singleRoot(own);
-  if (root?.kind === "Element") return root.tag;
+  if (root?.kind === "Element") {
+    return root.tag;
+  }
   if (!root) {
     const dynamic = dynamicRoot(own);
     return dynamic && dynamicTags(dynamic)[0];
@@ -365,7 +411,9 @@ export function declaredBy(
 /** Whether a child, by its local name, is generic (ADR-0068). */
 function isGeneric(module: UfModule, local: string): boolean {
   const api = importedApi(module, local);
-  if (api !== null) return Boolean(api?.typeParameters?.length);
+  if (api !== null) {
+    return Boolean(api?.typeParameters?.length);
+  }
   const own = module.components.find((each) => each.name === local);
   return Boolean(own?.typeParameters?.length);
 }
@@ -374,7 +422,9 @@ function isGeneric(module: UfModule, local: string): boolean {
 function importedApi(module: UfModule, local: string): ComponentApi | undefined | null {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     return entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"

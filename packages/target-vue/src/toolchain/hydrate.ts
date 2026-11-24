@@ -24,14 +24,20 @@ export const hydrate: HydrateAdapter = async (component, container, html, { prop
     render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
   });
   app.config.warnHandler = (message, _instance, trace) => {
-    if (MISMATCH.test(message)) mismatches.push(message);
-    else console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
+    if (MISMATCH.test(message)) {
+      mismatches.push(message);
+    } else {
+      console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
+    }
   };
   container.innerHTML = html;
   const { error } = console;
   console.error = (...args: unknown[]) => {
-    if (typeof args[0] === "string" && SUMMARY.test(args[0])) mismatches.push(args[0]);
-    else error(...args);
+    if (typeof args[0] === "string" && SUMMARY.test(args[0])) {
+      mismatches.push(args[0]);
+    } else {
+      error(...args);
+    }
   };
   try {
     app.mount(container);
@@ -45,7 +51,9 @@ export const hydrate: HydrateAdapter = async (component, container, html, { prop
     },
     async rerender(next) {
       for (const key of Object.keys(current)) {
-        if (!Object.hasOwn(next, key)) Reflect.deleteProperty(current, key);
+        if (!Object.hasOwn(next, key)) {
+          Reflect.deleteProperty(current, key);
+        }
       }
       Object.assign(current, next);
       await nextTick();

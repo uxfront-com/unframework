@@ -33,7 +33,9 @@ function dryRun(): DryTask[] {
     ["run", "test", "--dry=json", "--filter=@unframework.dev/integration"],
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
-  if (result.error) throw result.error;
+  if (result.error) {
+    throw result.error;
+  }
   expect(result.status, result.stderr).toBe(0);
   return (JSON.parse(result.stdout) as { tasks: DryTask[] }).tasks;
 }
@@ -56,9 +58,13 @@ describe("the integration test task", () => {
       expect(inputs, id).toContain("tsconfig.json");
       // L5 (ADR-0042): oxlint everywhere, and ESLint for the template languages.
       expect(inputs, id).toContain("output.oxlintrc.json");
-      if (ESLINT_TARGETS.has(target)) expect(inputs, id).toContain("eslint.config.js");
+      if (ESLINT_TARGETS.has(target)) {
+        expect(inputs, id).toContain("eslint.config.js");
+      }
       const host = ESLINT_HOSTS[target];
-      if (host === undefined) continue;
+      if (host === undefined) {
+        continue;
+      }
       expect(transit?.dependencies, id).toContain(`${host}#transit`);
       const hostTransit = tasks.find((task) => task.taskId === `${host}#transit`);
       expect(Object.keys(hostTransit?.inputs ?? {}), host).toContain("eslint.config.js");

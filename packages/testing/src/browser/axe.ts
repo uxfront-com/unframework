@@ -43,7 +43,9 @@ export async function compareAxe(
   );
   const actual = [...new Set(results.violations.map((violation) => violation.id))].toSorted();
   const wanted = [...new Set(expected)].toSorted();
-  if (actual.join("\n") === wanted.join("\n")) return { pass: true, unexpected: [], missing: [] };
+  if (actual.join("\n") === wanted.join("\n")) {
+    return { pass: true, unexpected: [], missing: [] };
+  }
   const unexpected = results.violations
     .filter((violation) => !wanted.includes(violation.id))
     .map(

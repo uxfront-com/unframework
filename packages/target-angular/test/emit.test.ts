@@ -62,7 +62,9 @@ async function compiled(contents: string, consumer: Record<string, unknown>): Pr
   tsProgram.emit(
     tsProgram.getSourceFile(file),
     (name, output) => {
-      if (name.endsWith(".js")) code = output;
+      if (name.endsWith(".js")) {
+        code = output;
+      }
     },
     undefined,
     false,
@@ -1281,9 +1283,13 @@ export default async function Card({ id }: { id: string }) {
       expect(await l3Errors(file)).toEqual([]);
       const [path] = Object.values(writeFiles(scratchDir(), { [file.path]: file.contents }));
       const checked = await toolchain.typecheck([path!], context);
-      for (const [each, messages] of checked) expect(messages, each).toEqual([]);
+      for (const [each, messages] of checked) {
+        expect(messages, each).toEqual([]);
+      }
       const linted = await toolchain.lint([path!], context);
-      for (const [each, messages] of linted) expect(messages, each).toEqual([]);
+      for (const [each, messages] of linted) {
+        expect(messages, each).toEqual([]);
+      }
     }
   });
 });

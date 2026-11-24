@@ -115,7 +115,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
    */
   const fileOf = (fileName: string): string | undefined => {
     const base = roots.find((each) => fileName.startsWith(`${each}/`));
-    if (base === undefined) return undefined;
+    if (base === undefined) {
+      return undefined;
+    }
     const path = relative(base, fileName);
     const modules = path.lastIndexOf("node_modules/");
     return modules === -1 ? path : packageFile(base, path, modules + "node_modules/".length);
@@ -128,7 +130,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
    */
   const rootCopy = (name: string): string | undefined => {
     const own = `${root}/node_modules/${name}`;
-    if (declaresTypes(own)) return realpathOrUndefined(own);
+    if (declaresTypes(own)) {
+      return realpathOrUndefined(own);
+    }
     const typed = name.startsWith("@") ? name.slice(1).replace("/", "__") : name;
     return realpathOrUndefined(`${root}/node_modules/@types/${typed}`);
   };
@@ -148,7 +152,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     const name = typed.includes("__") ? `@${typed.replace("__", "/")}` : typed;
     const directory = `${base}/${path.slice(0, at)}${installed}`;
     const own = rootCopy(name);
-    if (own === undefined) return `pkg:${name}@${versionOf(directory)}/${inner}`;
+    if (own === undefined) {
+      return `pkg:${name}@${versionOf(directory)}/${inner}`;
+    }
     return own === realpathOrUndefined(directory) ? `pkg:${name}/${inner}` : undefined;
   };
 
@@ -160,7 +166,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
       known = new Map();
       for (const fileName of program.getSourceFileNames()) {
         const file = fileOf(fileName);
-        if (file !== undefined) known.set(file, fileName);
+        if (file !== undefined) {
+          known.set(file, fileName);
+        }
       }
       names.set(program, known);
     }
@@ -170,7 +178,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   const resolveShape = async (query: ShapeQuery): Promise<TypeShape> => {
     const shape = await syntactic.resolveShape(query);
     // Only a construct the syntactic adapter could not evaluate needs the checker.
-    if (!shape.unresolved.some((entry) => entry.reason === "unsupported")) return shape;
+    if (!shape.unresolved.some((entry) => entry.reason === "unsupported")) {
+      return shape;
+    }
     const { checker, program } = project();
     const source = program.getSourceFile(`${root}/${query.file}`);
     const node = source && typeNodeAt(source, query.span);
@@ -191,7 +201,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
    */
   const authoringDirectories = new Map<string, string | undefined>();
   const authoringOf = (directory: string): string | undefined => {
-    if (authoringDirectories.has(directory)) return authoringDirectories.get(directory);
+    if (authoringDirectories.has(directory)) {
+      return authoringDirectories.get(directory);
+    }
     const own = realpathOrUndefined(`${directory}/node_modules/@uxfront/unframework`);
     const parent = dirname(directory);
     const found = own ?? (parent === directory ? undefined : authoringOf(parent));
@@ -207,7 +219,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
       fileNotifications: notifications,
       ensurePrograms: [id],
     });
-    if (next === snapshot) return;
+    if (next === snapshot) {
+      return;
+    }
     snapshot!.dispose();
     snapshot = next;
   };
@@ -219,15 +233,21 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   ): Promise<DirectiveValueChecks> => {
     const none = { checks: queries.map(() => null), dependencies: [] };
     // A module that applies no directive needs no checker.
-    if (!queries.length) return none;
+    if (!queries.length) {
+      return none;
+    }
     const authoring = authoringOf(dirname(`${root}/${file}`));
-    if (authoring === undefined) return none;
+    if (authoring === undefined) {
+      return none;
+    }
     const shadow = shadowOf(source, queries);
     // Beside the file, so its imports resolve as the file's do, under a name no source has.
     const shadowFile = `${file}.uf-directive-values.tsx`;
     const path = `${root}/${shadowFile}`;
     // A file of that name on the disk would be hidden by the shadow's removal from then on.
-    if (existsSync(path)) return none;
+    if (existsSync(path)) {
+      return none;
+    }
     project();
     // From here to the shadow's removal, no call yields: nothing else replaces the snapshot or
     // reads the program with the shadow in it, since every other query reads it synchronously too.
@@ -279,19 +299,27 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     },
     update: async (changes) => {
       await syntactic.update(changes);
-      if (!api || !snapshot) return;
+      if (!api || !snapshot) {
+        return;
+      }
       // A package installed, removed or changed can change how any import resolves: the next
       // query that needs the checker starts a new one.
-      if (changes.files.some((file) => file.startsWith("pkg:"))) return stop();
+      if (changes.files.some((file) => file.startsWith("pkg:"))) {
+        return stop();
+      }
       const { id, program } = snapshot.getConfiguredProject(config)!;
       const changed: string[] = [];
       const created: string[] = [];
       const deleted: string[] = [];
       for (const file of changes.files) {
         const path = `${root}/${file}`;
-        if (!existsSync(path)) deleted.push(path);
-        else if (program.getSourceFile(path)) changed.push(path);
-        else created.push(path);
+        if (!existsSync(path)) {
+          deleted.push(path);
+        } else if (program.getSourceFile(path)) {
+          changed.push(path);
+        } else {
+          created.push(path);
+        }
       }
       // A notified file only marks the project dirty: `ensurePrograms` builds its program again.
       const next = snapshot.update({
@@ -299,7 +327,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
         ensurePrograms: [id],
       });
       // A change that changes nothing gives back the same snapshot, which stays live.
-      if (next === snapshot) return;
+      if (next === snapshot) {
+        return;
+      }
       snapshot.dispose();
       snapshot = next;
     },
@@ -351,7 +381,9 @@ function versionOf(directory: string): string {
 function typeNodeAt(source: SourceFile, span: Span): TypeNode | undefined {
   let found: TypeNode | undefined;
   const visit = (node: Node): void => {
-    if (found || node.pos > span.start || node.end < span.end) return;
+    if (found || node.pos > span.start || node.end < span.end) {
+      return;
+    }
     if (isTypeNode(node) && node.getStart(source) === span.start && node.end === span.end) {
       found = node;
       return;

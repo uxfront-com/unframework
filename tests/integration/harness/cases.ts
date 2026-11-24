@@ -91,7 +91,9 @@ export function listCases(casesDir: string = CASES_DIR): CaseInfo[] {
       cases.push(readCase(casesDir, id));
     }
   }
-  if (!cases.length) throw new Error(`No cases under ${casesDir}.`);
+  if (!cases.length) {
+    throw new Error(`No cases under ${casesDir}.`);
+  }
   return cases;
 }
 
@@ -105,9 +107,13 @@ function readCase(casesDir: string, id: string): CaseInfo {
   const files = readdirSync(dir).toSorted();
   // The main input is a component: a case still needs one (ADR-0069).
   const inputs = files.filter((file) => file.endsWith(".uf.tsx"));
-  if (!inputs.length) throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
+  if (!inputs.length) {
+    throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
+  }
   const specs = files.filter((file) => file.endsWith(".test.ts"));
-  if (specs.length > 1) throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
+  if (specs.length > 1) {
+    throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
+  }
   const modules = files.filter(
     (file) => file.endsWith(".ts") && !file.endsWith(".test.ts") && !file.endsWith(".uf.ts"),
   );
@@ -148,7 +154,9 @@ function readCase(casesDir: string, id: string): CaseInfo {
  */
 function mainSource(id: string, inputs: readonly string[], main: string | undefined): string {
   if (main === undefined) {
-    if (inputs.length === 1) return inputs[0]!;
+    if (inputs.length === 1) {
+      return inputs[0]!;
+    }
     throw new Error(
       `Case ${id} holds ${inputs.join(", ")}: name the one the spec mounts in case.json, "main": "${inputs[0]}".`,
     );
@@ -162,11 +170,15 @@ function mainSource(id: string, inputs: readonly string[], main: string | undefi
 }
 
 function readConfig(id: string, file: string): CorpusCaseConfig {
-  if (!existsSync(file)) return {};
+  if (!existsSync(file)) {
+    return {};
+  }
   const config = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
   const problems: string[] = [];
   for (const key of Object.keys(config)) {
-    if (!CASE_KEYS.has(key)) problems.push(`unknown key "${key}"`);
+    if (!CASE_KEYS.has(key)) {
+      problems.push(`unknown key "${key}"`);
+    }
   }
   if (config.description !== undefined && typeof config.description !== "string") {
     problems.push(`"description" must be a string`);
@@ -227,8 +239,9 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
       problems.push(`"ssr" must map scenario names to { "props": {…} }`);
     } else {
       for (const [scenario, value] of Object.entries(config.ssr)) {
-        if (!KEBAB_CASE.test(scenario))
+        if (!KEBAB_CASE.test(scenario)) {
           problems.push(`SSR scenario "${scenario}", which is not kebab-case`);
+        }
         const props = (value as { props?: unknown } | null)?.props;
         if (
           typeof value !== "object" ||
@@ -243,14 +256,18 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
   if (config.typeOracle !== undefined && config.typeOracle !== "tsgo") {
     problems.push(`"typeOracle" must be "tsgo", or absent for the syntactic oracle`);
   }
-  if (problems.length) throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
+  if (problems.length) {
+    throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
+  }
   return config as CorpusCaseConfig;
 }
 
 /** The diagnostics a case expects (`__expected__/diagnostics.json`), or `undefined` if missing. */
 export function expectedDiagnostics(info: CaseInfo): ExpectedDiagnostic[] | undefined {
   const file = join(info.dir, "__expected__", "diagnostics.json");
-  if (!existsSync(file)) return undefined;
+  if (!existsSync(file)) {
+    return undefined;
+  }
   return JSON.parse(readFileSync(file, "utf8")) as ExpectedDiagnostic[];
 }
 
@@ -301,7 +318,9 @@ export function errorState(info: CaseInfo, target?: string): boolean | Error {
  * string literal, because then the case's expectations cannot be told from stale ones.
  */
 export function parityScenarios(info: CaseInfo): string[] {
-  if (!info.spec) return [];
+  if (!info.spec) {
+    return [];
+  }
   const source = readFileSync(info.spec, "utf8");
   const calls = source.match(/\bexpectParity\s*\(/g)?.length ?? 0;
   const names = [...source.matchAll(/\bexpectParity\s*\(\s*(["'`])([^"'`$\\\n]*)\1/g)].map(
@@ -393,8 +412,11 @@ function withoutThrownSteps(code: string): string {
     let depth = 1;
     let end = match.index + match[0].length;
     for (; end < code.length && depth > 0; end += 1) {
-      if (code[end] === "(") depth += 1;
-      else if (code[end] === ")") depth -= 1;
+      if (code[end] === "(") {
+        depth += 1;
+      } else if (code[end] === ")") {
+        depth -= 1;
+      }
     }
     const start = match.index + match[0].length;
     result = `${result.slice(0, start)}${code.slice(start, end - 1).replace(/[^\n]/g, " ")}${result.slice(end - 1)}`;
@@ -454,7 +476,9 @@ export function specTests(source: string): SpecTest[] {
 
 /** The capability names a test's options declare in `requires`, which must be string literals. */
 function declaredRequires(name: string, header: string): string[] {
-  if (!/\brequires\s*:/.test(header)) return [];
+  if (!/\brequires\s*:/.test(header)) {
+    return [];
+  }
   const list = /\brequires\s*:\s*\[([^\]]*)\]/.exec(header)?.[1];
   const items = list
     ?.split(",")
@@ -478,7 +502,9 @@ function uncomparedSteps(code: string, start: number, body: string): UncomparedS
   let pending: { index: number; text: string } | undefined;
   let unmounted = false;
   const report = (next: string | undefined) => {
-    if (!pending) return;
+    if (!pending) {
+      return;
+    }
     found.push({
       line: code.slice(0, start + pending.index).split("\n").length,
       step: `view${pending.text}`,
@@ -488,12 +514,19 @@ function uncomparedSteps(code: string, start: number, body: string): UncomparedS
   };
   for (const match of body.matchAll(EVENTS)) {
     const text = match[0].replace(/\s+/g, "");
-    if (text.startsWith(".expectParity")) pending = undefined;
-    else if (text.startsWith(".unmount")) unmounted = true;
-    else if (/^\.?mount/.test(text)) unmounted = false;
-    else if (text.startsWith("expect")) report(text);
+    if (text.startsWith(".expectParity")) {
+      pending = undefined;
+    } else if (text.startsWith(".unmount")) {
+      unmounted = true;
+    } else if (/^\.?mount/.test(text)) {
+      unmounted = false;
+    } else if (text.startsWith("expect")) {
+      report(text);
+    }
     // A tick once the view is unmounted records no step: there is nothing to compare.
-    else if (!(text.startsWith(".clock") && unmounted)) pending ??= { index: match.index, text };
+    else if (!(text.startsWith(".clock") && unmounted)) {
+      pending ??= { index: match.index, text };
+    }
   }
   report(undefined);
   return found;
@@ -536,7 +569,9 @@ function withoutComments(source: string): string {
  *   a case whose every test requires `interactivity` still checks Astro's server render.
  */
 export function specProblems(info: CaseInfo): string[] {
-  if (!info.spec) return [];
+  if (!info.spec) {
+    return [];
+  }
   const source = readFileSync(info.spec, "utf8");
   const file = `${info.id}/${basename(info.spec)}`;
   const problems: string[] = [];
@@ -554,7 +589,9 @@ export function specProblems(info: CaseInfo): string[] {
   }
   for (const match of source.matchAll(DIRECT_ACTION)) {
     const before = source.slice(0, match.index);
-    if (/\.user\s*$/.test(before)) continue;
+    if (/\.user\s*$/.test(before)) {
+      continue;
+    }
     const action = match[0].slice(1).replace(/\s*\($/, "");
     problems.push(
       `${file}:${before.split("\n").length}: calls ${action}() directly. Act through view.user (view.user.${action}(…)): it runs the action through the target's adapter, settles, and records a step of the trace.`,
@@ -578,7 +615,9 @@ export function specProblems(info: CaseInfo): string[] {
     }
   }
   for (const test of tests) {
-    if (test.requires.length || test.firstAssertion === undefined) continue;
+    if (test.requires.length || test.firstAssertion === undefined) {
+      continue;
+    }
     if (test.firstAssertion === "expect.element(" || test.firstAssertion === "expect.poll(") {
       continue;
     }
@@ -639,7 +678,9 @@ export function staleArtefacts(info: CaseInfo): string[] {
   return ["__expected__", "__screenshots__"]
     .flatMap((directory) => {
       const path = join(info.dir, directory);
-      if (!existsSync(path)) return [];
+      if (!existsSync(path)) {
+        return [];
+      }
       return (readdirSync(path, { recursive: true }) as string[])
         .filter((entry) => !basename(entry).startsWith(".") && statSync(join(path, entry)).isFile())
         .map((entry) => `${directory}/${entry.split(sep).join("/")}`);

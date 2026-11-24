@@ -34,7 +34,9 @@ async function render(suite: ParitySuite, format: boolean) {
   try {
     return { html: await renderToString(component, { props: parityProps(suite) }), logged };
   } finally {
-    for (const spy of spies) spy.mockRestore();
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
   }
 }
 

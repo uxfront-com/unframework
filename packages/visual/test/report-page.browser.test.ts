@@ -14,8 +14,9 @@ async function open(name: ReportFixture): Promise<void> {
   for (const element of report.querySelectorAll("[src], [href]")) {
     for (const attribute of ["src", "href"]) {
       const value = element.getAttribute(attribute);
-      if (value !== null && !value.startsWith("#"))
+      if (value !== null && !value.startsWith("#")) {
         element.setAttribute(attribute, `${base}${value}`);
+      }
     }
   }
   document.head.querySelector("style[data-report]")?.remove();
@@ -177,7 +178,9 @@ describe("a run whose cells left fewer files", () => {
       .toBeVisible();
 
     // Every image the page shows is one the run wrote.
-    for (const image of document.images) expect(image.naturalWidth).toBeGreaterThan(0);
+    for (const image of document.images) {
+      expect(image.naturalWidth).toBeGreaterThan(0);
+    }
   });
 
   it("passes axe-core", async () => {

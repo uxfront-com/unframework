@@ -5,7 +5,9 @@ import { formatOutput } from "../src/index.ts";
 /** Formats a file, failing on a format error, and checks that formatting again changes nothing. */
 async function formatted(path: string, contents: string): Promise<string> {
   const once = await formatOutput({ path, contents });
-  if (once.error) throw new Error(once.error);
+  if (once.error) {
+    throw new Error(once.error);
+  }
   const twice = await formatOutput(once.file);
   expect(twice.error).toBeUndefined();
   expect(twice.file.contents).toBe(once.file.contents);

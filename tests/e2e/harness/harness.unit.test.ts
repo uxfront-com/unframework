@@ -242,7 +242,9 @@ describe("the copy's manifest and workspace", () => {
     const root = readFileSync(join(repoRoot, "pnpm-workspace.yaml"), "utf8");
     const excluded = readReleaseAgeExclude(root);
     expect(excluded.length).toBeGreaterThan(0);
-    for (const entry of excluded) expect(entry).toMatch(/^[@a-z].*@\d/);
+    for (const entry of excluded) {
+      expect(entry).toMatch(/^[@a-z].*@\d/);
+    }
     expect(
       readReleaseAgeExclude(
         'a: 1\nminimumReleaseAgeExclude:\n  - "@x/y@1.0.0"\n  - z@2.0.0\nb: 2\n',
@@ -364,7 +366,9 @@ describe("the design system's copy", () => {
     const visual = named(readFileSync(join(docs, "6.visual.md"), "utf8"));
     for (const name of DESIGN_SYSTEM_TEST_DEPENDENCIES) {
       // TypeScript 6 is named in prose, and the umbrella is what the command comes with.
-      if (name === "typescript" || name === "@uxfront/unframework") continue;
+      if (name === "typescript" || name === "@uxfront/unframework") {
+        continue;
+      }
       expect(documented.has(name) || visual.has(name), name).toBe(true);
     }
   });
@@ -627,7 +631,9 @@ describe("spawnNgServe", () => {
     const { error, stdout } = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], {
       encoding: "utf8",
     });
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     const state = stdout.trim();
     return state !== "" && !state.startsWith("Z");
   };
@@ -901,8 +907,11 @@ describe("the global hooks", () => {
   });
 
   afterEach(() => {
-    if (previous === undefined) delete process.env.UF_E2E_WORK_DIR;
-    else process.env.UF_E2E_WORK_DIR = previous;
+    if (previous === undefined) {
+      delete process.env.UF_E2E_WORK_DIR;
+    } else {
+      process.env.UF_E2E_WORK_DIR = previous;
+    }
   });
 
   it("forgets the ports of a run that was killed", () => {

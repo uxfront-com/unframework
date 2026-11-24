@@ -64,10 +64,14 @@ export function parsePreviewArguments(args: readonly string[]): PreviewArguments
       throw new VisualUsageError(`${name} needs a value, such as ${name} ${EXAMPLE_VALUES[name]}.`);
     }
     if (name === "--out") {
-      if (parsed.out !== undefined) throw new VisualUsageError("--out is given twice.");
+      if (parsed.out !== undefined) {
+        throw new VisualUsageError("--out is given twice.");
+      }
       parsed.out = value;
     } else if (name === "--port") {
-      if (parsed.port !== undefined) throw new VisualUsageError("--port is given twice.");
+      if (parsed.port !== undefined) {
+        throw new VisualUsageError("--port is given twice.");
+      }
       if (!/^\d+$/.test(value) || Number(value) > 65_535) {
         throw new VisualUsageError(`--port takes a whole number from 0 to 65535, not ${value}.`);
       }
@@ -110,7 +114,9 @@ export function untilInterrupted(): { interrupted: Promise<void>; dispose(): voi
   let count = 0;
   const onSignal = () => {
     count += 1;
-    if (count > 1) process.exit(130);
+    if (count > 1) {
+      process.exit(130);
+    }
     interrupt();
   };
   process.on("SIGINT", onSignal);
@@ -142,7 +148,9 @@ export async function preview(
       ...(parsed.targets.length ? { targets: parsed.targets } : {}),
       ...(parsed.out === undefined ? {} : { out: parsed.out }),
     });
-    for (const diagnostic of built.diagnostics) io.stderr(diagnosticLine(diagnostic, io.cwd));
+    for (const diagnostic of built.diagnostics) {
+      io.stderr(diagnosticLine(diagnostic, io.cwd));
+    }
     io.stdout(`unframework preview build: ${built.out} (${built.targets.join(", ")})\n`);
     return 0;
   }
@@ -153,7 +161,9 @@ export async function preview(
       ...(parsed.targets.length ? { targets: parsed.targets } : {}),
       ...(parsed.port === undefined ? {} : { port: parsed.port }),
     });
-    for (const diagnostic of running.diagnostics) io.stderr(diagnosticLine(diagnostic, io.cwd));
+    for (const diagnostic of running.diagnostics) {
+      io.stderr(diagnosticLine(diagnostic, io.cwd));
+    }
     io.stdout(
       [
         `unframework preview: ${running.url}`,

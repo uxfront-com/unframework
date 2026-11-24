@@ -79,9 +79,13 @@ export function checkTag(
 ): TagCheck {
   const problem =
     parent === "svg" ? svgTagProblem(node, name.name) : tagProblem(node, name.name, root);
-  if (!problem) return { accepted: true, as: name.name };
+  if (!problem) {
+    return { accepted: true, as: name.name };
+  }
   report(reporter, name, problem);
-  if (problem.fixedTag) return { accepted: false, as: problem.fixedTag };
+  if (problem.fixedTag) {
+    return { accepted: false, as: problem.fixedTag };
+  }
   return problem.foreign ? { accepted: false, foreign: true } : { accepted: false };
 }
 
@@ -93,7 +97,9 @@ function svgTagProblem(node: AST.JSXElement, tag: string): Problem | undefined {
       ? { code: "UF1002", message: unrenderable, foreign: true }
       : { code: "UF3002", message: unrenderable, foreign: true };
   }
-  if (SVG_ELEMENTS.has(tag)) return undefined;
+  if (SVG_ELEMENTS.has(tag)) {
+    return undefined;
+  }
   if (tag === "a") {
     return {
       code: "UF1002",
@@ -122,7 +128,9 @@ function svgTagProblem(node: AST.JSXElement, tag: string): Problem | undefined {
 
 function tagProblem(node: AST.JSXElement, tag: string, root: boolean): Problem | undefined {
   const unrenderable = UNRENDERABLE_ELEMENTS.get(tag);
-  if (unrenderable) return { code: "UF3002", message: unrenderable };
+  if (unrenderable) {
+    return { code: "UF3002", message: unrenderable };
+  }
   const unportable = UNPORTABLE_ELEMENTS.get(tag);
   if (unportable) {
     const fixes = tag === "search" ? searchFix(node) : [];
@@ -134,7 +142,9 @@ function tagProblem(node: AST.JSXElement, tag: string, root: boolean): Problem |
       ...(fixes.length ? { fixedTag: "div" } : {}),
     };
   }
-  if (HTML_ELEMENTS.has(tag) || tag === "svg") return undefined;
+  if (HTML_ELEMENTS.has(tag) || tag === "svg") {
+    return undefined;
+  }
   if (tag === "math") {
     return { code: "UF1002", message: "MathML (`<math>`) is not supported yet.", foreign: true };
   }
@@ -199,7 +209,9 @@ function searchFix(node: AST.JSXElement): Fix[] {
       item.name.type === "JSXIdentifier" &&
       item.name.name.toLowerCase() === "role",
   );
-  if (hasRole) return [];
+  if (hasRole) {
+    return [];
+  }
   const fix = renameFix(node, "div");
   fix.edits.push({
     span: { start: node.openingElement.name.end, end: node.openingElement.name.end },
@@ -241,7 +253,9 @@ export function checkPlacement(
     parent?.namespace === "svg"
       ? svgPlacementProblem(tag, parent)
       : placementProblem(tag, ancestors, atRoot);
-  if (problem) report(reporter, name, problem);
+  if (problem) {
+    report(reporter, name, problem);
+  }
 }
 
 /**
@@ -249,7 +263,9 @@ export function checkPlacement(
  * HTML, and React as SVG (ADR-0040).
  */
 function svgPlacementProblem(tag: string, parent: OpenElement): Problem | undefined {
-  if (!SVG_HTML_INTEGRATION_POINTS.has(parent.tag)) return undefined;
+  if (!SVG_HTML_INTEGRATION_POINTS.has(parent.tag)) {
+    return undefined;
+  }
   return {
     code: "UF3003",
     message: `<${tag}> cannot be inside an SVG <${parent.tag}>: it holds text only, and the HTML parser and Vue read an element there as HTML, where React keeps it SVG.`,
@@ -268,7 +284,9 @@ function placementProblem(
     // A component's own root: the parent's compile checks it where the component sits
     // (ADR-0054). Anywhere else without a parent here (a slot's fill, a root component's root)
     // nothing places it where it belongs.
-    if (atRoot || !parents) return undefined;
+    if (atRoot || !parents) {
+      return undefined;
+    }
     return {
       code: "UF3003",
       message: `<${tag}> belongs inside ${list(tags(parents), "or")}, and nothing here places it there: only a component's own root element leaves its parent to the component that renders it.`,
@@ -304,9 +322,13 @@ function placementProblem(
   for (let index = ancestors.length - 1; index >= 0; index--) {
     const ancestor = ancestors[index]!;
     const rule = REPAIRED_DESCENDANTS.get(ancestor.tag);
-    if (!rule?.descendants.has(tag)) continue;
+    if (!rule?.descendants.has(tag)) {
+      continue;
+    }
     const between = ancestors.slice(index + 1);
-    if (rule.resetBy && between.some((element) => rule.resetBy!.has(element.tag))) continue;
+    if (rule.resetBy && between.some((element) => rule.resetBy!.has(element.tag))) {
+      continue;
+    }
     return {
       code: "UF3003",
       message: `<${tag}> cannot be inside <${ancestor.tag}>: ${repairOf(ancestor.tag)}`,
@@ -318,7 +340,9 @@ function placementProblem(
 
 /** What the parser does when the element opens inside an ancestor it repairs. */
 function repairOf(ancestor: string): string {
-  if (ancestor === "form") return "the browser ignores a form inside a form.";
+  if (ancestor === "form") {
+    return "the browser ignores a form inside a form.";
+  }
   if (ancestor === "a" || ancestor === "button") {
     return `the browser closes the outer <${ancestor}> first.`;
   }

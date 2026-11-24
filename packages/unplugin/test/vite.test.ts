@@ -982,7 +982,9 @@ describe("the golden guard (onCompile)", () => {
         'throw new Error("[uf guard] vue output differs");\nexport default undefined;\n',
       );
       const ssr = server.environments.ssr;
-      if (!isRunnableDevEnvironment(ssr)) throw new Error("the ssr environment is not runnable");
+      if (!isRunnableDevEnvironment(ssr)) {
+        throw new Error("the ssr environment is not runnable");
+      }
       await expect(ssr.runner.import(vueId())).rejects.toThrow("[uf guard] vue output differs");
     });
   });
@@ -1246,7 +1248,9 @@ describe("the project graph (ADR-0071)", () => {
       try {
         const idOf = (name: string) => `${join(graph.root, `${name}.uf.tsx`)}.vue`;
         const ids = { B: idOf("B"), C: idOf("C"), D: idOf("D") };
-        for (const each of Object.values(ids)) await server.client.transformRequest(each);
+        for (const each of Object.values(ids)) {
+          await server.client.transformRequest(each);
+        }
         await fn({ graph, client: server.client, ids, idOf, compiled, events });
       } finally {
         await server.close();
@@ -1277,8 +1281,11 @@ describe("the project graph (ADR-0071)", () => {
       client.moduleGraph.onFileChange(edited);
       for (const [name, id] of Object.entries(ids)) {
         const result = client.moduleGraph.getModuleById(id)?.transformResult;
-        if ((names as readonly string[]).includes(name)) expect(result, name).toBeNull();
-        else expect(result, name).not.toBeNull();
+        if ((names as readonly string[]).includes(name)) {
+          expect(result, name).toBeNull();
+        } else {
+          expect(result, name).not.toBeNull();
+        }
       }
     });
   });
@@ -1290,7 +1297,9 @@ describe("the project graph (ADR-0071)", () => {
       compiled.length = 0;
       graph.write("a.ts", PROPS.replace("label: string;", "label: string;\n  hint?: string;"));
       client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
-      for (const id of Object.values(ids)) await client.transformRequest(id);
+      for (const id of Object.values(ids)) {
+        await client.transformRequest(id);
+      }
       expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx", "useC.uf.ts"]);
     });
   });
@@ -1350,7 +1359,9 @@ describe("the project graph (ADR-0071)", () => {
   ])("sees an edit to a file that modules import %s, and by the other", async (_, names) => {
     await withGraph(async ({ graph, client, idOf, events }) => {
       linkPackage(graph, "tokens");
-      for (const name of names) await request(client, idOf(name));
+      for (const name of names) {
+        await request(client, idOf(name));
+      }
       graph.write("packages/tokens/index.ts", HINTED);
       client.moduleGraph.onFileChange(join(graph.root, "packages/tokens/index.ts"));
       for (const name of names) {

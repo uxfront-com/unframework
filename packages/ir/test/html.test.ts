@@ -74,7 +74,9 @@ describe("the HTML vocabulary", () => {
     }
     expect([...TRUE_VALUED_ATTRIBUTES].filter((name) => !isHtmlAttribute("div", name))).toEqual([]);
     for (const [tag, attributes] of NUMERIC_ATTRIBUTES) {
-      for (const name of attributes.keys()) expect(isHtmlAttribute(tag, name)).toBe(true);
+      for (const name of attributes.keys()) {
+        expect(isHtmlAttribute(tag, name)).toBe(true);
+      }
     }
   });
 
@@ -96,7 +98,9 @@ describe("the HTML vocabulary", () => {
     const stringTyped = new Set(["li value", "meter value", "progress max", "progress value"]);
     for (const [tag, attributes] of NUMERIC_ATTRIBUTES) {
       for (const name of attributes.keys()) {
-        if (stringTyped.has(`${tag} ${name}`) || ["height", "width"].includes(name)) continue;
+        if (stringTyped.has(`${tag} ${name}`) || ["height", "width"].includes(name)) {
+          continue;
+        }
         expect(isNumberTypedAttribute(tag, name), `${tag} ${name}`).toBe(true);
       }
     }
@@ -212,7 +216,9 @@ function spellings(scheme: string, count: number): string[] {
     let url = next() < 0.5 ? pick() + pick() : "";
     for (const character of `${scheme}:`) {
       url += next() < 0.5 ? character.toUpperCase() : character;
-      if (next() < 0.15) url += pick();
+      if (next() < 0.15) {
+        url += pick();
+      }
     }
     samples.push(`${url}alert(1)`);
   }

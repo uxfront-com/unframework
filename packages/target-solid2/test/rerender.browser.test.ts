@@ -46,8 +46,11 @@ function Badge(rawProps: BadgeProps): JSX.Element {
   createRenderEffect(
     () => props.count,
     (count) => {
-      if (count === undefined) p.removeAttribute("data-count");
-      else p.setAttribute("data-count", String(count));
+      if (count === undefined) {
+        p.removeAttribute("data-count");
+      } else {
+        p.setAttribute("data-count", String(count));
+      }
     },
   );
   insert(p, () => props.label);

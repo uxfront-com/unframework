@@ -45,7 +45,9 @@ import type { ReferencePath } from "./narrowing.ts";
  * spread element on the server.
  */
 function escapedText(node: RenderNode): RenderNode {
-  if (node.kind !== "Text" || !/[<>&]/.test(node.value)) return node;
+  if (node.kind !== "Text" || !/[<>&]/.test(node.value)) {
+    return node;
+  }
   return {
     kind: "Interpolation",
     value: { code: JSON.stringify(node.value), span: node.span, refs: [] },
@@ -154,7 +156,9 @@ export function forSolid(
           // which the server escapes whole; one left as text is escaped here.
           return interpolation(node, (part) => {
             const printed = parseExpression(rewriteExpression(part, component, rules));
-            if (printed.type === "Identifier") return true;
+            if (printed.type === "Identifier") {
+              return true;
+            }
             // A path a keyed callback receives prints as its plain name (src/narrowing.ts).
             const path = wholePath(part);
             return Boolean(path && keyed.flat().some((entry) => samePath(entry, path)));
@@ -274,8 +278,12 @@ function selectedOption(option: ElementNode, model: Expression, multiple: boolea
  */
 function optionText(option: ElementNode): Expression | string {
   const parts = option.children.flatMap((child): (Expression | string)[] => {
-    if (child.kind === "Text") return [child.value];
-    if (child.kind === "Interpolation") return [child.value];
+    if (child.kind === "Text") {
+      return [child.value];
+    }
+    if (child.kind === "Interpolation") {
+      return [child.value];
+    }
     return [];
   });
   if (parts.every((part) => typeof part === "string")) {
@@ -299,7 +307,9 @@ function joined(parts: readonly (Expression | string)[]): Expression {
   let code = "String(";
   const refs: Expression["refs"] = [];
   for (const [index, part] of parts.entries()) {
-    if (index) code += " + ";
+    if (index) {
+      code += " + ";
+    }
     if (typeof part === "string") {
       code += part;
       continue;
@@ -346,9 +356,13 @@ function insertedLineFeed(nodes: readonly RenderNode[]): RenderNode[] {
   for (;;) {
     const first = children.findIndex((node) => node.kind === "Text" || node.kind === "Element");
     const text = children[first];
-    if (first <= 0 || text?.kind !== "Text") return children;
+    if (first <= 0 || text?.kind !== "Text") {
+      return children;
+    }
     const feeds = /^\n+/.exec(text.value)?.[0];
-    if (!feeds) return children;
+    if (!feeds) {
+      return children;
+    }
     const at = { start: text.span.start, end: text.span.start };
     const inserted: InterpolationNode = {
       kind: "Interpolation",
@@ -372,7 +386,9 @@ function insertedLineFeed(nodes: readonly RenderNode[]): RenderNode[] {
  */
 function interpolation(node: InterpolationNode, bare: (part: Expression) => boolean): RenderNode[] {
   const parsed = parseExpression(node.value.code);
-  if (parsed.type !== "ConditionalExpression") return [node];
+  if (parsed.type !== "ConditionalExpression") {
+    return [node];
+  }
   if (!bare(slice(node.value, parsed.consequent)) && !bare(slice(node.value, parsed.alternate))) {
     return [node];
   }
@@ -387,14 +403,18 @@ function interpolation(node: InterpolationNode, bare: (part: Expression) => bool
   };
   const then = branch(parsed.consequent, slice(node.value, parsed.test));
   const otherwise = branch(parsed.alternate);
-  if (then.children.length === 0 && otherwise.children.length === 0) return [];
+  if (then.children.length === 0 && otherwise.children.length === 0) {
+    return [];
+  }
   const branches = otherwise.children.length ? [then, otherwise] : [then];
   return [{ kind: "If", branches, span: node.span }];
 }
 
 /** Whether a branch renders nothing: `null`, `undefined` or an empty string. */
 function isNothing(part: ReturnType<typeof parseExpression>): boolean {
-  if (part.type === "Identifier") return part.name === "undefined";
+  if (part.type === "Identifier") {
+    return part.name === "undefined";
+  }
   return part.type === "Literal" && (part.value === null || part.value === "");
 }
 
@@ -432,14 +452,18 @@ export function escapedOnServer(
       case "TemplateLiteral": {
         const text = node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join("");
         if (node.expressions.length === 0) {
-          if (!top && significant.test(text)) wrapped.push(node);
+          if (!top && significant.test(text)) {
+            wrapped.push(node);
+          }
           return;
         }
         if (position === "child" && significant.test(text)) {
           wrapped.push(node);
           return;
         }
-        for (const part of node.expressions) visit(part, false);
+        for (const part of node.expressions) {
+          visit(part, false);
+        }
         return;
       }
       case "ConditionalExpression":
@@ -447,17 +471,23 @@ export function escapedOnServer(
         visit(node.alternate, false);
         return;
       case "BinaryExpression":
-        if (node.left.type !== "PrivateIdentifier") visit(node.left, false);
+        if (node.left.type !== "PrivateIdentifier") {
+          visit(node.left, false);
+        }
         visit(node.right, false);
         return;
       case "LogicalExpression":
-        if (node.operator === "&&") visit(node.right, false);
+        if (node.operator === "&&") {
+          visit(node.right, false);
+        }
         return;
       default:
     }
   };
   visit(parseExpression(expression.code), true);
-  if (!wrapped.length) return expression;
+  if (!wrapped.length) {
+    return expression;
+  }
   const inserts = wrapped
     .flatMap((node) => [
       { at: node.start, text: "String(" },

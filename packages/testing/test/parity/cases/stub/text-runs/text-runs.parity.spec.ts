@@ -47,7 +47,9 @@ function render(view: View, { pieces, anchors = false, width = "", whiteSpace = 
   p.style.width = width;
   p.style.whiteSpace = whiteSpace;
   pieces.forEach((piece, index) => {
-    if (index && anchors) p.append(document.createComment(""));
+    if (index && anchors) {
+      p.append(document.createComment(""));
+    }
     p.append(document.createTextNode(piece));
   });
   view.container.replaceChildren(p);
@@ -173,7 +175,9 @@ describeTargets("stub/text-runs", () => {
           expect(Math.abs(width - ewidth), where).toBeLessThanOrEqual(slack);
           // A collapsed character renders nothing, and a text node that collapses whole has no
           // box for a range to measure: only rendered characters have a place to compare.
-          if (!width) return;
+          if (!width) {
+            return;
+          }
           expect(Math.abs(x - ex), where).toBeLessThanOrEqual(slack);
           expect([y, height], where).toEqual([ey, eheight]);
         });
@@ -273,7 +277,9 @@ describeTargets("stub/text-runs", () => {
 function characterBoxes(element: Element): [number, number, number, number][] {
   const boxes: [number, number, number, number][] = [];
   for (const node of element.childNodes) {
-    if (!(node instanceof Text)) continue;
+    if (!(node instanceof Text)) {
+      continue;
+    }
     for (let index = 0; index < node.length; index += 1) {
       const range = document.createRange();
       range.setStart(node, index);

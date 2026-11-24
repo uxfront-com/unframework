@@ -102,33 +102,47 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
   const visit = (id: number, type: Type, optional: boolean): number => {
     const node = nodes[id]!;
     if (node.kind === "opaque") {
-      if (!open.has(keyOf(node))) return id;
+      if (!open.has(keyOf(node))) {
+        return id;
+      }
       // Its text is read first: a construct that names something missing stays opaque.
       const written = context.nodeAt(node.file, node.span);
       const files = written && converter.read(written);
-      if (!files) return id;
+      if (!files) {
+        return id;
+      }
       const converted = converter.convert(type, optional, node);
-      if (converted === undefined) return id;
-      for (const file of files) converter.depend(file);
+      if (converted === undefined) {
+        return id;
+      }
+      for (const file of files) {
+        converter.depend(file);
+      }
       replaced.add(keyOf(node));
       return converted;
     }
     const each = parts(type, optional);
     const sole = each.length === 1 ? each[0] : undefined;
-    if (!sole || seen.has(id)) return id;
+    if (!sole || seen.has(id)) {
+      return id;
+    }
     seen.add(id);
     switch (node.kind) {
       case "object":
         for (const member of node.members) {
           const property = checker.getPropertyOfType(sole, member.name);
           const memberType = property && checker.getTypeOfSymbol(property);
-          if (memberType) member.type = visit(member.type, memberType, member.optional);
+          if (memberType) {
+            member.type = visit(member.type, memberType, member.optional);
+          }
         }
         break;
       case "array": {
         const [element] =
           sole.isTypeReference() && checker.isArrayType(sole) ? checker.getTypeArguments(sole) : [];
-        if (element) node.element = visit(node.element, element, false);
+        if (element) {
+          node.element = visit(node.element, element, false);
+        }
         break;
       }
       case "tuple": {
@@ -136,13 +150,17 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
           sole.isTypeReference() && checker.isTupleType(sole) ? checker.getTypeArguments(sole) : [];
         node.elements.forEach((element, index) => {
           const elementType = elements[index];
-          if (elementType && !element.rest) element.type = visit(element.type, elementType, false);
+          if (elementType && !element.rest) {
+            element.type = visit(element.type, elementType, false);
+          }
         });
         break;
       }
       case "function": {
         const signatures = checker.getSignaturesOfType(sole, SignatureKind.Call);
-        if (signatures.length !== 1) break;
+        if (signatures.length !== 1) {
+          break;
+        }
         const signature = signatures[0]!;
         const parameters = signature.getParameters();
         node.parameters.forEach((parameter, index) => {
@@ -153,23 +171,33 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
           }
         });
         const returns = checker.getReturnTypeOfSignature(signature);
-        if (returns) node.returns = visit(node.returns, returns, false);
+        if (returns) {
+          node.returns = visit(node.returns, returns, false);
+        }
         break;
       }
     }
     return id;
   };
   const root = visit(shape.root, queried, false);
-  if (!replaced.size) return shape;
+  if (!replaced.size) {
+    return shape;
+  }
 
   // An entry stays while an opaque node of its span is still reachable.
   const reachable = new Set<string>();
   const walk = (id: number, done: Set<number>) => {
-    if (done.has(id)) return;
+    if (done.has(id)) {
+      return;
+    }
     done.add(id);
     const node = nodes[id]!;
-    for (const child of children(node)) walk(child, done);
-    if (node.kind === "opaque") reachable.add(keyOf(node));
+    for (const child of children(node)) {
+      walk(child, done);
+    }
+    if (node.kind === "opaque") {
+      reachable.add(keyOf(node));
+    }
   };
   walk(root, new Set());
   return {
@@ -186,7 +214,9 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
 /** The parts of a type, without the `undefined` an optional member or parameter adds. */
 function parts(type: Type, optional: boolean): readonly Type[] {
   // `boolean` is the union of its two literals, and one type.
-  if (!type.isUnionType() || type.flags & TypeFlags.Boolean) return [type];
+  if (!type.isUnionType() || type.flags & TypeFlags.Boolean) {
+    return [type];
+  }
   return type.getTypes().filter((part) => !optional || !(part.flags & TypeFlags.Undefined));
 }
 
@@ -218,7 +248,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   let depth = 0;
 
   const build = (type: Type, optional = false): number => {
-    if (depth >= MAX_DEPTH) throw new Unrepresentable();
+    if (depth >= MAX_DEPTH) {
+      throw new Unrepresentable();
+    }
     depth++;
     try {
       return convertType(type, optional);
@@ -229,10 +261,14 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
 
   const convertType = (type: Type, optional: boolean): number => {
     // An enum's members are not their values' literals: `"x"` is not assignable to `E`.
-    if (type.isErrorType() || type.flags & TypeFlags.EnumLike) throw new Unrepresentable();
+    if (type.isErrorType() || type.flags & TypeFlags.EnumLike) {
+      throw new Unrepresentable();
+    }
     if (!optional) {
       const known = converted.get(type.id);
-      if (known !== undefined) return known;
+      if (known !== undefined) {
+        return known;
+      }
     }
     if (type.isUnionType() && !(type.flags & TypeFlags.Boolean)) {
       const each = parts(type, optional);
@@ -245,14 +281,20 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
               checker.getBooleanType(),
             ]
           : each;
-      if (types.length === 1) return build(types[0]!);
+      if (types.length === 1) {
+        return build(types[0]!);
+      }
       const ids = [...new Set(types.map((part) => build(part)))];
       const id = push({ kind: "union", types: ids });
-      if (!optional) converted.set(type.id, id);
+      if (!optional) {
+        converted.set(type.id, id);
+      }
       return id;
     }
     const primitive = PRIMITIVES.find(([flag]) => type.flags & flag);
-    if (primitive) return push({ kind: "primitive", name: primitive[1] });
+    if (primitive) {
+      return push({ kind: "primitive", name: primitive[1] });
+    }
     if (type.isStringLiteralType() || type.isNumberLiteralType() || type.isBooleanLiteralType()) {
       return push({ kind: "literal", value: type.value });
     }
@@ -261,7 +303,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       const id = push(node);
       converted.set(type.id, id);
       const constraint = checker.getConstraintOfTypeParameter(type);
-      if (constraint) node.constraint = build(constraint);
+      if (constraint) {
+        node.constraint = build(constraint);
+      }
       return id;
     }
     if (type.isTypeReference() && checker.isArrayType(type)) {
@@ -276,7 +320,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       node.element = build(element!);
       return id;
     }
-    if (type.isTupleType()) return tuple(type);
+    if (type.isTupleType()) {
+      return tuple(type);
+    }
     if (type.isObjectType()) {
       const calls = checker.getSignaturesOfType(type, SignatureKind.Call);
       if (calls.length) {
@@ -287,7 +333,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       }
       return object(type);
     }
-    if (type.isIntersectionType()) return object(type);
+    if (type.isIntersectionType()) {
+      return object(type);
+    }
     // Index, indexed-access, conditional and substitution types left generic, template literals
     // and string mappings that keep a hole, enums, unique symbols and bigint literals.
     throw new Unrepresentable();
@@ -296,7 +344,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   const tuple = (type: TupleTypeReference): number => {
     const target = type.getTarget();
     const flags = target.elementFlags;
-    if (flags.some((flag) => flag & ElementFlags.Variadic)) throw new Unrepresentable();
+    if (flags.some((flag) => flag & ElementFlags.Variadic)) {
+      throw new Unrepresentable();
+    }
     const id = push({ kind: "tuple", elements: [], readonly: target.readonly });
     converted.set(type.id, id);
     const elements = checker.getTypeArguments(type).slice(0, flags.length);
@@ -320,14 +370,18 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   };
 
   const signature = (call: Signature): number => {
-    if (call.getTypeParameters().length) throw new Unrepresentable();
+    if (call.getTypeParameters().length) {
+      throw new Unrepresentable();
+    }
     const id = push({ kind: "function", parameters: [], returns: -1 });
     const parameters = call.getParameters().map((parameter) => {
       const node = parameter.valueDeclaration?.resolve();
       const declaration = node && isParameterDeclaration(node) ? node : undefined;
       const optional = Boolean(declaration?.questionToken || declaration?.initializer);
       const parameterType = checker.getTypeOfSymbol(parameter);
-      if (!parameterType) throw new Unrepresentable();
+      if (!parameterType) {
+        throw new Unrepresentable();
+      }
       return {
         name: parameter.name,
         type: build(parameterType, optional),
@@ -336,14 +390,18 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       };
     });
     const returns = checker.getReturnTypeOfSignature(call);
-    if (!returns) throw new Unrepresentable();
+    if (!returns) {
+      throw new Unrepresentable();
+    }
     nodes[id] = { kind: "function", parameters, returns: build(returns) };
     return id;
   };
 
   /** Throws for an object type, or a part of an intersection, a shape cannot hold. */
   const representable = (type: Type) => {
-    if (!type.isObjectType()) throw new Unrepresentable();
+    if (!type.isObjectType()) {
+      throw new Unrepresentable();
+    }
     const symbol = type.getSymbol();
     if (symbol && symbol.flags & (SymbolFlags.Class | SymbolFlags.Enum)) {
       throw new Unrepresentable();
@@ -361,8 +419,12 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
 
   const object = (type: Type): number => {
     // An intersection's members are read only when each of its parts could be.
-    for (const part of type.isIntersectionType() ? type.getTypes() : [type]) representable(part);
-    if (checker.getIndexInfosOfType(type).length) throw new Unrepresentable();
+    for (const part of type.isIntersectionType() ? type.getTypes() : [type]) {
+      representable(part);
+    }
+    if (checker.getIndexInfosOfType(type).length) {
+      throw new Unrepresentable();
+    }
     if (
       checker.getSignaturesOfType(type, SignatureKind.Construct).length ||
       checker.getSignaturesOfType(type, SignatureKind.Call).length
@@ -395,10 +457,14 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       throw new Unrepresentable();
     }
     // A key that is a unique symbol has no name a shape can write.
-    if (property.escapedName.startsWith("__@")) throw new Unrepresentable();
+    if (property.escapedName.startsWith("__@")) {
+      throw new Unrepresentable();
+    }
     const optional = (property.flags & SymbolFlags.Optional) !== 0;
     const propertyType = checker.getTypeOfSymbol(property);
-    if (!propertyType) throw new Unrepresentable();
+    if (!propertyType) {
+      throw new Unrepresentable();
+    }
     const node = property.declarations[0]?.resolve();
     const written =
       node &&
@@ -430,7 +496,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     }
     const source = node.getSourceFile();
     const file = context.fileOf(source.fileName);
-    if (file === undefined) throw new Unrepresentable();
+    if (file === undefined) {
+      throw new Unrepresentable();
+    }
     depend(file);
     const owner = ownerOf(node);
     return {
@@ -459,21 +527,27 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   /** The interface or alias a symbol's first declaration is. */
   const declarationRef = (symbol: Symbol): DeclarationRef | undefined => {
     const node = symbol.declarations[0]?.resolve();
-    if (!node || !(isInterfaceDeclaration(node) || isTypeAliasDeclaration(node))) return undefined;
+    if (!node || !(isInterfaceDeclaration(node) || isTypeAliasDeclaration(node))) {
+      return undefined;
+    }
     return named(node);
   };
 
   /** The named interface or alias a member is written in. */
   const ownerOf = (node: Node): DeclarationRef | undefined => {
     for (let parent = node.parent; parent; parent = parent.parent) {
-      if (isInterfaceDeclaration(parent) || isTypeAliasDeclaration(parent)) return named(parent);
+      if (isInterfaceDeclaration(parent) || isTypeAliasDeclaration(parent)) {
+        return named(parent);
+      }
     }
     return undefined;
   };
 
   const named = (node: Node & { name: { text: string }; modifierFlags: ModifierFlags }) => {
     const file = context.fileOf(node.getSourceFile().fileName);
-    if (file === undefined) throw new Unrepresentable();
+    if (file === undefined) {
+      throw new Unrepresentable();
+    }
     return {
       file,
       name: node.name.text,
@@ -482,7 +556,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   };
 
   const depend = (file: string) => {
-    if (file !== context.file) dependencies.add(file.startsWith("pkg:") ? packageOf(file) : file);
+    if (file !== context.file) {
+      dependencies.add(file.startsWith("pkg:") ? packageOf(file) : file);
+    }
   };
 
   /**
@@ -509,22 +585,33 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       const target =
         symbol && symbol.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
       if (!target?.declarations.length) {
-        if (typed()?.isErrorType() ?? true) found.missing = true;
+        if (typed()?.isErrorType() ?? true) {
+          found.missing = true;
+        }
         return;
       }
-      if (visited.has(target.id)) return;
+      if (visited.has(target.id)) {
+        return;
+      }
       visited.add(target.id);
       for (const handle of target.declarations) {
         const node = handle.resolve();
-        if (!node) continue;
+        if (!node) {
+          continue;
+        }
         const source = node.getSourceFile();
         // A file a shape cannot name is walked for missing names, and left out of the files.
         const file = context.fileOf(source.fileName);
-        if (file !== undefined) files.add(file);
-        else if (context.isDefaultLibrary(source)) continue;
+        if (file !== undefined) {
+          files.add(file);
+        } else if (context.isDefaultLibrary(source)) {
+          continue;
+        }
         // A module's declaration is its file, which `import("./b.ts")` reads only for the names
         // its qualifier reaches.
-        if (node.kind !== SyntaxKind.SourceFile) pending.push(node);
+        if (node.kind !== SyntaxKind.SourceFile) {
+          pending.push(node);
+        }
       }
     };
     const visit = (node: Node): void => {
@@ -538,11 +625,15 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
         reach(node.expression, () => checker.getTypeAtLocation(node.expression));
       } else if (isImportTypeNode(node)) {
         const name = node.qualifier ?? (isLiteralTypeNode(node.argument) && node.argument.literal);
-        if (name) reach(name, () => checker.getTypeFromTypeNode(node));
+        if (name) {
+          reach(name, () => checker.getTypeFromTypeNode(node));
+        }
       }
       node.forEachChild(visit);
     };
-    while (pending.length && !found.missing) visit(pending.pop()!);
+    while (pending.length && !found.missing) {
+      visit(pending.pop()!);
+    }
     return found.missing ? undefined : files;
   };
 
@@ -557,11 +648,19 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       try {
         return build(type, optional);
       } catch (error) {
-        if (!(error instanceof Unrepresentable)) throw error;
+        if (!(error instanceof Unrepresentable)) {
+          throw error;
+        }
         nodes.length = mark;
-        for (const [key, id] of converted) if (id >= mark) converted.delete(key);
+        for (const [key, id] of converted) {
+          if (id >= mark) {
+            converted.delete(key);
+          }
+        }
         dependencies.clear();
-        for (const each of deps) dependencies.add(each);
+        for (const each of deps) {
+          dependencies.add(each);
+        }
         return undefined;
       }
     },
@@ -581,11 +680,17 @@ function references(nodes: readonly Node[]): string[] {
   const visit = (node: Node): void => {
     if (isTypeReferenceNode(node)) {
       let name = node.typeName;
-      while (isQualifiedName(name)) name = name.left;
-      if (isIdentifier(name) && !names.includes(name.text)) names.push(name.text);
+      while (isQualifiedName(name)) {
+        name = name.left;
+      }
+      if (isIdentifier(name) && !names.includes(name.text)) {
+        names.push(name.text);
+      }
     }
     node.forEachChild(visit);
   };
-  for (const node of nodes) visit(node);
+  for (const node of nodes) {
+    visit(node);
+  }
   return names;
 }

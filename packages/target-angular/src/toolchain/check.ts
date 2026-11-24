@@ -79,13 +79,17 @@ export async function frameworkEmit(
     tsProgram.emit(
       tsProgram.getSourceFile(resolve(file.path)),
       (fileName, text) => {
-        if (/\.[cm]?js$/.test(fileName)) code = text;
+        if (/\.[cm]?js$/.test(fileName)) {
+          code = text;
+        }
       },
       undefined,
       false,
       transformers,
     );
-    if (code === undefined) throw new Error(`ngtsc emitted nothing for ${file.path}.`);
+    if (code === undefined) {
+      throw new Error(`ngtsc emitted nothing for ${file.path}.`);
+    }
     emitted.set(file.path, [{ path: file.path, contents: code }]);
   }
   return emitted;

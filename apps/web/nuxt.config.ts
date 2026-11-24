@@ -188,7 +188,9 @@ export default defineNuxtConfig({
       // wrangler.jsonc serves 404.html instead.
       nitro.hooks.hook("compiled", async () => {
         const file = join(nitro.options.output.dir, "_redirects");
-        if (!existsSync(file)) return;
+        if (!existsSync(file)) {
+          return;
+        }
         const rules = (await readFile(file, "utf8"))
           .split("\n")
           .filter((line) => line && !/\s404$/.test(line));

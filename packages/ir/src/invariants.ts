@@ -416,7 +416,9 @@ function componentApis(
   for (const [index, entry] of (module.imports ?? []).entries()) {
     for (const [position, imported] of entry.names.entries()) {
       const at = `/imports/${index}/names/${position}`;
-      if (imported.kind === "Composable") continue;
+      if (imported.kind === "Composable") {
+        continue;
+      }
       if (imported.kind === "Directive") {
         if (!entry.api.directives?.some(({ name }) => name === imported.imported)) {
           errors.push({
@@ -463,7 +465,9 @@ function componentApis(
       });
     }
   }
-  for (const name of ambiguous) apis.delete(name);
+  for (const name of ambiguous) {
+    apis.delete(name);
+  }
   return apis;
 }
 
@@ -478,7 +482,9 @@ function composableApis(
   const apis = new Map<string, ComposableApi>();
   for (const [index, entry] of (module.imports ?? []).entries()) {
     for (const [position, imported] of entry.names.entries()) {
-      if (imported.kind !== "Composable") continue;
+      if (imported.kind !== "Composable") {
+        continue;
+      }
       const api = entry.api.composables?.find(({ name }) => name === imported.imported);
       if (!api) {
         errors.push({
@@ -554,7 +560,9 @@ function checkSharedNames(module: UfModule, errors: IrValidationError[]): Shared
           });
         }
         local(name.local, `${at}/local`);
-        if (field === "moduleImports") imports.set(name.local, name.span);
+        if (field === "moduleImports") {
+          imports.set(name.local, name.span);
+        }
       }
     }
   }
@@ -569,7 +577,9 @@ function checkSharedNames(module: UfModule, errors: IrValidationError[]): Shared
       });
     }
     constants.add(constant.binding);
-    if (constant.type) checkSourceText(constant.type, `${path}/type`, errors);
+    if (constant.type) {
+      checkSourceText(constant.type, `${path}/type`, errors);
+    }
     checkSourceText(constant.value, `${path}/value`, errors);
   }
   for (const [index, constant] of (module.constants ?? []).entries()) {
@@ -665,7 +675,9 @@ function checkDirectives(
     locals.add(directive.name);
     names.add(directive.name);
     checkSourceText(directive.value, `${path}/value`, errors);
-    if (directive.element) checkSourceText(directive.element, `${path}/element`, errors);
+    if (directive.element) {
+      checkSourceText(directive.element, `${path}/element`, errors);
+    }
     if (!directive.hooks.length) {
       errors.push({ path: `${path}/hooks`, message: "must declare at least one hook" });
     }
@@ -748,7 +760,9 @@ function checkDirectives(
   }
   for (const entry of module.imports ?? []) {
     for (const name of entry.names) {
-      if (name.kind === "Directive") names.add(name.local);
+      if (name.kind === "Directive") {
+        names.add(name.local);
+      }
     }
   }
   return names;
@@ -833,7 +847,9 @@ function checkTypeParameters(
     end = parameter.span.end;
     for (const part of ["constraint", "default"] as const) {
       const text = parameter[part];
-      if (!text) continue;
+      if (!text) {
+        continue;
+      }
       checkSourceText(text, `${at}/${part}`, errors);
       if (!inside(text.span, parameter.span)) {
         errors.push({ path: `${at}/${part}/span`, message: "must lie in the type parameter" });
@@ -1198,11 +1214,15 @@ function setupWalk(
   }
   const usedFunctions = new Map<BindingId, ComposableMemberApi>();
   for (const item of component.setup) {
-    if (item.kind !== "Use") continue;
+    if (item.kind !== "Use") {
+      continue;
+    }
     const api = composables.get(item.composable);
     for (const { member, binding } of item.members) {
       const found = api?.members.find(({ name }) => name === member);
-      if (found?.kind === "function") usedFunctions.set(binding, found);
+      if (found?.kind === "function") {
+        usedFunctions.set(binding, found);
+      }
     }
   }
   return {
@@ -1320,7 +1340,9 @@ function checkNames(
   errors: IrValidationError[],
 ): ReadonlyMap<string, string> {
   const names = new Map<string, string>();
-  for (const prop of component.props) names.set(prop.name, `the prop "${prop.name}"`);
+  for (const prop of component.props) {
+    names.set(prop.name, `the prop "${prop.name}"`);
+  }
   const parameter =
     component.propsParameter?.form === "object" ? component.propsParameter.name : undefined;
   for (const [index, binding] of component.bindings.entries()) {
@@ -1328,7 +1350,9 @@ function checkNames(
     if (binding.kind === "prop" || binding.kind === "loopVar" || binding.kind === "slotScope") {
       continue;
     }
-    if (bindings.get(binding.id) !== binding) continue;
+    if (bindings.get(binding.id) !== binding) {
+      continue;
+    }
     const at = `${path}/bindings/${index}/name`;
     const reserved = reservedSetupName(binding.name);
     const taken = names.get(binding.name);
@@ -1342,7 +1366,9 @@ function checkNames(
     } else if (binding.name === parameter) {
       errors.push({ path: at, message: "must differ from the props parameter's name" });
     }
-    if (!taken) names.set(binding.name, `the setup binding "${binding.name}"`);
+    if (!taken) {
+      names.set(binding.name, `the setup binding "${binding.name}"`);
+    }
   }
   return names;
 }
@@ -1404,7 +1430,9 @@ function checkComponentTypes(
       errors.push({ path: at, message: "must list the types in source order" });
     }
     named.add(name);
-    if (position !== undefined) previous = Math.max(previous, position);
+    if (position !== undefined) {
+      previous = Math.max(previous, position);
+    }
   }
 }
 
@@ -1532,7 +1560,9 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
       return;
     case "Interpolation": {
       const problem = dynamicTextProblem(place);
-      if (problem) walk.errors.push({ path: place.path, message: `must not be ${problem}` });
+      if (problem) {
+        walk.errors.push({ path: place.path, message: `must not be ${problem}` });
+      }
       checkExpression(node.value, `${place.path}/value`, place.scope, walk);
       return;
     }
@@ -1577,8 +1607,11 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
       checkExpression(node.key, `${place.path}/key`, scope, walk);
       checkKey(node.key, declared, `${place.path}/key`, walk);
       const body = { ...place, path: `${place.path}/body`, scope, controlled: true, inList: true };
-      if (node.body.kind === "Element") checkElement(node.body, body, walk);
-      else checkComponentNode(node.body, body, walk);
+      if (node.body.kind === "Element") {
+        checkElement(node.body, body, walk);
+      } else {
+        checkComponentNode(node.body, body, walk);
+      }
       return;
     }
     case "Component":
@@ -1659,8 +1692,12 @@ function checkTransition(node: TransitionNode, place: Place, walk: Walk): void {
 /** Whether a transition's children are one element, or one `If` of one element or nothing per branch. */
 function isTransitionChild(children: readonly RenderNode[]): boolean {
   const [child] = children;
-  if (children.length !== 1 || !child) return false;
-  if (child.kind === "Element") return true;
+  if (children.length !== 1 || !child) {
+    return false;
+  }
+  if (child.kind === "Element") {
+    return true;
+  }
   return (
     child.kind === "If" &&
     child.branches.every(
@@ -1715,7 +1752,9 @@ function checkComponentAttributes(
       seen.add(`${field} ${value}`);
     };
     const once = (key: string, path: string) => {
-      if (seen.has(key)) errors.push({ path, message: "must be set once" });
+      if (seen.has(key)) {
+        errors.push({ path, message: "must be set once" });
+      }
       seen.add(key);
     };
     switch (attribute.kind) {
@@ -1835,7 +1874,9 @@ function checkSlots(component: UfComponent, path: string, walk: Walk): void {
       });
     }
   }
-  if (!slots) return;
+  if (!slots) {
+    return;
+  }
   const at = `${path}/slots`;
   const binding = bindings.get(slots.binding);
   if (binding?.kind !== "slots" || !inside(binding.span, slots.span)) {
@@ -1853,7 +1894,9 @@ function checkSlots(component: UfComponent, path: string, walk: Walk): void {
       });
     }
     names.add(slot.name);
-    if (slot.props) checkSourceText(slot.props, `${at}/slots/${index}/props`, errors);
+    if (slot.props) {
+      checkSourceText(slot.props, `${at}/slots/${index}/props`, errors);
+    }
     if (slot.references && !slot.props) {
       errors.push({
         path: `${at}/slots/${index}/references`,
@@ -1868,7 +1911,9 @@ function checkSlots(component: UfComponent, path: string, walk: Walk): void {
 /** Checks what a component exposes (ADR-0054): its local functions, each once. */
 function checkExposes(component: UfComponent, path: string, walk: Walk): void {
   const { exposes } = component;
-  if (!exposes) return;
+  if (!exposes) {
+    return;
+  }
   const seen = new Set<BindingId>();
   for (const [index, id] of exposes.functions.entries()) {
     const at = `${path}/exposes/functions/${index}`;
@@ -1921,8 +1966,9 @@ function checkFills(
         message: `must name a slot the component declares, and "${fill.slot}" is not one`,
       });
     }
-    if (seen.has(fill.slot))
+    if (seen.has(fill.slot)) {
       errors.push({ path: `${at}/slot`, message: `must fill "${fill.slot}" once` });
+    }
     seen.add(fill.slot);
     if (fill.forward !== undefined) {
       if (!walk.component.slots?.slots.some(({ name }) => name === fill.forward)) {
@@ -1968,7 +2014,9 @@ function checkSlotOutlet(node: SlotOutletNode, place: Place, walk: Walk): void {
       message: `must name a slot the component declares, and "${node.slot}" is not one`,
     });
   }
-  if (node.props) checkExpression(node.props, `${place.path}/props`, place.scope, walk);
+  if (node.props) {
+    checkExpression(node.props, `${place.path}/props`, place.scope, walk);
+  }
   checkChildren(
     node.fallback,
     { ...place, path: `${place.path}/fallback`, controlled: true },
@@ -2005,7 +2053,9 @@ function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
   const reported = new Set<string>();
   let attachments: Map<BindingId, number> | undefined;
   for (const candidate of node.candidates) {
-    if (candidate.kind !== "Tag") continue;
+    if (candidate.kind !== "Tag") {
+      continue;
+    }
     // An attribute only some candidates take is checked on those alone (ADR-0119).
     const element: ElementNode = {
       kind: "Element",
@@ -2026,16 +2076,22 @@ function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
     attachments ??= own.attachments;
     for (const error of errors) {
       const key = `${error.path} ${error.message}`;
-      if (!reported.has(key)) walk.errors.push(error);
+      if (!reported.has(key)) {
+        walk.errors.push(error);
+      }
       reported.add(key);
     }
   }
-  for (const [id, count] of attachments ?? []) walk.attachments.set(id, count);
+  for (const [id, count] of attachments ?? []) {
+    walk.attachments.set(id, count);
+  }
 }
 
 /** Whether a tag candidate takes an attribute: every one does, but those `only` lists. */
 function takes(node: DynamicNode, tag: string, attribute: Attribute): boolean {
-  if (attribute.kind !== "Static" && attribute.kind !== "Bound") return true;
+  if (attribute.kind !== "Static" && attribute.kind !== "Bound") {
+    return true;
+  }
   const only = node.only?.find((entry) => entry.name === attribute.name);
   return !only || only.tags.includes(tag);
 }
@@ -2045,7 +2101,9 @@ function takes(node: DynamicNode, tag: string, attribute: Attribute): boolean {
  * of the node once, and lists some of its tag candidates, never none and never all.
  */
 function checkOnly(node: DynamicNode, place: Place, walk: Walk): void {
-  if (!node.only) return;
+  if (!node.only) {
+    return;
+  }
   const tags = node.candidates.flatMap((candidate) =>
     candidate.kind === "Tag" ? [candidate.tag] : [],
   );
@@ -2135,8 +2193,9 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
   const declared: Declared[] = [];
   for (const [index, candidate] of node.candidates.entries()) {
     const api = candidate.kind === "Component" ? walk.apis.get(candidate.component) : undefined;
-    if (api) declared.push(api);
-    else {
+    if (api) {
+      declared.push(api);
+    } else {
       errors.push({
         path: `${place.path}/candidates/${index}/component`,
         message: "must name exactly one imported or local component",
@@ -2181,8 +2240,12 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
  */
 function takenName(name: string, scope: ReadonlySet<BindingId>, walk: Walk): string | undefined {
   const owner = walk.names.get(name);
-  if (owner) return `it would shadow ${owner}`;
-  if (name === walk.propsName) return "it would shadow the props parameter";
+  if (owner) {
+    return `it would shadow ${owner}`;
+  }
+  if (name === walk.propsName) {
+    return "it would shadow the props parameter";
+  }
   for (const id of scope) {
     const other = walk.bindings.get(id);
     if (other?.kind === "loopVar" && other.name === name) {
@@ -2224,7 +2287,9 @@ function checkKey(key: Expression, declared: readonly BindingId[], path: string,
  */
 function dynamicTextProblem(place: Place): string | undefined {
   const { element, namespace } = place;
-  if (!element) return undefined;
+  if (!element) {
+    return undefined;
+  }
   if (namespace === "svg") {
     return SVG_TEXT_ELEMENTS.has(element.tag)
       ? undefined
@@ -2255,7 +2320,9 @@ function checkIf(node: IfNode, place: Place, walk: Walk): void {
     } else if (!branch.condition && !branch.children.length) {
       errors.push({ path: at, message: "must render something: an empty else renders nothing" });
     }
-    if (branch.condition) checkExpression(branch.condition, `${at}/condition`, place.scope, walk);
+    if (branch.condition) {
+      checkExpression(branch.condition, `${at}/condition`, place.scope, walk);
+    }
     checkChildren(branch.children, { ...place, path: `${at}/children`, controlled: true }, walk);
   }
   if (branches.length && branches.every((branch) => !branch.children.length)) {
@@ -2319,7 +2386,9 @@ function checkElement(element: ElementNode, place: Place, walk: Walk): void {
     (namespace === "svg" && tag === "title" && place.controlled
       ? "must not start a conditional's branch or a list's body in SVG: dom-expressions leaves `title` out of its SVG tags, so Solid creates it in HTML's namespace"
       : undefined);
-  if (tagProblem) errors.push({ path: `${path}/tag`, message: tagProblem });
+  if (tagProblem) {
+    errors.push({ path: `${path}/tag`, message: tagProblem });
+  }
   // Angular prints an element with `{{` in a static attribute, and what it holds, in a region
   // where nothing binds (ADR-0037).
   const literal =
@@ -2382,8 +2451,12 @@ function leading(
       return { texts, empty: false };
     }
     // A list's body is an element: it renders elements, or nothing.
-    if (child.kind === "For") continue;
-    if (child.kind !== "If") return { texts, empty: false };
+    if (child.kind === "For") {
+      continue;
+    }
+    if (child.kind !== "If") {
+      return { texts, empty: false };
+    }
     // Without an else, or with a branch that can render nothing, a conditional can too.
     let empty = child.branches.at(-1)?.condition !== undefined;
     for (const [number, branch] of child.branches.entries()) {
@@ -2391,7 +2464,9 @@ function leading(
       texts.push(...inner.texts);
       empty ||= inner.empty;
     }
-    if (!empty) return { texts, empty: false };
+    if (!empty) {
+      return { texts, empty: false };
+    }
   }
   return { texts, empty: true };
 }
@@ -2399,10 +2474,16 @@ function leading(
 /** Why an HTML-namespace tag is not one a component can render as itself, or `undefined`. */
 function htmlTagProblem(tag: string): string | undefined {
   const unrenderable = UNRENDERABLE_ELEMENTS.get(tag);
-  if (unrenderable) return `must be an element a component can render: ${unrenderable}`;
+  if (unrenderable) {
+    return `must be an element a component can render: ${unrenderable}`;
+  }
   const unportable = UNPORTABLE_ELEMENTS.get(tag);
-  if (unportable) return `must be an element every target renders as itself: ${unportable}`;
-  if (isHtmlElement(tag)) return undefined;
+  if (unportable) {
+    return `must be an element every target renders as itself: ${unportable}`;
+  }
+  if (isHtmlElement(tag)) {
+    return undefined;
+  }
   return isSvgElement(tag)
     ? `must be an HTML element, and <${tag}> is not: SVG elements sit inside an <svg>`
     : `must be an HTML element, and <${tag}> is not`;
@@ -2418,14 +2499,18 @@ function textOnlyProblem(place: Place): string | undefined {
     return undefined;
   }
   // A conditional or a list in a <textarea> reports itself.
-  if (place.controlled && parent.tag === "textarea") return undefined;
+  if (place.controlled && parent.tag === "textarea") {
+    return undefined;
+  }
   return `must not be inside <${parent.tag}>: its content is text, and the HTML parser reads markup there as text`;
 }
 
 /** Why an SVG-namespace tag is not one a component can render, or `undefined`. */
 function svgTagProblem(tag: string, parent: ElementNode | undefined): string | undefined {
   const unrenderable = SVG_UNRENDERABLE_ELEMENTS.get(tag);
-  if (unrenderable) return `must be an element a component can render: ${unrenderable}`;
+  if (unrenderable) {
+    return `must be an element a component can render: ${unrenderable}`;
+  }
   if (!isSvgElement(tag)) {
     return `must be an SVG element, and <${tag}> is not: the HTML parser leaves SVG at some HTML elements, and the targets create others in SVG or HTML`;
   }
@@ -2464,9 +2549,14 @@ function checkAttributes(
   const claim = (name: string, path: string, fromSpread: boolean) => {
     if (name === "class") {
       const taken = fromSpread ? spreadClass : ownClass;
-      if (fromSpread) spreadClass = true;
-      else ownClass = true;
-      if (!taken) return;
+      if (fromSpread) {
+        spreadClass = true;
+      } else {
+        ownClass = true;
+      }
+      if (!taken) {
+        return;
+      }
     } else if (!seen.has(name)) {
       seen.add(name);
       return;
@@ -2557,7 +2647,9 @@ function checkAttributes(
       case "Spread":
         for (const [key, { name }] of attribute.keys.entries()) {
           const path = `${at}/keys/${key}/name`;
-          if (checkName(name, path)) checkBoundName(name, path, true);
+          if (checkName(name, path)) {
+            checkBoundName(name, path, true);
+          }
           claim(name, path, true);
         }
         checkExpression(attribute.value, `${at}/value`, place.scope, walk);
@@ -2576,7 +2668,9 @@ function checkAttributes(
         break;
       }
       case "Ref":
-        if (ref) errors.push({ path: at, message: "must attach the element to one template ref" });
+        if (ref) {
+          errors.push({ path: at, message: "must attach the element to one template ref" });
+        }
         ref = true;
         checkRef(attribute, at, place, walk);
         break;
@@ -2593,7 +2687,9 @@ function checkAttributes(
         // The markup is the element's content (ADR-0097): an HTML element that holds content,
         // with no children beside it.
         const problem = rawHtmlProblem(tag, namespace, children.length > 0);
-        if (problem) errors.push({ path: at, message: problem });
+        if (problem) {
+          errors.push({ path: at, message: problem });
+        }
         claim("innerHTML", at, false);
         checkExpression(attribute.value, `${at}/value`, place.scope, walk);
         break;
@@ -2652,12 +2748,18 @@ function rawHtmlProblem(
   namespace: Namespace,
   hasChildren: boolean,
 ): string | undefined {
-  if (namespace !== "html") return "must be on an HTML element: SVG content is not raw HTML";
-  if (isVoidElement(tag)) return `must not be on <${tag}>: a void element holds no content`;
+  if (namespace !== "html") {
+    return "must be on an HTML element: SVG content is not raw HTML";
+  }
+  if (isVoidElement(tag)) {
+    return `must not be on <${tag}>: a void element holds no content`;
+  }
   if (TEXT_ONLY_ELEMENTS.has(tag)) {
     return `must not be on <${tag}>: its content is text, which the targets set apart`;
   }
-  if (hasChildren) return "must be on an element without children: the markup is its content";
+  if (hasChildren) {
+    return "must be on an element without children: the markup is its content";
+  }
   return undefined;
 }
 
@@ -2711,7 +2813,9 @@ function checkListener(attribute: EventAttribute, path: string, place: Place, wa
       return;
     }
     const item = walk.functions.get(handler.binding);
-    if (item) checkHandledEvent(item.function, event, at, walk);
+    if (item) {
+      checkHandledEvent(item.function, event, at, walk);
+    }
   } else {
     const fn = handler.function;
     checkFunction(fn, `${at}/function`, place.scope, "handler", walk);
@@ -2726,7 +2830,9 @@ function checkListener(attribute: EventAttribute, path: string, place: Place, wa
  */
 function checkHandledEvent(fn: FunctionCode, event: string, path: string, walk: Walk): void {
   const dom = DOM_EVENTS.get(event);
-  if (dom === undefined) return;
+  if (dom === undefined) {
+    return;
+  }
   const [first] = fn.parameters;
   if (first && first.event === undefined) {
     walk.errors.push({
@@ -2804,9 +2910,13 @@ function checkStaticValue(
           : `must be true: "${name}" is a boolean attribute`,
     });
   }
-  if (typeof value !== "string") return;
+  if (typeof value !== "string") {
+    return;
+  }
   const problem = valueProblem(tag, namespace, name, value);
-  if (problem) errors.push({ path, message: problem });
+  if (problem) {
+    errors.push({ path, message: problem });
+  }
   checkCharacters(value, path, errors);
 }
 
@@ -2918,7 +3028,9 @@ function checkStyle(attribute: StyleAttribute, path: string, place: Place, walk:
         (angularMisreads(declaration.value)
           ? "must be read alike by Angular's style parser, which knows neither escapes nor comments and counts the parentheses inside strings"
           : undefined);
-      if (problem) errors.push({ path: `${at}/value`, message: problem });
+      if (problem) {
+        errors.push({ path: `${at}/value`, message: problem });
+      }
       checkCharacters(declaration.value, `${at}/value`, errors);
     } else {
       checkExpression(declaration.value, `${at}/value`, place.scope, walk);
@@ -2941,7 +3053,9 @@ function checkExpression(
 ): void {
   const { errors } = walk;
   const { code, span, refs } = expression;
-  if (!checkSourceText(expression, path, errors)) return;
+  if (!checkSourceText(expression, path, errors)) {
+    return;
+  }
   let end = span.start;
   for (const [index, ref] of refs.entries()) {
     const at = `${path}/refs/${index}`;
@@ -2962,7 +3076,9 @@ function checkExpression(
       checkImportReference(ref, text, at, walk);
     } else {
       checkBindingReference(ref, text, at, scope, "render", walk);
-      if (ref.narrowed) checkNarrowed(ref, expression, at, "render", walk, directive);
+      if (ref.narrowed) {
+        checkNarrowed(ref, expression, at, "render", walk, directive);
+      }
     }
   }
 }
@@ -3080,7 +3196,9 @@ function checkBindingReference(
     });
   }
   const problem = useProblem(binding, ref.call === true, context, walk);
-  if (problem) errors.push({ path: `${path}/${problem.field}`, message: problem.message });
+  if (problem) {
+    errors.push({ path: `${path}/${problem.field}`, message: problem.message });
+  }
   // Only client code hands a function to a call that runs it later (ADR-0048).
   if (ref.later && context !== "client") {
     errors.push({
@@ -3138,7 +3256,9 @@ function checkNarrowed(
     });
     return;
   }
-  if (ref.call) errors.push({ path: at, message: "must be absent on a call" });
+  if (ref.call) {
+    errors.push({ path: at, message: "must be absent on a call" });
+  }
   if (!ref.narrowed!.length) {
     errors.push({ path: at, message: "must hold a path, or be absent" });
     return;
@@ -3363,7 +3483,9 @@ function useProblem(
             message: `must not read the setup \`let\` "${id}" in ${where}: it is not reactive, so only client code may (ADR-0045)`,
           };
     case "localFn": {
-      if (context === "client") return undefined;
+      if (context === "client") {
+        return undefined;
+      }
       if (!call) {
         return {
           field: "binding",
@@ -3403,7 +3525,9 @@ function useProblem(
           };
     case "usedFn": {
       // Its flags say what it does: the caller never reads the composable's body (ADR-0069).
-      if (context === "client") return undefined;
+      if (context === "client") {
+        return undefined;
+      }
       if (!call) {
         return {
           field: "binding",
@@ -3466,7 +3590,9 @@ function checkCode(
   event?: EventScope,
 ): void {
   const { errors, bindings } = walk;
-  if (!checkSourceText(code, path, errors)) return;
+  if (!checkSourceText(code, path, errors)) {
+    return;
+  }
   /** The writes and emits around the current reference, with where theirs may lie. */
   const open: { end: number; slots: readonly Span[] }[] = [];
   let cursor = code.span.start;
@@ -3496,7 +3622,9 @@ function checkCode(
     switch (ref.kind) {
       case "Binding":
         checkBindingReference(ref, text, at, scope, context, walk);
-        if (ref.narrowed) checkNarrowed(ref, code, at, context, walk);
+        if (ref.narrowed) {
+          checkNarrowed(ref, code, at, context, walk);
+        }
         break;
       case "Global":
         checkGlobal(ref.name, text, at, context, walk);
@@ -3545,7 +3673,9 @@ function checkCode(
         ) {
           errors.push({ path: `${at}/value`, message: "must lie in the write, after its target" });
         }
-        if (ref.narrowed) checkWriteNarrowed(ref, binding, at, walk);
+        if (ref.narrowed) {
+          checkWriteNarrowed(ref, binding, at, walk);
+        }
         open.push({ end: ref.span.end, slots: ref.value ? [ref.value] : [] });
         cursor = ref.span.start;
         break;
@@ -3836,10 +3966,14 @@ function checkParameter(
         ? "another parameter of the function takes it"
         : takenName(name, scope, walk)
       : "it is not an ASCII identifier";
-    if (taken) errors.push({ path: at, message: `must not be named "${name}": ${taken}` });
+    if (taken) {
+      errors.push({ path: at, message: `must not be named "${name}": ${taken}` });
+    }
     names.add(name);
   }
-  if (parameter.type) checkSourceText(parameter.type, `${path}/type`, errors);
+  if (parameter.type) {
+    checkSourceText(parameter.type, `${path}/type`, errors);
+  }
   if (parameter.default) {
     checkSourceText(parameter.default, `${path}/default`, errors);
     if (parameter.default.refs.length) {
@@ -3902,7 +4036,9 @@ function checkEventControls(
       errors.push({ path: `${at}/span`, message: `must hold the call of \`${control.method}\`` });
     }
     const { condition } = control;
-    if (!condition) continue;
+    if (!condition) {
+      continue;
+    }
     const refs = body.refs.filter((ref) => inside(ref.span, condition.span));
     if (
       !inside(condition.span, control.span) ||
@@ -3987,7 +4123,9 @@ function checkSetup(
         owners.set(used.binding, (owners.get(used.binding) ?? 0) + 1);
       }
     }
-    if ("type" in item && item.type) checkSourceText(item.type, `${at}/type`, errors);
+    if ("type" in item && item.type) {
+      checkSourceText(item.type, `${at}/type`, errors);
+    }
     checkItem(item, at, scope, walk);
   }
   for (const [index, binding] of component.bindings.entries()) {
@@ -4101,15 +4239,21 @@ function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>,
       return;
     case "Provide":
       checkKeyName(item.key, `${path}/key`, walk);
-      if (walk.keys.get(item.key)) checkProvidedRef(item.value, `${path}/value`, walk);
-      else checkCode(item.value, `${path}/value`, scope, "initial", walk);
+      if (walk.keys.get(item.key)) {
+        checkProvidedRef(item.value, `${path}/value`, walk);
+      } else {
+        checkCode(item.value, `${path}/value`, scope, "initial", walk);
+      }
       declaredBefore(summarizeCode(item.value, component), item, `${path}/value`, walk);
       return;
     case "Inject":
       checkKeyName(item.key, `${path}/key`, walk);
       if (item.fallback) {
-        if (walk.keys.get(item.key)) checkProvidedRef(item.fallback, `${path}/fallback`, walk);
-        else checkCode(item.fallback, `${path}/fallback`, scope, "initial", walk);
+        if (walk.keys.get(item.key)) {
+          checkProvidedRef(item.fallback, `${path}/fallback`, walk);
+        } else {
+          checkCode(item.fallback, `${path}/fallback`, scope, "initial", walk);
+        }
         declaredBefore(summarizeCode(item.fallback, component), item, `${path}/fallback`, walk);
       }
       return;
@@ -4291,7 +4435,9 @@ function domGlobal(code: Code, summary: CodeSummary, component: UfComponent): st
   for (const each of [code, ...reached]) {
     for (const ref of each.refs) {
       const following = each.code.slice(ref.span.end - each.span.start);
-      if (ref.kind === "Global" && readsDom(ref.name, following)) return ref.name;
+      if (ref.kind === "Global" && readsDom(ref.name, following)) {
+        return ref.name;
+      }
     }
   }
   return undefined;
@@ -4320,14 +4466,24 @@ function beforeTick(code: Code): Code {
  */
 function serverProblem(summary: CodeSummary, async: boolean, walk: Walk): string | undefined {
   const state = [...summary.writes].find((id) => walk.bindings.get(id)?.kind === "state");
-  if (state !== undefined) return `it writes "${state}"`;
-  if (summary.readsTemplateRef) return "it reads a template ref";
+  if (state !== undefined) {
+    return `it writes "${state}"`;
+  }
+  if (summary.readsTemplateRef) {
+    return "it reads a template ref";
+  }
   const global = [...summary.clientGlobals].find(
     (name) => BROWSER_GLOBALS.has(name) || SCHEDULING_GLOBALS.has(name),
   );
-  if (global !== undefined) return `it reads \`${global}\``;
-  if (async || summary.async) return "it is asynchronous";
-  if (summary.api) return "it calls `nextTick`";
+  if (global !== undefined) {
+    return `it reads \`${global}\``;
+  }
+  if (async || summary.async) {
+    return "it is asynchronous";
+  }
+  if (summary.api) {
+    return "it calls `nextTick`";
+  }
   return undefined;
 }
 
@@ -4343,7 +4499,9 @@ function serverProblem(summary: CodeSummary, async: boolean, walk: Walk): string
  */
 function checkAwait(item: AwaitItem, path: string, walk: Walk): void {
   for (const ref of item.value.refs) {
-    if (ref.kind === "Global" || ref.kind === "Import") continue;
+    if (ref.kind === "Global" || ref.kind === "Import") {
+      continue;
+    }
     const binding = ref.kind === "Binding" ? walk.bindings.get(ref.binding) : undefined;
     const allowed =
       binding &&
@@ -4369,7 +4527,9 @@ function declaredBefore(summary: CodeSummary, item: SetupItem, path: string, wal
     ),
   );
   const used = [...summary.reads, ...summary.reaches].filter((id) => !hoisted.has(id));
-  if (summary.emits.size && emits) used.push(emits.binding);
+  if (summary.emits.size && emits) {
+    used.push(emits.binding);
+  }
   for (const id of used) {
     const binding = walk.bindings.get(id);
     // A module-level value is in scope wherever the setup runs (ADR-0070).
@@ -4407,7 +4567,9 @@ function checkEmits(component: UfComponent, path: string, walk: Walk): void {
       });
     }
   }
-  if (!emits) return;
+  if (!emits) {
+    return;
+  }
   const at = `${path}/emits`;
   checkDeclaredEmits(emits, at, walk);
   const binding = bindings.get(emits.binding);
@@ -4467,7 +4629,9 @@ function checkDeclaredEmits(emits: Emits, path: string, walk: Walk): void {
               : svelte
                 ? `must not be "${name}": Svelte names its prop "${svelte.name}", which a prop takes`
                 : undefined;
-    if (problem) errors.push({ path: `${at}/name`, message: problem });
+    if (problem) {
+      errors.push({ path: `${at}/name`, message: problem });
+    }
     lower.set(name.toLowerCase(), name);
     if (event.span.start < end) {
       errors.push({ path: `${at}/span`, message: "must follow the event before it" });
@@ -4516,7 +4680,9 @@ function slice(code: Code, span: Span): string {
  * whitespace and comments around the dot.
  */
 function isMemberOf(text: string, object: string, member: string): boolean {
-  if (!text.startsWith(object) || !text.endsWith(member)) return false;
+  if (!text.startsWith(object) || !text.endsWith(member)) {
+    return false;
+  }
   const between = text.slice(object.length, text.length - member.length);
   return between.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$)|\s+/g, "") === ".";
 }
@@ -4531,7 +4697,9 @@ function checkSourceText(
   errors: IrValidationError[],
 ): boolean {
   const length = text.span.end - text.span.start;
-  if (text.code.length === length) return true;
+  if (text.code.length === length) {
+    return true;
+  }
   errors.push({
     path: `${path}/code`,
     message: `must be the source at its span, ${length} characters, and is ${text.code.length}`,
@@ -4550,7 +4718,9 @@ function unportableAttribute(
     return `\`${name}\` holds an HTML document, which the compiler cannot analyse`;
   }
   const reason = TEMPLATE_SYNTAX_ATTRIBUTES.get(name) ?? UNRENDERED_ATTRIBUTES.get(name);
-  if (reason) return reason;
+  if (reason) {
+    return reason;
+  }
   if (isStateAttribute(tag, name, type)) {
     return `\`${name}\` is the state of the <${tag}>, which some targets set as its DOM property and others as the attribute`;
   }
@@ -4576,9 +4746,13 @@ function valueProblem(
     name === "class"
       ? value.split(" ").find((item, index, all) => all.indexOf(item) !== index)
       : undefined;
-  if (repeated !== undefined) return `must name the class "${repeated}" once`;
+  if (repeated !== undefined) {
+    return `must name the class "${repeated}" once`;
+  }
   const unanalysable = unanalysableUrl(tag, name, value);
-  if (unanalysable === "javascript") return "must not be a `javascript:` URL";
+  if (unanalysable === "javascript") {
+    return "must not be a `javascript:` URL";
+  }
   if (unanalysable === "data") {
     return `must not be a \`data:\` URL: <${tag}> loads it as a document, which the compiler cannot analyse`;
   }
@@ -4603,7 +4777,9 @@ function checkCharacters(value: string, path: string, errors: IrValidationError[
   for (const character of value) {
     const codePoint = character.codePointAt(0)!;
     const problem = unkeptCharacter(codePoint);
-    if (!problem) continue;
+    if (!problem) {
+      continue;
+    }
     const name = `U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`;
     errors.push({
       path,

@@ -104,7 +104,9 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
   return Promise.all(
     files.map(async (file) => {
       const outcome = await formatOutput(file);
-      if (outcome.error) throw new Error(`${file.path} does not format: ${outcome.error}`);
+      if (outcome.error) {
+        throw new Error(`${file.path} does not format: ${outcome.error}`);
+      }
       return outcome.file;
     }),
   );
@@ -122,11 +124,15 @@ export async function emitSource(
   if (!module || diagnostics.length) {
     throw new Error(`the source does not analyse: ${diagnostics.map((d) => d.message).join("; ")}`);
   }
-  if (module.components.length !== 1) throw new Error("the source has more than one component");
+  if (module.components.length !== 1) {
+    throw new Error("the source has more than one component");
+  }
   const files = format
     ? await emitFormatted(module)
     : target.emit(module.components[0]!, context(module));
-  if (files.length !== 1) throw new Error(`expected one file, got ${files.length}`);
+  if (files.length !== 1) {
+    throw new Error(`expected one file, got ${files.length}`);
+  }
   return files[0]!;
 }
 
@@ -144,7 +150,9 @@ export async function compileSources(
   const files: Record<string, string> = {};
   for (const [filename, source] of Object.entries(sources)) {
     // A plain `.ts` module is read through the resolver, and copied by each source that reaches it.
-    if (!/\.uf\.tsx?$/.test(filename)) continue;
+    if (!/\.uf\.tsx?$/.test(filename)) {
+      continue;
+    }
     const { diagnostics, outputs } = await compile(source, {
       filename,
       targets: [target],
@@ -152,9 +160,12 @@ export async function compileSources(
       typeOracle,
     });
     const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-    if (errors.length)
+    if (errors.length) {
       throw new Error(`${filename}: ${errors.map((each) => each.message).join("; ")}`);
-    for (const file of outputs["svelte"] ?? []) files[file.path] = file.contents;
+    }
+    for (const file of outputs["svelte"] ?? []) {
+      files[file.path] = file.contents;
+    }
   }
   return files;
 }
@@ -185,7 +196,9 @@ export function scratchDir(parent: string = packageDir): string {
 
 /** Deletes every scratch directory this test file created. */
 export function removeScratch(): void {
-  for (const directory of scratch.splice(0)) rmSync(directory, { recursive: true, force: true });
+  for (const directory of scratch.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 /**

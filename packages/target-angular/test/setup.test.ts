@@ -723,7 +723,9 @@ describe("reads a condition narrows (ADR-0046)", () => {
     // The one write, wherever the IR keeps it.
     const writes: WriteReference[] = [];
     JSON.stringify(component, (_key, value: { kind?: string }) => {
-      if (value?.kind === "Write") writes.push(value as WriteReference);
+      if (value?.kind === "Write") {
+        writes.push(value as WriteReference);
+      }
       return value;
     });
     const rules = classRules(planComponent(component!, module));

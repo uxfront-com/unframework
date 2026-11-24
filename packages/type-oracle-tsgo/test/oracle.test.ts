@@ -32,7 +32,9 @@ function children(): string[] {
 async function exited(pids: readonly string[]): Promise<void> {
   const deadline = Date.now() + 5000;
   while (pids.some((pid) => children().includes(pid))) {
-    if (Date.now() > deadline) throw new Error(`Still running: ${pids.join(", ")}.`);
+    if (Date.now() > deadline) {
+      throw new Error(`Still running: ${pids.join(", ")}.`);
+    }
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
 }
@@ -54,7 +56,9 @@ describe("tsgo adapter", () => {
     oracles = [];
   });
   afterEach(async () => {
-    for (const oracle of oracles) await oracle.dispose();
+    for (const oracle of oracles) {
+      await oracle.dispose();
+    }
     await rm(base, { recursive: true, force: true });
   });
 
@@ -466,7 +470,9 @@ describe("tsgo adapter", () => {
         kind: "object",
         declaration: { file: "types.ts", name: "Box", exported: true },
       });
-      if (box?.kind !== "object") return;
+      if (box?.kind !== "object") {
+        return;
+      }
       expect(box.typeArguments!.map((id) => shape.nodes[id])).toEqual([
         { kind: "primitive", name: "number" },
       ]);
@@ -541,7 +547,9 @@ describe("tsgo adapter", () => {
         prelude,
       );
       const object = shape.nodes[shape.root]!;
-      if (object.kind !== "object") throw new Error("not an object");
+      if (object.kind !== "object") {
+        throw new Error("not an object");
+      }
       const files = object.members.map((member) => {
         const inner = shape.nodes[member.type]!;
         return inner.kind === "object" ? inner.members[0]!.file : undefined;
@@ -727,7 +735,9 @@ describe("tsgo adapter", () => {
       for (let skip = occurrence; skip > 0 && at !== -1; skip--) {
         at = source.indexOf(attribute, at + 1);
       }
-      if (at === -1) throw new Error(`No ${attribute} in the source.`);
+      if (at === -1) {
+        throw new Error(`No ${attribute} in the source.`);
+      }
       const equals = attribute.indexOf("=");
       const braced = attribute[equals + 1] === "{";
       const length = attribute.length - equals - 1 - (braced ? 2 : 0);

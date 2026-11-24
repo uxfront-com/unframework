@@ -17,7 +17,9 @@ import type { OutputFile, SourceMapV3 } from "../src/index.ts";
 /** The `Code` covering `text` in `source`, with a reference at each of `refs`, by their text. */
 function code(source: string, text: string, refs: readonly string[] = []): Code {
   const start = source.indexOf(text);
-  if (start < 0) throw new Error(`The source doesn't hold ${text}.`);
+  if (start < 0) {
+    throw new Error(`The source doesn't hold ${text}.`);
+  }
   return {
     code: text,
     span: { start, end: start + text.length },
@@ -42,8 +44,12 @@ function moduleOf(file: string, codes: readonly Code[]): UfModule {
 /** Where the map says the `index`th `token` of the output came from, as an offset in `source`. */
 function originOf(file: OutputFile, map: SourceMapV3, source: string, token: string, index = 0) {
   let at = -1;
-  for (let seen = 0; seen <= index; seen++) at = file.contents.indexOf(token, at + 1);
-  if (at < 0) throw new Error(`The output doesn't hold ${token}.`);
+  for (let seen = 0; seen <= index; seen++) {
+    at = file.contents.indexOf(token, at + 1);
+  }
+  if (at < 0) {
+    throw new Error(`The output doesn't hold ${token}.`);
+  }
   const before = file.contents.slice(0, at).split("\n");
   const found = originalPositionFor(new TraceMap(map), {
     line: before.length,
@@ -51,8 +57,12 @@ function originOf(file: OutputFile, map: SourceMapV3, source: string, token: str
   });
   // The segment must start at the token itself, not somewhere before it on its line.
   const decoded = decodedMappings(new TraceMap(map))[before.length - 1] ?? [];
-  if (!decoded.some((segment) => segment[0] === before.at(-1)!.length)) return undefined;
-  if (found.line === null) return undefined;
+  if (!decoded.some((segment) => segment[0] === before.at(-1)!.length)) {
+    return undefined;
+  }
+  if (found.line === null) {
+    return undefined;
+  }
   const lines = source.split("\n").slice(0, found.line - 1);
   return lines.reduce((sum, line) => sum + line.length + 1, 0) + found.column!;
 }
@@ -64,7 +74,9 @@ function mismatches(contents: string, map: SourceMapV3): string[] {
   const problems: string[] = [];
   for (const [line, segments] of decodedMappings(new TraceMap(map)).entries()) {
     for (const segment of segments) {
-      if (segment.length !== 4) continue;
+      if (segment.length !== 4) {
+        continue;
+      }
       const token = /[\p{ID_Start}$_][\p{ID_Continue}$]*|\d[\w.]*|\S/uy;
       token.lastIndex = segment[3];
       const text = token.exec(source[segment[2]]!)![0];
@@ -82,7 +94,9 @@ async function anchoredAndFormatted(file: OutputFile, module: UfModule, source: 
   const formatted = await formatOutput(anchored);
   expect(formatted.error).toBeUndefined();
   const result = remapFormatted(anchored, formatted.file, anchored.map!);
-  if (!("map" in result)) throw new Error(result.diagnostic.message);
+  if (!("map" in result)) {
+    throw new Error(result.diagnostic.message);
+  }
   expect(mismatches(anchored.contents, anchored.map!)).toEqual([]);
   expect(mismatches(formatted.file.contents, result.map)).toEqual([]);
   return { anchored, after: formatted.file, map: result.map };
@@ -914,7 +928,9 @@ describe("anchorOutput and remapFormatted", () => {
         source,
       );
       const result = remapFormatted(before, { path: "a.js", contents }, before.map!);
-      if (!("map" in result)) throw new Error(result.diagnostic.message);
+      if (!("map" in result)) {
+        throw new Error(result.diagnostic.message);
+      }
       expect(mismatches(contents, result.map)).toEqual([]);
       // Each token sits on a line of its own, at its start, and all the source is on one line.
       const segments = decodedMappings(new TraceMap(result.map));
@@ -936,7 +952,9 @@ describe("anchorOutput and remapFormatted", () => {
     );
     const contents = `<script lang="ts">\nconst val = 1;\n</script>\n${markup}`;
     const result = remapFormatted(before, { path: "a.vue", contents }, before.map!);
-    if (!("map" in result)) throw new Error(result.diagnostic.message);
+    if (!("map" in result)) {
+      throw new Error(result.diagnostic.message);
+    }
     expect(originOf({ path: "a.vue", contents }, result.map, source, "const")).toBe(0);
     expect(originOf({ path: "a.vue", contents }, result.map, source, "1")).toBe(
       source.indexOf("1"),
@@ -952,7 +970,9 @@ describe("anchorOutput and remapFormatted", () => {
     );
     const contents = source.replace("bb aa", "bb");
     const result = remapFormatted(before, { path: "a.js", contents }, before.map!);
-    if (!("map" in result)) throw new Error(result.diagnostic.message);
+    if (!("map" in result)) {
+      throw new Error(result.diagnostic.message);
+    }
     const segments = decodedMappings(new TraceMap(result.map)).flat();
     expect(segments.every((segment) => segment[0] >= 0)).toBe(true);
     expect(segments.map((segment) => segment[3])).toEqual(

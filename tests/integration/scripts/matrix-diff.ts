@@ -81,7 +81,9 @@ function casesOf(matrices: readonly MatrixContents[], only: readonly string[]): 
     ...matrices.flatMap(({ cases, scenarios, tests }) => [cases, scenarios, tests]),
   );
   for (const id of only) {
-    if (!all.includes(id)) throw new Error(`No matrix holds the case ${id}.`);
+    if (!all.includes(id)) {
+      throw new Error(`No matrix holds the case ${id}.`);
+    }
   }
   return only.length ? all.filter((id) => only.includes(id)) : all;
 }
@@ -95,7 +97,9 @@ function statusOf(cell: string): string {
 function firstDifference(a: string, b: string): string {
   const [linesA, linesB] = [a.split("\n"), b.split("\n")];
   let line = 0;
-  while (linesA[line] === linesB[line]) line += 1;
+  while (linesA[line] === linesB[line]) {
+    line += 1;
+  }
   const shownLine = (text: string | undefined) => text ?? "(no such line)";
   return `line ${line + 1}:\n    a ${shownLine(linesA[line])}\n    b ${shownLine(linesB[line])}`;
 }
@@ -162,7 +166,9 @@ export function diffStable(
         });
         const [a1, a2, b1, b2] = statuses;
         const where = `${id} › ${target} › ${layer}`;
-        if (statuses.includes(undefined)) diff.absent += 1;
+        if (statuses.includes(undefined)) {
+          diff.absent += 1;
+        }
         const [a, b] = [a1 === a2 ? a1 : undefined, b1 === b2 ? b1 : undefined];
         const [goneA, goneB] = [
           a1 === undefined && a2 === undefined,
@@ -170,7 +176,9 @@ export function diffStable(
         ];
         if (a !== undefined && b !== undefined) {
           diff.stable += 1;
-          if (a !== b) diff.differing.push(`${where}: a ${a}, b ${b}`);
+          if (a !== b) {
+            diff.differing.push(`${where}: a ${a}, b ${b}`);
+          }
         } else if (a !== undefined && goneB) {
           diff.differing.push(`${where}: a ${a}, b absent`);
         } else if (b !== undefined && goneA) {
@@ -200,7 +208,9 @@ export function parseDiffArgs(argv: readonly string[]): {
       stable = true;
     } else if (arg === "--case") {
       const id = argv[(index += 1)];
-      if (id === undefined || id.startsWith("--")) throw new Error(USAGE);
+      if (id === undefined || id.startsWith("--")) {
+        throw new Error(USAGE);
+      }
       cases.push(id);
     } else if (arg.startsWith("--")) {
       throw new Error(USAGE);
@@ -208,7 +218,9 @@ export function parseDiffArgs(argv: readonly string[]): {
       files.push(arg);
     }
   }
-  if (files.length !== (stable ? 4 : 2)) throw new Error(USAGE);
+  if (files.length !== (stable ? 4 : 2)) {
+    throw new Error(USAGE);
+  }
   return { files, stable, cases };
 }
 
@@ -216,7 +228,9 @@ export function parseDiffArgs(argv: readonly string[]): {
 // which would otherwise end the run on an unhandled EPIPE, with the wrong exit status.
 function list(heading: string, lines: readonly string[]): void {
   console.log(`${heading}: ${lines.length}`);
-  for (const line of lines) console.log(`  ${line}`);
+  for (const line of lines) {
+    console.log(`  ${line}`);
+  }
 }
 
 function main(argv: readonly string[]): number {
@@ -244,4 +258,6 @@ function main(argv: readonly string[]): number {
   }
 }
 
-if (import.meta.main) process.exitCode = main(process.argv.slice(2));
+if (import.meta.main) {
+  process.exitCode = main(process.argv.slice(2));
+}

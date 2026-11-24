@@ -36,7 +36,9 @@ export async function outputFiles(
   // A case whose expected diagnostics are missing fails its own test; check what it has.
   const checked = cases.filter((info) => errorState(info, target) !== true);
   if (!canary) {
-    for (const info of checked) files.set(info.id, committedOutputFiles(info, target));
+    for (const info of checked) {
+      files.set(info.id, committedOutputFiles(info, target));
+    }
     return files;
   }
   // Each target's project writes its own tree: the projects run in parallel.

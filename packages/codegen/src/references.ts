@@ -60,25 +60,40 @@ export function referencedBindings(
   const component = "bindings" in scope ? scope : nodeComponent(scope);
   const found = new Set<BindingId>();
   for (const { expression, path } of expressionsOf(component)) {
-    if (!includeKeys && path.endsWith("/key")) continue;
+    if (!includeKeys && path.endsWith("/key")) {
+      continue;
+    }
     readsOf(expression, found);
   }
   if (!includeClient) {
     for (const item of component.setup) {
-      for (const code of serverCode(item)) readsOf(code, found);
+      for (const code of serverCode(item)) {
+        readsOf(code, found);
+      }
     }
     return found;
   }
-  for (const { code } of codeOf(component)) readsOf(code, found);
+  for (const { code } of codeOf(component)) {
+    readsOf(code, found);
+  }
   for (const item of component.setup) {
-    if (item.kind !== "Watch") continue;
-    for (const source of item.sources) if (source.kind === "Ref") found.add(source.binding);
+    if (item.kind !== "Watch") {
+      continue;
+    }
+    for (const source of item.sources) {
+      if (source.kind === "Ref") {
+        found.add(source.binding);
+      }
+    }
   }
   walk(component.render, {
     enter(node) {
       for (const attribute of clientAttributes(node)) {
-        if (attribute.kind === "Ref") found.add(attribute.binding);
-        else if (attribute.handler.kind === "Function") found.add(attribute.handler.binding);
+        if (attribute.kind === "Ref") {
+          found.add(attribute.binding);
+        } else if (attribute.handler.kind === "Function") {
+          found.add(attribute.handler.binding);
+        }
       }
     },
   });
@@ -92,7 +107,9 @@ export function referencedBindings(
 function clientAttributes(
   node: RenderNode | FragmentNode,
 ): (RefAttribute | EventAttribute | ListenerAttribute)[] {
-  if (node.kind !== "Element" && node.kind !== "Component") return [];
+  if (node.kind !== "Element" && node.kind !== "Component") {
+    return [];
+  }
   const attributes: readonly (Attribute | ComponentAttribute)[] = node.attributes;
   return attributes.filter(
     (attribute): attribute is RefAttribute | EventAttribute | ListenerAttribute =>
@@ -125,38 +142,58 @@ export interface LiveOptions {
 export function liveBindings(component: UfComponent, options: LiveOptions): Set<BindingId> {
   const declarations = new Map<BindingId, SetupItem>();
   for (const item of component.setup) {
-    if ("binding" in item) declarations.set(item.binding, item);
+    if ("binding" in item) {
+      declarations.set(item.binding, item);
+    }
   }
   const live = new Set<BindingId>();
   const pending: BindingId[] = [];
   const reach = (id: BindingId) => {
-    if (live.has(id)) return;
+    if (live.has(id)) {
+      return;
+    }
     live.add(id);
     pending.push(id);
   };
   const read = (code: Expression | Code | undefined) => {
-    if (!code) return;
+    if (!code) {
+      return;
+    }
     const found = new Set<BindingId>();
     readsOf(code, found);
-    for (const id of found) reach(id);
+    for (const id of found) {
+      reach(id);
+    }
   };
   const readFunction = (fn: FunctionCode) => {
     read(fn.body);
-    for (const parameter of fn.parameters) read(parameter.default);
+    for (const parameter of fn.parameters) {
+      read(parameter.default);
+    }
   };
   for (const { expression, path } of expressionsOf(component)) {
-    if (options.includeKeys === false && path.endsWith("/key")) continue;
+    if (options.includeKeys === false && path.endsWith("/key")) {
+      continue;
+    }
     read(expression);
   }
   // A development-only block runs where the setup does, on the server too (ADR-0117).
-  for (const item of component.setup) if (item.kind === "DevCheck") read(item.code);
+  for (const item of component.setup) {
+    if (item.kind === "DevCheck") {
+      read(item.code);
+    }
+  }
   if (options.client) {
     walk(component.render, {
       enter(node) {
         for (const attribute of clientAttributes(node)) {
-          if (attribute.kind === "Ref") reach(attribute.binding);
-          else if (attribute.handler.kind === "Function") reach(attribute.handler.binding);
-          else readFunction(attribute.handler.function);
+          if (attribute.kind === "Ref") {
+            reach(attribute.binding);
+          } else if (attribute.handler.kind === "Function") {
+            reach(attribute.handler.binding);
+          } else {
+            readFunction(attribute.handler.function);
+          }
         }
       },
     });
@@ -164,8 +201,11 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       switch (item.kind) {
         case "Watch":
           for (const source of item.sources) {
-            if (source.kind === "Ref") reach(source.binding);
-            else readFunction(source.getter);
+            if (source.kind === "Ref") {
+              reach(source.binding);
+            } else {
+              readFunction(source.getter);
+            }
           }
           readFunction(item.callback);
           break;
@@ -202,7 +242,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
   }
   for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
     const item = declarations.get(id);
-    if (!item) continue;
+    if (!item) {
+      continue;
+    }
     switch (item.kind) {
       case "State":
       case "Variable":
@@ -288,44 +330,68 @@ function reachTypes(
   const reach = (found: Iterable<string>) => {
     for (const name of found) {
       names.add(name);
-      if (!declared.has(name) || reached.has(name)) continue;
+      if (!declared.has(name) || reached.has(name)) {
+        continue;
+      }
       reached.add(name);
       pending.push(name);
     }
   };
   const type = (text: TypeText | undefined) => {
-    if (text) reach(typeNames(text));
+    if (text) {
+      reach(typeNames(text));
+    }
   };
   const code = (piece: Code) => reach(codeNames(piece.code, codeKind(piece, component)));
   const fn = (written: FunctionCode) => {
-    for (const parameter of written.parameters) type(parameter.type);
+    for (const parameter of written.parameters) {
+      type(parameter.type);
+    }
     type(written.returnType);
     code(written.body);
   };
-  if (component.propsParameter) type(component.propsParameter.type);
+  if (component.propsParameter) {
+    type(component.propsParameter.type);
+  }
   // A member another file declares is written in that file's names (ADR-0067), which the
   // component's module does not declare or import.
-  for (const prop of component.props) if (!prop.declaredBy) type(prop.type);
+  for (const prop of component.props) {
+    if (!prop.declaredBy) {
+      type(prop.type);
+    }
+  }
   for (const parameter of component.typeParameters ?? []) {
     type(parameter.constraint);
     type(parameter.default);
   }
   // A slot's props are its public type, as a prop's is (ADR-0054).
-  for (const slot of component.slots?.slots ?? []) type(slot.props);
+  for (const slot of component.slots?.slots ?? []) {
+    type(slot.props);
+  }
   for (const declaration of declared.values()) {
-    if (declaration.exported) reach([declaration.name]);
+    if (declaration.exported) {
+      reach([declaration.name]);
+    }
   }
   const live = liveBindings(component, options);
   for (const item of component.setup) {
     // A model is a prop of the output's API, typed whatever reads it (ADR-0055).
-    if (item.kind === "Model") type(item.type);
+    if (item.kind === "Model") {
+      type(item.type);
+    }
     const runs = "binding" in item ? live.has(item.binding) : options.client;
-    if (!runs) continue;
-    if ("type" in item) type(item.type);
+    if (!runs) {
+      continue;
+    }
+    if ("type" in item) {
+      type(item.type);
+    }
     switch (item.kind) {
       case "State":
       case "Variable":
-        if (item.initial) code(item.initial);
+        if (item.initial) {
+          code(item.initial);
+        }
         break;
       case "Await":
       case "Const":
@@ -338,7 +404,11 @@ function reachTypes(
         fn(item.function);
         break;
       case "Watch":
-        for (const source of item.sources) if (source.kind === "Getter") fn(source.getter);
+        for (const source of item.sources) {
+          if (source.kind === "Getter") {
+            fn(source.getter);
+          }
+        }
         fn(item.callback);
         break;
       case "WatchEffect":
@@ -351,7 +421,9 @@ function reachTypes(
         code(item.value);
         break;
       case "Inject":
-        if (item.fallback) code(item.fallback);
+        if (item.fallback) {
+          code(item.fallback);
+        }
         break;
       case "DevCheck":
         code(item.code);
@@ -371,7 +443,9 @@ function reachTypes(
     if (component.emits) {
       type(component.emits.type);
       for (const event of component.emits.events) {
-        for (const parameter of event.parameters) type(parameter.type);
+        for (const parameter of event.parameters) {
+          type(parameter.type);
+        }
       }
     }
     walk(component.render, {
@@ -385,7 +459,9 @@ function reachTypes(
     });
   }
   for (const { expression, path } of expressionsOf(component)) {
-    if (options.includeKeys === false && path.endsWith("/key")) continue;
+    if (options.includeKeys === false && path.endsWith("/key")) {
+      continue;
+    }
     reach(codeNames(expression.code));
   }
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {

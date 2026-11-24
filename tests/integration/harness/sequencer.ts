@@ -52,7 +52,9 @@ export function runLast<T extends SequencedSpec>(
   // Where each project's last file that is not held back sits.
   const end = new Map<string, number>();
   specs.forEach((spec, index) => {
-    if (!runsLast(spec)) end.set(spec.project.name, index);
+    if (!runsLast(spec)) {
+      end.set(spec.project.name, index);
+    }
   });
   const held = new Map<string, T[]>();
   const sorted: T[] = [];
@@ -64,7 +66,9 @@ export function runLast<T extends SequencedSpec>(
     } else {
       sorted.push(spec);
     }
-    if (index === projectEnd) sorted.push(...(held.get(project) ?? []));
+    if (index === projectEnd) {
+      sorted.push(...(held.get(project) ?? []));
+    }
   });
   return sorted;
 }

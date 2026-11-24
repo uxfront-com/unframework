@@ -84,7 +84,9 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     const failed = results.flatMap((result) =>
       result.status === "rejected" ? [result.reason] : [],
     );
-    if (failed.length) throw new AggregateError(failed, "[uf:preview] A server failed to close.");
+    if (failed.length) {
+      throw new AggregateError(failed, "[uf:preview] A server failed to close.");
+    }
   };
   try {
     const servers = await Promise.allSettled(
@@ -109,7 +111,9 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     const failed = servers.flatMap((result, index) =>
       result.status === "rejected" ? [{ target: targets[index]!, reason: result.reason }] : [],
     );
-    if (failed.length) throw startFailure(failed);
+    if (failed.length) {
+      throw startFailure(failed);
+    }
     // In the project's order of targets, whichever started first.
     const frames = targets.map((target) => started.find((server) => server.target === target)!);
     const pages = frames.map((frame) => ({
@@ -174,7 +178,9 @@ export function targetServerOptions(
  * fail alike, as on a project plugin that throws, give one line.
  */
 export function startFailure(failed: readonly { target: TargetName; reason: unknown }[]): unknown {
-  if (failed.length === 1) return failed[0]!.reason;
+  if (failed.length === 1) {
+    return failed[0]!.reason;
+  }
   const byMessage = new Map<string, TargetName[]>();
   for (const { target, reason } of failed) {
     const message = reason instanceof Error ? String(reason.message) : String(reason);
@@ -192,7 +198,9 @@ export function previewTargets(
   project: readonly TargetName[],
   requested: readonly TargetName[] | undefined,
 ): TargetName[] {
-  if (!requested?.length) return [...project];
+  if (!requested?.length) {
+    return [...project];
+  }
   const unknown = requested.filter((name) => !project.includes(name));
   if (unknown.length) {
     const known = unknown.every((name) => (TARGET_NAMES as readonly string[]).includes(name));

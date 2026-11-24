@@ -43,10 +43,18 @@ export function createDiagnostic(code: DiagnosticCode, init: DiagnosticInit): Di
     file: init.file,
     span: init.span,
   };
-  if (init.related?.length) diagnostic.related = init.related;
-  if (init.help) diagnostic.help = init.help;
-  if (init.fixes?.length) diagnostic.fixes = init.fixes;
-  if (init.target) diagnostic.target = init.target;
+  if (init.related?.length) {
+    diagnostic.related = init.related;
+  }
+  if (init.help) {
+    diagnostic.help = init.help;
+  }
+  if (init.fixes?.length) {
+    diagnostic.fixes = init.fixes;
+  }
+  if (init.target) {
+    diagnostic.target = init.target;
+  }
   return diagnostic;
 }
 

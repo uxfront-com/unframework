@@ -44,11 +44,15 @@ const cellsOf = (line: string) =>
 function capabilityTable(): { header: string[]; rows: string[][] } {
   const lines = page.split("\n");
   const start = lines.findIndex((line) => /^\| Capability +\|/.test(line));
-  if (start < 0) throw new Error("The targets page has no capability table.");
+  if (start < 0) {
+    throw new Error("The targets page has no capability table.");
+  }
   const header = cellsOf(lines[start]!);
   const rows: string[][] = [];
   for (const line of lines.slice(start + 2)) {
-    if (!line.startsWith("|")) break;
+    if (!line.startsWith("|")) {
+      break;
+    }
     rows.push(cellsOf(line));
   }
   return { header, rows };
@@ -65,7 +69,9 @@ describe("the targets reference page", () => {
     expect(header.slice(0, 2)).toEqual(["Capability", "What it covers"]);
     expect(header.slice(2).toSorted()).toEqual(TARGET_NAMES.map((name) => NAMES[name]).toSorted());
     expect(rows.map((row) => row[0])).toEqual(CAPABILITY_NAMES.map((name) => `\`${name}\``));
-    for (const row of rows) expect(row[1], row[0]).not.toBe("");
+    for (const row of rows) {
+      expect(row[1], row[0]).not.toBe("");
+    }
   });
 
   it("writes each target's cell as the target declares it", () => {

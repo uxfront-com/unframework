@@ -115,13 +115,23 @@ export class SolidCode {
     const written = new Set<BindingId>();
     for (const item of component.setup) {
       for (const code of itemCode(item)) {
-        for (const ref of code.refs) if (ref.kind === "Write") written.add(ref.binding);
+        for (const ref of code.refs) {
+          if (ref.kind === "Write") {
+            written.add(ref.binding);
+          }
+        }
       }
     }
     for (const handler of inlineHandlers(component)) {
-      for (const ref of handler.body.refs) if (ref.kind === "Write") written.add(ref.binding);
+      for (const ref of handler.body.refs) {
+        if (ref.kind === "Write") {
+          written.add(ref.binding);
+        }
+      }
     }
-    for (const id of modelTargets(component)) written.add(id);
+    for (const id of modelTargets(component)) {
+      written.add(id);
+    }
     for (const item of component.setup) {
       if ((item.kind === "State" || item.kind === "Model") && written.has(item.binding)) {
         const { name } = this.#binding(item.binding);
@@ -141,10 +151,14 @@ export class SolidCode {
     for (const item of component.setup) {
       if (item.kind === "WatchEffect" || (item.kind === "Watch" && item.post)) {
         this.#uses.flush.post = true;
-      } else if (item.kind === "Watch") this.#uses.flush.pre = true;
+      } else if (item.kind === "Watch") {
+        this.#uses.flush.pre = true;
+      }
     }
     for (const item of component.setup) {
-      if (item.kind !== "Function") continue;
+      if (item.kind !== "Function") {
+        continue;
+      }
       // What it reads in what it hands on to run later is that code's, not the call's.
       const { reads, emits } = summarizeTracked(item.function.body, component);
       if (emits.size || [...reads].some((id) => tracked(this.#binding(id).kind))) {
@@ -264,7 +278,9 @@ export class SolidCode {
    */
   slot(name: string): string {
     const resolved = this.#composition.resolvedSlot(name);
-    if (resolved) return `${resolved}()`;
+    if (resolved) {
+      return `${resolved}()`;
+    }
     return `${this.#props.object!}.${name === "default" ? "children" : name}`;
   }
 
@@ -308,7 +324,9 @@ export class SolidCode {
     // A key's context is `null` where nothing provides it (src/composition.ts): Vue's `inject`
     // gives `undefined` there.
     const read = `${this.solid("useContext")}(${item.key})`;
-    if (!item.fallback) return `const ${name} = ${read} ?? undefined;`;
+    if (!item.fallback) {
+      return `const ${name} = ${read} ?? undefined;`;
+    }
     return `const ${name} = ${read} ?? ${this.provided(item.key, item.fallback)};`;
   }
 
@@ -376,8 +394,12 @@ export class SolidCode {
    */
   settled(fn: FunctionCode): string {
     const callback = this.callback(fn);
-    if (fn.async) return `() => {\n(${callback})();\n}`;
-    if (!fn.expression) return callback;
+    if (fn.async) {
+      return `() => {\n(${callback})();\n}`;
+    }
+    if (!fn.expression) {
+      return callback;
+    }
     const body = this.body(fn, true);
     return `() => {\n${body.trimStart().startsWith("{") ? `(${body})` : body};\n}`;
   }
@@ -398,7 +420,9 @@ export class SolidCode {
    */
   value(code: Code): string {
     const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
-    if (!this.#readsReactive(code)) return text;
+    if (!this.#readsReactive(code)) {
+      return text;
+    }
     return `${this.solid("untrack")}(() => ${arrowBody(text)})`;
   }
 
@@ -408,7 +432,9 @@ export class SolidCode {
    */
   devCheck(code: Code): string {
     const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
-    if (!this.#readsReactive(code)) return text;
+    if (!this.#readsReactive(code)) {
+      return text;
+    }
     return `${this.solid("untrack")}(() => {\n${text}\n});`;
   }
 
@@ -451,8 +477,11 @@ export class SolidCode {
     const immediate = Boolean(item.immediate);
     const post = Boolean(item.post);
     const uses = array ? this.#uses.array : this.#uses.single;
-    if (immediate) uses.immediate = true;
-    else uses.lazy = true;
+    if (immediate) {
+      uses.immediate = true;
+    } else {
+      uses.lazy = true;
+    }
     this.#watcher ??= this.#imports.claim(WATCHER_HELPER);
     const printed = sources.map((source) => {
       switch (source.kind) {
@@ -537,8 +566,12 @@ export class SolidCode {
         }),
       );
     }
-    if (this.#nextTick) helpers.push(nextTickHelperCode(this.#nextTick));
-    if (this.#clearedRef) helpers.push(refHelperCode(this.#clearedRef, this.solid("onCleanup")));
+    if (this.#nextTick) {
+      helpers.push(nextTickHelperCode(this.#nextTick));
+    }
+    if (this.#clearedRef) {
+      helpers.push(refHelperCode(this.#clearedRef, this.solid("onCleanup")));
+    }
     if (this.#state) {
       helpers.push(
         stateHelperCode(this.#state, {
@@ -554,7 +587,9 @@ export class SolidCode {
 
   #binding(id: BindingId): Binding {
     const binding = this.#bindings.get(id);
-    if (!binding) throw new Error(`No binding ${id}: invalid IR.`);
+    if (!binding) {
+      throw new Error(`No binding ${id}: invalid IR.`);
+    }
     return binding;
   }
 
@@ -760,7 +795,9 @@ export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSe
  */
 function teardownFirst(items: readonly SetupItem[]): SetupItem[] {
   const hooks = items.filter(unmounted);
-  if (!hooks.length) return [...items];
+  if (!hooks.length) {
+    return [...items];
+  }
   const anchor = items.findIndex(
     (item) => item.kind === "Watch" || item.kind === "WatchEffect" || unmounted(item),
   );
@@ -895,9 +932,15 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
     ) {
       continue;
     }
-    if ("binding" in item && taken.has(nameOf(item.binding))) continue;
-    if (item.kind === "Const") candidates.set(item.binding, [item.value]);
-    if (item.kind === "Function") functions.add(item.binding);
+    if ("binding" in item && taken.has(nameOf(item.binding))) {
+      continue;
+    }
+    if (item.kind === "Const") {
+      candidates.set(item.binding, [item.value]);
+    }
+    if (item.kind === "Function") {
+      functions.add(item.binding);
+    }
     if (item.kind === "Function") {
       const fn = item.function;
       candidates.set(item.binding, [fn.body]);
@@ -913,20 +956,30 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
       for (const [id, codes] of candidates) {
         const reaches = codes.some((piece) =>
           piece.refs.some((ref) => {
-            if (ref.kind !== "Binding") return false;
+            if (ref.kind !== "Binding") {
+              return false;
+            }
             const kind = kinds.get(ref.binding);
             return kind === "moduleConst" || kind === "import" || reads.has(ref.binding);
           }),
         );
-        if (reaches) reads.add(id);
+        if (reaches) {
+          reads.add(id);
+        }
       }
     }
-    for (const id of reads) if (!functions.has(id)) hoisted.delete(id);
+    for (const id of reads) {
+      if (!functions.has(id)) {
+        hoisted.delete(id);
+      }
+    }
   }
   for (let changed = true; changed;) {
     changed = false;
     for (const [id, codes] of candidates) {
-      if (!hoisted.has(id)) continue;
+      if (!hoisted.has(id)) {
+        continue;
+      }
       const captures = codes.some((piece) =>
         piece.refs.some((ref) => {
           switch (ref.kind) {
@@ -934,7 +987,9 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
               // A module's value is at module scope already (ADR-0070); a constant that reads it
               // in an owner that imports it was kept in the component above.
               const kind = kinds.get(ref.binding);
-              if (kind === "moduleConst" || kind === "import") return false;
+              if (kind === "moduleConst" || kind === "import") {
+                return false;
+              }
               return !hoisted.has(ref.binding);
             }
             case "Write":
@@ -1029,7 +1084,9 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
         node.children.forEach(visit);
         return;
       case "If":
-        for (const branch of node.branches) branch.children.forEach(visit);
+        for (const branch of node.branches) {
+          branch.children.forEach(visit);
+        }
         return;
       case "For":
         visit(node.body);
@@ -1047,8 +1104,12 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
             found.push(attribute.handler.function);
           }
         }
-        if (node.kind === "Dynamic") node.children.forEach(visit);
-        for (const fill of node.fills ?? []) fill.children.forEach(visit);
+        if (node.kind === "Dynamic") {
+          node.children.forEach(visit);
+        }
+        for (const fill of node.fills ?? []) {
+          fill.children.forEach(visit);
+        }
         return;
       case "SlotOutlet":
         node.fallback.forEach(visit);
@@ -1075,9 +1136,13 @@ function modelTargets(component: UfComponent): BindingId[] {
           ? node.attributes
           : [];
       for (const attribute of attributes) {
-        if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") continue;
+        if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") {
+          continue;
+        }
         const [ref] = attribute.value.refs;
-        if (ref?.kind === "Binding") found.push(ref.binding);
+        if (ref?.kind === "Binding") {
+          found.push(ref.binding);
+        }
       }
     },
   });
@@ -1087,7 +1152,9 @@ function modelTargets(component: UfComponent): BindingId[] {
 /** The binding code is a whole reference to (`count`, `count.value`), or none. */
 function wholeBinding(code: Code): BindingId | undefined {
   const [only] = code.refs;
-  if (code.refs.length !== 1 || only?.kind !== "Binding") return undefined;
+  if (code.refs.length !== 1 || only?.kind !== "Binding") {
+    return undefined;
+  }
   return only.span.start === code.span.start && only.span.end === code.span.end
     ? only.binding
     : undefined;
@@ -1097,10 +1164,14 @@ function wholeBinding(code: Code): BindingId | undefined {
 function keyRef(composition: SolidComposition, local: string): RefType | undefined {
   const { module } = composition;
   const own = module.keys?.find((key) => key.name === local);
-  if (own) return own.ref;
+  if (own) {
+    return own.ref;
+  }
   for (const entry of module.imports ?? []) {
     const name = entry.names.find((each) => each.kind === "Key" && each.local === local);
-    if (name) return entry.api.keys.find((key) => key.name === name.imported)?.ref;
+    if (name) {
+      return entry.api.keys.find((key) => key.name === name.imported)?.ref;
+    }
   }
   return undefined;
 }

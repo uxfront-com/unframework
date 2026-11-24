@@ -25,7 +25,9 @@ function decode(mappings: string): number[][][] {
           const digit = BASE64.indexOf(character);
           value += (digit & 31) << shift;
           shift += 5;
-          if (digit & 32) continue;
+          if (digit & 32) {
+            continue;
+          }
           fields.push(value & 1 ? -(value >> 1) : value >> 1);
           value = 0;
           shift = 0;
@@ -43,7 +45,9 @@ function broken(contents: string, map: { mappings: string; sourcesContent: strin
   for (const [line, segments] of decode(map.mappings).entries()) {
     for (const [column, , fromLine, fromColumn, name] of segments) {
       // A reference's segment carries its name: a target respells it, and only a run stays as written.
-      if (name !== undefined) continue;
+      if (name !== undefined) {
+        continue;
+      }
       const token = /[\p{ID_Start}$_][\p{ID_Continue}$]*|\d[\w.]*|\S/uy;
       token.lastIndex = fromColumn!;
       const text = token.exec(source[fromLine!]!)![0];
@@ -58,7 +62,9 @@ function broken(contents: string, map: { mappings: string; sourcesContent: strin
 /** The source line a token of the output maps to, 1-based, or `undefined`. */
 function lineOf(contents: string, mappings: string, token: string): number | undefined {
   const at = contents.indexOf(token);
-  if (at < 0) return undefined;
+  if (at < 0) {
+    return undefined;
+  }
   const before = contents.slice(0, at).split("\n");
   const segment = decode(mappings)[before.length - 1]?.find(
     (candidate) => candidate[0] === before.at(-1)!.length,
@@ -94,7 +100,9 @@ describe("compile with sourceMap", () => {
   it("adds no map without the option", async () => {
     const result = await compile(SOURCE, { filename: "Card.uf.tsx", targets: TARGET_NAMES });
     for (const files of Object.values(result.outputs)) {
-      for (const file of files) expect(file).not.toHaveProperty("map");
+      for (const file of files) {
+        expect(file).not.toHaveProperty("map");
+      }
     }
   });
 

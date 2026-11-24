@@ -94,8 +94,11 @@ export async function buildPreview(options: BuildPreviewOptions): Promise<BuiltP
   try {
     await buildTargets(root, out, config, targets, catalogue, entries, options.toolchainDirs);
   } finally {
-    if (nodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = nodeEnv;
+    if (nodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = nodeEnv;
+    }
   }
   const frames = targets.map((target) => ({ target, src: `./${target}/${STATIC_FRAME_FILE}` }));
   writeFileSync(join(out, "index.html"), shellPage(shellData(catalogue, frames)));
@@ -144,7 +147,9 @@ async function buildTargets(
     }
     await buildTarget(server, dir, renders);
     mkdirSync(join(dir, STATIC_RENDERS_DIR), { recursive: true });
-    for (const [file, render] of files) writeFileSync(join(dir, file), JSON.stringify(render));
+    for (const [file, render] of files) {
+      writeFileSync(join(dir, file), JSON.stringify(render));
+    }
   }
 }
 
@@ -158,7 +163,9 @@ export function checkPreviewOut(root: string, out: string): void {
       `--out ${out} holds the project: the build empties its directory, so name one of its own, such as ${DEFAULT_PREVIEW_OUT}.`,
     );
   }
-  if (!existsSync(out)) return;
+  if (!existsSync(out)) {
+    return;
+  }
   if (!statSync(out).isDirectory()) {
     throw new VisualUsageError(
       `--out ${out} is a file: name a directory, such as ${DEFAULT_PREVIEW_OUT}.`,
@@ -184,7 +191,9 @@ function contains(directory: string, path: string): boolean {
  */
 export function initialProps(catalogue: PreviewCatalogue): Record<string, Record<string, unknown>> {
   const props: Record<string, Record<string, unknown>> = {};
-  for (const example of catalogue.examples) props[example.key] = {};
+  for (const example of catalogue.examples) {
+    props[example.key] = {};
+  }
   for (const component of catalogue.components) {
     props[component.key] = Object.fromEntries(
       component.controls

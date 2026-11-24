@@ -99,7 +99,9 @@ export function isDirectiveCall(
   authoring: ReadonlyMap<object, AuthoringApi | undefined>,
 ): node is AST.CallExpression {
   const inner = node && unwrapped(node);
-  if (inner?.type !== "CallExpression" || inner.callee.type !== "Identifier") return false;
+  if (inner?.type !== "CallExpression" || inner.callee.type !== "Identifier") {
+    return false;
+  }
   const resolution = scopes.resolve(inner.callee as AST.IdentifierReference);
   return (
     resolution.kind === "import" && authoring.get(resolution.declaration) === "defineDirective"
@@ -126,10 +128,16 @@ export function directiveCandidate(
   scopes: Scopes,
   authoring: ReadonlyMap<object, AuthoringApi | undefined>,
 ): DirectiveCandidate | undefined {
-  if (statement.declarations.length !== 1) return undefined;
+  if (statement.declarations.length !== 1) {
+    return undefined;
+  }
   const [declarator] = statement.declarations;
-  if (!declarator || declarator.id.type !== "Identifier") return undefined;
-  if (!isDirectiveCall(declarator.init, scopes, authoring)) return undefined;
+  if (!declarator || declarator.id.type !== "Identifier") {
+    return undefined;
+  }
+  if (!isDirectiveCall(declarator.init, scopes, authoring)) {
+    return undefined;
+  }
   return {
     statement: exported ?? statement,
     declarator: declarator as DirectiveCandidate["declarator"],
@@ -155,7 +163,9 @@ export function lowerDirectives(
       name: candidate.declarator.id.name,
       bindings: lowered?.bindings ?? [],
     });
-    if (lowered) directives.push(lowered);
+    if (lowered) {
+      directives.push(lowered);
+    }
   }
   return { directives, infos };
 }
@@ -247,7 +257,9 @@ function lowerDirective(
   const typeNodes: unknown[] = [value, element];
   for (const property of object.properties) {
     const hook = hookOf(property, seen, reporter);
-    if (!hook) continue;
+    if (!hook) {
+      continue;
+    }
     typeNodes.push(hook.fn);
     const body = hook.fn.body!;
     const refs = hookReferences(hook.fn, bindings, context, id.name);
@@ -269,7 +281,9 @@ function lowerDirective(
       { help: DECLARATION_HELP },
     );
   }
-  if (reporter.hasErrorsSince(mark) || !value) return undefined;
+  if (reporter.hasErrorsSince(mark) || !value) {
+    return undefined;
+  }
   const declared = new Set(context.types.declarations.map(({ name }) => name));
   const types = closure(typeNodes, context.types.table).filter((name) => declared.has(name));
   return createDirective(
@@ -404,13 +418,19 @@ function hookReferences(
         "A hook reads its parameters, its own names, the browser's globals and, in a `.uf.ts` module, the module's constants and the values it imports from shared `.ts` modules.",
     });
   const visit = (node: unknown, parent: AST.Node | undefined): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, parent);
+      for (const item of node) {
+        visit(item, parent);
+      }
       return;
     }
     const typed = node as AST.Node;
-    if (typeof typed.type !== "string") return;
+    if (typeof typed.type !== "string") {
+      return;
+    }
     switch (typed.type) {
       case "ThisExpression":
         reject(
@@ -430,7 +450,9 @@ function hookReferences(
         );
         return;
       case "Identifier": {
-        if (!scopes.isReference(typed)) break;
+        if (!scopes.isReference(typed)) {
+          break;
+        }
         const identifier = typed as AST.IdentifierReference;
         const shorthand = parent?.type === "Property" && parent.shorthand && parent.value === typed;
         reference(identifier, shorthand);
@@ -449,7 +471,9 @@ function hookReferences(
       case "parameter":
         return;
       case "variable": {
-        if ((resolution.scope as AST.Node).type !== "Program") return;
+        if ((resolution.scope as AST.Node).type !== "Program") {
+          return;
+        }
         const value = shared.values.get(resolution.declaration);
         if (value?.kind === "moduleConst") {
           read(node, value.name, value.kind, value.span, value.id, shorthand);
@@ -469,7 +493,9 @@ function hookReferences(
           read(node, value.name, value.kind, value.span, value.id, shorthand);
           return;
         }
-        if (shared.failed.has(resolution.declaration)) return;
+        if (shared.failed.has(resolution.declaration)) {
+          return;
+        }
         if (authoring.get(resolution.declaration) === "isDev") {
           // A directive's hook is no component's code (ADR-0117).
           misplacedDev(node, reporter);
@@ -523,8 +549,9 @@ function hookReferences(
     id: string,
     shorthand: boolean,
   ): void => {
-    if (!bindings.some((binding) => binding.id === id))
+    if (!bindings.some((binding) => binding.id === id)) {
       bindings.push(createBinding(name, kind, at));
+    }
     refs.push(createBindingReference(id, span(node), shorthand));
   };
   visit(fn.body, undefined);
@@ -550,7 +577,9 @@ export function directiveValueQueries(parsed: ParsedModule): DirectiveValueQuery
   const names = new Map<string, { start: number; end: number }>();
   for (const statement of parsed.program.body) {
     if (statement.type === "ImportDeclaration") {
-      if (statement.importKind === "type") continue;
+      if (statement.importKind === "type") {
+        continue;
+      }
       for (const specifier of statement.specifiers) {
         if (specifier.type === "ImportSpecifier" && specifier.importKind !== "type") {
           names.set(specifier.local.name, span(specifier.local));
@@ -560,25 +589,37 @@ export function directiveValueQueries(parsed: ParsedModule): DirectiveValueQuery
     }
     const declaration =
       statement.type === "ExportNamedDeclaration" ? statement.declaration : statement;
-    if (declaration?.type !== "VariableDeclaration" || declaration.kind !== "const") continue;
+    if (declaration?.type !== "VariableDeclaration" || declaration.kind !== "const") {
+      continue;
+    }
     for (const declarator of declaration.declarations) {
-      if (declarator.id.type === "Identifier") names.set(declarator.id.name, span(declarator.id));
+      if (declarator.id.type === "Identifier") {
+        names.set(declarator.id.name, span(declarator.id));
+      }
     }
   }
   const queries: DirectiveValueQuery[] = [];
-  if (!names.size) return queries;
+  if (!names.size) {
+    return queries;
+  }
   walk(parsed.program, (node) => {
-    if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") return true;
+    if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") {
+      return true;
+    }
     const authored = node.name.name;
     const name = isDirectiveAttribute(authored) ? directiveNameOf(authored) : undefined;
     const directive = name === undefined ? undefined : names.get(name);
-    if (!directive) return true;
+    if (!directive) {
+      return true;
+    }
     const value = node.value;
     if (value?.type === "Literal") {
       // A static value holding `\`, `&` or a line break is UF1002 (`lowerDirectiveAttribute`),
       // and it reads otherwise in JavaScript, where the oracle types it: it is not asked about.
       const raw = parsed.source.slice(value.start, value.end);
-      if (!/[\\&\r\n]/.test(raw)) queries.push({ value: span(value), kind: "string", directive });
+      if (!/[\\&\r\n]/.test(raw)) {
+        queries.push({ value: span(value), kind: "string", directive });
+      }
     } else if (
       value?.type === "JSXExpressionContainer" &&
       value.expression.type !== "JSXEmptyExpression"
@@ -601,7 +642,9 @@ function reportsValueType(
   render: ElementContext["render"],
 ): boolean {
   const check = render.directiveValues?.(span(value));
-  if (!check || check.assignable) return false;
+  if (!check || check.assignable) {
+    return false;
+  }
   render.reporter.report(
     "UF6007",
     value,
@@ -623,7 +666,9 @@ function code(text: string): string {
 
 /** The name a `v-` attribute applies, `vFocusTrap` for `v-focus-trap`, or `undefined` for one not in kebab case. */
 export function directiveNameOf(attribute: string): string | undefined {
-  if (!/^v(?:-[a-z][a-z0-9]*)+$/.test(attribute)) return undefined;
+  if (!/^v(?:-[a-z][a-z0-9]*)+$/.test(attribute)) {
+    return undefined;
+  }
   return `v${attribute
     .slice(2)
     .split("-")
@@ -712,7 +757,9 @@ export function lowerDirectiveAttribute(
       );
       return undefined;
     }
-    if (reportsValueType(value, authored, name, render)) return undefined;
+    if (reportsValueType(value, authored, name, render)) {
+      return undefined;
+    }
     declareReads(info, render);
     return createDirectiveAttribute(name, createExpression(raw, span(value)), span(item));
   }
@@ -755,7 +802,9 @@ export function lowerDirectiveAttribute(
   // listener names it, never called in the template.
   const fn = setupFunction(inner, render);
   if (fn) {
-    if (reportsValueType(value.expression, authored, name, render)) return undefined;
+    if (reportsValueType(value.expression, authored, name, render)) {
+      return undefined;
+    }
     declareReads(info, render);
     return createDirectiveAttribute(
       name,
@@ -769,8 +818,12 @@ export function lowerDirectiveAttribute(
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(value.expression, { ...render, directiveValue: true });
-  if (!checked.clean || reporter.hasErrorsSince(mark)) return undefined;
-  if (reportsValueType(value.expression, authored, name, render)) return undefined;
+  if (!checked.clean || reporter.hasErrorsSince(mark)) {
+    return undefined;
+  }
+  if (reportsValueType(value.expression, authored, name, render)) {
+    return undefined;
+  }
   declareReads(info, render);
   return createDirectiveAttribute(name, checked.expression, span(item));
 }
@@ -778,15 +831,21 @@ export function lowerDirectiveAttribute(
 /** What the module's own directive reads, its components declare as their own (ADR-0070). */
 function declareReads(info: DirectiveInfo, render: ElementContext["render"]): void {
   for (const binding of info.bindings) {
-    if (!render.bindings.some((each) => each.id === binding.id)) render.bindings.push(binding);
+    if (!render.bindings.some((each) => each.id === binding.id)) {
+      render.bindings.push(binding);
+    }
   }
 }
 
 /** The setup function a value names by itself (`v-click-outside={close}`), or `undefined`. */
 function setupFunction(node: AST.Node, render: ElementContext["render"]): SetupBinding | undefined {
-  if (node.type !== "Identifier" || !render.scopes.isReference(node)) return undefined;
+  if (node.type !== "Identifier" || !render.scopes.isReference(node)) {
+    return undefined;
+  }
   const resolution = render.scopes.resolve(node as AST.IdentifierReference);
-  if (resolution.kind !== "variable" || resolution.scope !== render.component) return undefined;
+  if (resolution.kind !== "variable" || resolution.scope !== render.component) {
+    return undefined;
+  }
   const binding = render.setup.bindings.get(resolution.declaration);
   return binding?.kind === "localFn" ? binding : undefined;
 }
@@ -869,7 +928,9 @@ const RESERVED_DIRECTIVES: ReadonlySet<string> = new Set([
  * (`v-model`, `v-if`, …), which are checked as the attributes they are.
  */
 export function isDirectiveAttribute(name: string): boolean {
-  if (!/^v-/i.test(name)) return false;
+  if (!/^v-/i.test(name)) {
+    return false;
+  }
   const base = /^v-[A-Za-z0-9-]*/.exec(name)![0].toLowerCase();
   return !RESERVED_DIRECTIVES.has(base) && !/^v-model(?:$|[_:])/i.test(name);
 }

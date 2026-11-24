@@ -98,7 +98,9 @@ export function composableId(file: string, suffix: string, query = ""): string {
 export function parseComposableId(id: string, suffix: string): ModuleRequest | undefined {
   const index = id.indexOf("?");
   const path = index === -1 ? id : id.slice(0, index);
-  if (!path.endsWith(`${COMPOSABLE_EXTENSION}${suffix}`)) return undefined;
+  if (!path.endsWith(`${COMPOSABLE_EXTENSION}${suffix}`)) {
+    return undefined;
+  }
   return {
     file: path.slice(0, path.length - suffix.length),
     query: index === -1 ? "" : id.slice(index),
@@ -133,7 +135,9 @@ export function idSuffix(target: TargetName | Target, extension?: string): strin
     return extension;
   }
   if (typeof target === "string") {
-    if (!Object.hasOwn(ID_SUFFIXES, target)) throw new TypeError(`Unknown target "${target}".`);
+    if (!Object.hasOwn(ID_SUFFIXES, target)) {
+      throw new TypeError(`Unknown target "${target}".`);
+    }
     return ID_SUFFIXES[target];
   }
   const builtin = TARGET_NAMES.find((name) => builtinTargets[name] === target);
@@ -166,7 +170,9 @@ export interface ModuleRequest {
 export function parseModuleId(id: string, suffix: string): ModuleRequest | undefined {
   const index = id.indexOf("?");
   const path = index === -1 ? id : id.slice(0, index);
-  if (!path.endsWith(`${SOURCE_EXTENSION}${suffix}`)) return undefined;
+  if (!path.endsWith(`${SOURCE_EXTENSION}${suffix}`)) {
+    return undefined;
+  }
   return {
     file: path.slice(0, path.length - suffix.length),
     query: index === -1 ? "" : id.slice(index),
@@ -194,13 +200,19 @@ export function moduleIdCandidates(
   importer: string | undefined,
 ): string[] {
   if (path.startsWith("./") || path.startsWith("../")) {
-    if (importer === undefined) return [];
+    if (importer === undefined) {
+      return [];
+    }
     const index = importer.indexOf("?");
     const importerPath = index === -1 ? importer : importer.slice(0, index);
     return [posix.join(posix.dirname(importerPath), path)];
   }
-  if (path.startsWith(`${root}/`)) return [path];
-  if (path.startsWith("/")) return [posix.join(root, path), path];
+  if (path.startsWith(`${root}/`)) {
+    return [path];
+  }
+  if (path.startsWith("/")) {
+    return [posix.join(root, path), path];
+  }
   return DRIVE_PATH.test(path) ? [path] : [];
 }
 
@@ -224,7 +236,9 @@ export function parseComponentId(
   id: string,
 ): { file: string; output: string; query: string } | undefined {
   const match = COMPONENT_ID.exec(id);
-  if (!match) return undefined;
+  if (!match) {
+    return undefined;
+  }
   const index = id.indexOf("?");
   const path = index === -1 ? id : id.slice(0, index);
   const output = match[1]!;

@@ -56,20 +56,26 @@ export function segmentLoads(): Plugin {
     // After the optimizer, which writes the imports and the QRLs.
     enforce: "post",
     transform(code) {
-      if (!code.includes("import(")) return null;
+      if (!code.includes("import(")) {
+        return null;
+      }
       const imports = code.replace(
         QRL_IMPORT,
         (_, call: string, specifier: string) =>
           `${call}((globalThis.${TRACKER} ?? ((load) => load))(() => import(${specifier}))`,
       );
-      if (imports === code) return null;
+      if (imports === code) {
+        return null;
+      }
       const instrumented = imports.replace(CORE_IMPORT, (statement, list: string, from: string) => {
         const names = list
           .split(",")
           .map((name) => name.trim())
           .filter(Boolean);
         const factories: string[] = names.filter((name) => name === "qrlDEV" || name === "qrl");
-        if (!factories.length) return statement;
+        if (!factories.length) {
+          return statement;
+        }
         const renamed = names.map((name) =>
           factories.includes(name) ? `${name} as __uf_${name}` : name,
         );
@@ -107,7 +113,9 @@ let reporting = false;
  * event, and a `sync$` handler or a `preventdefault:` attribute runs no `$` body.
  */
 function reportControls(): void {
-  if (reporting) return;
+  if (reporting) {
+    return;
+  }
   reporting = true;
   for (const control of CONTROLS) {
     const original = Event.prototype[control];
@@ -147,7 +155,9 @@ export class SegmentLoads {
       return () => this.#track(load()).then((module) => this.#bodies(module));
     };
     registry[QRLS] = (qrl: unknown): unknown => {
-      if (isResolvable(qrl)) this.#qrls.push(qrl);
+      if (isResolvable(qrl)) {
+        this.#qrls.push(qrl);
+      }
       return qrl;
     };
     reportControls();
@@ -162,9 +172,13 @@ export class SegmentLoads {
 
   /** A segment module whose exported functions count as running `$` bodies while they run. */
   #bodies(module: unknown): unknown {
-    if (typeof module !== "object" || module === null) return module;
+    if (typeof module !== "object" || module === null) {
+      return module;
+    }
     const known = this.#modules.get(module);
-    if (known) return known;
+    if (known) {
+      return known;
+    }
     const wrapped: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const [name, value] of Object.entries(module)) {
       wrapped[name] = typeof value === "function" ? this.#body(value) : value;
@@ -177,11 +191,15 @@ export class SegmentLoads {
     return function (this: unknown, ...args: unknown[]): unknown {
       // The event a handler, or a local function a handler passed it to, was called with.
       const event = args.find((arg): arg is Event => arg instanceof Event);
-      if (event) running.push(event);
+      if (event) {
+        running.push(event);
+      }
       try {
         return fn.apply(this, args);
       } finally {
-        if (event) running.splice(running.lastIndexOf(event), 1);
+        if (event) {
+          running.splice(running.lastIndexOf(event), 1);
+        }
       }
     };
   }

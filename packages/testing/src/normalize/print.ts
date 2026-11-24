@@ -95,7 +95,9 @@ export function printTree(root: TreeParent): string {
 function printChildren(parent: TreeParent, indent: string, lines: string[]): void {
   let text: string | undefined;
   const flush = () => {
-    if (text !== undefined) lines.push(indent + quote(text));
+    if (text !== undefined) {
+      lines.push(indent + quote(text));
+    }
     text = undefined;
   };
   for (const node of childrenOf(parent)) {

@@ -53,8 +53,14 @@ export function mutable(provenance: Provenance): boolean {
  */
 export function joined(all: readonly Provenance[], name: string): Provenance {
   const origins = new Set<Origin>();
-  for (const item of all) for (const origin of item.origins) origins.add(origin);
-  if (!origins.has("other")) return { origins };
+  for (const item of all) {
+    for (const origin of item.origins) {
+      origins.add(origin);
+    }
+  }
+  if (!origins.has("other")) {
+    return { origins };
+  }
   return all.some((item) => item.shared)
     ? {
         ...other(
@@ -71,7 +77,11 @@ export function joined(all: readonly Provenance[], name: string): Provenance {
  */
 export function either(...all: readonly Provenance[]): Provenance {
   const origins = new Set<Origin>();
-  for (const item of all) for (const origin of item.origins) origins.add(origin);
+  for (const item of all) {
+    for (const origin of item.origins) {
+      origins.add(origin);
+    }
+  }
   const from = all.find((item) => item.origins.has("other"));
   return from ? { ...from, origins } : { origins };
 }
@@ -101,8 +111,12 @@ export function memberProvenance(
   text: string,
   members?: () => Provenance,
 ): Provenance {
-  if (object.origins.has("other")) return object;
-  if (object.origins.has("fresh")) return heldMembers(object, text, members);
+  if (object.origins.has("other")) {
+    return object;
+  }
+  if (object.origins.has("fresh")) {
+    return heldMembers(object, text, members);
+  }
   const origins = new Set<Origin>();
   for (const origin of object.origins) {
     origins.add(
@@ -152,14 +166,22 @@ export function callProvenance(
   text: string,
   members?: () => Provenance,
 ): Provenance {
-  if (method !== undefined && NEW_ARRAY.has(method)) return FRESH;
-  if (receiver.origins.has("other")) return receiver;
+  if (method !== undefined && NEW_ARRAY.has(method)) {
+    return FRESH;
+  }
+  if (receiver.origins.has("other")) {
+    return receiver;
+  }
   const origins = new Set<Origin>();
   for (const origin of receiver.origins) {
     if (origin === "fresh" || origin === "clone") {
-      if (method !== undefined && RETURNS_RECEIVER.has(method)) origins.add(origin);
-      else if (origin === "clone") origins.add("clone");
-      else return heldMembers(receiver, text, members);
+      if (method !== undefined && RETURNS_RECEIVER.has(method)) {
+        origins.add(origin);
+      } else if (origin === "clone") {
+        origins.add("clone");
+      } else {
+        return heldMembers(receiver, text, members);
+      }
     } else {
       origins.add(origin);
     }
@@ -177,9 +199,15 @@ function heldMembers(
   members: (() => Provenance) | undefined,
 ): Provenance {
   const held = members?.();
-  if (!held || held.origins.has("other")) return shared(text);
+  if (!held || held.origins.has("other")) {
+    return shared(text);
+  }
   const origins = new Set(held.origins);
-  for (const origin of object.origins) if (origin !== "fresh") origins.add(origin);
+  for (const origin of object.origins) {
+    if (origin !== "fresh") {
+      origins.add(origin);
+    }
+  }
   return { origins };
 }
 
@@ -223,12 +251,18 @@ const MEMBERS = new WeakMap<ComponentFunction, MemberValues>();
 /** The values code writes into each name's value (see {@link MemberValues}), read once. */
 export function memberValues(component: ComponentFunction, scopes: Scopes): MemberValues {
   const known = MEMBERS.get(component);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   const values = new Map<object, { key: string | undefined; value: AST.Expression | null }[]>();
   const add = (holder: AST.Node, key: string | undefined, value: AST.Expression | null) => {
-    if (holder.type !== "Identifier") return;
+    if (holder.type !== "Identifier") {
+      return;
+    }
     const resolution = scopes.resolve(holder as AST.IdentifierReference);
-    if (resolution.kind !== "variable" && resolution.kind !== "parameter") return;
+    if (resolution.kind !== "variable" && resolution.kind !== "parameter") {
+      return;
+    }
     const list = values.get(resolution.declaration) ?? [];
     list.push({ key, value });
     values.set(resolution.declaration, list);
@@ -245,7 +279,9 @@ export function memberValues(component: ComponentFunction, scopes: Scopes): Memb
       node.callee.property.type === "Identifier"
     ) {
       const from = INSERTING.get(node.callee.property.name);
-      if (from === undefined) return;
+      if (from === undefined) {
+        return;
+      }
       for (const argument of node.arguments.slice(from)) {
         add(node.callee.object, undefined, argument.type === "SpreadElement" ? null : argument);
       }
@@ -264,12 +300,18 @@ const LOOPS = new WeakMap<ComponentFunction, ReadonlyMap<object, AST.Expression>
 /** The iterable of each `for…of` loop's variable (see {@link LOOPS}), read once. */
 export function loopSources(component: ComponentFunction): ReadonlyMap<object, AST.Expression> {
   const known = LOOPS.get(component);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   const sources = new Map<object, AST.Expression>();
   visit(component.body, (node) => {
-    if (node.type !== "ForOfStatement" || node.left.type !== "VariableDeclaration") return;
+    if (node.type !== "ForOfStatement" || node.left.type !== "VariableDeclaration") {
+      return;
+    }
     for (const declarator of node.left.declarations) {
-      if (declarator.id.type === "Identifier") sources.set(declarator.id, node.right);
+      if (declarator.id.type === "Identifier") {
+        sources.set(declarator.id, node.right);
+      }
     }
   });
   LOOPS.set(component, sources);
@@ -279,7 +321,9 @@ export function loopSources(component: ComponentFunction): ReadonlyMap<object, A
 /** A member's static key: `a.b`, `a["b"]`, `a[0]`. */
 function staticKey(node: AST.MemberExpression): string | undefined {
   const { property } = node;
-  if (!node.computed) return property.type === "Identifier" ? property.name : undefined;
+  if (!node.computed) {
+    return property.type === "Identifier" ? property.name : undefined;
+  }
   return property.type === "Literal" &&
     (typeof property.value === "string" || typeof property.value === "number")
     ? String(property.value)
@@ -300,10 +344,18 @@ const SHALLOW_COPIES: ReadonlyMap<string, ReadonlySet<string>> = new Map([
  * `undefined` for `Object.assign`, whose result is its first argument.
  */
 export function globalCallProvenance(global: string, method: string): Provenance | undefined {
-  if (global === "JSON" && method === "parse") return CLONE;
-  if (SHALLOW_COPIES.get(global)?.has(method)) return FRESH;
-  if (global === "Object" && method === "assign") return undefined;
-  if (/^[a-z]/.test(global)) return GLOBAL;
+  if (global === "JSON" && method === "parse") {
+    return CLONE;
+  }
+  if (SHALLOW_COPIES.get(global)?.has(method)) {
+    return FRESH;
+  }
+  if (global === "Object" && method === "assign") {
+    return undefined;
+  }
+  if (/^[a-z]/.test(global)) {
+    return GLOBAL;
+  }
   return other(`a value \`${global}.${method}\` returns,`);
 }
 
@@ -321,17 +373,23 @@ const ASSIGNED = new WeakMap<ComponentFunction, AssignedValues>();
 /** The values each name of a component is given (see {@link AssignedValues}), read once. */
 export function assignedValues(component: ComponentFunction, scopes: Scopes): AssignedValues {
   const known = ASSIGNED.get(component);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   const values = new Map<object, (AST.Expression | null)[]>();
   const later = new Map<object, (AST.Expression | null)[]>();
   const loopDeclarations = new WeakSet<object>();
   const assign = (target: AST.Node, value: AST.Expression | null): void => {
     if (target.type !== "Identifier") {
-      for (const name of assignedNames(target)) assign(name, null);
+      for (const name of assignedNames(target)) {
+        assign(name, null);
+      }
       return;
     }
     const resolution = scopes.resolve(target as AST.IdentifierReference);
-    if (resolution.kind !== "variable") return;
+    if (resolution.kind !== "variable") {
+      return;
+    }
     const list = later.get(resolution.declaration) ?? [];
     list.push(value);
     later.set(resolution.declaration, list);
@@ -342,7 +400,9 @@ export function assignedValues(component: ComponentFunction, scopes: Scopes): As
         if (node.id.type === "Identifier") {
           values.set(node.id, loopDeclarations.has(node) ? [null] : node.init ? [node.init] : []);
         } else {
-          for (const name of assignedNames(node.id)) values.set(name, [null]);
+          for (const name of assignedNames(node.id)) {
+            values.set(name, [null]);
+          }
         }
         break;
       case "AssignmentExpression":
@@ -351,7 +411,9 @@ export function assignedValues(component: ComponentFunction, scopes: Scopes): As
       case "ForOfStatement":
       case "ForInStatement":
         if (node.left.type === "VariableDeclaration") {
-          for (const declarator of node.left.declarations) loopDeclarations.add(declarator);
+          for (const declarator of node.left.declarations) {
+            loopDeclarations.add(declarator);
+          }
         } else {
           assign(node.left, null);
         }
@@ -362,7 +424,9 @@ export function assignedValues(component: ComponentFunction, scopes: Scopes): As
   });
   for (const [declaration, list] of later) {
     const own = values.get(declaration);
-    if (own) own.push(...list);
+    if (own) {
+      own.push(...list);
+    }
   }
   ASSIGNED.set(component, values);
   return values;
@@ -390,13 +454,19 @@ function assignedNames(pattern: AST.Node): AST.Node[] {
 
 /** Visits every node in a tree, depth first. */
 function visit(node: unknown, enter: (node: AST.Node) => void): void {
-  if (!node || typeof node !== "object") return;
+  if (!node || typeof node !== "object") {
+    return;
+  }
   if (Array.isArray(node)) {
-    for (const item of node) visit(item, enter);
+    for (const item of node) {
+      visit(item, enter);
+    }
     return;
   }
   const typed = node as AST.Node;
-  if (typeof typed.type !== "string") return;
+  if (typeof typed.type !== "string") {
+    return;
+  }
   enter(typed);
   for (const key of visitorKeys[typed.type] ?? []) {
     visit((typed as unknown as Record<string, unknown>)[key], enter);

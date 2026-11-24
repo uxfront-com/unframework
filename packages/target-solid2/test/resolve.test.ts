@@ -25,7 +25,9 @@ function versionOf(path: string): string {
         name?: string;
         version?: string;
       };
-      if (manifest.name && manifest.version) return manifest.version;
+      if (manifest.name && manifest.version) {
+        return manifest.version;
+      }
     } catch {
       // No manifest here: look further up.
     }

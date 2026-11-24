@@ -20,7 +20,9 @@ let bound = false;
 export function boundElementTimeout(): void {
   // Once per page: the setup file runs again for every spec file that shares it (ADR-0092), and
   // each run would wrap the wrapper again.
-  if (bound) return;
+  if (bound) {
+    return;
+  }
   const timeout = server.config.expect?.poll?.timeout;
   if (timeout === undefined) {
     throw new Error(

@@ -26,7 +26,9 @@ export default component$<{ x: boolean } & { class?: ClassList; style?: CSSPrope
 function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
+    if (key.startsWith("data-uf-")) {
+      scope[key] = "";
+    }
   }
   return scope;
 }

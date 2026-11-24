@@ -151,7 +151,9 @@ export function createProject(options: ProjectOptions): Project {
   const compileOptions: Omit<CompileOptions, "filename" | "resolve" | "typeOracle"> = {
     ...options,
   };
-  for (const key of ["root", "readFile", "typeOracle"]) Reflect.deleteProperty(compileOptions, key);
+  for (const key of ["root", "readFile", "typeOracle"]) {
+    Reflect.deleteProperty(compileOptions, key);
+  }
   const readPath = (path: string | undefined) =>
     path === undefined ? Promise.resolve(undefined) : options.readFile(`${root}/${path}`);
 
@@ -179,12 +181,16 @@ export function createProject(options: ProjectOptions): Project {
   let active = 0;
   const newSession = (): Session => ({ analyses: new Map(), imports: new Map(), texts: new Map() });
   const inSession = async <T>(run: () => Promise<T>, fresh = false): Promise<T> => {
-    if (fresh || !session) session = newSession();
+    if (fresh || !session) {
+      session = newSession();
+    }
     active++;
     try {
       return await run();
     } finally {
-      if (--active === 0) session = undefined;
+      if (--active === 0) {
+        session = undefined;
+      }
     }
   };
   const memoOf = () => session ?? newSession();
@@ -194,13 +200,17 @@ export function createProject(options: ProjectOptions): Project {
    * outside a session. A read that fails is forgotten, so the next one tries again.
    */
   const readText = (path: string | undefined, memo = session): Promise<string | undefined> => {
-    if (path === undefined || !memo) return readPath(path);
+    if (path === undefined || !memo) {
+      return readPath(path);
+    }
     let text = memo.texts.get(path);
     if (!text) {
       const read = readPath(path);
       memo.texts.set(path, read);
       read.catch(() => {
-        if (memo.texts.get(path) === read) memo.texts.delete(path);
+        if (memo.texts.get(path) === read) {
+          memo.texts.delete(path);
+        }
       });
       text = read;
     }
@@ -230,9 +240,13 @@ export function createProject(options: ProjectOptions): Project {
     const seen = new Set(queue);
     for (let index = 0; index < queue.length; index++) {
       const each = queue[index]!;
-      if (each === to) return true;
+      if (each === to) {
+        return true;
+      }
       for (const next of await importsOf(each, memo)) {
-        if (seen.has(next)) continue;
+        if (seen.has(next)) {
+          continue;
+        }
         seen.add(next);
         queue.push(next);
       }
@@ -244,7 +258,9 @@ export function createProject(options: ProjectOptions): Project {
   const resolveChild = async (request: ResolveRequest): Promise<Child | undefined> => {
     const path = joinPath(directoryOf(request.importer), request.specifier);
     const analysed = path === undefined ? undefined : await analysisOf(path, memoOf());
-    if (!analysed) return undefined;
+    if (!analysed) {
+      return undefined;
+    }
     const { api } = analysed.child;
     return {
       api: api && { ...api, file: relativePath(directoryOf(request.importer), path!) },
@@ -268,7 +284,9 @@ export function createProject(options: ProjectOptions): Project {
       memo.analyses.set(path, entry);
       const created = entry;
       created.pending.catch(() => {
-        if (memo.analyses.get(path) === created) memo.analyses.delete(path);
+        if (memo.analyses.get(path) === created) {
+          memo.analyses.delete(path);
+        }
       });
     }
     return entry.pending;
@@ -286,13 +304,19 @@ export function createProject(options: ProjectOptions): Project {
       const analysed = file === undefined || cyclic ? CYCLE : await analysisOf(file, memo);
       const api = analysed && analysed !== CYCLE ? analysed.child.api : undefined;
       imports.set(specifier, api && { ...api, file: relativePath(directoryOf(path), file!) });
-      if (file !== undefined) edges.add(file);
-      for (const edge of (file !== undefined && childEdges.get(file)) || []) edges.add(edge);
+      if (file !== undefined) {
+        edges.add(file);
+      }
+      for (const edge of (file !== undefined && childEdges.get(file)) || []) {
+        edges.add(edge);
+      }
     }
     const stylesheets = new Map<string, StylesheetSource | undefined>();
     for (const specifier of stylesheetImports(parsed)) {
       const sheet = joinPath(directoryOf(path), specifier);
-      if (sheet !== undefined) edges.add(sheet);
+      if (sheet !== undefined) {
+        edges.add(sheet);
+      }
       const text = await readText(sheet, memo);
       stylesheets.set(specifier, text === undefined ? undefined : stylesheetSource(sheet!, text));
     }
@@ -302,7 +326,9 @@ export function createProject(options: ProjectOptions): Project {
     for (const query of typeOracle ? shapeQueries(parsed) : []) {
       const shape = await typeOracle!.resolveShape(query);
       shapes.set(`${query.span.start}:${query.span.end}`, shape);
-      for (const dependency of shape.dependencies) edges.add(dependency);
+      for (const dependency of shape.dependencies) {
+        edges.add(dependency);
+      }
     }
     childEdges.set(path, edges);
     const key = JSON.stringify([
@@ -344,7 +370,9 @@ export function createProject(options: ProjectOptions): Project {
    */
   const followModules = async (request: ResolveRequest) => {
     const first = await readModule(modulePath(request));
-    if (!first) return undefined;
+    if (!first) {
+      return undefined;
+    }
     const files = [first];
     const seen = new Set([first.file]);
     const missing: string[] = [];
@@ -353,20 +381,28 @@ export function createProject(options: ProjectOptions): Project {
       const { file, source } = files[index]!;
       const parsed = parseModule(file, source);
       const [unfollowed] = unfollowedImports(parsed);
-      if (unfollowed !== undefined) resolved.unresolved ??= { specifier: unfollowed, file };
+      if (unfollowed !== undefined) {
+        resolved.unresolved ??= { specifier: unfollowed, file };
+      }
       for (const specifier of moduleSpecifiers(parsed)) {
         if (frameworkOf(specifier) || isAuthoringModule(specifier)) {
           resolved.framework ??= { specifier, file };
           continue;
         }
         // A package is the module's own dependency, which no output tree copies.
-        if (!specifier.startsWith("./") && !specifier.startsWith("../")) continue;
+        if (!specifier.startsWith("./") && !specifier.startsWith("../")) {
+          continue;
+        }
         const path = modulePath({ specifier, importer: file });
-        if (path !== undefined && seen.has(path)) continue;
+        if (path !== undefined && seen.has(path)) {
+          continue;
+        }
         const next = await readModule(path);
         if (!next) {
           resolved.unresolved ??= { specifier, file };
-          if (path !== undefined) missing.push(path);
+          if (path !== undefined) {
+            missing.push(path);
+          }
         } else {
           seen.add(next.file);
           files.push(next);
@@ -385,7 +421,9 @@ export function createProject(options: ProjectOptions): Project {
    */
   const componentEdgesOf = async (file: string, read: Set<string>): Promise<string[]> => {
     const source = await readText(file);
-    if (source === undefined) return [];
+    if (source === undefined) {
+      return [];
+    }
     let cached = imported.get(file);
     if (cached?.source !== source) {
       cached = { source, imports: componentImportNames(parseModule(file, source)) };
@@ -395,10 +433,14 @@ export function createProject(options: ProjectOptions): Project {
     for (const { specifier, names } of cached.imports) {
       const request = { specifier, importer: file };
       const path = joinPath(directoryOf(file), specifier);
-      if (path === undefined) continue;
+      if (path === undefined) {
+        continue;
+      }
       // Every module whose API was read: a change to one may make its import a component edge.
       read.add(path);
-      if (takesComponent((await resolveChild(request))?.api, names)) files.push(path);
+      if (takesComponent((await resolveChild(request))?.api, names)) {
+        files.push(path);
+      }
     }
     return files;
   };
@@ -410,7 +452,9 @@ export function createProject(options: ProjectOptions): Project {
    */
   const findCycle = async (request: ResolveRequest) => {
     const start = joinPath(directoryOf(request.importer), request.specifier);
-    if (start === undefined || start === request.importer) return { read: [] };
+    if (start === undefined || start === request.importer) {
+      return { read: [] };
+    }
     const read = new Set([start]);
     const previous = new Map([[start, request.importer]]);
     const queue = [start];
@@ -419,10 +463,14 @@ export function createProject(options: ProjectOptions): Project {
       for (const next of await componentEdgesOf(file, read)) {
         if (next === request.importer) {
           const chain = [file];
-          while (chain[0] !== start) chain.unshift(previous.get(chain[0]!)!);
+          while (chain[0] !== start) {
+            chain.unshift(previous.get(chain[0]!)!);
+          }
           return { cycle: [request.importer, ...chain, request.importer], read: [...read] };
         }
-        if (next === file || previous.has(next)) continue;
+        if (next === file || previous.has(next)) {
+          continue;
+        }
         previous.set(next, file);
         queue.push(next);
       }
@@ -491,11 +539,15 @@ export function createProject(options: ProjectOptions): Project {
       try {
         const answer = await ask(call);
         held.push(answer.held);
-        for (const edge of answer.edges) edges.add(edge);
+        for (const edge of answer.edges) {
+          edges.add(edge);
+        }
       } catch (error) {
         held.push({ threw: error instanceof Error ? error.message : String(error) });
         const named = namedFile(call);
-        if (named !== undefined) edges.add(named);
+        if (named !== undefined) {
+          edges.add(named);
+        }
       }
     }
     return { key: await hash(JSON.stringify([source, held])), edges };
@@ -512,7 +564,9 @@ export function createProject(options: ProjectOptions): Project {
       try {
         const answer = await ask(call);
         held.push(answer.held);
-        for (const edge of answer.edges) edges.add(edge);
+        for (const edge of answer.edges) {
+          edges.add(edge);
+        }
         if (call.kind === "module") {
           for (const module of (answer.value as ResolvedModule | undefined)?.files ?? []) {
             copies.set(module.file, module.source);
@@ -524,7 +578,9 @@ export function createProject(options: ProjectOptions): Project {
       } catch (error) {
         held.push({ threw: error instanceof Error ? error.message : String(error) });
         const named = namedFile(call);
-        if (named !== undefined) edges.add(named);
+        if (named !== undefined) {
+          edges.add(named);
+        }
         throw error;
       }
     };
@@ -564,7 +620,9 @@ export function createProject(options: ProjectOptions): Project {
       resolve: recording,
       ...(oracle ? { typeOracle: oracle } : {}),
     });
-    for (const dependency of result.dependencies) edges.add(dependency);
+    for (const dependency of result.dependencies) {
+      edges.add(dependency);
+    }
     edges.delete(file);
     const outputs = Object.fromEntries(
       Object.entries(result.outputs).map(([target, files]) => [
@@ -590,10 +648,14 @@ export function createProject(options: ProjectOptions): Project {
     resolve,
     compile: async (file) => {
       const cached = compiled.get(file);
-      if (cached) return cached.result;
+      if (cached) {
+        return cached.result;
+      }
       return inSession(async () => {
         const source = await readText(file);
-        if (source === undefined) throw new Error(`The project has no file "${file}".`);
+        if (source === undefined) {
+          throw new Error(`The project has no file "${file}".`);
+        }
         return build(file, source);
       });
     },
@@ -601,7 +663,9 @@ export function createProject(options: ProjectOptions): Project {
     copies: (file) =>
       [...(compiled.get(file)?.copies ?? [])].flatMap((module) => {
         const contents = copies.get(module);
-        if (contents === undefined) return [];
+        if (contents === undefined) {
+          return [];
+        }
         return [{ path: relativePath(directoryOf(file), module), contents }];
       }),
     dependencies: (file) => [...edgesOf(file)].toSorted(),
@@ -616,27 +680,38 @@ export function createProject(options: ProjectOptions): Project {
     await typeOracle?.update({ files: [...files] });
     const before = new Map(copies);
     for (const file of files) {
-      if (!copies.has(file)) continue;
+      if (!copies.has(file)) {
+        continue;
+      }
       const source = await readText(file);
-      if (source === undefined) copies.delete(file);
-      else copies.set(file, source);
+      if (source === undefined) {
+        copies.delete(file);
+      } else {
+        copies.set(file, source);
+      }
     }
     // The reverse edges, from every module compiled or analysed as a child.
     const dependents = new Map<string, Set<string>>();
     for (const file of new Set([...compiled.keys(), ...childEdges.keys()])) {
       for (const edge of edgesOf(file)) {
-        if (!dependents.has(edge)) dependents.set(edge, new Set());
+        if (!dependents.has(edge)) {
+          dependents.set(edge, new Set());
+        }
         dependents.get(edge)!.add(file);
       }
     }
     const affected = new Set(files);
     for (const file of affected) {
-      for (const dependent of dependents.get(file) ?? []) affected.add(dependent);
+      for (const dependent of dependents.get(file) ?? []) {
+        affected.add(dependent);
+      }
     }
     const recompiled: string[] = [];
     for (const file of [...affected].toSorted()) {
       const node = compiled.get(file);
-      if (!node) continue;
+      if (!node) {
+        continue;
+      }
       const source = await readText(file);
       if (source === undefined) {
         compiled.delete(file);
@@ -654,7 +729,11 @@ export function createProject(options: ProjectOptions): Project {
     }
     // A copy no compiled module reaches any more goes with its last importer.
     const live = new Set([...compiled.values()].flatMap((node) => [...node.copies]));
-    for (const file of copies.keys()) if (!live.has(file)) copies.delete(file);
+    for (const file of copies.keys()) {
+      if (!live.has(file)) {
+        copies.delete(file);
+      }
+    }
     const copied = [...new Set([...before.keys(), ...copies.keys()])].filter(
       (file) => before.get(file) !== copies.get(file),
     );
@@ -688,7 +767,9 @@ export function createFileResolver(options: FileResolverOptions): Resolver {
  * query, or a check of the directives' values, names the module's own file, which is no edge.
  */
 function namedFile(call: Call): string | undefined {
-  if (call.kind === "shape" || call.kind === "directive-values") return undefined;
+  if (call.kind === "shape" || call.kind === "directive-values") {
+    return undefined;
+  }
   return call.kind === "module"
     ? modulePath(call.request)
     : joinPath(directoryOf(call.request.importer), call.request.specifier);

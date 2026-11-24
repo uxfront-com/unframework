@@ -44,8 +44,12 @@ const source = [
 /** The span of the `nth` occurrence of `text` in the source. */
 function find(text: string, nth = 0): Span {
   let start = -1;
-  for (let found = 0; found <= nth; found++) start = source.indexOf(text, start + 1);
-  if (start === -1) throw new Error(`"${text}" is not in the source`);
+  for (let found = 0; found <= nth; found++) {
+    start = source.indexOf(text, start + 1);
+  }
+  if (start === -1) {
+    throw new Error(`"${text}" is not in the source`);
+  }
   return span(start, start + text.length);
 }
 
@@ -244,7 +248,9 @@ describe("pluginIrProblems on setup code", () => {
   const problems = (module: UfModule) => pluginIrProblems(module, everyKind(), counterSource);
   const setupItem = <K extends SetupItem["kind"]>(module: UfModule, index: number, kind: K) => {
     const item = counter(module).setup[index]!;
-    if (item.kind !== kind) throw new Error(`The counter's item ${index} is no ${kind}.`);
+    if (item.kind !== kind) {
+      throw new Error(`The counter's item ${index} is no ${kind}.`);
+    }
     return item as Extract<SetupItem, { kind: K }>;
   };
 
@@ -270,7 +276,9 @@ describe("pluginIrProblems on setup code", () => {
         const body = setupItem(module, 6, "Function").function.body;
         const index = body.refs.findIndex((reference) => reference.kind === "Write");
         const write = body.refs[index]!;
-        if (write.kind !== "Write") throw new Error("The increment writes the count.");
+        if (write.kind !== "Write") {
+          throw new Error("The increment writes the count.");
+        }
         body.refs[index] = createBindingReference(write.binding, write.target);
       },
       "/components/1/setup/6/function",
@@ -281,9 +289,13 @@ describe("pluginIrProblems on setup code", () => {
       (module) => {
         walk(counter(module).render, {
           enter(node) {
-            if (node.kind !== "Interpolation") return;
+            if (node.kind !== "Interpolation") {
+              return;
+            }
             for (const reference of node.value.refs) {
-              if (reference.kind === "Binding") delete reference.call;
+              if (reference.kind === "Binding") {
+                delete reference.call;
+              }
             }
           },
         });

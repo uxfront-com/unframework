@@ -302,7 +302,9 @@ export function solidListeners(
     }
     // A `v-model`'s helper that needs the element (src/models.ts), in the same callback.
     const model = modelRef(element, context);
-    if (model) statements.push(model(parameter));
+    if (model) {
+      statements.push(model(parameter));
+    }
     // Each directive's factory, called while the element renders, as its own `ref` would be.
     for (const directive of planOf(element).directives) {
       const value = rewriteCode(directive.value, code.component, code.rules, "pure");
@@ -351,7 +353,9 @@ export function solidListeners(
     },
     directiveAttribute(attribute, element, context) {
       const plan = planOf(element);
-      if (plan.carrier !== attribute) return [];
+      if (plan.carrier !== attribute) {
+        return [];
+      }
       // The element's one ref is the factory's callback itself, unless a `v-model`'s helper or
       // another directive needs the element too: then one callback calls each.
       if (plan.directives.length === 1 && !modelRef(element, context) && !forwardedRef(element)) {
@@ -466,10 +470,16 @@ function returnsEarly(body: string): boolean {
 
 /** Whether part of an AST holds a `return` of its own function: not one of a function it holds. */
 function holdsReturn(node: unknown): boolean {
-  if (Array.isArray(node)) return node.some(holdsReturn);
-  if (!node || typeof node !== "object") return false;
+  if (Array.isArray(node)) {
+    return node.some(holdsReturn);
+  }
+  if (!node || typeof node !== "object") {
+    return false;
+  }
   const { type } = node as { type?: unknown };
-  if (type === "ReturnStatement") return true;
+  if (type === "ReturnStatement") {
+    return true;
+  }
   if (
     type === "FunctionDeclaration" ||
     type === "FunctionExpression" ||
@@ -514,9 +524,13 @@ function nativeEvents(component: UfComponent): Set<string> {
   const native = new Set<string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event" || !DELEGATED_EVENTS.has(attribute.event)) continue;
+        if (attribute.kind !== "Event" || !DELEGATED_EVENTS.has(attribute.event)) {
+          continue;
+        }
         if (attribute.once || attribute.passive || needsDomType(attribute, component)) {
           native.add(attribute.event);
         }
@@ -583,7 +597,9 @@ function elementPlan(element: ElementNode, component: UfComponent): ElementPlan 
         typedOn(listener.event, element.tag) &&
         !needsDomType(listener, component),
     );
-    if (own) props.add(own);
+    if (own) {
+      props.add(own);
+    }
   }
   const added = listeners.filter((listener) => !props.has(listener));
   const ref = element.attributes.find(
@@ -612,9 +628,15 @@ function typedOn(event: string, tag: string): boolean {
 
 /** A listener's option as `addEventListener` takes it, `capture: true`, or none. */
 function options(attribute: EventAttribute): string | undefined {
-  if (attribute.capture) return "capture: true";
-  if (attribute.once) return "once: true";
-  if (attribute.passive) return "passive: true";
+  if (attribute.capture) {
+    return "capture: true";
+  }
+  if (attribute.once) {
+    return "once: true";
+  }
+  if (attribute.passive) {
+    return "passive: true";
+  }
   return undefined;
 }
 

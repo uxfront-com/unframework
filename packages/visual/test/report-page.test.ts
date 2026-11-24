@@ -53,7 +53,9 @@ describe("renderReport", () => {
     );
     const linked = [...html.matchAll(/(?:src|href)="([^"#][^"]*)"/g)].map((match) => match[1]);
     expect(linked.length).toBeGreaterThan(0);
-    for (const path of linked) expect(named).toContain(path);
+    for (const path of linked) {
+      expect(named).toContain(path);
+    }
   });
 
   it("escapes every value and encodes every path", () => {

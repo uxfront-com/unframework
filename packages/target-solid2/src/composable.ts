@@ -57,8 +57,14 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const owner = setupOwner(composable);
   const parameterTypes = composableTypeTexts(composable);
   const names = sourceNames(owner, module);
-  for (const type of parameterTypes) for (const name of typeNames(type)) names.add(name);
-  for (const name of moduleValueNames(module)) names.add(name);
+  for (const type of parameterTypes) {
+    for (const name of typeNames(type)) {
+      names.add(name);
+    }
+  }
+  for (const name of moduleValueNames(module)) {
+    names.add(name);
+  }
   const imports = new ImportSet(new NameScope(names));
   const placeholders = new Placeholders();
   const composition = new SolidComposition(owner, module, imports);
@@ -76,7 +82,9 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
       bindings.get(parameter.binding)!,
       placeholders.type(parameter.type.code),
     );
-    if (parameter.optional) Object.assign(identifier, { optional: true });
+    if (parameter.optional) {
+      Object.assign(identifier, { optional: true });
+    }
     return identifier;
   });
   const fn = js.functionDeclaration(composable.name, parameters, [
@@ -147,7 +155,9 @@ export function addComposableImports(
   for (const entry of module.imports ?? []) {
     const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
     for (const name of entry.names) {
-      if (name.kind !== "Composable" || !called.has(name.local)) continue;
+      if (name.kind !== "Composable" || !called.has(name.local)) {
+        continue;
+      }
       imports.add(`${directory}${name.imported}`, name.imported, {
         local: name.local,
         exact: true,
@@ -195,7 +205,9 @@ export function moduleReads(
   imports: ImportSet,
   placeholders: Placeholders,
 ): ModuleReads {
-  if (!moduleValueNames(module).length) return { constants: [], types: [] };
+  if (!moduleValueNames(module).length) {
+    return { constants: [], types: [] };
+  }
   const owners = [
     ...module.components.map((component) => ({ owner: component, typeTexts: [] as TypeText[] })),
     ...(module.composables ?? []).map((composable) => ({
@@ -207,14 +219,18 @@ export function moduleReads(
   const own = owners.find(({ owner }) => owner.name === name)!;
   const direct = ownValues(own.owner, module, own.typeTexts);
   if (owners.length > 1 && name !== main) {
-    for (const value of [...direct].toSorted()) imports.add(`./${main}`, value, { exact: true });
+    for (const value of [...direct].toSorted()) {
+      imports.add(`./${main}`, value, { exact: true });
+    }
     return { constants: [], types: [] };
   }
   // The main owner declares what every owner reaches, and exports what the others read.
   const exported = new Set<string>();
   const values = new Set(direct);
   for (const each of owners) {
-    if (each === own) continue;
+    if (each === own) {
+      continue;
+    }
     for (const value of ownValues(each.owner, module, each.typeTexts)) {
       exported.add(value);
       values.add(value);
@@ -223,10 +239,14 @@ export function moduleReads(
   const closed = closure(values, own.owner, module);
   for (const entry of module.moduleImports ?? []) {
     for (const each of entry.names) {
-      if (!closed.values.has(each.local)) continue;
+      if (!closed.values.has(each.local)) {
+        continue;
+      }
       if (each.imported === "default") {
         imports.addDefault(entry.specifier, each.local, { exact: true });
-      } else imports.add(entry.specifier, each.imported, { local: each.local, exact: true });
+      } else {
+        imports.add(entry.specifier, each.imported, { local: each.local, exact: true });
+      }
     }
   }
   addNamedTypeImports(module, imports, closed.named);
@@ -273,11 +293,21 @@ function ownValues(
       .map((binding) => binding.name),
   );
   const query = (text: string, kind: CodeKind | "type") => {
-    for (const name of typeQueries(text, kind)) if (moduleValues.has(name)) values.add(name);
+    for (const name of typeQueries(text, kind)) {
+      if (moduleValues.has(name)) {
+        values.add(name);
+      }
+    }
   };
-  for (const { code } of codeOf(owner)) query(code.code, codeKind(code, owner));
-  for (const text of [...ownTypes(owner), ...typeTexts]) query(text.code, "type");
-  for (const declaration of componentTypes(owner, module)) query(declaration.code, "statements");
+  for (const { code } of codeOf(owner)) {
+    query(code.code, codeKind(code, owner));
+  }
+  for (const text of [...ownTypes(owner), ...typeTexts]) {
+    query(text.code, "type");
+  }
+  for (const declaration of componentTypes(owner, module)) {
+    query(declaration.code, "statements");
+  }
   return values;
 }
 
@@ -289,7 +319,11 @@ function closure(values: ReadonlySet<string>, owner: UfComponent, module: UfModu
   const moduleValues = new Set(moduleValueNames(module));
   const reached = new Set(values);
   const query = (text: string, kind: CodeKind | "type") => {
-    for (const name of typeQueries(text, kind)) if (moduleValues.has(name)) reached.add(name);
+    for (const name of typeQueries(text, kind)) {
+      if (moduleValues.has(name)) {
+        reached.add(name);
+      }
+    }
   };
   const own = new Set(owner.types);
   const named = new Set<string>();
@@ -297,21 +331,33 @@ function closure(values: ReadonlySet<string>, owner: UfComponent, module: UfModu
   for (let size = -1; size !== reached.size + types.size;) {
     size = reached.size + types.size;
     for (const constant of module.constants ?? []) {
-      if (!reached.has(constant.name)) continue;
+      if (!reached.has(constant.name)) {
+        continue;
+      }
       for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") reached.add(nameOf(reference.binding));
+        if (reference.kind === "Binding") {
+          reached.add(nameOf(reference.binding));
+        }
       }
       if (constant.type) {
-        for (const name of typeNames(constant.type)) named.add(name);
+        for (const name of typeNames(constant.type)) {
+          named.add(name);
+        }
         query(constant.type.code, "type");
       }
-      for (const name of codeNames(constant.value.code)) named.add(name);
+      for (const name of codeNames(constant.value.code)) {
+        named.add(name);
+      }
       query(constant.value.code, "expression");
     }
     for (const declaration of module.types) {
-      if (own.has(declaration.name) || !named.has(declaration.name)) continue;
+      if (own.has(declaration.name) || !named.has(declaration.name)) {
+        continue;
+      }
       types.add(declaration.name);
-      for (const name of codeNames(declaration.code, "statements")) named.add(name);
+      for (const name of codeNames(declaration.code, "statements")) {
+        named.add(name);
+      }
       query(declaration.code, "statements");
     }
   }
@@ -339,7 +385,9 @@ function addNamedTypeImports(
 ): void {
   for (const entry of module.typeImports ?? []) {
     for (const name of entry.names) {
-      if (!names.has(name.local)) continue;
+      if (!names.has(name.local)) {
+        continue;
+      }
       imports.add(
         typeSpecifier(entry.specifier, module, (each) => each),
         name.imported,
@@ -356,13 +404,27 @@ function addNamedTypeImports(
 /** The type text an owner's IR writes beside its code: its props', setup's and emits' types. */
 function ownTypes(owner: UfComponent): TypeText[] {
   const found: TypeText[] = [];
-  if (owner.propsParameter) found.push(owner.propsParameter.type);
-  for (const prop of owner.props) found.push(prop.type);
-  for (const item of owner.setup) if ("type" in item && item.type) found.push(item.type);
-  if (owner.emits) found.push(owner.emits.type);
+  if (owner.propsParameter) {
+    found.push(owner.propsParameter.type);
+  }
+  for (const prop of owner.props) {
+    found.push(prop.type);
+  }
+  for (const item of owner.setup) {
+    if ("type" in item && item.type) {
+      found.push(item.type);
+    }
+  }
+  if (owner.emits) {
+    found.push(owner.emits.type);
+  }
   for (const parameter of owner.typeParameters ?? []) {
-    if (parameter.constraint) found.push(parameter.constraint);
-    if (parameter.default) found.push(parameter.default);
+    if (parameter.constraint) {
+      found.push(parameter.constraint);
+    }
+    if (parameter.default) {
+      found.push(parameter.default);
+    }
   }
   return found;
 }
@@ -384,17 +446,29 @@ function typeQueries(text: string, kind: CodeKind | "type"): string[] {
   const found: string[] = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     const each = node as { type?: unknown; exprName?: unknown };
     if (each.type === "TSTypeQuery") {
       let name = each.exprName as { type?: unknown; left?: unknown; name?: unknown } | undefined;
-      while (name?.type === "TSQualifiedName") name = name.left as typeof name;
-      if (name?.type === "Identifier" && typeof name.name === "string") found.push(name.name);
+      while (name?.type === "TSQualifiedName") {
+        name = name.left as typeof name;
+      }
+      if (name?.type === "Identifier" && typeof name.name === "string") {
+        found.push(name.name);
+      }
     }
-    for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value);
+    for (const [key, value] of Object.entries(node)) {
+      if (key !== "parent") {
+        visit(value);
+      }
+    }
   };
   visit(root);
   return found;

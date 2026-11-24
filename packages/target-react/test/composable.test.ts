@@ -53,9 +53,13 @@ async function expectClean(directory: string, outputs: readonly OutputFile[]): P
   }
   const paths = files.map(({ path }) => path);
   const checked = await toolchain.typecheck(paths, context);
-  for (const [path, messages] of checked) expect(messages, path).toEqual([]);
+  for (const [path, messages] of checked) {
+    expect(messages, path).toEqual([]);
+  }
   const linted = await toolchain.lint(paths, context);
-  for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+  for (const [path, messages] of linted) {
+    expect(messages, path).toEqual([]);
+  }
 }
 
 /**
@@ -77,7 +81,9 @@ async function compileProject(files: Record<string, string>) {
     }
     const result = await compile(source, { filename, targets: ["react"], resolve, typeOracle });
     diagnostics.push(...result.diagnostics);
-    for (const file of result.outputs.react ?? []) outputs.set(file.path, file.contents);
+    for (const file of result.outputs.react ?? []) {
+      outputs.set(file.path, file.contents);
+    }
   }
   return {
     diagnostics,

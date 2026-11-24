@@ -125,15 +125,21 @@ function titleChildren(
   options: Omit<TitleContext, "placeholders">,
 ): RenderNode[] {
   const [only] = children;
-  if (!only) return [];
+  if (!only) {
+    return [];
+  }
   const context: TitleContext = { ...options, placeholders: new Placeholders() };
-  if (children.length === 1 && only.kind === "Text") return [only];
+  if (children.length === 1 && only.kind === "Text") {
+    return [only];
+  }
   if (children.length === 1 && only.kind === "Interpolation" && isText(only.value, context)) {
     return [only];
   }
   const value = children.length === 1 ? alone(only, context) : text(children, context, false);
   const span = { start: only.span.start, end: children.at(-1)!.span.end };
-  if (typeof value === "string") return value ? [{ kind: "Text", value, span }] : [];
+  if (typeof value === "string") {
+    return value ? [{ kind: "Text", value, span }] : [];
+  }
   const code = context.placeholders.print(() => printExpression(value));
   // Printed here, each part spelled by the context: the expression holds no reference for a
   // rewrite to spell again.
@@ -151,7 +157,9 @@ function alone(node: RenderNode, context: TitleContext): JsExpression | string {
     case "If":
       return chain(node, (children) => branchValue(children, context), undefinedValue(), context);
     case "Interpolation": {
-      if (isText(node.value, context)) return expression(node.value, context);
+      if (isText(node.value, context)) {
+        return expression(node.value, context);
+      }
       const kinds = propReadKinds(node.value, context.jsx.component, context.module);
       if (kinds && [...kinds].every((kind) => ["string", "null", "undefined"].includes(kind))) {
         const value = expression(node.value, context, "operand");
@@ -167,7 +175,9 @@ function alone(node: RenderNode, context: TitleContext): JsExpression | string {
 /** A branch of a conditional that is the title's whole value: see {@link alone}. */
 function branchValue(children: readonly RenderNode[], context: TitleContext): JsExpression {
   const [only] = children;
-  if (!only) return undefinedValue();
+  if (!only) {
+    return undefinedValue();
+  }
   const value = children.length === 1 ? alone(only, context) : text(children, context, false);
   return typeof value === "string" ? js.stringLiteral(value) : value;
 }
@@ -184,10 +194,14 @@ function text(
   const parts: TextPart[] = [];
   for (const node of nodes) {
     const value = node.kind === "Text" ? node.value : templatePart(node, context);
-    if (value !== undefined) parts.push(value);
+    if (value !== undefined) {
+      parts.push(value);
+    }
   }
   const [only] = parts;
-  if (inner && parts.length === 1 && typeof only !== "string") return only!;
+  if (inner && parts.length === 1 && typeof only !== "string") {
+    return only!;
+  }
   return textTemplate(parts);
 }
 

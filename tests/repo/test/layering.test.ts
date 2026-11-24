@@ -54,7 +54,9 @@ describe("layering", () => {
         .flatMap(importsOf)
         .filter((record) => {
           const imported = packageOf(record.specifier);
-          if (!imported || !isWorkspace(imported) || imported === name) return false;
+          if (!imported || !isWorkspace(imported) || imported === name) {
+            return false;
+          }
           return (layerOf.get(imported) ?? Number.POSITIVE_INFINITY) >= layer;
         })
         .map((record) => `${record.file} imports ${record.specifier}`);

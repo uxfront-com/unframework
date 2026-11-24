@@ -35,7 +35,9 @@ function solidGoldens(): ToolchainFile[] {
 
 function golden(name: string): ToolchainFile {
   const file = solidGoldens().find((entry) => entry.path.endsWith(`/${name}`));
-  if (!file) throw new Error(`No Solid golden named ${name}`);
+  if (!file) {
+    throw new Error(`No Solid golden named ${name}`);
+  }
   return file;
 }
 

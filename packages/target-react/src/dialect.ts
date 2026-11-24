@@ -59,7 +59,9 @@ export function reactDialect(
       const { name, value } = attribute;
       if (typeof value === "string" && name === "class") {
         const reads = spreadClassReads(element, context);
-        if (reads.length) return [className([js.stringLiteral(value), ...reads], names)];
+        if (reads.length) {
+          return [className([js.stringLiteral(value), ...reads], names)];
+        }
       }
       // @types/react types these as `number`, so a string fails L4; the invariants keep their
       // static values canonical numbers, which print as written (`tabIndex={0}`).
@@ -123,7 +125,9 @@ export function reactDialect(
       }
       const object = styleObject(attribute, context, "camel");
       // A consumer's declarations win over the root's own (ADR-0054).
-      if (fallthrough) object.properties.push(js.spreadElement(js.identifier(own!)));
+      if (fallthrough) {
+        object.properties.push(js.spreadElement(js.identifier(own!)));
+      }
       // React's `CSSProperties` declares no custom properties, so an object holding one is
       // typed as its own (tsgo rejects the literal otherwise).
       const custom = attribute.declarations.some(({ property }) => property.startsWith("--"));
@@ -276,8 +280,11 @@ function classParts(attribute: ClassAttribute, context: JsxContext): Expression[
     const entry = shorthand
       ? js.property(item.name, js.identifier(item.name), { shorthand: true })
       : js.property(item.name, jsxExpression(item.condition, context));
-    if (toggles) toggles.properties.push(entry);
-    else parts.push((toggles = js.objectExpression([entry])));
+    if (toggles) {
+      toggles.properties.push(entry);
+    } else {
+      parts.push((toggles = js.objectExpression([entry])));
+    }
   }
   return parts;
 }

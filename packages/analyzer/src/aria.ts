@@ -92,7 +92,9 @@ export const ABSTRACT_ROLES: ReadonlySet<string> = new Set(
  */
 export function ariaValueProblem(name: string, value: string): string | undefined {
   const aria = ARIA_TYPES.get(name);
-  if (!aria) return undefined;
+  if (!aria) {
+    return undefined;
+  }
   switch (aria.type) {
     case "boolean":
       return value === "true" || value === "false" ? undefined : '`"true"` or `"false"`';
@@ -126,9 +128,12 @@ export function ariaValueProblem(name: string, value: string): string | undefine
  */
 export function roleProblem(value: string): string | undefined {
   for (const role of value.split(/[\t\n\f\r ]+/).filter(Boolean)) {
-    if (ABSTRACT_ROLES.has(role))
+    if (ABSTRACT_ROLES.has(role)) {
       return `\`${role}\` is an abstract role, which authors cannot use`;
-    if (!ARIA_ROLES.has(role)) return `\`${role}\` is not an ARIA role`;
+    }
+    if (!ARIA_ROLES.has(role)) {
+      return `\`${role}\` is not an ARIA role`;
+    }
   }
   return undefined;
 }

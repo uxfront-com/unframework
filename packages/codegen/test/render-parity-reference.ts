@@ -71,7 +71,9 @@ export function instantiate(
     scope.set(propsParameter.name!, { ...props });
   } else {
     for (const prop of component.props) {
-      if (prop.binding === undefined) continue;
+      if (prop.binding === undefined) {
+        continue;
+      }
       const passed = props[prop.name];
       const value =
         passed === undefined && prop.default
@@ -82,14 +84,18 @@ export function instantiate(
   }
   const evaluator = new Evaluator(component);
   const { render } = component;
-  if (render.kind === "Element") return evaluator.element(render, scope, "html");
+  if (render.kind === "Element") {
+    return evaluator.element(render, scope, "html");
+  }
   return createFragment(evaluator.children(render.children, scope, "html"), at);
 }
 
 /** A binding's name, by its id. */
 function nameOf(component: UfComponent, id: string): string {
   const binding = component.bindings.find((each) => each.id === id);
-  if (!binding) throw new Error(`no binding ${id}`);
+  if (!binding) {
+    throw new Error(`no binding ${id}`);
+  }
   return binding.name;
 }
 
@@ -114,10 +120,15 @@ class Evaluator {
   children(nodes: readonly RenderNode[], scope: Scope, namespace: Namespace): RenderNode[] {
     const rendered: RenderNode[] = [];
     const text = (value: string) => {
-      if (value === "") return;
+      if (value === "") {
+        return;
+      }
       const last = rendered.at(-1);
-      if (last?.kind === "Text") rendered[rendered.length - 1] = createText(last.value + value, at);
-      else rendered.push(createText(value, at));
+      if (last?.kind === "Text") {
+        rendered[rendered.length - 1] = createText(last.value + value, at);
+      } else {
+        rendered.push(createText(value, at));
+      }
     };
     const visit = (node: RenderNode, names: Scope): void => {
       switch (node.kind) {
@@ -134,26 +145,36 @@ class Evaluator {
           const branch = node.branches.find(
             ({ condition }) => !condition || Boolean(evaluate(condition, names, "a condition")),
           );
-          for (const child of branch?.children ?? []) visit(child, names);
+          for (const child of branch?.children ?? []) {
+            visit(child, names);
+          }
           return;
         }
         case "For": {
           const items = evaluate(node.source, names, "a list source");
-          if (!Array.isArray(items)) throw outside(node.source, `${String(items)} is no array`);
+          if (!Array.isArray(items)) {
+            throw outside(node.source, `${String(items)} is no array`);
+          }
           const keys = new Set<string>();
           // A loop by index, as `forEach` skips a hole a target's loop would render.
           for (let index = 0; index < items.length; index++) {
-            if (!(index in items)) throw outside(node.source, `a sparse array (hole at ${index})`);
+            if (!(index in items)) {
+              throw outside(node.source, `a sparse array (hole at ${index})`);
+            }
             const item: unknown = items[index];
             const inner = new Map(names);
             inner.set(nameOf(this.component, node.item), item);
-            if (node.index !== undefined) inner.set(nameOf(this.component, node.index), index);
+            if (node.index !== undefined) {
+              inner.set(nameOf(this.component, node.index), index);
+            }
             const key = evaluate(node.key, inner, "a key");
             if (typeof key !== "string" && typeof key !== "number") {
               throw outside(node.key, `a key is ${typeof key}`);
             }
             // React's keys are strings: `1` and `"1"` are the same key there.
-            if (keys.has(String(key))) throw outside(node.key, `the key ${String(key)} repeats`);
+            if (keys.has(String(key))) {
+              throw outside(node.key, `the key ${String(key)} repeats`);
+            }
             keys.add(String(key));
             visit(node.body, inner);
           }
@@ -164,7 +185,9 @@ class Evaluator {
           return;
         // A static render holds a transition's child settled, with no class (ADR-0100).
         case "Transition":
-          for (const child of node.children) visit(child, names);
+          for (const child of node.children) {
+            visit(child, names);
+          }
           return;
         // Composition (ADR-0055) renders through its lanes in M3, not here yet.
         case "Component":
@@ -175,7 +198,9 @@ class Evaluator {
           throw new Error(`unknown node ${(node satisfies never as RenderNode).kind}`);
       }
     };
-    for (const node of nodes) visit(node, scope);
+    for (const node of nodes) {
+      visit(node, scope);
+    }
     return rendered;
   }
 
@@ -183,8 +208,12 @@ class Evaluator {
   attributes(node: ElementNode, scope: Scope, namespace: Namespace): StaticAttribute[] {
     const values = new Map<string, string | true>();
     const set = (name: string, value: string | true | undefined) => {
-      if (values.has(name)) throw new Error(`<${node.tag}> sets ${name} twice`);
-      if (value !== undefined) values.set(name, value);
+      if (values.has(name)) {
+        throw new Error(`<${node.tag}> sets ${name} twice`);
+      }
+      if (value !== undefined) {
+        values.set(name, value);
+      }
     };
     const classes: string[] = [];
     let style: string[] | undefined;
@@ -205,10 +234,15 @@ class Evaluator {
           break;
         case "Class":
           for (const item of attribute.items) {
-            if (item.kind === "Static") classes.push(...tokens(item.value));
-            else if (item.kind === "Toggle") {
-              if (evaluate(item.condition, scope, "a class toggle")) classes.push(item.name);
-            } else classes.push(...classTokens(item.value, evaluate(item.value, scope, "a class")));
+            if (item.kind === "Static") {
+              classes.push(...tokens(item.value));
+            } else if (item.kind === "Toggle") {
+              if (evaluate(item.condition, scope, "a class toggle")) {
+                classes.push(item.name);
+              }
+            } else {
+              classes.push(...classTokens(item.value, evaluate(item.value, scope, "a class")));
+            }
           }
           break;
         case "Style":
@@ -222,12 +256,19 @@ class Evaluator {
           break;
         case "Spread": {
           const source = evaluate(attribute.value, scope, "a spread");
-          if (source === null || source === undefined) break;
-          if (typeof source !== "object") throw outside(attribute.value, "a spread of no object");
+          if (source === null || source === undefined) {
+            break;
+          }
+          if (typeof source !== "object") {
+            throw outside(attribute.value, "a spread of no object");
+          }
           for (const { name } of attribute.keys) {
             const value = (source as Record<string, unknown>)[name];
-            if (name === "class") classes.push(...classTokens(attribute.value, value));
-            else set(name, attributeValue(node.tag, name, namespace, value, attribute.value));
+            if (name === "class") {
+              classes.push(...classTokens(attribute.value, value));
+            } else {
+              set(name, attributeValue(node.tag, name, namespace, value, attribute.value));
+            }
           }
           break;
         }
@@ -254,8 +295,12 @@ class Evaluator {
     if (new Set(classes).size !== classes.length) {
       throw new Error(`<${node.tag}> repeats a class: ${classes.join(" ")} (ADR-0035)`);
     }
-    if (classes.length) set("class", classes.join(" "));
-    if (style?.length) set("style", style.join("; "));
+    if (classes.length) {
+      set("class", classes.join(" "));
+    }
+    if (style?.length) {
+      set("style", style.join("; "));
+    }
     return [...values].map(([name, value]) => createStaticAttribute(name, value, at));
   }
 }
@@ -267,10 +312,16 @@ class Evaluator {
  */
 function interpolated(expression: Expression, scope: Scope): string {
   const value = evaluate(expression, scope, "an interpolation");
-  if (value === null || value === undefined) return "";
-  if (typeof value === "string") return value;
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw outside(expression, `${value} rendered as text`);
+    if (!Number.isFinite(value)) {
+      throw outside(expression, `${value} rendered as text`);
+    }
     return String(value);
   }
   throw outside(expression, `${typeof value} rendered as text`);
@@ -304,18 +355,26 @@ function attributeValue(
   value: unknown,
   expression: Expression,
 ): string | true | undefined {
-  if (value === null || value === undefined) return undefined;
+  if (value === null || value === undefined) {
+    return undefined;
+  }
   if (namespace === "html" && BINDABLE_BOOLEAN_ATTRIBUTES.has(name)) {
-    if (typeof value !== "boolean") throw outside(expression, `${name} bound to ${typeof value}`);
+    if (typeof value !== "boolean") {
+      throw outside(expression, `${name} bound to ${typeof value}`);
+    }
     return value || undefined;
   }
   if (typeof value === "boolean") {
-    if (name.startsWith("aria-") || STRING_BOOLEAN_ATTRIBUTES.has(name)) return String(value);
+    if (name.startsWith("aria-") || STRING_BOOLEAN_ATTRIBUTES.has(name)) {
+      return String(value);
+    }
     throw outside(expression, `${name} bound to a boolean`);
   }
   let text: string;
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw outside(expression, `${name} bound to ${value}`);
+    if (!Number.isFinite(value)) {
+      throw outside(expression, `${name} bound to ${value}`);
+    }
     text = String(value);
     // React drops a number its property refuses (`rows={0}`).
     const numeric = namespace === "html" ? NUMERIC_ATTRIBUTES.get(tag)?.get(name) : undefined;
@@ -338,8 +397,12 @@ function attributeValue(
 
 /** The class names a dynamic part (or a spread's `class`) holds. */
 function classTokens(expression: Expression, value: unknown): string[] {
-  if (value === null || value === undefined) return [];
-  if (typeof value !== "string") throw outside(expression, `a class of ${typeof value}`);
+  if (value === null || value === undefined) {
+    return [];
+  }
+  if (typeof value !== "string") {
+    throw outside(expression, `a class of ${typeof value}`);
+  }
   return tokens(value);
 }
 
@@ -351,17 +414,25 @@ function tokens(value: string): string[] {
 /** What a bound style declaration renders, or `undefined` when it is left out. */
 function styleValue(property: string, expression: Expression, scope: Scope): string | undefined {
   const value = evaluate(expression, scope, "a style value");
-  if (value === null || value === undefined || value === "") return undefined;
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
   if (typeof value === "number") {
     // React and Qwik add `px` to a number anywhere else.
     if (!UNITLESS_PROPERTIES.has(property) && !isCustomProperty(property)) {
       throw outside(expression, `${property}: ${value} without a unit`);
     }
-    if (!Number.isFinite(value)) throw outside(expression, `${property}: ${value}`);
+    if (!Number.isFinite(value)) {
+      throw outside(expression, `${property}: ${value}`);
+    }
     return String(value);
   }
-  if (typeof value !== "string") throw outside(expression, `${property} of ${typeof value}`);
-  if (/[;]|!\s*important/i.test(value)) throw outside(expression, `${property}: ${value}`);
+  if (typeof value !== "string") {
+    throw outside(expression, `${property} of ${typeof value}`);
+  }
+  if (/[;]|!\s*important/i.test(value)) {
+    throw outside(expression, `${property}: ${value}`);
+  }
   return value.trim();
 }
 

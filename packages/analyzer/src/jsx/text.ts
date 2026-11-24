@@ -99,9 +99,13 @@ export function htmlOnlyReferences(raw: string): HtmlOnlyReference[] {
   for (const match of raw.matchAll(/&([A-Za-z][A-Za-z0-9]*);/g)) {
     const name = match[1]!;
     const value = HTML_ONLY_ENTITIES.get(name);
-    if (value === undefined) continue;
+    if (value === undefined) {
+      continue;
+    }
     const codePoints: number[] = [];
-    for (const char of value) codePoints.push(char.codePointAt(0)!);
+    for (const char of value) {
+      codePoints.push(char.codePointAt(0)!);
+    }
     const numeric = codePoints.map((code) => `&#x${code.toString(16).toUpperCase()};`).join("");
     const end = match.index + match[0].length;
     found.push({ start: match.index, end, name, value, codePoints, numeric });
@@ -175,11 +179,15 @@ function offerRewrites(
   reading: JsxReading,
   rewrites: ReadonlyMap<Divergence, string>,
 ): void {
-  if (!rewrites.size) return;
+  if (!rewrites.size) {
+    return;
+  }
   let fixed = raw;
   for (const divergence of reading.divergences.toReversed()) {
     const replacement = divergence.replacement ?? rewrites.get(divergence);
-    if (replacement === undefined) continue;
+    if (replacement === undefined) {
+      continue;
+    }
     fixed = fixed.slice(0, divergence.start) + replacement + fixed.slice(divergence.end);
   }
   const after = readText(fixed).reading;
@@ -187,8 +195,12 @@ function offerRewrites(
     .filter((divergence) => divergence.replacement === undefined && !rewrites.has(divergence))
     .map((divergence) => divergence.message);
   const left = after.divergences.map((divergence) => divergence.message);
-  if (after.value !== reading.value || left.join("\n") !== unfixed.join("\n")) return;
-  for (const [divergence, replacement] of rewrites) divergence.replacement = replacement;
+  if (after.value !== reading.value || left.join("\n") !== unfixed.join("\n")) {
+    return;
+  }
+  for (const [divergence, replacement] of rewrites) {
+    divergence.replacement = replacement;
+  }
 }
 
 function decodePieces(raw: string, kind: "text" | "attribute"): Piece[] {
@@ -219,15 +231,23 @@ function readReference(raw: string, start: number): { value: string; end: number
     const digitsStart = start + (hex ? 2 : 1);
     const pattern = hex ? /[0-9a-fA-F]/ : /[0-9]/;
     let end = digitsStart;
-    while (end < raw.length && pattern.test(raw[end]!)) end++;
-    if (end === digitsStart || raw[end] !== ";") return undefined;
+    while (end < raw.length && pattern.test(raw[end]!)) {
+      end++;
+    }
+    if (end === digitsStart || raw[end] !== ";") {
+      return undefined;
+    }
     const codePoint = Number.parseInt(raw.slice(digitsStart, end), hex ? 16 : 10);
     // Out of range, the implementations disagree (see referenceDivergences); it stays text.
-    if (codePoint > 0x10ffff) return undefined;
+    if (codePoint > 0x10ffff) {
+      return undefined;
+    }
     return { value: String.fromCodePoint(codePoint), end: end + 1 };
   }
   const semicolon = raw.indexOf(";", start);
-  if (semicolon === -1 || semicolon - start > 10) return undefined;
+  if (semicolon === -1 || semicolon - start > 10) {
+    return undefined;
+  }
   const value = XHTML_ENTITIES.get(raw.slice(start, semicolon));
   return value === undefined ? undefined : { value, end: semicolon + 1 };
 }
@@ -267,7 +287,9 @@ function referenceDivergences(raw: string): Divergence[] {
       });
       continue;
     }
-    if (codePoint < 0xd800 || codePoint > 0xdfff) continue;
+    if (codePoint < 0xd800 || codePoint > 0xdfff) {
+      continue;
+    }
     const next = matches[index + 1];
     const low =
       next && next.index === end
@@ -308,7 +330,9 @@ function babelReading(pieces: readonly Piece[]): {
   for (let index = 0; index < pieces.length; index++) {
     const piece = pieces[index]!;
     if (piece.value === "\n" || piece.value === "\r") {
-      if (piece.value === "\r" && pieces[index + 1]?.value === "\n") index++;
+      if (piece.value === "\r" && pieces[index + 1]?.value === "\n") {
+        index++;
+      }
       lines.push([]);
     } else {
       lines.at(-1)!.push(piece);
@@ -317,7 +341,9 @@ function babelReading(pieces: readonly Piece[]): {
   const blank = (piece: Piece) => piece.value === " " || piece.value === "\t";
   let lastNonEmptyLine = 0;
   lines.forEach((line, index) => {
-    if (line.some((piece) => !blank(piece))) lastNonEmptyLine = index;
+    if (line.some((piece) => !blank(piece))) {
+      lastNonEmptyLine = index;
+    }
   });
   const kept: Piece[] = [];
   const trimmed = new Set<Piece>();
@@ -325,14 +351,28 @@ function babelReading(pieces: readonly Piece[]): {
   lines.forEach((line, index) => {
     let from = 0;
     let to = line.length;
-    if (index !== 0) while (from < to && blank(line[from]!)) from++;
-    if (index !== lines.length - 1) while (to > from && blank(line[to - 1]!)) to--;
-    for (const piece of [...line.slice(0, from), ...line.slice(to)]) trimmed.add(piece);
-    if (from === to) return;
+    if (index !== 0) {
+      while (from < to && blank(line[from]!)) {
+        from++;
+      }
+    }
+    if (index !== lines.length - 1) {
+      while (to > from && blank(line[to - 1]!)) {
+        to--;
+      }
+    }
+    for (const piece of [...line.slice(0, from), ...line.slice(to)]) {
+      trimmed.add(piece);
+    }
+    if (from === to) {
+      return;
+    }
     const content = line.slice(from, to);
     kept.push(...content);
     value += content.map((piece) => (piece.value === "\t" ? " " : piece.value)).join("");
-    if (index !== lastNonEmptyLine) value += " ";
+    if (index !== lastNonEmptyLine) {
+      value += " ";
+    }
   });
   return { value, kept, trimmed };
 }
@@ -383,7 +423,9 @@ function typescriptReading(
   const lines: { start: number; end: number }[] = [];
   let start = 0;
   for (let index = 0; index < raw.length; index++) {
-    if (!isLineTerminator(raw.charCodeAt(index))) continue;
+    if (!isLineTerminator(raw.charCodeAt(index))) {
+      continue;
+    }
     lines.push({ start, end: index });
     start = index + 1;
   }
@@ -393,18 +435,32 @@ function typescriptReading(
   lines.forEach((line, index) => {
     let from = line.start;
     let to = line.end;
-    while (from < to && isWhitespace(raw.charCodeAt(from))) from++;
-    while (to > from && isWhitespace(raw.charCodeAt(to - 1))) to--;
+    while (from < to && isWhitespace(raw.charCodeAt(from))) {
+      from++;
+    }
+    while (to > from && isWhitespace(raw.charCodeAt(to - 1))) {
+      to--;
+    }
     // The first line keeps its leading whitespace and the last its trailing, unless the text is
     // one line of whitespace, which is kept whole; a line of whitespace among others is dropped.
     if (from === to && lines.length > 1) {
-      for (let offset = line.start; offset < line.end; offset++) trimmed.add(offset);
+      for (let offset = line.start; offset < line.end; offset++) {
+        trimmed.add(offset);
+      }
       return;
     }
-    if (index === 0) from = line.start;
-    if (index === lines.length - 1) to = line.end;
-    for (let offset = line.start; offset < from; offset++) trimmed.add(offset);
-    for (let offset = to; offset < line.end; offset++) trimmed.add(offset);
+    if (index === 0) {
+      from = line.start;
+    }
+    if (index === lines.length - 1) {
+      to = line.end;
+    }
+    for (let offset = line.start; offset < from; offset++) {
+      trimmed.add(offset);
+    }
+    for (let offset = to; offset < line.end; offset++) {
+      trimmed.add(offset);
+    }
     kept.push(decodeJsx(raw.slice(from, to), "attribute"));
   });
   return { value: kept.join(" "), trimmed };

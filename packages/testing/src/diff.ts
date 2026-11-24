@@ -18,7 +18,9 @@ const MAX_CELLS = 4_000_000;
  * actual. Returns an empty string when the texts are equal.
  */
 export function diffLines(expected: string, actual: string, options: DiffOptions = {}): string {
-  if (expected === actual) return "";
+  if (expected === actual) {
+    return "";
+  }
   const context = options.context ?? 3;
   const maxLines = options.maxLines ?? 80;
   const a = expected.split("\n");
@@ -32,8 +34,12 @@ export function diffLines(expected: string, actual: string, options: DiffOptions
     const near = changed
       .slice(Math.max(0, index - context), index + context + 1)
       .some((isChange) => isChange);
-    if (!near) continue;
-    if (lastPrinted !== -1 && index > lastPrinted + 1) lines.push("  …");
+    if (!near) {
+      continue;
+    }
+    if (lastPrinted !== -1 && index > lastPrinted + 1) {
+      lines.push("  …");
+    }
     const op = ops[index]!;
     lines.push(`${op.kind} ${visible(op.text)}`);
     lastPrinted = index;
@@ -77,15 +83,21 @@ function lcsOps(a: readonly string[], b: readonly string[]): Op[] {
       j += 1;
     }
   }
-  while (i < a.length) ops.push({ kind: "-", text: a[i++]! });
-  while (j < b.length) ops.push({ kind: "+", text: b[j++]! });
+  while (i < a.length) {
+    ops.push({ kind: "-", text: a[i++]! });
+  }
+  while (j < b.length) {
+    ops.push({ kind: "+", text: b[j++]! });
+  }
   return ops;
 }
 
 /** For very large inputs: everything up to the first differing line is shared, the rest differs. */
 function firstChange(a: readonly string[], b: readonly string[]): Op[] {
   let start = 0;
-  while (start < a.length && start < b.length && a[start] === b[start]) start += 1;
+  while (start < a.length && start < b.length && a[start] === b[start]) {
+    start += 1;
+  }
   return [
     ...a.slice(0, start).map((text): Op => ({ kind: " ", text })),
     ...a.slice(start).map((text): Op => ({ kind: "-", text })),

@@ -48,7 +48,9 @@ function declaredAttributes(): Map<string, string> {
   for (const [, event, alias, generic, plain] of text.matchAll(
     /\n\s+on([a-z]+)\?: (?:(\w+EventHandler)<T>|EventHandler<(\w+), T>|(EventHandler)) \| undefined \| null;/g,
   )) {
-    if (declared.has(event!)) continue;
+    if (declared.has(event!)) {
+      continue;
+    }
     declared.set(event!, alias ? aliases.get(alias)! : (generic ?? (plain ? "Event" : "?")));
   }
   return declared;

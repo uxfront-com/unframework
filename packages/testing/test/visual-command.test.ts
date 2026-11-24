@@ -630,8 +630,12 @@ describe("ufVisualCapture's preconditions", () => {
     const released = new Promise<void>((resolve) => (release = resolve));
     const held: FakeCdp = {
       async send(method, params) {
-        if (method === "DOM.getDocument") return pierced("m-1");
-        if (method !== "CSS.getPlatformFontsForNode") return {};
+        if (method === "DOM.getDocument") {
+          return pierced("m-1");
+        }
+        if (method !== "CSS.getPlatformFontsForNode") {
+          return {};
+        }
         const nodeId = params?.nodeId ?? 0;
         asked.push(nodeId);
         await released;

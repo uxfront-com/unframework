@@ -119,15 +119,21 @@ export class QwikDirectives {
     this.#plan = plan;
     walk(component.render, {
       enter: (node) => {
-        if (node.kind !== "Element") return;
+        if (node.kind !== "Element") {
+          return;
+        }
         const [first] = node.attributes.filter(
           (attribute): attribute is DirectiveAttribute => attribute.kind === "Directive",
         );
-        if (!first) return;
+        if (!first) {
+          return;
+        }
         const ref = node.attributes.find(
           (attribute): attribute is RefAttribute => attribute.kind === "Ref",
         );
-        if (ref) this.#templateRefs.add(ref);
+        if (ref) {
+          this.#templateRefs.add(ref);
+        }
         const templateRef = ref
           ? component.bindings.find(({ id }) => id === ref.binding)!.name
           : undefined;
@@ -150,7 +156,9 @@ export class QwikDirectives {
     const branched = (node: RenderNode, inBranch: boolean): void => {
       if (node.kind === "If") {
         for (const branch of node.branches) {
-          for (const child of branch.children) branched(child, true);
+          for (const child of branch.children) {
+            branched(child, true);
+          }
         }
         return;
       }
@@ -167,9 +175,13 @@ export class QwikDirectives {
       ) {
         this.#branched.add(node);
       }
-      for (const child of childrenOf(node)) branched(child, inBranch);
+      for (const child of childrenOf(node)) {
+        branched(child, inBranch);
+      }
     };
-    for (const child of childrenOf(component.render)) branched(child, false);
+    for (const child of childrenOf(component.render)) {
+      branched(child, false);
+    }
     const waits = this.#branched.size > 0;
     const passes = [...this.#lists.values()].some(({ values }) => values.length > 0);
     this.#helper = this.#lists.size
@@ -210,7 +222,9 @@ export class QwikDirectives {
   ): ReturnType<typeof js.jsxAttribute>[] {
     const ref = this.#refs.get(attribute);
     const helper = this.#helper;
-    if (ref === undefined || !helper) return [];
+    if (ref === undefined || !helper) {
+      return [];
+    }
     // What the element's ref fills besides the directive's list: its template ref, and on the
     // root, a consumer's ref (ADR-0118).
     const fills = [
@@ -245,7 +259,9 @@ export class QwikDirectives {
   /** The statements of the component's body: the element lists, then a task per directive. */
   setup(names: OutputNames): string {
     const helper = this.#helper;
-    if (!helper) return "";
+    if (!helper) {
+      return "";
+    }
     const statements: string[] = [];
     for (const [element, list] of this.#lists) {
       const type = list.type.replace("DirectiveElement", helper.element);
@@ -256,7 +272,9 @@ export class QwikDirectives {
         : type;
       statements.push(`const ${list.name} = ${names.core("useSignal")}<${entry}[]>([]);`);
       for (const attribute of element.attributes) {
-        if (attribute.kind !== "Directive") continue;
+        if (attribute.kind !== "Directive") {
+          continue;
+        }
         // The task's own names, apart from the component's.
         const track = names.once("track");
         const cleanup = names.once("cleanup");
@@ -348,7 +366,9 @@ export class QwikDirectives {
   /** The module's helpers: the hooks' type, the runner the tasks call, and the queue. */
   helpers(names: OutputNames): string[] {
     const helper = this.#helper;
-    if (!helper) return [];
+    if (!helper) {
+      return [];
+    }
     const { run, hooks, element, queue, values, watch, watches, wait, collect, forget } = helper;
     const signal = names.core("Signal", { type: true });
     // The plain list's helpers, where an element's directives' values are all the tasks'.

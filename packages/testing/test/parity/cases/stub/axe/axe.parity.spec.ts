@@ -23,7 +23,9 @@ async function l11Failure(
   const view = await mount({ html });
   await view.expectParity(scenario);
   expectLayerFailure("L7", /Missing artefact/);
-  if (task.meta.uf?.layers.L11?.status !== "fail") return undefined;
+  if (task.meta.uf?.layers.L11?.status !== "fail") {
+    return undefined;
+  }
   return `L11: ${expectLayerFailure("L11", /./)}`;
 }
 

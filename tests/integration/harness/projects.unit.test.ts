@@ -68,7 +68,9 @@ describe("projects", () => {
   it("shares each page among spec files in every hydrate project (ADR-0106)", () => {
     const targets = selectTargets(undefined);
     expect(targets).toHaveLength(8);
-    for (const target of targets) expect(isolatesFiles("hydrate", target)).toBe(false);
+    for (const target of targets) {
+      expect(isolatesFiles("hydrate", target)).toBe(false);
+    }
   });
 
   it("names, for Vue alone, the case that leaves a page unusable, with the reason (ADR-0106)", () => {
@@ -193,7 +195,9 @@ describe("project factories", () => {
         | { ufUnavailable: { layers: string[]; message: string } }
         | undefined;
       const unavailable = provided?.ufUnavailable;
-      if (!unavailable) throw new Error("The project provides no ufUnavailable.");
+      if (!unavailable) {
+        throw new Error("The project provides no ufUnavailable.");
+      }
       expect(unavailable.layers).toEqual(layers);
       expect(unavailable.message).toMatch(
         /^The missing toolchain \(@unframework\.dev\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
@@ -321,12 +325,16 @@ describe("the reference's own page count (ADR-0092)", () => {
         const pages = referencePages(setup, 14, [], {});
         const groups = new Map<number, Set<number | undefined>>();
         for (const entry of projectEntries(setup)) {
-          if (!isSelected(entry.name, projectFilter)) continue;
+          if (!isSelected(entry.name, projectFilter)) {
+            continue;
+          }
           const group = projectGroup(setup, entry.kind, entry.target);
           const workers = entry.name === "browser:vue" ? pages : undefined;
           groups.set(group, (groups.get(group) ?? new Set()).add(workers));
         }
-        for (const workers of groups.values()) expect(workers.size).toBe(1);
+        for (const workers of groups.values()) {
+          expect(workers.size).toBe(1);
+        }
         // Only a live run of the browser projects leaves the reference alone in its group.
         const alone = modeName === "live" && filterName === "browser:*";
         expect(pages).toBe(alone ? 28 : undefined);

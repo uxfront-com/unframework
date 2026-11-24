@@ -134,7 +134,9 @@ export function stylesheetImport(
       }),
     );
   }
-  if (errors.length) return;
+  if (errors.length) {
+    return;
+  }
   sheets.push({
     sheet: createStyleSheet(specifier, read.source, {
       start: statement.start,

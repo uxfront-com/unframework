@@ -98,7 +98,11 @@ export function objectOf(shape: ObjectShape): Kinds {
 /** The kinds any of the given kinds may have. */
 export function union(...all: Kinds[]): Kinds {
   const primitives = new Set<Primitive>();
-  for (const item of all) for (const primitive of item.primitives) primitives.add(primitive);
+  for (const item of all) {
+    for (const primitive of item.primitives) {
+      primitives.add(primitive);
+    }
+  }
   const result: {
     primitives: Set<Primitive>;
     strings?: Set<string>;
@@ -108,27 +112,45 @@ export function union(...all: Kinds[]): Kinds {
     elements?: (() => Kinds)[];
   } = { primitives };
   const literals = <T>(primitive: Primitive, pick: (item: Kinds) => ReadonlySet<T> | undefined) => {
-    if (!primitives.has(primitive)) return undefined;
+    if (!primitives.has(primitive)) {
+      return undefined;
+    }
     const values = new Set<T>();
     for (const item of all) {
-      if (!item.primitives.has(primitive)) continue;
+      if (!item.primitives.has(primitive)) {
+        continue;
+      }
       const own = pick(item);
-      if (!own) return undefined;
-      for (const value of own) values.add(value);
+      if (!own) {
+        return undefined;
+      }
+      for (const value of own) {
+        values.add(value);
+      }
     }
     return values;
   };
   const strings = literals("string", (item) => item.strings);
   const numbers = literals("number", (item) => item.numbers);
   const booleans = literals("boolean", (item) => item.booleans);
-  if (strings) result.strings = strings;
-  if (numbers) result.numbers = numbers;
-  if (booleans) result.booleans = booleans;
+  if (strings) {
+    result.strings = strings;
+  }
+  if (numbers) {
+    result.numbers = numbers;
+  }
+  if (booleans) {
+    result.booleans = booleans;
+  }
   // A shape or an element that two of them share is one.
   const objects = [...new Set(all.flatMap((item) => item.objects ?? []))];
   const elements = [...new Set(all.flatMap((item) => item.elements ?? []))];
-  if (objects.length) result.objects = objects;
-  if (elements.length) result.elements = elements;
+  if (objects.length) {
+    result.objects = objects;
+  }
+  if (elements.length) {
+    result.elements = elements;
+  }
   return result;
 }
 
@@ -152,7 +174,9 @@ export function without(value: Kinds, ...removed: Primitive[]): Kinds {
  */
 export function falsyPart(left: Kinds): Kinds {
   const kept = without(left, "object", "array", "function", "symbol", "boolean");
-  if (!has(left, "boolean") || (left.booleans && !left.booleans.has(false))) return kept;
+  if (!has(left, "boolean") || (left.booleans && !left.booleans.has(false))) {
+    return kept;
+  }
   return union(kept, { primitives: new Set(["boolean"]), booleans: new Set([false]) });
 }
 
@@ -193,8 +217,11 @@ export function elementsOf(value: Kinds): Kinds {
 export function memberOf(value: Kinds, name: string): Kinds {
   const found: Kinds[] = [];
   let unknown = has(value, "unknown") || has(value, "function") || has(value, "symbol");
-  if (name === "length" && (has(value, "string") || has(value, "array"))) found.push(NUMBER);
-  else if (has(value, "string") || has(value, "array") || has(value, "number")) unknown = true;
+  if (name === "length" && (has(value, "string") || has(value, "array"))) {
+    found.push(NUMBER);
+  } else if (has(value, "string") || has(value, "array") || has(value, "number")) {
+    unknown = true;
+  }
   for (const shape of value.objects ?? []) {
     const member = shape.members().get(name);
     if (!member) {
@@ -203,8 +230,12 @@ export function memberOf(value: Kinds, name: string): Kinds {
     }
     found.push(member.optional ? union(member.kinds(), UNDEFINED) : member.kinds());
   }
-  if (has(value, "object") && !value.objects?.length) unknown = true;
-  if (unknown) found.push(UNKNOWN);
+  if (has(value, "object") && !value.objects?.length) {
+    unknown = true;
+  }
+  if (unknown) {
+    found.push(UNKNOWN);
+  }
   return found.length ? union(...found) : UNKNOWN;
 }
 
@@ -212,7 +243,9 @@ export function memberOf(value: Kinds, name: string): Kinds {
 export function declaredShapeOf(value: Kinds): ObjectShape | undefined {
   const shapes = value.objects ?? [];
   const others = outside(value, ["object", "null", "undefined"]);
-  if (has(value, "unknown") || others.length || shapes.length !== 1) return undefined;
+  if (has(value, "unknown") || others.length || shapes.length !== 1) {
+    return undefined;
+  }
   return shapes[0]!.declared ? shapes[0] : undefined;
 }
 
@@ -245,7 +278,9 @@ export function describe(primitives: readonly Primitive[]): string {
  * `depth` levels, and for what the model cannot type, it writes `unknown`.
  */
 export function kindsType(value: Kinds, depth = 3): string {
-  if (depth < 0) return "unknown";
+  if (depth < 0) {
+    return "unknown";
+  }
   const parts: string[] = [];
   for (const primitive of value.primitives) {
     switch (primitive) {
@@ -271,7 +306,9 @@ export function kindsType(value: Kinds, depth = 3): string {
         break;
       }
       case "object":
-        if (!value.objects?.length) parts.push("object");
+        if (!value.objects?.length) {
+          parts.push("object");
+        }
         for (const shape of value.objects ?? []) {
           const members = [...shape.members()].map(([name, member]) => {
             const key = /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);

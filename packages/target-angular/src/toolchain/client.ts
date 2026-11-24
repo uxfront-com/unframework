@@ -65,7 +65,9 @@ export function setInputs(
   props: Readonly<Record<string, unknown>>,
 ): void {
   for (const name of set) {
-    if (Object.hasOwn(props, name)) continue;
+    if (Object.hasOwn(props, name)) {
+      continue;
+    }
     ref.setInput(name, undefined);
     set.delete(name);
   }
@@ -93,9 +95,13 @@ export function outputBindings(
       );
     }
     return outputBinding<unknown>(outputName(name), (value) => {
-      if (!optional.length) listener();
-      else if (optional.length === 1 && !optional[0]) listener(value);
-      else listener(...(value as unknown[]));
+      if (!optional.length) {
+        listener();
+      } else if (optional.length === 1 && !optional[0]) {
+        listener(value);
+      } else {
+        listener(...(value as unknown[]));
+      }
     });
   });
 }

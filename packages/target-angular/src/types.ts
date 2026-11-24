@@ -42,23 +42,37 @@ function referencedNames(node: TypeNode): Set<string> {
   const names = new Set<string>();
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
-    if (!isTypeNode(value)) return;
+    if (!isTypeNode(value)) {
+      return;
+    }
     if (value.type === "TSTypeReference") {
       let name = value.typeName as { type: string; name?: string; left?: unknown };
-      while (name.type === "TSQualifiedName") name = name.left as typeof name;
-      if (typeof name.name === "string") names.add(name.name);
+      while (name.type === "TSQualifiedName") {
+        name = name.left as typeof name;
+      }
+      if (typeof name.name === "string") {
+        names.add(name.name);
+      }
     }
     // An interface's heritage names its base as an expression (`extends Base`, `extends ns.Base`).
     if (value.type === "TSInterfaceHeritage") {
       let base = value.expression as { type: string; name?: string; object?: unknown };
-      while (base.type === "MemberExpression") base = base.object as typeof base;
-      if (typeof base.name === "string") names.add(base.name);
+      while (base.type === "MemberExpression") {
+        base = base.object as typeof base;
+      }
+      if (typeof base.name === "string") {
+        names.add(base.name);
+      }
     }
     for (const [key, child] of Object.entries(value)) {
-      if (key !== "type" && typeof child === "object") visit(child);
+      if (key !== "type" && typeof child === "object") {
+        visit(child);
+      }
     }
   };
   visit(node);
@@ -103,7 +117,9 @@ function declarationReferences(declaration: TypeDeclaration): Set<string> {
     ?.params;
   for (const parameter of parameters ?? []) {
     const name = parameter.name?.name;
-    if (typeof name === "string") names.delete(name);
+    if (typeof name === "string") {
+      names.delete(name);
+    }
   }
   return names;
 }
@@ -129,7 +145,9 @@ export function declaredTypes(
   ];
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
     const declaration = byName.get(name);
-    if (!declaration || kept.has(name)) continue;
+    if (!declaration || kept.has(name)) {
+      continue;
+    }
     kept.add(name);
     pending.push(...declarationReferences(declaration));
   }
@@ -165,7 +183,9 @@ function without(code: string, declarations: readonly TypeDeclaration[], nullish
   );
   // Whether an alias a member refers to admits what is left out, through other aliases.
   const admits = (type: TypeNode, seen: ReadonlySet<string>): boolean => {
-    if (left(type)) return true;
+    if (left(type)) {
+      return true;
+    }
     switch (type.type) {
       // An indexed access, a member read from the props type (`BadgeProps["note"]`, `propType`)
       // or one the author writes (`Item["id"]`): opaque here, so it may admit either.
@@ -175,7 +195,9 @@ function without(code: string, declarations: readonly TypeDeclaration[], nullish
         return (type.types as TypeNode[]).some((member) => admits(member, seen));
       case "TSTypeReference": {
         const name = (type.typeName as { name?: unknown }).name;
-        if (typeof name !== "string" || seen.has(name)) return false;
+        if (typeof name !== "string" || seen.has(name)) {
+          return false;
+        }
         const alias = aliases.get(name);
         return alias !== undefined && admits(parseType(alias), new Set([...seen, name]));
       }
@@ -186,7 +208,9 @@ function without(code: string, declarations: readonly TypeDeclaration[], nullish
   const type = parseType(code);
   const members = type.type === "TSUnionType" ? (type.types as TypeNode[]) : [type];
   const kept = members.filter((member) => !left(member));
-  if (!kept.length) return "never";
+  if (!kept.length) {
+    return "never";
+  }
   // A function or conditional type keeps parentheses in a union.
   const text = (member: TypeNode) => {
     const written = code.slice(member.start - PREFIX.length, member.end - PREFIX.length);
@@ -195,7 +219,9 @@ function without(code: string, declarations: readonly TypeDeclaration[], nullish
       : written;
   };
   const written = kept.length === members.length ? code.trim() : kept.map(text).join(" | ");
-  if (!kept.some((member) => admits(member, new Set()))) return written;
+  if (!kept.some((member) => admits(member, new Set()))) {
+    return written;
+  }
   return nullish ? `NonNullable<${written}>` : `Exclude<${written}, undefined>`;
 }
 
@@ -209,7 +235,9 @@ export function arrayElement(code: string): string | undefined {
   if (type.type === "TSTypeOperator" && type.operator === "readonly") {
     type = type.typeAnnotation as TypeNode;
   }
-  if (type.type === "TSArrayType") return text(type.elementType as TypeNode);
+  if (type.type === "TSArrayType") {
+    return text(type.elementType as TypeNode);
+  }
   if (type.type === "TSTypeReference") {
     const name = (type.typeName as { name?: unknown }).name;
     const parameters = (type.typeArguments as { params?: TypeNode[] } | null)?.params ?? [];
@@ -229,7 +257,9 @@ export function arrayElement(code: string): string | undefined {
  */
 export function propType(prop: Prop, component: UfComponent): string {
   const props = component.propsParameter?.type.code;
-  if (!prop.declaredBy || props === undefined) return prop.type.code;
+  if (!prop.declaredBy || props === undefined) {
+    return prop.type.code;
+  }
   const type = parseType(props);
   const object =
     type.type === "TSTypeReference" || type.type === "TSTypeLiteral"
@@ -264,16 +294,22 @@ export function defaultedType(
  * members. A constraint that names another parameter reads it the same way.
  */
 export function atConstraints(code: string, parameters: readonly TypeParameter[]): string {
-  if (!parameters.length) return code;
+  if (!parameters.length) {
+    return code;
+  }
   const byName = new Map(parameters.map((parameter) => [parameter.name, parameter]));
   const read = (text: string, seen: ReadonlySet<string>): string => {
     const found: { start: number; end: number; name: string }[] = [];
     const visit = (value: unknown, shadowed: ReadonlySet<string>): void => {
       if (Array.isArray(value)) {
-        for (const item of value) visit(item, shadowed);
+        for (const item of value) {
+          visit(item, shadowed);
+        }
         return;
       }
-      if (!isTypeNode(value)) return;
+      if (!isTypeNode(value)) {
+        return;
+      }
       const name = value.typeName as { type?: string; name?: unknown } | undefined;
       if (
         value.type === "TSTypeReference" &&
@@ -300,7 +336,9 @@ export function atConstraints(code: string, parameters: readonly TypeParameter[]
       const own = [...declaredNames(value)];
       const inner = own.length ? new Set([...shadowed, ...own]) : shadowed;
       for (const [key, child] of Object.entries(value)) {
-        if (key !== "type" && typeof child === "object") visit(child, inner);
+        if (key !== "type" && typeof child === "object") {
+          visit(child, inner);
+        }
       }
     };
     visit(parseType(text), new Set());
@@ -328,7 +366,9 @@ function declaredNames(node: TypeNode): string[] {
     | { type?: string; params?: { name?: { name?: unknown } }[] }
     | null
     | undefined;
-  if (declaration?.type !== "TSTypeParameterDeclaration") return [];
+  if (declaration?.type !== "TSTypeParameterDeclaration") {
+    return [];
+  }
   return (declaration.params ?? [])
     .map((parameter) => parameter.name?.name)
     .filter((name): name is string => typeof name === "string");
@@ -336,8 +376,12 @@ function declaredNames(node: TypeNode): string[] {
 
 /** The names a conditional type's extends clause declares with `infer`. */
 function inferredNames(value: unknown): string[] {
-  if (Array.isArray(value)) return value.flatMap(inferredNames);
-  if (!isTypeNode(value)) return [];
+  if (Array.isArray(value)) {
+    return value.flatMap(inferredNames);
+  }
+  if (!isTypeNode(value)) {
+    return [];
+  }
   if (value.type === "TSInferType") {
     const name = (value.typeParameter as { name?: { name?: unknown } } | undefined)?.name?.name;
     return typeof name === "string" ? [name] : [];
@@ -357,11 +401,16 @@ function grouped(type: string): string {
 
 /** Whether a type's text is one parenthesised type, `("a" | "b")`, which its parser drops. */
 function enclosed(text: string): boolean {
-  if (!text.startsWith("(")) return false;
+  if (!text.startsWith("(")) {
+    return false;
+  }
   let depth = 0;
   for (let index = 0; index < text.length; index += 1) {
-    if (text[index] === "(") depth += 1;
-    else if (text[index] === ")" && --depth === 0) return index === text.length - 1;
+    if (text[index] === "(") {
+      depth += 1;
+    } else if (text[index] === ")" && --depth === 0) {
+      return index === text.length - 1;
+    }
   }
   return false;
 }

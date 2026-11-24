@@ -44,8 +44,9 @@ export function joinQuarantine(
           `${entry.case} › ${entry.target} › ${entry.layer} is in quarantine/${target}.ts: move it to quarantine/${entry.target}.ts.`,
       ),
   );
-  if (misfiled.length)
+  if (misfiled.length) {
     throw new Error(`[uf] Misfiled quarantine entries:\n  ${misfiled.join("\n  ")}`);
+  }
   return Object.values(files).flat();
 }
 
@@ -88,15 +89,26 @@ export function validateQuarantine(
   const seen = new Set<string>();
   for (const entry of entries) {
     const key = `${entry.case} › ${entry.target} › ${entry.layer}`;
-    if (!known.cases.includes(entry.case)) problems.push(`${key}: no case "${entry.case}".`);
-    if (!known.targets.includes(entry.target))
+    if (!known.cases.includes(entry.case)) {
+      problems.push(`${key}: no case "${entry.case}".`);
+    }
+    if (!known.targets.includes(entry.target)) {
       problems.push(`${key}: no target "${entry.target}".`);
-    if (!LAYERS.includes(entry.layer)) problems.push(`${key}: no layer "${entry.layer}".`);
-    else if (!LIVE_LAYERS.includes(entry.layer))
+    }
+    if (!LAYERS.includes(entry.layer)) {
+      problems.push(`${key}: no layer "${entry.layer}".`);
+    } else if (!LIVE_LAYERS.includes(entry.layer)) {
       problems.push(`${key}: ${entry.layer} is not live, so it cannot fail.`);
-    if (!entry.reason.trim()) problems.push(`${key}: needs a reason.`);
-    if (!entry.issue.trim()) problems.push(`${key}: needs an issue.`);
-    if (seen.has(key)) problems.push(`${key}: listed twice.`);
+    }
+    if (!entry.reason.trim()) {
+      problems.push(`${key}: needs a reason.`);
+    }
+    if (!entry.issue.trim()) {
+      problems.push(`${key}: needs an issue.`);
+    }
+    if (seen.has(key)) {
+      problems.push(`${key}: listed twice.`);
+    }
     seen.add(key);
   }
   return problems;

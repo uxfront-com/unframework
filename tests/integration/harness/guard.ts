@@ -30,8 +30,9 @@ export function goldenGuard(
   const shared = readdirSync(dirname(event.file)).filter((file) => /\.uf\.tsx?$/.test(file));
   const problems: string[] = [];
   for (const path of shared.length > 1 ? [] : golden) {
-    if (!produced.has(path))
+    if (!produced.has(path)) {
       problems.push(`${rel(join(directory, path))} is not produced by the compiler.`);
+    }
   }
   for (const [path, contents] of produced) {
     const file = join(directory, path);
@@ -40,10 +41,13 @@ export function goldenGuard(
       continue;
     }
     const expected = readFileSync(file, "utf8");
-    if (expected !== contents)
+    if (expected !== contents) {
       problems.push(`${rel(file)} differs:\n${diffLines(expected, contents)}`);
+    }
   }
-  if (!problems.length) return undefined;
+  if (!problems.length) {
+    return undefined;
+  }
   return [
     `[uf guard] The ${event.target} output of ${rel(event.file)} is not its golden output:`,
     ...problems,

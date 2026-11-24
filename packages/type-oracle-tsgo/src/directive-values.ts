@@ -36,7 +36,9 @@ const HELPER = "__ufDirectiveValue";
 export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]): Shadow {
   const bom = source.startsWith("\uFEFF") ? 1 : 0;
   let helper = HELPER;
-  for (let suffix = 1; source.includes(helper); suffix++) helper = `${HELPER}${suffix}`;
+  for (let suffix = 1; source.includes(helper); suffix++) {
+    helper = `${HELPER}${suffix}`;
+  }
   const order = queries
     .map((query, index) => ({ query, index }))
     .toSorted((a, b) => a.query.value.start - b.query.value.start);
@@ -46,16 +48,22 @@ export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]
   for (const { query, index } of order) {
     const { value, directive } = query;
     // Spans that overlap are no two values the parser gave: the later one is left out.
-    if (value.start < at) continue;
+    if (value.start < at) {
+      continue;
+    }
     text += source.slice(at, value.start);
     // The parser says which a value is: a string attribute's literal takes the braces of a
     // container, which a container's expression already has.
     const attribute = query.kind === "string";
     const call = `${helper}(${source.slice(directive.start, directive.end)}, (${source.slice(value.start, value.end)}))`;
-    if (attribute) text += "{";
+    if (attribute) {
+      text += "{";
+    }
     calls[index] = text.length;
     text += call;
-    if (attribute) text += "}";
+    if (attribute) {
+      text += "}";
+    }
     at = value.end;
   }
   text += source.slice(at);
@@ -98,7 +106,9 @@ export function checkShadow(shadow: Shadow, context: DirectiveValueContext): Dir
   const dependencies = new Set<string>();
   let index = 0;
   const checks = located.map((call): DirectiveValueCheck | null => {
-    if (!call) return null;
+    if (!call) {
+      return null;
+    }
     const at = index++;
     const named = symbols[at];
     const symbol =
@@ -112,7 +122,9 @@ export function checkShadow(shadow: Shadow, context: DirectiveValueContext): Dir
     }
     const expected = directiveType(directiveTypes[at]!, context);
     const value = valueTypes[at]!;
-    if (!expected || value.isErrorType()) return null;
+    if (!expected || value.isErrorType()) {
+      return null;
+    }
     return {
       assignable: checker.isTypeAssignableTo(value, expected),
       value: checker.typeToString(value),
@@ -128,7 +140,9 @@ export function checkShadow(shadow: Shadow, context: DirectiveValueContext): Dir
  * argument gives.
  */
 function directiveType(type: Type, context: DirectiveValueContext): Type | undefined {
-  if (type.isErrorType() || !type.isTypeReference()) return undefined;
+  if (type.isErrorType() || !type.isTypeReference()) {
+    return undefined;
+  }
   const target = type.getSymbol();
   if (!target || target.name !== "Directive" || !(target.flags & SymbolFlags.Interface)) {
     return undefined;
@@ -139,7 +153,9 @@ function directiveType(type: Type, context: DirectiveValueContext): Type | undef
     return undefined;
   }
   const [expected] = context.checker.getTypeArguments(type as TypeReference);
-  if (!expected || expected.isErrorType() || expected.flags & TypeFlags.Never) return undefined;
+  if (!expected || expected.isErrorType() || expected.flags & TypeFlags.Never) {
+    return undefined;
+  }
   return expected;
 }
 
@@ -147,7 +163,9 @@ function directiveType(type: Type, context: DirectiveValueContext): Type | undef
 function callAt(source: SourceFile, start: number): CallExpression | undefined {
   let found: CallExpression | undefined;
   const visit = (node: Node): void => {
-    if (found || node.pos > start || node.end <= start) return;
+    if (found || node.pos > start || node.end <= start) {
+      return;
+    }
     if (
       isCallExpression(node) &&
       node.getStart(source) === start &&

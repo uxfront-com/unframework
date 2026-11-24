@@ -29,7 +29,9 @@ export function assertedPaths(
   binding: Binding,
   start: number = reference.span.start,
 ): NarrowedPath[] {
-  if (!reference.narrowed || plan.narrowedReads.has(start)) return [];
+  if (!reference.narrowed || plan.narrowedReads.has(start)) {
+    return [];
+  }
   switch (binding.kind) {
     case "derived":
       return plan.derived.get(binding.id)?.current
@@ -88,7 +90,9 @@ export function assertedCode(
         : [],
     )
     .toSorted((a, b) => a - b);
-  if (at.length === 0) return { code, original: (position) => position };
+  if (at.length === 0) {
+    return { code, original: (position) => position };
+  }
   const offset = code.span.start;
   let text = "";
   let from = 0;

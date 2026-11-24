@@ -81,7 +81,9 @@ async function compileRunesModule(
   file: ToolchainFile,
 ): Promise<FrameworkCompileResult> {
   const { code, result } = await transformScriptModule(file);
-  if (code === undefined) return result;
+  if (code === undefined) {
+    return result;
+  }
   const warnings = new Map<string, ToolchainMessage>();
   for (const generate of ["client", "server"] as const) {
     try {

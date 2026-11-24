@@ -9,7 +9,9 @@ import { main } from "../src/index.ts";
 const roots: string[] = [];
 
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 /** A throwaway project holding `files`, by their paths relative to it. */

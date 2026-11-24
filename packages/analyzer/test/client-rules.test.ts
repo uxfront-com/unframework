@@ -353,7 +353,9 @@ describe("self-triggering effects (UF2027)", () => {
       "<p>{items.value.join()}{checks.value}</p>",
     );
     const effect = module?.components[0]?.setup.find((item) => item.kind === "WatchEffect");
-    if (effect?.kind !== "WatchEffect") throw new Error("the component has an effect");
+    if (effect?.kind !== "WatchEffect") {
+      throw new Error("the component has an effect");
+    }
     expect(
       effect.effect.body.refs.flatMap((ref) =>
         ref.kind === "Binding"

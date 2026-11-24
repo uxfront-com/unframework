@@ -46,8 +46,11 @@ describe("solid's event table", () => {
   it("has a native listener's type for every DOM event, `encrypted` on media elements", () => {
     const namespaced = members("CustomEventHandlersNamespaced");
     for (const event of DOM_EVENTS.keys()) {
-      if (event === "encrypted") expect(jsxTypes).toContain('"on:encrypted"?:');
-      else expect(namespaced, event).toContain(`on:${event}`);
+      if (event === "encrypted") {
+        expect(jsxTypes).toContain('"on:encrypted"?:');
+      } else {
+        expect(namespaced, event).toContain(`on:${event}`);
+      }
     }
   });
 

@@ -25,7 +25,9 @@ describe("the nightly's browser job", () => {
 
   it("runs WebKit in batches that each hold the reference, and every follower once", () => {
     const batches = batchesOf("webkit");
-    if (!batches) throw new Error("nightly.yml gives WebKit no batches.");
+    if (!batches) {
+      throw new Error("nightly.yml gives WebKit no batches.");
+    }
     expect(batches.length).toBeGreaterThan(1);
     for (const batch of batches) {
       expect(batch[0]).toBe(REFERENCE);

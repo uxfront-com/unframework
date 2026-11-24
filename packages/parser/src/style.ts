@@ -82,8 +82,11 @@ function split(text: string, separator: string): Span[] {
   for (let index = 0; index < text.length; index++) {
     const character = text[index]!;
     if (quote) {
-      if (character === "\\") index++;
-      else if (character === quote) quote = undefined;
+      if (character === "\\") {
+        index++;
+      } else if (character === quote) {
+        quote = undefined;
+      }
     } else if (character === "\\") {
       index++;
     } else if (character === '"' || character === "'") {
@@ -108,7 +111,9 @@ function split(text: string, separator: string): Span[] {
 function trim(text: string, range: Span): Span {
   let { start, end } = range;
   for (;;) {
-    while (start < end && /\s/.test(text[start]!)) start++;
+    while (start < end && /\s/.test(text[start]!)) {
+      start++;
+    }
     if (text.startsWith("/*", start)) {
       const close = text.indexOf("*/", start + 2);
       if (close !== -1 && close + 2 <= end) {
@@ -119,7 +124,9 @@ function trim(text: string, range: Span): Span {
     break;
   }
   for (;;) {
-    while (end > start && /\s/.test(text[end - 1]!)) end--;
+    while (end > start && /\s/.test(text[end - 1]!)) {
+      end--;
+    }
     if (text.endsWith("*/", end) && end - 2 >= start) {
       const open = text.lastIndexOf("/*", end - 3);
       if (open >= start) {

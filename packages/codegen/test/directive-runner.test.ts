@@ -73,7 +73,11 @@ function runner() {
   const made = make(FakeObserver, FakeWeakRef, {}, queueHook);
   /** A change of the document: every observer's callback runs. */
   const mutate = () => {
-    for (const observer of observers) if (!observer.disconnected) observer.callback();
+    for (const observer of observers) {
+      if (!observer.disconnected) {
+        observer.callback();
+      }
+    }
   };
   return { ...made, calls, collected, mutate, observers };
 }
@@ -115,14 +119,18 @@ describe("the directive runner", () => {
     // run's elements, and runs the list, which no longer holds it.
     body.isConnected = false;
     mutate();
-    for (const stop of stops) stop();
+    for (const stop of stops) {
+      stop();
+    }
     stops = listed.map((element) => runDirective(hooks, element, "b", follow));
     await Promise.resolve();
     body.isConnected = true;
     mutate();
     expect(listed).toEqual([body]);
     // The list changed, so Qwik runs the task again, which mounts it.
-    for (const stop of stops) stop();
+    for (const stop of stops) {
+      stop();
+    }
     stops = listed.map((element) => runDirective(hooks, element, "b", follow));
     await Promise.resolve();
     expect(calls).toEqual(["mounted body", "unmounted body", "mounted body"]);
@@ -132,9 +140,13 @@ describe("the directive runner", () => {
     const { runDirective, documentWatches, collected, mutate, observers } = runner();
     const follow: Follow = { leave() {}, back() {} };
     const rows = [1, 2, 3].map((index) => ({ name: `row ${index}`, isConnected: true }));
-    for (const row of rows) runDirective(hooks, row, "a", follow);
+    for (const row of rows) {
+      runDirective(hooks, row, "a", follow);
+    }
     expect(documentWatches.checks.size).toBe(3);
-    for (const row of rows) row.isConnected = false;
+    for (const row of rows) {
+      row.isConnected = false;
+    }
     mutate();
     // Gone from the document, each is watched weakly until it is collected.
     expect(documentWatches.checks.size).toBe(3);

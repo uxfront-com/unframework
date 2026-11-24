@@ -64,7 +64,9 @@ export const mount: MountAdapter = async (component, container, options) => {
       // every later element would read them. A component that had no props at all gets new
       // ones as a new instance, as a parent that starts writing attributes renders one.
       const none = !Object.keys(state.value.props).length;
-      if (none && Object.keys(props).length) instances += 1;
+      if (none && Object.keys(props).length) {
+        instances += 1;
+      }
       state.value = { props, key: `uf-mounted-${instances}` };
       await settle();
     },
@@ -81,7 +83,9 @@ export const mount: MountAdapter = async (component, container, options) => {
           await loads.idle();
           const seen = started.size;
           await Promise.race([Promise.allSettled(started), nextTask().then(nextTask)]);
-          if (!loads.loading && started.size === seen) break;
+          if (!loads.loading && started.size === seen) {
+            break;
+          }
         }
         return outcome;
       } finally {
@@ -128,13 +132,17 @@ function trackHandlers(container: HTMLElement, started: Set<Promise<unknown>>): 
     typeof handler === "function"
       ? function (this: unknown, ...args: unknown[]): unknown {
           const value: unknown = handler.apply(this, args);
-          if (isThenable(value)) started.add(Promise.resolve(value));
+          if (isThenable(value)) {
+            started.add(Promise.resolve(value));
+          }
           return value;
         }
       : handler;
   for (const element of [container, ...container.querySelectorAll("*")]) {
     const dispatch = (element as { _qDispatch?: Dispatch })._qDispatch;
-    if (!dispatch) continue;
+    if (!dispatch) {
+      continue;
+    }
     for (const [name, original] of Object.entries(dispatch)) {
       const wrapper = Array.isArray(original) ? original.map(wrap) : wrap(original);
       dispatch[name] = wrapper;
@@ -144,7 +152,9 @@ function trackHandlers(container: HTMLElement, started: Set<Promise<unknown>>): 
   return () => {
     // A handler a render replaced since is the new render's own.
     for (const { dispatch, name, original, wrapper } of wrapped) {
-      if (dispatch[name] === wrapper) dispatch[name] = original;
+      if (dispatch[name] === wrapper) {
+        dispatch[name] = original;
+      }
     }
   };
 }

@@ -75,8 +75,12 @@ export interface DynamicTag {
  * (`slots` are the component's own declared slots).
  */
 export function isRenderProp(fill: SlotFill, component: UfComponent): boolean {
-  if (fill.parameter !== undefined) return true;
-  if (fill.forward === undefined) return false;
+  if (fill.parameter !== undefined) {
+    return true;
+  }
+  if (fill.forward === undefined) {
+    return false;
+  }
   return component.slots?.slots.find((slot) => slot.name === fill.forward)?.props !== undefined;
 }
 
@@ -103,7 +107,9 @@ export function ownProps(component: UfComponent): Set<string> {
 export function childProps(module: UfModule, local: string): Set<string> {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     const api = entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"
@@ -224,7 +230,9 @@ export function astroRender(
         // Each branch renders the same constant.
         const copies =
           copy.kind === "If" ? copy.branches.map((branch) => branch.children[0]!) : [copy];
-        for (const dynamic of copies) dynamics.set(dynamic as DynamicNode, tag);
+        for (const dynamic of copies) {
+          dynamics.set(dynamic as DynamicNode, tag);
+        }
         return copy;
       }
       default:
@@ -272,7 +280,9 @@ export function astroRender(
     const forwarded = (each.fills ?? []).filter(
       (fill) => fill.forward !== undefined && !isRenderProp(fill, component),
     );
-    if (!forwarded.length) return each;
+    if (!forwarded.length) {
+      return each;
+    }
     const sets = forwarded
       .reduce<SlotFill[][]>((all, fill) => all.flatMap((set) => [[...set, fill], set]), [[]])
       .toSorted((a, b) => b.length - a.length);
@@ -344,7 +354,9 @@ export function astroRender(
         })),
       };
     }
-    if (each.kind === "For") return { ...each, body: selected(each.body, test) as ElementNode };
+    if (each.kind === "For") {
+      return { ...each, body: selected(each.body, test) as ElementNode };
+    }
     return node(each);
   }
 
@@ -396,9 +408,11 @@ function withFallthrough<T extends ElementNode | ComponentNode | DynamicNode>(
   }
   const classAt = attributes.findIndex((attribute) => attribute.kind === "Class");
   const existing = attributes[classAt];
-  if (existing?.kind === "Class")
+  if (existing?.kind === "Class") {
     attributes[classAt] = { ...existing, items: [...existing.items, className] };
-  else attributes.push({ kind: "Class", items: [className], span: root.span });
+  } else {
+    attributes.push({ kind: "Class", items: [className], span: root.span });
+  }
   const styleAt = attributes.findIndex((attribute) => attribute.kind === "Style");
   const declared = attributes[styleAt];
   // A style bound to one value, or a spread's `style` key, is the root's own (ADR-0065).
@@ -426,7 +440,9 @@ function withFallthrough<T extends ElementNode | ComponentNode | DynamicNode>(
     attributes[styleAt] = { kind: "Style", declarations: [whole, style], span: declared.span };
   } else if (declared?.kind === "Style") {
     attributes[styleAt] = { ...declared, declarations: [...declared.declarations, style] };
-  } else attributes.push({ kind: "Style", declarations: [style], span: root.span });
+  } else {
+    attributes.push({ kind: "Style", declarations: [style], span: root.span });
+  }
   return { ...root, attributes } as T;
 }
 
@@ -439,7 +455,9 @@ function optionValue(option: ElementNode, code: (expression: Expression) => stri
     if (attribute.kind === "Static" && attribute.name === "value" && attribute.value !== true) {
       return JSON.stringify(attribute.value);
     }
-    if (attribute.kind === "Bound" && attribute.name === "value") return code(attribute.value);
+    if (attribute.kind === "Bound" && attribute.name === "value") {
+      return code(attribute.value);
+    }
   }
   const text = option.children.map((child) => (child.kind === "Text" ? child.value : "")).join("");
   return JSON.stringify(text.trim().replace(/\s+/g, " "));

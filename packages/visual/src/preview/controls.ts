@@ -48,18 +48,23 @@ export function controlOf(member: ApiMember): PropControl | string {
   const { name, optional } = member;
   // The literals an alias resolves to come first: the text as written (`Tone`) names none.
   const members = member.literals?.length ? member.literals : unionMembers(member.type);
-  if (!members) return `its type, ${member.type}, is not one the preview can set`;
+  if (!members) {
+    return `its type, ${member.type}, is not one the preview can set`;
+  }
   // `undefined` in a union only says the prop may be left out, which an optional control does.
   const values = members.filter((each) => each !== "undefined");
   const allowsUndefined = values.length < members.length;
   if (values.length === 1) {
     const [only] = values;
-    if (only === "boolean")
+    if (only === "boolean") {
       return { name, optional: optional || allowsUndefined, kind: "boolean", initial: false };
-    if (only === "string")
+    }
+    if (only === "string") {
       return { name, optional: optional || allowsUndefined, kind: "string", initial: "" };
-    if (only === "number")
+    }
+    if (only === "number") {
       return { name, optional: optional || allowsUndefined, kind: "number", initial: 0 };
+    }
   }
   if (values.length === 2 && values.includes("true") && values.includes("false")) {
     return { name, optional: optional || allowsUndefined, kind: "boolean", initial: false };
@@ -103,7 +108,9 @@ export function unionMembers(type: string): string[] | undefined {
       current += char;
       continue;
     }
-    if ("()[]{}<>`".includes(char)) return undefined;
+    if ("()[]{}<>`".includes(char)) {
+      return undefined;
+    }
     if (char === "|") {
       members.push(current.trim());
       current = "";
@@ -111,16 +118,22 @@ export function unionMembers(type: string): string[] | undefined {
     }
     current += char;
   }
-  if (quote) return undefined;
+  if (quote) {
+    return undefined;
+  }
   members.push(current.trim());
   return members.every(Boolean) ? members : undefined;
 }
 
 /** A string literal's value, as TypeScript writes it (`"primary"`, `'primary'`), or `undefined`. */
 export function stringLiteral(text: string): string | undefined {
-  if (text.length < 2) return undefined;
+  if (text.length < 2) {
+    return undefined;
+  }
   const quote = text[0];
-  if ((quote !== '"' && quote !== "'") || text.at(-1) !== quote) return undefined;
+  if ((quote !== '"' && quote !== "'") || text.at(-1) !== quote) {
+    return undefined;
+  }
   const body = text.slice(1, -1);
   try {
     // A single-quoted literal reads as JSON once its quotes are double and its own `"` escaped.

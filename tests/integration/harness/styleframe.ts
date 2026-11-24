@@ -23,7 +23,9 @@ export const STYLEFRAME_DECLARATIONS: string = join(ROOT, "styleframe.d.ts");
  * extractor reads only `className`: `_padding:lg`, `_border-radius:[4px]`.
  */
 export function sourceUtilities(content: string, file: string): string[] {
-  if (!file.endsWith(".uf.tsx")) return [];
+  if (!file.endsWith(".uf.tsx")) {
+    return [];
+  }
   return [...content.matchAll(/\bclass="([^"]*)"/g)].flatMap(([, value]) =>
     value!.split(/\s+/).filter((name) => name.startsWith("_")),
   );
@@ -65,7 +67,9 @@ export async function styleframeDeclarations(config: string = STYLEFRAME_CONFIG)
   const { instance } = await loadModule(config);
   const { files } = await transpile(instance, { type: "dts" });
   const shims = files.find((file) => file.name === "shims.d.ts");
-  if (!shims) throw new Error("Styleframe's transpiler wrote no shims.d.ts.");
+  if (!shims) {
+    throw new Error("Styleframe's transpiler wrote no shims.d.ts.");
+  }
   return shims.content
     .replace(/^\s*import type \{ Styleframe \} from "@styleframe\/core";\n\n?/m, "")
     .replace(/^\s*export function styleframe\(\): Styleframe;\n\n?/m, "");

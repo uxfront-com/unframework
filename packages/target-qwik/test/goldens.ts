@@ -12,7 +12,9 @@ const repo = fileURLToPath(new URL("../../..", import.meta.url));
 function expectsErrors(golden: string): boolean {
   const caseDir = golden.slice(0, golden.indexOf("/__output__/"));
   const path = join(caseDir, "__expected__", "diagnostics.json");
-  if (!existsSync(path)) return false;
+  if (!existsSync(path)) {
+    return false;
+  }
   const diagnostics = JSON.parse(readFileSync(path, "utf8")) as {
     severity: string;
     target?: string;

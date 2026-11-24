@@ -87,11 +87,15 @@ export function printSetup(plan: SetupPlan): SetupOutput {
   for (const [index, item] of plan.component.setup.entries()) {
     const module = moduleCode(plan, item);
     if (module !== undefined) {
-      if (module !== "") hoisted.push(module);
+      if (module !== "") {
+        hoisted.push(module);
+      }
       continue;
     }
     const statements = itemStatements(plan, item);
-    if (!statements.length) continue;
+    if (!statements.length) {
+      continue;
+    }
     entries.push({
       index,
       statements,
@@ -133,7 +137,9 @@ export function printSetup(plan: SetupPlan): SetupOutput {
   let body = "";
   let previous: Statement | undefined;
   for (const statement of ordered.flatMap((entry) => entry.statements)) {
-    if (previous) body += previous.declaration && statement.declaration ? "\n" : "\n\n";
+    if (previous) {
+      body += previous.declaration && statement.declaration ? "\n" : "\n\n";
+    }
     body += statement.code;
     previous = statement;
   }
@@ -150,22 +156,32 @@ export function printSetup(plan: SetupPlan): SetupOutput {
  */
 function order(entries: readonly Entry[]): Entry[] {
   const declaredBy = new Map<BindingId, Entry>();
-  for (const entry of entries) for (const id of entry.declares) declaredBy.set(id, entry);
+  for (const entry of entries) {
+    for (const id of entry.declares) {
+      declaredBy.set(id, entry);
+    }
+  }
   const placed = new Set<Entry>();
   const visiting = new Set<Entry>();
   const result: Entry[] = [];
   const place = (entry: Entry): void => {
-    if (placed.has(entry) || visiting.has(entry)) return;
+    if (placed.has(entry) || visiting.has(entry)) {
+      return;
+    }
     visiting.add(entry);
     for (const id of entry.captures) {
       const declaring = declaredBy.get(id);
-      if (declaring !== undefined && declaring !== entry) place(declaring);
+      if (declaring !== undefined && declaring !== entry) {
+        place(declaring);
+      }
     }
     visiting.delete(entry);
     placed.add(entry);
     result.push(entry);
   };
-  for (const entry of entries) place(entry);
+  for (const entry of entries) {
+    place(entry);
+  }
   return result;
 }
 
@@ -178,7 +194,9 @@ function withCallees(plan: SetupPlan, captures: Set<BindingId>): Set<BindingId> 
   const queue = [...captures];
   for (let id = queue.pop(); id !== undefined; id = queue.pop()) {
     const fn = plan.functions.get(id);
-    if (!fn) continue;
+    if (!fn) {
+      continue;
+    }
     for (const next of referencedIds(captures_(plan, fn.item.function.body.refs))) {
       if (!found.has(next)) {
         found.add(next);
@@ -198,7 +216,11 @@ function captures_(plan: SetupPlan, refs: readonly CodeReference[]): CodeReferen
 function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
   const found = new Set<BindingId>();
   const add = (code: Code | undefined) => {
-    if (code) for (const id of referencedIds(captures_(plan, code.refs))) found.add(id);
+    if (code) {
+      for (const id of referencedIds(captures_(plan, code.refs))) {
+        found.add(id);
+      }
+    }
   };
   switch (item.kind) {
     case "State":
@@ -217,8 +239,11 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
       break;
     case "Watch":
       for (const source of item.sources) {
-        if (source.kind === "Ref") found.add(source.binding);
-        else add(source.getter.body);
+        if (source.kind === "Ref") {
+          found.add(source.binding);
+        } else {
+          add(source.getter.body);
+        }
       }
       add(item.callback.body);
       break;
@@ -242,7 +267,9 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
     case "Model":
       break;
     case "Use":
-      for (const argument of item.arguments) add(argumentCode(argument));
+      for (const argument of item.arguments) {
+        add(argumentCode(argument));
+      }
       break;
     default:
       unreachable(item);
@@ -259,7 +286,9 @@ function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
   }
   if (item.kind === "Function" && plan.functions.get(item.binding)?.form === "module") {
     // A function whose whole body moved to its listeners (./handlers.ts) is not declared.
-    if (plan.functionCode(item.binding) === null) return "";
+    if (plan.functionCode(item.binding) === null) {
+      return "";
+    }
     const declared = functionDeclaration(plan, item, "pure");
     // A function typed by the component's `T` takes its own (src/generics.ts, ADR-0068).
     // Its parameters follow the declaration's `function name` or the arrow's `const name = `.
@@ -282,7 +311,9 @@ function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
 
 function bindingName(plan: SetupPlan, id: BindingId): string {
   const binding = plan.component.bindings.find((candidate) => candidate.id === id);
-  if (!binding) throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
+  if (!binding) {
+    throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
+  }
   return binding.name;
 }
 
@@ -299,7 +330,9 @@ function rewritten(
 ): string {
   const getters = new Set<string>();
   for (const parameter of plan.arguments.values()) {
-    if (parameter.kind === "getter") getters.add(parameter.name);
+    if (parameter.kind === "getter") {
+      getters.add(parameter.name);
+    }
   }
   return readGetters(rewriteCode(code, plan.component, plan.rules(event), site), kind, getters);
 }
@@ -404,7 +437,9 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
           ref.kind === "Binding" &&
           ["prop", "state", "derived", "model"].includes(kinds.get(ref.binding) ?? ""),
       );
-      if (!reactive) return [block(text)];
+      if (!reactive) {
+        return [block(text)];
+      }
       return [block(`${plan.names.core("untrack")}(() => {\n${text}\n});`)];
     }
     default:
@@ -448,7 +483,9 @@ function useStatement(plan: SetupPlan, item: UseItem): string {
     const name = entry.names.find(
       (each) => each.kind === "Composable" && each.local === item.composable,
     );
-    if (!name) continue;
+    if (!name) {
+      continue;
+    }
     const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
     names.imports.add(`${directory}${name.imported}`, name.imported, {
       local: item.composable,
@@ -469,12 +506,16 @@ function useStatement(plan: SetupPlan, item: UseItem): string {
   });
   const read = readBindings(plan);
   const members = item.members.flatMap(({ member, binding }) => {
-    if (!read.has(binding)) return [];
+    if (!read.has(binding)) {
+      return [];
+    }
     const local = bindingName(plan, binding);
     return [member === local ? local : `${member}: ${local}`];
   });
   const call = `${item.composable}(${parts.join(", ")});`;
-  if (!members.length) return call;
+  if (!members.length) {
+    return call;
+  }
   // Qwik's optimizer captures a destructured call's members through an object it names after the
   // hook. Where one call's argument reads another call's members, itself or through the setup's
   // declarations, it can name two calls of one hook alike, and the argument captures the wrong one, or the server build declares the name
@@ -498,7 +539,11 @@ function readBindings(plan: SetupPlan): Set<BindingId> {
     ...codeOf(plan.component).map(({ code }) => code),
     ...expressionsOf(plan.component).map(({ expression }) => expression),
   ];
-  for (const code of codes) for (const id of referencedIds(code.refs)) found.add(id);
+  for (const code of codes) {
+    for (const id of referencedIds(code.refs)) {
+      found.add(id);
+    }
+  }
   return found;
 }
 
@@ -540,7 +585,9 @@ function modelStatements(plan: SetupPlan, item: ModelItem): Statement[] {
 export function exposeStatement(plan: SetupPlan): string | undefined {
   const { exposes } = plan.component;
   const expose = plan.composition.expose;
-  if (!exposes || !expose) return undefined;
+  if (!exposes || !expose) {
+    return undefined;
+  }
   const members = exposes.functions.map((id) => {
     const fn = plan.functions.get(id)!;
     return fn.binding.name === fn.qrl ? fn.qrl : `${fn.binding.name}: ${fn.qrl}`;
@@ -583,10 +630,14 @@ function functionStatements(plan: SetupPlan, item: FunctionItem): Statement[] {
   const plain = !fnPlan.gettersOnly || !plan.component.typeParameters?.length;
   const fn = plan.functionCode(item.binding);
   // A function whose whole body moved to its listeners (./listeners.ts) is not declared.
-  if (fn === null) return [];
+  if (fn === null) {
+    return [];
+  }
   const qrl = () => {
     const created = `${plan.names.core("$")}(${printFunction(plan, fn ?? item.function, "client").text})`;
-    if (!plan.stable.functions.has(item.binding)) return `const ${fnPlan.qrl} = ${created};`;
+    if (!plan.stable.functions.has(item.binding)) {
+      return `const ${fnPlan.qrl} = ${created};`;
+    }
     // One QRL for the instance's life (./plan.ts `StablePlan`), in the holder where it is one.
     const useConstant = plan.names.core("useConstant");
     const holder = plan.stable.holder;
@@ -674,7 +725,9 @@ export function printFunction(
  */
 function promised(fn: FunctionCode): string {
   const type = fn.returnType!.code.trim();
-  if (!isPredicate(fn)) return type;
+  if (!isPredicate(fn)) {
+    return type;
+  }
   return type.startsWith("asserts") ? "void" : "boolean";
 }
 
@@ -715,13 +768,17 @@ function getterSource(plan: SetupPlan, getter: FunctionCode): string {
   const kind: CodeKind = getter.expression ? "expression" : "statements";
   const code = rewritten(plan, getter.body, kind, undefined, "pure");
   const inlined = inlineCalls(code, kind, keptFunctions(plan), { keep: true });
-  if (!inlined.locals.size) return printFunction(plan, getter, "pure").text;
+  if (!inlined.locals.size) {
+    return printFunction(plan, getter, "pure").text;
+  }
   return functionSource(asKind(getter, inlined.kind), inlined.code);
 }
 
 /** A function whose body is now of `kind`: an expression body may have become a block. */
 function asKind(fn: FunctionCode, kind: CodeKind): FunctionCode {
-  if (kind === "expression" || !fn.expression) return fn;
+  if (kind === "expression" || !fn.expression) {
+    return fn;
+  }
   const block = { ...fn };
   delete block.expression;
   return block;
@@ -733,11 +790,15 @@ function keptFunctions(plan: SetupPlan): Inliner {
   const inliner: Inliner = {
     target(name) {
       const found = kept.get(name);
-      if (found) return found;
+      if (found) {
+        return found;
+      }
       const fnPlan = [...plan.functions.values()].find(
         (each) => each.form !== "module" && each.binding.name === name,
       );
-      if (!fnPlan) return undefined;
+      if (!fnPlan) {
+        return undefined;
+      }
       const fn = plan.functionCode(fnPlan.item.binding) ?? fnPlan.item.function;
       const kind: CodeKind = fn.expression ? "expression" : "statements";
       const code = rewritten(plan, fn.body, kind, undefined, "pure");
@@ -771,7 +832,9 @@ export function inliner(plan: SetupPlan, synchronous: boolean): Inliner {
         return undefined;
       }
       let known = inlineFunctions.get(plan);
-      if (!known) inlineFunctions.set(plan, (known = new Map()));
+      if (!known) {
+        inlineFunctions.set(plan, (known = new Map()));
+      }
       let found = known.get(id);
       if (!found) {
         found = inlineFunction(plan, id);
@@ -815,7 +878,9 @@ function inlineFunction(plan: SetupPlan, id: BindingId): InlineFunction {
           : {}),
       }
     : { ...fn };
-  if (settled.kind !== kind) delete printed.expression;
+  if (settled.kind !== kind) {
+    delete printed.expression;
+  }
   return {
     fn: printed,
     declaration: item.form === "declaration",
@@ -836,10 +901,14 @@ export function passEvent(
   body: Code,
   event: string | undefined,
 ): string {
-  if (event === undefined) return code;
+  if (event === undefined) {
+    return code;
+  }
   const callees = new Set(
     eventCallees(body.refs, plan.eventFunctions).flatMap((id) => {
-      if (!plan.eventFunctions.get(id)?.element) return [];
+      if (!plan.eventFunctions.get(id)?.element) {
+        return [];
+      }
       const fn = plan.functions.get(id)!;
       return [fn.form === "both" ? fn.qrl : fn.binding.name];
     }),
@@ -967,7 +1036,9 @@ function taskContext(
 ): { parameter: string; track: string } {
   const track = plan.names.once("track");
   const parts: string[] = [];
-  if (options.track) parts.push(track === "track" ? "track" : `track: ${track}`);
+  if (options.track) {
+    parts.push(track === "track" ? "track" : `track: ${track}`);
+  }
   if (options.cleanup !== undefined) {
     parts.push(options.cleanup === "cleanup" ? "cleanup" : `cleanup: ${options.cleanup}`);
   }
@@ -984,9 +1055,13 @@ function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
   const valueName = valueParameter?.name;
   // Each source as a tracked expression, and as a read for the previous value's start.
   const sources = item.sources.map((source) => {
-    if (source.kind === "Ref") return tracked(plan, source.binding, track);
+    if (source.kind === "Ref") {
+      return tracked(plan, source.binding, track);
+    }
     const single = singleRead(plan, source.getter);
-    if (single !== undefined) return tracked(plan, single, track);
+    if (single !== undefined) {
+      return tracked(plan, single, track);
+    }
     const name = names.fresh(`${valueName ?? "watched"}Source`);
     const getter = getterSource(plan, source.getter);
     statements.push(`const ${name} = ${names.core("useComputed$")}(${getter});`);
@@ -1100,12 +1175,18 @@ function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
  * (`previousQuery`, `previousTitle`), the callback's value parameter, or `values` for an array.
  */
 function previousBase(plan: SetupPlan, item: WatchItem, valueName: string | undefined): string {
-  if (item.array) return "values";
+  if (item.array) {
+    return "values";
+  }
   const [source] = item.sources;
-  if (source?.kind === "Ref") return bindingName(plan, source.binding);
+  if (source?.kind === "Ref") {
+    return bindingName(plan, source.binding);
+  }
   if (source?.kind === "Getter") {
     const single = singleRead(plan, source.getter);
-    if (single !== undefined) return bindingName(plan, single);
+    if (single !== undefined) {
+      return bindingName(plan, single);
+    }
   }
   return valueName ?? "value";
 }
@@ -1131,9 +1212,13 @@ function parameterBinding(parameter: Parameter): string {
  * value (`() => title`, `() => count.value`): a task tracks it as it is, without a computed.
  */
 function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefined {
-  if (!getter.expression || getter.body.refs.length !== 1) return undefined;
+  if (!getter.expression || getter.body.refs.length !== 1) {
+    return undefined;
+  }
   const [reference] = getter.body.refs;
-  if (reference?.kind !== "Binding") return undefined;
+  if (reference?.kind !== "Binding") {
+    return undefined;
+  }
   const code = getter.body.code
     .trim()
     .replace(/^\(([\s\S]*)\)$/, "$1")
@@ -1144,7 +1229,9 @@ function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefine
   );
   // A composable's getter argument is read by a call (`() => price()`).
   const isGetter = plan.arguments.get(reference.binding)?.kind === "getter";
-  if (code !== (isGetter ? `${written}()` : written)) return undefined;
+  if (code !== (isGetter ? `${written}()` : written)) {
+    return undefined;
+  }
   const binding = plan.component.bindings.find((each) => each.id === reference.binding);
   return binding && isReactiveBinding(binding, plan.arguments) ? reference.binding : undefined;
 }

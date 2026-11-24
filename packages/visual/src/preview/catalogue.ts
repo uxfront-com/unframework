@@ -68,7 +68,9 @@ export function compareExamples(
   b: Pick<Example, "id" | "title" | "order">,
 ): number {
   const order = (a.order ?? Infinity) - (b.order ?? Infinity);
-  if (order) return order;
+  if (order) {
+    return order;
+  }
   return byCodeUnit(a.title, b.title) || byCodeUnit(a.id, b.id);
 }
 
@@ -115,7 +117,9 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
       const specifier = path.startsWith(".") ? path : `./${path}`;
       const api = await resolver({ specifier, importer: "preview.uf.tsx" }).catch(() => undefined);
       const component = api?.components.find((each) => each.export === "default");
-      if (!component) continue;
+      if (!component) {
+        continue;
+      }
       const id = idOf(root, file, COMPONENT_SUFFIX);
       components.push({
         kind: "component",

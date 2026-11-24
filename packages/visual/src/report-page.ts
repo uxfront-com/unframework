@@ -169,7 +169,9 @@ function renderAbsent(cell: VisualCell): string {
 }
 
 function renderDeltas(id: string, deltas: readonly GeometryDelta[]): string {
-  if (!deltas.length) return '<p class="no-deltas">No geometry or computed-style delta.</p>';
+  if (!deltas.length) {
+    return '<p class="no-deltas">No geometry or computed-style delta.</p>';
+  }
   const shown = deltas.slice(0, MAX_DELTA_ROWS);
   const caption =
     shown.length < deltas.length
@@ -202,7 +204,9 @@ function statusText(status: "passed" | "failed"): string {
 
 /** A delta's value: a string as it is, anything else as JSON, and an absent one as such. */
 function value(item: unknown): string {
-  if (item === undefined || item === null) return '<span class="none">none</span>';
+  if (item === undefined || item === null) {
+    return '<span class="none">none</span>';
+  }
   return `<code>${escapeHtml(typeof item === "string" ? item : JSON.stringify(item))}</code>`;
 }
 

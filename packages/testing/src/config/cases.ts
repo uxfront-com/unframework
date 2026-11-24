@@ -89,7 +89,9 @@ function mainSource(id: string, dir: string, main: string | undefined): string {
     return source;
   }
   const inputs = readdirSync(dir).filter((file) => file.endsWith(".uf.tsx"));
-  if (inputs.length === 1) return join(dir, inputs[0]!);
+  if (inputs.length === 1) {
+    return join(dir, inputs[0]!);
+  }
   throw new Error(
     inputs.length
       ? `[uf] Case ${id} holds ${inputs.join(", ")}: name the one the test mounts in case.json, "main": "${inputs[0]}".`
@@ -99,7 +101,9 @@ function mainSource(id: string, dir: string, main: string | undefined): string {
 
 /** A case's `case.json`, checked: `{}` when it has none. */
 export function readCaseConfig(id: string, file: string): CaseConfig {
-  if (!existsSync(file)) return {};
+  if (!existsSync(file)) {
+    return {};
+  }
   let config: unknown;
   try {
     config = JSON.parse(readFileSync(file, "utf8"));
@@ -165,6 +169,8 @@ export function readCaseConfig(id: string, file: string): CaseConfig {
       }
     }
   }
-  if (problems.length) throw new Error(`[uf] Case ${id}: case.json has ${problems.join("; ")}.`);
+  if (problems.length) {
+    throw new Error(`[uf] Case ${id}: case.json has ${problems.join("; ")}.`);
+  }
   return record as CaseConfig;
 }

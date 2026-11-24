@@ -85,7 +85,9 @@ function selectOptions(value: () => unknown): (select: HTMLSelectElement) => voi
   let observer: MutationObserver | undefined;
   const choose = (current: unknown) => {
     const select = bound;
-    if (!select) return;
+    if (!select) {
+      return;
+    }
     if (!Array.isArray(current)) {
       // `selectedIndex` -1 where no option holds it: unselecting each one selects the first.
       select.selectedIndex = [...select.options].findIndex(
@@ -93,7 +95,9 @@ function selectOptions(value: () => unknown): (select: HTMLSelectElement) => voi
       );
       return;
     }
-    for (const option of select.options) option.selected = current.includes(option.value);
+    for (const option of select.options) {
+      option.selected = current.includes(option.value);
+    }
   };
   // Created here, as the `ref` is evaluated: Solid 2 creates no computation in a `ref` callback.
   createEffect(value, choose);
@@ -116,11 +120,15 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   // A version, never the value: `createSignal` would take a function for a computation.
   const [tracked, notify] = createSignal(0, { ownedWrite: true });
   function read(): T | undefined {
-    if (getObserver()) tracked();
+    if (getObserver()) {
+      tracked();
+    }
     return current;
   }
   function write(value: T | undefined): void {
-    if (Object.is(value, current)) return;
+    if (Object.is(value, current)) {
+      return;
+    }
     current = value;
     notify((version) => version + 1);
   }

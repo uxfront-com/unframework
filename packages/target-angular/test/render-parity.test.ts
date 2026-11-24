@@ -48,7 +48,9 @@ async function render(
   try {
     html = await renderToString(component, { props: parityProps(suite) });
   } finally {
-    for (const spy of spies) spy.mockRestore();
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
   }
   const [host, ...rest] = parseHtml(html);
   expect(rest).toEqual([]);

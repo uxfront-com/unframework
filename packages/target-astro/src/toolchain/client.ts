@@ -44,7 +44,9 @@ export const mount: MountAdapter = async (component, container, options) => {
   let styles = insert(container, component.name, rendered.html);
   const clear = () => {
     container.replaceChildren();
-    for (const style of styles) style.remove();
+    for (const style of styles) {
+      style.remove();
+    }
   };
 
   return {

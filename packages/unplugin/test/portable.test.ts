@@ -27,7 +27,9 @@ vi.mock("@unframework.dev/compiler", async (importActual) => {
         ...created,
         update: (files: readonly string[]) => {
           update.calls++;
-          if (update.fails) return Promise.reject(new Error("The update failed."));
+          if (update.fails) {
+            return Promise.reject(new Error("The update failed."));
+          }
           return created.update(files);
         },
       };

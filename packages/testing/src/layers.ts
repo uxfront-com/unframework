@@ -228,12 +228,16 @@ const PRECEDENCE: Record<LayerOutcome["status"], number> = {
  */
 export function mergeOutcomes(...outcomes: readonly LayerOutcome[]): LayerOutcome {
   const [first, ...rest] = outcomes;
-  if (!first) throw new Error("mergeOutcomes needs at least one outcome.");
+  if (!first) {
+    throw new Error("mergeOutcomes needs at least one outcome.");
+  }
   const winner = rest.reduce(
     (best, outcome) => (rank(outcome) > rank(best) ? outcome : best),
     first,
   );
-  if (winner.status !== "fail") return winner;
+  if (winner.status !== "fail") {
+    return winner;
+  }
   const messages = new Set(
     outcomes.flatMap((outcome) => (outcome.status === "fail" ? [outcome.message] : [])),
   );
@@ -270,9 +274,15 @@ export function quarantineFor(
  * is quarantined; one that passes, or is skipped, is a stale entry and fails.
  */
 export function settleOutcome(outcome: LayerOutcome, entry?: QuarantineEntry): LayerOutcome {
-  if (!entry) return outcome;
-  if (outcome.status === "fail") return { status: "quarantined", issue: entry.issue };
-  if (outcome.status === "quarantined") return outcome;
+  if (!entry) {
+    return outcome;
+  }
+  if (outcome.status === "fail") {
+    return { status: "quarantined", issue: entry.issue };
+  }
+  if (outcome.status === "quarantined") {
+    return outcome;
+  }
   const what = outcome.status === "pass" ? "passes" : `is skipped (${outcome.reason})`;
   const pixels =
     entry.layer === "L10" && entry.pixels === undefined
@@ -341,7 +351,9 @@ export function recordStandIn(task: LayerTask, subject: LayerSubject, cause: str
 export function recordScenario(task: LayerTask, subject: LayerSubject, name: string): void {
   const meta = metaOf(task, subject);
   const scenarios = (meta.scenarios ??= []);
-  if (!scenarios.includes(name)) scenarios.push(name);
+  if (!scenarios.includes(name)) {
+    scenarios.push(name);
+  }
 }
 
 /** The task's record, created for the subject on first use: a test records one case and target. */
@@ -371,9 +383,13 @@ function isSkipReason(reason: unknown): reason is string {
 
 /** A check's return value as an outcome: nothing passes, `{ skip: reason }` skips. */
 function outcomeOfResult(result: unknown): LayerOutcome {
-  if (result === undefined) return { status: "pass" };
+  if (result === undefined) {
+    return { status: "pass" };
+  }
   if (typeof result === "object" && result !== null && "skip" in result) {
-    if (isSkipReason(result.skip)) return { status: "skip", reason: result.skip };
+    if (isSkipReason(result.skip)) {
+      return { status: "skip", reason: result.skip };
+    }
   }
   return {
     status: "fail",
@@ -396,7 +412,9 @@ export async function recordLayerChecks(
   const failures: string[] = [];
   for (const layer of LAYERS) {
     const check = checks[layer];
-    if (!check) continue;
+    if (!check) {
+      continue;
+    }
     let outcome: LayerOutcome;
     try {
       outcome = outcomeOfResult(await check());
@@ -404,7 +422,9 @@ export async function recordLayerChecks(
       outcome = { status: "fail", message: formatError(error) };
     }
     const recorded = recordLayer(task, subject, layer, outcome);
-    if (recorded.status === "fail") failures.push(`${layer}: ${recorded.message}`);
+    if (recorded.status === "fail") {
+      failures.push(`${layer}: ${recorded.message}`);
+    }
   }
   return failures;
 }

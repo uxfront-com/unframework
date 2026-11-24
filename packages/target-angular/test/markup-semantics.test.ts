@@ -106,7 +106,9 @@ async function render(source: string, props: Record<string, unknown>): Promise<s
   try {
     html = await renderToString(component, { props });
   } finally {
-    for (const spy of spies) spy.mockRestore();
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
   }
   expect([...warnings, ...logged]).toEqual([]);
   const host = /^<uf-cases style="display: contents;">([\s\S]*)<\/uf-cases>$/.exec(html);

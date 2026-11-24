@@ -100,7 +100,9 @@ export async function loadConfig(root: string, file?: string): Promise<LoadedCon
     file === undefined
       ? CONFIG_FILES.map((name) => resolve(base, name)).find((each) => existsSync(each))
       : resolve(base, file);
-  if (path === undefined) return { raw: {}, directory: base, diagnostics: [] };
+  if (path === undefined) {
+    return { raw: {}, directory: base, diagnostics: [] };
+  }
 
   const shown = relative(base, path);
   const failed = (reason: string): LoadedConfig => ({
@@ -216,7 +218,9 @@ async function checkConfig(
 
 /** The font families a live capture may take, each a name that isn't empty (ADR-0105). */
 function fontList(value: unknown, report: Report): string[] {
-  if (value === undefined) return [];
+  if (value === undefined) {
+    return [];
+  }
   if (!Array.isArray(value)) {
     report(
       "UF7002",
@@ -234,7 +238,9 @@ function fontList(value: unknown, report: Report): string[] {
         `/liveFonts/${index}`,
         "must be a font family's name, as a string that isn't empty and has no space at either end.",
       );
-    } else names.push(item);
+    } else {
+      names.push(item);
+    }
   }
   return names;
 }
@@ -259,11 +265,15 @@ function isEmptyCommonJs(loaded: { default?: unknown }): boolean {
 /** What a thrown value says. Whatever the value is, reading it here can't throw again. */
 function reasonOf(error: unknown): string {
   try {
-    if (!(error instanceof Error)) return String(error);
+    if (!(error instanceof Error)) {
+      return String(error);
+    }
     // Node's own messages may end their sentence, or a line, or neither.
     const text = String(error.message).trimEnd() || "it threw an error with no message";
     const reason = text.replace(/\.?$/, ".");
-    if (!("code" in error) || error.code !== "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") return reason;
+    if (!("code" in error) || error.code !== "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") {
+      return reason;
+    }
     return `${reason} Node loads a TypeScript configuration by stripping its types, so the file cannot use syntax that needs compiling, such as an enum or a parameter property.`;
   } catch {
     return "it threw a value that can't be read.";
@@ -271,7 +281,9 @@ function reasonOf(error: unknown): string {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
   const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
@@ -294,7 +306,9 @@ function checkFields(
   report: Report,
 ): void {
   for (const key of Object.keys(record)) {
-    if (fields.includes(key)) continue;
+    if (fields.includes(key)) {
+      continue;
+    }
     report(
       "UF7002",
       `${pointer}${segment(key)}`,
@@ -337,16 +351,21 @@ function targetList(
   const seen: TargetName[] = [];
   for (const [index, item] of (value as unknown[]).entries()) {
     const at = `${pointer}/${index}`;
-    if (typeof item !== "string") report("UF7002", at, "must be a target name.");
-    else if (!isTargetSelector(item)) reportUnknownTarget(item, at, report);
-    else {
+    if (typeof item !== "string") {
+      report("UF7002", at, "must be a target name.");
+    } else if (!isTargetSelector(item)) {
+      reportUnknownTarget(item, at, report);
+    } else {
       // `solid` and `solid@1` select one target, so the second repeats it (ADR-0102).
       const name = targetName(item);
       const named = item === name ? `"${name}"` : `"${name}" (${JSON.stringify(item)})`;
-      if (seen.includes(name)) report("UF7002", at, `repeats the target ${named}.`);
-      else if (within && !within.includes(name)) {
+      if (seen.includes(name)) {
+        report("UF7002", at, `repeats the target ${named}.`);
+      } else if (within && !within.includes(name)) {
         report("UF7002", at, `names the target ${named}, which "/targets" leaves out.`);
-      } else seen.push(name);
+      } else {
+        seen.push(name);
+      }
     }
   }
   return seen;
@@ -370,7 +389,9 @@ async function resolveTargetOptions(
   report: Report,
 ): Promise<Partial<Record<TargetName, unknown>>> {
   const resolved: Partial<Record<TargetName, unknown>> = {};
-  if (value === undefined) return resolved;
+  if (value === undefined) {
+    return resolved;
+  }
   if (!isRecord(value)) {
     report("UF7002", "/targetOptions", "must be an object, by target name.");
     return resolved;
@@ -381,13 +402,16 @@ async function resolveTargetOptions(
       reportUnknownTarget(name, pointer, report, TARGET_NAMES);
       continue;
     }
-    if (options === undefined) continue;
+    if (options === undefined) {
+      continue;
+    }
     const schema = builtinTargets[name].options;
     if (!schema) {
       // Nothing would read them, so they would be ignored in silence (P2, ADR-0076).
       const problem = `is not valid: \`${name}\` declares no options.`;
-      if (!isRecord(options)) report("UF7004", pointer, problem);
-      else {
+      if (!isRecord(options)) {
+        report("UF7004", pointer, problem);
+      } else {
         for (const key of Reflect.ownKeys(options)) {
           report("UF7004", `${pointer}${segment(String(key))}`, problem);
         }
@@ -431,12 +455,16 @@ function resolvePackage(
   const resolved: ResolvedPackageConfig = {};
   if (value.targets !== undefined) {
     const list = targetList(value.targets, "/package/targets", report, targets);
-    if (list) resolved.targets = list;
+    if (list) {
+      resolved.targets = list;
+    }
   }
   const from = value.resolveFrom;
   if (typeof from === "string") {
     const path = pathField(from, "/package/resolveFrom", directory, report);
-    if (path) resolved.resolveFrom = path;
+    if (path) {
+      resolved.resolveFrom = path;
+    }
   } else if (isRecord(from)) {
     const each: Partial<Record<TargetName, string>> = {};
     for (const [name, path] of Object.entries(from)) {
@@ -445,9 +473,13 @@ function resolvePackage(
         reportUnknownTarget(name, pointer, report, TARGET_NAMES);
         continue;
       }
-      if (path === undefined) continue;
+      if (path === undefined) {
+        continue;
+      }
       const absolute = pathField(path, pointer, directory, report);
-      if (absolute) each[name] = absolute;
+      if (absolute) {
+        each[name] = absolute;
+      }
     }
     resolved.resolveFrom = each;
   } else if (from !== undefined) {

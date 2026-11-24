@@ -113,7 +113,9 @@ export function createUser(host: UserHost): ViewUser {
           yield focus(target);
           yield* press(keys);
           // As Vitest's `type` does, and a person whose hands leave the keyboard.
-          for (const key of [...held].toReversed()) yield release(key);
+          for (const key of [...held].toReversed()) {
+            yield release(key);
+          }
         })();
       }),
     clear: (target) =>
@@ -124,7 +126,9 @@ export function createUser(host: UserHost): ViewUser {
         return (function* () {
           // As Vitest's `keyboard` does: with the focus nowhere, the keys go to the frame.
           const active = document.activeElement;
-          if (!active || active === document.body) window.focus();
+          if (!active || active === document.body) {
+            window.focus();
+          }
           yield* press(keys);
         })();
       }),
@@ -152,7 +156,9 @@ export function createUser(host: UserHost): ViewUser {
         const { deltaX, deltaY, times } = wheelSteps(options);
         return (function* () {
           yield send({ kind: "move", locator: target.serialize(), check: "hover" });
-          for (let step = 0; step < times; step += 1) yield send({ kind: "wheel", deltaX, deltaY });
+          for (let step = 0; step < times; step += 1) {
+            yield send({ kind: "wheel", deltaX, deltaY });
+          }
         })();
       }),
   };
@@ -198,10 +204,14 @@ function* press(keys: readonly KeyInput[]): Generator<Input> {
     if (down) {
       yield async () => {
         const { inserted } = await commands.ufInput({ kind: "keydown", key, text });
-        if (!inserted) held.add(key);
+        if (!inserted) {
+          held.add(key);
+        }
       };
     }
-    if (up && held.has(key)) yield release(key);
+    if (up && held.has(key)) {
+      yield release(key);
+    }
   }
 }
 
@@ -218,7 +228,9 @@ function release(key: string): Input {
  * with none. Nothing settles: no view is left to settle.
  */
 export async function releaseKeys(): Promise<void> {
-  for (const key of [...held].toReversed()) await release(key)();
+  for (const key of [...held].toReversed()) {
+    await release(key)();
+  }
 }
 
 /** The wheel's steps, as Vitest's `wheel` reads its options: a direction is 100 pixels. */
@@ -233,7 +245,9 @@ function wheelSteps(options: UserEventWheelOptions): {
       `view.user.wheel: the wheel turns a positive whole number of times, not ${String(times)}.`,
     );
   }
-  if (options.delta) return { deltaX: options.delta.x ?? 0, deltaY: options.delta.y ?? 0, times };
+  if (options.delta) {
+    return { deltaX: options.delta.x ?? 0, deltaY: options.delta.y ?? 0, times };
+  }
   const steps = {
     up: [0, -100],
     down: [0, 100],

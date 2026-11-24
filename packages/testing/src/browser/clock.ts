@@ -87,7 +87,9 @@ function firstDue(clock: FakeClock): number | undefined {
         "view.clock.tick: a fake timer has no due time (`callAt`): Vitest's fake timers changed.",
       );
     }
-    if (first === undefined || callAt < first) first = callAt;
+    if (first === undefined || callAt < first) {
+      first = callAt;
+    }
   }
   return first;
 }
@@ -116,7 +118,9 @@ export async function advanceClock(
       await clock.nextAsync();
     });
   }
-  if (clock.now < end) await clock.tickAsync(end - clock.now);
+  if (clock.now < end) {
+    await clock.tickAsync(end - clock.now);
+  }
 }
 
 /** The most intervals one tick runs, as Vitest's fake timers bound one advance (`loopLimit`). */
@@ -127,14 +131,18 @@ const MAX_INTERVALS = 1000;
  * unmount, so a component's teardown clears its interval on the clock that set it.
  */
 export function restoreClock(): void {
-  if (!installed) return;
+  if (!installed) {
+    return;
+  }
   installed = false;
   vi.useRealTimers();
 }
 
 /** Refuses a tick that is not a positive whole number of milliseconds. */
 export function checkTick(ms: unknown): void {
-  if (typeof ms === "number" && Number.isSafeInteger(ms) && ms > 0) return;
+  if (typeof ms === "number" && Number.isSafeInteger(ms) && ms > 0) {
+    return;
+  }
   throw new TypeError(
     `view.clock.tick: the time to advance is a positive whole number of milliseconds, not ${typeof ms === "number" ? String(ms) : typeof ms}.`,
   );

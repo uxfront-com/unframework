@@ -90,8 +90,12 @@ export function expression(
 ): Expression {
   const references: Reference[] = refs.map(([text, binding, nth = 0]) => {
     let offset = -1;
-    for (let found = 0; found <= nth; found++) offset = code.indexOf(text, offset + 1);
-    if (offset === -1) throw new Error(`"${text}" is not in "${code}"`);
+    for (let found = 0; found <= nth; found++) {
+      offset = code.indexOf(text, offset + 1);
+    }
+    if (offset === -1) {
+      throw new Error(`"${text}" is not in "${code}"`);
+    }
     const at = span(start + offset, start + offset + text.length);
     return binding === undefined
       ? createGlobalReference(text, at)
@@ -322,8 +326,12 @@ export const COUNTER: string = [
  */
 export function find(text: string, nth = 0, from: number = OFFSET): Span {
   let offset = from - OFFSET - 1;
-  for (let found = 0; found <= nth; found++) offset = COUNTER.indexOf(text, offset + 1);
-  if (offset === -1) throw new Error(`"${text}" is not in the counter's source`);
+  for (let found = 0; found <= nth; found++) {
+    offset = COUNTER.indexOf(text, offset + 1);
+  }
+  if (offset === -1) {
+    throw new Error(`"${text}" is not in the counter's source`);
+  }
   return span(OFFSET + offset, OFFSET + offset + text.length);
 }
 
@@ -348,8 +356,12 @@ export function piece(text: string, nth = 0, from: number = OFFSET): Piece {
   const where = find(text, nth, from);
   const locate = (part: string, index = 0): Span => {
     let offset = -1;
-    for (let found = 0; found <= index; found++) offset = text.indexOf(part, offset + 1);
-    if (offset === -1) throw new Error(`"${part}" is not in "${text}"`);
+    for (let found = 0; found <= index; found++) {
+      offset = text.indexOf(part, offset + 1);
+    }
+    if (offset === -1) {
+      throw new Error(`"${part}" is not in "${text}"`);
+    }
     return span(where.start + offset, where.start + offset + part.length);
   };
   return {

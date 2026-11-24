@@ -25,7 +25,9 @@ export class PayloadError extends Error {
  */
 export function copyPayload(event: string, args: readonly unknown[]): unknown[] {
   let length = args.length;
-  while (length > 0 && args[length - 1] === undefined) length -= 1;
+  while (length > 0 && args[length - 1] === undefined) {
+    length -= 1;
+  }
   return args.slice(0, length).map((arg, index) => copyValue(arg, `argument ${index + 1}`, event));
 }
 
@@ -35,21 +37,37 @@ function copyValue(value: unknown, path: string, event: string): unknown {
       `The payload of "${event}" holds ${what} at ${path}: an emit's arguments are plain data (strings, finite numbers, booleans, null, arrays and plain objects), which every target's listener receives alike and a trace records.`,
     );
   };
-  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (value === null || typeof value === "string" || typeof value === "boolean") {
+    return value;
+  }
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) refuse(String(value));
+    if (!Number.isFinite(value)) {
+      refuse(String(value));
+    }
     // JSON has one zero.
     return value === 0 ? 0 : value;
   }
   if (value === undefined) {
     return refuse("undefined (leave the argument out, or pass null)");
   }
-  if (typeof value === "function") return refuse("a function");
-  if (typeof value !== "object") return refuse(`a ${typeof value}`);
-  if (typeof Event !== "undefined" && value instanceof Event) return refuse("a DOM event");
-  if (typeof Node !== "undefined" && value instanceof Node) return refuse("a DOM node");
-  if (value instanceof Map) return refuse("a Map");
-  if (value instanceof Set) return refuse("a Set");
+  if (typeof value === "function") {
+    return refuse("a function");
+  }
+  if (typeof value !== "object") {
+    return refuse(`a ${typeof value}`);
+  }
+  if (typeof Event !== "undefined" && value instanceof Event) {
+    return refuse("a DOM event");
+  }
+  if (typeof Node !== "undefined" && value instanceof Node) {
+    return refuse("a DOM node");
+  }
+  if (value instanceof Map) {
+    return refuse("a Map");
+  }
+  if (value instanceof Set) {
+    return refuse("a Set");
+  }
   if (Array.isArray(value)) {
     return Array.from(value, (item, index) => copyValue(item, `${path}[${index}]`, event));
   }
@@ -72,8 +90,12 @@ function copyValue(value: unknown, path: string, event: string): unknown {
  * does not hold takes the next number.
  */
 export function renumberIds(value: unknown, names: Map<string, string>): unknown {
-  if (typeof value === "string") return renameGeneratedIds(value, names);
-  if (Array.isArray(value)) return value.map((item) => renumberIds(item, names));
+  if (typeof value === "string") {
+    return renameGeneratedIds(value, names);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => renumberIds(item, names));
+  }
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, renumberIds(item, names)]),
@@ -89,6 +111,8 @@ export function renumberIds(value: unknown, names: Map<string, string>): unknown
  */
 export function groupEvents(events: readonly EmittedEvent[]): Record<string, unknown[][]> {
   const groups = new Map<string, unknown[][]>();
-  for (const { name, args } of events) groups.set(name, [...(groups.get(name) ?? []), args]);
+  for (const { name, args } of events) {
+    groups.set(name, [...(groups.get(name) ?? []), args]);
+  }
   return Object.fromEntries([...groups.keys()].sort().map((name) => [name, groups.get(name)!]));
 }

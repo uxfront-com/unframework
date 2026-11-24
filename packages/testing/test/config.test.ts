@@ -23,7 +23,9 @@ import {
 
 const roots: string[] = [];
 afterAll(() => {
-  for (const root of roots) rmSync(root, { recursive: true, force: true });
+  for (const root of roots) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 /** A throwaway project holding `files`, by path relative to its root. */
@@ -45,8 +47,11 @@ const SAVED = ["UF_TARGETS", "UF_UPDATE", "CI"] as const;
 const env = Object.fromEntries(SAVED.map((name) => [name, process.env[name]]));
 afterEach(() => {
   for (const name of SAVED) {
-    if (env[name] === undefined) delete process.env[name];
-    else process.env[name] = env[name];
+    if (env[name] === undefined) {
+      delete process.env[name];
+    } else {
+      process.env[name] = env[name];
+    }
   }
 });
 
@@ -55,7 +60,9 @@ async function projectsOf(
   options: Parameters<typeof defineTestConfig>[0],
 ): Promise<TestProjectInlineConfiguration[]> {
   const projects = (await defineTestConfig(options)).test?.projects;
-  if (!projects) throw new Error("defineTestConfig gave no projects.");
+  if (!projects) {
+    throw new Error("defineTestConfig gave no projects.");
+  }
   return projects as TestProjectInlineConfiguration[];
 }
 

@@ -18,7 +18,9 @@ const Greeting = await fixture("Greeting");
 const LEVELS = ["log", "info", "warn", "error", "debug"] as const;
 
 function spyOnConsole(): void {
-  for (const level of LEVELS) vi.spyOn(console, level).mockImplementation(() => {});
+  for (const level of LEVELS) {
+    vi.spyOn(console, level).mockImplementation(() => {});
+  }
 }
 
 function consoleCalls(): string[] {

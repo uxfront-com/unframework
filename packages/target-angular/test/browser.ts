@@ -76,6 +76,8 @@ export async function render(
 /** Unmounts every view a test left mounted. */
 export async function cleanup(): Promise<void> {
   for (const view of views.splice(0)) {
-    if (view.container.isConnected) await view.unmount();
+    if (view.container.isConnected) {
+      await view.unmount();
+    }
   }
 }

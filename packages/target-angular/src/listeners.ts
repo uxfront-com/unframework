@@ -120,10 +120,15 @@ export function planListeners(
   const count = (node: IfNode, step: 1 | -1) => {
     for (const { condition } of node.branches) {
       for (const reference of condition?.refs ?? []) {
-        if (reference.kind !== "Binding") continue;
+        if (reference.kind !== "Binding") {
+          continue;
+        }
         const next = (tested.get(reference.binding) ?? 0) + step;
-        if (next === 0) tested.delete(reference.binding);
-        else tested.set(reference.binding, next);
+        if (next === 0) {
+          tested.delete(reference.binding);
+        } else {
+          tested.set(reference.binding, next);
+        }
       }
     }
   };
@@ -142,10 +147,14 @@ export function planListeners(
   };
   walk(component.render, {
     leave(node) {
-      if (node.kind === "If") count(node, -1);
+      if (node.kind === "If") {
+        count(node, -1);
+      }
     },
     enter(node) {
-      if (node.kind === "If") count(node, 1);
+      if (node.kind === "If") {
+        count(node, 1);
+      }
       const child =
         node.kind === "Component"
           ? node.component
@@ -154,11 +163,15 @@ export function planListeners(
             : undefined;
       if (child !== undefined && (node.kind === "Component" || node.kind === "Dynamic")) {
         for (const attribute of node.attributes) {
-          if (attribute.kind !== "Listener") continue;
+          if (attribute.kind !== "Listener") {
+            continue;
+          }
           const event = childEvent(plan, child, attribute.event);
           outputs.set(attribute, outputStatement(plan, attribute, event, methods, collected));
         }
-        if (node.kind === "Component") onComponent(node);
+        if (node.kind === "Component") {
+          onComponent(node);
+        }
         return;
       }
       // `<component is>` over tags takes an element's listeners, on each candidate alike.
@@ -174,7 +187,9 @@ export function planListeners(
                 span: node.span,
               }
             : undefined;
-      if (element === undefined) return;
+      if (element === undefined) {
+        return;
+      }
       onElement(element);
     },
   });
@@ -197,7 +212,9 @@ export function planListeners(
       forwards.span.start === node.span.start &&
       forwards.span.end === node.span.end;
     for (const attribute of node.attributes) {
-      if (attribute.kind !== "Event") continue;
+      if (attribute.kind !== "Event") {
+        continue;
+      }
       const name = () => handlerName(plan, element, attribute.event, undefined);
       if (chains) {
         statements.set(attribute, chainStatement(plan, attribute, name(), methods, collected));
@@ -210,7 +227,9 @@ export function planListeners(
   function onElement(node: ElementNode): void {
     const groups = orderedGroups(node, writes);
     for (const attribute of node.attributes) {
-      if (attribute.kind !== "Event") continue;
+      if (attribute.kind !== "Event") {
+        continue;
+      }
       const group = groups.get(attribute);
       if (group !== undefined) {
         // The group's first attribute writes its one listener; the others print nothing.
@@ -272,8 +291,12 @@ export function planListeners(
  */
 function payloadArguments(event: ApiEvent): string[] {
   const [only, ...more] = event.parameters;
-  if (only === undefined) return [];
-  if (more.length === 0 && !only.optional) return ["$event"];
+  if (only === undefined) {
+    return [];
+  }
+  if (more.length === 0 && !only.optional) {
+    return ["$event"];
+  }
   return event.parameters.map((_, index) => `$event[${index}]`);
 }
 
@@ -304,7 +327,9 @@ function outputStatement(
     case "Inline": {
       const fn = handler.function;
       const statement = templateStatement(plan, fn, collected, payload);
-      if (statement !== undefined) return statement.code;
+      if (statement !== undefined) {
+        return statement.code;
+      }
       const name = templateMember(plan, `on${pascalCase(attribute.event)}`);
       const body = bodyStatements(
         assertedFunction(fn, () => true),
@@ -330,8 +355,12 @@ function outputStatement(
 
 /** A listener's option, or none. */
 function optionOf(attribute: EventAttribute): "capture" | "once" | "passive" | undefined {
-  if (attribute.capture) return "capture";
-  if (attribute.once) return "once";
+  if (attribute.capture) {
+    return "capture";
+  }
+  if (attribute.once) {
+    return "once";
+  }
   return attribute.passive ? "passive" : undefined;
 }
 
@@ -381,7 +410,9 @@ function listenerStatement(
     }
     case "Inline": {
       const statement = templateStatement(plan, handler.function, collected);
-      if (statement !== undefined) return statement;
+      if (statement !== undefined) {
+        return statement;
+      }
       const fn = handler.function;
       const [event] = fn.parameters;
       const name = methodName();
@@ -443,7 +474,9 @@ function chainStatement(
         classRules(plan, collected.nextTick),
       );
       if (!fn.async && (first === undefined || first.name !== undefined)) {
-        if (first?.name === undefined) return chain(plan.locals.claim("event"), body);
+        if (first?.name === undefined) {
+          return chain(plan.locals.claim("event"), body);
+        }
         return chain(first.name, body, first.type ? parameterText(first) : undefined);
       }
       const own = plan.members.claim(`${name}Handler`);
@@ -485,7 +518,9 @@ function handlerName(
  */
 function templateMember(plan: Plan, base: string): string {
   let name = plan.members.claim(base);
-  while (plan.loopNames.has(name)) name = plan.members.claim(base);
+  while (plan.loopNames.has(name)) {
+    name = plan.members.claim(base);
+  }
   return name;
 }
 
@@ -497,7 +532,9 @@ function templateMember(plan: Plan, base: string): string {
 function elementSubject(element: ElementNode, domEvent: string): string | undefined {
   const event = pascalCase(domEvent);
   const label = words(staticValue(element, "aria-label") ?? textOf(element));
-  if (label !== undefined) return `${label}${domEvent === "click" ? "" : event}`;
+  if (label !== undefined) {
+    return `${label}${domEvent === "click" ? "" : event}`;
+  }
   const control = words(staticValue(element, "name"));
   return control === undefined ? undefined : `${control}${event}`;
 }
@@ -533,21 +570,27 @@ function staticValue(element: ElementNode, name: string): string | undefined {
 /** An element's text, when its children are text alone. */
 function textOf(element: ElementNode): string | undefined {
   const { children } = element;
-  if (!children.length || !children.every((child) => child.kind === "Text")) return undefined;
+  if (!children.length || !children.every((child) => child.kind === "Text")) {
+    return undefined;
+  }
   return children.map((child) => (child.kind === "Text" ? child.value : "")).join("");
 }
 
 /** Up to four ASCII words in PascalCase (`Add one` → `AddOne`), or `undefined`. */
 function words(text: string | undefined): string | undefined {
   const found = text?.match(/[A-Za-z0-9]+/g);
-  if (!found || found.length > 4) return undefined;
+  if (!found || found.length > 4) {
+    return undefined;
+  }
   return found.map((word) => `${word[0]!.toUpperCase()}${word.slice(1).toLowerCase()}`).join("");
 }
 
 /** The function a setup function's binding names. */
 function functionOf(component: UfComponent, id: BindingId): FunctionCode {
   for (const item of component.setup) {
-    if (item.kind === "Function" && item.binding === id) return item.function;
+    if (item.kind === "Function" && item.binding === id) {
+      return item.function;
+    }
   }
   throw new Error(`No setup function declares ${id}.`);
 }
@@ -568,12 +611,18 @@ const isAstNode = (value: unknown): value is AstNode =>
 /** Calls `visit` on every node of an AST, parents first; `false` skips a node's children. */
 function visitAst(root: unknown, visit: (node: AstNode) => boolean | void): void {
   if (Array.isArray(root)) {
-    for (const item of root) visitAst(item, visit);
+    for (const item of root) {
+      visitAst(item, visit);
+    }
     return;
   }
-  if (!isAstNode(root) || visit(root) === false) return;
+  if (!isAstNode(root) || visit(root) === false) {
+    return;
+  }
   for (const [key, value] of Object.entries(root)) {
-    if (key !== "type" && typeof value === "object") visitAst(value, visit);
+    if (key !== "type" && typeof value === "object") {
+      visitAst(value, visit);
+    }
   }
 }
 
@@ -595,9 +644,13 @@ function templateStatement(
   payload: readonly string[] = ["$event"],
 ): Statement | undefined {
   const call = singleCall(fn.body, fn.expression === true);
-  if (!call) return undefined;
+  if (!call) {
+    return undefined;
+  }
   // A destructured parameter has no name the template could read the payload by.
-  if (fn.parameters.some((parameter) => parameter.name === undefined)) return undefined;
+  if (fn.parameters.some((parameter) => parameter.name === undefined)) {
+    return undefined;
+  }
   const refs = fn.body.refs;
   const readsLoop = refs.some(
     (reference) =>
@@ -635,14 +688,19 @@ function templateStatement(
       // only a member the template sees.
       const through = statementRead(plan, bindingById(plan, reference.binding)).startsWith("this.");
       (through ? members : reads).add(reference.binding);
-    } else if (reference.kind === "Emit") reads.add(reference.binding);
-    else if (reference.kind === "Global") globals.add(reference.name);
+    } else if (reference.kind === "Emit") {
+      reads.add(reference.binding);
+    } else if (reference.kind === "Global") {
+      globals.add(reference.name);
+    }
   }
   const statement = fn.parameters.reduce(
     (written, parameter, index) => renamed(written, parameter.name!, payload[index] ?? "$event"),
     rewriteCode(code, plan.component, statementRules(plan), "client"),
   );
-  if (call.callee === undefined) return { code: statement, valued: false };
+  if (call.callee === undefined) {
+    return { code: statement, valued: false };
+  }
   // A function a composable returns may return a value: its API holds no result, only whether it
   // is async (ADR-0069).
   if (bindingById(plan, call.callee).kind === "usedFn") {
@@ -651,7 +709,9 @@ function templateStatement(
   // A module's function (ADR-0070) is declared in another module, so nothing here says whether it
   // returns a value: the statement discards it, as Angular prevents the default on `false`.
   const { kind } = bindingById(plan, call.callee);
-  if (kind === "import" || kind === "moduleConst") return { code: statement, valued: true };
+  if (kind === "import" || kind === "moduleConst") {
+    return { code: statement, valued: true };
+  }
   // A setup function's value, unless it is async (its value is a promise).
   const callee = functionOf(plan.component, call.callee);
   return { code: statement, valued: !callee.async && returnsValue(callee) };
@@ -679,10 +739,14 @@ function singleCall(
     const inner =
       statements.length === 1 && block?.type === "BlockStatement" ? (block.body as AstNode[]) : [];
     const [only] = inner;
-    if (inner.length !== 1 || only?.type !== "ExpressionStatement") return undefined;
+    if (inner.length !== 1 || only?.type !== "ExpressionStatement") {
+      return undefined;
+    }
     node = only.expression as AstNode;
   }
-  if (node.type !== "CallExpression" || node.optional) return undefined;
+  if (node.type !== "CallExpression" || node.optional) {
+    return undefined;
+  }
   const callee = node.callee as AstNode;
   const args = node.arguments as AstNode[];
   if (callee.type !== "Identifier" || args.some((arg) => arg.type === "SpreadElement")) {
@@ -698,7 +762,9 @@ function singleCall(
     callRef.call === true &&
     callRef.span.end === offset + callee.end;
   const emits = callRef?.kind === "Emit" && callRef.span.end === end;
-  if (!callsFunction && !emits) return undefined;
+  if (!callsFunction && !emits) {
+    return undefined;
+  }
   return {
     code: body.code.slice(node.start, node.end),
     span: { start, end },
@@ -827,18 +893,26 @@ function renamed(expression: string, from: string, to: string): string {
   const edits: { start: number; end: number; text: string }[] = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
-    if (!isAstNode(value)) return;
+    if (!isAstNode(value)) {
+      return;
+    }
     switch (value.type) {
       case "Identifier":
-        if (value.name === from) edits.push({ start: value.start, end: value.end, text: to });
+        if (value.name === from) {
+          edits.push({ start: value.start, end: value.end, text: to });
+        }
         return;
       // A member's name and a property's key are no reads.
       case "MemberExpression":
         visit(value.object);
-        if (value.computed) visit(value.property);
+        if (value.computed) {
+          visit(value.property);
+        }
         return;
       case "Property":
         if (value.shorthand && (value.value as AstNode).type === "Identifier") {
@@ -847,12 +921,16 @@ function renamed(expression: string, from: string, to: string): string {
           }
           return;
         }
-        if (value.computed) visit(value.key);
+        if (value.computed) {
+          visit(value.key);
+        }
         visit(value.value);
         return;
       default:
         for (const [key, child] of Object.entries(value)) {
-          if (key !== "type" && typeof child === "object") visit(child);
+          if (key !== "type" && typeof child === "object") {
+            visit(child);
+          }
         }
     }
   };
@@ -877,7 +955,9 @@ function orderedGroups(
 ): Map<EventAttribute, EventAttribute[]> {
   const byEvent = new Map<string, EventAttribute[]>();
   for (const attribute of element.attributes) {
-    if (attribute.kind !== "Event" || attribute.capture) continue;
+    if (attribute.kind !== "Event" || attribute.capture) {
+      continue;
+    }
     const group = byEvent.get(attribute.event) ?? [];
     group.push(attribute);
     byEvent.set(attribute.event, group);
@@ -886,8 +966,12 @@ function orderedGroups(
   for (const group of byEvent.values()) {
     const [only] = group;
     const option = only !== undefined && (only.once || only.passive);
-    if (group.length < 2 && !(option && writes.has(only))) continue;
-    for (const attribute of group) groups.set(attribute, group);
+    if (group.length < 2 && !(option && writes.has(only))) {
+      continue;
+    }
+    for (const attribute of group) {
+      groups.set(attribute, group);
+    }
   }
   return groups;
 }
@@ -925,7 +1009,9 @@ function groupStatement(
   const parts = group.map((attribute) => {
     const name = () => handlerName(plan, element, attribute.event, optionOf(attribute), true);
     const statement = listenerStatement(plan, attribute, name, context.methods, context.collected);
-    if (!attribute.once) return { ...statement, guarded: false };
+    if (!attribute.once) {
+      return { ...statement, guarded: false };
+    }
     return {
       code: `${context.once()}(${context.guard(attribute.event)}, $event) && ${statement.code}`,
       valued: true,

@@ -465,9 +465,15 @@ export function unanalysableUrl(
   name: string,
   value: string,
 ): "javascript" | "data" | undefined {
-  if (!URL_ATTRIBUTES.has(name)) return undefined;
-  if (isJavaScriptUrl(value)) return "javascript";
-  if (NESTED_DOCUMENT_ATTRIBUTES.get(tag) === name && urlScheme(value) === "data") return "data";
+  if (!URL_ATTRIBUTES.has(name)) {
+    return undefined;
+  }
+  if (isJavaScriptUrl(value)) {
+    return "javascript";
+  }
+  if (NESTED_DOCUMENT_ATTRIBUTES.get(tag) === name && urlScheme(value) === "data") {
+    return "data";
+  }
   return undefined;
 }
 
@@ -542,9 +548,15 @@ export type UnkeptCharacter = "carriage-return" | "nul" | "surrogate" | "control
  * controls (but tab, line feed and form feed) or the noncharacters in a document.
  */
 export function unkeptCharacter(codePoint: number): UnkeptCharacter | undefined {
-  if (codePoint === 0x0d) return "carriage-return";
-  if (codePoint === 0) return "nul";
-  if (codePoint >= 0xd800 && codePoint <= 0xdfff) return "surrogate";
+  if (codePoint === 0x0d) {
+    return "carriage-return";
+  }
+  if (codePoint === 0) {
+    return "nul";
+  }
+  if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
+    return "surrogate";
+  }
   if (
     (codePoint < 0x20 && codePoint !== 0x09 && codePoint !== 0x0a && codePoint !== 0x0c) ||
     (codePoint >= 0x7f && codePoint <= 0x9f)

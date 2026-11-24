@@ -11,7 +11,9 @@ import { isFrameworkAttribute } from "./framework-attributes.ts";
  * unwrapped, so the difference it makes stays visible.
  */
 export function isAngularHost(element: TreeElement): boolean {
-  if (element.namespaceURI !== HTML_NAMESPACE || !element.tagName.startsWith("uf-")) return false;
+  if (element.namespaceURI !== HTML_NAMESPACE || !element.tagName.startsWith("uf-")) {
+    return false;
+  }
   let contents = false;
   for (const attribute of element.attrs) {
     const name = attributeName(attribute);
@@ -21,7 +23,9 @@ export function isAngularHost(element: TreeElement): boolean {
         declarations.length === 1 &&
         declarations[0]!.property === "display" &&
         declarations[0]!.value?.toLowerCase() === "contents";
-      if (!contents) return false;
+      if (!contents) {
+        return false;
+      }
     } else if (!isFrameworkAttribute(name, "angular")) {
       return false;
     }
@@ -37,7 +41,9 @@ export function isAngularHost(element: TreeElement): boolean {
  * stays.
  */
 export function unwrapAngularHosts(root: TreeParent, target?: NormalizeTarget): void {
-  if (target !== "angular") return;
+  if (target !== "angular") {
+    return;
+  }
   unwrap(root);
 }
 
@@ -58,5 +64,7 @@ function unwrap(root: TreeParent): void {
       unwrapped.push(node);
     }
   }
-  if (changed) replaceChildren(root, unwrapped);
+  if (changed) {
+    replaceChildren(root, unwrapped);
+  }
 }

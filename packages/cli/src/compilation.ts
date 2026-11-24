@@ -100,7 +100,9 @@ export async function compileSources(
   ): Promise<Compilation> => {
     const sources = new Map<string, string>();
     for (const { file } of diagnostics) {
-      if (!sources.has(file)) sources.set(file, (await read(join(root, file))) ?? "");
+      if (!sources.has(file)) {
+        sources.set(file, (await read(join(root, file))) ?? "");
+      }
     }
     return {
       status,
@@ -114,9 +116,13 @@ export async function compileSources(
     };
   };
 
-  if (loaded.diagnostics.length > 0) return finish(2, loaded.diagnostics);
+  if (loaded.diagnostics.length > 0) {
+    return finish(2, loaded.diagnostics);
+  }
   const { config, diagnostics: invalid } = await resolveConfig(loaded.raw, loaded);
-  if (!config) return finish(2, invalid);
+  if (!config) {
+    return finish(2, invalid);
+  }
 
   const named = (path: string) => relative(root, path).split(sep).join("/");
   const configProblem = (field: string, problem: string) =>
@@ -182,7 +188,9 @@ export async function compileSources(
   const diagnostics = compiled.flatMap(({ result }) =>
     result.diagnostics.map((diagnostic) => (config.strict ? strictly(diagnostic) : diagnostic)),
   );
-  if (hasErrors(diagnostics)) return finish(1, diagnostics, config);
+  if (hasErrors(diagnostics)) {
+    return finish(1, diagnostics, config);
+  }
 
   // Nor what a source read, which the glob doesn't list: a child, a sheet, a shared module, a type.
   for (const { file, read: readFiles } of compiled) {
@@ -217,7 +225,9 @@ export async function compileSources(
     const tree = assembleTree(target, compiled, diagnostics);
     trees.set(target, tree);
   }
-  if (hasErrors(diagnostics)) return finish(1, diagnostics, config);
+  if (hasErrors(diagnostics)) {
+    return finish(1, diagnostics, config);
+  }
   return finish(0, diagnostics, config, trees, await authoredFiles(files, compiled, root));
 }
 
@@ -234,7 +244,9 @@ async function authoredFiles(
       (entry) => entry.isFile(),
       () => false,
     );
-    if (found) authored.add(each);
+    if (found) {
+      authored.add(each);
+    }
   }
   return [...authored].toSorted();
 }
@@ -252,7 +264,9 @@ async function findSources(
       entry.name === "node_modules" || join(entry.parentPath, entry.name) === config.outDir,
   });
   for await (const entry of entries) {
-    if (entry.isDirectory() || entry.name.endsWith(EXAMPLE)) continue;
+    if (entry.isDirectory() || entry.name.endsWith(EXAMPLE)) {
+      continue;
+    }
     files.push(named(join(entry.parentPath, entry.name)));
   }
   return files.toSorted();
@@ -305,7 +319,9 @@ function assembleTree(
   ) => {
     const written = exported.get(name)?.specifier;
     // A component exported twice under one name, as default and by name, is one line.
-    if (written === specifier) return;
+    if (written === specifier) {
+      return;
+    }
     if (written !== undefined) {
       const message = `The ${target} barrel would export ${name} from both ${written} and ${specifier}. Rename one of them.`;
       collision(module, span, message);
@@ -321,21 +337,28 @@ function assembleTree(
       const path = posix.join(directory, output.path);
       claim({ ...output, path }, file);
       const owner = result.owners[target]?.[output.path];
-      if (owner === undefined) continue;
+      if (owner === undefined) {
+        continue;
+      }
       // An output imports a TypeScript file without its extension, and a component file with it.
       const specifier = `./${path.replace(/\.tsx?$/, "")}`;
       const whole = SINGLE_FILE_COMPONENT.test(path);
       const composable = result.ir?.composables?.find((each) => each.name === owner);
-      if (composable) barrelLine(owner, owner, specifier, file, composable.span);
+      if (composable) {
+        barrelLine(owner, owner, specifier, file, composable.span);
+      }
       for (const each of result.ir?.exports ?? []) {
-        if (each.local !== owner) continue;
+        if (each.local !== owner) {
+          continue;
+        }
         const isDefault = each.kind === "default";
         const name = isDefault ? owner : each.name;
         barrelLine(name, whole || isDefault ? "default" : name, specifier, file, each.span);
       }
     }
-    for (const copy of copies)
+    for (const copy of copies) {
       claim({ ...copy, path: posix.join(directory, copy.path) }, file, true);
+    }
   }
 
   const lines = [...exported.values()].map(({ line }) => line).toSorted();

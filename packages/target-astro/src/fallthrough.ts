@@ -93,15 +93,21 @@ export function planFallthrough(
   let target: ElementNode | ComponentNode | DynamicNode | undefined;
   const rest = component.inheritAttrs === false;
   const [only] = render.kind === "Fragment" && render.children.length === 1 ? render.children : [];
-  if (rest) target = restElement(component);
-  else if (render.kind === "Element") target = render;
-  else if (only?.kind === "Component") target = only;
+  if (rest) {
+    target = restElement(component);
+  } else if (render.kind === "Element") {
+    target = render;
+  } else if (only?.kind === "Component") {
+    target = only;
+  }
   // A `<component is>` over tags renders one element, which takes what falls through as a root
   // element does (ADR-0119, ADR-0122).
   else if (only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")) {
     target = only;
   }
-  if (!target) return undefined;
+  if (!target) {
+    return undefined;
+  }
   const { scope } = spelling;
   const className = scope.claim("className");
   const style = scope.claim("style");
@@ -116,10 +122,16 @@ export function planFallthrough(
       target.kind === "Dynamic" ? (target.only ?? []).map((each) => each.name) : [],
     );
     for (const attribute of target.attributes) {
-      if (attribute.kind !== "Static" && attribute.kind !== "Bound") continue;
+      if (attribute.kind !== "Static" && attribute.kind !== "Bound") {
+        continue;
+      }
       const { name } = attribute;
-      if (name === "class" || name === "style" || declared.has(name) || seen.has(name)) continue;
-      if (only.has(name)) continue;
+      if (name === "class" || name === "style" || declared.has(name) || seen.has(name)) {
+        continue;
+      }
+      if (only.has(name)) {
+        continue;
+      }
       seen.add(name);
       own.push({ attribute, local: scope.claim(localName(name)) });
     }
@@ -136,7 +148,9 @@ export function planFallthrough(
   const tags = found && found.length > 1 ? found : undefined;
   const omitted = new Set(declared);
   if (target.kind === "Component") {
-    for (const name of childProps(module, target.component)) omitted.add(name);
+    for (const name of childProps(module, target.component)) {
+      omitted.add(name);
+    }
   }
   return {
     omitted: [...omitted],
@@ -159,7 +173,9 @@ export function planFallthrough(
 export function declaredNames(component: UfComponent): Set<string> {
   const names = ownProps(component);
   for (const slot of component.slots?.slots ?? []) {
-    if (slot.props) names.add(renderPropName(slot.name, ownProps(component)));
+    if (slot.props) {
+      names.add(renderPropName(slot.name, ownProps(component)));
+    }
   }
   return names;
 }
@@ -170,10 +186,16 @@ export function declaredNames(component: UfComponent): Set<string> {
  * element, the root, one element or one component, as it would be without the rest.
  */
 export function scopeRootsOf(component: UfComponent, fallthrough: Fallthrough | undefined): Span[] {
-  if (!fallthrough || fallthrough.attributes === undefined) return scopeRoots(component);
-  if (fallthrough.scopeless === undefined) return [];
+  if (!fallthrough || fallthrough.attributes === undefined) {
+    return scopeRoots(component);
+  }
+  if (fallthrough.scopeless === undefined) {
+    return [];
+  }
   const { render } = component;
-  if (render.kind === "Element") return [render.span];
+  if (render.kind === "Element") {
+    return [render.span];
+  }
   const [root] = render.children;
   return render.children.length === 1 && root?.kind === "Component" ? [root.span] : [];
 }
@@ -191,8 +213,12 @@ function restElement(component: UfComponent): ElementNode | undefined {
   let found: ElementNode | undefined;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" || found) return;
-      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+      if (node.kind !== "Element" || found) {
+        return;
+      }
+      if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+        found = node;
+      }
     },
   });
   return found;
@@ -210,25 +236,35 @@ function componentFallthroughTags(
 ): string[] | undefined {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     const api = entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"
         : each.export === "named" && each.name === imported.imported,
     );
-    if (api?.fallthroughTag !== undefined) return [api.fallthroughTag];
+    if (api?.fallthroughTag !== undefined) {
+      return [api.fallthroughTag];
+    }
     return api?.inheritAttrs ? api.rootTags : undefined;
   }
   const own = module.components.find((each) => each.name === local);
-  if (!own || seen.has(local)) return undefined;
+  if (!own || seen.has(local)) {
+    return undefined;
+  }
   if (own.inheritAttrs === false) {
     const element = restElement(own);
     return element && [element.tag];
   }
   const { render } = own;
-  if (render.kind === "Element") return [render.tag];
+  if (render.kind === "Element") {
+    return [render.tag];
+  }
   const [root] = render.children;
-  if (render.children.length !== 1) return undefined;
+  if (render.children.length !== 1) {
+    return undefined;
+  }
   if (root?.kind === "Dynamic" && root.candidates.every((each) => each.kind === "Tag")) {
     return root.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
   }

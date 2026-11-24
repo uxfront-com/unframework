@@ -166,7 +166,9 @@ export function classMembers(context: MemberContext): {
   // binding names the member; the model's own name is the public one (`value` and
   // `valueChange`), an alias where the two differ.
   for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
+    if (item.kind !== "Model") {
+      continue;
+    }
     const { name } = bindingById(plan, item.binding);
     const callee = js.identifier(core("model"));
     const alias =
@@ -225,7 +227,9 @@ export function classMembers(context: MemberContext): {
   }
   // View queries next to the inputs and outputs, as Angular's guide groups them.
   for (const item of component.setup) {
-    if (item.kind !== "TemplateRef") continue;
+    if (item.kind !== "TemplateRef") {
+      continue;
+    }
     const name = bindingById(plan, item.binding).name;
     if (formOf(plan, bindingById(plan, item.binding)) === "instance") {
       // A ref on a component holds its instance, typed as the source types what it exposes.
@@ -339,7 +343,9 @@ export function classMembers(context: MemberContext): {
   const refs: Member[] = [];
   /** Adds an effect's code: its statements, its member, what `ngOnDestroy` runs. */
   const effect = (into: string[], code: EffectCode, hook = false) => {
-    if (code.code !== undefined) into.push(code.code);
+    if (code.code !== undefined) {
+      into.push(code.code);
+    }
     if (code.ref) {
       const member = js.propertyDefinition(code.ref.name, null, {
         accessibility: "private",
@@ -348,7 +354,9 @@ export function classMembers(context: MemberContext): {
       });
       refs.push(code.ref.optional ? { ...member, optional: true } : member);
     }
-    if (code.destroy !== undefined) (hook ? unmounted : destroyCode).push(code.destroy);
+    if (code.destroy !== undefined) {
+      (hook ? unmounted : destroyCode).push(code.destroy);
+    }
   };
   let pins: string[] | undefined;
   /**
@@ -463,7 +471,9 @@ export function classMembers(context: MemberContext): {
         break;
       case "Id": {
         const { name } = bindingById(plan, item.binding);
-        if (context.nextId === undefined) throw new Error("An id is declared without a counter.");
+        if (context.nextId === undefined) {
+          throw new Error("An id is declared without a counter.");
+        }
         // Angular has no id API: a counter, as Angular Material writes its ids, one per
         // application (ADR-0095). The component's name keeps two components' ids apart.
         const id = `\`uf-id-${kebabCase(component.name)}-\${${core("inject")}(${context.nextId}).next++}\``;
@@ -591,13 +601,17 @@ export function classMembers(context: MemberContext): {
         if (plan.late.has(item)) {
           effect(initCode, watchEffectCode(item, plan, context.rules, names, true));
           pins = undefined;
-        } else effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
+        } else {
+          effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
+        }
         break;
       case "Lifecycle":
         if (plan.late.has(item)) {
           effect(initCode, lifecycleCode(item, plan, context.rules, names, true), true);
           pins = undefined;
-        } else effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
+        } else {
+          effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
+        }
         break;
       case "Inject": {
         // Its parent's value (`skipSelf`, since a component that provides the key it injects
@@ -918,7 +932,9 @@ function callCode(context: MemberContext, item: UseItem): string {
 export function composableName(plan: Plan, local: string): string {
   for (const entry of plan.module.imports ?? []) {
     const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
-    if (name === undefined) continue;
+    if (name === undefined) {
+      continue;
+    }
     const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
     return plan.imports.add(`${directory}${kebabCase(name.imported)}`, name.imported, {
       local,

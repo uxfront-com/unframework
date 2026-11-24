@@ -159,9 +159,13 @@ export function remapFormatted(
     for (const segment of segments) {
       const offset = beforeLines[line]! + segment[0];
       const target = moved[offset]!;
-      if (target < 0 || segment.length === 1) continue;
+      if (target < 0 || segment.length === 1) {
+        continue;
+      }
       const token = tokenAt(before.contents, offset);
-      if (!after.contents.startsWith(token, target)) continue;
+      if (!after.contents.startsWith(token, target)) {
+        continue;
+      }
       const position = positionOf(afterLines, target);
       const label = segment.length === 5 ? map.names[segment[4]] : undefined;
       if (label === undefined) {
@@ -187,7 +191,9 @@ function moveOffsets(
   const tooFew = `fewer than 95% of the ${total} word characters it counts match`;
   if (isFormatted(path)) {
     const whole = diffInto(moved, before, 0, before.length, after, 0, after.length, count);
-    if (whole === PAST_CAP) return PAST_CAP;
+    if (whole === PAST_CAP) {
+      return PAST_CAP;
+    }
     return whole ? moved : tooFew;
   }
   let beforeBlocks: Span[];
@@ -218,8 +224,12 @@ function moveOffsets(
       formatted.end,
       count,
     );
-    if (diffed === PAST_CAP) return PAST_CAP;
-    if (!diffed) return tooFew;
+    if (diffed === PAST_CAP) {
+      return PAST_CAP;
+    }
+    if (!diffed) {
+      return tooFew;
+    }
     beforeAt = block.end;
     afterAt = formatted.end;
   }
@@ -236,7 +246,11 @@ interface MatchCount {
 
 function countedText(text: string): string {
   let words = "";
-  for (const [, word] of text.matchAll(COUNTED)) if (word) words += word;
+  for (const [, word] of text.matchAll(COUNTED)) {
+    if (word) {
+      words += word;
+    }
+  }
   return words;
 }
 
@@ -251,7 +265,9 @@ function keptInto(
   afterEnd: number,
 ): boolean {
   const kept = before.slice(beforeStart, beforeEnd).trimEnd();
-  if (kept !== after.slice(afterStart, afterEnd).trimEnd()) return false;
+  if (kept !== after.slice(afterStart, afterEnd).trimEnd()) {
+    return false;
+  }
   for (let offset = 0; offset < kept.length; offset++) {
     moved[beforeStart + offset] = afterStart + offset;
   }
@@ -279,14 +295,26 @@ function diffInto(
   const wordsA = codesOf(countedText(before.slice(beforeStart, beforeEnd)));
   const wordsB = codesOf(countedText(after.slice(afterStart, afterEnd)));
   const words = myers(wordsA, wordsB, 2 * count.spare + (wordsB.length - wordsA.length));
-  if (!words) return false;
-  if (words === PAST_CAP) return PAST_CAP;
-  for (const match of words) if (match < 0) count.spare--;
+  if (!words) {
+    return false;
+  }
+  if (words === PAST_CAP) {
+    return PAST_CAP;
+  }
+  for (const match of words) {
+    if (match < 0) {
+      count.spare--;
+    }
+  }
   const pairs = myers(a.codes, b.codes, a.codes.length + b.codes.length)!;
-  if (pairs === PAST_CAP) return PAST_CAP;
+  if (pairs === PAST_CAP) {
+    return PAST_CAP;
+  }
   for (let index = 0; index < pairs.length; index++) {
     const match = pairs[index]!;
-    if (match >= 0) moved[a.offsets[index]!] = b.offsets[match]!;
+    if (match >= 0) {
+      moved[a.offsets[index]!] = b.offsets[match]!;
+    }
   }
   return true;
 }
@@ -313,7 +341,9 @@ function significant(
   let length = 0;
   for (let offset = start; offset < end; offset++) {
     const code = text.charCodeAt(offset);
-    if (isSpace(code)) continue;
+    if (isSpace(code)) {
+      continue;
+    }
     codes[length] = code === SINGLE_QUOTE ? DOUBLE_QUOTE : isUpperCase(code) ? code + 0x20 : code;
     offsets[length++] = offset;
   }
@@ -353,9 +383,13 @@ function myers(
   }
   const n = aEnd - prefix;
   const m = bEnd - prefix;
-  if (n === 0 && m === 0) return pairs;
+  if (n === 0 && m === 0) {
+    return pairs;
+  }
   const limit = Math.min(budget, n + m);
-  if (limit < Math.abs(n - m)) return undefined;
+  if (limit < Math.abs(n - m)) {
+    return undefined;
+  }
   // `furthest[k + offset]` is how far along `a` the diagonal `k` reaches.
   const offset = limit + 1;
   const furthest = new Int32Array(2 * limit + 3).fill(-1);
@@ -364,17 +398,25 @@ function myers(
   let traced = 0;
   for (let edits = 0; edits <= limit; edits++) {
     traced += (2 * edits + 3) * Int32Array.BYTES_PER_ELEMENT;
-    if (traced > MAX_TRACE_BYTES) return PAST_CAP;
+    if (traced > MAX_TRACE_BYTES) {
+      return PAST_CAP;
+    }
     // Only the diagonals this round can read, so memory grows with the edits, not the limit.
     trace.push(furthest.slice(offset - edits - 1, offset + edits + 2));
     for (let k = -edits; k <= edits; k += 2) {
-      if (k < -m || k > n) continue;
+      if (k < -m || k > n) {
+        continue;
+      }
       const down =
         k === -edits || (k !== edits && furthest[offset + k - 1]! < furthest[offset + k + 1]!);
       let x = down ? furthest[offset + k + 1]! : furthest[offset + k - 1]! + 1;
-      if (x < 0) continue;
+      if (x < 0) {
+        continue;
+      }
       let y = x - k;
-      if (x > n || y > m || y < 0) continue;
+      if (x > n || y > m || y < 0) {
+        continue;
+      }
       while (x < n && y < m && a[prefix + x] === b[prefix + y]) {
         x++;
         y++;
@@ -413,7 +455,9 @@ function walkBack(
       y--;
       pairs[prefix + x] = prefix + y;
     }
-    if (edits === 0) return;
+    if (edits === 0) {
+      return;
+    }
     x = startX;
     y = startX - previous;
   }
@@ -427,11 +471,15 @@ function findAnchors(output: string, module: UfModule, source: string): Anchor[]
   const place = (unplaced: readonly Run[]): void => {
     const runs = unplaced.toSorted((a, b) => b.text.length - a.text.length || a.start - b.start);
     const remaining = new Map<string, number>();
-    for (const { text } of runs) remaining.set(text, (remaining.get(text) ?? 0) + 1);
+    for (const { text } of runs) {
+      remaining.set(text, (remaining.get(text) ?? 0) + 1);
+    }
     for (const run of runs) {
       const same = remaining.get(run.text)!;
       remaining.set(run.text, same - 1);
-      if (isTaken(read, run.start, run.start + run.text.length)) continue;
+      if (isTaken(read, run.start, run.start + run.text.length)) {
+        continue;
+      }
       // A run beside a reference is checked by it. Nothing checks any other run, so a short one needs
       // the output to hold as many places as the source holds runs, or it would be a guess (P2).
       if (
@@ -461,7 +509,9 @@ function findAnchors(output: string, module: UfModule, source: string): Anchor[]
         }
       }
       const at = findRun(output, run, from, to, taken, source);
-      if (at < 0) continue;
+      if (at < 0) {
+        continue;
+      }
       run.at = at;
       taken.fill(1, at, at + run.text.length);
       read.fill(1, run.start, run.start + run.text.length);
@@ -475,7 +525,9 @@ function findAnchors(output: string, module: UfModule, source: string): Anchor[]
   const anchors: Anchor[] = [];
   for (const owner of owners) {
     for (const run of owner.runs) {
-      if (run.at === undefined) continue;
+      if (run.at === undefined) {
+        continue;
+      }
       for (const match of run.text.matchAll(TOKENS)) {
         anchors.push({ generated: run.at + match.index, original: run.start + match.index });
       }
@@ -503,20 +555,34 @@ function referenceStart(
   source: string,
 ): number | undefined {
   for (const run of runs) {
-    if (run.at === undefined) continue;
+    if (run.at === undefined) {
+      continue;
+    }
     const end = run.start + run.text.length;
-    if (end > ref.span.start) break;
-    if (source.slice(end, ref.span.start).trim()) continue;
+    if (end > ref.span.start) {
+      break;
+    }
+    if (source.slice(end, ref.span.start).trim()) {
+      continue;
+    }
     let at = run.at + run.text.length;
-    while (at < output.length && isSpace(output.charCodeAt(at))) at++;
+    while (at < output.length && isSpace(output.charCodeAt(at))) {
+      at++;
+    }
     return mentions(spellingAfter(output, at), ref, source) ? at : undefined;
   }
   const written = source.slice(ref.span.start, ref.span.end);
   for (const run of runs) {
-    if (run.at === undefined || run.start < ref.span.end) continue;
-    if (source.slice(ref.span.end, run.start).trim()) return undefined;
+    if (run.at === undefined || run.start < ref.span.end) {
+      continue;
+    }
+    if (source.slice(ref.span.end, run.start).trim()) {
+      return undefined;
+    }
     let end = run.at;
-    while (end > 0 && isSpace(output.charCodeAt(end - 1))) end--;
+    while (end > 0 && isSpace(output.charCodeAt(end - 1))) {
+      end--;
+    }
     const at = end - written.length;
     return at >= 0 && output.startsWith(written, at) && isWhole(output, at, end) ? at : undefined;
   }
@@ -527,9 +593,13 @@ function referenceStart(
 function collectOwners(module: UfModule, source: string): Owner[] {
   const owners = new Map<string, Owner>();
   const visit = (value: unknown): void => {
-    if (typeof value !== "object" || value === null) return;
+    if (typeof value !== "object" || value === null) {
+      return;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
     const { code, span, refs } = value as { code?: unknown; span?: Span; refs?: CodeReference[] };
@@ -547,7 +617,9 @@ function collectOwners(module: UfModule, source: string): Owner[] {
       owner.runs.forEach((run, index) => (run.index = index));
       owners.set(`${span.start}:${span.end}`, owner);
     }
-    for (const item of Object.values(value)) visit(item);
+    for (const item of Object.values(value)) {
+      visit(item);
+    }
   };
   visit(module);
   return [...owners.values()];
@@ -562,12 +634,16 @@ function ownedRun(owner: Owner, piece: Piece, source: string, fallback = false):
   const end = piece.start + piece.text.length;
   const beside = owner.refs.filter((ref) => ref.kind !== "Write" && ref.kind !== "Emit");
   const before = beside.find(({ span }) => {
-    if (span.end > piece.start) return false;
+    if (span.end > piece.start) {
+      return false;
+    }
     const gap = source.slice(span.end, piece.start).trim();
     return !gap || (fallback && gap === "}" && inSubstitution(source, span.start));
   });
   const after = beside.find(({ span: { start } }) => {
-    if (start < end) return false;
+    if (start < end) {
+      return false;
+    }
     const gap = source.slice(end, start).trim();
     return !gap || (fallback && gap === "{" && piece.text.endsWith("$"));
   });
@@ -594,7 +670,9 @@ function inSubstitution(source: string, offset: number): boolean {
 function splitAtBraces(owner: Owner, source: string): Run[] {
   const pieces: Run[] = [];
   owner.runs = owner.runs.flatMap((run) => {
-    if (run.at !== undefined) return [run];
+    if (run.at !== undefined) {
+      return [run];
+    }
     const own = piecesOf(run.text, run.start, BRACES)
       .filter(({ text }) => isDistinctive(text) && text.match(TOKENS)!.length > 1)
       .map((piece) => ownedRun(owner, piece, source, true));
@@ -646,10 +724,14 @@ function literalRuns(span: Span, refs: readonly CodeReference[], source: string)
   };
   let at = span.start;
   for (const cut of cuts) {
-    if (cut.start > at) add(at, cut.start);
+    if (cut.start > at) {
+      add(at, cut.start);
+    }
     at = Math.max(at, cut.end);
   }
-  if (at < span.end) add(at, span.end);
+  if (at < span.end) {
+    add(at, span.end);
+  }
   return runs;
 }
 
@@ -669,7 +751,9 @@ function findRun(
   const gapAfter = after ? source.slice(start + text.length, after.span.start).trim() : "";
   for (let at = output.indexOf(text, from); at >= 0; at = output.indexOf(text, at + 1)) {
     const end = at + text.length;
-    if (end > to) return -1;
+    if (end > to) {
+      return -1;
+    }
     if (
       !isTaken(taken, at, end) &&
       isWhole(output, at, end) &&
@@ -691,7 +775,9 @@ function isDistinctive(text: string): boolean {
 function countFree(output: string, text: string, taken: Uint8Array): number {
   let count = 0;
   for (let at = output.indexOf(text); at >= 0; at = output.indexOf(text, at + 1)) {
-    if (!isTaken(taken, at, at + text.length) && isWhole(output, at, at + text.length)) count++;
+    if (!isTaken(taken, at, at + text.length) && isWhole(output, at, at + text.length)) {
+      count++;
+    }
   }
   return count;
 }
@@ -699,28 +785,44 @@ function countFree(output: string, text: string, taken: Uint8Array): number {
 /** The spelling that ends at `end`, past whitespace and a brace the source holds there. */
 function spellingBefore(output: string, end: number, gap: string): string {
   let last = end;
-  while (last > 0 && isSpace(output.charCodeAt(last - 1))) last--;
-  if (gap) {
-    if (output[last - 1] !== gap) return "";
+  while (last > 0 && isSpace(output.charCodeAt(last - 1))) {
     last--;
-    while (last > 0 && isSpace(output.charCodeAt(last - 1))) last--;
+  }
+  if (gap) {
+    if (output[last - 1] !== gap) {
+      return "";
+    }
+    last--;
+    while (last > 0 && isSpace(output.charCodeAt(last - 1))) {
+      last--;
+    }
   }
   let first = last;
-  while (first > 0 && SPELLING.test(output[first - 1]!)) first--;
+  while (first > 0 && SPELLING.test(output[first - 1]!)) {
+    first--;
+  }
   return output.slice(first, last);
 }
 
 /** The spelling that starts at `start`, past whitespace and a brace the source holds there. */
 function spellingAfter(output: string, start: number, gap = ""): string {
   let first = start;
-  while (first < output.length && isSpace(output.charCodeAt(first))) first++;
-  if (gap) {
-    if (output[first] !== gap) return "";
+  while (first < output.length && isSpace(output.charCodeAt(first))) {
     first++;
-    while (first < output.length && isSpace(output.charCodeAt(first))) first++;
+  }
+  if (gap) {
+    if (output[first] !== gap) {
+      return "";
+    }
+    first++;
+    while (first < output.length && isSpace(output.charCodeAt(first))) {
+      first++;
+    }
   }
   let last = first;
-  while (last < output.length && SPELLING.test(output[last]!)) last++;
+  while (last < output.length && SPELLING.test(output[last]!)) {
+    last++;
+  }
   return output.slice(first, last);
 }
 
@@ -753,7 +855,11 @@ function isWhole(text: string, start: number, end: number): boolean {
 }
 
 function isTaken(taken: Uint8Array, start: number, end: number): boolean {
-  for (let offset = start; offset < end; offset++) if (taken[offset]) return true;
+  for (let offset = start; offset < end; offset++) {
+    if (taken[offset]) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -776,7 +882,9 @@ function identifierAt(text: string, offset: number): string | undefined {
 export function withLineStarts(map: SourceMapV3): SourceMapV3 {
   const lines = decodedMappings(new TraceMap(map)).map((line): SourceMapSegment[] => {
     const first = line[0];
-    if (!first || first[0] === 0 || first.length === 1) return [...line];
+    if (!first || first[0] === 0 || first.length === 1) {
+      return [...line];
+    }
     return [[0, first[1], first[2], first[3]], ...line];
   });
   return { ...map, mappings: encodedMappings(new TraceMap({ ...map, mappings: lines })) };
@@ -874,7 +982,9 @@ function encode(map: GenMapping, file: string): SourceMapV3 {
 
 function lineStarts(text: string): number[] {
   const starts = [0];
-  for (let at = text.indexOf("\n"); at >= 0; at = text.indexOf("\n", at + 1)) starts.push(at + 1);
+  for (let at = text.indexOf("\n"); at >= 0; at = text.indexOf("\n", at + 1)) {
+    starts.push(at + 1);
+  }
   return starts;
 }
 
@@ -883,8 +993,11 @@ function positionOf(starts: readonly number[], offset: number): { line: number; 
   let high = starts.length - 1;
   while (low < high) {
     const middle = (low + high + 1) >> 1;
-    if (starts[middle]! <= offset) low = middle;
-    else high = middle - 1;
+    if (starts[middle]! <= offset) {
+      low = middle;
+    } else {
+      high = middle - 1;
+    }
   }
   return { line: low, column: offset - starts[low]! };
 }

@@ -65,14 +65,20 @@ export function detectTarget(
   let solid: TargetName | undefined;
   const found = Object.entries(FRAMEWORK_PLUGINS).flatMap(([target, belongs]) => {
     const plugin = names.find((name) => belongs(name));
-    if (!plugin) return [];
+    if (!plugin) {
+      return [];
+    }
     if (target === "solid" || target === "solid2") {
       solid ??= solidMajor(root) === 2 ? "solid2" : "solid";
-      if (target !== solid) return [];
+      if (target !== solid) {
+        return [];
+      }
     }
     return [{ target: target as TargetName, plugin }];
   });
-  if (found.length === 1) return { target: found[0]!.target };
+  if (found.length === 1) {
+    return { target: found[0]!.target };
+  }
   const diagnostic = found.length
     ? createDiagnostic("UF7006", {
         file,
@@ -116,7 +122,9 @@ export function hostOptionWarning(
   file: string,
 ): string | undefined {
   const whitespace = vueApiOf(plugins)?.options?.template?.compilerOptions?.whitespace;
-  if (whitespace !== "preserve") return undefined;
+  if (whitespace !== "preserve") {
+    return undefined;
+  }
   const diagnostic = createDiagnostic("UF7010", {
     file,
     span: NO_SPAN,
@@ -151,7 +159,9 @@ export const NODE_SCRIPT_FS: ScriptFs = {
     try {
       return readFileSync(file, "utf8");
     } catch (error) {
-      if (isNoFile(error)) return undefined;
+      if (isNoFile(error)) {
+        return undefined;
+      }
       throw error;
     }
   },
@@ -159,7 +169,9 @@ export const NODE_SCRIPT_FS: ScriptFs = {
     try {
       return realpathSync(file);
     } catch (error) {
-      if (isNoFile(error)) return file;
+      if (isNoFile(error)) {
+        return file;
+      }
       throw error;
     }
   },
@@ -178,6 +190,8 @@ export const NODE_SCRIPT_FS: ScriptFs = {
 export function fillVueScriptFs(plugins: readonly NamedPlugin[]): void {
   const api = vueApiOf(plugins);
   const options = api?.options;
-  if (!api || !options || options.script?.fs != null) return;
+  if (!api || !options || options.script?.fs != null) {
+    return;
+  }
   api.options = { ...options, script: { ...options.script, fs: NODE_SCRIPT_FS } };
 }

@@ -62,7 +62,9 @@ export async function compileWithOptimizer(
       for (const diagnostic of diagnostics) {
         const message = toMessage(diagnostic);
         const key = `${diagnostic.category}|${message.code}|${message.line}|${message.column}|${message.message}`;
-        if (seen.has(key)) continue;
+        if (seen.has(key)) {
+          continue;
+        }
         seen.add(key);
         (diagnostic.category === "warning" ? result.warnings : result.errors).push(message);
       }

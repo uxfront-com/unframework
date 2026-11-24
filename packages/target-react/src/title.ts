@@ -29,7 +29,9 @@ export function titleChildren(children: readonly RenderNode[], context: JsxConte
   if (!only || children.length > 1 || only.kind === "Element" || only.kind === "For") {
     return joined(children, context);
   }
-  if (only.kind !== "If") return [only];
+  if (only.kind !== "If") {
+    return [only];
+  }
   const branches = only.branches.map((branch) => ({
     ...branch,
     children: titleChildren(branch.children, context),
@@ -43,11 +45,15 @@ export function titleChildren(children: readonly RenderNode[], context: JsxConte
  * context, so the expression holds no reference for a rewrite to spell again.
  */
 function joined(children: readonly RenderNode[], context: JsxContext): RenderNode[] {
-  if (children.length === 0) return [];
+  if (children.length === 0) {
+    return [];
+  }
   const span = { start: children[0]!.span.start, end: children.at(-1)!.span.end };
   const placeholders = new Placeholders();
   const parts = template(children, context, placeholders);
-  if (typeof parts === "string") return parts ? [{ kind: "Text", value: parts, span }] : [];
+  if (typeof parts === "string") {
+    return parts ? [{ kind: "Text", value: parts, span }] : [];
+  }
   const code = placeholders.print(() => printExpression(parts));
   return [{ kind: "Interpolation", value: { code, span, refs: [] }, span }];
 }
@@ -64,10 +70,14 @@ function template(
   const parts: TextPart[] = [];
   for (const node of nodes) {
     const value = node.kind === "Text" ? node.value : part(node, context, placeholders);
-    if (value !== undefined) parts.push(value);
+    if (value !== undefined) {
+      parts.push(value);
+    }
   }
   const [only] = parts;
-  if (parts.length === 1 && typeof only !== "string") return only!;
+  if (parts.length === 1 && typeof only !== "string") {
+    return only!;
+  }
   return textTemplate(parts);
 }
 
@@ -113,7 +123,9 @@ function interpolationText(
   placeholders: Placeholders,
 ): JsExpression | undefined {
   const code = expressionCode(value, context);
-  if (isTextProp(value, context.component)) return placeholders.expression(code);
+  if (isTextProp(value, context.component)) {
+    return placeholders.expression(code);
+  }
   return nullishText(code, placeholders);
 }
 
@@ -153,9 +165,15 @@ function branchText(
  */
 function isTextProp(value: Expression, component: UfComponent): boolean {
   const [only] = value.refs;
-  if (value.refs.length !== 1 || only?.kind !== "Binding") return false;
-  if (only.span.start !== value.span.start || only.span.end !== value.span.end) return false;
+  if (value.refs.length !== 1 || only?.kind !== "Binding") {
+    return false;
+  }
+  if (only.span.start !== value.span.start || only.span.end !== value.span.end) {
+    return false;
+  }
   const prop = component.props.find((candidate) => candidate.binding === only.binding);
-  if (!prop || !["string", "number"].includes(prop.type.code)) return false;
+  if (!prop || !["string", "number"].includes(prop.type.code)) {
+    return false;
+  }
   return !prop.optional || prop.default !== undefined;
 }

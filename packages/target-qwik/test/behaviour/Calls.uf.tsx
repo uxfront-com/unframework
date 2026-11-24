@@ -29,11 +29,15 @@ export default function Calls() {
   const isSize = (value: string): value is Size => value === "sm" || value === "md";
 
   function assertSize(value: string): asserts value is Size {
-    if (!isSize(value)) throw new Error(value);
+    if (!isSize(value)) {
+      throw new Error(value);
+    }
   }
 
   function set(value: string) {
-    if (isSize(value)) size.value = value;
+    if (isSize(value)) {
+      size.value = value;
+    }
   }
 
   function force(value: string) {
@@ -49,7 +53,9 @@ export default function Calls() {
           type="text"
           onInput={(event) => (query.value = (event.currentTarget as HTMLInputElement).value)}
           onKeydown={(event) => {
-            if (event.key === "Escape") clear(event);
+            if (event.key === "Escape") {
+              clear(event);
+            }
           }}
         />
       </label>

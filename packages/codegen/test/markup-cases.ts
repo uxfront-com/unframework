@@ -110,16 +110,24 @@ export class Builder {
     const resolve = (name: string): { binding: BindingId } | { global: string } | undefined => {
       for (const scope of this.loops.toReversed()) {
         const id = scope.get(name);
-        if (id) return { binding: id };
+        if (id) {
+          return { binding: id };
+        }
       }
       const prop = this.propBindings.get(name);
-      if (prop) return { binding: prop.id };
+      if (prop) {
+        return { binding: prop.id };
+      }
       return ALLOWED_GLOBALS.has(name) ? { global: name } : undefined;
     };
     const reference = (node: Identifier, locals: ReadonlySet<string>, shorthand: boolean) => {
-      if (locals.has(node.name)) return;
+      if (locals.has(node.name)) {
+        return;
+      }
       const found = resolve(node.name);
-      if (found === undefined) throw new Error(`\`${node.name}\` in \`${code}\` is unresolved.`);
+      if (found === undefined) {
+        throw new Error(`\`${node.name}\` in \`${code}\` is unresolved.`);
+      }
       const at = span(start + node.start, start + node.end);
       refs.push(
         "global" in found
@@ -129,25 +137,33 @@ export class Builder {
     };
     const visit = (value: unknown, locals: ReadonlySet<string>): void => {
       if (Array.isArray(value)) {
-        for (const item of value) visit(item, locals);
+        for (const item of value) {
+          visit(item, locals);
+        }
         return;
       }
       if (isIdentifier(value)) {
         reference(value, locals, false);
         return;
       }
-      if (!isNode(value)) return;
+      if (!isNode(value)) {
+        return;
+      }
       switch (value.type) {
         case "MemberExpression":
           visit(value.object, locals);
-          if (value.computed) visit(value.property, locals);
+          if (value.computed) {
+            visit(value.property, locals);
+          }
           return;
         case "Property":
           if (value.shorthand && isIdentifier(value.value)) {
             reference(value.value, locals, true);
             return;
           }
-          if (value.computed) visit(value.key, locals);
+          if (value.computed) {
+            visit(value.key, locals);
+          }
           visit(value.value, locals);
           return;
         case "ArrowFunctionExpression": {
@@ -157,7 +173,9 @@ export class Builder {
         }
         default:
           for (const [key, child] of Object.entries(value)) {
-            if (key !== "type" && typeof child === "object") visit(child, locals);
+            if (key !== "type" && typeof child === "object") {
+              visit(child, locals);
+            }
           }
       }
     };
@@ -278,7 +296,9 @@ export class Builder {
    */
   private propSource(name: string): { code: string; nullish: boolean } {
     const spec = this.props[name];
-    if (!spec) throw new Error(`\`${name}\` is no prop of the case.`);
+    if (!spec) {
+      throw new Error(`\`${name}\` is no prop of the case.`);
+    }
     const passed = "value" in spec && spec.value !== undefined;
     return { code: name, nullish: !passed || /\|\s*(?:null|undefined)\s*$/.test(spec.type) };
   }
@@ -384,17 +404,26 @@ export function suite(cases: readonly MarkupCase[], root: "div" | "self" = "div"
 }
 
 function asElement(tree: ElementNode | FragmentNode): ElementNode {
-  if (tree.kind !== "Element") throw new Error("Only a root case's tree can be a fragment.");
+  if (tree.kind !== "Element") {
+    throw new Error("Only a root case's tree can be a fragment.");
+  }
   return tree;
 }
 
 /** The allowed globals a tree's expressions read. */
 function collectGlobals(value: unknown, found: Set<string>): Set<string> {
-  if (Array.isArray(value)) for (const item of value) collectGlobals(item, found);
-  else if (typeof value === "object" && value !== null) {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectGlobals(item, found);
+    }
+  } else if (typeof value === "object" && value !== null) {
     const node = value as { kind?: unknown; name?: unknown };
-    if (node.kind === "Global" && typeof node.name === "string") found.add(node.name);
-    for (const child of Object.values(value)) collectGlobals(child, found);
+    if (node.kind === "Global" && typeof node.name === "string") {
+      found.add(node.name);
+    }
+    for (const child of Object.values(value)) {
+      collectGlobals(child, found);
+    }
   }
   return found;
 }
@@ -417,19 +446,27 @@ export function canonical(html: string): DomNode[] {
 }
 
 function canonicalNode(node: DomNode): DomNode {
-  if (typeof node === "string") return node;
+  if (typeof node === "string") {
+    return node;
+  }
   const attributes: Record<string, string> = {};
   for (const [name, value] of Object.entries(node.attributes).toSorted(([a], [b]) =>
     a.localeCompare(b),
   )) {
     if (name === "class") {
       const tokens = value.split(/[\t\n\f\r ]+/).filter(Boolean);
-      if (tokens.length) attributes[name] = tokens.toSorted().join(" ");
+      if (tokens.length) {
+        attributes[name] = tokens.toSorted().join(" ");
+      }
     } else if (name === "style") {
       // Split outside strings, parentheses and comments: a `;` in a string ends no declaration.
       const declarations = comparableValue(name, value);
-      if (declarations !== undefined) attributes[name] = declarations;
-    } else attributes[name] = value;
+      if (declarations !== undefined) {
+        attributes[name] = declarations;
+      }
+    } else {
+      attributes[name] = value;
+    }
   }
   return {
     tag: node.tag,

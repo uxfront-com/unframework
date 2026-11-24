@@ -69,12 +69,18 @@ export function formatDiagnostic(
       output.push(line.text ? `${gutter(line.number)} ${line.text}` : gutter(line.number));
     }
   }
-  if (lines.length) output.push(gutter());
-  if (diagnostic.help) output.push(`${pad} = ${paint("bold", "help")}: ${diagnostic.help}`);
+  if (lines.length) {
+    output.push(gutter());
+  }
+  if (diagnostic.help) {
+    output.push(`${pad} = ${paint("bold", "help")}: ${diagnostic.help}`);
+  }
   for (const fix of diagnostic.fixes ?? []) {
     output.push(`${pad} = ${paint("bold", `fix (${fix.confidence})`)}: ${fix.title}`);
   }
-  if (options.docs !== false) output.push(`${pad} = see: ${docsUrl(diagnostic.code)}`);
+  if (options.docs !== false) {
+    output.push(`${pad} = see: ${docsUrl(diagnostic.code)}`);
+  }
   return output.join("\n");
 }
 
@@ -116,10 +122,14 @@ function frameLines(index: LineIndex, span: Span, label: string | undefined): Fr
   });
   if (end.line > start.line) {
     const last = index.line(end.line);
-    if (end.line > start.line + 1) lines.push({ number: undefined, text: "..." });
+    if (end.line > start.line + 1) {
+      lines.push({ number: undefined, text: "..." });
+    }
     lines.push({ number: end.line, text: last });
     const covered = last.slice(0, end.column - 1);
-    if (covered) lines.push({ number: undefined, text: covered.replace(/[^\t]/g, "^") });
+    if (covered) {
+      lines.push({ number: undefined, text: covered.replace(/[^\t]/g, "^") });
+    }
   }
   return lines;
 }

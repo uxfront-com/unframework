@@ -130,7 +130,9 @@ const IMPORT_HELP = `Import what the component uses, as in \`import { ref } from
  * API are UF2016. Type-only imports are erased, whatever they name.
  */
 export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter: Reporter): void {
-  if (statement.importKind === "type") return;
+  if (statement.importKind === "type") {
+    return;
+  }
   const specifier = statement.source.value;
   const root = specifier === AUTHORING_PACKAGE;
   if (!statement.specifiers.length) {
@@ -161,7 +163,9 @@ export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter:
       );
       continue;
     }
-    if (item.importKind === "type") continue;
+    if (item.importKind === "type") {
+      continue;
+    }
     const name = exportName(item.imported);
     if (!root) {
       reporter.report(
@@ -172,7 +176,9 @@ export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter:
       );
       continue;
     }
-    if (AUTHORING_APIS.has(name as AuthoringApi) || AUTHORING_TYPES.has(name)) continue;
+    if (AUTHORING_APIS.has(name as AuthoringApi) || AUTHORING_TYPES.has(name)) {
+      continue;
+    }
     const later = LATER_APIS.get(name);
     if (later) {
       reporter.unsupported(item, `\`${name}\` is not supported yet: ${later}.`);
@@ -209,7 +215,9 @@ export function authoringBindings(program: AST.Program): Map<object, AuthoringAp
     }
     const root = statement.source.value === AUTHORING_PACKAGE;
     for (const item of statement.specifiers) {
-      if (item.type === "ImportSpecifier" && item.importKind === "type") continue;
+      if (item.type === "ImportSpecifier" && item.importKind === "type") {
+        continue;
+      }
       const name = item.type === "ImportSpecifier" ? exportName(item.imported) : undefined;
       bindings.set(
         item.local,

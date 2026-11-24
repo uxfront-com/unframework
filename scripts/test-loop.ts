@@ -216,7 +216,9 @@ function changesCanaryPaths(base: string): boolean {
     encoding: "utf8",
     input: `${changedFiles(base).join("\n")}\n`,
   });
-  if (gate.status !== 0) throw new Error(`canary-paths.ts failed: ${gate.stderr.trim()}`);
+  if (gate.status !== 0) {
+    throw new Error(`canary-paths.ts failed: ${gate.stderr.trim()}`);
+  }
   return /^canaries=true$/m.test(gate.stdout);
 }
 
@@ -242,7 +244,9 @@ function runStep(step: Step, base: string): StepResult {
       stdio: "inherit",
       shell: process.platform === "win32",
     });
-    if (result.status !== 0) return { name: step.name, status: "failed", seconds: seconds() };
+    if (result.status !== 0) {
+      return { name: step.name, status: "failed", seconds: seconds() };
+    }
   }
   return { name: step.name, status: "passed", seconds: seconds() };
 }
@@ -252,11 +256,15 @@ function list(mode: "quick" | "full", steps: readonly Step[]): void {
     const jobs = step.jobs.length > 0 ? ` (CI: ${step.jobs.join(", ")})` : "";
     const when = step.when === "canary-paths" ? " [only when a canary path changed]" : "";
     print(`${step.name}${jobs}${when}`);
-    for (const command of step.commands) print(`  ${format(command)}`);
+    for (const command of step.commands) {
+      print(`  ${format(command)}`);
+    }
   }
   if (mode === "full") {
     print("\nLeft out:");
-    for (const [job, reason] of Object.entries(EXCLUDED_JOBS)) print(`  ${job}: ${reason}`);
+    for (const [job, reason] of Object.entries(EXCLUDED_JOBS)) {
+      print(`  ${job}: ${reason}`);
+    }
   }
 }
 
@@ -313,7 +321,9 @@ if (import.meta.main) {
   try {
     process.exitCode = main();
   } catch (error) {
-    if (!(error instanceof UsageError)) throw error;
+    if (!(error instanceof UsageError)) {
+      throw error;
+    }
     process.stderr.write(`[test-loop] ${error.message}\n`);
     process.exitCode = 1;
   }

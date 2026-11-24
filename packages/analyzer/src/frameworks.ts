@@ -18,7 +18,9 @@ const FRAMEWORK_MODULES: readonly (readonly [RegExp, string])[] = [
 /** The framework a module specifier belongs to, if any. */
 export function frameworkOf(specifier: string): string | undefined {
   for (const [pattern, framework] of FRAMEWORK_MODULES) {
-    if (pattern.test(specifier)) return framework;
+    if (pattern.test(specifier)) {
+      return framework;
+    }
   }
   return undefined;
 }

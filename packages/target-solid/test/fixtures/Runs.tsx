@@ -186,7 +186,9 @@ let flushQueued = false;
  */
 function queueWatcher(queue: Set<() => void>, run: () => void): void {
   queue.add(run);
-  if (flushQueued) return;
+  if (flushQueued) {
+    return;
+  }
   flushQueued = true;
   queueMicrotask(() => {
     try {
@@ -198,7 +200,9 @@ function queueWatcher(queue: Set<() => void>, run: () => void): void {
         for (const watcher of queuedWatchers.post) {
           queuedWatchers.post.delete(watcher);
           watcher();
-          if (queuedWatchers.pre.size) break;
+          if (queuedWatchers.pre.size) {
+            break;
+          }
         }
       } while (queuedWatchers.pre.size || queuedWatchers.post.size);
     } finally {
@@ -241,7 +245,9 @@ function createWatcher(
   onMount(() =>
     onCleanup(() => {
       queue.delete(run);
-      for (const cleanup of cleanups.splice(0)) cleanup();
+      for (const cleanup of cleanups.splice(0)) {
+        cleanup();
+      }
     }),
   );
 
@@ -255,14 +261,18 @@ function createWatcher(
 
   function run(): void {
     const values = read();
-    if (values.every((value, index) => Object.is(value, last[index]))) return;
+    if (values.every((value, index) => Object.is(value, last[index]))) {
+      return;
+    }
     const previous = last;
     last = values;
     call(values, previous);
   }
 
   function call(values: unknown[], previous: unknown[] | undefined): void {
-    for (const cleanup of cleanups.splice(0)) cleanup();
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
     const register = (cleanup: () => void) => cleanups.push(cleanup);
     if (typeof source === "function") {
       callback(values[0] as never, previous?.[0] as never, register);
@@ -287,14 +297,20 @@ function createWatchEffect(
     run();
     onCleanup(() => {
       queuedWatchers.post.delete(run);
-      for (const cleanup of cleanups.splice(0)) cleanup();
+      for (const cleanup of cleanups.splice(0)) {
+        cleanup();
+      }
     });
 
     function run(): void {
       track(() => {
-        for (const source of sources) source();
+        for (const source of sources) {
+          source();
+        }
       });
-      for (const cleanup of cleanups.splice(0)) cleanup();
+      for (const cleanup of cleanups.splice(0)) {
+        cleanup();
+      }
       effect((cleanup) => cleanups.push(cleanup));
     }
   });

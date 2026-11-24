@@ -67,11 +67,15 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   // A version, never the value: `createSignal` would take a function for a computation.
   const [tracked, notify] = createSignal(0, { ownedWrite: true });
   function read(): T | undefined {
-    if (getObserver()) tracked();
+    if (getObserver()) {
+      tracked();
+    }
     return current;
   }
   function write(value: T | undefined): void {
-    if (Object.is(value, current)) return;
+    if (Object.is(value, current)) {
+      return;
+    }
     current = value;
     notify((version) => version + 1);
   }

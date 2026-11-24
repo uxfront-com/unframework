@@ -33,7 +33,9 @@ export function embedOptions(
   ];
   for (const [name, values] of accepted) {
     for (const value of params.getAll(name)) {
-      if (values.includes(value)) continue;
+      if (values.includes(value)) {
+        continue;
+      }
       const list = values.join(" or ");
       return { error: `The ${name} parameter takes ${list}, not ${JSON.stringify(value)}.` };
     }

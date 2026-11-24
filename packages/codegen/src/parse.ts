@@ -144,12 +144,18 @@ export function isNode(value: unknown): value is Node {
 /** Calls `visit` on every node of an AST, depth-first, parents before their children. */
 export function visitNodes(root: unknown, visit: (node: Node) => void): void {
   if (Array.isArray(root)) {
-    for (const item of root) visitNodes(item, visit);
+    for (const item of root) {
+      visitNodes(item, visit);
+    }
     return;
   }
-  if (!isNode(root)) return;
+  if (!isNode(root)) {
+    return;
+  }
   visit(root);
   for (const [key, value] of Object.entries(root)) {
-    if (key !== "type" && key !== "parent" && typeof value === "object") visitNodes(value, visit);
+    if (key !== "type" && key !== "parent" && typeof value === "object") {
+      visitNodes(value, visit);
+    }
   }
 }

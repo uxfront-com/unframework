@@ -32,7 +32,9 @@ export function sourceTexts(compiles: readonly SourceCompile[]): Map<string, str
     // The cases directory: the source's path, without its file name relative to it.
     const root = source.source.slice(0, source.source.length - source.filename.length);
     for (const { file } of result.diagnostics) {
-      if (!texts.has(file)) texts.set(file, readFileSync(join(root, file), "utf8"));
+      if (!texts.has(file)) {
+        texts.set(file, readFileSync(join(root, file), "utf8"));
+      }
     }
   }
   return texts;
@@ -62,7 +64,9 @@ export function caseOutputs(
     for (const file of result.outputs[target] ?? []) {
       const key = file.path.toLowerCase();
       const other = producer.get(key);
-      if (other !== undefined && files.get(file.path) === file.contents) continue;
+      if (other !== undefined && files.get(file.path) === file.contents) {
+        continue;
+      }
       if (other !== undefined) {
         problems.push(
           `${other} and ${source.filename} both produce ${target}/${file.path}: the components of a case need names of their own on every target.`,
@@ -91,7 +95,9 @@ export function caseResolver(
     root: casesDir.split(sep).join("/"),
     readFile: async (path) => {
       const file = join(path);
-      if (relative(info.dir, dirname(file)) !== "") return undefined;
+      if (relative(info.dir, dirname(file)) !== "") {
+        return undefined;
+      }
       return readFile(file, "utf8").catch(() => undefined);
     },
     ...(typeOracle ? { typeOracle } : {}),
@@ -115,7 +121,9 @@ export function caseOracle(
 ): TypeOracle {
   const root = casesDir.split(sep).join("/");
   const read = async (path: string) => {
-    if (path === `${root}/${compiled.filename}`) return compiled.text;
+    if (path === `${root}/${compiled.filename}`) {
+      return compiled.text;
+    }
     const file = join(path);
     if (relative(info.dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
       return undefined;

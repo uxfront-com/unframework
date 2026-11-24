@@ -54,7 +54,9 @@ export const ufShellFixture: BrowserCommand<[name: ShellFixture, targets?: strin
   name,
   targets = TARGETS,
 ) => {
-  if (!SHELL_FIXTURES.includes(name)) throw new Error(`No shell fixture named ${String(name)}.`);
+  if (!SHELL_FIXTURES.includes(name)) {
+    throw new Error(`No shell fixture named ${String(name)}.`);
+  }
   const root = ROOTS[name];
   const catalogue = await readCatalogue(root, (await projectConfig(root)).srcDir);
   const out = join(PACKAGE, ".output/shell");

@@ -116,8 +116,11 @@ async function compile(
     const emitted = tsProgram.emit(
       sourceFile,
       (fileName, text) => {
-        if (fileName.endsWith(".map")) map = text;
-        else if (/\.[cm]?js$/.test(fileName)) code = text;
+        if (fileName.endsWith(".map")) {
+          map = text;
+        } else if (/\.[cm]?js$/.test(fileName)) {
+          code = text;
+        }
       },
       undefined,
       false,

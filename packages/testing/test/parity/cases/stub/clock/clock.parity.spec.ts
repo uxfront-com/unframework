@@ -34,7 +34,9 @@ function ticker(leaks = false): StubComponent {
         },
         { signal },
       );
-      if (!leaks) signal.addEventListener("abort", () => clearInterval(timer));
+      if (!leaks) {
+        signal.addEventListener("abort", () => clearInterval(timer));
+      }
     },
   };
 }
@@ -56,7 +58,9 @@ function framedCountdown(): StubComponent {
       let timer: ReturnType<typeof setInterval> | undefined;
       const render = () => {
         frame = 0;
-        if (left === shown) return;
+        if (left === shown) {
+          return;
+        }
         emit("changed", left, shown);
         shown = left;
         status.textContent = String(left);
@@ -66,7 +70,9 @@ function framedCountdown(): StubComponent {
         () => {
           timer = setInterval(() => {
             left -= 1;
-            if (left === 0) clearInterval(timer);
+            if (left === 0) {
+              clearInterval(timer);
+            }
             frame ||= requestAnimationFrame(render);
           }, 1000);
         },

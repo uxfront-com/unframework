@@ -80,13 +80,19 @@ export class SolidComposition {
     // Each child's output, by the name the template uses (ADR-0053): a component that renders
     // itself calls its own function.
     for (const child of childImports(component, module, (name) => name)) {
-      if (child.self) continue;
+      if (child.self) {
+        continue;
+      }
       if (child.export === "default") {
         imports.addDefault(child.specifier, child.local, { exact: true });
-      } else imports.add(child.specifier, child.name, { local: child.local, exact: true });
+      } else {
+        imports.add(child.specifier, child.name, { local: child.local, exact: true });
+      }
     }
     for (const key of keyImports(component, module, (name) => name)) {
-      if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
+      if (key.specifier) {
+        imports.add(key.specifier, key.name, { local: key.local, exact: true });
+      }
     }
     const jsx = () => imports.add("solid-js", "JSX", { type: true });
     const models = component.setup.filter((item): item is ModelItem => item.kind === "Model");
@@ -172,7 +178,9 @@ export class SolidComposition {
   resolvedSlot(slot: string): string | undefined {
     for (const row of this.#rows.toReversed()) {
       const name = row.get(slot);
-      if (name) return name;
+      if (name) {
+        return name;
+      }
     }
     return this.resolved.get(slot);
   }
@@ -204,7 +212,9 @@ export class SolidComposition {
    * (`const content = children(() => props.children);`).
    */
   statements(object: string, slots: ReadonlyMap<string, string> = this.resolved): string[] {
-    if (!slots.size) return [];
+    if (!slots.size) {
+      return [];
+    }
     const children = this.#imports.add("solid-js", "children");
     return [...slots].map(
       ([slot, name]) =>
@@ -215,7 +225,9 @@ export class SolidComposition {
   /** The statement that hands the exposed functions to the `ref` prop, or none. */
   expose(object: string): string | undefined {
     const { exposes } = this.component;
-    if (!exposes) return undefined;
+    if (!exposes) {
+      return undefined;
+    }
     const names = exposes.functions.map((id) => this.#binding(id).name);
     // Once, as an element's `ref` is called: `solid/reactivity` (L5) asks for `untrack`.
     const untrack = this.#imports.add("solid-js", "untrack");
@@ -286,14 +298,22 @@ function propertyKey(name: string): string {
  * the source; none for any other root or with `inheritAttrs: false`.
  */
 function fallthroughRoot(component: UfComponent): Span | undefined {
-  if (component.inheritAttrs === false) return undefined;
+  if (component.inheritAttrs === false) {
+    return undefined;
+  }
   const { render } = component;
-  if (render.kind === "Element") return render.span;
+  if (render.kind === "Element") {
+    return render.span;
+  }
   const [only] = render.children;
-  if (render.children.length !== 1) return undefined;
+  if (render.children.length !== 1) {
+    return undefined;
+  }
   // A `<component is>` over tags renders one element, which takes them as a root element does
   // (ADR-0119): `jsxDynamic` keeps its span for `isRoot`.
-  if (only?.kind === "Component") return only.span;
+  if (only?.kind === "Component") {
+    return only.span;
+  }
   return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
     ? only.span
     : undefined;
@@ -320,23 +340,35 @@ function slotUse(root: unknown): SlotUse {
   const use: SlotUse = { tests: new Set(), uses: new Map(), fallsBack: new Set(), rows: new Set() };
   const visit = (value: unknown, row: boolean): void => {
     if (Array.isArray(value)) {
-      for (const item of value) visit(item, row);
+      for (const item of value) {
+        visit(item, row);
+      }
       return;
     }
-    if (!value || typeof value !== "object") return;
+    if (!value || typeof value !== "object") {
+      return;
+    }
     const node = value as Record<string, unknown>;
     const named = (slot: unknown, count: boolean) => {
-      if (typeof slot !== "string") return;
-      if (row) use.rows.add(slot);
-      else if (count) use.uses.set(slot, (use.uses.get(slot) ?? 0) + 1);
-      else use.tests.add(slot);
+      if (typeof slot !== "string") {
+        return;
+      }
+      if (row) {
+        use.rows.add(slot);
+      } else if (count) {
+        use.uses.set(slot, (use.uses.get(slot) ?? 0) + 1);
+      } else {
+        use.tests.add(slot);
+      }
     };
     if (node.kind === "SlotOutlet") {
       named(node.slot, true);
       if (!row && node.slot === "default" && (node.fallback as unknown[]).length) {
         use.fallsBack.add("default");
       }
-    } else if (node.kind === "Slot") named(node.slot, false);
+    } else if (node.kind === "Slot") {
+      named(node.slot, false);
+    }
     named(node.forward, true);
     for (const [key, child] of Object.entries(node)) {
       visit(child, row || (node.kind === "For" && key === "body"));
@@ -351,7 +383,9 @@ function slotUse(root: unknown): SlotUse {
  * the object `refObject` provides, `{ readonly value: number }`.
  */
 function contextType(key: InjectionKeyDeclaration): string {
-  if (!key.ref) return key.type.code;
+  if (!key.ref) {
+    return key.type.code;
+  }
   const inner = /^\s*[A-Za-z]+\s*<([\s\S]*)>\s*$/.exec(key.type.code)?.[1]?.trim() ?? "unknown";
   return `{ readonly value: ${inner} }`;
 }

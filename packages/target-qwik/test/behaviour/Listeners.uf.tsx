@@ -14,7 +14,9 @@ export default function Listeners() {
   }
 
   function blockComma(event: KeyboardEvent) {
-    if (event.key === ",") event.preventDefault();
+    if (event.key === ",") {
+      event.preventDefault();
+    }
   }
 
   function submit(event: SubmitEvent) {

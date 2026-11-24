@@ -49,7 +49,9 @@ beforeAll(async () => {
   // from `document`.
   DominoAdapter.makeCurrent();
   const document = new DominoAdapter().createHtmlDocument();
-  for (const name of globals) saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+  for (const name of globals) {
+    saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+  }
   Object.assign(globalThis, { document, window: document.defaultView });
 
   const directory = scratchDir();
@@ -63,8 +65,11 @@ beforeAll(async () => {
 afterAll(() => {
   for (const name of globals) {
     const descriptor = saved.get(name);
-    if (descriptor) Object.defineProperty(globalThis, name, descriptor);
-    else Reflect.deleteProperty(globalThis, name);
+    if (descriptor) {
+      Object.defineProperty(globalThis, name, descriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, name);
+    }
   }
   removeScratch();
 });

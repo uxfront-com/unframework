@@ -75,7 +75,9 @@ function scheduled(): StubComponent {
           setTimeout(() => {
             rendering = undefined;
             for (const [watched, current] of Object.entries(state)) {
-              if (Object.is(current, seen[watched])) continue;
+              if (Object.is(current, seen[watched])) {
+                continue;
+              }
               seen[watched] = current;
               emit(watched, current);
             }
@@ -87,17 +89,23 @@ function scheduled(): StubComponent {
         element.addEventListener(type, listener, { signal });
       on(field, "input", () => write("asked", field.value));
       on(field, "keydown", (event) => {
-        if ((event as KeyboardEvent).key === "Shift") write("held", true);
+        if ((event as KeyboardEvent).key === "Shift") {
+          write("held", true);
+        }
       });
       on(field, "keyup", (event) => {
-        if ((event as KeyboardEvent).key === "Shift") write("held", false);
+        if ((event as KeyboardEvent).key === "Shift") {
+          write("held", false);
+        }
       });
       on(press!, "mousedown", () => write("phased", "down"));
       on(press!, "click", () => write("phased", "clicked"));
       on(count!, "click", () => write("counted", Number(state.counted) + 1));
     },
     settle: async () => {
-      while (rendering) await rendering;
+      while (rendering) {
+        await rendering;
+      }
     },
   };
 }

@@ -212,15 +212,21 @@ export const solid: Target = defineTarget({
     // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035); so is
     // every name the module declares for its components to read, which keep theirs (ADR-0070).
     const names = sourceNames(component, context.module);
-    for (const name of freeNames(component, names)) names.delete(name);
-    for (const name of moduleValueNames(context.module)) names.add(name);
+    for (const name of freeNames(component, names)) {
+      names.delete(name);
+    }
+    for (const name of moduleValueNames(context.module)) {
+      names.add(name);
+    }
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
     // the class, scope, style, keyed list, teleport and directive queue helpers from bases of its own (`cx_1`), past the
     // names any other component declares.
     const index = context.module.components.findIndex((each) => each.name === component.name);
     const reserved = context.module.components.map((each) => {
       const taken = sourceNames(each, context.module);
-      for (const name of freeNames(each, taken)) taken.delete(name);
+      for (const name of freeNames(each, taken)) {
+        taken.delete(name);
+      }
       return taken;
     });
     const bases = [
@@ -233,11 +239,15 @@ export const solid: Target = defineTarget({
       REST_HELPER,
     ].map((helper) => {
       const { base, others } = moduleHelperName(helper, reserved, index);
-      for (const name of others) names.add(name);
+      for (const name of others) {
+        names.add(name);
+      }
       return [helper, base] as const;
     });
     const scope = new NameScope(names);
-    for (const [helper, base] of bases) scope.rebase(helper, base);
+    for (const [helper, base] of bases) {
+      scope.rebase(helper, base);
+    }
     const imports = new ImportSet(scope);
     // The imports that pass through, which the render reads as written (ADR-0064).
     addPassThroughImports(component, context.module, imports);
@@ -407,7 +417,9 @@ function rendered(
       : render;
   let wrapped: JsxExpression = jsxNode(root, context);
   for (const item of component.setup.toReversed()) {
-    if (item.kind !== "Provide") continue;
+    if (item.kind !== "Provide") {
+      continue;
+    }
     const value = context.placeholders.expression(code.provided(item.key, item.value));
     wrapped = js.jsxElement(
       `${item.key}.Provider`,

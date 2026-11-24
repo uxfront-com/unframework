@@ -700,8 +700,12 @@ describe("names a prototype has", () => {
 function markupWith(name: string, value: string): string {
   const owner = isHtmlAttribute("div", name) ? "div" : (ownerOf(name) ?? "div");
   const element = `<${owner} ${name}="${value}">a</${owner}>`;
-  if (owner === "td") return `<table><tbody><tr>${element}</tr></tbody></table>`;
-  if (owner === "input" || owner === "img") return `<div><${owner} ${name}="${value}" /></div>`;
+  if (owner === "td") {
+    return `<table><tbody><tr>${element}</tr></tbody></table>`;
+  }
+  if (owner === "input" || owner === "img") {
+    return `<div><${owner} ${name}="${value}" /></div>`;
+  }
   return `<div>${element}</div>`;
 }
 
@@ -828,11 +832,15 @@ describe("fixes", () => {
     const values = [null, "", "x", "submit", "button", "1", "true"];
     const combinations: string[] = [];
     for (const [tag, own] of ELEMENT_ATTRIBUTES) {
-      if (UNRENDERABLE_ELEMENTS.has(tag)) continue;
+      if (UNRENDERABLE_ELEMENTS.has(tag)) {
+        continue;
+      }
       const names = [...own, "id", "title", "class", "tabindex", "popover"];
       for (const bare of names) {
         for (const other of names) {
-          if (other === bare) continue;
+          if (other === bare) {
+            continue;
+          }
           for (const value of isBooleanAttribute(other) ? [null] : values) {
             const attributes = `${bare} ${value === null ? other : `${other}="${value}"`}`;
             const element = VOID_ELEMENTS.has(tag)
@@ -848,7 +856,9 @@ describe("fixes", () => {
       let fixed = 0;
       for (const jsx of sampleOf(combinations, run)) {
         const { source, diagnostics } = component(jsx);
-        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) {
+          continue;
+        }
         try {
           applyAndRecheck(source, diagnostics);
           fixed++;

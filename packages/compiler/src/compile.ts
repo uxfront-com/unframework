@@ -181,7 +181,9 @@ export interface CompileResult {
  */
 export async function compile(source: string, options: CompileOptions): Promise<CompileResult> {
   const file = options.filename;
-  if (options.passThrough) checkPassThrough(options.passThrough);
+  if (options.passThrough) {
+    checkPassThrough(options.passThrough);
+  }
   const diagnostics: Diagnostic[] = [];
   const targets = options.targets.map(resolveTarget);
   const outputs: Record<string, OutputFile[]> = {};
@@ -215,7 +217,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
       try {
         const shape = await oracle.resolveShape(query);
         shapes.set(`${query.span.start}:${query.span.end}`, shape);
-        for (const dependency of shape.dependencies) dependencies.add(dependency);
+        for (const dependency of shape.dependencies) {
+          dependencies.add(dependency);
+        }
       } catch (error) {
         const type = source.slice(query.span.start, query.span.end);
         diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
@@ -230,9 +234,13 @@ export async function compile(source: string, options: CompileOptions): Promise<
         const answer = await oracle.checkDirectiveValues!(file, source, valueQueries);
         valueQueries.forEach((query, index) => {
           const check = answer.checks[index];
-          if (check) directiveValues.set(`${query.value.start}:${query.value.end}`, check);
+          if (check) {
+            directiveValues.set(`${query.value.start}:${query.value.end}`, check);
+          }
         });
-        for (const dependency of answer.dependencies) dependencies.add(dependency);
+        for (const dependency of answer.dependencies) {
+          dependencies.add(dependency);
+        }
       } catch (error) {
         diagnostics.push(internal(file, error, "The type oracle failed on the directives' values"));
       }
@@ -244,7 +252,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
       const composable = COMPOSABLE_SPECIFIER.test(specifier)
         ? joinPath(directoryOf(file), specifier)
         : undefined;
-      if (composable !== undefined) dependencies.add(composable);
+      if (composable !== undefined) {
+        dependencies.add(composable);
+      }
       try {
         const api = await options.resolve!({ specifier, importer: file });
         imports.set(specifier, api);
@@ -311,7 +321,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
     for (const { specifier, span } of options.resolve?.cycle ? edges : []) {
       try {
         const files = await options.resolve!.cycle!({ specifier, importer: file });
-        if (files) cycles.push(importCycle(file, specifier, span, files));
+        if (files) {
+          cycles.push(importCycle(file, specifier, span, files));
+        }
       } catch (error) {
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
       }
@@ -339,17 +351,23 @@ export async function compile(source: string, options: CompileOptions): Promise<
     // error does.
     const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
     diagnostics.push(...collisions, ...cycles);
-    if (collisions.length || cycles.length) analysed = undefined;
+    if (collisions.length || cycles.length) {
+      analysed = undefined;
+    }
   } catch (error) {
     diagnostics.push(internal(file, error, "The analyser failed"));
   }
 
   let module = analysed;
   for (const plugin of options.plugins ?? []) {
-    if (!module || !analysed || !plugin.ir) continue;
+    if (!module || !analysed || !plugin.ir) {
+      continue;
+    }
     try {
       const result = plugin.ir(module);
-      if (result === undefined) continue;
+      if (result === undefined) {
+        continue;
+      }
       const problems = validateModule(result);
       // Only a module of the schema's shape can be walked for its invariants.
       if (!problems.length) {
@@ -378,10 +396,14 @@ export async function compile(source: string, options: CompileOptions): Promise<
       const sheetFile = sheetFiles.get(sheet.specifier) ?? sheet.specifier;
       const scoped = scopeStylesheet(sheetFile, sheet.source, component.scopeId!);
       diagnostics.push(...scoped.diagnostics);
-      if (scoped.diagnostics.length) module = undefined;
+      if (scoped.diagnostics.length) {
+        module = undefined;
+      }
       joined += joined && !joined.endsWith("\n") ? `\n${scoped.code}` : scoped.code;
     }
-    if (component.styles?.length) sheets.set(component.name, joined);
+    if (component.styles?.length) {
+      sheets.set(component.name, joined);
+    }
   }
 
   if (module) {
@@ -448,7 +470,9 @@ function copyCollisions(
       names.set(`${directory}${stem}`.toLowerCase(), name);
     }
   };
-  for (const component of module.components) add("", component.name);
+  for (const component of module.components) {
+    add("", component.name);
+  }
   for (const entry of module.imports ?? []) {
     const slash = entry.file.lastIndexOf("/");
     for (const component of entry.api.components) {
@@ -457,7 +481,9 @@ function copyCollisions(
   }
   return [...copies].flatMap(([path, { span }]) => {
     const name = names.get(path.replace(/\.ts$/, "").toLowerCase());
-    if (name === undefined) return [];
+    if (name === undefined) {
+      return [];
+    }
     return [
       createDiagnostic("UF1104", {
         file,
@@ -482,8 +508,12 @@ function relativeImports(parsed: ParsedModule): { specifier: string; span: Span 
       statement.type === "ExportNamedDeclaration"
         ? statement.source
         : null;
-    if (!from || found.has(from.value)) continue;
-    if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
+    if (!from || found.has(from.value)) {
+      continue;
+    }
+    if (!from.value.startsWith("./") && !from.value.startsWith("../")) {
+      continue;
+    }
     found.set(from.value, { start: from.start, end: from.end });
   }
   return [...found].map(([specifier, span]) => ({ specifier, span }));
@@ -539,9 +569,13 @@ async function emitTarget(
           report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
         }),
       );
-      if ("problem" in emitted) throw new TypeError(`emit returned ${emitted.problem}`);
+      if ("problem" in emitted) {
+        throw new TypeError(`emit returned ${emitted.problem}`);
+      }
       const sheet = sheets.get(component.name);
-      if (sheet !== undefined) emitted.files.push({ path: sheetPath, contents: sheet });
+      if (sheet !== undefined) {
+        emitted.files.push({ path: sheetPath, contents: sheet });
+      }
       files = deepFreeze(emitted.files);
     } catch (error) {
       const what = `The ${target.name} target failed on ${component.name}`;
@@ -550,10 +584,14 @@ async function emitTarget(
     }
 
     for (const plugin of options.plugins ?? []) {
-      if (!plugin.output) continue;
+      if (!plugin.output) {
+        continue;
+      }
       try {
         const result: unknown = plugin.output(files, { target: target.name, component, module });
-        if (result === undefined) continue;
+        if (result === undefined) {
+          continue;
+        }
         const returned = readFiles(result);
         if ("problem" in returned) {
           const what = `returned ${returned.problem}`;
@@ -659,8 +697,9 @@ async function emitTarget(
           report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
         }),
       );
-      if ("problem" in emitted)
+      if ("problem" in emitted) {
         throw new TypeError(`emitting ${each.name} returned ${emitted.problem}`);
+      }
       files = emitted.files;
     } catch (error) {
       const what = `The ${target.name} target failed on ${each.name}`;
@@ -738,10 +777,14 @@ function remapped(
   target: string,
   diagnostics: Diagnostic[],
 ): OutputFile {
-  if (!before.map || error) return after;
+  if (!before.map || error) {
+    return after;
+  }
   const { map: _stale, ...formatted } = after;
   const result = remapFormatted(before, after, before.map);
-  if ("map" in result) return { ...formatted, map: result.map };
+  if ("map" in result) {
+    return { ...formatted, map: result.map };
+  }
   const { code, ...init } = result.diagnostic;
   diagnostics.push(createDiagnostic(code, { ...init, file, target }));
   return formatted;
@@ -762,7 +805,9 @@ function reported(value: unknown, source: string, file: string, target: string):
 
 /** Why a value is not a diagnostic whose spans lie in a source of `length` characters. */
 function diagnosticProblem(value: unknown, length: number): string | undefined {
-  if (!isRecord(value)) return `${describe(value)} instead of a diagnostic`;
+  if (!isRecord(value)) {
+    return `${describe(value)} instead of a diagnostic`;
+  }
   const { code, message } = value;
   if (typeof code !== "string" || typeof message !== "string") {
     return "a diagnostic without a code or a message";
@@ -816,7 +861,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** A target's or a plugin's files, copied, or why the value is not a list of output files. */
 function readFiles(value: unknown): { files: OutputFile[] } | { problem: string } {
-  if (!Array.isArray(value)) return { problem: `${describe(value)} instead of a list of files` };
+  if (!Array.isArray(value)) {
+    return { problem: `${describe(value)} instead of a list of files` };
+  }
   const files: OutputFile[] = [];
   for (const [index, item] of (value as unknown[]).entries()) {
     if (
@@ -836,8 +883,12 @@ function readFiles(value: unknown): { files: OutputFile[] } | { problem: string 
 
 /** `undefined`, `an array`, `a string`, … */
 function describe(value: unknown): string {
-  if (value === null || value === undefined) return String(value);
-  if (Array.isArray(value)) return "an array";
+  if (value === null || value === undefined) {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return "an array";
+  }
   const type = typeof value;
   return `${/^[aeiou]/.test(type) ? "an" : "a"} ${type}`;
 }
@@ -853,7 +904,9 @@ function describeProblems(problems: readonly IrValidationError[]): string {
 function deepFreeze<T>(value: T): T {
   if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
     Object.freeze(value);
-    for (const item of Object.values(value)) deepFreeze(item);
+    for (const item of Object.values(value)) {
+      deepFreeze(item);
+    }
   }
   return value;
 }

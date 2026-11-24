@@ -198,7 +198,9 @@ function addParameterTypeImports(
   const read = new Set(texts.flatMap((type) => [...typeNames(type)]));
   for (const entry of module.typeImports ?? []) {
     for (const name of entry.names) {
-      if (!read.has(name.local)) continue;
+      if (!read.has(name.local)) {
+        continue;
+      }
       imports.add(typeSpecifier(entry.specifier, module, kebabCase), name.imported, {
         type: true,
         local: name.local,
@@ -320,8 +322,12 @@ function watcherCode(item: WatchItem, context: ComposableContext): string {
   // The value the callback last saw, for its previous one, and whether the effect ran before.
   const last = readsPrevious ? locals.claim(`last${pascalCase(hint)}`) : undefined;
   const watching = !item.immediate || readsPrevious ? locals.claim("watching") : undefined;
-  if (last !== undefined) lines.push(`let ${last}!: ReturnType<typeof ${signal}>;`);
-  if (watching !== undefined) lines.push(`let ${watching} = false;`);
+  if (last !== undefined) {
+    lines.push(`let ${last}!: ReturnType<typeof ${signal}>;`);
+  }
+  if (watching !== undefined) {
+    lines.push(`let ${watching} = false;`);
+  }
   const inner = new NameScope([...context.taken, ...callbackNames(item.callback, owner)]);
   const value = inner.claim(item.array ? "current" : "value");
   // The read subscribes the effect; the callback and the previous value may not need its value.
@@ -343,9 +349,15 @@ function watcherCode(item: WatchItem, context: ComposableContext): string {
       `const ${parameterBinding(previousParameter)}${annotation(previousParameter)} = ${defaulted(previousParameter, previous)};`,
     );
   }
-  if (item.immediate && watching !== undefined) body.push(`${watching} = true;`);
-  if (last !== undefined) body.push(`${last} = ${value};`);
-  if (item.immediate) body.push(`if (!${context.browser()}) return;`);
+  if (item.immediate && watching !== undefined) {
+    body.push(`${watching} = true;`);
+  }
+  if (last !== undefined) {
+    body.push(`${last} = ${value};`);
+  }
+  if (item.immediate) {
+    body.push(`if (!${context.browser()}) return;`);
+  }
   const callback = item.callback.expression
     ? `${item.callback.async ? "async " : ""}() => ${arrowBody(rewriteCode(item.callback.body, owner, rules, "client"))}`
     : `${item.callback.async ? "async " : ""}() => {\n${functionBodyText(item.callback, owner, rules, "client")}\n}`;
@@ -373,6 +385,8 @@ function callbackNames(fn: FunctionCode, owner: UfComponent): string[] {
 /** The binding a composable declares under `id`. */
 function bindingOf(owner: UfComponent, id: string): Binding {
   const binding = owner.bindings.find((each) => each.id === id);
-  if (!binding) throw new Error(`Composable ${owner.name} declares no binding ${id}.`);
+  if (!binding) {
+    throw new Error(`Composable ${owner.name} declares no binding ${id}.`);
+  }
   return binding;
 }

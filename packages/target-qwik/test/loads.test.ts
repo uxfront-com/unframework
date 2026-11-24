@@ -22,7 +22,9 @@ function register(load: () => Promise<unknown>): () => Promise<unknown> {
   const hook = (globalThis as Record<string, unknown>)[TRACKER] as
     | ((load: () => Promise<unknown>) => () => Promise<unknown>)
     | undefined;
-  if (!hook) throw new Error("No registry is installed.");
+  if (!hook) {
+    throw new Error("No registry is installed.");
+  }
   return hook(load);
 }
 
@@ -40,7 +42,9 @@ function deferred<T = unknown>() {
 /** What an instrumented module does with each QRL it creates: hands it to the registry. */
 function created<T>(qrl: T): T {
   const hook = (globalThis as Record<string, unknown>)[QRLS] as ((qrl: T) => T) | undefined;
-  if (!hook) throw new Error("No registry is installed.");
+  if (!hook) {
+    throw new Error("No registry is installed.");
+  }
   return hook(qrl);
 }
 
@@ -211,7 +215,9 @@ describe("Qwik's error reports in the test builds", () => {
       { ...fragment, root, configFile: false, logLevel: "silent" },
       "serve",
     ).finally(() => {
-      for (const [name, value] of flags) Reflect.set(globalThis, name, value);
+      for (const [name, value] of flags) {
+        Reflect.set(globalThis, name, value);
+      }
     });
     expect(config.define?.["globalThis.qTest"]).toBe(false);
     const names = config.plugins.map((plugin: Plugin) => plugin.name);

@@ -254,7 +254,9 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
         const unframework: Plugin = {
           name: "unframework",
           resolveId: (id, importer) => {
-            if (ASTRO_VIRTUAL_ID.test(id)) return id;
+            if (ASTRO_VIRTUAL_ID.test(id)) {
+              return id;
+            }
             const name = /^\.\/(\w+)\.astro$/.exec(id)?.[1];
             return name && importer && ASTRO_VIRTUAL_ID.test(importer) ? idOf(name) : null;
           },

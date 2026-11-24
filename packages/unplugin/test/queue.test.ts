@@ -129,7 +129,9 @@ describe("a request whose compile is current", () => {
     server = await startServer(project.root, unframework({ target: "qwik" }));
     const { client } = server;
     // The spec file imports only the main component, so only its module loads before the test.
-    for (const name of load) codeOf(await client.pluginContainer.load(at(name)));
+    for (const name of load) {
+      codeOf(await client.pluginContainer.load(at(name)));
+    }
     const started = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
     release = released.resolve;

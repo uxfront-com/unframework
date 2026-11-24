@@ -156,8 +156,12 @@ export function toSarif(
     }
     if (diagnostic.target || diagnostic.help) {
       result.properties = {};
-      if (diagnostic.target) result.properties.target = diagnostic.target;
-      if (diagnostic.help) result.properties.help = diagnostic.help;
+      if (diagnostic.target) {
+        result.properties.target = diagnostic.target;
+      }
+      if (diagnostic.help) {
+        result.properties.help = diagnostic.help;
+      }
     }
     return result;
   });
@@ -166,7 +170,9 @@ export function toSarif(
     informationUri: "https://unframework.dev",
     rules,
   };
-  if (options.version) driver.version = options.version;
+  if (options.version) {
+    driver.version = options.version;
+  }
   return {
     $schema: "https://json.schemastore.org/sarif-2.1.0.json",
     version: "2.1.0",
@@ -182,9 +188,15 @@ export function toSarif(
 function artifactLocation(file: string): SarifArtifactLocation {
   const path = file.replaceAll("\\", "/");
   const drive = /^([A-Za-z]:)\//.exec(path);
-  if (drive) return { uri: `file:///${drive[1]}/${encode(path.slice(3))}` };
-  if (path.startsWith("//")) return { uri: `file:${encode(path)}` };
-  if (path.startsWith("/")) return { uri: `file://${encode(path)}` };
+  if (drive) {
+    return { uri: `file:///${drive[1]}/${encode(path.slice(3))}` };
+  }
+  if (path.startsWith("//")) {
+    return { uri: `file:${encode(path)}` };
+  }
+  if (path.startsWith("/")) {
+    return { uri: `file://${encode(path)}` };
+  }
   return { uri: encode(path), uriBaseId: "%SRCROOT%" };
 }
 

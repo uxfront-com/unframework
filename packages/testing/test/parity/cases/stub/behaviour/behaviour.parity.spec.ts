@@ -39,7 +39,9 @@ describeTargets("stub/behaviour", () => {
 
   describe("a spec's own afterEach", () => {
     afterEach(({ task }) => {
-      if (task.name.startsWith("fails L8")) throw new Error("[fixture] the spec's afterEach");
+      if (task.name.startsWith("fails L8")) {
+        throw new Error("[fixture] the spec's afterEach");
+      }
     });
 
     it.fails("fails L8 with the error its afterEach threw", async () => {

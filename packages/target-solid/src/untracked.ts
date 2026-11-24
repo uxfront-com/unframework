@@ -157,7 +157,9 @@ export function untrackEdits(fn: FunctionCode, options: UntrackOptions): Edit[] 
   const functions = collect(top, self, body.code, reactive);
   const edits: Edit[] = [];
   for (const each of functions) {
-    if (!each.untracked || !each.node) continue;
+    if (!each.untracked || !each.node) {
+      continue;
+    }
     const depth = each.outer.length * 100;
     // An untracked async arrow's work moves into `untrack`'s callback, which returns its promise
     // (`(result) => untrack(async () => { … })`).
@@ -200,10 +202,14 @@ function collect(root: Node, self: Fn, code: string, reactive: readonly Span[]):
   const parents = new Map<Fn, Node | undefined>();
   const visit = (node: unknown, parent: Node | undefined, around: Fn): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, parent, around);
+      for (const item of node) {
+        visit(item, parent, around);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     let inside = around;
     if (FUNCTIONS.has(node.type) && isNode(node.body)) {
       const fn: Fn = {
@@ -230,7 +236,9 @@ function collect(root: Node, self: Fn, code: string, reactive: readonly Span[]):
   // wrapped, which is known once that one's reads are (a sync callback stays its caller's).
   for (const fn of functions) {
     fn.position = positionOf(fn.node!, parents.get(fn), fn.outer[0]!);
-    if (fn.position === "reported") fn.untracked = readsReactive(fn, functions, reactive);
+    if (fn.position === "reported") {
+      fn.untracked = readsReactive(fn, functions, reactive);
+    }
   }
   return functions;
 }
@@ -239,15 +247,21 @@ function collect(root: Node, self: Fn, code: string, reactive: readonly Span[]):
 function readsReactive(fn: Fn, functions: readonly Fn[], reactive: readonly Span[]): boolean {
   const node = fn.node!;
   return reactive.some((site) => {
-    if (site.start < node.start || site.end > node.end) return false;
+    if (site.start < node.start || site.end > node.end) {
+      return false;
+    }
     let owner: Fn | undefined;
     for (const each of functions) {
       if (each.node!.start <= site.start && each.node!.end >= site.end) {
-        if (!owner || each.outer.length > owner.outer.length) owner = each;
+        if (!owner || each.outer.length > owner.outer.length) {
+          owner = each;
+        }
       }
     }
     for (let current = owner; current && current !== fn; current = current.outer[0]) {
-      if (current.position !== "caller") return false;
+      if (current.position !== "caller") {
+        return false;
+      }
     }
     return true;
   });
@@ -262,25 +276,35 @@ function readsReactive(fn: Fn, functions: readonly Fn[], reactive: readonly Span
  * setup function, an arrow assigned to a variable).
  */
 function positionOf(node: Node, parent: Node | undefined, around: Fn): Position {
-  if (!parent) return "plain";
+  if (!parent) {
+    return "plain";
+  }
   /** Whether the function the call is in is a tracked scope (or untrack's, once wrapped). */
   const tracking = around.position === "tracked" || around.untracked;
   switch (parent.type) {
     case "CallExpression": {
       const args = Array.isArray(parent.arguments) ? parent.arguments : [];
-      if (unwrap(parent.callee as Node) === node) return "caller";
-      if (!args.includes(node)) return "plain";
+      if (unwrap(parent.callee as Node) === node) {
+        return "caller";
+      }
+      if (!args.includes(node)) {
+        return "plain";
+      }
       const callee = unwrap(parent.callee as Node);
       if (callee.type === "Identifier") {
         const name = callee.name as string;
-        if (TIMERS.has(name) || PRIMITIVE.test(name)) return "tracked";
+        if (TIMERS.has(name) || PRIMITIVE.test(name)) {
+          return "tracked";
+        }
         // An arrow passed to any other function is a called function inside a tracked scope.
         return tracking ? "tracked" : "reported";
       }
       if (callee.type === "MemberExpression" && !callee.computed && isNode(callee.property)) {
         const method = callee.property.name as string;
         const object = unwrap(callee.object as Node);
-        if (method === "addEventListener" && args[1] === node) return "tracked";
+        if (method === "addEventListener" && args[1] === node) {
+          return "tracked";
+        }
         if (
           object.type === "Identifier" &&
           GLOBAL_OBJECTS.has(object.name as string) &&
@@ -289,8 +313,12 @@ function positionOf(node: Node, parent: Node | undefined, around: Fn): Position 
         ) {
           return "tracked";
         }
-        if (PRIMITIVE.test(method)) return "tracked";
-        if (syncCallback(node, parent)) return "caller";
+        if (PRIMITIVE.test(method)) {
+          return "tracked";
+        }
+        if (syncCallback(node, parent)) {
+          return "caller";
+        }
       }
       return "reported";
     }
@@ -304,7 +332,9 @@ function positionOf(node: Node, parent: Node | undefined, around: Fn): Position 
         : "reported";
     }
     case "AssignmentExpression": {
-      if (parent.right !== node) return "plain";
+      if (parent.right !== node) {
+        return "plain";
+      }
       const left = parent.left as Node;
       // A member `on…` is a handler.
       return left.type === "MemberExpression" &&
@@ -337,9 +367,13 @@ function positionOf(node: Node, parent: Node | undefined, around: Fn): Position 
  * callback, alone in its call, of an array method the rule knows (`list.filter((value) => …)`).
  */
 function syncCallback(node: Node, parent: Node): boolean {
-  if (parent.type !== "CallExpression" || node.async) return false;
+  if (parent.type !== "CallExpression" || node.async) {
+    return false;
+  }
   const args = parent.arguments as unknown[];
-  if (args.length !== 1 || args[0] !== node) return false;
+  if (args.length !== 1 || args[0] !== node) {
+    return false;
+  }
   const callee = unwrap(parent.callee as Node);
   return (
     callee.type === "MemberExpression" &&
@@ -353,21 +387,27 @@ function syncCallback(node: Node, parent: Node): boolean {
 /** An expression without the parentheses and type assertions around it. */
 function unwrap(node: Node): Node {
   let current = node;
-  while (TYPE_WRAPPERS.has(current.type) && isNode(current.expression))
+  while (TYPE_WRAPPERS.has(current.type) && isNode(current.expression)) {
     current = current.expression;
+  }
   return current;
 }
 
 /** Where an arrow's body is written: an expression body with the parentheses around it. */
 function bodyRegion(node: Node, code: string): Span {
   const body = node.body as Node;
-  if (body.type === "BlockStatement") return { start: body.start, end: body.end };
+  if (body.type === "BlockStatement") {
+    return { start: body.start, end: body.end };
+  }
   let start = body.start;
   // Back over the parentheses the parser leaves out, to the `=>`.
   for (let index = body.start - 1; index > node.start; index--) {
     const char = code[index]!;
-    if (char === "(") start = index;
-    else if (!/\s/.test(char)) break;
+    if (char === "(") {
+      start = index;
+    } else if (!/\s/.test(char)) {
+      break;
+    }
   }
   return { start, end: node.end };
 }

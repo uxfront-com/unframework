@@ -198,7 +198,9 @@ function queueWatcher(queue: Set<() => void>, run: () => void): void {
 
 /** Queues the flush of the watchers, once, in a microtask. */
 function requestWatcherFlush(): void {
-  if (flushQueued) return;
+  if (flushQueued) {
+    return;
+  }
   flushQueued = true;
   queueMicrotask(() => {
     try {
@@ -213,7 +215,9 @@ function requestWatcherFlush(): void {
           queuedWatchers.post.delete(watcher);
           watcher();
           flush();
-          if (queuedWatchers.pre.size) break;
+          if (queuedWatchers.pre.size) {
+            break;
+          }
         }
       } while (queuedWatchers.pre.size || queuedWatchers.post.size);
     } finally {
@@ -257,7 +261,9 @@ function createWatcher(
   let last = read();
   onSettled(() => () => {
     queue.delete(run);
-    for (const cleanup of cleanups.splice(0)) cleanup();
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
     dispose();
   });
 
@@ -271,14 +277,18 @@ function createWatcher(
 
   function run(): void {
     const values = read();
-    if (values.every((value, index) => Object.is(value, last[index]))) return;
+    if (values.every((value, index) => Object.is(value, last[index]))) {
+      return;
+    }
     const previous = last;
     last = values;
     call(values, previous);
   }
 
   function call(values: unknown[], previous: unknown[] | undefined): void {
-    for (const cleanup of cleanups.splice(0)) cleanup();
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
     const register = (cleanup: () => void) => cleanups.push(cleanup);
     if (typeof source === "function") {
       callback(values[0] as never, previous?.[0] as never, register);
@@ -307,16 +317,22 @@ function createWatchEffect(
     run();
     return () => {
       queuedWatchers.post.delete(run);
-      for (const cleanup of cleanups.splice(0)) cleanup();
+      for (const cleanup of cleanups.splice(0)) {
+        cleanup();
+      }
       dispose();
     };
   });
 
   function run(): void {
     track(() => {
-      for (const source of sources) source();
+      for (const source of sources) {
+        source();
+      }
     });
-    for (const cleanup of cleanups.splice(0)) cleanup();
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
     effect((cleanup) => cleanups.push(cleanup));
   }
 }
@@ -341,11 +357,15 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   // A version, never the value: `createSignal` would take a function for a computation.
   const [tracked, notify] = createSignal(0, { ownedWrite: true });
   function read(): T | undefined {
-    if (getObserver()) tracked();
+    if (getObserver()) {
+      tracked();
+    }
     return current;
   }
   function write(value: T | undefined): void {
-    if (Object.is(value, current)) return;
+    if (Object.is(value, current)) {
+      return;
+    }
     current = value;
     notify((version) => version + 1);
     requestWatcherFlush();

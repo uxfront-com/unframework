@@ -30,7 +30,9 @@ export function syncHandler(
   syncs: readonly SyncBatch[],
   type: string,
 ): string | undefined {
-  if (!syncs.length) return undefined;
+  if (!syncs.length) {
+    return undefined;
+  }
   const element = plan.names.once("element");
   const own = syncs[0]!.fn.parameters.find((candidate) => candidate.event !== undefined);
   const name = own?.name ?? "event";
@@ -38,7 +40,9 @@ export function syncHandler(
     const body = controls
       .map(({ control }) => eventText(fn, control.span, name, element))
       .join("\n");
-    if (!tests.length) return body;
+    if (!tests.length) {
+      return body;
+    }
     const conditions = tests.map(({ test, negated: guard }) => {
       const rewritten = rewriteCode(test, plan.component, plan.rules(name), "client");
       const written = guard ? negation(rewritten) : rewritten;
@@ -58,8 +62,11 @@ export function batches(controls: readonly LiftedControl[]): SyncBatch[] {
     const batch = found.find(
       (each) => each.fn === lifted.fn && sameTests(each.tests, lifted.tests),
     );
-    if (batch) batch.controls.push(lifted);
-    else found.push({ fn: lifted.fn, tests: lifted.tests, controls: [lifted] });
+    if (batch) {
+      batch.controls.push(lifted);
+    } else {
+      found.push({ fn: lifted.fn, tests: lifted.tests, controls: [lifted] });
+    }
   }
   return found;
 }
@@ -88,7 +95,9 @@ function eventText(fn: FunctionCode, span: Span, name: string, element: string):
     )
     .toSorted((a, b) => b.span.start - a.span.start);
   for (const reference of edits) {
-    if (reference.kind !== "Event") continue;
+    if (reference.kind !== "Event") {
+      continue;
+    }
     const start = reference.span.start - span.start;
     const end = reference.span.end - span.start;
     const read = reference.member === "currentTarget" ? element : `${name}.${reference.member}`;
@@ -129,7 +138,9 @@ function negated(test: string, node: TestNode): string {
   if (node.type === "BinaryExpression" && node.operator !== undefined && node.operator in FLIPPED) {
     return `${text(node.left!)} ${FLIPPED[node.operator]} ${text(node.right!)}`;
   }
-  if (node.type === "UnaryExpression" && node.operator === "!") return text(node.argument!);
+  if (node.type === "UnaryExpression" && node.operator === "!") {
+    return text(node.argument!);
+  }
   if (node.type === "LogicalExpression" && (node.operator === "||" || node.operator === "&&")) {
     const join = node.operator === "||" ? " && " : " || ";
     const side = (each: TestNode) => {

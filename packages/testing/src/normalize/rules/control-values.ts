@@ -29,18 +29,24 @@ import type { TreeElement, TreeParent } from "../tree.ts";
  */
 export function removeSettledValues(root: TreeParent): void {
   forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    if (element.namespaceURI !== HTML_NAMESPACE) {
+      return;
+    }
     switch (element.tagName) {
       case "input": {
         const state = getAttribute(element, "uf:value");
         if (state !== undefined && getAttribute(element, "value") === state) {
           removeAttribute(element, "value");
         }
-        if (getAttribute(element, "uf:checked") === "true") removeAttribute(element, "checked");
+        if (getAttribute(element, "uf:checked") === "true") {
+          removeAttribute(element, "checked");
+        }
         return;
       }
       case "option":
-        if (getAttribute(element, "uf:selected") === "true") removeAttribute(element, "selected");
+        if (getAttribute(element, "uf:selected") === "true") {
+          removeAttribute(element, "selected");
+        }
         return;
       case "textarea": {
         const state = getAttribute(element, "uf:value");
@@ -48,7 +54,9 @@ export function removeSettledValues(root: TreeParent): void {
         const text = children.every(isText)
           ? children.map((child) => child.value).join("")
           : undefined;
-        if (state !== undefined && children.length && text === state) replaceChildren(element, []);
+        if (state !== undefined && children.length && text === state) {
+          replaceChildren(element, []);
+        }
         return;
       }
       default:
@@ -67,9 +75,13 @@ export function removeSettledValues(root: TreeParent): void {
  * element without the `uf:*` state (a server render) keeps its attribute on React too.
  */
 export function removeReactDefaultStates(root: TreeParent, target?: NormalizeTarget): void {
-  if (target !== "react") return;
+  if (target !== "react") {
+    return;
+  }
   forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    if (element.namespaceURI !== HTML_NAMESPACE) {
+      return;
+    }
     if (element.tagName === "input" && getAttribute(element, "uf:checked") !== undefined) {
       removeAttribute(element, "checked");
     } else if (element.tagName === "option" && getAttribute(element, "uf:selected") !== undefined) {
@@ -89,13 +101,21 @@ export function removeReactDefaultStates(root: TreeParent, target?: NormalizeTar
  * and in the client render's DOM (L7).
  */
 export function removeServerControlStates(root: TreeParent, hydrated?: boolean): void {
-  if (!hydrated) return;
+  if (!hydrated) {
+    return;
+  }
   forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    if (element.namespaceURI !== HTML_NAMESPACE) {
+      return;
+    }
     switch (element.tagName) {
       case "input":
-        if (getAttribute(element, "uf:value") !== undefined) removeAttribute(element, "value");
-        if (getAttribute(element, "uf:checked") !== undefined) removeAttribute(element, "checked");
+        if (getAttribute(element, "uf:value") !== undefined) {
+          removeAttribute(element, "value");
+        }
+        if (getAttribute(element, "uf:checked") !== undefined) {
+          removeAttribute(element, "checked");
+        }
         return;
       case "option":
         if (getAttribute(element, "uf:selected") !== undefined) {
@@ -103,7 +123,9 @@ export function removeServerControlStates(root: TreeParent, hydrated?: boolean):
         }
         return;
       case "textarea":
-        if (getAttribute(element, "uf:value") !== undefined) replaceChildren(element, []);
+        if (getAttribute(element, "uf:value") !== undefined) {
+          replaceChildren(element, []);
+        }
         return;
       default:
         return;

@@ -48,11 +48,17 @@ function parent(jsx: string, setup = "") {
 function componentNode(module: ReturnType<typeof run>["module"]): ComponentNode {
   const page = module!.components.find((each) => each.name === "Page")!;
   const visit = (value: unknown): ComponentNode | undefined => {
-    if (!value || typeof value !== "object") return undefined;
-    if ((value as { kind?: string }).kind === "Component") return value as ComponentNode;
+    if (!value || typeof value !== "object") {
+      return undefined;
+    }
+    if ((value as { kind?: string }).kind === "Component") {
+      return value as ComponentNode;
+    }
     for (const item of Object.values(value)) {
       const found = visit(item);
-      if (found) return found;
+      if (found) {
+        return found;
+      }
     }
     return undefined;
   };

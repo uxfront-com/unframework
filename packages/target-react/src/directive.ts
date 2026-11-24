@@ -51,9 +51,13 @@ export function directivesInPostOrder(component: UfComponent): DirectiveAttribut
   const found: DirectiveAttribute[] = [];
   walk(component.render, {
     leave(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Directive") found.push(attribute);
+        if (attribute.kind === "Directive") {
+          found.push(attribute);
+        }
       }
     },
   });

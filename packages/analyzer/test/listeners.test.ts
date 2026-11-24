@@ -11,8 +11,12 @@ import { applyAndRecheck, functionOf, only, problems, root, setupOf } from "./he
 /** An element's listeners and refs, compactly. */
 function ownAttributes(source: string, element: ElementNode): string[] {
   return element.attributes.flatMap((attribute: Attribute) => {
-    if (attribute.kind === "Ref") return [`ref ${attribute.binding.split("@")[0]}`];
-    if (attribute.kind !== "Event") return [];
+    if (attribute.kind === "Ref") {
+      return [`ref ${attribute.binding.split("@")[0]}`];
+    }
+    if (attribute.kind !== "Event") {
+      return [];
+    }
     const option = attribute.capture
       ? " capture"
       : attribute.once

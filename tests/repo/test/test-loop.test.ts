@@ -25,15 +25,23 @@ import { root } from "./workspace.ts";
 function workflowJobIds(workflow: string): string[] {
   const lines = workflow.split(/\r?\n/);
   const start = lines.findIndex((line) => /^jobs:[ \t]*(?:#.*)?$/.test(line));
-  if (start === -1) return [];
+  if (start === -1) {
+    return [];
+  }
   const ids: string[] = [];
   let indent: string | undefined;
   for (const line of lines.slice(start + 1)) {
-    if (/^[ \t]*(?:#.*)?$/.test(line)) continue;
+    if (/^[ \t]*(?:#.*)?$/.test(line)) {
+      continue;
+    }
     // The next top-level key ends the mapping.
-    if (!/^[ \t]/.test(line)) break;
+    if (!/^[ \t]/.test(line)) {
+      break;
+    }
     indent ??= /^[ \t]+/.exec(line)?.[0] ?? "";
-    if (!line.startsWith(indent) || /^[ \t]/.test(line.slice(indent.length))) continue;
+    if (!line.startsWith(indent) || /^[ \t]/.test(line.slice(indent.length))) {
+      continue;
+    }
     const key = /^(["']?)([A-Za-z_][\w-]*)\1:[ \t]*(?:#.*)?$/.exec(line.slice(indent.length));
     // A line at the jobs' indentation that isn't a plain key fails the guard, not skips it.
     ids.push(key?.[2] ?? `<unreadable: ${line.trim()}>`);

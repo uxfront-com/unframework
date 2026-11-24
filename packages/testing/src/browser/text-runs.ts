@@ -35,7 +35,9 @@ export function mergeTextRuns(root: Element): () => void {
         if (run.detached.length) {
           runs.push(run);
           child.data = [run.data, ...run.detached.map(textOf)].join("");
-          for (const node of run.detached) node.remove();
+          for (const node of run.detached) {
+            node.remove();
+          }
         }
       } else if (child instanceof Element && !SKIPPED.has(child.localName)) {
         visit(child);
@@ -62,7 +64,9 @@ export async function withMergedTextRuns<T>(
   try {
     return await capture();
   } finally {
-    for (const restore of restores.toReversed()) restore();
+    for (const restore of restores.toReversed()) {
+      restore();
+    }
   }
 }
 

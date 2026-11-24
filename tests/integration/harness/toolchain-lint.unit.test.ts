@@ -312,7 +312,9 @@ describe("every toolchain's oxlint configuration", () => {
     const { rules, overrides = [] } = configs.get(target)!;
     for (const rule of AUTHOR_RULES) {
       expect(rules[rule] ?? "allow", rule).toBe("allow");
-      for (const override of overrides) expect(override.rules[rule] ?? "allow", rule).toBe("allow");
+      for (const override of overrides) {
+        expect(override.rules[rule] ?? "allow", rule).toBe("allow");
+      }
     }
   });
 
@@ -334,7 +336,9 @@ describe("every toolchain's oxlint configuration", () => {
       const { host, rules } = TYPED_LAYER[target]!;
       const directory = join(toolchainDir(target), "..", host);
       const [framework] = configs.get(target)!.overrides ?? [];
-      for (const rule of rules) expect(framework?.rules[rule], rule).toBe("allow");
+      for (const rule of rules) {
+        expect(framework?.rules[rule], rule).toBe("allow");
+      }
       expect(eslintRules(directory)).toEqual(rules);
       // The rules' plugin resolves TypeScript as it is installed for the host, and the
       // toolchain's checker (tsgo) is TypeScript 7.

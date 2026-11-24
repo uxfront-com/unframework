@@ -82,7 +82,9 @@ export function consumersDir(target: string): string {
 /** The cases a target has consumer fixtures for, as `area/name`, sorted. */
 export function consumerCases(target: string): string[] {
   const root = consumersDir(target);
-  if (!existsSync(root)) return [];
+  if (!existsSync(root)) {
+    return [];
+  }
   return directories(root).flatMap((area) =>
     directories(join(root, area)).map((name) => `${area}/${name}`),
   );
@@ -91,7 +93,9 @@ export function consumerCases(target: string): string[] {
 /** A case's consumer fixtures for a target (absolute paths, sorted): none without a tree. */
 export function consumerFixtures(target: string, caseId: string): string[] {
   const directory = join(consumersDir(target), ...caseId.split("/"));
-  if (!existsSync(directory)) return [];
+  if (!existsSync(directory)) {
+    return [];
+  }
   return readdirSync(directory)
     .toSorted()
     .map((entry) => join(directory, entry))
@@ -122,7 +126,9 @@ export function readExpectations(contents: string): {
   const expectations: Expectation[] = [];
   const malformed: number[] = [];
   contents.split(/\r?\n/).forEach((text, index) => {
-    if (!text.includes("@uf-expect")) return;
+    if (!text.includes("@uf-expect")) {
+      return;
+    }
     // One directive a line: a second would claim the same misuse line.
     const match = text.split("@uf-expect").length === 2 ? DIRECTIVE.exec(text) : null;
     if (!match) {
@@ -152,12 +158,16 @@ export function consumerProblems(
   results: ReadonlyMap<string, readonly ToolchainMessage[]>,
   gaps: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = CONSUMER_GAPS,
 ): string[] {
-  if (!fixtures.length) return [];
+  if (!fixtures.length) {
+    return [];
+  }
   const declarations = caseDeclarations(info);
   return fixtures.flatMap(({ path, checked }) => {
     const shown = posix(relative(REPO_ROOT, path));
     const messages = results.get(checked);
-    if (!messages) return [`${shown}: the checker reported nothing for this file.`];
+    if (!messages) {
+      return [`${shown}: the checker reported nothing for this file.`];
+    }
     const { expectations, malformed } = readExpectations(readFileSync(path, "utf8"));
     const problems = malformed.map(
       (line) =>
@@ -226,7 +236,9 @@ function caseDeclarations(
         declarations.set(`${component.name}.event:${event.name}`, { at: at(event.span.start) });
       }
       for (const item of component.setup) {
-        if (item.kind !== "Model") continue;
+        if (item.kind !== "Model") {
+          continue;
+        }
         declarations.set(`${component.name}.model:${item.name}`, { at: at(item.span.start) });
       }
       const typeParameters = new Set(component.typeParameters?.map(({ name }) => name));
@@ -258,7 +270,9 @@ function exportedTypes(
 ): Map<string, string> {
   const types = new Map<string, string>();
   for (const declaration of module.types) {
-    if (declaration.exported) types.set(declaration.name, at(declaration.span.start));
+    if (declaration.exported) {
+      types.set(declaration.name, at(declaration.span.start));
+    }
   }
   for (const typeExport of module.typeExports ?? []) {
     if (typeExport.kind === "Declaration") {

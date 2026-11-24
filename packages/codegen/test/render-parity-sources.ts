@@ -1046,24 +1046,44 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
     const written: string[] = [];
     const names = new Set<string>();
     const add = (name: string, source: string) => {
-      if (names.has(name)) return;
+      if (names.has(name)) {
+        return;
+      }
       names.add(name);
       written.push(source);
     };
     if (svg) {
       svgAttributes(tag, add);
     } else {
-      if (chance(0.2)) add("title", chance(0.5) ? `title={${stringProp()}}` : `title="t${seed}"`);
-      if (chance(0.15)) add("data-x", `data-x={${pick([stringProp(), numberProp(pick([0, 7]))])}}`);
-      if (chance(0.1)) add("aria-label", `aria-label={${stringProp()}}`);
-      if (chance(0.1)) add("aria-hidden", `aria-hidden={${booleanProp()}}`);
-      if (chance(0.05)) add("tabindex", `tabindex={${numberProp(pick([0, -1, 2]))}}`);
-      if (chance(0.05)) add("data-n", `data-n={${nullableProp()}}`);
+      if (chance(0.2)) {
+        add("title", chance(0.5) ? `title={${stringProp()}}` : `title="t${seed}"`);
+      }
+      if (chance(0.15)) {
+        add("data-x", `data-x={${pick([stringProp(), numberProp(pick([0, 7]))])}}`);
+      }
+      if (chance(0.1)) {
+        add("aria-label", `aria-label={${stringProp()}}`);
+      }
+      if (chance(0.1)) {
+        add("aria-hidden", `aria-hidden={${booleanProp()}}`);
+      }
+      if (chance(0.05)) {
+        add("tabindex", `tabindex={${numberProp(pick([0, -1, 2]))}}`);
+      }
+      if (chance(0.05)) {
+        add("data-n", `data-n={${nullableProp()}}`);
+      }
       own(tag, add);
     }
-    if (chance(0.25)) add("class", `class=${classValue()}`);
-    if (chance(0.2)) add("style", `style=${styleValue()}`);
-    if (!svg && chance(0.12)) spread(names, written);
+    if (chance(0.25)) {
+      add("class", `class=${classValue()}`);
+    }
+    if (chance(0.2)) {
+      add("style", `style=${styleValue()}`);
+    }
+    if (!svg && chance(0.12)) {
+      spread(names, written);
+    }
     return written.map((attribute) => ` ${attribute}`).join("");
   }
 
@@ -1085,41 +1105,69 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
       case "img":
         add("src", `src=${ownValue(() => stringProp("about:blank"), "data:,")}`);
         add("alt", `alt={${stringProp()}}`);
-        if (chance(0.3)) add("width", `width={${numberProp(16)}}`);
+        if (chance(0.3)) {
+          add("width", `width={${numberProp(16)}}`);
+        }
         return;
       case "input":
         add("type", `type="${pick(["text", "email", "number", "checkbox"])}"`);
-        if (chance(0.4)) add("name", `name={${stringProp("field")}}`);
-        if (chance(0.3)) add("placeholder", `placeholder={${stringProp()}}`);
-        if (chance(0.3)) add("disabled", `disabled={${booleanProp()}}`);
-        if (chance(0.2)) add("required", `required={${booleanProp()}}`);
-        if (chance(0.2)) add("readonly", "readonly");
+        if (chance(0.4)) {
+          add("name", `name={${stringProp("field")}}`);
+        }
+        if (chance(0.3)) {
+          add("placeholder", `placeholder={${stringProp()}}`);
+        }
+        if (chance(0.3)) {
+          add("disabled", `disabled={${booleanProp()}}`);
+        }
+        if (chance(0.2)) {
+          add("required", `required={${booleanProp()}}`);
+        }
+        if (chance(0.2)) {
+          add("readonly", "readonly");
+        }
         return;
       case "button":
         add("type", `type="${pick(["button", "submit", "reset"])}"`);
-        if (chance(0.3)) add("disabled", `disabled={${booleanProp()}}`);
+        if (chance(0.3)) {
+          add("disabled", `disabled={${booleanProp()}}`);
+        }
         return;
       case "ol":
-        if (chance(0.4)) add("start", `start={${numberProp(pick([3, -1]))}}`);
-        if (chance(0.3)) add("reversed", `reversed={${booleanProp()}}`);
+        if (chance(0.4)) {
+          add("start", `start={${numberProp(pick([3, -1]))}}`);
+        }
+        if (chance(0.3)) {
+          add("reversed", `reversed={${booleanProp()}}`);
+        }
         return;
       case "td":
       case "th":
-        if (chance(0.3)) add("colspan", `colspan={${numberProp(pick([1, 2]))}}`);
+        if (chance(0.3)) {
+          add("colspan", `colspan={${numberProp(pick([1, 2]))}}`);
+        }
         return;
       case "select":
         add("name", `name="choice"`);
-        if (chance(0.3)) add("disabled", `disabled={${booleanProp()}}`);
+        if (chance(0.3)) {
+          add("disabled", `disabled={${booleanProp()}}`);
+        }
         return;
       case "textarea":
         add("name", `name="note"`);
-        if (chance(0.3)) add("rows", `rows={${numberProp(pick([2, 3]))}}`);
-        if (chance(0.3)) add("placeholder", `placeholder={${stringProp()}}`);
+        if (chance(0.3)) {
+          add("rows", `rows={${numberProp(pick([2, 3]))}}`);
+        }
+        if (chance(0.3)) {
+          add("placeholder", `placeholder={${stringProp()}}`);
+        }
         return;
       case "pre":
       case "section":
       case "div":
-        if (chance(0.1)) add("lang", `lang={${stringProp("en")}}`);
+        if (chance(0.1)) {
+          add("lang", `lang={${stringProp("en")}}`);
+        }
         return;
       default:
     }
@@ -1127,8 +1175,12 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 
   /** A static value, or a prop holding it, typed as `type` (an enumerated one's literals). */
   const svgValue = (value: string | number, type?: string) => {
-    if (!chance(0.5)) return `"${value}"`;
-    if (typeof value === "number") return `{${numberProp(value)}}`;
+    if (!chance(0.5)) {
+      return `"${value}"`;
+    }
+    if (typeof value === "number") {
+      return `{${numberProp(value)}}`;
+    }
     return `{${type ? declare("e", type, value) : stringProp(value)}}`;
   };
 
@@ -1137,17 +1189,23 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
     switch (tag) {
       case "svg":
         add("viewBox", `viewBox=${svgValue("0 0 10 10")}`);
-        if (chance(0.5)) add("width", `width=${svgValue(10)}`);
+        if (chance(0.5)) {
+          add("width", `width=${svgValue(10)}`);
+        }
         return;
       case "circle":
         add("cx", `cx=${svgValue(5)}`);
         add("r", `r=${svgValue(pick([1, 2]))}`);
-        if (chance(0.5)) add("stroke-width", `stroke-width=${svgValue(1)}`);
+        if (chance(0.5)) {
+          add("stroke-width", `stroke-width=${svgValue(1)}`);
+        }
         return;
       case "rect":
         add("width", `width=${svgValue(4)}`);
         add("height", `height=${svgValue("2")}`);
-        if (chance(0.5)) add("fill", `fill=${svgValue(pick(["red", "none"]))}`);
+        if (chance(0.5)) {
+          add("fill", `fill=${svgValue(pick(["red", "none"]))}`);
+        }
         return;
       case "path":
         add("d", `d=${svgValue("M0 0 L 5 5")}`);
@@ -1190,7 +1248,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
       null,
       undefined,
     ]);
-    if (value === null) return declare("c", "string | null", null);
+    if (value === null) {
+      return declare("c", "string | null", null);
+    }
     return declare("c", "string", value, value === undefined ? { absent: chance(0.5) } : {});
   };
 
@@ -1200,7 +1260,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
     const fresh = (pool: readonly string[]) => {
       const names = pool.filter((name) => !name.split(" ").some((part) => used.has(part)));
       const chosen = pick(names.length ? names : [token()]);
-      for (const part of chosen.split(" ")) used.add(part);
+      for (const part of chosen.split(" ")) {
+        used.add(part);
+      }
       return chosen;
     };
     switch (Math.floor(next() * 5)) {
@@ -1233,7 +1295,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
           }
         });
         // All static, it would be a static `class` (UF3004).
-        if (items.every((item) => item.startsWith('"'))) items.push(dynamicProp());
+        if (items.every((item) => item.startsWith('"'))) {
+          items.push(dynamicProp());
+        }
         return `{[${items.join(", ")}]}`;
       }
     }
@@ -1242,14 +1306,20 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
   /** A `style` value: a static string, or an object of static and bound declarations. */
   function styleValue(): string {
     const chosen = STYLE_PROPERTIES.filter(() => chance(0.3));
-    if (!chosen.length) chosen.push(pick(STYLE_PROPERTIES));
+    if (!chosen.length) {
+      chosen.push(pick(STYLE_PROPERTIES));
+    }
     if (chance(0.25)) {
       return `"${chosen.map(({ property, values }) => `${property}: ${pick(values)}`).join("; ")}"`;
     }
     const entries = chosen.map(({ key, values, numbers }) => {
       const how = Math.floor(next() * 4);
-      if (how === 0) return `${key}: ${JSON.stringify(pick(values))}`;
-      if (how === 1 && numbers) return `${key}: ${numberProp(pick(numbers))}`;
+      if (how === 0) {
+        return `${key}: ${JSON.stringify(pick(values))}`;
+      }
+      if (how === 1 && numbers) {
+        return `${key}: ${numberProp(pick(numbers))}`;
+      }
       if (how === 2) {
         // Left out when nullish or empty.
         const empty = chance(0.5);
@@ -1266,14 +1336,18 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
     const spreadKeys = ["title", "data-x", "aria-label", "class", "lang"].filter(
       (key) => (key === "class" || !names.has(key)) && chance(0.6),
     );
-    if (!spreadKeys.length) return;
+    if (!spreadKeys.length) {
+      return;
+    }
     const type = `${prefix}Attrs${types.length}`;
     types.push(
       `interface ${type} {\n${spreadKeys.map((key) => `  ${/-/.test(key) ? JSON.stringify(key) : key}?: string;`).join("\n")}\n}`,
     );
     const value: Record<string, unknown> = {};
     for (const key of spreadKeys) {
-      if (chance(0.7)) value[key] = key === "class" ? `t${seed}x${++tokens}` : text();
+      if (chance(0.7)) {
+        value[key] = key === "class" ? `t${seed}x${++tokens}` : text();
+      }
     }
     // An optional source reads every key through `?.`.
     const name = chance(0.3)
@@ -1281,16 +1355,22 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
         ? declare("a", type, value, { optional: true })
         : declare("a", type, undefined, { absent: chance(0.5) })
       : declare("a", type, value);
-    for (const key of spreadKeys) names.add(key);
+    for (const key of spreadKeys) {
+      names.add(key);
+    }
     written.unshift(`{...${name}}`);
   }
 
   /** A random element of a tag, with attributes and content. */
   function element(tag: string, place: Place): string {
-    if (tag === "svg") return svgElement("svg", 0);
+    if (tag === "svg") {
+      return svgElement("svg", 0);
+    }
     const inner = content(tag, place);
     const open = `<${tag}${attributes(tag, false)}`;
-    if (["br", "img", "input"].includes(tag)) return `${open} />`;
+    if (["br", "img", "input"].includes(tag)) {
+      return `${open} />`;
+    }
     return `${open}>${inner}</${tag}>`;
   }
 
@@ -1315,7 +1395,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
             const numbers = declare("l", "number[]", uniqueNumbers());
             return `{${numbers}.map((x) => <rect key={x} x={x} width="1" height="1" />)}`;
           }
-          if (kind === "if") return `{${condition()} && <circle cx="1" r="1" />}`;
+          if (kind === "if") {
+            return `{${condition()} && <circle cx="1" r="1" />}`;
+          }
           return svgElement(kind === "g" && depth > 1 ? "rect" : kind, depth + 1);
         });
         return `${open}>${children.join("")}</${tag}>`;
@@ -1420,7 +1502,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
     };
     // A conditional whose branches hold no JSX is an interpolation: keep one element in each.
     const chain = (...parts: string[]) => {
-      if (!parts.some((part) => part.startsWith("<"))) parts[0] = child(allowed, place);
+      if (!parts.some((part) => part.startsWith("<"))) {
+        parts[0] = child(allowed, place);
+      }
       return parts;
     };
     switch (Math.floor(next() * 4)) {
@@ -1456,14 +1540,18 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
         continue;
       }
       lastText = false;
-      if (roll < 0.4) children.push(interpolation());
-      else if (roll < 0.5) {
+      if (roll < 0.4) {
+        children.push(interpolation());
+      } else if (roll < 0.5) {
         children.push(interpolation(), textChild(text()));
         lastText = true;
-      } else if (roll < 0.62 && place.depth < 3) children.push(conditional(candidates, place));
-      else if (roll < 0.7 && place.depth < 3 && !place.interactive)
+      } else if (roll < 0.62 && place.depth < 3) {
+        children.push(conditional(candidates, place));
+      } else if (roll < 0.7 && place.depth < 3 && !place.interactive) {
         children.push(list(parent, place));
-      else children.push(child(candidates, place));
+      } else {
+        children.push(child(candidates, place));
+      }
     }
     return children;
   }
@@ -1523,7 +1611,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
   let jsx: string;
   if (options.root) {
     const children = mixed([...BLOCKS, ...INLINES], { depth: 1, interactive: false }, 5, "#root");
-    if (!children.length) children.push(interpolation());
+    if (!children.length) {
+      children.push(interpolation());
+    }
     jsx = `<>${children.join("")}</>`;
   } else {
     jsx = element(pick(FLOW), { depth: 0, interactive: false });

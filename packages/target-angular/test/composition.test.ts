@@ -19,7 +19,9 @@ function lowerWith(source: string, children: Record<string, string>): UfModule {
     }),
   );
   const { module, diagnostics } = analyze(parseModule("Toolbar.uf.tsx", source), { imports });
-  if (!module || diagnostics.length) throw new Error(JSON.stringify(diagnostics));
+  if (!module || diagnostics.length) {
+    throw new Error(JSON.stringify(diagnostics));
+  }
   return module;
 }
 

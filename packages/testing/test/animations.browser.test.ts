@@ -6,7 +6,9 @@ import { afterEach, expect, it } from "vitest";
 import { ANIMATION_WAIT_MS, settleFrame } from "../src/browser/determinism.ts";
 
 afterEach(() => {
-  for (const element of document.querySelectorAll("[data-animated]")) element.remove();
+  for (const element of document.querySelectorAll("[data-animated]")) {
+    element.remove();
+  }
 });
 
 /** An element in `body` with an inline transition of `opacity` over `duration` ms. */

@@ -98,7 +98,9 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
   const targets = options.targets ?? config.targets;
   checkTargets("targets", targets, TARGET_NAMES);
   const reference = options.reference ?? (targets.includes("vue") ? "vue" : targets[0]);
-  if (reference === undefined) throw new Error("[uf] defineTestConfig: the project has no target.");
+  if (reference === undefined) {
+    throw new Error("[uf] defineTestConfig: the project has no target.");
+  }
   checkTargets("reference", [reference], targets);
 
   const mode = resolveHarnessMode({
@@ -194,7 +196,9 @@ export function selectedTargets(
   value: string | undefined,
   targets: readonly TargetName[],
 ): TargetName[] {
-  if (!value?.trim()) return [...targets];
+  if (!value?.trim()) {
+    return [...targets];
+  }
   const requested = value
     .split(",")
     .map((name) => name.trim())
@@ -232,7 +236,9 @@ export function toolchainDirOf(
   resolveFrom: string | Partial<Record<TargetName, string>> | undefined,
 ): string {
   const own = toolchainDirs?.[target];
-  if (own !== undefined) return resolve(root, own);
+  if (own !== undefined) {
+    return resolve(root, own);
+  }
   return (typeof resolveFrom === "string" ? resolveFrom : resolveFrom?.[target]) ?? root;
 }
 

@@ -179,10 +179,14 @@ describe("compile", () => {
             L14: () => checkSourceMaps(info, compiles, target),
           };
           if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
-            for (const layer of NO_OUTPUT_LAYERS) checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+            for (const layer of NO_OUTPUT_LAYERS) {
+              checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+            }
           } else if (!info.spec && info.id.startsWith("diagnostics/")) {
             // Only a diagnostics case: a feature case without a spec stays a missing cell.
-            for (const layer of NO_SPEC_LAYERS) checks[layer] = () => ({ skip: NO_SPEC_SKIP });
+            for (const layer of NO_SPEC_LAYERS) {
+              checks[layer] = () => ({ skip: NO_SPEC_SKIP });
+            }
           }
           // No hydrate project runs a diagnostics case, which has no spec: its L12 says so, with
           // compile errors or without, as the targets that do not hydrate say why they skip
@@ -224,7 +228,9 @@ describe("compile", () => {
 
   it("holds no shared expectation that no case owns", () => {
     if (harness.update) {
-      for (const info of cases) removeStaleArtefacts(info);
+      for (const info of cases) {
+        removeStaleArtefacts(info);
+      }
       return;
     }
     const stale = cases.flatMap((info) =>
@@ -251,7 +257,9 @@ async function checkDiagnostics(
   const path = join(info.dir, "__expected__", "diagnostics.json");
   const outcome = settleArtefact(path, `${JSON.stringify(actual, null, 2)}\n`, owner);
   if (!outcome.pass) {
-    if (outcome.status !== "mismatch") throw new Error(outcome.message);
+    if (outcome.status !== "mismatch") {
+      throw new Error(outcome.message);
+    }
     // The file is target-independent: fail the targets whose own diagnostics differ, with the
     // difference in theirs, which every other target's would bury in a case of several.
     const expected = JSON.parse(readFileSync(path, "utf8")) as Omit<JsonDiagnostic, "url">[];
@@ -274,7 +282,9 @@ async function checkDiagnostics(
       ? referenceProblems(actual, info.spec !== undefined, REFERENCE, info.config.reference)
       : []),
   ];
-  if (problems.length) throw new Error(problems.join("\n"));
+  if (problems.length) {
+    throw new Error(problems.join("\n"));
+  }
 
   // The L1-fix-no-op canary corrupts the fixes here, on the cases whose diagnostics have one.
   for (const { source, text, first } of compiles) {
@@ -300,7 +310,9 @@ async function checkOutputs(
   const problems: string[] = [];
   const output = join(info.dir, "__output__");
   const settle = (outcome: { pass: boolean; message: string }) => {
-    if (!outcome.pass) problems.push(outcome.message);
+    if (!outcome.pass) {
+      problems.push(outcome.message);
+    }
   };
 
   for (const { source, first } of compiles) {
@@ -326,7 +338,9 @@ async function checkOutputs(
   const stale = existsSync(output)
     ? readdirSync(output).filter((file) => /^ir\..+\.json$/.test(file) && !snapshots.has(file))
     : [];
-  for (const file of stale) settle(settleArtefact(join(output, file), undefined, owner));
+  for (const file of stale) {
+    settle(settleArtefact(join(output, file), undefined, owner));
+  }
 
   const joined = firsts(compiles);
   const diagnostics = caseDiagnostics(joined);
@@ -361,12 +375,16 @@ async function checkOutputs(
   // P8: the same input and versions give byte-identical, formatted output.
   for (const { first, second } of compiles) {
     const different = nondeterminism(first, second, target);
-    if (different) problems.push(different);
+    if (different) {
+      problems.push(different);
+    }
     problems.push(...(await formattingProblems(target, first.outputs[target] ?? [])));
     problems.push(...stylesheetProblems(target, first.outputs[target] ?? []));
   }
 
-  if (problems.length) throw new Error(problems.join("\n\n"));
+  if (problems.length) {
+    throw new Error(problems.join("\n\n"));
+  }
 }
 
 /**
@@ -383,7 +401,9 @@ function checkSourceMaps(
     const files = first.outputs[target] ?? [];
     // A source a target writes no file for has no map to check or corrupt: a `.uf.ts` module's
     // directives on Astro, which runs no hook (ADR-0099).
-    if (!files.length) return [];
+    if (!files.length) {
+      return [];
+    }
     return sourceMapProblems(
       target,
       canaryMaps(harness.canary, files),
@@ -391,5 +411,7 @@ function checkSourceMaps(
       modules,
     );
   });
-  if (problems.length) throw new Error(problems.join("\n"));
+  if (problems.length) {
+    throw new Error(problems.join("\n"));
+  }
 }

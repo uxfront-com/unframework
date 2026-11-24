@@ -122,7 +122,9 @@ export function runSummary(env: NodeJS.ProcessEnv, run: SummaryRun): number {
  */
 export function parityJob(env: NodeJS.ProcessEnv, args: readonly string[] = []): SummaryRun {
   const unknown = args.filter((arg) => arg !== "--" && arg !== "--browser-only");
-  if (unknown.length) throw new Error(`[uf:summary] Unknown argument: ${unknown.join(" ")}.`);
+  if (unknown.length) {
+    throw new Error(`[uf:summary] Unknown argument: ${unknown.join(" ")}.`);
+  }
   return { requireComplete: isCI(env), browserOnly: args.includes("--browser-only") };
 }
 

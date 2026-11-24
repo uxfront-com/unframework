@@ -57,8 +57,14 @@ export function reactiveProps(initial: Record<string, unknown>): {
   });
   const assign = (next: Record<string, unknown>) =>
     batch(() => {
-      for (const key of values.keys()) if (!Object.hasOwn(next, key)) entry(key)[1](undefined);
-      for (const [key, value] of Object.entries(next)) entry(key)[1](value);
+      for (const key of values.keys()) {
+        if (!Object.hasOwn(next, key)) {
+          entry(key)[1](undefined);
+        }
+      }
+      for (const [key, value] of Object.entries(next)) {
+        entry(key)[1](value);
+      }
       setKeys(Object.keys(next));
     });
   assign(initial);

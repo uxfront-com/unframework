@@ -527,7 +527,9 @@ describe("resolveConfig", () => {
       expect(reported).toHaveLength(1);
       expect(reported[0]![0]).toBe("UF7003");
       expect(reported[0]![1]).toContain(`at ${JSON.stringify(pointer)} `);
-      if (meant) expect(reported[0]![1]).toContain(`Did you mean \`${meant}\`?`);
+      if (meant) {
+        expect(reported[0]![1]).toContain(`Did you mean \`${meant}\`?`);
+      }
     });
   });
 

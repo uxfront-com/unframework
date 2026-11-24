@@ -62,7 +62,9 @@ export function astroComponentRef(id: string): AstroComponentRef {
 
 /** Whether a value is what a browser project's `.uf.tsx` import yields. */
 export function isAstroComponentRef(value: unknown): value is AstroComponentRef {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
   const ref = value as Partial<AstroComponentRef>;
   return (
     ref.__ufTarget === "astro" &&

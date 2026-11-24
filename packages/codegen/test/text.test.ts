@@ -33,7 +33,9 @@ function printed(build: (placeholders: Placeholders) => Parameters<typeof printE
 /** The template literal of parts that hold an expression. */
 function literal(parts: Parameters<typeof textTemplate>[0]) {
   const template = textTemplate(parts);
-  if (typeof template === "string") throw new Error("The parts hold no expression.");
+  if (typeof template === "string") {
+    throw new Error("The parts hold no expression.");
+  }
   return template;
 }
 
@@ -166,7 +168,9 @@ describe("syntacticNullishness, as TypeScript reads it", { timeout: 60_000 }, ()
   ];
   const temporaries: string[] = [];
   afterAll(() => {
-    for (const directory of temporaries) rmSync(directory, { recursive: true, force: true });
+    for (const directory of temporaries) {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
   const source = [
     "declare const a: string | undefined;",
@@ -228,7 +232,9 @@ describe("syntacticNullishness, as TypeScript reads it", { timeout: 60_000 }, ()
       [join(dirname(manifest), Object.values(bin)[0]!), "-p", directory, "--pretty", "false"],
       { cwd: directory, encoding: "utf8" },
     );
-    if (result.error) throw result.error;
+    if (result.error) {
+      throw result.error;
+    }
     const messages = [
       ...result.stdout.matchAll(/^(?:.*[\\/])?Forms\.ts\((\d+),\d+\): error (TS\d+)/gm),
     ]

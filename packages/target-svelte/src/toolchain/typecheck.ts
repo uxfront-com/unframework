@@ -63,13 +63,19 @@ export async function typecheck(
   let totals: { errors: number; warnings: number } | undefined;
   const counted = { errors: 0, warnings: 0 };
   for (const line of run.stdout.split(/\r?\n/)) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
     const read = readLine(line);
-    if (!read) unknown.push(line);
-    else if (read.kind === "start") workspace = read.workspace;
-    else if (read.kind === "failure") failures.push(read.message);
-    else if (read.kind === "completed") totals = read;
-    else {
+    if (!read) {
+      unknown.push(line);
+    } else if (read.kind === "start") {
+      workspace = read.workspace;
+    } else if (read.kind === "failure") {
+      failures.push(read.message);
+    } else if (read.kind === "completed") {
+      totals = read;
+    } else {
       const { diagnostic } = read;
       // svelte-check itself reports an error without a file against the tsconfig it ran with.
       diagnostics.add(resolve(workspace ?? run.cwd, diagnostic.filename), fromMachine(diagnostic));
@@ -86,7 +92,9 @@ export async function typecheck(
   if (unknown.length > 0) {
     throw checkerFailed("svelte-check", run, "it printed output this toolchain cannot read.");
   }
-  if (!totals) throw checkerFailed("svelte-check", run, "it never reported completion.");
+  if (!totals) {
+    throw checkerFailed("svelte-check", run, "it never reported completion.");
+  }
   // svelte-check has cut machine-verbose output short before (it exits without draining stdout).
   if (totals.errors !== counted.errors || totals.warnings !== counted.warnings) {
     throw checkerFailed(
@@ -120,7 +128,9 @@ type MachineLine =
 /** Reads one `<timestamp> <payload>` line of machine output; `undefined` when it is not one. */
 function readLine(line: string): MachineLine | undefined {
   const payload = /^\d+ (.*)$/.exec(line)?.[1];
-  if (payload === undefined) return undefined;
+  if (payload === undefined) {
+    return undefined;
+  }
   if (payload.startsWith("START ")) {
     const workspace = json(payload.slice("START ".length));
     return typeof workspace === "string" ? { kind: "start", workspace } : undefined;

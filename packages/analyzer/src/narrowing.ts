@@ -106,12 +106,16 @@ export function referencePath(
   const inner = unwrap(node);
   if (inner.type === "Identifier") {
     const resolution = render.scopes.resolve(inner);
-    if (resolution.kind === "parameter") return { root: resolution.declaration, names: [] };
+    if (resolution.kind === "parameter") {
+      return { root: resolution.declaration, names: [] };
+    }
     return resolution.kind === "variable" && refOf(resolution, render)
       ? { root: resolution.declaration, names: [] }
       : undefined;
   }
-  if (inner.type !== "MemberExpression") return undefined;
+  if (inner.type !== "MemberExpression") {
+    return undefined;
+  }
   const object = referencePath(inner.object, render);
   const name = memberName(inner);
   return object && name !== undefined
@@ -161,21 +165,32 @@ export function usedLoosely(node: AST.Node, render: RenderContext): boolean | AS
       case "MemberExpression":
       case "CallExpression": {
         const receiver = parent.type === "MemberExpression" ? parent.object : parent.callee;
-        if (receiver !== child) return false;
-        if (parent.optional) optional = true;
-        else if (!optional) return false;
+        if (receiver !== child) {
+          return false;
+        }
+        if (parent.optional) {
+          optional = true;
+        } else if (!optional) {
+          return false;
+        }
         continue;
       }
       case "LogicalExpression":
-        if (parent.left === child) return true;
+        if (parent.left === child) {
+          return true;
+        }
         continue;
       case "ConditionalExpression":
-        if (parent.test === child) return true;
+        if (parent.test === child) {
+          return true;
+        }
         continue;
       case "UnaryExpression":
         return parent.operator === "!" || parent.operator === "typeof";
       case "BinaryExpression":
-        if (EQUALITY.has(parent.operator)) return true;
+        if (EQUALITY.has(parent.operator)) {
+          return true;
+        }
         return parent.operator === "+" ? parent : false;
       case "TemplateLiteral":
       case "JSXExpressionContainer":
@@ -228,19 +243,27 @@ export function readsAsText(node: AST.Node, render: RenderContext): boolean {
       case "ChainExpression":
         continue;
       case "ConditionalExpression":
-        if (parent.test === child) return false;
+        if (parent.test === child) {
+          return false;
+        }
         continue;
       case "LogicalExpression":
-        if (parent.left === child && parent.operator !== "??") return false;
+        if (parent.left === child && parent.operator !== "??") {
+          return false;
+        }
         continue;
       case "MemberExpression": {
-        if (parent.object !== child) return true;
+        if (parent.object !== child) {
+          return true;
+        }
         const name = memberName(parent);
         return name === undefined || !REGEX_MEMBERS.has(name);
       }
       case "CallExpression": {
         const { callee } = parent;
-        if (callee === child || parent.arguments[0] !== child) return true;
+        if (callee === child || parent.arguments[0] !== child) {
+          return true;
+        }
         const name = callee.type === "MemberExpression" ? memberName(callee) : undefined;
         return name === undefined || !REGEX_METHODS.has(name);
       }
@@ -263,7 +286,9 @@ const NARROWINGS = new WeakMap<object, Narrowing>();
 /** What the conditions around `node` make of `path`, which it reads (see the module's comment). */
 export function narrowingAt(node: AST.Node, path: ReferencePath, render: RenderContext): Narrowing {
   const known = NARROWINGS.get(node);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   const ancestors = ancestorsOf(node, render.component);
   let present: AST.Expression | undefined;
   let unfollowed: Extract<Narrowing, { kind: "unfollowed" }> | undefined;
@@ -274,8 +299,9 @@ export function narrowingAt(node: AST.Node, path: ReferencePath, render: RenderC
       found = { kind: "absent", condition: fact.condition };
       break;
     }
-    if (effect === "present") present ??= fact.condition;
-    else if (effect !== "none") {
+    if (effect === "present") {
+      present ??= fact.condition;
+    } else if (effect !== "none") {
       unfollowed ??= { kind: "unfollowed", condition: fact.condition, reason: effect };
     }
   }
@@ -356,7 +382,9 @@ export function pathFacts(
     const present = effect === "present" || form;
     const narrowed =
       form || narrowsKinds(kinds, refine(fact.condition, path, fact.holds, kinds, render));
-    if (!present && !narrowed) return [];
+    if (!present && !narrowed) {
+      return [];
+    }
     const scope = fact.boundary === "none" ? "local" : fact.template ? "template" : "closure";
     return [{ condition: fact.condition, present, kinds: narrowed, scope, child: fact.child }];
   });
@@ -382,7 +410,9 @@ function assignedFact(
   kindsOf: (node: AST.Expression) => Kinds,
 ): PathFact | undefined {
   const found = assignedBefore(ancestors, path, kinds, render, kindsOf);
-  if (!found) return undefined;
+  if (!found) {
+    return undefined;
+  }
   const { write, whole } = found;
   const value = kindsOf(write.right);
   const present = !has(value, "null") && !has(value, "undefined");
@@ -390,7 +420,9 @@ function assignedFact(
     whole &&
     !has(value, "unknown") &&
     narrowsKinds(without(kinds, "null", "undefined"), without(value, "null", "undefined"));
-  if (!present && !fewer) return undefined;
+  if (!present && !fewer) {
+    return undefined;
+  }
   return { condition: write, present, kinds: fewer, scope: "local", child: false };
 }
 
@@ -411,20 +443,30 @@ function assignedBefore(
   for (let index = ancestors.length - 2; index >= 0; index--) {
     const parent = ancestors[index]!;
     const child = ancestors[index + 1]!;
-    if (parent === render.component || isFunctionNode(parent)) return undefined;
+    if (parent === render.component || isFunctionNode(parent)) {
+      return undefined;
+    }
     // TypeScript joins what a loop's body writes into the narrowing at its start.
-    if (LOOPS.has(parent.type) && writesPath(parent, path, render)) return undefined;
+    if (LOOPS.has(parent.type) && writesPath(parent, path, render)) {
+      return undefined;
+    }
     const statements =
       parent.type === "BlockStatement"
         ? parent.body
         : parent.type === "SwitchCase"
           ? parent.consequent
           : undefined;
-    if (!statements) continue;
+    if (!statements) {
+      continue;
+    }
     for (const statement of statements.toReversed()) {
-      if (statement.start >= child.start) continue;
+      if (statement.start >= child.start) {
+        continue;
+      }
       const write = writeOf(statement, path, kinds, render, kindsOf);
-      if (write === "none") continue;
+      if (write === "none") {
+        continue;
+      }
       return write === "other" ? undefined : write;
     }
   }
@@ -455,7 +497,9 @@ function writeOf(
   if (expression?.type === "AssignmentExpression" && expression.left.type === "MemberExpression") {
     const target = referencePath(expression.left, render);
     if (target && samePath(target, path)) {
-      if (expression.operator === "=") return { write: expression, whole: true };
+      if (expression.operator === "=") {
+        return { write: expression, whole: true };
+      }
       const logical = expression.operator === "??=" || expression.operator === "||=";
       return logical ? { write: expression, whole: false } : "other";
     }
@@ -511,10 +555,18 @@ function writesPath(node: AST.Node, path: ReferencePath, render: RenderContext):
     );
   };
   const visit = (value: unknown): boolean => {
-    if (Array.isArray(value)) return value.some(visit);
-    if (!isNode(value) || isFunctionNode(value)) return false;
-    if (value.type === "AssignmentExpression" && covers(value.left)) return true;
-    if (value.type === "UpdateExpression" && covers(value.argument)) return true;
+    if (Array.isArray(value)) {
+      return value.some(visit);
+    }
+    if (!isNode(value) || isFunctionNode(value)) {
+      return false;
+    }
+    if (value.type === "AssignmentExpression" && covers(value.left)) {
+      return true;
+    }
+    if (value.type === "UpdateExpression" && covers(value.argument)) {
+      return true;
+    }
     return childrenOf(value).some(visit);
   };
   return visit(node);
@@ -556,8 +608,9 @@ export function narrowedKinds(
   for (const fact of factsAround(ancestors, render.component).toReversed()) {
     const narrowed = refine(fact.condition, path, fact.holds, result, render);
     const kept = fact.boundary === "none" || keepsAcross(fact, path, render);
-    if (kept && !key) result = narrowed;
-    else if (!apart && changesKinds(result, narrowed)) {
+    if (kept && !key) {
+      result = narrowed;
+    } else if (!apart && changesKinds(result, narrowed)) {
       const reason = kept ? "key" : fact.boundary === "list" ? "callback" : "closure";
       apart = { condition: fact.condition, reason };
     }
@@ -605,7 +658,9 @@ function refineOperand(
   render: RenderContext,
 ): Kinds {
   const reading = readOf(operand, source, render);
-  if (reading === "source") return holds ? truthy(kinds) : falsy(kinds);
+  if (reading === "source") {
+    return holds ? truthy(kinds) : falsy(kinds);
+  }
   if (reading === "optional" || reading === "member") {
     const key = ownMember(operand, source, render);
     const result =
@@ -643,7 +698,9 @@ function refineEquality(
   kinds: Kinds,
   render: RenderContext,
 ): Kinds {
-  if (node.left.type === "PrivateIdentifier") return kinds;
+  if (node.left.type === "PrivateIdentifier") {
+    return kinds;
+  }
   const loose = node.operator === "==" || node.operator === "!=";
   const equal = (node.operator === "===" || node.operator === "==") === holds;
   for (const [side, other] of [
@@ -651,17 +708,27 @@ function refineEquality(
     [node.right, node.left],
   ] as const) {
     const value = literalOf(other, render);
-    if (value === NOT_LITERAL) continue;
+    if (value === NOT_LITERAL) {
+      continue;
+    }
     const inner = withoutParentheses(side);
     if (inner.type === "UnaryExpression" && inner.operator === "typeof") {
-      if (readOf(withoutParentheses(inner.argument), source, render) !== "source") continue;
+      if (readOf(withoutParentheses(inner.argument), source, render) !== "source") {
+        continue;
+      }
       const named = typeof value === "string" ? TYPEOF.get(value) : undefined;
-      if (!named) return kinds;
+      if (!named) {
+        return kinds;
+      }
       return equal ? only(kinds, named) : without(kinds, ...named);
     }
     const reading = readOf(inner, source, render);
-    if (reading === "source") return byValue(kinds, value, loose, equal);
-    if (reading !== "optional" && reading !== "member") continue;
+    if (reading === "source") {
+      return byValue(kinds, value, loose, equal);
+    }
+    if (reading !== "optional" && reading !== "member") {
+      continue;
+    }
     const key = ownMember(inner, source, render);
     const result =
       key === undefined
@@ -695,7 +762,9 @@ function byValue(kinds: Kinds, value: Literal, loose: boolean, equal: boolean): 
     return equal ? only(kinds, nullish) : without(kinds, ...nullish);
   }
   // `==` converts a value of another kind, which the compiler does not follow.
-  if (loose) return kinds;
+  if (loose) {
+    return kinds;
+  }
   if (equal) {
     const known = without(kinds, "unknown");
     const literal = mayEqual(known, value, false) ? literalKinds(value) : NOTHING;
@@ -705,7 +774,9 @@ function byValue(kinds: Kinds, value: Literal, loose: boolean, equal: boolean): 
 }
 
 function literalKinds(value: string | number | boolean): Kinds {
-  if (typeof value === "string") return stringLiteral(value);
+  if (typeof value === "string") {
+    return stringLiteral(value);
+  }
   return typeof value === "number" ? numberLiteral(value) : booleanLiteral(value);
 }
 
@@ -746,14 +817,22 @@ function keepLiterals<T extends string | number | boolean>(
   keep: (value: T) => boolean,
   all?: readonly T[],
 ): Kinds {
-  if (!has(kinds, primitive)) return kinds;
+  if (!has(kinds, primitive)) {
+    return kinds;
+  }
   const field =
     primitive === "string" ? "strings" : primitive === "number" ? "numbers" : "booleans";
   const listed = (kinds[field] as ReadonlySet<T> | undefined) ?? (all && new Set(all));
-  if (!listed) return kinds;
+  if (!listed) {
+    return kinds;
+  }
   const kept = new Set([...listed].filter(keep));
-  if (!kept.size) return without(kinds, primitive);
-  if (kept.size === listed.size && kinds[field]) return kinds;
+  if (!kept.size) {
+    return without(kinds, primitive);
+  }
+  if (kept.size === listed.size && kinds[field]) {
+    return kinds;
+  }
   return { ...kinds, [field]: kept };
 }
 
@@ -767,7 +846,9 @@ function ownMember(
   render: RenderContext,
 ): string | undefined {
   const path = referencePath(node, render);
-  if (!path || path.names.length !== source.names.length + 1) return undefined;
+  if (!path || path.names.length !== source.names.length + 1) {
+    return undefined;
+  }
   return path.names.at(-1);
 }
 
@@ -777,12 +858,16 @@ function ownMember(
  */
 function byMember(kinds: Kinds, key: string, passes: (member: Kinds) => boolean): Kinds {
   const shapes = kinds.objects;
-  if (!shapes || shapes.length < 2 || !isDiscriminant(shapes, key)) return kinds;
+  if (!shapes || shapes.length < 2 || !isDiscriminant(shapes, key)) {
+    return kinds;
+  }
   const kept = shapes.filter((shape) => {
     const member = shape.members().get(key);
     return !member || passes(kindsOfMember(member));
   });
-  if (kept.length === shapes.length) return kinds;
+  if (kept.length === shapes.length) {
+    return kinds;
+  }
   return kept.length ? { ...kinds, objects: kept } : without(kinds, "object");
 }
 
@@ -797,7 +882,9 @@ function kindsOfMember(member: Member): Kinds {
 function isDiscriminant(shapes: readonly ObjectShape[], key: string): boolean {
   return shapes.some((shape) => {
     const member = shape.members().get(key);
-    if (!member) return false;
+    if (!member) {
+      return false;
+    }
     const kinds = kindsOfMember(member);
     return (
       kinds.primitives.size > 0 &&
@@ -819,8 +906,12 @@ function isDiscriminant(shapes: readonly ObjectShape[], key: string): boolean {
  */
 function changesKinds(before: Kinds, after: Kinds): boolean {
   const left = presentKinds(after);
-  if (!left.length) return false;
-  if (presentKinds(before).length !== left.length) return true;
+  if (!left.length) {
+    return false;
+  }
+  if (presentKinds(before).length !== left.length) {
+    return true;
+  }
   return (before.objects?.length ?? 0) !== (after.objects?.length ?? 0);
 }
 
@@ -829,8 +920,12 @@ function changesKinds(before: Kinds, after: Kinds): boolean {
  * (`choice === "a"` of `"a" | "b"`): more than presence.
  */
 function narrowsKinds(before: Kinds, after: Kinds): boolean {
-  if (changesKinds(before, after)) return true;
-  if (!presentKinds(after).length) return false;
+  if (changesKinds(before, after)) {
+    return true;
+  }
+  if (!presentKinds(after).length) {
+    return false;
+  }
   return (["strings", "numbers", "booleans"] as const).some(
     (field) => after[field] !== undefined && after[field]!.size !== (before[field]?.size ?? -1),
   );
@@ -871,7 +966,9 @@ function effectOf(
 ): Effect {
   const effect = testEffect(fact.condition, source, fact.holds, render, rootOnly);
   if (typeof effect !== "string") {
-    if (presentWithout(source, effect.removed, render, kinds)) return "present";
+    if (presentWithout(source, effect.removed, render, kinds)) {
+      return "present";
+    }
     return effect.unknown ? "form" : "none";
   }
   return effect === "unknown" ? "form" : effect;
@@ -897,29 +994,41 @@ function testEffect(
     const left = testEffect(inner.left, source, holds, render, rootOnly);
     const right = testEffect(inner.right, source, holds, render, rootOnly);
     // `a && b` that holds and `a || b` that fails: both are as `holds` says.
-    if ((inner.operator === "&&") === holds) return both(left, right);
+    if ((inner.operator === "&&") === holds) {
+      return both(left, right);
+    }
     // Otherwise the left side is as `holds` says, or it is the other way and the right side is.
     const other = testEffect(inner.left, source, !holds, render, rootOnly);
     return either(left, both(other, right));
   }
   // A discriminant of the reference's root is all that narrows it as a parameter.
-  if (rootOnly) return discriminant(inner, source, holds, render, true) ?? "none";
+  if (rootOnly) {
+    return discriminant(inner, source, holds, render, true) ?? "none";
+  }
   return operandEffect(inner, source, holds, render);
 }
 
 /** The nullish kinds and the unknown a test says, as one shape. */
 function removedOf(effect: TestEffect): Removed | undefined {
-  if (typeof effect !== "string") return effect;
+  if (typeof effect !== "string") {
+    return effect;
+  }
   return effect === "unknown" ? { removed: [], unknown: true } : undefined;
 }
 
 /** Two tests that both hold where the reference is read. */
 function both(a: TestEffect, b: TestEffect): TestEffect {
-  if (a === "absent" || b === "absent") return "absent";
-  if (a === "present" || b === "present") return "present";
+  if (a === "absent" || b === "absent") {
+    return "absent";
+  }
+  if (a === "present" || b === "present") {
+    return "present";
+  }
   const left = removedOf(a);
   const right = removedOf(b);
-  if (!left && !right) return "none";
+  if (!left && !right) {
+    return "none";
+  }
   const removed = [...(left?.removed ?? []), ...(right?.removed ?? [])];
   const unknown = Boolean(left?.unknown || right?.unknown);
   return removed.length ? { removed, unknown } : unknown ? "unknown" : "none";
@@ -930,13 +1039,23 @@ function both(a: TestEffect, b: TestEffect): TestEffect {
  * nothing where either leaves it as declared or absent alone.
  */
 function either(a: TestEffect, b: TestEffect): TestEffect {
-  if (a === "absent" && b === "absent") return "absent";
-  if (a === "present" && b === "present") return "present";
-  if (a === "present") return removedOf(b) ? b : "none";
-  if (b === "present") return removedOf(a) ? a : "none";
+  if (a === "absent" && b === "absent") {
+    return "absent";
+  }
+  if (a === "present" && b === "present") {
+    return "present";
+  }
+  if (a === "present") {
+    return removedOf(b) ? b : "none";
+  }
+  if (b === "present") {
+    return removedOf(a) ? a : "none";
+  }
   const left = removedOf(a);
   const right = removedOf(b);
-  if (!left || !right) return "none";
+  if (!left || !right) {
+    return "none";
+  }
   const removed = left.removed.filter((kind) => right.removed.includes(kind));
   const unknown = left.unknown || right.unknown;
   return removed.length ? { removed, unknown } : unknown ? "unknown" : "none";
@@ -947,20 +1066,32 @@ function either(a: TestEffect, b: TestEffect): TestEffect {
  * parameter's narrowing in a closure and forgets a property's (see the module's comment).
  */
 function across(fact: Fact, effect: Effect, path: ReferencePath, render: RenderContext): Effect {
-  if (fact.boundary === "none" || effect === "none") return effect;
-  if (keepsAcross(fact, path, render)) return effect;
+  if (fact.boundary === "none" || effect === "none") {
+    return effect;
+  }
+  if (keepsAcross(fact, path, render)) {
+    return effect;
+  }
   // A member narrowed by a discriminant of its root narrows that root, which may be one.
   if (path.names.length && keepsAcross(fact, { root: path.root, names: [] }, render)) {
     const root = effectOf(fact, path, render, true);
-    if (root === "present") return root;
+    if (root === "present") {
+      return root;
+    }
   }
   // The template targets' loops keep a narrowing, and Solid's keyed callbacks: what shows the
   // reference absent stays so there; their arrow functions forget a property's.
-  if (effect === "absent") return fact.boundary === "list" ? "absent" : "none";
-  if (effect === "present") return fact.boundary === "list" ? "callback" : "closure";
+  if (effect === "absent") {
+    return fact.boundary === "list" ? "absent" : "none";
+  }
+  if (effect === "present") {
+    return fact.boundary === "list" ? "callback" : "closure";
+  }
   // A test the compiler does not follow: the template targets' loops keep it, and Solid copies
   // an expression's conditional, a prop's included, with `props.x`.
-  if (fact.boundary === "list") return effect;
+  if (fact.boundary === "list") {
+    return effect;
+  }
   return isProp(path, render) && path.names.length === 0 ? "closure" : "none";
 }
 
@@ -1034,14 +1165,18 @@ function inKey(ancestors: readonly AST.Node[]): boolean {
 /** The operands of a condition, through parentheses. */
 function withoutParentheses(node: AST.Expression): AST.Expression {
   let inner = node;
-  while (inner.type === "ParenthesizedExpression") inner = inner.expression;
+  while (inner.type === "ParenthesizedExpression") {
+    inner = inner.expression;
+  }
   return inner;
 }
 
 /** A member's static key: `a.b`, `a["b"]`, `a[0]`. */
 export function memberName(node: AST.MemberExpression): string | undefined {
   const { property } = node;
-  if (!node.computed) return property.type === "Identifier" ? property.name : undefined;
+  if (!node.computed) {
+    return property.type === "Identifier" ? property.name : undefined;
+  }
   return property.type === "Literal" &&
     (typeof property.value === "string" || typeof property.value === "number")
     ? String(property.value)
@@ -1098,12 +1233,19 @@ function factsAround(ancestors: readonly AST.Node[], component: AST.Node): Fact[
   for (let index = ancestors.length - 2; index >= 0; index--) {
     const parent = ancestors[index]!;
     const child = ancestors[index + 1];
-    if (parent === component) break;
-    if (parent.type === "JSXAttribute") template = true;
+    if (parent === component) {
+      break;
+    }
+    if (parent.type === "JSXAttribute") {
+      template = true;
+    }
     if (parent.type === "ArrowFunctionExpression" || parent.type === "FunctionExpression") {
       // JSX in a function is a list's element: anywhere else it is reported (UF3012).
-      if (!containsJsx(parent.body)) boundary = "expression";
-      else if (boundary === "none") boundary = "list";
+      if (!containsJsx(parent.body)) {
+        boundary = "expression";
+      } else if (boundary === "none") {
+        boundary = "list";
+      }
     } else if (parent.type === "ConditionalExpression" && child !== parent.test) {
       const holds = child === parent.consequent;
       const conditional = isIf(ancestors, index);
@@ -1129,7 +1271,9 @@ function factsAround(ancestors: readonly AST.Node[], component: AST.Node): Fact[
       facts.push({ condition: parent.test, holds: true, boundary, child: false, template });
     } else if (parent.type === "BlockStatement") {
       for (const statement of parent.body.toReversed()) {
-        if (statement.start >= (child?.start ?? 0)) continue;
+        if (statement.start >= (child?.start ?? 0)) {
+          continue;
+        }
         if (
           statement.type === "IfStatement" &&
           !statement.alternate &&
@@ -1184,12 +1328,16 @@ function isIf(ancestors: readonly AST.Node[], index: number): boolean {
 function isChild(ancestors: readonly AST.Node[], index: number): boolean {
   const node = ancestors[index]!;
   const parent = ancestors[index - 1];
-  if (!parent) return false;
+  if (!parent) {
+    return false;
+  }
   if (parent.type === "JSXExpressionContainer") {
     const holder = ancestors[index - 2];
     return holder?.type === "JSXElement" || holder?.type === "JSXFragment";
   }
-  if (parent.type === "ReturnStatement") return true;
+  if (parent.type === "ReturnStatement") {
+    return true;
+  }
   if (parent.type === "ConditionalExpression" && parent.test !== node) {
     return isIf(ancestors, index - 1);
   }
@@ -1201,9 +1349,15 @@ function isChild(ancestors: readonly AST.Node[], index: number): boolean {
 
 /** Whether a node holds JSX anywhere in it. */
 function containsJsx(node: unknown): boolean {
-  if (Array.isArray(node)) return node.some(containsJsx);
-  if (!isNode(node)) return false;
-  if (node.type === "JSXElement" || node.type === "JSXFragment") return true;
+  if (Array.isArray(node)) {
+    return node.some(containsJsx);
+  }
+  if (!isNode(node)) {
+    return false;
+  }
+  if (node.type === "JSXElement" || node.type === "JSXFragment") {
+    return true;
+  }
   return childrenOf(node).some(containsJsx);
 }
 
@@ -1211,10 +1365,16 @@ function containsJsx(node: unknown): boolean {
 export function ancestorsOf(target: AST.Node, root: AST.Node): AST.Node[] {
   const path: AST.Node[] = [];
   const visit = (value: unknown): boolean => {
-    if (Array.isArray(value)) return value.some(visit);
-    if (!isNode(value) || value.start > target.start || value.end < target.end) return false;
+    if (Array.isArray(value)) {
+      return value.some(visit);
+    }
+    if (!isNode(value) || value.start > target.start || value.end < target.end) {
+      return false;
+    }
     path.push(value);
-    if (value === target || childrenOf(value).some(visit)) return true;
+    if (value === target || childrenOf(value).some(visit)) {
+      return true;
+    }
     path.pop();
     return false;
   };
@@ -1252,18 +1412,27 @@ function operandEffect(
   const reading = readOf(operand, source, render);
   // A falsy string, number or boolean is no nullish one: only a value that is falsy when it
   // is nullish alone (an object, an array) is absent where it fails.
-  if (reading === "source")
+  if (reading === "source") {
     return holds ? "present" : falsyOnlyNullish(source, render) ? "absent" : "none";
-  if (reading === "optional") return holds ? "present" : "none";
+  }
+  if (reading === "optional") {
+    return holds ? "present" : "none";
+  }
   // A member read through `.` says the source is there already, and may discriminate it.
-  if (reading === "member") return discriminant(operand, source, holds, render) ?? "none";
+  if (reading === "member") {
+    return discriminant(operand, source, holds, render) ?? "none";
+  }
   if (operand.type === "BinaryExpression" && EQUALITY.has(operand.operator)) {
     const compared = comparison(operand, source, holds, render);
-    if (compared) return compared;
+    if (compared) {
+      return compared;
+    }
     // TypeScript narrows by an equality with a value of another type, which the compiler does
     // not follow; it narrows by nothing else that mentions the reference (a relational
     // comparison, arithmetic, `??`, a call's argument).
-    if (comparesSource(operand, source, render)) return "unknown";
+    if (comparesSource(operand, source, render)) {
+      return "unknown";
+    }
   }
   if (operand.type === "CallExpression" && isArrayCheck(operand, source, render)) {
     return holds ? "present" : "none";
@@ -1277,7 +1446,9 @@ function comparesSource(
   source: ReferencePath,
   render: RenderContext,
 ): boolean {
-  if (node.left.type === "PrivateIdentifier") return false;
+  if (node.left.type === "PrivateIdentifier") {
+    return false;
+  }
   return [node.left, node.right].some((side) => {
     const inner = withoutParentheses(side);
     const read =
@@ -1292,7 +1463,9 @@ function comparesSource(
 /** Whether a reference is falsy only where it is nullish: its declared kinds hold no other. */
 function falsyOnlyNullish(source: ReferencePath, render: RenderContext): boolean {
   const kinds = declaredKinds(source, render);
-  if (!kinds) return false;
+  if (!kinds) {
+    return false;
+  }
   return !mayBeFalsy(without(kinds, "null", "undefined"));
 }
 
@@ -1307,14 +1480,22 @@ function readOf(
   render: RenderContext,
 ): "source" | "optional" | "member" | undefined {
   const own = referencePath(node, render);
-  if (!own || own.root !== source.root) return undefined;
-  if (samePath(own, source)) return "source";
-  if (own.names.length <= source.names.length) return undefined;
+  if (!own || own.root !== source.root) {
+    return undefined;
+  }
+  if (samePath(own, source)) {
+    return "source";
+  }
+  if (own.names.length <= source.names.length) {
+    return undefined;
+  }
   let inner = unwrap(node);
   while (inner.type === "MemberExpression") {
     const object = unwrap(inner.object);
     const path = referencePath(object, render);
-    if (path && samePath(path, source)) return inner.optional ? "optional" : "member";
+    if (path && samePath(path, source)) {
+      return inner.optional ? "optional" : "member";
+    }
     inner = object;
   }
   return undefined;
@@ -1330,7 +1511,9 @@ function comparison(
   holds: boolean,
   render: RenderContext,
 ): TestEffect | undefined {
-  if (node.left.type === "PrivateIdentifier") return undefined;
+  if (node.left.type === "PrivateIdentifier") {
+    return undefined;
+  }
   const { left, right } = node;
   const loose = node.operator === "==" || node.operator === "!=";
   // Whether the two sides are equal where the operand is as `holds` says.
@@ -1340,19 +1523,31 @@ function comparison(
     [right, left],
   ] as const) {
     const value = literalOf(other, render);
-    if (value === NOT_LITERAL) continue;
+    if (value === NOT_LITERAL) {
+      continue;
+    }
     const inner = withoutParentheses(side);
     if (inner.type === "UnaryExpression" && inner.operator === "typeof") {
-      if (readOf(withoutParentheses(inner.argument), source, render) !== "source") continue;
-      if (typeof value !== "string") return "none";
-      if (value === "undefined") return equal ? "absent" : removing("undefined");
-      if (!equal) return "none";
+      if (readOf(withoutParentheses(inner.argument), source, render) !== "source") {
+        continue;
+      }
+      if (typeof value !== "string") {
+        return "none";
+      }
+      if (value === "undefined") {
+        return equal ? "absent" : removing("undefined");
+      }
+      if (!equal) {
+        return "none";
+      }
       return value === "object" ? removing("undefined") : "present";
     }
     const reading = readOf(inner, source, render);
     if (reading === "source") {
       if (value === null || value === undefined) {
-        if (equal) return "absent";
+        if (equal) {
+          return "absent";
+        }
         return loose
           ? removing("null", "undefined")
           : removing(value === null ? "null" : "undefined");
@@ -1367,7 +1562,9 @@ function comparison(
       return equal ? "present" : "none";
     }
     // A member through `.` is left to `discriminant`.
-    if (reading === "member") return undefined;
+    if (reading === "member") {
+      return undefined;
+    }
   }
   return undefined;
 }
@@ -1433,7 +1630,9 @@ function presentWithout(
   declared?: Kinds,
 ): boolean {
   const kinds = declared ?? declaredKinds(source, render);
-  if (!kinds) return false;
+  if (!kinds) {
+    return false;
+  }
   const left = without(kinds, ...removed);
   return !has(left, "null") && !has(left, "undefined") && !has(left, "unknown");
 }
@@ -1463,7 +1662,9 @@ function discriminant(
     const pair = sides.find(
       ([, other]) => literalOf(other as AST.Expression, render) !== NOT_LITERAL,
     );
-    if (!pair || pair[0].type === "PrivateIdentifier") return undefined;
+    if (!pair || pair[0].type === "PrivateIdentifier") {
+      return undefined;
+    }
     const value = literalOf(pair[1] as AST.Expression, render) as Literal;
     const loose = operand.operator === "==" || operand.operator === "!=";
     const equal = (operand.operator === "===" || operand.operator === "==") === holds;
@@ -1472,10 +1673,14 @@ function discriminant(
     nullishSafe = equal && value !== null && value !== undefined;
   }
   const path = referencePath(tested, render);
-  if (!path || path.root !== source.root || !path.names.length) return undefined;
+  if (!path || path.root !== source.root || !path.names.length) {
+    return undefined;
+  }
   const prefix = path.names.slice(0, -1);
   const key = path.names.at(-1)!;
-  if (rootOnly && prefix.length) return undefined;
+  if (rootOnly && prefix.length) {
+    return undefined;
+  }
   // The union itself (`plan` of `plan.kind`), or a member of it the test does not read.
   const own = prefix.length === source.names.length;
   if (
@@ -1487,19 +1692,31 @@ function discriminant(
   }
   const parent = declaredKinds({ root: source.root, names: prefix }, render);
   const shapes = parent?.objects;
-  if (!parent || !shapes || shapes.length < 2 || !isDiscriminant(shapes, key)) return undefined;
+  if (!parent || !shapes || shapes.length < 2 || !isDiscriminant(shapes, key)) {
+    return undefined;
+  }
   // A test that may hold where the parent is absent says nothing of its members.
-  if (!nullishSafe && (has(parent, "null") || has(parent, "undefined"))) return undefined;
+  if (!nullishSafe && (has(parent, "null") || has(parent, "undefined"))) {
+    return undefined;
+  }
   const kept = shapes.filter((shape) => {
     const member = shape.members().get(key);
-    if (!member) return true;
+    if (!member) {
+      return true;
+    }
     return passes(member.optional ? union(member.kinds(), UNDEFINED) : member.kinds());
   });
-  if (kept.length === shapes.length) return undefined;
+  if (kept.length === shapes.length) {
+    return undefined;
+  }
   // The union narrowed to the shapes that remain: never nullish, and narrowed for closures.
-  if (own) return "present";
+  if (own) {
+    return "present";
+  }
   let kinds: Kinds = { primitives: new Set(["object"]), objects: kept };
-  for (const name of source.names.slice(prefix.length)) kinds = memberOf(kinds, name);
+  for (const name of source.names.slice(prefix.length)) {
+    kinds = memberOf(kinds, name);
+  }
   const nullish = has(kinds, "null") || has(kinds, "undefined") || has(kinds, "unknown");
   return nullish ? "none" : "present";
 }
@@ -1508,17 +1725,21 @@ type Literal = string | number | boolean | null | undefined;
 
 /** Whether a value of these kinds may equal a literal (`==` when `loose`). */
 function mayEqual(kinds: Kinds, value: Literal, loose: boolean): boolean {
-  if (has(kinds, "unknown")) return true;
+  if (has(kinds, "unknown")) {
+    return true;
+  }
   if (value === null || value === undefined) {
     return (
       has(kinds, value === null ? "null" : "undefined") ||
       (loose && (has(kinds, "null") || has(kinds, "undefined")))
     );
   }
-  if (typeof value === "string")
+  if (typeof value === "string") {
     return has(kinds, "string") && (!kinds.strings || kinds.strings.has(value));
-  if (typeof value === "number")
+  }
+  if (typeof value === "number") {
     return has(kinds, "number") && (!kinds.numbers || kinds.numbers.has(value));
+  }
   return has(kinds, "boolean") && (!kinds.booleans || kinds.booleans.has(value));
 }
 
@@ -1529,7 +1750,9 @@ function onlyEqual(kinds: Kinds, value: Literal, loose: boolean): boolean {
     const nullish = loose ? ["null", "undefined"] : [value === null ? "null" : "undefined"];
     return primitives.length > 0 && primitives.every((primitive) => nullish.includes(primitive));
   }
-  if (primitives.length !== 1) return false;
+  if (primitives.length !== 1) {
+    return false;
+  }
   const literals =
     typeof value === "string"
       ? kinds.strings
@@ -1542,12 +1765,18 @@ function onlyEqual(kinds: Kinds, value: Literal, loose: boolean): boolean {
 /** Whether a value of these kinds may be truthy. */
 function mayBeTruthy(kinds: Kinds): boolean {
   return [...kinds.primitives].some((primitive) => {
-    if (primitive === "null" || primitive === "undefined") return false;
-    if (primitive === "string")
+    if (primitive === "null" || primitive === "undefined") {
+      return false;
+    }
+    if (primitive === "string") {
       return !kinds.strings || [...kinds.strings].some((value) => value !== "");
-    if (primitive === "number")
+    }
+    if (primitive === "number") {
       return !kinds.numbers || [...kinds.numbers].some((value) => value !== 0);
-    if (primitive === "boolean") return !kinds.booleans || kinds.booleans.has(true);
+    }
+    if (primitive === "boolean") {
+      return !kinds.booleans || kinds.booleans.has(true);
+    }
     return true;
   });
 }
@@ -1555,9 +1784,15 @@ function mayBeTruthy(kinds: Kinds): boolean {
 /** Whether a value of these kinds may be falsy. */
 function mayBeFalsy(kinds: Kinds): boolean {
   return [...kinds.primitives].some((primitive) => {
-    if (primitive === "string") return !kinds.strings || kinds.strings.has("");
-    if (primitive === "number") return !kinds.numbers || kinds.numbers.has(0);
-    if (primitive === "boolean") return !kinds.booleans || kinds.booleans.has(false);
+    if (primitive === "string") {
+      return !kinds.strings || kinds.strings.has("");
+    }
+    if (primitive === "number") {
+      return !kinds.numbers || kinds.numbers.has(0);
+    }
+    if (primitive === "boolean") {
+      return !kinds.booleans || kinds.booleans.has(false);
+    }
     return (
       primitive === "null" ||
       primitive === "undefined" ||
@@ -1584,6 +1819,8 @@ function declaredKinds(path: ReferencePath, render: RenderContext): Kinds | unde
     kinds =
       render.propsByDeclaration.get(path.root)?.kinds ?? render.loopVariables.get(path.root)?.kinds;
   }
-  for (const name of names) kinds = kinds && memberOf(kinds, name);
+  for (const name of names) {
+    kinds = kinds && memberOf(kinds, name);
+  }
   return kinds;
 }

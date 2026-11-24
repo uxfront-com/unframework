@@ -102,7 +102,9 @@ async function serve(
     });
     await server.listen();
     const address = server.httpServer?.address();
-    if (!address || typeof address === "string") throw new Error("the server has no port");
+    if (!address || typeof address === "string") {
+      throw new Error("the server has no port");
+    }
     const get = async (url: string): Promise<Answer> => {
       const response = await fetch(`http://${HOST}:${address.port}${url}`, {
         headers: { accept: "*/*" },
@@ -120,7 +122,9 @@ async function serve(
 /** The URL an import of `specifier` became in a served module. */
 function importedUrl(code: string, specifier: RegExp): string {
   for (const [, url] of code.matchAll(/(?:from|import)\s*["']([^"']+)["']/g)) {
-    if (specifier.test(url!)) return url!;
+    if (specifier.test(url!)) {
+      return url!;
+    }
   }
   throw new Error(`no import matches ${specifier} in:\n${code}`);
 }
@@ -128,7 +132,9 @@ function importedUrl(code: string, specifier: RegExp): string {
 /** The URL a served module imports its default export `name` from. */
 function importOf(code: string, name: string): string {
   const url = new RegExp(`import ${name} from "([^"]+)"`).exec(code)?.[1];
-  if (url === undefined) throw new Error(`no import of ${name} in:\n${code}`);
+  if (url === undefined) {
+    throw new Error(`no import of ${name} in:\n${code}`);
+  }
   return url;
 }
 

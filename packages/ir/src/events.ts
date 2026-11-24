@@ -209,7 +209,9 @@ export const EVENT_INTERFACES: ReadonlyMap<string, string | null> = table<string
 /** Whether an event interface is `ancestor` or extends it (`PointerEvent` extends `MouseEvent`). */
 export function extendsEventInterface(name: string, ancestor: string): boolean {
   for (let current: string | null | undefined = name; current;) {
-    if (current === ancestor) return true;
+    if (current === ancestor) {
+      return true;
+    }
     current = EVENT_INTERFACES.get(current);
   }
   return false;

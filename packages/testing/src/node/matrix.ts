@@ -160,19 +160,33 @@ export interface ProjectRecord {
  * canary can require the evidence of each.
  */
 export function cellOf(outcome: LayerOutcome): string {
-  if (outcome.status === "skip") return `skip(${outcome.reason})`;
-  if (outcome.status === "quarantined") return `quarantined(${outcome.issue})`;
-  if (outcome.status === "pass") return "pass";
+  if (outcome.status === "skip") {
+    return `skip(${outcome.reason})`;
+  }
+  if (outcome.status === "quarantined") {
+    return `quarantined(${outcome.issue})`;
+  }
+  if (outcome.status === "pass") {
+    return "pass";
+  }
   return `fail: ${outcome.message.trim() || "failed"}`;
 }
 
 /** A matrix cell as an outcome. Throws on text that is not a cell, so a corrupt matrix is loud. */
 export function outcomeOfCell(cell: string): LayerOutcome {
-  if (cell === "pass") return { status: "pass" };
-  if (cell.startsWith("fail: ")) return { status: "fail", message: cell.slice("fail: ".length) };
+  if (cell === "pass") {
+    return { status: "pass" };
+  }
+  if (cell.startsWith("fail: ")) {
+    return { status: "fail", message: cell.slice("fail: ".length) };
+  }
   const match = /^(skip|quarantined)\((.*)\)$/s.exec(cell);
-  if (match?.[1] === "skip") return { status: "skip", reason: match[2]! };
-  if (match?.[1] === "quarantined") return { status: "quarantined", issue: match[2]! };
+  if (match?.[1] === "skip") {
+    return { status: "skip", reason: match[2]! };
+  }
+  if (match?.[1] === "quarantined") {
+    return { status: "quarantined", issue: match[2]! };
+  }
   throw new Error(`Not a parity matrix cell: ${JSON.stringify(cell)}`);
 }
 
@@ -188,12 +202,18 @@ export function buildCells(records: readonly UfLayerMeta[]): MatrixCells {
   const outcomes = new Map<string, Map<string, Map<LayerName, LayerOutcome[]>>>();
   for (const record of records) {
     let targets = outcomes.get(record.case);
-    if (!targets) outcomes.set(record.case, (targets = new Map()));
+    if (!targets) {
+      outcomes.set(record.case, (targets = new Map()));
+    }
     let layers = targets.get(record.target);
-    if (!layers) targets.set(record.target, (layers = new Map()));
+    if (!layers) {
+      targets.set(record.target, (layers = new Map()));
+    }
     for (const layer of LAYERS) {
       const outcome = record.layers[layer];
-      if (outcome) layers.set(layer, [...(layers.get(layer) ?? []), outcome]);
+      if (outcome) {
+        layers.set(layer, [...(layers.get(layer) ?? []), outcome]);
+      }
     }
   }
   const cells: MatrixCells = {};
@@ -230,10 +250,14 @@ export function mergeScenarios(sets: readonly MatrixScenarios[]): MatrixScenario
   for (const scenarios of sets) {
     for (const [caseId, targets] of Object.entries(scenarios)) {
       let byTarget = names.get(caseId);
-      if (!byTarget) names.set(caseId, (byTarget = new Map()));
+      if (!byTarget) {
+        names.set(caseId, (byTarget = new Map()));
+      }
       for (const [target, list] of Object.entries(targets)) {
         const set = byTarget.get(target) ?? new Set<string>();
-        for (const name of list) set.add(name);
+        for (const name of list) {
+          set.add(name);
+        }
         byTarget.set(target, set);
       }
     }
@@ -259,8 +283,9 @@ export function buildTests(records: readonly UfLayerMeta[]): MatrixTests {
       if (
         record.test === undefined ||
         (!record.scenarios?.length && record.skipped === undefined && record.standIn === undefined)
-      )
+      ) {
         return [];
+      }
       const test: MatrixTest = {
         scenarios: [...new Set(record.scenarios ?? [])].sort(),
         ...(record.skipped === undefined ? {} : { skipped: record.skipped }),
@@ -415,7 +440,9 @@ export function withoutProjects(
     const cells = outsideScope(before[0], scope);
     const scenarios = outsideScope(before[1], scope);
     const tests = outsideScope(before[2], scope);
-    if (cells !== before[0] || scenarios !== before[1] || tests !== before[2]) dropped = true;
+    if (cells !== before[0] || scenarios !== before[1] || tests !== before[2]) {
+      dropped = true;
+    }
     if (scope && ![cells, scenarios, tests].some((set) => Object.keys(set).length)) {
       dropped = true;
       continue;
@@ -424,9 +451,13 @@ export function withoutProjects(
     scenariosByProject[project] = scenarios;
     testsByProject[project] = tests;
   }
-  if (!dropped) return matrix;
+  if (!dropped) {
+    return matrix;
+  }
   const kept = matrix.projects.filter((project) => project in byProject);
-  if (!kept.length) return undefined;
+  if (!kept.length) {
+    return undefined;
+  }
   return {
     ...matrix,
     projects: kept,
@@ -448,7 +479,9 @@ function outsideScope<T>(
   byCase: Record<string, Record<string, T>>,
   scope: ProjectScope | undefined,
 ): Record<string, Record<string, T>> {
-  if (!scope) return byCase;
+  if (!scope) {
+    return byCase;
+  }
   const kept: Record<string, Record<string, T>> = {};
   let dropped = false;
   for (const [caseId, targets] of Object.entries(byCase)) {
@@ -546,12 +579,16 @@ export function settleQuarantine(
     for (const [target, layers] of Object.entries(targets)) {
       for (const layer of LAYERS) {
         const cell = layers[layer];
-        if (cell === undefined) continue;
+        if (cell === undefined) {
+          continue;
+        }
         const outcome = outcomeOfCell(cell);
         const entry = quarantineFor(quarantine, { case: caseId, target }, layer);
         let settled: LayerOutcome;
         if (!entry) {
-          if (outcome.status !== "quarantined") continue;
+          if (outcome.status !== "quarantined") {
+            continue;
+          }
           settled = {
             status: "fail",
             message: `quarantined for ${outcome.issue} by an older run, but no entry quarantines ${caseId} › ${target} › ${layer} any more: rerun its project to see the failure.`,
@@ -562,7 +599,9 @@ export function settleQuarantine(
           continue;
         }
         layers[layer] = cellOf(settled);
-        if (settled.status === "fail") problems.push(settled.message);
+        if (settled.status === "fail") {
+          problems.push(settled.message);
+        }
       }
     }
   }

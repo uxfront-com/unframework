@@ -21,7 +21,9 @@ export function captureExample(id: string, caseId: string, component: () => unkn
   describeTargets(id, () => {
     it(EXAMPLE_TEST, async () => {
       const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-      if (!test) throw new Error("captureExample's test has no current test.");
+      if (!test) {
+        throw new Error("captureExample's test has no current test.");
+      }
       const view = await mount(component);
       await view.settle();
       const result = await captureVisual(

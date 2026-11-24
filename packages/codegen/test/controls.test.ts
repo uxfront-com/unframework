@@ -447,12 +447,18 @@ function analysed(name: string, lines: string[]) {
   const found = module!.components[0]!;
   const listeners: EventAttribute[] = [];
   const visit = (node: { kind: string }) => {
-    if (node.kind !== "Element") return;
+    if (node.kind !== "Element") {
+      return;
+    }
     const element = node as ElementNode;
     for (const attribute of element.attributes) {
-      if (attribute.kind === "Event") listeners.push(attribute);
+      if (attribute.kind === "Event") {
+        listeners.push(attribute);
+      }
     }
-    for (const child of element.children) visit(child);
+    for (const child of element.children) {
+      visit(child);
+    }
   };
   visit(found.render);
   const named = (binding: string) =>

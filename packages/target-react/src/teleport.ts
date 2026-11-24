@@ -11,7 +11,9 @@ import type { ReactPlan, TeleportNames } from "./plan.ts";
 /** The dialect's `teleport` hook: `mounted ? teleport(<div …/>, "body") : null`. */
 export function teleportCall(plan: ReactPlan): JsxDialect["teleport"] {
   const names = plan.helpers.teleport;
-  if (!names) return undefined;
+  if (!names) {
+    return undefined;
+  }
   return (node, context) =>
     js.conditionalExpression(
       js.identifier(names.mounted),

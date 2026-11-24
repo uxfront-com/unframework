@@ -118,7 +118,11 @@ export function untypedAttribute(
   name: string,
   besides: boolean,
 ): "spread" | "untyped" | undefined {
-  if (FORBIDDEN.get(name)?.has(tag)) return "untyped";
-  if (!UNDECLARED.get(name)?.has(tag)) return undefined;
+  if (FORBIDDEN.get(name)?.has(tag)) {
+    return "untyped";
+  }
+  if (!UNDECLARED.get(name)?.has(tag)) {
+    return undefined;
+  }
   return besides ? "spread" : "untyped";
 }

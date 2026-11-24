@@ -69,7 +69,9 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
   /** The file oxc-resolver finds for a specifier, and the directory of its package. */
   const locate = (from: string, specifier: string): { path: string; directory: string } | null => {
     const found = resolver.resolveDtsSync(from, specifier);
-    if (!found.path || !TYPESCRIPT.test(found.path)) return null;
+    if (!found.path || !TYPESCRIPT.test(found.path)) {
+      return null;
+    }
     // Its `package.json` keeps the path through `node_modules`; the file's path is the real one.
     return {
       path: found.path,
@@ -78,7 +80,9 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
   };
   const resolve = (importer: string, specifier: string): string | null => {
     const key = `${importer}\0${specifier}`;
-    if (resolved.has(key)) return resolved.get(key)!;
+    if (resolved.has(key)) {
+      return resolved.get(key)!;
+    }
     const inPackage = importer.startsWith(PACKAGE);
     const from = inPackage ? paths.get(importer)! : `${root}/${importer}`;
     const found = locate(from, specifier);
@@ -88,7 +92,9 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
       const name = packageName(importer.slice(PACKAGE.length));
       const directory = packages.get(name);
       const path = directory === undefined ? ".." : relative(directory, found.path);
-      if (!path.startsWith("..")) file = `${PACKAGE}${name}/${path}`;
+      if (!path.startsWith("..")) {
+        file = `${PACKAGE}${name}/${path}`;
+      }
     } else if (found) {
       // The copy of a package the root resolves owns its name, whichever query reaches it first;
       // any other copy of it is not surely the one the name means. A package the root resolves
@@ -104,7 +110,9 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
         file = `${PACKAGE}${token}/${relative(found.directory, found.path)}`;
       }
     }
-    if (file) paths.set(file, found!.path);
+    if (file) {
+      paths.set(file, found!.path);
+    }
     resolved.set(key, file);
     return file;
   };
@@ -126,14 +134,18 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
   const resolveShape = async (query: ShapeQuery): Promise<TypeShape> => {
     const key = `${query.file}:${query.span.start}:${query.span.end}`;
     const cached = shapes.get(key);
-    if (cached) return cached.shape;
+    if (cached) {
+      return cached.shape;
+    }
     const started = generation;
     // Each round reads the files the last one needed, until resolution needs none it lacks.
     let pending = [query.file];
     for (;;) {
       await Promise.all(pending.map(load));
       const own = loaded.get(query.file);
-      if (own === null) throw new Error(`Cannot read ${query.file}.`);
+      if (own === null) {
+        throw new Error(`Cannot read ${query.file}.`);
+      }
       const result = resolveQuery(modules, query, true);
       if (own && !result.shape) {
         throw new Error(`No type at ${query.file}:${query.span.start}-${query.span.end}.`);
@@ -165,12 +177,16 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
       for (const file of changes.files) {
         loaded.delete(file);
         reading.delete(file);
-        if (!file.startsWith(PACKAGE)) continue;
+        if (!file.startsWith(PACKAGE)) {
+          continue;
+        }
         // A package installed, removed or changed: every file of every copy of it is read and
         // resolved again.
         const name = file.slice(PACKAGE.length);
         for (const token of packages.keys()) {
-          if (token === name || token.startsWith(`${name}@`)) packages.delete(token);
+          if (token === name || token.startsWith(`${name}@`)) {
+            packages.delete(token);
+          }
         }
         for (const each of [...loaded.keys(), ...reading.keys()]) {
           if (each.startsWith(`${file}/`) || each.startsWith(`${file}@`)) {
@@ -184,7 +200,9 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
       }
       // A shape read from a changed file is stale, and so is every shape of its dependents.
       for (const [key, entry] of shapes) {
-        if ([...entry.files].some((file) => changed.has(file))) shapes.delete(key);
+        if ([...entry.files].some((file) => changed.has(file))) {
+          shapes.delete(key);
+        }
       }
     },
     dispose: async () => {
@@ -218,8 +236,9 @@ export function localShapes(
   const shapes = new Map<string, TypeShape | undefined>();
   return (span) => {
     const key = `${span.start}:${span.end}`;
-    if (!shapes.has(key))
+    if (!shapes.has(key)) {
       shapes.set(key, resolveQuery(modules, { file: filename, span }, false).shape);
+    }
     return shapes.get(key);
   };
 }

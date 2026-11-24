@@ -27,7 +27,9 @@ const SEVEN = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"] as
 
 const roots: string[] = [];
 afterAll(() => {
-  for (const root of roots) rmSync(root, { recursive: true, force: true });
+  for (const root of roots) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 /**

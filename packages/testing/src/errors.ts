@@ -5,7 +5,9 @@ import { diffLines } from "./diff.ts";
  * line diff, because the message is all the parity matrix and the combined error keep.
  */
 export function formatError(error: unknown): string {
-  if (!(error instanceof Error)) return String(error);
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
   const assertion = error as Error & { actual?: unknown; expected?: unknown; showDiff?: boolean };
   if (
     assertion.showDiff &&
@@ -24,7 +26,9 @@ export function formatError(error: unknown): string {
  * connection) in its own, so the cause is the part that says what happened.
  */
 export function errorMessages(error: unknown): string[] {
-  if (typeof error !== "object" || error === null) return [String(error)];
+  if (typeof error !== "object" || error === null) {
+    return [String(error)];
+  }
   const messages = [messageOf(error)];
   const seen = new Set<unknown>([error]);
   const first = "cause" in error ? error.cause : undefined;

@@ -7,13 +7,23 @@ export type AstNode = { type: string; start: number; end: number } & Record<stri
 /** Calls `fn` on every node of a parsed tree, parents first. */
 export function visit(root: unknown, fn: (node: AstNode) => void): void {
   if (Array.isArray(root)) {
-    for (const item of root) visit(item, fn);
+    for (const item of root) {
+      visit(item, fn);
+    }
     return;
   }
-  if (typeof root !== "object" || root === null) return;
+  if (typeof root !== "object" || root === null) {
+    return;
+  }
   const node = root as Partial<AstNode>;
-  if (typeof node.type === "string" && typeof node.start === "number") fn(node as AstNode);
-  for (const value of Object.values(node)) if (typeof value === "object") visit(value, fn);
+  if (typeof node.type === "string" && typeof node.start === "number") {
+    fn(node as AstNode);
+  }
+  for (const value of Object.values(node)) {
+    if (typeof value === "object") {
+      visit(value, fn);
+    }
+  }
 }
 
 /** The ranges of the functions inside a parsed tree. */
@@ -38,12 +48,18 @@ export function functionRanges(root: unknown): { start: number; end: number }[] 
 export function readsName(root: unknown, name: string): boolean {
   let found = false;
   const walk = (node: unknown, parent: AstNode | undefined, key: string | undefined): void => {
-    if (found) return;
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item, parent, key);
+    if (found) {
       return;
     }
-    if (typeof node !== "object" || node === null) return;
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        walk(item, parent, key);
+      }
+      return;
+    }
+    if (typeof node !== "object" || node === null) {
+      return;
+    }
     const current = node as Partial<AstNode>;
     if (current.type === "Identifier" && current["name"] === name) {
       const memberName =
@@ -53,7 +69,9 @@ export function readsName(root: unknown, name: string): boolean {
         key === "key" &&
         parent["computed"] !== true &&
         parent["shorthand"] !== true;
-      if (!memberName && !propertyKey) found = true;
+      if (!memberName && !propertyKey) {
+        found = true;
+      }
       return;
     }
     const isNode = typeof current.type === "string";

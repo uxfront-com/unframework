@@ -22,16 +22,24 @@ const API =
 /** The first node of a kind in a render tree, depth first. */
 function find<T>(value: unknown, kind: string): T {
   const visit = (item: unknown): unknown => {
-    if (!item || typeof item !== "object") return undefined;
-    if (!Array.isArray(item) && (item as { kind?: string }).kind === kind) return item;
+    if (!item || typeof item !== "object") {
+      return undefined;
+    }
+    if (!Array.isArray(item) && (item as { kind?: string }).kind === kind) {
+      return item;
+    }
     for (const child of Object.values(item)) {
       const found = visit(child);
-      if (found) return found;
+      if (found) {
+        return found;
+      }
     }
     return undefined;
   };
   const found = visit(value);
-  if (!found) throw new Error(`no ${kind}`);
+  if (!found) {
+    throw new Error(`no ${kind}`);
+  }
   return found as T;
 }
 
@@ -392,7 +400,9 @@ describe("provide and inject", () => {
       ),
     ).api!;
     const imports = new Map<string, ModuleApi | undefined>();
-    for (const specifier of componentImports(parsed)) imports.set(specifier, provider);
+    for (const specifier of componentImports(parsed)) {
+      imports.set(specifier, provider);
+    }
     const { module, diagnostics } = analyze(parsed, { imports });
     expect(diagnostics).toEqual([]);
     expect(module!.imports![0]!.names.map(({ kind, imported }) => [kind, imported])).toEqual([

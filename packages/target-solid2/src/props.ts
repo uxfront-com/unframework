@@ -98,7 +98,9 @@ export function solidProps(
       ...(events ? { events } : {}),
     };
   };
-  if (read.length === 0 && !emitted && !composition.reads) return unread();
+  if (read.length === 0 && !emitted && !composition.reads) {
+    return unread();
+  }
   if (!parameter || parameter.form === "object") {
     // The source's own name, which every reference already spells (`props.label`), or `props`
     // for a component that takes only its events' listeners. An object form only composition
@@ -129,7 +131,9 @@ export function solidProps(
     read: (binding: Binding) => `${props}.${binding.name}`,
     ...(events ? { events } : {}),
   };
-  if (!raw) return { parameters: [js.bindingIdentifier(props, type())], statements: [], ...shared };
+  if (!raw) {
+    return { parameters: [js.bindingIdentifier(props, type())], statements: [], ...shared };
+  }
   // `merge` takes the last source's key, so each default is a getter over the prop that applies
   // the default where the prop is `undefined`, absent or passed as such.
   const merge = imports.add("solid-js", "merge");
@@ -193,7 +197,9 @@ function eventsInterface(
   imports: ImportSet,
 ): GeneratedInterface | undefined {
   const { emits } = component;
-  if (!emits) return undefined;
+  if (!emits) {
+    return undefined;
+  }
   const name = imports.claim(`${component.name}Events`);
   const members = emits.events.map((event) => {
     const parameters = event.parameters
@@ -211,9 +217,15 @@ function emitsAny(component: UfComponent): boolean {
 
 /** Whether a default is or holds an object or array literal (`{ title: "t" }`, `["info"]`). */
 function holdsContainer(node: unknown): boolean {
-  if (Array.isArray(node)) return node.some(holdsContainer);
-  if (typeof node !== "object" || node === null) return false;
+  if (Array.isArray(node)) {
+    return node.some(holdsContainer);
+  }
+  if (typeof node !== "object" || node === null) {
+    return false;
+  }
   const { type } = node as { type?: unknown };
-  if (type === "ObjectExpression" || type === "ArrayExpression") return true;
+  if (type === "ObjectExpression" || type === "ArrayExpression") {
+    return true;
+  }
   return Object.entries(node).some(([key, value]) => key !== "type" && holdsContainer(value));
 }

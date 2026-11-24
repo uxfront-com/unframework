@@ -26,13 +26,21 @@ import type {
 export function listBoxSize(
   element: ElementNode,
 ): StaticAttribute | BoundAttribute | SpreadAttribute | undefined {
-  if (element.tag !== "select" || hasStaticAttribute(element, "multiple")) return undefined;
+  if (element.tag !== "select" || hasStaticAttribute(element, "multiple")) {
+    return undefined;
+  }
   const size = sizeOf(element);
-  if (!size) return undefined;
+  if (!size) {
+    return undefined;
+  }
   if (size.kind === "Static") {
-    if (size.value === true) return undefined;
+    if (size.value === true) {
+      return undefined;
+    }
     const displaySize = parseNonNegativeInteger(size.value);
-    if (displaySize === undefined || displaySize <= 1) return undefined;
+    if (displaySize === undefined || displaySize <= 1) {
+      return undefined;
+    }
   }
   return hasSelectableOption(element, element.children) ? size : undefined;
 }
@@ -43,7 +51,9 @@ function sizeOf(
 ): StaticAttribute | BoundAttribute | SpreadAttribute | undefined {
   for (const attribute of element.attributes) {
     if (attribute.kind === "Static" || attribute.kind === "Bound") {
-      if (attribute.name === "size") return attribute;
+      if (attribute.name === "size") {
+        return attribute;
+      }
     } else if (attribute.kind === "Spread" && attribute.keys.some(({ name }) => name === "size")) {
       return attribute;
     }
@@ -54,7 +64,9 @@ function sizeOf(
 /** HTML's rules for parsing non-negative integers: `undefined` where they fail. */
 function parseNonNegativeInteger(value: string): number | undefined {
   const match = /^[\t\n\f\r ]*([+-]?)(\d+)/.exec(value);
-  if (!match) return undefined;
+  if (!match) {
+    return undefined;
+  }
   const number = Number(match[2]);
   return match[1] === "-" && number !== 0 ? undefined : number;
 }
@@ -68,7 +80,9 @@ function hasSelectableOption(parent: ElementNode, children: readonly RenderNode[
   return children.some((child) => {
     switch (child.kind) {
       case "Element":
-        if (child.tag !== "option") return hasSelectableOption(child, child.children);
+        if (child.tag !== "option") {
+          return hasSelectableOption(child, child.children);
+        }
         return (
           !hasStaticAttribute(child, "disabled") &&
           !(parent.tag === "optgroup" && hasStaticAttribute(parent, "disabled"))

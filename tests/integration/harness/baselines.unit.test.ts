@@ -154,7 +154,9 @@ function commit(repo: string, { detach = false } = {}): string {
     );
   git("init", "--quiet", "--initial-branch", "probe");
   git("commit", "--quiet", "--allow-empty", "--message", "probe");
-  if (detach) git("switch", "--quiet", "--detach");
+  if (detach) {
+    git("switch", "--quiet", "--detach");
+  }
   return git("rev-parse", "HEAD").stdout.trim();
 }
 
@@ -173,7 +175,9 @@ const WRITES_BASELINE = `mkdir -p "$out/$(dirname "${BASELINE}")" && printf png 
 
 const roots: string[] = [];
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 function run(
@@ -685,7 +689,9 @@ describe("CI's Baselines job", () => {
     .find((block) => block.startsWith("baselines:\n"));
 
   it("runs on pull requests and by hand, in the baseline image, and uploads the artefact download reads", () => {
-    if (!job) throw new Error("ci.yml has no baselines job.");
+    if (!job) {
+      throw new Error("ci.yml has no baselines job.");
+    }
     expect(job).toMatch(/^ {4}name: Baselines$/m);
     // A docs-only pull request skips it, like every test job (ADR-0084).
     expect(job).toMatch(
@@ -721,7 +727,9 @@ describe("the baseline image", () => {
     const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
     const images = [...workflow.matchAll(/image: (mcr\.microsoft\.com\/playwright:\S+)/g)];
     expect(images.length).toBeGreaterThan(0);
-    for (const [, used] of images) expect(used).toBe(image);
+    for (const [, used] of images) {
+      expect(used).toBe(image);
+    }
   });
 });
 

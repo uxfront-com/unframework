@@ -24,7 +24,9 @@ function everyFrame(root: Element, selector: string, prefix: string): { stop: ()
   const frames: string[] = [];
   let running = true;
   const read = () => {
-    if (!running) return;
+    if (!running) {
+      return;
+    }
     const elements = [...root.querySelectorAll(selector)];
     frames.push(
       elements
@@ -57,20 +59,28 @@ function byElement(frames: string[]): Record<string, string[]> {
   const lastRead = new Map<string, number>();
   frames.forEach((frame, index) => {
     for (const entry of frame.split(" | ")) {
-      if (entry === "") continue;
+      if (entry === "") {
+        continue;
+      }
       // A settled reading has been through `trimEnd`, so it is `text:`, with no space to split on.
       const colon = entry.lastIndexOf(":");
-      if (colon === -1) throw new Error(`The reading "${entry}" has no ":".`);
+      if (colon === -1) {
+        throw new Error(`The reading "${entry}" has no ":".`);
+      }
       const text = entry.slice(0, colon);
       const classes = entry.slice(colon + 1).trim();
       const last = lastRead.get(text);
-      if (last === index) throw new Error(`Two elements read "${text}" in one frame: "${frame}".`);
+      if (last === index) {
+        throw new Error(`Two elements read "${text}" in one frame: "${frame}".`);
+      }
       if (last !== undefined && last !== index - 1) {
         throw new Error(`"${text}" left the DOM and came back: ${JSON.stringify(frames)}`);
       }
       lastRead.set(text, index);
       const sequence = (sequences[text] ??= []);
-      if (sequence.at(-1) !== classes) sequence.push(classes);
+      if (sequence.at(-1) !== classes) {
+        sequence.push(classes);
+      }
     }
   });
   return sequences;

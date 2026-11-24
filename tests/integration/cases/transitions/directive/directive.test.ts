@@ -13,7 +13,9 @@ import Banner from "./Banner.uf.tsx";
 function record(element: Element): { calls: () => string[]; stop: () => void } {
   const calls: string[] = [];
   const listener = (event: Event) => {
-    if ((event as CustomEvent<Element>).detail === element) calls.push("unmounted");
+    if ((event as CustomEvent<Element>).detail === element) {
+      calls.push("unmounted");
+    }
   };
   document.addEventListener("mark-unmounted", listener);
   return {

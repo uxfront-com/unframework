@@ -23,8 +23,9 @@ import { lintWithEslint, lintWithOxlint, mergeLintResults } from "../src/toolcha
 
 const temporaries: string[] = [];
 afterAll(() => {
-  for (const directory of temporaries.splice(0))
+  for (const directory of temporaries.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
+  }
 });
 afterEach(() => vi.unstubAllEnvs());
 

@@ -40,7 +40,9 @@ const KEEP_SHEETS = {
   enforce: "pre",
   resolveId(id: string) {
     const path = STYLE_REQUEST.exec(id)?.[1];
-    if (path !== undefined) return { id: path, external: true };
+    if (path !== undefined) {
+      return { id: path, external: true };
+    }
     if (id.includes("?vue&type=style")) {
       throw new Error(`The Vue packager can only ship a <style src> sheet, not ${id}.`);
     }
@@ -75,7 +77,9 @@ const PRODUCTION = {
   name: "unframework:vue-production",
   configResolved(config: { plugins: readonly { name: string; api?: VueApi }[] }) {
     const api = config.plugins.find(({ name }) => name === PLUGIN_VUE_NAME)?.api;
-    if (!api) throw new Error(`${PLUGIN_VUE} exposes no options to compile for production with.`);
+    if (!api) {
+      throw new Error(`${PLUGIN_VUE} exposes no options to compile for production with.`);
+    }
     api.options = { ...api.options, isProduction: true, devToolsEnabled: false };
   },
 };

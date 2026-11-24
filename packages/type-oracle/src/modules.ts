@@ -67,8 +67,11 @@ export function indexModule(file: string, source: string, program: Program): Sou
     if (declaration) {
       const name = declaration.id.name;
       const declarations = module.declarations.get(name);
-      if (declarations) declarations.push(declaration);
-      else module.declarations.set(name, [declaration]);
+      if (declarations) {
+        declarations.push(declaration);
+      } else {
+        module.declarations.set(name, [declaration]);
+      }
       if (statement.type === "ExportNamedDeclaration") {
         module.exports.set(name, { kind: "local", local: name });
       }
@@ -114,7 +117,9 @@ export function indexModule(file: string, source: string, program: Program): Sou
     }
   }
   for (const entry of module.exports.values()) {
-    if (entry.kind === "local") module.exported.add(entry.local);
+    if (entry.kind === "local") {
+      module.exported.add(entry.local);
+    }
   }
   return module;
 }
@@ -175,9 +180,14 @@ export function candidates(importer: string, specifier: string): string[] {
   const slash = importer.lastIndexOf("/");
   const parts = slash === -1 ? [] : importer.slice(0, slash).split("/");
   for (const part of specifier.split("/")) {
-    if (part === "." || part === "") continue;
-    if (part === ".." && parts.length && parts.at(-1) !== "..") parts.pop();
-    else parts.push(part);
+    if (part === "." || part === "") {
+      continue;
+    }
+    if (part === ".." && parts.length && parts.at(-1) !== "..") {
+      parts.pop();
+    } else {
+      parts.push(part);
+    }
   }
   const path = parts.join("/");
   return /\.[cm]?tsx?$/.test(path)

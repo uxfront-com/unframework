@@ -380,7 +380,9 @@ export const react: Target = defineTarget({
     // The exported component starts the setup and renders the resolved one, which is today's
     // whole component, after it (ADR-0101).
     const exported = outer ? outerComponent(plan, jsx, propsType(plan)) : fn;
-    if (outer) exported.typeParameters = typeParameters(component, jsx);
+    if (outer) {
+      exported.typeParameters = typeParameters(component, jsx);
+    }
     // The types it imports, by name, from where the source imports them, a child's from its
     // output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
     addTypeImports(component, module, plan.names, (name) => name);
@@ -468,9 +470,13 @@ function passedListeners(component: UfComponent): Set<EventAttribute> {
   const found = new Set<EventAttribute>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Component") return;
+      if (node.kind !== "Component") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Event") found.add(attribute);
+        if (attribute.kind === "Event") {
+          found.add(attribute);
+        }
       }
     },
   });
@@ -512,7 +518,9 @@ function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[
  * component without them.
  */
 function typeParameters(component: UfComponent, context: JsxContext): TypeParameters {
-  if (!component.typeParameters?.length) return null;
+  if (!component.typeParameters?.length) {
+    return null;
+  }
   const type = (text: TypeText | undefined) => (text ? context.placeholders.type(text.code) : null);
   const params = component.typeParameters.map((parameter) => ({
     type: "TSTypeParameter" as const,
@@ -536,12 +544,19 @@ function typeParameters(component: UfComponent, context: JsxContext): TypeParame
 function importChildren(plan: ReactPlan): void {
   const { names, composition } = plan;
   for (const child of composition.children) {
-    if (child.self) continue;
-    if (child.export === "default") names.addDefault(child.specifier, child.local, { exact: true });
-    else names.add(child.specifier, child.name, { local: child.local, exact: true });
+    if (child.self) {
+      continue;
+    }
+    if (child.export === "default") {
+      names.addDefault(child.specifier, child.local, { exact: true });
+    } else {
+      names.add(child.specifier, child.name, { local: child.local, exact: true });
+    }
   }
   for (const key of composition.keys) {
-    if (key.specifier) names.add(key.specifier, key.name, { local: key.local, exact: true });
+    if (key.specifier) {
+      names.add(key.specifier, key.name, { local: key.local, exact: true });
+    }
   }
 }
 
@@ -551,7 +566,9 @@ function importChildren(plan: ReactPlan): void {
  * passed as `{ value }` (`refObject`).
  */
 function keyDeclarations(plan: ReactPlan): string[] {
-  if (!plan.composition.ownsKeys) return [];
+  if (!plan.composition.ownsKeys) {
+    return [];
+  }
   const createContext = plan.names.add("react", "createContext");
   return plan.module.keys!.map((key) => {
     const value = refValueType(key.type.code);
@@ -578,7 +595,9 @@ function withFallthrough(
   composer: ReactComposer,
 ): ElementNode | FragmentNode {
   const { fallthrough } = plan.composition;
-  if (!fallthrough) return root;
+  if (!fallthrough) {
+    return root;
+  }
   const target = fallthrough.root;
   const consumer: Expression = { code: fallthrough.className, span: target.span, refs: [] };
   if (target.kind === "Element" && target !== root) {
@@ -696,7 +715,9 @@ function provided(plan: ReactPlan, tree: ReturnType<typeof jsxNode>): ReturnType
 function exposeHandle(plan: ReactPlan): string | undefined {
   const { expose } = plan.composition;
   const exposes = plan.owner.exposes;
-  if (!expose || !exposes) return undefined;
+  if (!expose || !exposes) {
+    return undefined;
+  }
   const useImperativeHandle = plan.names.add("react", "useImperativeHandle");
   const members = exposes.functions.map((id) => {
     const { name } = plan.bindings.get(id)!;
@@ -940,12 +961,20 @@ function compilerOptOut(
   } else {
     for (const prop of read) {
       locals.add(prop.name);
-      if (prop.default) defaults.push({ code: prop.default.code, kind: "default" });
+      if (prop.default) {
+        defaults.push({ code: prop.default.code, kind: "default" });
+      }
     }
-    for (const event of plan.events.values()) if (event.emitted) locals.add(event.local);
+    for (const event of plan.events.values()) {
+      if (event.emitted) {
+        locals.add(event.local);
+      }
+    }
   }
   const reason = compilerBailout([...defaults, ...code], locals);
-  if (!reason) return undefined;
+  if (!reason) {
+    return undefined;
+  }
   return `// React Compiler 1.0 cannot compile ${reason} yet: the component opts out of it.\n"use no memo";`;
 }
 
@@ -965,7 +994,9 @@ function nextTickHooks(plan: ReactPlan): NextTickHooks {
  */
 function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
   const { emits } = plan.owner;
-  if (!emits || !plan.eventsInterface) return [];
+  if (!emits || !plan.eventsInterface) {
+    return [];
+  }
   const members = emits.events.map((event) => {
     const parameters = event.parameters
       .map(
@@ -991,24 +1022,34 @@ function interfaceParameters(
 ): Partial<Record<"events" | "models" | "slots" | "expose", { declared: string; passed: string }>> {
   const { owner: component, composition } = plan;
   const parameters = component.typeParameters ?? [];
-  if (!parameters.length) return {};
+  if (!parameters.length) {
+    return {};
+  }
   const written = (texts: readonly (TypeText | undefined)[]) => {
     const named = new Set<string>();
     const read = (text: TypeText | undefined) => {
-      if (text) for (const name of typeNames(text)) named.add(name);
+      if (text) {
+        for (const name of typeNames(text)) {
+          named.add(name);
+        }
+      }
     };
     texts.forEach(read);
     let kept: TypeParameter[] = [];
     while (true) {
       const next = parameters.filter(({ name }) => named.has(name));
-      if (next.length === kept.length) break;
+      if (next.length === kept.length) {
+        break;
+      }
       kept = next;
       for (const parameter of kept) {
         read(parameter.constraint);
         read(parameter.default);
       }
     }
-    if (!kept.length) return undefined;
+    if (!kept.length) {
+      return undefined;
+    }
     return {
       declared: `<${kept.map(typeParameterText).join(", ")}>`,
       passed: `<${kept.map(({ name }) => name).join(", ")}>`,
@@ -1016,7 +1057,9 @@ function interfaceParameters(
   };
   const exposed = component.exposes?.functions.flatMap((id) => {
     const item = component.setup.find((entry) => entry.kind === "Function" && entry.binding === id);
-    if (item?.kind !== "Function") return [];
+    if (item?.kind !== "Function") {
+      return [];
+    }
     return [...item.function.parameters.map(({ type }) => type), item.function.returnType];
   });
   return {
@@ -1055,7 +1098,9 @@ function propsParameters(
   // A component without props still takes the scope attributes of the styled parents that
   // render it, as an object (ADR-0063).
   const outer = plan.helpers.async;
-  if (own === undefined && !outer) return [];
+  if (own === undefined && !outer) {
+    return [];
+  }
   // The resolved component of a setup that awaits takes its setup's promise too (ADR-0101).
   const typeCode = outer
     ? [own === "object" ? undefined : own, resolvedPropsType(plan)]
@@ -1069,19 +1114,30 @@ function propsParameters(
   // What composition reads of the props (ADR-0054), each as `[prop, local, default]`.
   const composed: [string, string, Expression?][] = [];
   for (const model of composition.models.values()) {
-    if (!model.local && !context.referenced.has(model.item.binding)) continue;
+    if (!model.local && !context.referenced.has(model.item.binding)) {
+      continue;
+    }
     composed.push([model.prop, model.propLocal, model.local ? undefined : model.item.default]);
-    if (model.calls) composed.push([model.event, model.eventLocal]);
+    if (model.calls) {
+      composed.push([model.event, model.eventLocal]);
+    }
   }
   for (const slot of composition.slots.values()) {
-    if (slot.read) composed.push([slot.prop, slot.local]);
+    if (slot.read) {
+      composed.push([slot.prop, slot.local]);
+    }
   }
   const { fallthrough, expose, passing } = composition;
-  if (fallthrough)
+  if (fallthrough) {
     composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
-  if (expose) composed.push(["ref", expose.ref]);
+  }
+  if (expose) {
+    composed.push(["ref", expose.ref]);
+  }
   // The consumer's `ref` the root takes where nothing passes through (ADR-0118).
-  if (!passing && composer.consumerRef !== undefined) composed.push(["ref", composer.consumerRef]);
+  if (!passing && composer.consumerRef !== undefined) {
+    composed.push(["ref", composer.consumerRef]);
+  }
   if (passing && parameter?.form !== "object") {
     const taken = new Set([
       ...read.map((prop) => prop.name),
@@ -1114,7 +1170,9 @@ function propsParameters(
       ),
     );
   for (const event of plan.events.values()) {
-    if (event.emitted) properties.push(renamedProperty(event.prop, event.local));
+    if (event.emitted) {
+      properties.push(renamedProperty(event.prop, event.local));
+    }
   }
   for (const [prop, local, initial] of composed) {
     properties.push(
@@ -1125,9 +1183,13 @@ function propsParameters(
   // the scope attributes are picked from (ADR-0101).
   if (outer) {
     properties.push(js.bindingProperty(outer.promise));
-    if (rest) properties.push(renamedProperty(outer.settled, names.claim(`_${outer.settled}`)));
+    if (rest) {
+      properties.push(renamedProperty(outer.settled, names.claim(`_${outer.settled}`)));
+    }
   }
-  if (!properties.length) return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
+  if (!properties.length) {
+    return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
+  }
   return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
 }
 
@@ -1145,14 +1207,18 @@ function passedProps(
   taken: ReadonlySet<string>,
 ): [string, string][] {
   const { passing, slots } = plan.composition;
-  if (!passing) return [];
+  if (!passing) {
+    return [];
+  }
   // `children` is never passed but as a slot's: the type leaves it out.
   const children = [...slots.values()].some((slot) => slot.prop === "children");
   const unread = new Set(passing.declared.filter((name) => name !== "children" || children));
   const { target } = passing;
   if (target.kind === "Element") {
     for (const attribute of target.attributes) {
-      if (attribute.kind !== "Model") continue;
+      if (attribute.kind !== "Model") {
+        continue;
+      }
       const box = ["checkbox", "checkbox-group", "radio"].includes(attribute.control);
       unread.add(box ? "checked" : "value");
     }
@@ -1194,7 +1260,9 @@ function mergedRefDeclaration(plan: ReactPlan, composer: ReactComposer): string 
 function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | undefined {
   const { passing, fallthrough, expose } = plan.composition;
   const parameter = plan.owner.propsParameter;
-  if (parameter?.form !== "object") return undefined;
+  if (parameter?.form !== "object") {
+    return undefined;
+  }
   // Where nothing else passes, the consumer's `ref` alone: React Compiler reads `props.ref` as
   // a ref's value read during render.
   if (!passing) {
@@ -1212,7 +1280,9 @@ function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | u
       : []),
     ...passedProps(plan, composer, new Set(["className", "style"])),
   ];
-  if (expose) entries.push(["ref", plan.names.claim("_ref")]);
+  if (expose) {
+    entries.push(["ref", plan.names.claim("_ref")]);
+  }
   // The setup's promise and the flag the resolved component of an async setup takes (ADR-0101).
   const outer = plan.helpers.async;
   if (outer) {
@@ -1255,7 +1325,9 @@ function renamedProperty(
   local: string,
   initial?: ReturnType<typeof js.identifier>,
 ): BindingProperty {
-  if (key === local) return js.bindingProperty(key, initial);
+  if (key === local) {
+    return js.bindingProperty(key, initial);
+  }
   const property = js.bindingProperty(key);
   const value = js.bindingIdentifier(local);
   return {
@@ -1271,7 +1343,9 @@ function rootForReact(
   context: JsxContext,
   plan: ReactPlan,
 ): ElementNode | FragmentNode {
-  if (root.kind === "Element") return forReact(root, context, plan);
+  if (root.kind === "Element") {
+    return forReact(root, context, plan);
+  }
   return {
     ...root,
     children: placed(
@@ -1405,7 +1479,9 @@ function fillForReact(
 function forReact(original: ElementNode, context: JsxContext, plan: ReactPlan): ElementNode {
   const rest = restTargets.get(plan);
   const node = rest?.node === original ? { ...original, attributes: rest.attributes } : original;
-  if (node.tag === "title") return { ...node, children: titleChildren(node.children, context) };
+  if (node.tag === "title") {
+    return { ...node, children: titleChildren(node.children, context) };
+  }
   if (node.tag !== "textarea" || node.children.length === 0) {
     return {
       ...node,

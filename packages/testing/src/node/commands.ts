@@ -160,7 +160,9 @@ export async function ufInput(context: InputContext, request: InputRequest): Pro
         await keyboard.down(request.key);
         return { inserted: false };
       } catch (error) {
-        if (!request.text || !UNKNOWN_KEY.test(String(error))) throw error;
+        if (!request.text || !UNKNOWN_KEY.test(String(error))) {
+          throw error;
+        }
         await keyboard.insertText(request.key);
         return { inserted: true };
       }

@@ -40,7 +40,9 @@ export function merge(render: RenderContext, mark: number, probes: readonly Rend
   for (const each of probes) {
     for (const diagnostic of each.reporter.diagnostics) {
       const key = `${diagnostic.code} ${diagnostic.span.start} ${diagnostic.message}`;
-      if (seen.has(key)) continue;
+      if (seen.has(key)) {
+        continue;
+      }
       seen.add(key);
       render.reporter.diagnostics.push(diagnostic);
     }

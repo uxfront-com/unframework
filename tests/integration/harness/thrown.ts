@@ -67,7 +67,9 @@ export async function ufMapStack(
   request: MapStackRequest,
 ): Promise<MapStackResult> {
   const graph = context.project.browser?.vite?.environments.client.moduleGraph;
-  if (!graph) return { message: "The browser project has no Vite server to map the stack on." };
+  if (!graph) {
+    return { message: "The browser project has no Vite server to map the stack on." };
+  }
   const site = throwSite(join(CASES_DIR, request.case));
   const expected = `${site.file}:${site.line}`;
   const marker = `/cases/${request.case}/`;

@@ -27,7 +27,9 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  if (!unmounted) await mounted?.unmount();
+  if (!unmounted) {
+    await mounted?.unmount();
+  }
   mounted = undefined;
   container.remove();
   vi.restoreAllMocks();
@@ -55,7 +57,9 @@ async function click(name: string): Promise<void> {
   const button = [...container.querySelectorAll("button")].find(
     (each) => each.textContent === name,
   );
-  if (!button) throw new Error(`No button is named ${name}.`);
+  if (!button) {
+    throw new Error(`No button is named ${name}.`);
+  }
   await userEvent.click(button);
   await mounted!.settle();
 }

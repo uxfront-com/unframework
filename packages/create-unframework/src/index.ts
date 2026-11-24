@@ -39,7 +39,9 @@ const PROCESS_IO: Io = {
  */
 function projectBin(project: string): string | undefined {
   const manifest = join(project, "node_modules", PACKAGE, "package.json");
-  if (!existsSync(manifest)) return undefined;
+  if (!existsSync(manifest)) {
+    return undefined;
+  }
   // Whatever is installed under the name may not have this bin, like a release from before it.
   const bin: unknown = JSON.parse(readFileSync(manifest, "utf8")).bin?.unframework;
   return typeof bin === "string" ? join(dirname(manifest), bin) : undefined;
@@ -62,7 +64,9 @@ function create(dir: string, io: Io): number {
     return 1;
   }
   const init = spawnSync(process.execPath, [bin, "init"], { cwd: project, encoding: "utf8" });
-  if (init.error) throw init.error;
+  if (init.error) {
+    throw init.error;
+  }
   io.stdout(init.stdout);
   io.stderr(init.stderr);
   return init.status ?? 2;
@@ -72,7 +76,9 @@ function directoryOf(argv: readonly string[]): string {
   const { positionals } = parseArgs({ args: [...argv], allowPositionals: true });
   const [dir] = positionals;
   // An empty name, like an unset shell variable, would resolve to the working directory.
-  if (!dir || positionals.length > 1) throw new Error("It takes one directory.");
+  if (!dir || positionals.length > 1) {
+    throw new Error("It takes one directory.");
+  }
   return dir;
 }
 

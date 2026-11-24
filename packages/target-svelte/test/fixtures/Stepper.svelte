@@ -27,7 +27,7 @@
   const doubled = $derived(count * 2);
 
   const parity = $derived.by(() => {
-    if (count % 2 === 0) return "even";
+    if (count % 2 === 0) {return "even";}
     return "odd";
   });
 

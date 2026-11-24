@@ -54,7 +54,9 @@ export function pluginIrProblems(
   }
   const known = analysedCode(analysed);
   const check = (key: string, path: string, message: string) => {
-    if (!known.has(key)) problems.push({ path, message });
+    if (!known.has(key)) {
+      problems.push({ path, message });
+    }
   };
   for (const [index, component] of result.components.entries()) {
     const base = `/components/${index}`;
@@ -83,11 +85,17 @@ export function pluginIrProblems(
       check(functionKey(located), located.path, NOT_ANALYSED.function);
     }
     for (const { key, path } of codeKeys(component, functions, base)) {
-      if (functions.some((located) => path.startsWith(`${located.path}/`))) continue;
+      if (functions.some((located) => path.startsWith(`${located.path}/`))) {
+        continue;
+      }
       check(key, path, NOT_ANALYSED.code);
     }
-    if (component.emits) check(emitsKey(component.emits), `${base}/emits`, NOT_ANALYSED.emits);
-    if (component.styles) check(stylesKey(component), `${base}/styles`, NOT_ANALYSED.styles);
+    if (component.emits) {
+      check(emitsKey(component.emits), `${base}/emits`, NOT_ANALYSED.emits);
+    }
+    if (component.styles) {
+      check(stylesKey(component), `${base}/styles`, NOT_ANALYSED.styles);
+    }
   }
   for (const [index, declaration] of result.types.entries()) {
     check(declarationKey(declaration), `/types/${index}`, NOT_ANALYSED.declaration);
@@ -98,7 +106,9 @@ export function pluginIrProblems(
   let next = 0;
   for (const [index, entry] of (result.passThroughImports ?? []).entries()) {
     const key = passThroughKey(entry);
-    while (next < imports.length && imports[next] !== key) next++;
+    while (next < imports.length && imports[next] !== key) {
+      next++;
+    }
     if (next === imports.length) {
       problems.push({ path: `/passThroughImports/${index}`, message: NOT_ANALYSED.passThrough });
     } else {
@@ -138,19 +148,37 @@ const NOT_ANALYSED = {
  */
 function analysedCode(module: UfModule): ReadonlySet<string> {
   const keys = new Set<string>();
-  for (const declaration of module.types) keys.add(declarationKey(declaration));
+  for (const declaration of module.types) {
+    keys.add(declarationKey(declaration));
+  }
   for (const component of module.components) {
-    if (component.propsParameter) keys.add(typeTextKey(component.propsParameter.type));
-    for (const { type } of component.props) keys.add(typeTextKey(type));
-    for (const { expression } of expressionsOf(component)) keys.add(expressionKey(expression));
+    if (component.propsParameter) {
+      keys.add(typeTextKey(component.propsParameter.type));
+    }
+    for (const { type } of component.props) {
+      keys.add(typeTextKey(type));
+    }
+    for (const { expression } of expressionsOf(component)) {
+      keys.add(expressionKey(expression));
+    }
     for (const item of component.setup) {
-      if ("type" in item && item.type) keys.add(typeTextKey(item.type));
+      if ("type" in item && item.type) {
+        keys.add(typeTextKey(item.type));
+      }
     }
     const functions = functionsOf(component);
-    for (const located of functions) keys.add(functionKey(located));
-    for (const { key } of codeKeys(component, functions)) keys.add(key);
-    if (component.emits) keys.add(emitsKey(component.emits));
-    if (component.styles) keys.add(stylesKey(component));
+    for (const located of functions) {
+      keys.add(functionKey(located));
+    }
+    for (const { key } of codeKeys(component, functions)) {
+      keys.add(key);
+    }
+    if (component.emits) {
+      keys.add(emitsKey(component.emits));
+    }
+    if (component.styles) {
+      keys.add(stylesKey(component));
+    }
   }
   return keys;
 }

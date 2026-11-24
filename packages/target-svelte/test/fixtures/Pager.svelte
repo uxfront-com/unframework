@@ -26,14 +26,14 @@
   let cleanupPage: (() => void) | undefined;
   $effect.pre(() => {
     const value = page;
-    if (Object.is(value, previousPage)) return;
+    if (Object.is(value, previousPage)) {return;}
     const previous = previousPage;
     previousPage = value;
     untrack(() => {
       cleanupPage?.();
       const cleanups: (() => void)[] = [];
       cleanupPage = () => {
-        for (const cleanup of cleanups) cleanup();
+        for (const cleanup of cleanups) {cleanup();}
       };
       const onCleanup = (cleanup: () => void) => {
         cleanups.push(cleanup);
@@ -50,7 +50,7 @@
   let previousSpan = untrack(() => watchedSpan);
   $effect.pre(() => {
     const span = watchedSpan;
-    if (Object.is(span, previousSpan)) return;
+    if (Object.is(span, previousSpan)) {return;}
     previousSpan = span;
     untrack(() => {
       onspan?.(span);
@@ -60,7 +60,7 @@
   let previousLowHigh = untrack((): [typeof low, typeof high] => [low, high]);
   $effect(() => {
     const values: [typeof low, typeof high] = [low, high];
-    if (values.every((value, index) => Object.is(value, previousLowHigh[index]))) return;
+    if (values.every((value, index) => Object.is(value, previousLowHigh[index]))) {return;}
     previousLowHigh = values;
     untrack(() => {
       const [first, last]: [number, number] = values;
@@ -72,7 +72,7 @@
   let sizeWatched = false;
   $effect.pre(() => {
     const value = size;
-    if (sizeWatched && Object.is(value, previousSize)) return;
+    if (sizeWatched && Object.is(value, previousSize)) {return;}
     const previous = sizeWatched ? previousSize : undefined;
     sizeWatched = true;
     previousSize = value;

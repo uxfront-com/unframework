@@ -150,7 +150,9 @@ export const vue: Target = defineTarget({
             restAttribute: () => [spread],
             orderAttributes: (attributes) => {
               const ordered = vueDialect.orderAttributes!(attributes);
-              if (!ordered.includes(spread)) return ordered;
+              if (!ordered.includes(spread)) {
+                return ordered;
+              }
               const others = ordered.filter((attribute) => attribute !== spread);
               const content = others.findIndex((attribute) => attribute.name === "v-html");
               others.splice(content === -1 ? others.length : content, 0, spread);

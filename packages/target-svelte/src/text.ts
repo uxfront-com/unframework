@@ -29,7 +29,9 @@ function literalRanges(code: string): { start: number; end: number }[] | undefin
       node.type === "TemplateLiteral" ||
       node.type === "TSTemplateLiteralType" ||
       (node.type === "Literal" && typeof node["value"] === "string");
-    if (literal) ranges.push({ start: node.start, end: node.end });
+    if (literal) {
+      ranges.push({ start: node.start, end: node.end });
+    }
   });
   return ranges;
 }
@@ -37,7 +39,9 @@ function literalRanges(code: string): { start: number; end: number }[] | undefin
 /** Each line of code, with whether it starts inside a literal (its text must not move). */
 function linesOf(code: string): { text: string; fixed: boolean }[] | undefined {
   const literals = literalRanges(code);
-  if (!literals) return undefined;
+  if (!literals) {
+    return undefined;
+  }
   let offset = 0;
   return code.split("\n").map((text) => {
     const start = offset;

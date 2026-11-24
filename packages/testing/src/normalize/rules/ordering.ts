@@ -33,9 +33,13 @@ const ASCII_WHITESPACE = /[\t\n\f\r ]+/;
 export function canonicalizeClasses(root: TreeParent): void {
   forEachElement(root, (element) => {
     element.attrs = element.attrs.flatMap((attribute) => {
-      if (attributeName(attribute) !== "class") return [attribute];
+      if (attributeName(attribute) !== "class") {
+        return [attribute];
+      }
       const tokens = attribute.value.split(ASCII_WHITESPACE).filter((token) => token !== "");
-      if (!tokens.length) return [];
+      if (!tokens.length) {
+        return [];
+      }
       attribute.value = tokens.toSorted(byCodeUnits).join(" ");
       return [attribute];
     });

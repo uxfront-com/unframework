@@ -14,14 +14,18 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 /** An integration directory holding the given case directories. */
 function corpus(name: string, directories: string[]): string {
   const root = join(scratch, name);
-  for (const directory of directories) mkdirSync(join(root, directory), { recursive: true });
+  for (const directory of directories) {
+    mkdirSync(join(root, directory), { recursive: true });
+  }
   return root;
 }
 
 describe("the composable cases", () => {
   it("lists each case once, by area and name", () => {
     expect(new Set(COMPOSABLE_CASES).size).toBe(COMPOSABLE_CASES.length);
-    for (const id of COMPOSABLE_CASES) expect(id).toMatch(/^[a-z]+\/[a-z0-9]+(?:-[a-z0-9]+)*$/);
+    for (const id of COMPOSABLE_CASES) {
+      expect(id).toMatch(/^[a-z]+\/[a-z0-9]+(?:-[a-z0-9]+)*$/);
+    }
   });
 
   it("reads a case from pending/ before it lands", () => {

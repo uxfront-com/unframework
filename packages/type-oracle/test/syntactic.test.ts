@@ -940,7 +940,9 @@ describe("createSyntacticOracle", () => {
           readFile: (path) => readFile(path, "utf8").catch(() => undefined),
         });
         const shapes = new Map();
-        for (const query of order) shapes.set(query, await oracle.resolveShape(query));
+        for (const query of order) {
+          shapes.set(query, await oracle.resolveShape(query));
+        }
         results.push(queries.map((query) => shapes.get(query)));
       }
       expect(results[0]).toEqual(results[1]);
@@ -973,7 +975,9 @@ describe("createSyntacticOracle", () => {
         readFile: (path) => readFile(path, "utf8").catch(() => undefined),
       });
       const shapes = new Map();
-      for (const query of order) shapes.set(query, await oracle.resolveShape(query));
+      for (const query of order) {
+        shapes.set(query, await oracle.resolveShape(query));
+      }
       results.push([nested, owner].map((query) => shapes.get(query)));
     }
     expect(results[0]).toEqual(results[1]);

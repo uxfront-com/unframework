@@ -164,11 +164,15 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     if (!child.self && !VUE_BUILT_INS.has(child.local)) {
       // A child the source imports under two names is imported once, and written by that name.
       const local = imports.addDefault(child.specifier, child.local, { exact: true });
-      if (local !== child.local) components.set(child.local, local);
+      if (local !== child.local) {
+        components.set(child.local, local);
+      }
     }
   }
   for (const child of children) {
-    if (!VUE_BUILT_INS.has(child.local)) continue;
+    if (!VUE_BUILT_INS.has(child.local)) {
+      continue;
+    }
     const local = `${child.local}Component`;
     components.set(
       child.local,
@@ -176,7 +180,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     );
   }
   for (const key of keyImports(component, module, (name) => `${name}.vue`)) {
-    if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
+    if (key.specifier) {
+      imports.add(key.specifier, key.name, { local: key.local, exact: true });
+    }
   }
   // The imports that pass through, which the template reads as written (ADR-0064).
   addPassThroughImports(component, module, imports);
@@ -203,7 +209,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
   for (const binding of component.bindings) {
     const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
-    if (alias) names.rename(binding.id, alias);
+    if (alias) {
+      names.rename(binding.id, alias);
+    }
   }
   const self = children.find((child) => child.self);
   const recursive = self && (components.get(self.local) ?? self.local);
@@ -267,7 +275,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // An async setup exposes before its first await, or the parent's ref keeps the bare proxy
   // (ADR-0101): the functions it names are then declarations, which hoist.
   const awaits = component.setup.some((item) => item.kind === "Await");
-  if (expose && awaits) statements.push({ code: expose, layout: "block" });
+  if (expose && awaits) {
+    statements.push({ code: expose, layout: "block" });
+  }
   const hoisted = new Set(awaits ? component.exposes?.functions : []);
   for (const item of component.setup) {
     const code =
@@ -281,9 +291,13 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   for (const code of listeners.functions) {
     statements.push({ code: names.ownQueries(code), layout: "block" });
   }
-  for (const code of rest?.functions ?? []) statements.push({ code, layout: "block" });
+  for (const code of rest?.functions ?? []) {
+    statements.push({ code, layout: "block" });
+  }
   // Last, once every function it names is declared (ADR-0054).
-  if (expose && !awaits) statements.push({ code: expose, layout: "block" });
+  if (expose && !awaits) {
+    statements.push({ code: expose, layout: "block" });
+  }
   // A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
   // before it, where a client render's `vModelText` sets the text of an empty field and leaves the
   // caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
@@ -366,7 +380,9 @@ export function asyncRootChild(
   module: UfModule,
 ): ComponentNode | undefined {
   const { render } = component;
-  if (component.inheritAttrs === false || render.kind !== "Fragment") return undefined;
+  if (component.inheritAttrs === false || render.kind !== "Fragment") {
+    return undefined;
+  }
   const [child] = render.children;
   return render.children.length === 1 &&
     child?.kind === "Component" &&
@@ -380,7 +396,9 @@ function holdsTeleport(component: UfComponent): boolean {
   let found = false;
   walk(component.render, {
     enter(node) {
-      if (node.kind === "Teleport") found = true;
+      if (node.kind === "Teleport") {
+        found = true;
+      }
     },
   });
   return found;
@@ -391,8 +409,12 @@ function bindsTextarea(component: UfComponent): boolean {
   let found = false;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" || node.tag !== "textarea") return;
-      if (node.attributes.some((attribute) => attribute.kind === "Model")) found = true;
+      if (node.kind !== "Element" || node.tag !== "textarea") {
+        return;
+      }
+      if (node.attributes.some((attribute) => attribute.kind === "Model")) {
+        found = true;
+      }
     },
   });
   return found;
@@ -435,7 +457,9 @@ function keyBlock(
     let type = key.type.code;
     for (const name of REF_TYPES) {
       const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
-      if (!reference.test(type)) continue;
+      if (!reference.test(type)) {
+        continue;
+      }
       const local = imports.add("vue", name, { type: true });
       type = type.replace(reference, local);
     }
@@ -473,7 +497,9 @@ function moduleTypes(
   if (keyOwner(module.components, module.exports) === component.name) {
     const written = new Set([...component.types, ...reads.types.map(({ name }) => name)]);
     for (const other of module.components) {
-      if (other === component) continue;
+      if (other === component) {
+        continue;
+      }
       const { types } = constantTypes(other, module, moduleReach(other, module).values);
       for (const declaration of types) {
         if (!declaration.exported || written.has(declaration.name) || sibling(declaration.name)) {
@@ -509,7 +535,9 @@ function moduleTypes(
  * text holds no `'` (`withoutSingleQuotes`), and is single-quoted where it holds a `"`.
  */
 function genericAttribute(component: UfComponent): string {
-  if (!component.typeParameters?.length) return "";
+  if (!component.typeParameters?.length) {
+    return "";
+  }
   const text = withoutSingleQuotes(typeParametersList(component.typeParameters));
   return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
 }
@@ -565,8 +593,11 @@ function withoutSingleQuotes(text: string): string {
       nested.push("`");
       written += char;
     } else if (typeof inside === "number" && (char === "{" || char === "}")) {
-      if (char === "}" && inside === 0) nested.pop();
-      else nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+      if (char === "}" && inside === 0) {
+        nested.pop();
+      } else {
+        nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+      }
       written += char;
     } else {
       written += char;
@@ -603,7 +634,9 @@ function addComposableImports(component: UfComponent, module: UfModule, imports:
   for (const entry of module.imports ?? []) {
     const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
     for (const name of entry.names) {
-      if (name.kind !== "Composable" || !called.has(name.local)) continue;
+      if (name.kind !== "Composable" || !called.has(name.local)) {
+        continue;
+      }
       imports.add(`${directory}${name.imported}`, name.imported, {
         local: name.local,
         exact: true,
@@ -688,7 +721,9 @@ export function laidOut(statements: readonly Statement[]): string {
   return statements
     .map((statement, index) => {
       const previous = statements[index - 1];
-      if (previous === undefined) return statement.code;
+      if (previous === undefined) {
+        return statement.code;
+      }
       const together = previous.layout === statement.layout && statement.layout !== "block";
       return `${together ? "\n" : "\n\n"}${statement.code}`;
     })
@@ -697,7 +732,9 @@ export function laidOut(statements: readonly Statement[]): string {
 
 /** How a setup item sits in the script: a model is a macro, which stays with `defineProps`. */
 export function itemLayout(item: SetupItem, code: string): Statement["layout"] {
-  if (item.kind === "Model") return "macro";
+  if (item.kind === "Model") {
+    return "macro";
+  }
   return declares(item) && !code.includes("\n") ? "line" : "block";
 }
 
@@ -957,17 +994,23 @@ function destructuredDeclaration(
 ): string {
   const macro = `defineProps<${type}>()`;
   const isRead = (prop: Prop) => prop.binding !== undefined && read.has(prop.binding);
-  if (!component.props.some(isRead)) return `${macro};`;
+  if (!component.props.some(isRead)) {
+    return `${macro};`;
+  }
   const entries = component.props
     .filter((prop) => isRead(prop) || prop.optional)
     .map((prop) => {
       const value = prop.default?.code ?? (prop.optional ? "undefined" : undefined);
       // In the pattern for its default alone: the filter keeps only optional unread props.
-      if (!isRead(prop)) return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
+      if (!isRead(prop)) {
+        return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
+      }
       // Vue 3.5 destructures a prop under another name too (`{ Map: Map_1 }`), and every
       // reference reads the local.
       const local = VUE_RESERVED.has(prop.name) ? names.scope.claim(prop.name) : prop.name;
-      if (local !== prop.name && prop.binding !== undefined) names.rename(prop.binding, local);
+      if (local !== prop.name && prop.binding !== undefined) {
+        names.rename(prop.binding, local);
+      }
       const target = local === prop.name ? prop.name : `${prop.name}: ${local}`;
       return value === undefined ? target : `${target} = ${value}`;
     });
@@ -1000,7 +1043,9 @@ function objectDeclaration(
     : /^[_$]/.test(name)
       ? names.scope.claim("props")
       : name;
-  if (local !== name) names.renamePropsObject(name, local);
+  if (local !== name) {
+    names.renamePropsObject(name, local);
+  }
   return `const ${local} = ${call};`;
 }
 

@@ -215,10 +215,15 @@ class Names {
   /** The local name of an import, claimed on first use: `untrack`, or `untrack_1` if taken. */
   import(source: Module, name: string, { type = false }: { type?: boolean } = {}): string {
     let names = this.#imports.get(source);
-    if (!names) this.#imports.set(source, (names = new Map()));
+    if (!names) {
+      this.#imports.set(source, (names = new Map()));
+    }
     let entry = names.get(name);
-    if (entry === undefined) names.set(name, (entry = { local: this.claim(name), type }));
-    else if (!type) entry.type = false;
+    if (entry === undefined) {
+      names.set(name, (entry = { local: this.claim(name), type }));
+    } else if (!type) {
+      entry.type = false;
+    }
     return entry.local;
   }
 
@@ -243,8 +248,12 @@ class Names {
    */
   importPassThrough(specifier: string, name?: { imported: string; local: string }): void {
     let names = this.#passThrough.get(specifier);
-    if (!names) this.#passThrough.set(specifier, (names = []));
-    if (!name || names.some(({ local }) => local === name.local)) return;
+    if (!names) {
+      this.#passThrough.set(specifier, (names = []));
+    }
+    if (!name || names.some(({ local }) => local === name.local)) {
+      return;
+    }
     this.scope.reserve(name.local);
     names.push(name);
   }
@@ -252,7 +261,9 @@ class Names {
   /** A name a sibling output exports, under the source's local name: `Theme as Mode`. */
   importNamed(specifier: string, name: string, local: string): void {
     const entry = this.#local(specifier);
-    if (entry.names.has(local)) return;
+    if (entry.names.has(local)) {
+      return;
+    }
     this.scope.reserve(local);
     entry.names.set(local, name);
   }
@@ -260,14 +271,19 @@ class Names {
   /** A value a `.ts` module exports, under the source's local name (ADR-0070). */
   importShared(specifier: string, name: string, local: string): void {
     this.#local(specifier).shared = true;
-    if (name === "default") this.importDefault(specifier, local);
-    else this.importNamed(specifier, name, local);
+    if (name === "default") {
+      this.importDefault(specifier, local);
+    } else {
+      this.importNamed(specifier, name, local);
+    }
   }
 
   /** A type a module exports, under the source's local name (ADR-0067): `Tone as Mode`. */
   importType(specifier: string, name: string, local: string): void {
     const entry = this.#local(specifier);
-    if (entry.types.has(local)) return;
+    if (entry.types.has(local)) {
+      return;
+    }
     this.scope.reserve(local);
     entry.types.set(local, name);
   }
@@ -307,7 +323,9 @@ class Names {
           ? [...entry.types].map(([local, name]) => `type ${importedAs(name, local)}`)
           : []),
       ];
-      if (entry.default === undefined && !named.length) return [];
+      if (entry.default === undefined && !named.length) {
+        return [];
+      }
       // A module that gives only types is imported `import type`, which a bundler drops whole.
       if (entry.default === undefined && !entry.names.size) {
         return [
@@ -330,7 +348,9 @@ class Names {
       ] as const
     ).flatMap((source) => {
       const names = this.#imports.get(source);
-      if (!names?.size) return [];
+      if (!names?.size) {
+        return [];
+      }
       const types = [...names.values()].every(({ type }) => type);
       return [`import ${types ? "type " : ""}${specifiers(names, !types)} from "${source}";`];
     });
@@ -392,7 +412,9 @@ function typeSpecifiers(types: ReadonlyMap<string, string>): string {
  * text holds no `'` (`withoutSingleQuotes`), and is single-quoted where it holds a `"`.
  */
 function genericsAttribute(component: UfComponent): string {
-  if (!component.typeParameters?.length) return "";
+  if (!component.typeParameters?.length) {
+    return "";
+  }
   const text = withoutSingleQuotes(
     component.typeParameters
       .map(
@@ -457,8 +479,11 @@ function withoutSingleQuotes(text: string): string {
       nested.push("`");
       written += char;
     } else if (typeof inside === "number" && (char === "{" || char === "}")) {
-      if (char === "}" && inside === 0) nested.pop();
-      else nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+      if (char === "}" && inside === 0) {
+        nested.pop();
+      } else {
+        nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+      }
       written += char;
     } else {
       written += char;
@@ -472,7 +497,9 @@ function specifiers(
   names: ReadonlyMap<string, { local: string; type: boolean }>,
   inline = true,
 ): string {
-  if (!names.size) return "";
+  if (!names.size) {
+    return "";
+  }
   const written = [...names]
     .toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([name, { local, type }]) => {
@@ -610,8 +637,12 @@ class ScriptWriter {
     // A snippet hides a module value only from the markup between the child's tags: the value
     // keeps its name, which every `typeof` reads, and the component reads it through an alias.
     for (const binding of component.bindings) {
-      if (binding.kind !== "moduleConst" && binding.kind !== "import") continue;
-      if (!hidden.has(binding.name) || this.#aliases.has(binding.name)) continue;
+      if (binding.kind !== "moduleConst" && binding.kind !== "import") {
+        continue;
+      }
+      if (!hidden.has(binding.name) || this.#aliases.has(binding.name)) {
+        continue;
+      }
       this.#aliases.set(binding.name, this.#names.claim(binding.name));
     }
     const nested = nestedSnippetNames(component);
@@ -619,7 +650,9 @@ class ScriptWriter {
       // A fill's parameter is hidden only by a snippet declared inside its own fill: its own
       // snippet's name is the one its parameter shadows.
       const names = binding.kind === "slotScope" ? nested.get(binding.id) : hidden;
-      if (!names?.has(binding.name) || !renamable(binding, component)) return binding;
+      if (!names?.has(binding.name) || !renamable(binding, component)) {
+        return binding;
+      }
       this.#renamed.set(binding.id, binding.name);
       return { ...binding, name: this.#names.claim(binding.name) };
     });
@@ -640,7 +673,9 @@ class ScriptWriter {
     for (const item of uses) {
       const object = this.#resultName(item, hidden);
       this.#results.set(item, object);
-      for (const { binding, member } of item.members) this.#used.set(binding, { object, member });
+      for (const { binding, member } of item.members) {
+        this.#used.set(binding, { object, member });
+      }
     }
     this.rules = {
       binding: (_reference, binding, written) => this.#read(binding, written),
@@ -662,7 +697,9 @@ class ScriptWriter {
     // The names the markup's code reads are claimed before the script's own: `tick` in a handler,
     // `on` and the attachment's parameter for the listeners Svelte has no attribute for, and the
     // `modelText` helper with what its fields read.
-    if (usesNextTick(component)) this.#names.import("svelte", "tick");
+    if (usesNextTick(component)) {
+      this.#names.import("svelte", "tick");
+    }
     const attached = attachedListeners(component);
     const fields = modelTextFields(component);
     const node = attached.length ? this.#names.claim("node") : undefined;
@@ -908,21 +945,39 @@ class ScriptWriter {
     // component's reach (`liveTypeNames`) misses them.
     const read = new Set<string>();
     const add = (names: Iterable<string>) => {
-      for (const name of names) read.add(name);
+      for (const name of names) {
+        read.add(name);
+      }
     };
-    for (const type of typeTexts) add(typeNames(type));
-    for (const item of owner.setup) if ("type" in item && item.type) add(typeNames(item.type));
-    for (const { function: fn } of functionsOf(owner)) {
-      for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
-      if (fn.returnType) add(typeNames(fn.returnType));
+    for (const type of typeTexts) {
+      add(typeNames(type));
     }
-    for (const { code } of codeOf(owner)) add(codeNames(code.code, codeKind(code, owner)));
+    for (const item of owner.setup) {
+      if ("type" in item && item.type) {
+        add(typeNames(item.type));
+      }
+    }
+    for (const { function: fn } of functionsOf(owner)) {
+      for (const parameter of fn.parameters) {
+        if (parameter.type) {
+          add(typeNames(parameter.type));
+        }
+      }
+      if (fn.returnType) {
+        add(typeNames(fn.returnType));
+      }
+    }
+    for (const { code } of codeOf(owner)) {
+      add(codeNames(code.code, codeKind(code, owner)));
+    }
     for (const declaration of [...componentTypes(owner, this.#module), ...this.#reach.types]) {
       add(codeNames(declaration.code, "statements"));
     }
     for (const entry of this.#module.typeImports ?? []) {
       for (const name of entry.names) {
-        if (!read.has(name.local)) continue;
+        if (!read.has(name.local)) {
+          continue;
+        }
         const specifier = typeSpecifier(entry.specifier, this.#module, (each) => `${each}.svelte`);
         this.#names.importType(specifier, name.imported, name.local);
       }
@@ -978,15 +1033,23 @@ class ScriptWriter {
     const component = this.#component;
     for (const child of childImports(component, this.#module, (name) => `${name}.svelte`)) {
       const local = this.#names.importDefault(child.specifier, child.local);
-      if (local !== child.local) this.#componentTags.set(child.local, local);
+      if (local !== child.local) {
+        this.#componentTags.set(child.local, local);
+      }
     }
     for (const key of keyImports(component, this.#module, (name) => `${name}.svelte`)) {
-      if (key.specifier) this.#names.importNamed(key.specifier, key.name, key.local);
+      if (key.specifier) {
+        this.#names.importNamed(key.specifier, key.name, key.local);
+      }
     }
     // The imports that pass through, which the markup reads as written (ADR-0064).
     for (const { specifier, names } of passThroughImports(component, this.#module)) {
-      if (!names.length) this.#names.importPassThrough(specifier);
-      for (const name of names) this.#names.importPassThrough(specifier, name);
+      if (!names.length) {
+        this.#names.importPassThrough(specifier);
+      }
+      for (const name of names) {
+        this.#names.importPassThrough(specifier, name);
+      }
     }
     // Each composable it calls, from the composable's own module beside its `.uf.ts`,
     // `useToggle.svelte.ts` (ADR-0069). The specifier has no extension, `./useToggle.svelte`:
@@ -996,7 +1059,9 @@ class ScriptWriter {
     for (const entry of this.#module.imports ?? []) {
       const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
       for (const name of entry.names) {
-        if (name.kind !== "Composable" || !called.has(name.local)) continue;
+        if (name.kind !== "Composable" || !called.has(name.local)) {
+          continue;
+        }
         this.#names.importNamed(`${directory}${name.imported}.svelte`, name.imported, name.local);
       }
     }
@@ -1009,7 +1074,9 @@ class ScriptWriter {
     // imports them (ADR-0070).
     for (const entry of this.#module.moduleImports ?? []) {
       for (const name of entry.names) {
-        if (!this.#reach.values.has(name.local)) continue;
+        if (!this.#reach.values.has(name.local)) {
+          continue;
+        }
         const local = this.#moduleLocals.get(name.local) ?? name.local;
         this.#names.importShared(entry.specifier, name.imported, local);
       }
@@ -1020,7 +1087,9 @@ class ScriptWriter {
     addTypeImports(component, this.#module, types, (name) => `${name}.svelte`);
     for (const declaration of types.toDeclarations()) {
       for (const specifier of declaration.specifiers) {
-        if (specifier.type !== "ImportSpecifier") continue;
+        if (specifier.type !== "ImportSpecifier") {
+          continue;
+        }
         const { imported, local } = specifier;
         const name = imported.type === "Identifier" ? imported.name : imported.value;
         this.#names.importType(declaration.source.value, name, local.name);
@@ -1029,7 +1098,9 @@ class ScriptWriter {
     // And those the module's constants it declares name (ADR-0070).
     for (const entry of this.#module.typeImports ?? []) {
       for (const name of entry.names) {
-        if (!this.#reach.typeNames.has(name.local)) continue;
+        if (!this.#reach.typeNames.has(name.local)) {
+          continue;
+        }
         const specifier = typeSpecifier(entry.specifier, this.#module, (each) => `${each}.svelte`);
         this.#names.importType(specifier, name.imported, name.local);
       }
@@ -1039,11 +1110,15 @@ class ScriptWriter {
   /** A key's value type as written, and the ref it holds: the module's own, or an imported one's. */
   #key(local: string): { type: string; ref?: RefType } {
     const own = this.#module.keys?.find((key) => key.name === local);
-    if (own) return { type: own.type.code, ...(own.ref ? { ref: own.ref } : {}) };
+    if (own) {
+      return { type: own.type.code, ...(own.ref ? { ref: own.ref } : {}) };
+    }
     for (const entry of this.#module.imports ?? []) {
       const imported = entry.names.find((name) => name.kind === "Key" && name.local === local);
       const key = imported && entry.api.keys.find((each) => each.name === imported.imported);
-      if (key) return { type: key.type, ...(key.ref ? { ref: key.ref } : {}) };
+      if (key) {
+        return { type: key.type, ...(key.ref ? { ref: key.ref } : {}) };
+      }
     }
     throw new Error(`The module declares or imports no key \`${local}\`.`);
   }
@@ -1055,14 +1130,20 @@ class ScriptWriter {
    */
   #siblingConstantTypes(written: ReadonlySet<string>): { code: string; span: Span }[] {
     const component = this.#component;
-    if (keyOwner(this.#module.components, this.#module.exports) !== component.name) return [];
+    if (keyOwner(this.#module.components, this.#module.exports) !== component.name) {
+      return [];
+    }
     const found = new Map<string, { code: string; span: Span }>();
     for (const other of this.#module.components) {
-      if (other === component) continue;
+      if (other === component) {
+        continue;
+      }
       for (const declaration of moduleReach(other, this.#module).types) {
         const { name, exported, span } = declaration;
         const declared = this.#module.components.some((each) => each.types.includes(name));
-        if (!exported || written.has(name) || declared || found.has(name)) continue;
+        if (!exported || written.has(name) || declared || found.has(name)) {
+          continue;
+        }
         found.set(name, {
           code: `export type { ${name} } from ${JSON.stringify(`./${other.name}.svelte`)};`,
           span,
@@ -1106,10 +1187,16 @@ class ScriptWriter {
     const declarations: string[] = [];
     walk(this.#component.render, {
       enter: (node) => {
-        if (node.kind !== "Dynamic") return;
-        if (!node.candidates.every((candidate) => candidate.kind === "Component")) return;
+        if (node.kind !== "Dynamic") {
+          return;
+        }
+        if (!node.candidates.every((candidate) => candidate.kind === "Component")) {
+          return;
+        }
         // A condition that reads a block's variable is chosen where it sits (`composition.ts`).
-        if (choosesInBlock(node, this.#component)) return;
+        if (choosesInBlock(node, this.#component)) {
+          return;
+        }
         const name = this.#names.claim("Component");
         this.#dynamic.set(node, name);
         const is = rewriteExpression(node.is, this.#component, this.rules, "render");
@@ -1133,7 +1220,9 @@ class ScriptWriter {
       ...(attribute.number || attribute.control === "number" ? ["number: true"] : []),
     ];
     const args = [`() => ${value}`, `(value) => (${value} = value)`];
-    if (options.length) args.push(`{ ${options.join(", ")} }`);
+    if (options.length) {
+      args.push(`{ ${options.join(", ")} }`);
+    }
     const first = initial === undefined ? `value={${untrack}(() => ${value})}` : `{...${initial}}`;
     return `${first} {@attach ${modelText}(${args.join(", ")})}`;
   }
@@ -1152,10 +1241,14 @@ class ScriptWriter {
   #fieldInitials(fields: readonly ModelAttribute[], untrack: string): string[] {
     const declarations: string[] = [];
     for (const attribute of fields) {
-      if (attribute.control === "textarea") continue;
+      if (attribute.control === "textarea") {
+        continue;
+      }
       // The template's spelling: a variable reads the same in the script.
       const value = rewriteExpression(attribute.value, this.#component, this.rules, "render");
-      if (!/^[A-Za-z_$][\w$]*$/.test(value)) continue;
+      if (!/^[A-Za-z_$][\w$]*$/.test(value)) {
+        continue;
+      }
       const name = this.#names.claim(`${value}Field`);
       this.#initials.set(attribute, name);
       declarations.push(`const ${name} = { value: ${untrack}(() => ${value}) };`);
@@ -1175,13 +1268,19 @@ class ScriptWriter {
         span.start >= parameter.span.start &&
         span.end <= parameter.span.end,
     );
-    if (!inside.length) return parameter;
-    if (parameter.name !== undefined) return { ...parameter, name: inside[0]!.name };
+    if (!inside.length) {
+      return parameter;
+    }
+    if (parameter.name !== undefined) {
+      return { ...parameter, name: inside[0]!.name };
+    }
     const pattern = parameter.pattern!;
     // The pattern parsed as an arrow's parameter, whose code starts one character in.
     const shorthands = new Set<number>();
     visit(parseExpression(`(${pattern.code}) => 0`), (node) => {
-      if (node.type === "Property" && node["shorthand"] === true) shorthands.add(node.start - 1);
+      if (node.type === "Property" && node["shorthand"] === true) {
+        shorthands.add(node.start - 1);
+      }
     });
     let code = pattern.code;
     for (const binding of inside.toSorted((a, b) => b.span.start - a.span.start)) {
@@ -1203,7 +1302,9 @@ class ScriptWriter {
 
   /** How code reads a binding: a ref's value without `.value`, everything else as written. */
   #read(binding: Binding, written: string): string {
-    if (this.#renamed.has(binding.id)) return binding.name;
+    if (this.#renamed.has(binding.id)) {
+      return binding.name;
+    }
     switch (binding.kind) {
       case "prop":
         return this.#propsObject === undefined ? written : `${this.#propsObject}.${binding.name}`;
@@ -1245,7 +1346,9 @@ class ScriptWriter {
   /** How code reads a binding a composable's call destructures: `toggle.on`. */
   #usedRead(id: BindingId): string {
     const used = this.#used.get(id);
-    if (!used) throw new Error(`Component ${this.#component.name} calls no composable for ${id}.`);
+    if (!used) {
+      throw new Error(`Component ${this.#component.name} calls no composable for ${id}.`);
+    }
     return `${used.object}.${used.member}`;
   }
 
@@ -1272,17 +1375,25 @@ class ScriptWriter {
         ? renamed
         : `${stem[0]!.toLowerCase()}${stem.slice(1)}`;
     const own = item.members.some(({ binding }) => this.#name(binding) === name);
-    if (own && !hidden.has(name)) return name;
+    if (own && !hidden.has(name)) {
+      return name;
+    }
     this.#names.scope.reserve(...hidden);
-    if (!isIdentifier(name)) this.#names.scope.reserve(name);
+    if (!isIdentifier(name)) {
+      this.#names.scope.reserve(name);
+    }
     return this.#names.claim(name);
   }
 
   /** How code calls an event's callback prop: `onchange`, or `props.onchange` in the object form. */
   #callback(event: string): string {
     const prop = this.#events.get(event);
-    if (!prop) throw new Error(`The component declares no event \`${event}\`.`);
-    if (prop.local !== undefined) return prop.local;
+    if (!prop) {
+      throw new Error(`The component declares no event \`${event}\`.`);
+    }
+    if (prop.local !== undefined) {
+      return prop.local;
+    }
     return `${this.#propsObjectName()}.${prop.key}`;
   }
 
@@ -1323,13 +1434,17 @@ class ScriptWriter {
     const scoped = spread ? !restAtRoot && singleRoot : scopeRoots(component).length > 0;
     const helper = scoped ? scope.claim("scopeAttributes") : undefined;
     const scopeFrom = (props: string) => {
-      if (helper) this.#scope = { helper, props };
+      if (helper) {
+        this.#scope = { helper, props };
+      }
       return props;
     };
     // A ref on a component that exposes nothing holds its root element (ADR-0118): a `$bindable`
     // prop, `ref`, which the root binds.
     const ownRef = refTags(component, this.#module);
-    if (ownRef !== undefined) this.#ref = { local: scope.claim("ref"), tags: ownRef };
+    if (ownRef !== undefined) {
+      this.#ref = { local: scope.claim("ref"), tags: ownRef };
+    }
     if (
       !parameter &&
       !emits &&
@@ -1338,7 +1453,9 @@ class ScriptWriter {
       !fallthrough &&
       !this.#ref
     ) {
-      if (!scoped) return [];
+      if (!scoped) {
+        return [];
+      }
       // No props of its own: the props object is the parents' attributes, unchecked.
       return [`let ${scopeFrom(scope.claim("attributes"))}: object = $props();`];
     }
@@ -1378,7 +1495,9 @@ class ScriptWriter {
         members.push(`${prop}?: ${snippet}${slot.props ? `<[${slot.props.code}]>` : ""};`);
         if (!used.has(slot.name)) {
           // Left out of the rest, which the fallthrough element spreads.
-          if (spread) unread.push(`${prop}: ${scope.claim(`_${prop}`)}`);
+          if (spread) {
+            unread.push(`${prop}: ${scope.claim(`_${prop}`)}`);
+          }
           continue;
         }
         // A source name the prop's would capture (a list's `item`) leaves it to the snippet.
@@ -1417,7 +1536,9 @@ class ScriptWriter {
     if (spread) {
       for (const attribute of ownListeners(component)) {
         const key = `on${attribute.event}`;
-        if ([...this.#events.values()].some((each) => each.key === key)) continue;
+        if ([...this.#events.values()].some((each) => each.key === key)) {
+          continue;
+        }
         const local = this.#consumers.get(key) ?? scope.claim(key);
         if (!this.#consumers.has(key)) {
           this.#consumers.set(key, local);
@@ -1454,7 +1575,9 @@ class ScriptWriter {
           scope.import("svelte/elements", each, { type: true }),
         );
         pieces.push(`type ${name} = ${passed} & ${joined};`);
-      } else pieces.push(`type ${name} = ${joined};`);
+      } else {
+        pieces.push(`type ${name} = ${joined};`);
+      }
       type = name;
     }
     // The props' rest, which the fallthrough element spreads: `rest`, as the source names it on
@@ -1479,7 +1602,9 @@ class ScriptWriter {
         // under a name starting with `_`: an unused binding fails L5 (`no-unused-vars`), which
         // leaves such names alone, as React's `_props` (ADR-0034). A name `_` and more says it
         // is unused already: it stays the source's.
-        if (!/^_./.test(local)) local = scope.claim(`_${local.replace(/^\$/, "")}`);
+        if (!/^_./.test(local)) {
+          local = scope.claim(`_${local.replace(/^\$/, "")}`);
+        }
       } else if (local.startsWith("$")) {
         // Svelte reserves the `$` prefix for its runes and stores: a script variable named
         // `$props` or `$p` does not compile (`dollar_prefix_invalid`), so the object takes the
@@ -1489,10 +1614,14 @@ class ScriptWriter {
       }
       // The models, the snippets and the fallthrough are bound beside the object, the rest of
       // the props, which a component that reads none of its own leaves out.
-      if (!extras.length) pattern = local;
-      else pattern = `{ ${[...extras, ...(reads ? [`...${local}`] : [])].join(", ")} }`;
-      if (rest === undefined) scopeFrom(local);
-      else {
+      if (!extras.length) {
+        pattern = local;
+      } else {
+        pattern = `{ ${[...extras, ...(reads ? [`...${local}`] : [])].join(", ")} }`;
+      }
+      if (rest === undefined) {
+        scopeFrom(local);
+      } else {
         // The object keeps the props the setup reads as `props.label`: the rest is what it holds
         // but the names the component declares, a value derived from it.
         for (const prop of component.props) {
@@ -1511,7 +1640,9 @@ class ScriptWriter {
       const props = new Map(component.props.map((prop) => [prop.binding, prop]));
       const entries = component.bindings.flatMap(({ id, kind }) => {
         const prop = kind === "prop" ? props.get(id) : undefined;
-        if (!prop) return [];
+        if (!prop) {
+          return [];
+        }
         if (!read.has(id)) {
           return rest === undefined ? [] : [`${prop.name}: ${scope.claim(`_${prop.name}`)}`];
         }
@@ -1523,25 +1654,33 @@ class ScriptWriter {
       // all the same.
       if (rest !== undefined) {
         for (const prop of component.props) {
-          if (prop.binding !== undefined && this.#bindings.has(prop.binding)) continue;
+          if (prop.binding !== undefined && this.#bindings.has(prop.binding)) {
+            continue;
+          }
           entries.push(`${prop.name}: ${scope.claim(`_${prop.name}`)}`);
         }
       }
       for (const { key, local } of this.#events.values()) {
-        if (local !== undefined) entries.push(local === key ? key : `${key}: ${local}`);
-        else if (rest !== undefined) entries.push(`${key}: ${scope.claim(`_${key}`)}`);
+        if (local !== undefined) {
+          entries.push(local === key ? key : `${key}: ${local}`);
+        } else if (rest !== undefined) {
+          entries.push(`${key}: ${scope.claim(`_${key}`)}`);
+        }
       }
       entries.push(...extras, ...unread);
       // A component that reads none of its props still declares them, under the object form:
       // the props type is its API, and an empty pattern (`let {}`) is `no-empty-pattern`. The
       // object is named `_props`, as nothing reads it (`no-unused-vars`), or `attributes` where
       // its root reads the scope attributes from it.
-      if (rest !== undefined) pattern = `{ ${[...entries, `...${scopeFrom(rest)}`].join(", ")} }`;
-      else if (!entries.length)
+      if (rest !== undefined) {
+        pattern = `{ ${[...entries, `...${scopeFrom(rest)}`].join(", ")} }`;
+      } else if (!entries.length) {
         pattern = scoped ? scopeFrom(scope.claim("attributes")) : scope.claim("_props");
-      else if (scoped)
+      } else if (scoped) {
         pattern = `{ ${[...entries, `...${scopeFrom(scope.claim("attributes"))}`].join(", ")} }`;
-      else pattern = `{ ${entries.join(", ")} }`;
+      } else {
+        pattern = `{ ${entries.join(", ")} }`;
+      }
     }
     pieces.push(`let ${pattern}: ${type!} = $props();`);
     return pieces;
@@ -1566,12 +1705,17 @@ class ScriptWriter {
     let previousDeclaration = false;
     const items = setupInTeardownOrder(this.#component.setup);
     for (const item of setupInStartOrder(items, this.#bindings)) {
-      if (item.kind === "Model") continue;
+      if (item.kind === "Model") {
+        continue;
+      }
       const code = this.#item(item);
       // The first id is two declarations, `$props.id()` and the id itself.
       const declaration = isDeclaration(item) && (item.kind === "Id" || !code.includes("\n"));
-      if (declaration && previousDeclaration) pieces[pieces.length - 1] += `\n${code}`;
-      else pieces.push(code);
+      if (declaration && previousDeclaration) {
+        pieces[pieces.length - 1] += `\n${code}`;
+      } else {
+        pieces.push(code);
+      }
       previousDeclaration = declaration;
     }
     return pieces;
@@ -1606,7 +1750,9 @@ class ScriptWriter {
         // `$state` (`non_reactive_update`).
         const name = this.#name(item.binding);
         const type = item.type ? `${item.type.code} | null` : "unknown";
-        if (this.#conditionalRefs.has(item.binding)) return `let ${name} = $state<${type}>(null);`;
+        if (this.#conditionalRefs.has(item.binding)) {
+          return `let ${name} = $state<${type}>(null);`;
+        }
         return `let ${name}: ${type} = null;`;
       }
       case "Id": {
@@ -1654,11 +1800,15 @@ class ScriptWriter {
         const text = rewriteCode(item.code, this.#component, this.rules, "pure");
         // Statements, so any reactive read: one in a callback it calls runs at once too.
         const reads = item.code.refs.some((reference) => {
-          if (reference.kind !== "Binding") return false;
+          if (reference.kind !== "Binding") {
+            return false;
+          }
           const binding = this.#bindings.get(reference.binding);
           return binding !== undefined && isReactive(binding.kind);
         });
-        if (!reads) return text;
+        if (!reads) {
+          return text;
+        }
         return `${this.#names.import("svelte", "untrack")}(() => {\n${text}\n});`;
       }
       default:
@@ -1710,7 +1860,9 @@ class ScriptWriter {
     const name = this.#name(item.binding);
     const getContext = this.#names.import("svelte", "getContext");
     const type = contextType(item.key);
-    if (!item.fallback) return `const ${name} = ${getContext}<${orUndefined(type)}>(${item.key});`;
+    if (!item.fallback) {
+      return `const ${name} = ${getContext}<${orUndefined(type)}>(${item.key});`;
+    }
     const hasContext = this.#names.import("svelte", "hasContext");
     const fallback = this.#key(item.key).ref
       ? this.#refValue(item.fallback)
@@ -1729,7 +1881,9 @@ class ScriptWriter {
         const whole =
           written === binding.name &&
           (binding.kind === "state" || binding.kind === "derived" || binding.kind === "model");
-        if (!whole) return this.#read(binding, written);
+        if (!whole) {
+          return this.#read(binding, written);
+        }
         this.#refObject ??= this.#names.claim("refObject");
         return `${this.#refObject}(() => ${binding.name})`;
       },
@@ -1739,7 +1893,9 @@ class ScriptWriter {
 
   #name(id: string): string {
     const binding = this.#bindings.get(id);
-    if (!binding) throw new Error(`Component ${this.#component.name} declares no binding ${id}.`);
+    if (!binding) {
+      throw new Error(`Component ${this.#component.name} declares no binding ${id}.`);
+    }
     return binding.name;
   }
 
@@ -1751,7 +1907,9 @@ class ScriptWriter {
    */
   #setupValue(code: Code): string {
     const text = rewriteCode(code, this.#component, this.rules, "pure");
-    if (!readsReactivelyAtTop(code, this.#bindings)) return text;
+    if (!readsReactivelyAtTop(code, this.#bindings)) {
+      return text;
+    }
     const untrack = this.#names.import("svelte", "untrack");
     return `${untrack}(() => ${text.startsWith("{") ? `(${text})` : text})`;
   }
@@ -1827,8 +1985,12 @@ class ScriptWriter {
     // The previous value starts as the sources' value, read in a function for the same reason:
     // an immediate watcher's first call still hands `undefined` (or `[]`), as Vue's does.
     lines.push(`let ${previous} = ${untrack}((${tuple ? `): ${tuple}` : ")"} => ${value});`);
-    if (watched) lines.push(`let ${watched} = false;`);
-    if (stop) lines.push(`let ${stop}: (() => void) | undefined;`);
+    if (watched) {
+      lines.push(`let ${watched} = false;`);
+    }
+    if (stop) {
+      lines.push(`let ${stop}: (() => void) | undefined;`);
+    }
 
     const effect: string[] = [];
     // The new value: under the callback's own parameter where it names one.
@@ -1840,7 +2002,9 @@ class ScriptWriter {
     } else if (valueParameter || item.array) {
       current = names.claim(item.array ? "values" : "value");
       effect.push(`const ${current}${tuple ? `: ${tuple}` : ""} = ${value};`);
-    } else current = value;
+    } else {
+      current = value;
+    }
     const element = current === "value" ? "next" : "value";
     const unchanged = item.array
       ? `${current}.every((${element}, index) => Object.is(${element}, ${previous}[index]))`
@@ -1862,11 +2026,15 @@ class ScriptWriter {
       }
       effect.push(`const ${binding}${annotation(previousParameter)} = ${read};`);
     }
-    if (watched) effect.push(`${watched} = true;`);
+    if (watched) {
+      effect.push(`${watched} = true;`);
+    }
     effect.push(`${previous} = ${current};`);
 
     const run: string[] = [];
-    if (stop && cleanupParameter) run.push(...this.#cleanups(stop, cleanupParameter));
+    if (stop && cleanupParameter) {
+      run.push(...this.#cleanups(stop, cleanupParameter));
+    }
     if (valueParameter?.pattern) {
       run.push(`const ${valueParameter.pattern.code}${annotation(valueParameter)} = ${current};`);
     }
@@ -1967,7 +2135,9 @@ class ScriptWriter {
     const name = parameter.name ?? this.#names.claim("onCleanup");
     const returned =
       parameter.name !== undefined && !fn.async ? returnedCleanup(body, name) : undefined;
-    if (returned !== undefined) return block("$effect(() => {", [returned], "});");
+    if (returned !== undefined) {
+      return block("$effect(() => {", [returned], "});");
+    }
     // Every way out of the effect returns the teardown that runs what it registered.
     const cleanups = this.#names.claim("cleanups");
     const stop = this.#names.claim("cleanUp");
@@ -2043,7 +2213,9 @@ class ScriptWriter {
           own,
           `bind:${property}={() => ${local}, (${element}) => {\n  ${local} = ${element};\n  ${ref.local} = ${element};\n}}`,
         );
-      } else rootAttributes.push(bind(property, ref.local));
+      } else {
+        rootAttributes.push(bind(property, ref.local));
+      }
     }
     const listeners = new Map<EventAttribute, string>();
     for (const [attribute, consumer] of this.#listeners) {
@@ -2170,7 +2342,9 @@ class ScriptWriter {
       ...(attribute.passive ? ["passive: true"] : []),
     ];
     const args = [node, JSON.stringify(attribute.event), handler];
-    if (options.length) args.push(`{ ${options.join(", ")} }`);
+    if (options.length) {
+      args.push(`{ ${options.join(", ")} }`);
+    }
     return `{@attach (${node}) => ${on}(${args.join(", ")})}`;
   }
 }
@@ -2194,7 +2368,9 @@ function eventsJoined(type: string | undefined, members: readonly string[]): str
 
 /** Whether a type annotation is one object type literal (`{ size: number }`, not a union of them). */
 function isTypeLiteral(type: string): boolean {
-  if (!type.startsWith("{") || !type.endsWith("}")) return false;
+  if (!type.startsWith("{") || !type.endsWith("}")) {
+    return false;
+  }
   try {
     const [statement] = parseStatementsSource(`let value: ${type};`).statements;
     return (
@@ -2216,7 +2392,9 @@ function setupInTeardownOrder(items: readonly SetupItem[]): SetupItem[] {
   const early = items.filter(
     (item, index) => index < last && item.kind === "Lifecycle" && item.hook === "unmounted",
   );
-  if (!early.length) return [...items];
+  if (!early.length) {
+    return [...items];
+  }
   const rest = items.filter((item) => !early.includes(item));
   const at = rest.indexOf(items[last]!) + 1;
   return [...rest.slice(0, at), ...early, ...rest.slice(at)];
@@ -2236,7 +2414,9 @@ function setupInStartOrder(
   items: readonly SetupItem[],
   bindings: ReadonlyMap<string, Binding>,
 ): SetupItem[] {
-  if (!items.some((item) => item.kind === "Await")) return [...items];
+  if (!items.some((item) => item.kind === "Await")) {
+    return [...items];
+  }
   const early = items.filter(
     (item) =>
       item.kind === "TemplateRef" ||
@@ -2273,7 +2453,9 @@ function startsProvide(item: ProvideItem, bindings: ReadonlyMap<string, Binding>
  * `set_context_after_init`. The target reports them (UF1002) and emits nothing for the component.
  */
 export function lateProvides(component: UfComponent): ProvideItem[] {
-  if (!component.setup.some((item) => item.kind === "Await")) return [];
+  if (!component.setup.some((item) => item.kind === "Await")) {
+    return [];
+  }
   const bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
   return component.setup.filter(
     (item): item is ProvideItem => item.kind === "Provide" && !startsProvide(item, bindings),
@@ -2322,7 +2504,11 @@ function isDeclaration(item: SetupItem): boolean {
 function emittedEvents(component: UfComponent): Set<string> {
   const events = new Set<string>();
   for (const { code } of codeOf(component)) {
-    for (const reference of code.refs) if (reference.kind === "Emit") events.add(reference.event);
+    for (const reference of code.refs) {
+      if (reference.kind === "Emit") {
+        events.add(reference.event);
+      }
+    }
   }
   return events;
 }
@@ -2338,13 +2524,19 @@ function typeScriptInMarkup(component: UfComponent, rules: RewriteRules): boolea
   walk(component.render, {
     enter(node) {
       // A component's listener falls through to the child's element (ADR-0118).
-      if (found || (node.kind !== "Element" && node.kind !== "Component")) return;
+      if (found || (node.kind !== "Element" && node.kind !== "Component")) {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
+        if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") {
+          continue;
+        }
         const code = functionText(attribute.handler.function, component, rules, "client");
         try {
           visit(parseExpression(code), (each) => {
-            if (each.type.startsWith("TS")) found = true;
+            if (each.type.startsWith("TS")) {
+              found = true;
+            }
           });
         } catch {
           found = true;
@@ -2365,16 +2557,26 @@ function conditionalRefs(component: UfComponent): Set<string> {
   let depth = 0;
   walk(component.render, {
     enter(node) {
-      if (node.kind === "If") depth++;
+      if (node.kind === "If") {
+        depth++;
+      }
       const chosen = node.kind === "Dynamic" && choosesInBlock(node, component);
-      if (node.kind !== "Element" && node.kind !== "Component" && !chosen) return;
-      if (depth === 0 && !chosen) return;
+      if (node.kind !== "Element" && node.kind !== "Component" && !chosen) {
+        return;
+      }
+      if (depth === 0 && !chosen) {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Ref") found.add(attribute.binding);
+        if (attribute.kind === "Ref") {
+          found.add(attribute.binding);
+        }
       }
     },
     leave(node) {
-      if (node.kind === "If") depth--;
+      if (node.kind === "If") {
+        depth--;
+      }
     },
   });
   return found;
@@ -2385,9 +2587,13 @@ function conditionalRefs(component: UfComponent): Set<string> {
  * list's item or a fill's parameter, which a `$derived` in the script cannot see.
  */
 function choosesInBlock(node: DynamicNode, component: UfComponent): boolean {
-  if (!node.candidates.every((candidate) => candidate.kind === "Component")) return false;
+  if (!node.candidates.every((candidate) => candidate.kind === "Component")) {
+    return false;
+  }
   return node.is.refs.some((reference) => {
-    if (reference.kind !== "Binding") return false;
+    if (reference.kind !== "Binding") {
+      return false;
+    }
     const kind = component.bindings.find((binding) => binding.id === reference.binding)?.kind;
     return kind === "loopVar" || kind === "slotScope";
   });
@@ -2416,7 +2622,9 @@ function holdsTeleport(component: UfComponent): boolean {
   let found = false;
   walk(component.render, {
     enter(node) {
-      if (node.kind === "Teleport") found = true;
+      if (node.kind === "Teleport") {
+        found = true;
+      }
     },
   });
   return found;
@@ -2430,10 +2638,16 @@ function transitionPhases(component: UfComponent): { enter: boolean; leave: bool
   const phases = { enter: false, leave: false };
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Transition") return;
+      if (node.kind !== "Transition") {
+        return;
+      }
       const conditional = node.children[0]?.kind === "If";
-      if (conditional || node.appear) phases.enter = true;
-      if (conditional) phases.leave = true;
+      if (conditional || node.appear) {
+        phases.enter = true;
+      }
+      if (conditional) {
+        phases.leave = true;
+      }
     },
   });
   return phases;
@@ -2575,7 +2789,9 @@ function contextType(key: string): string {
  * `refObject`'s object, whose `value` reads it (ADR-0054).
  */
 function contextValue(type: string, ref: RefType | undefined): string {
-  if (!ref) return type;
+  if (!ref) {
+    return type;
+  }
   const inner = new RegExp(`^${ref}\\s*<([\\s\\S]*)>$`).exec(type.trim())?.[1] ?? "unknown";
   return `{ readonly value: ${inner.trim()} }`;
 }
@@ -2616,10 +2832,16 @@ function nestedSnippetNames(component: UfComponent): Map<string, Set<string>> {
       const fills =
         node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
       for (const fill of fills ?? []) {
-        if (!fill.parameter) continue;
+        if (!fill.parameter) {
+          continue;
+        }
         const { span } = fill.parameter;
         const inner = new Set<string>();
-        for (const child of fill.children) for (const name of snippetNames(child)) inner.add(name);
+        for (const child of fill.children) {
+          for (const name of snippetNames(child)) {
+            inner.add(name);
+          }
+        }
         for (const binding of component.bindings) {
           if (
             binding.kind === "slotScope" &&
@@ -2679,15 +2901,24 @@ function renamable(binding: Binding, component: UfComponent): boolean {
 function usedSlots(component: UfComponent): Set<string> {
   const used = new Set<string>();
   for (const { expression } of expressionsOf(component)) {
-    for (const reference of expression.refs)
-      if (reference.kind === "Slot") used.add(reference.slot);
+    for (const reference of expression.refs) {
+      if (reference.kind === "Slot") {
+        used.add(reference.slot);
+      }
+    }
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind === "SlotOutlet") used.add(node.slot);
+      if (node.kind === "SlotOutlet") {
+        used.add(node.slot);
+      }
       const fills =
         node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
-      for (const fill of fills ?? []) if (fill.forward !== undefined) used.add(fill.forward);
+      for (const fill of fills ?? []) {
+        if (fill.forward !== undefined) {
+          used.add(fill.forward);
+        }
+      }
     },
   });
   return used;
@@ -2712,9 +2943,13 @@ function modelTextFields(component: UfComponent): ModelAttribute[] {
   const found: ModelAttribute[] = [];
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Model" && usesModelText(attribute)) found.push(attribute);
+        if (attribute.kind === "Model" && usesModelText(attribute)) {
+          found.push(attribute);
+        }
       }
     },
   });
@@ -2878,7 +3113,9 @@ function ownListeners(component: UfComponent): EventAttribute[] {
       : component.render.kind === "Element"
         ? component.render
         : (rootComponentNode(component) ?? rootDynamicNode(component));
-  if (!node) return [];
+  if (!node) {
+    return [];
+  }
   const attributes: readonly (Attribute | ComponentAttribute)[] = node.attributes;
   return attributes.filter(
     (attribute): attribute is EventAttribute =>
@@ -2910,7 +3147,9 @@ function statementOf(statement: string): string {
     ) {
       const inner = code.slice(1, -1);
       // A statement that starts like a block or a declaration keeps them.
-      if (!/^(?:\{|function\b|class\b|async\s+function\b|let\s*\[)/.test(inner)) return `${inner};`;
+      if (!/^(?:\{|function\b|class\b|async\s+function\b|let\s*\[)/.test(inner)) {
+        return `${inner};`;
+      }
     }
   } catch {
     return statement;
@@ -2923,9 +3162,13 @@ function attachedListeners(component: UfComponent): EventAttribute[] {
   const found: EventAttribute[] = [];
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Event" && isAttached(attribute, node)) found.push(attribute);
+        if (attribute.kind === "Event" && isAttached(attribute, node)) {
+          found.push(attribute);
+        }
       }
     },
   });
@@ -2938,11 +3181,15 @@ function attachedListeners(component: UfComponent): EventAttribute[] {
  */
 function readsReactivelyAtTop(code: Code, bindings: ReadonlyMap<string, Binding>): boolean {
   const reads = code.refs.filter((reference) => {
-    if (reference.kind !== "Binding") return false;
+    if (reference.kind !== "Binding") {
+      return false;
+    }
     const binding = bindings.get(reference.binding);
     return binding !== undefined && isReactive(binding.kind);
   });
-  if (!reads.length) return false;
+  if (!reads.length) {
+    return false;
+  }
   const functions = functionRanges(parseExpression(code.code));
   return reads.some(({ span }) => {
     const start = span.start - code.span.start;
@@ -2989,7 +3236,9 @@ function isReactive(kind: BindingKind): boolean {
  */
 function soleRead(body: Code): { binding: string } | undefined {
   const [reference, ...rest] = body.refs;
-  if (rest.length || reference?.kind !== "Binding") return undefined;
+  if (rest.length || reference?.kind !== "Binding") {
+    return undefined;
+  }
   const code = body.code
     .trim()
     .replace(/^\(([\s\S]*)\)$/, "$1")
@@ -3041,8 +3290,12 @@ function withReturns(body: string, returned: () => string): string {
   const functions = functionRanges(statements);
   const returns: { start: number; end: number; argument?: { start: number; end: number } }[] = [];
   visit(statements, (node) => {
-    if (node.type !== "ReturnStatement") return;
-    if (functions.some((range) => range.start < node.start && node.end <= range.end)) return;
+    if (node.type !== "ReturnStatement") {
+      return;
+    }
+    if (functions.some((range) => range.start < node.start && node.end <= range.end)) {
+      return;
+    }
     const argument = node["argument"] as { type: string; start: number; end: number } | null;
     // A value that does nothing when evaluated (a function, a name, a literal) is dropped.
     const inert = argument !== null && INERT_EXPRESSIONS.has(argument.type);
@@ -3096,7 +3349,9 @@ function returnedCleanup(body: string, name: string): string | undefined {
   let returns = false;
   const functions = functionRanges(statements);
   visit(statements, (node) => {
-    if (node.type === "Identifier" && node["name"] === name) uses++;
+    if (node.type === "Identifier" && node["name"] === name) {
+      uses++;
+    }
     if (
       node.type === "ReturnStatement" &&
       !functions.some((range) => range.start < node.start && node.end <= range.end)
@@ -3104,7 +3359,9 @@ function returnedCleanup(body: string, name: string): string | undefined {
       returns = true;
     }
   });
-  if (uses !== 1 || returns) return undefined;
+  if (uses !== 1 || returns) {
+    return undefined;
+  }
   return `${body.slice(0, last.start)}return ${body.slice(argument.start, argument.end)};`;
 }
 
@@ -3140,8 +3397,11 @@ function literalLines(code: string): Set<number> {
     const next = code[index + 1];
     if (char === "\n") {
       line++;
-      if (state === "line comment") state = "code";
-      else if (state === "'" || state === '"' || state === "`") lines.add(line);
+      if (state === "line comment") {
+        state = "code";
+      } else if (state === "'" || state === '"' || state === "`") {
+        lines.add(line);
+      }
       continue;
     }
     switch (state) {
@@ -3159,26 +3419,34 @@ function literalLines(code: string): Set<number> {
         // An escape skips the next character, but for a line continuation's line break,
         // which starts a line inside the literal.
         if (char === "\\") {
-          if (next !== "\n") index++;
-        } else if (char === state) state = "code";
-        else if (state === "`" && char === "$" && next === "{") {
+          if (next !== "\n") {
+            index++;
+          }
+        } else if (char === state) {
+          state = "code";
+        } else if (state === "`" && char === "$" && next === "{") {
           substitutions.push(0);
           state = "code";
           index++;
         }
         break;
       case "code":
-        if (char === "/" && next === "/") state = "line comment";
-        else if (char === "/" && next === "*") {
+        if (char === "/" && next === "/") {
+          state = "line comment";
+        } else if (char === "/" && next === "*") {
           state = "block comment";
           index++;
-        } else if (char === "'" || char === '"' || char === "`") state = char;
-        else if (substitutions.length && char === "{") substitutions[substitutions.length - 1]!++;
-        else if (substitutions.length && char === "}") {
+        } else if (char === "'" || char === '"' || char === "`") {
+          state = char;
+        } else if (substitutions.length && char === "{") {
+          substitutions[substitutions.length - 1]!++;
+        } else if (substitutions.length && char === "}") {
           if (substitutions.at(-1) === 0) {
             substitutions.pop();
             state = "`";
-          } else substitutions[substitutions.length - 1]!--;
+          } else {
+            substitutions[substitutions.length - 1]!--;
+          }
         }
         break;
       default:

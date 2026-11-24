@@ -65,15 +65,18 @@ registerTarget(
   "dom",
   async (component, container, options) => {
     const stub = component as StubComponent;
-    if (stub.fail) throw new Error(stub.fail);
+    if (stub.fail) {
+      throw new Error(stub.fail);
+    }
     const nodes: Text[] = [];
     const emit: Emit = (name, ...args) => options.on?.[name]?.(...args);
     let wiring = new AbortController();
     const render = (props: Props) => {
       wiring.abort();
       wiring = new AbortController();
-      if (stub.text) renderText(container, stub.text, props, nodes);
-      else {
+      if (stub.text) {
+        renderText(container, stub.text, props, nodes);
+      } else {
         container.innerHTML =
           typeof stub.html === "function" ? stub.html(props) : (stub.html ?? "");
       }
@@ -91,9 +94,13 @@ registerTarget(
       unmount: async () => {
         wiring.abort();
         container.replaceChildren();
-        if (stub.failUnmount !== undefined) throw new Error(stub.failUnmount);
+        if (stub.failUnmount !== undefined) {
+          throw new Error(stub.failUnmount);
+        }
         const late = stub.lateWarning;
-        if (late !== undefined) setTimeout(() => console.warn(late), 0);
+        if (late !== undefined) {
+          setTimeout(() => console.warn(late), 0);
+        }
       },
       ...(stub.console ? { console: stub.console } : {}),
     };
@@ -109,12 +116,16 @@ registerTarget(
 function renderText(container: HTMLElement, text: SplitText, props: Props, nodes: Text[]): void {
   const pieces = text.pieces(props);
   if (nodes.length) {
-    for (const [index, piece] of pieces.entries()) nodes[index]!.data = piece;
+    for (const [index, piece] of pieces.entries()) {
+      nodes[index]!.data = piece;
+    }
     return;
   }
   const element = document.createElement(text.tag);
   pieces.forEach((piece, index) => {
-    if (index && text.anchors) element.append(document.createComment(""));
+    if (index && text.anchors) {
+      element.append(document.createComment(""));
+    }
     const node = document.createTextNode(piece);
     nodes.push(node);
     element.append(node);

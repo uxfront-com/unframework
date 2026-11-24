@@ -17,8 +17,9 @@ import { typecheckWithTsgo } from "../src/toolchain-node/index.ts";
 
 const temporaries: string[] = [];
 afterAll(() => {
-  for (const directory of temporaries.splice(0))
+  for (const directory of temporaries.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 /** A fresh directory under the OS's temporary directory, which macOS reaches through a symlink. */
@@ -167,7 +168,9 @@ describe("typecheckWithTsgo with TypeScript 7", { timeout: 60_000 }, () => {
 function fakeToolchain(options: { version?: string; tsc?: string; tsconfig?: boolean }): string {
   const directory = temporaryDir();
   writeFileSync(join(directory, "package.json"), `{ "name": "fake", "private": true }`);
-  if (options.tsconfig ?? true) writeFileSync(join(directory, "tsconfig.json"), "{}");
+  if (options.tsconfig ?? true) {
+    writeFileSync(join(directory, "tsconfig.json"), "{}");
+  }
   if (options.version) {
     const typescript = join(directory, "node_modules/typescript");
     mkdirSync(join(typescript, "bin"), { recursive: true });

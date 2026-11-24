@@ -29,8 +29,12 @@ export async function emitSource(
   options: { fallthrough?: boolean; frozen?: boolean } = {},
 ): Promise<string> {
   const module = lower(source);
-  if (!options.fallthrough) module.components[0]!.inheritAttrs = false;
-  if (options.frozen) deepFreeze(module);
+  if (!options.fallthrough) {
+    module.components[0]!.inheritAttrs = false;
+  }
+  if (options.frozen) {
+    deepFreeze(module);
+  }
   const reported: unknown[] = [];
   const context: EmitContext = {
     module,
@@ -47,7 +51,11 @@ export async function emitSource(
 
 /** Freezes a value and everything in it, as `compile()` freezes the IR it hands the targets. */
 function deepFreeze(value: unknown): void {
-  if (typeof value !== "object" || value === null || Object.isFrozen(value)) return;
+  if (typeof value !== "object" || value === null || Object.isFrozen(value)) {
+    return;
+  }
   Object.freeze(value);
-  for (const item of Object.values(value)) deepFreeze(item);
+  for (const item of Object.values(value)) {
+    deepFreeze(item);
+  }
 }

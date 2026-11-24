@@ -34,14 +34,22 @@ export function packages(): WorkspacePackage[] {
  * `.reports/`, `.vitest/`) is never read.
  */
 export function sourceFiles(directory: string): string[] {
-  if (!existsSync(directory)) return [];
+  if (!existsSync(directory)) {
+    return [];
+  }
   const files: string[] = [];
   for (const entry of readdirSync(directory)) {
-    if (entry === "node_modules" || entry === "dist") continue;
+    if (entry === "node_modules" || entry === "dist") {
+      continue;
+    }
     const path = join(directory, entry);
     if (statSync(path).isDirectory()) {
-      if (!entry.startsWith(".")) files.push(...sourceFiles(path));
-    } else if (/\.(?:[cm]?ts|tsx)$/.test(entry) && !entry.endsWith(".d.ts")) files.push(path);
+      if (!entry.startsWith(".")) {
+        files.push(...sourceFiles(path));
+      }
+    } else if (/\.(?:[cm]?ts|tsx)$/.test(entry) && !entry.endsWith(".d.ts")) {
+      files.push(path);
+    }
   }
   return files.sort();
 }
@@ -90,7 +98,9 @@ export function importsOf(file: string): ImportRecord[] {
   for (const entry of module.dynamicImports) {
     const literal = source.slice(entry.moduleRequest.start, entry.moduleRequest.end);
     const match = /^["'`]([^"'`]+)["'`]$/.exec(literal.trim());
-    if (match) records.push({ file: name, specifier: match[1]!, typeOnly: false });
+    if (match) {
+      records.push({ file: name, specifier: match[1]!, typeOnly: false });
+    }
   }
   return records;
 }

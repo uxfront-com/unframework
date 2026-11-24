@@ -32,7 +32,9 @@ describe("frameworkCompile (L3, the Qwik optimizer)", () => {
     expect(goldens.length).toBeGreaterThanOrEqual(2);
     const results = await toolchain.frameworkCompile(goldens, context);
     expect([...results.keys()].toSorted()).toEqual(goldens.map((file) => file.path).toSorted());
-    for (const result of results.values()) expect(result).toEqual({ errors: [], warnings: [] });
+    for (const result of results.values()) {
+      expect(result).toEqual({ errors: [], warnings: [] });
+    }
   }, 60_000);
 
   it("accepts the fixtures, interactive and attribute-heavy ones included", async () => {
@@ -44,7 +46,9 @@ describe("frameworkCompile (L3, the Qwik optimizer)", () => {
     );
     const results = await toolchain.frameworkCompile(files, context);
     expect(results.size).toBe(files.length);
-    for (const result of results.values()) expect(result).toEqual({ errors: [], warnings: [] });
+    for (const result of results.values()) {
+      expect(result).toEqual({ errors: [], warnings: [] });
+    }
   });
 
   it("reports a mismatched closing tag as an error at its position", async () => {

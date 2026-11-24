@@ -83,16 +83,22 @@ describe("the names", () => {
       "Pick",
       "Exclude",
     ]);
-    for (const name of RESERVED_TYPE_NAMES.keys()) expect(isIdentifier(name)).toBe(true);
+    for (const name of RESERVED_TYPE_NAMES.keys()) {
+      expect(isIdentifier(name)).toBe(true);
+    }
   });
 
   // Each context reads what the one before it does, and more (ADR-0045).
   it("nests the globals of each context: render, pure, then client", () => {
-    for (const name of ALLOWED_GLOBALS) expect(PURE_GLOBALS.has(name), name).toBe(true);
+    for (const name of ALLOWED_GLOBALS) {
+      expect(PURE_GLOBALS.has(name), name).toBe(true);
+    }
     for (const name of [...PURE_GLOBALS, ...BROWSER_GLOBALS, ...SCHEDULING_GLOBALS]) {
       expect(CLIENT_GLOBALS.has(name), name).toBe(true);
     }
-    for (const name of CLIENT_GLOBALS) expect(isIdentifier(name), name).toBe(true);
+    for (const name of CLIENT_GLOBALS) {
+      expect(isIdentifier(name), name).toBe(true);
+    }
     expect([...PURE_GLOBALS].filter((name) => !ALLOWED_GLOBALS.has(name)).toSorted()).toEqual([
       "Error",
       "Map",
@@ -112,7 +118,9 @@ describe("the names", () => {
     for (const name of ["globalThis", "eval", "process", "require", "Function", "Buffer"]) {
       expect(CLIENT_GLOBALS.has(name), name).toBe(false);
     }
-    for (const name of BROWSER_GLOBALS) expect(SCHEDULING_GLOBALS.has(name), name).toBe(false);
+    for (const name of BROWSER_GLOBALS) {
+      expect(SCHEDULING_GLOBALS.has(name), name).toBe(false);
+    }
   });
 
   // Client code runs only in the browser, on every target, which prints a global as written: it
@@ -148,7 +156,9 @@ describe("the names", () => {
     for (const name of LIB_DOM_GLOBALS) {
       expect(CLIENT_GLOBALS.has(name) !== WINDOW_MEMBER_GLOBALS.has(name), name).toBe(true);
     }
-    for (const name of WINDOW_MEMBER_GLOBALS) expect(LIB_DOM_GLOBALS.has(name), name).toBe(true);
+    for (const name of WINDOW_MEMBER_GLOBALS) {
+      expect(LIB_DOM_GLOBALS.has(name), name).toBe(true);
+    }
   });
 
   // UF2018 and the `post` invariant judge only what a render changes (analyzer#8).

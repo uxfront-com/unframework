@@ -11,7 +11,9 @@ export const run: RunCommand = async (args, io) => {
     throw new Error("It takes one diagnostic code, such as UF1002.");
   }
   const entry = lookup(code);
-  if (!entry) throw new Error(`"${code}" is no diagnostic code.`);
+  if (!entry) {
+    throw new Error(`"${code}" is no diagnostic code.`);
+  }
   io.stdout(
     `${entry.code} ${entry.name} (${entry.severity})\n${entry.title}\n\n${entry.description}\n\n${docsUrl(entry.code)}\n`,
   );

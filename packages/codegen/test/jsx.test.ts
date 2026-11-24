@@ -134,7 +134,9 @@ function print(
 async function formatted(render: ElementNode | FragmentNode, options = {}): Promise<string> {
   const code = `x = ${print(render, options)};`;
   const outcome = await formatOutput({ path: "A.tsx", contents: code });
-  if (outcome.error) throw new Error(`${outcome.error}\n${code}`);
+  if (outcome.error) {
+    throw new Error(`${outcome.error}\n${code}`);
+  }
   const value = outcome.file.contents.replace(/^x = /, "").replace(/;\n$/, "");
   // A multi-line JSX value is wrapped in parentheses and indented: unwrap it.
   const wrapped = /^\(\n([^]*)\n\)$/.exec(value);

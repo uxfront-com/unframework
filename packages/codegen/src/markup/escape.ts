@@ -132,13 +132,18 @@ export function codeTokens(code: string, kind: CodeKind = "expression"): CodeTok
   const tokens: CodeToken[] = comments.map(({ start, end }) => ({ kind: "comment", start, end }));
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
-    if (!isNode(value)) return;
+    if (!isNode(value)) {
+      return;
+    }
     if (value.type === "Literal") {
-      if (value.regex) tokens.push({ kind: "regex", ...at(value) });
-      else if (typeof value.value === "string") {
+      if (value.regex) {
+        tokens.push({ kind: "regex", ...at(value) });
+      } else if (typeof value.value === "string") {
         tokens.push({ kind: "string", ...at(value), value: value.value });
       } else if (typeof value.value === "number") {
         tokens.push({ kind: "number", ...at(value), value: value.value });
@@ -154,7 +159,9 @@ export function codeTokens(code: string, kind: CodeKind = "expression"): CodeTok
       return;
     }
     for (const [key, child] of Object.entries(value)) {
-      if (key !== "type" && typeof child === "object") visit(child);
+      if (key !== "type" && typeof child === "object") {
+        visit(child);
+      }
     }
   };
   visit(root);
@@ -277,7 +284,9 @@ const escapeClosingBrace = (character: string) => (character === "}" ? "\\u007d"
  * a quasi that starts with `}`, is a quasi to re-print too.
  */
 export function separateClosingBraces(code: string): string {
-  if (!code.includes("}}")) return code;
+  if (!code.includes("}}")) {
+    return code;
+  }
   return mapCode(code, {
     string: (raw, { value }) =>
       raw.includes("}}")

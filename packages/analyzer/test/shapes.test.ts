@@ -24,7 +24,9 @@ async function analyzeWith(files: Record<string, string>): Promise<AnalyzeResult
     shapes.set(`${query.span.start}:${query.span.end}`, await oracle.resolveShape(query));
   }
   const result = analyze(parsed, { shapes: (span) => shapes.get(`${span.start}:${span.end}`) });
-  if (result.module) expect(checkInvariants(result.module)).toEqual([]);
+  if (result.module) {
+    expect(checkInvariants(result.module)).toEqual([]);
+  }
   return result;
 }
 

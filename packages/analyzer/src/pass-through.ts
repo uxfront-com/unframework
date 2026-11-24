@@ -58,7 +58,9 @@ export function passThroughImport(
   const specifier = statement.source.value;
   const at = { start: statement.start, end: statement.end };
   const help = `Import its class functions by name and call them in a \`class\`, as in \`import { button } from "${specifier}";\`, or import the module for its effect alone, as in \`import "${specifier}";\`.`;
-  for (const item of statement.specifiers) names.set(item.local, undefined);
+  for (const item of statement.specifiers) {
+    names.set(item.local, undefined);
+  }
   if (statement.importKind === "type") {
     reporter.report(
       "UF5006",
@@ -115,8 +117,12 @@ export function passThroughImport(
     );
     local.set(item.local, item.local.name);
   }
-  if (lowered.length !== statement.specifiers.length) return;
-  for (const [declaration, name] of local) names.set(declaration, name);
+  if (lowered.length !== statement.specifiers.length) {
+    return;
+  }
+  for (const [declaration, name] of local) {
+    names.set(declaration, name);
+  }
   imports.push(createPassThroughImport(specifier, lowered, at));
 }
 
@@ -131,10 +137,14 @@ export function reportUnread(
 ): boolean {
   let reported = false;
   for (const statement of statements) {
-    if (statement.type !== "ImportDeclaration") continue;
+    if (statement.type !== "ImportDeclaration") {
+      continue;
+    }
     for (const item of statement.specifiers) {
       const name = passThrough.names.get(item.local);
-      if (name === undefined || passThrough.read.has(item.local)) continue;
+      if (name === undefined || passThrough.read.has(item.local)) {
+        continue;
+      }
       reporter.report(
         "UF5006",
         item,

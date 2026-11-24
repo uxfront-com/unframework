@@ -60,7 +60,9 @@ export function parseVisualArguments(args: readonly string[]): VisualArguments {
       const inline = option[2];
       const given = value(name, inline, inline === undefined ? (index += 1) : index);
       if (name === "--out") {
-        if (parsed.out !== undefined) throw new VisualUsageError("--out is given twice.");
+        if (parsed.out !== undefined) {
+          throw new VisualUsageError("--out is given twice.");
+        }
         parsed.out = given;
       } else if (!isTargetSelector(given)) {
         throw new VisualUsageError(

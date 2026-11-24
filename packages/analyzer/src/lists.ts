@@ -197,7 +197,9 @@ export function lowerList(
   if (valid) {
     for (const [position, parameter] of parameters.entries()) {
       const identifier = parameter as AST.BindingIdentifier;
-      if (shadowing(identifier, render)) valid = false;
+      if (shadowing(identifier, render)) {
+        valid = false;
+      }
       const binding = createBinding(identifier.name, "loopVar", {
         start: identifier.start,
         end: identifier.start + identifier.name.length,
@@ -237,7 +239,9 @@ export function lowerList(
   ) {
     return undefined;
   }
-  if (!key || !valid || reporter.hasErrorsSince(mark)) return undefined;
+  if (!key || !valid || reporter.hasErrorsSince(mark)) {
+    return undefined;
+  }
   const [item, index] = variables;
   return createFor(list.expression, item!.id, key, lowered.element, span(call), index?.id);
 }
@@ -248,7 +252,9 @@ function bodyOf(callback: AST.ArrowFunctionExpression): AST.JSXElement | undefin
   if (body.type === "BlockStatement") {
     const statements = body.body.filter((statement) => statement.type !== "EmptyStatement");
     const only = statements.length === 1 ? statements[0] : undefined;
-    if (only?.type !== "ReturnStatement" || !only.argument) return undefined;
+    if (only?.type !== "ReturnStatement" || !only.argument) {
+      return undefined;
+    }
     body = only.argument;
   }
   return body.type === "JSXElement" ? body : undefined;
@@ -407,7 +413,9 @@ function indexKeyFix(
   const edits: Fix["edits"] = [];
   if (!name) {
     name = "index";
-    for (let suffix = 2; !free(name, component, render); suffix++) name = `index${suffix}`;
+    for (let suffix = 2; !free(name, component, render); suffix++) {
+      name = `index${suffix}`;
+    }
     const parenthesised = source[callback.start] === "(";
     edits.push(
       parenthesised

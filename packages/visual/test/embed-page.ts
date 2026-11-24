@@ -77,7 +77,9 @@ export function expectedPanel(groups: readonly ExampleControlGroup[]): PanelGrou
 export function panel(frame: FrameLocator | Page | Frame): Promise<PanelGroup[] | null> {
   return frame.locator("body").evaluate(() => {
     const root = document.querySelector("uf-embed-controls")?.shadowRoot;
-    if (!root) return null;
+    if (!root) {
+      return null;
+    }
     const list = (group: Element, title: string) => {
       const heading = [...group.querySelectorAll("h4")].find((each) => each.textContent === title);
       return heading
@@ -178,7 +180,9 @@ export function scrolls(frame: FrameLocator | Page | Frame): Promise<Scrolls> {
 /** Asserts nothing in an embed scrolls. */
 export function expectNoScroll(boxes: Scrolls, at: string): void {
   for (const [name, sizes] of Object.entries(boxes)) {
-    if (!Array.isArray(sizes)) continue;
+    if (!Array.isArray(sizes)) {
+      continue;
+    }
     expect(sizes[0], `${at}: ${name}`).toBeLessThanOrEqual(sizes[1]);
   }
 }
@@ -204,7 +208,9 @@ export async function settled(page: Page, at: string): Promise<number> {
     const before = (await reports(page)).length;
     await page.waitForTimeout(1000);
     const after = await reports(page);
-    if (after.length === before) return after.at(-1)!;
+    if (after.length === before) {
+      return after.at(-1)!;
+    }
   }
   throw new Error(`${at}: the reports never settled: ${JSON.stringify(await reports(page))}`);
 }
@@ -212,6 +218,8 @@ export async function settled(page: Page, at: string): Promise<number> {
 /** The frame the host page holds in `#embed`. */
 export async function embedFrame(page: Page): Promise<Frame> {
   const frame = await (await page.locator("#embed").elementHandle())?.contentFrame();
-  if (!frame) throw new Error("The host page frames nothing in #embed.");
+  if (!frame) {
+    throw new Error("The host page frames nothing in #embed.");
+  }
   return frame;
 }

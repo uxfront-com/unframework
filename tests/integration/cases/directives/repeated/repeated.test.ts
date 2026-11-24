@@ -32,11 +32,15 @@ function record(): {
     mark: () => traces.length,
     since: (view, mark) => {
       for (const { call, el } of traces) {
-        if (call.startsWith("mounted") && view.container.contains(el)) own.add(el);
+        if (call.startsWith("mounted") && view.container.contains(el)) {
+          own.add(el);
+        }
       }
       const found = new Map<Element, string[]>();
       for (const { call, el } of traces.slice(mark)) {
-        if (!own.has(el)) continue;
+        if (!own.has(el)) {
+          continue;
+        }
         found.set(el, [...(found.get(el) ?? []), call]);
       }
       return [...found].map(([el, calls]) => ({ name: el.getAttribute("data-name"), calls }));

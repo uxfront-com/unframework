@@ -151,7 +151,9 @@ export const svelte: Target = defineTarget({
         span: item.span,
       });
     }
-    if (late.length) return [];
+    if (late.length) {
+      return [];
+    }
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
@@ -175,7 +177,9 @@ export const svelte: Target = defineTarget({
       // (`DECLARED_ONLY_ON`): the child's spread listens to it all the same.
       eventAttribute: (event, attributeContext) => {
         const composed = fallthrough.listeners.get(event.attribute);
-        if (composed !== undefined) return [{ name: `on${event.attribute.event}`, text: composed }];
+        if (composed !== undefined) {
+          return [{ name: `on${event.attribute.event}`, text: composed }];
+        }
         const name = `on${event.attribute.event}`;
         if (
           isComponentTag(attributeContext.element.tag) &&

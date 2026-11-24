@@ -83,8 +83,14 @@ export function reactiveProps(initial: Record<string, unknown>): {
     equals: (a, b) => a.length === b.length && a.every((key, index) => key === b[index]),
   });
   const assign = (next: Record<string, unknown>) => {
-    for (const key of values.keys()) if (!Object.hasOwn(next, key)) entry(key)[1](undefined);
-    for (const [key, value] of Object.entries(next)) entry(key)[1](value);
+    for (const key of values.keys()) {
+      if (!Object.hasOwn(next, key)) {
+        entry(key)[1](undefined);
+      }
+    }
+    for (const [key, value] of Object.entries(next)) {
+      entry(key)[1](value);
+    }
     setKeys(Object.keys(next));
     flush();
   };

@@ -27,7 +27,9 @@ export function typeParameterDeclaration(
   component: UfComponent,
   placeholders: Placeholders,
 ): TypeParameterDeclaration | null {
-  if (!component.typeParameters?.length) return null;
+  if (!component.typeParameters?.length) {
+    return null;
+  }
   return {
     type: "TSTypeParameterDeclaration",
     params: component.typeParameters.map((parameter) => ({
@@ -69,11 +71,17 @@ export function generatedInterface(
   for (let added = true; added;) {
     added = false;
     for (const parameter of component.typeParameters ?? []) {
-      if (!read.has(parameter.name)) continue;
+      if (!read.has(parameter.name)) {
+        continue;
+      }
       for (const text of [parameter.constraint, parameter.default]) {
-        if (!text) continue;
+        if (!text) {
+          continue;
+        }
         for (const each of typeNames(text)) {
-          if (read.has(each)) continue;
+          if (read.has(each)) {
+            continue;
+          }
           read.add(each);
           added = true;
         }
@@ -100,7 +108,9 @@ export function generatedInterface(
  */
 export function genericModelType(component: UfComponent, binding: BindingId): string | undefined {
   const model = component.setup.find((item) => item.kind === "Model" && item.binding === binding);
-  if (model?.kind !== "Model" || !model.type) return undefined;
+  if (model?.kind !== "Model" || !model.type) {
+    return undefined;
+  }
   const read = typeNames(model.type);
   return component.typeParameters?.some(({ name }) => read.has(name)) ? model.type.code : undefined;
 }
@@ -114,18 +124,30 @@ export function namesTypeParameter(
   component: UfComponent,
   item: ConstItem | FunctionItem,
 ): boolean {
-  if (!component.typeParameters?.length) return false;
+  if (!component.typeParameters?.length) {
+    return false;
+  }
   const names = new Set<string>();
   const add = (found: Iterable<string>) => {
-    for (const name of found) names.add(name);
+    for (const name of found) {
+      names.add(name);
+    }
   };
   if (item.kind === "Const") {
-    if (item.type) add(typeNames(item.type));
+    if (item.type) {
+      add(typeNames(item.type));
+    }
     add(codeNames(item.value.code));
   } else {
     const fn = item.function;
-    for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
-    if (fn.returnType) add(typeNames(fn.returnType));
+    for (const parameter of fn.parameters) {
+      if (parameter.type) {
+        add(typeNames(parameter.type));
+      }
+    }
+    if (fn.returnType) {
+      add(typeNames(fn.returnType));
+    }
     add(codeNames(fn.body.code, fn.expression ? "expression" : "statements"));
   }
   return component.typeParameters.some(({ name }) => names.has(name));

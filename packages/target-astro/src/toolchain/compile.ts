@@ -50,7 +50,9 @@ export async function astroFrameworkCompile(
           fromDiagnostic(diagnostic),
         );
       }
-      for (const message of output.styleError) result.errors.push({ message });
+      for (const message of output.styleError) {
+        result.errors.push({ message });
+      }
     } catch (error) {
       // The compiler reports bad input as diagnostics; a throw is a compiler failure on this file.
       result.errors.push({ message: `${COMPILER} failed: ${String(error)}` });
@@ -128,7 +130,9 @@ function fromDiagnostic(diagnostic: DiagnosticMessage): ToolchainMessage {
  */
 export function assertCompilerMatchesAstro(root: string): void {
   const astroManifest = resolveInstalled(root, "astro/package.json");
-  if (!astroManifest) throw new Error(`L3 (astro): astro is not installed in ${root}.`);
+  if (!astroManifest) {
+    throw new Error(`L3 (astro): astro is not installed in ${root}.`);
+  }
   const theirs = versionOf(createRequire(astroManifest));
   const ours = versionOf(createRequire(import.meta.url));
   if (theirs !== ours) {

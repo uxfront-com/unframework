@@ -63,8 +63,12 @@ export const SOURCE: string = [
 /** The span of the `nth` occurrence of `text` in the source, at or after `from`. */
 export function find(text: string, nth = 0, from = 0): Span {
   let offset = from - 1;
-  for (let found = 0; found <= nth; found++) offset = SOURCE.indexOf(text, offset + 1);
-  if (offset === -1) throw new Error(`"${text}" is not in the source`);
+  for (let found = 0; found <= nth; found++) {
+    offset = SOURCE.indexOf(text, offset + 1);
+  }
+  if (offset === -1) {
+    throw new Error(`"${text}" is not in the source`);
+  }
   return span(offset, offset + text.length);
 }
 

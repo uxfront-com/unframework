@@ -143,7 +143,9 @@ export async function emitSource(source: string, name?: string): Promise<string>
     throw new Error(`The Solid 2 target reported ${JSON.stringify(reported)}.`);
   }
   const outcome = await formatOutput(files[0]!);
-  if (outcome.error) throw new Error(`oxfmt rejects the output: ${outcome.error}`);
+  if (outcome.error) {
+    throw new Error(`oxfmt rejects the output: ${outcome.error}`);
+  }
   return outcome.file.contents;
 }
 

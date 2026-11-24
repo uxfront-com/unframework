@@ -21,7 +21,9 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  for (const view of mounted.splice(0)) await view.unmount();
+  for (const view of mounted.splice(0)) {
+    await view.unmount();
+  }
   document.body.replaceChildren();
   vi.restoreAllMocks();
 });

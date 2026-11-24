@@ -96,14 +96,18 @@ export function firstUse(component: UfComponent, local: string): Span {
   let found: Span | undefined;
   walk(component.render, {
     enter(node: RenderNode) {
-      if (found) return;
+      if (found) {
+        return;
+      }
       const names =
         node.kind === "Component"
           ? [node.component]
           : node.kind === "Dynamic"
             ? node.candidates.flatMap((each) => (each.kind === "Component" ? [each.component] : []))
             : [];
-      if (names.includes(local)) found = node.span;
+      if (names.includes(local)) {
+        found = node.span;
+      }
     },
   });
   return found ?? component.span;
@@ -126,17 +130,23 @@ export function planComposition(plan: Plan): Composition {
   const selectors = new Set([selectorOf(component.name)]);
   for (const child of childImports(component, module, outputFile)) {
     const selector = selectorOf(child.name);
-    if (!child.self && selectors.has(selector)) clashes.set(child.local, selector);
+    if (!child.self && selectors.has(selector)) {
+      clashes.set(child.local, selector);
+    }
     selectors.add(selector);
     tags.set(child.local, selector);
     specifiers.set(child.local, child);
     // A component that renders itself uses its own selector, with nothing in `imports`.
-    if (child.self) continue;
+    if (child.self) {
+      continue;
+    }
     const local =
       child.export === "default"
         ? imports.addDefault(child.specifier, child.local, { exact: true })
         : imports.add(child.specifier, child.name, { local: child.local, exact: true });
-    if (!classes.includes(local)) classes.push(local);
+    if (!classes.includes(local)) {
+      classes.push(local);
+    }
   }
   // The keys first: a slot's directive takes a name apart from an imported key's.
   const keyNames = new Map<string, string>();
@@ -163,7 +173,9 @@ export function planComposition(plan: Plan): Composition {
       };
     });
   for (const directive of slots) {
-    if (directive.slot.props) directive.context = imports.claim(`${directive.exported}Context`);
+    if (directive.slot.props) {
+      directive.context = imports.claim(`${directive.exported}Context`);
+    }
   }
   const attributes = new Map<string, string>();
   const slotClashes: Composition["slotClashes"] = [];
@@ -172,26 +184,38 @@ export function planComposition(plan: Plan): Composition {
     const child = specifiers.get(local)!;
     for (const fill of fills) {
       // The default slot forwarded re-projects `<ng-content />` (unsupported: `default-slot-presence`).
-      if (fill.forward !== undefined && fill.slot !== "default") outlet = true;
-      if (!usesDirective(fill.slot, fill.parameter !== undefined)) continue;
+      if (fill.forward !== undefined && fill.slot !== "default") {
+        outlet = true;
+      }
+      if (!usesDirective(fill.slot, fill.parameter !== undefined)) {
+        continue;
+      }
       const name = `${child.name}${pascalCase(fill.slot)}`;
       const attribute = slotAttribute(child.name, fill.slot);
       const filled = `\`<${child.name}>\`'s \`${fill.slot}\` slot`;
       const other = attributes.get(attribute) ?? filled;
       attributes.set(attribute, other);
-      if (other !== filled) slotClashes.push({ fill, child: filled, attribute, other });
+      if (other !== filled) {
+        slotClashes.push({ fill, child: filled, attribute, other });
+      }
       const directive = child.self
         ? slots.find((slot) => slot.slot.name === fill.slot)!.className
         : imports.add(child.specifier, name);
-      if (!classes.includes(directive)) classes.push(directive);
+      if (!classes.includes(directive)) {
+        classes.push(directive);
+      }
     }
   };
   walk(component.render, {
     enter(node: RenderNode) {
-      if (node.kind === "Component") fillDirectives(node.component, node.fills);
+      if (node.kind === "Component") {
+        fillDirectives(node.component, node.fills);
+      }
       if (node.kind === "Dynamic") {
         for (const candidate of node.candidates) {
-          if (candidate.kind === "Component") fillDirectives(candidate.component, node.fills ?? []);
+          if (candidate.kind === "Component") {
+            fillDirectives(candidate.component, node.fills ?? []);
+          }
         }
       }
       if (node.kind === "SlotOutlet" && usesDirective(node.slot, node.props !== undefined)) {
@@ -199,7 +223,9 @@ export function planComposition(plan: Plan): Composition {
       }
     },
   });
-  if (outlet) classes.push(imports.add("@angular/common", "NgTemplateOutlet"));
+  if (outlet) {
+    classes.push(imports.add("@angular/common", "NgTemplateOutlet"));
+  }
   return { tags, imports: classes, slots, outlet, keys, keyNames, clashes, slotClashes };
 }
 
@@ -210,11 +236,15 @@ export function planComposition(plan: Plan): Composition {
 export function keyOf(plan: Plan, local: string): InjectionKeyDeclaration | KeyApi {
   const { module } = plan;
   const own = module.keys?.find((key) => key.name === local);
-  if (own) return own;
+  if (own) {
+    return own;
+  }
   for (const entry of module.imports ?? []) {
     const name = entry.names.find((each) => each.kind === "Key" && each.local === local);
     const key = name && entry.api.keys.find((each) => each.name === name.imported);
-    if (key) return key;
+    if (key) {
+      return key;
+    }
   }
   throw new Error(`No injection key is named ${local}.`);
 }
@@ -225,7 +255,9 @@ export function keyOf(plan: Plan, local: string): InjectionKeyDeclaration | KeyA
  */
 export function tokenType(key: InjectionKeyDeclaration | KeyApi): string {
   const type = typeof key.type === "string" ? key.type : key.type.code;
-  if (!key.ref) return type;
+  if (!key.ref) {
+    return type;
+  }
   const inner = type.slice(type.indexOf("<") + 1, type.lastIndexOf(">")).trim();
   return `{ readonly value: ${inner} }`;
 }
@@ -238,18 +270,24 @@ export function childEvent(plan: Plan, local: string, event: string): ApiEvent {
   const { module } = plan;
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     const api = entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"
         : each.export === "named" && each.name === imported.imported,
     );
     const found = api?.events.find((each) => each.name === event);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   const own = module.components.find((each) => each.name === local);
   const declared = own?.emits?.events.find((each) => each.name === event);
-  if (!declared) throw new Error(`${local} declares no event ${event}.`);
+  if (!declared) {
+    throw new Error(`${local} declares no event ${event}.`);
+  }
   return {
     name: declared.name,
     parameters: declared.parameters.map((parameter) => ({
@@ -323,7 +361,9 @@ function aliases(props: string): string {
   const found = [...props.matchAll(/["']([^"']+)["']\??\s*:\s*([^;,}]+)/g)].filter(
     ([, key]) => !/^[A-Za-z_$][\w$]*$/.test(key!),
   );
-  if (!found.length) return "";
+  if (!found.length) {
+    return "";
+  }
   return ` & { ${found.map(([, key, type]) => `${contextAlias(key!)}: ${type!.trim()}`).join("; ")} }`;
 }
 

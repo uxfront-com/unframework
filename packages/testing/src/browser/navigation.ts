@@ -14,20 +14,28 @@ let installed = false;
  * the others on the element), so a component that prevents the default has done so by then.
  */
 export function installNavigationGuard(): void {
-  if (installed) return;
+  if (installed) {
+    return;
+  }
   installed = true;
   window.addEventListener("submit", (event) => {
-    if (event.defaultPrevented) return;
+    if (event.defaultPrevented) {
+      return;
+    }
     event.preventDefault();
     prevented.push(
       `a form submission was not prevented: the component's submit listener must call event.preventDefault() (${describe(event.target)}).`,
     );
   });
   window.addEventListener("click", (event) => {
-    if (event.defaultPrevented) return;
+    if (event.defaultPrevented) {
+      return;
+    }
     const target = event.target;
     const link = target instanceof Element ? target.closest("a[href]") : null;
-    if (!link) return;
+    if (!link) {
+      return;
+    }
     event.preventDefault();
     prevented.push(
       `a link's navigation was not prevented: a click on a link leaves the page unless the component prevents it (${describe(link)}).`,
@@ -42,7 +50,9 @@ export function takePreventedNavigations(): string[] {
 
 /** An element for a message: its tag, and its id or name if it has one. */
 function describe(target: EventTarget | null): string {
-  if (!(target instanceof Element)) return "outside an element";
+  if (!(target instanceof Element)) {
+    return "outside an element";
+  }
   const name = target.getAttribute("id") ?? target.getAttribute("name");
   return `<${target.localName}${name ? ` "${name}"` : ""}>`;
 }

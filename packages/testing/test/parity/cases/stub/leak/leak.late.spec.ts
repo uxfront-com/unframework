@@ -12,7 +12,9 @@ import "../../../dom-target.ts";
 const leaking: StubComponent = {
   html: "<p>In place</p>",
   setup() {
-    if (document.querySelector("body > .toast")) return;
+    if (document.querySelector("body > .toast")) {
+      return;
+    }
     const toast = document.createElement("div");
     toast.className = "toast";
     toast.textContent = "Saved";

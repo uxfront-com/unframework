@@ -29,7 +29,9 @@ import type { TreeElement, TreeFragment } from "../src/normalize/tree.ts";
 /** Parses, applies only the given rules, and prints: each rule tested on its own. */
 function apply(html: string, ...rules: ((root: TreeFragment) => void)[]): string {
   const root = parseHtml(html);
-  for (const rule of rules) rule(root);
+  for (const rule of rules) {
+    rule(root);
+  }
   return printTree(root);
 }
 

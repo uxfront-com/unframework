@@ -58,10 +58,14 @@ export const ID_ATTRIBUTES: readonly string[] = [
 export function idsOf(root: ParentNode): string[] {
   const ids: string[] = [];
   for (const element of root.querySelectorAll("*")) {
-    if (element.localName === "script") continue;
+    if (element.localName === "script") {
+      continue;
+    }
     for (const name of ID_ATTRIBUTES) {
       const value = element.getAttribute(name);
-      if (value !== null) ids.push(`${name}="${value}"`);
+      if (value !== null) {
+        ids.push(`${name}="${value}"`);
+      }
     }
   }
   return ids;
@@ -93,7 +97,9 @@ export function compareIds(
 /** Records an L12 failure on the current test, naming its sub-check. */
 export function failHydration(target: string, subCheck: string, message: string): void {
   const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) throw new Error(`${subCheck}: ${message}`);
+  if (!test) {
+    throw new Error(`${subCheck}: ${message}`);
+  }
   const harness = inject("ufHarness");
   recordLayer(
     test,
@@ -132,7 +138,9 @@ export async function hydrateInto(
   const props = { ...options.props };
   assertSerialisableProps(props, "A hydrate project renders the server HTML in Node (L12)");
   const rendered = await commands.ufHydrationRender({ case: caseId, props });
-  if (rendered.console.length) captureExternalConsole(rendered.console);
+  if (rendered.console.length) {
+    captureExternalConsole(rendered.console);
+  }
   const main = (await importModule(rendered.module)) as { default?: unknown };
   if (main.default !== component) {
     throw new Error(
@@ -195,7 +203,9 @@ export async function clientRender(
       for (let round = 0; round < CLIENT_SETTLE_ROUNDS; round += 1) {
         await settleFrame(() => instance.settle());
         const html = normalize(root, teleportedBy(owner));
-        if (html === previous) return html;
+        if (html === previous) {
+          return html;
+        }
         previous = html;
       }
       throw new Error(
@@ -218,6 +228,8 @@ export async function clientRender(
 
 /** Why the hydrated root and the client render differ, or nothing when they agree. */
 export function compareClientRender(hydrated: string, client: string): string | undefined {
-  if (hydrated === client) return undefined;
+  if (hydrated === client) {
+    return undefined;
+  }
   return `the hydrated DOM is not the client render's (expected: the client render, actual: the hydrated root):\n${diffLines(client, hydrated)}`;
 }

@@ -59,25 +59,39 @@ function nameTable(file: string, table: string): ReadonlyMap<string, string> {
   const source = readFileSync(new URL(file, ROOT), "utf8");
   const names = new Map<string, string>();
   for (const statement of parseModule(file, source).program.body) {
-    if (statement.type !== "ExportNamedDeclaration") continue;
+    if (statement.type !== "ExportNamedDeclaration") {
+      continue;
+    }
     const declaration = statement.declaration;
-    if (declaration?.type !== "VariableDeclaration") continue;
+    if (declaration?.type !== "VariableDeclaration") {
+      continue;
+    }
     for (const declarator of declaration.declarations) {
-      if (declarator.id.type !== "Identifier" || declarator.id.name !== table) continue;
-      if (declarator.init?.type !== "ObjectExpression") continue;
+      if (declarator.id.type !== "Identifier" || declarator.id.name !== table) {
+        continue;
+      }
+      if (declarator.init?.type !== "ObjectExpression") {
+        continue;
+      }
       for (const property of declarator.init.properties) {
-        if (property.type !== "Property" || property.value.type !== "Literal") continue;
+        if (property.type !== "Property" || property.value.type !== "Literal") {
+          continue;
+        }
         const key =
           property.key.type === "Identifier"
             ? property.key.name
             : property.key.type === "Literal"
               ? String(property.key.value)
               : undefined;
-        if (key !== undefined) names.set(key, String(property.value.value));
+        if (key !== undefined) {
+          names.set(key, String(property.value.value));
+        }
       }
     }
   }
-  if (!names.size) throw new Error(`${table} was not found in ${file}`);
+  if (!names.size) {
+    throw new Error(`${table} was not found in ${file}`);
+  }
   return names;
 }
 
@@ -216,7 +230,9 @@ function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing
     cached?.length === checks.length && /^[012]*$/.test(cached)
       ? cached
       : runProbe(checks, probe, tsconfig, join(dirname(manifestPath), manifest.bin.tsc));
-  if (digits !== cached) cache.write(key, digits);
+  if (digits !== cached) {
+    cache.write(key, digits);
+  }
   return Array.from(digits, (digit) =>
     digit === "1" ? "accepted" : digit === "0" ? "rejected" : "missing",
   );
@@ -234,24 +250,33 @@ function runProbe(checks: readonly Check[], probe: string, tsconfig: string, tsc
     [tsc, "-p", join(folder, "tsconfig.json"), ...TSC_FLAGS],
     { cwd: folder, encoding: "utf8", maxBuffer: 1 << 28 },
   );
-  if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);
+  if (result.error) {
+    throw new Error(`could not start tsc: ${result.error.message}`);
+  }
   const found = new Map<number, string>();
   const unexpected: string[] = [];
   for (const line of `${result.stdout}${result.stderr}`.split("\n")) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
     const match = VERDICT.exec(line);
-    if (match) found.set(Number(match[1]) - HEADER.length - 1, match[2]!);
-    else unexpected.push(line);
+    if (match) {
+      found.set(Number(match[1]) - HEADER.length - 1, match[2]!);
+    } else {
+      unexpected.push(line);
+    }
   }
-  if (unexpected.length)
+  if (unexpected.length) {
     throw new Error(`tsc reported more than the probes:\n${unexpected.slice(0, 20).join("\n")}`);
+  }
   return checks
     .map((check, index) => {
       const verdict = found.get(index);
-      if (verdict === undefined)
+      if (verdict === undefined) {
         throw new Error(
           `no verdict for ${JSON.stringify({ ...check, library: check.library.name })}`,
         );
+      }
       return verdict;
     })
     .join("");
@@ -271,14 +296,20 @@ function pairs(): (Pair & { readonly named: boolean })[] {
   const found: (Pair & { readonly named: boolean })[] = [];
   const add = (namespace: Namespace, tag: string, names: Iterable<string>) => {
     for (const name of new Set(names)) {
-      if (name === "class" || name === "style") continue;
+      if (name === "class" || name === "style") {
+        continue;
+      }
       const known = namespace === "html" ? isHtmlAttribute(tag, name) : isSvgAttribute(tag, name);
-      if (!known) continue;
+      if (!known) {
+        continue;
+      }
       found.push({ namespace, tag, name, named: !nameProblem(tag, namespace, name, name) });
     }
   };
   for (const tag of HTML_ELEMENTS) {
-    if (UNRENDERABLE_ELEMENTS.has(tag) || UNPORTABLE_ELEMENTS.has(tag)) continue;
+    if (UNRENDERABLE_ELEMENTS.has(tag) || UNPORTABLE_ELEMENTS.has(tag)) {
+      continue;
+    }
     add("html", tag, [
       ...GLOBAL_ATTRIBUTES,
       ...(ELEMENT_ATTRIBUTES.get(tag) ?? []),
@@ -338,7 +369,9 @@ describe("bound values against the targets' element types", () => {
     const values = enumeratedValues(pair.tag, pair.namespace, pair.name);
     // A name the analyser rejects is probed for whether the targets declare it.
     const probed: string[] = pair.named ? [...PRIMITIVES] : ["string"];
-    if (pair.named && values?.tokens.length) probed.push(tokensType(values.tokens));
+    if (pair.named && values?.tokens.length) {
+      probed.push(tokensType(values.tokens));
+    }
     // The static values a target converts itself, which the others take as written.
     const converted = pair.named
       ? (staticTokens(pair.tag, pair.namespace, pair.name) ?? []).filter(
@@ -347,7 +380,9 @@ describe("bound values against the targets' element types", () => {
       : [];
     probed.push(...converted.map((token) => JSON.stringify(token)));
     for (const value of probed) {
-      for (const library of LIBRARIES) checks.push({ ...pair, value, library });
+      for (const library of LIBRARIES) {
+        checks.push({ ...pair, value, library });
+      }
     }
   }
   const verdictOf = new Map<string, "accepted" | "rejected" | "missing">();
@@ -360,7 +395,9 @@ describe("bound values against the targets' element types", () => {
     verdictOf.get(`${where(pair)}\t${value}\t${library}`);
   const rejecters = new Map<string, Set<string>>();
   results.forEach((verdict, index) => {
-    if (verdict !== "rejected") return;
+    if (verdict !== "rejected") {
+      return;
+    }
     const check = checks[index]!;
     const id = `${where(check)}\t${check.value}`;
     (rejecters.get(id) ?? rejecters.set(id, new Set()).get(id)!).add(check.library.name);
@@ -394,7 +431,9 @@ describe("bound values against the targets' element types", () => {
         }
       }
       const values = enumeratedValues(pair.tag, pair.namespace, pair.name);
-      if (!values?.tokens.length) continue;
+      if (!values?.tokens.length) {
+        continue;
+      }
       // Where the attribute binds at all, its tokens bind.
       if (accepts(pair, UNKNOWN) && !accepts(pair, union(...values.tokens.map(stringLiteral)))) {
         violation(pair, "the analyser rejects its tokens");
@@ -410,8 +449,9 @@ describe("bound values against the targets' element types", () => {
     if (tokenChecks.length) {
       verdicts(tokenChecks).forEach((verdict, index) => {
         const check = tokenChecks[index]!;
-        if (verdict === "rejected")
+        if (verdict === "rejected") {
           violation(check, `${check.library.name} rejects ${check.value}`);
+        }
       });
     }
     const elements = new Map<string, number>();
@@ -430,7 +470,9 @@ describe("bound values against the targets' element types", () => {
   it("lists as a string only what some target declares so", () => {
     const names = new Map<string, Pair[]>();
     for (const pair of all) {
-      if (!isTargetStringAttribute(pair.tag, pair.namespace, pair.name)) continue;
+      if (!isTargetStringAttribute(pair.tag, pair.namespace, pair.name)) {
+        continue;
+      }
       const id = `${pair.namespace} ${pair.name}`;
       (names.get(id) ?? names.set(id, []).get(id)!).push(pair);
     }
@@ -446,18 +488,25 @@ describe("bound values against the targets' element types", () => {
     const ids = new Map<Enumerated, number>();
     for (const pair of all) {
       const values = enumeratedValues(pair.tag, pair.namespace, pair.name);
-      if (!values) continue;
-      if (!ids.has(values)) ids.set(values, ids.size);
+      if (!values) {
+        continue;
+      }
+      if (!ids.has(values)) {
+        ids.set(values, ids.size);
+      }
       const id = `${pair.namespace} ${pair.name} #${ids.get(values)}`;
       (groups.get(id) ?? groups.set(id, { values, pairs: [] }).get(id)!).pairs.push(pair);
     }
     const loose: string[] = [];
     const booleans: string[] = [];
     for (const [id, group] of groups) {
-      if (!group.pairs.some((pair) => rejectedBy(pair, "string").size)) loose.push(id);
+      if (!group.pairs.some((pair) => rejectedBy(pair, "string").size)) {
+        loose.push(id);
+      }
       const boolean = group.pairs.every((pair) => !rejectedBy(pair, "boolean").size);
-      if (boolean !== group.values.boolean)
+      if (boolean !== group.values.boolean) {
         booleans.push(`${id}: every target takes a boolean: ${boolean}`);
+      }
     }
     expect(groups.size).toBeGreaterThan(100);
     expect(loose).toEqual([]);
@@ -491,13 +540,19 @@ describe("bound values against the targets' element types", () => {
     const declared: string[] = [];
     let rejected = 0;
     for (const pair of known) {
-      if (pair.named) continue;
+      if (pair.named) {
+        continue;
+      }
       const frameworks = undeclaredBy(pair.tag, pair.namespace, pair.name);
-      if (!frameworks) continue;
+      if (!frameworks) {
+        continue;
+      }
       rejected++;
       // Vue's types are the authoring types, which TSX checks for a name without a hyphen.
       const libraries: string[] = [...frameworks];
-      if (frameworks.includes("Vue") && !pair.name.includes("-")) libraries.push("Authoring");
+      if (frameworks.includes("Vue") && !pair.name.includes("-")) {
+        libraries.push("Authoring");
+      }
       for (const library of libraries) {
         if (verdictFor(pair, "string", library) !== "missing") {
           declared.push(`${library} declares ${where(pair)}`);
@@ -514,16 +569,19 @@ describe("bound values against the targets' element types", () => {
     for (const pair of all) {
       const values = enumeratedValues(pair.tag, pair.namespace, pair.name);
       for (const token of staticTokens(pair.tag, pair.namespace, pair.name) ?? []) {
-        if (values?.tokens.includes(token)) continue;
+        if (values?.tokens.includes(token)) {
+          continue;
+        }
         probed++;
         const rejecting = LIBRARIES.filter(
           (library) => verdictFor(pair, JSON.stringify(token), library.name) === "rejected",
         ).map((library) => library.name);
         // Qwik writes them as the boolean its types take; the conversion is needed.
-        if (rejecting.join() !== "Qwik")
+        if (rejecting.join() !== "Qwik") {
           problems.push(
             `${where(pair)} "${token}": ${rejecting.join(", ") || "no target"} rejects it`,
           );
+        }
       }
     }
     expect(probed).toBeGreaterThan(100);

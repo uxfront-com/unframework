@@ -43,7 +43,9 @@ export function printShape(shape: TypeShape, options: PrintOptions = {}): string
       case "tuple": {
         const elements = node.elements.map((element) => {
           if (element.name === undefined) {
-            if (element.rest) return `...${inner(element.type)}`;
+            if (element.rest) {
+              return `...${inner(element.type)}`;
+            }
             return element.optional ? `${operand(element.type)}?` : inner(element.type);
           }
           const label = `${element.rest ? "..." : ""}${element.name}${element.optional ? "?" : ""}`;
@@ -58,10 +60,14 @@ export function printShape(shape: TypeShape, options: PrintOptions = {}): string
             const args = node.typeArguments?.map(inner).join(", ");
             return args ? `${node.declaration.name}<${args}>` : node.declaration.name;
           }
-          if (options.canonical) return `(cycle ^${stack.length - stack.indexOf(id)})`;
+          if (options.canonical) {
+            return `(cycle ^${stack.length - stack.indexOf(id)})`;
+          }
           throw new Error("Cannot print a recursive type that has no name.");
         }
-        if (!node.members.length) return "{}";
+        if (!node.members.length) {
+          return "{}";
+        }
         const members = options.canonical
           ? node.members.toSorted((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
           : node.members;

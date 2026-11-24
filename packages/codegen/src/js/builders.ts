@@ -48,7 +48,9 @@ export function nullLiteral(): AST.NullLiteral {
  * are. A negative number is a unary minus.
  */
 export function numberLiteral(value: number): AST.NumericLiteral | AST.UnaryExpression {
-  if (value < 0 || Object.is(value, -0)) return unaryExpression("-", numberLiteral(-value));
+  if (value < 0 || Object.is(value, -0)) {
+    return unaryExpression("-", numberLiteral(-value));
+  }
   return { type: "Literal", value, raw: String(value), ...at } as AST.NumericLiteral;
 }
 

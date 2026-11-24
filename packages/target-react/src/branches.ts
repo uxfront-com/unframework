@@ -46,7 +46,9 @@ export function keyedTernary(node: IfNode, context: JsxContext, imports: ImportS
       // A nested conditional that is the branch's only root prints in this chain: its keys carry
       // this branch's (`key="1.0"`), so none equals another branch's.
       PREFIXES.set(only, `${prefix}${index}.`);
-      if (keyed) KEYED.add(only);
+      if (keyed) {
+        KEYED.add(only);
+      }
     } else {
       placeConditionals(entry.children, context.module);
     }
@@ -105,8 +107,12 @@ export function placeConditionals(children: readonly RenderNode[], module?: UfMo
   const keyed = children.flatMap((child, position) =>
     child.kind === "If" && conflicts(child, module) ? [[child, position] as const] : [],
   );
-  if (keyed.length < 2) return;
-  for (const [child, position] of keyed) PREFIXES.set(child, `${position}-`);
+  if (keyed.length < 2) {
+    return;
+  }
+  for (const [child, position] of keyed) {
+    PREFIXES.set(child, `${position}-`);
+  }
 }
 
 /**
@@ -222,7 +228,9 @@ function conflicts(node: IfNode, module: UfModule | undefined): boolean {
   ) {
     return true;
   }
-  if (!branches.some((branch) => branch.children.some(holdsState))) return false;
+  if (!branches.some((branch) => branch.children.some(holdsState))) {
+    return false;
+  }
   return tags.some((own, a) =>
     tags.some((other, b) => a < b && [...own].some((tag) => other.has(tag))),
   );
@@ -241,15 +249,21 @@ function topTags(nodes: readonly RenderNode[], module: UfModule | undefined): Se
         break;
       case "If":
         for (const branch of node.branches) {
-          for (const tag of topTags(branch.children, module)) tags.add(tag);
+          for (const tag of topTags(branch.children, module)) {
+            tags.add(tag);
+          }
         }
         break;
       case "For":
-        if (node.body.kind === "Element") tags.add(node.body.tag);
+        if (node.body.kind === "Element") {
+          tags.add(node.body.tag);
+        }
         break;
       // An async component, by its name in angle brackets, which no element's tag takes.
       case "Component":
-        if (module && childIsAsync(module, node.component)) tags.add(`<${node.component}>`);
+        if (module && childIsAsync(module, node.component)) {
+          tags.add(`<${node.component}>`);
+        }
         break;
       case "Text":
       case "Interpolation":

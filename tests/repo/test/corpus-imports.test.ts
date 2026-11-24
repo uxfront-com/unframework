@@ -53,7 +53,9 @@ afterAll(() => rmSync(project, { recursive: true, force: true }));
 /** The specifiers oxlint reports `no-restricted-imports` for, one import per line of the spec. */
 function refusedBy(specifiers: readonly string[], spec: string = SPEC): string[] {
   const override = config.overrides?.find((entry) => entry.files.includes(CASES));
-  if (!override) throw new Error(`oxlint.config.ts has no override for ${CASES}.`);
+  if (!override) {
+    throw new Error(`oxlint.config.ts has no override for ${CASES}.`);
+  }
   writeFileSync(
     join(project, ".oxlintrc.json"),
     JSON.stringify({ overrides: [{ files: override.files, rules: override.rules }] }),

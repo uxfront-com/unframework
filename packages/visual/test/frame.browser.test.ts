@@ -64,7 +64,9 @@ function frameOptions(calls: Calls, fail?: (props: unknown) => boolean): FrameOp
       return Promise.resolve({
         rerender: (props) => {
           calls.rerenders.push(props);
-          if (fail?.(props)) return Promise.reject(new Error(STATIC_RENDER_MESSAGE));
+          if (fail?.(props)) {
+            return Promise.reject(new Error(STATIC_RENDER_MESSAGE));
+          }
           container.innerHTML = `<button>${JSON.stringify(props)}</button>`;
           return Promise.resolve();
         },

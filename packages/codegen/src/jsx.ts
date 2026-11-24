@@ -320,7 +320,9 @@ export function expressionCode(
   context: JsxContext,
   site: RewriteSite = "render",
 ): string {
-  if (context.dialect.expression) return context.dialect.expression(expression, context, site);
+  if (context.dialect.expression) {
+    return context.dialect.expression(expression, context, site);
+  }
   return context.rules
     ? rewriteExpression(expression, context.component, context.rules, site)
     : expression.code;
@@ -411,8 +413,12 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
  */
 export function jsxBranch(children: readonly RenderNode[], context: JsxContext): AST.Expression {
   const [only] = children;
-  if (!only) return js.nullLiteral();
-  if (children.length === 1) return jsxNode(only, context);
+  if (!only) {
+    return js.nullLiteral();
+  }
+  if (children.length === 1) {
+    return jsxNode(only, context);
+  }
   return js.jsxFragment(jsxChildren(children, context));
 }
 
@@ -465,7 +471,9 @@ export function listParameters(node: ForNode, context: JsxContext): AST.BindingI
   const item = jsxBinding(node.item, context);
   const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
   const parameters = [js.bindingIdentifier(item.name)];
-  if (index && context.referenced.has(index.id)) parameters.push(js.bindingIdentifier(index.name));
+  if (index && context.referenced.has(index.id)) {
+    parameters.push(js.bindingIdentifier(index.name));
+  }
   return parameters;
 }
 
@@ -552,17 +560,23 @@ function componentElement(
       // What falls through (ADR-0118): printed all at once below where the dialect takes them
       // so, and otherwise each as the element hooks print it on the component's tag.
       case "Static":
-        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        if (dialect.fallthroughAttributes) {
+          return fallthrough(attribute);
+        }
         return dialect.staticAttribute
           ? dialect.staticAttribute(attribute, element, context)
           : staticJsxAttribute(attribute, element, context);
       case "Bound":
-        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        if (dialect.fallthroughAttributes) {
+          return fallthrough(attribute);
+        }
         return dialect.boundAttribute
           ? dialect.boundAttribute(attribute, element, context)
           : boundJsxAttribute(attribute, element, context);
       case "Event":
-        if (dialect.fallthroughAttributes) return fallthrough(attribute);
+        if (dialect.fallthroughAttributes) {
+          return fallthrough(attribute);
+        }
         return dialect.eventAttribute
           ? dialect.eventAttribute(attribute, element, context)
           : eventJsxAttribute(attribute, element, context);
@@ -646,7 +660,9 @@ export function onlyContext(
   tag: () => AST.Expression,
   context: JsxContext,
 ): JsxContext {
-  if (!node.only?.length) return context;
+  if (!node.only?.length) {
+    return context;
+  }
   const only = new Map(node.only.map((entry) => [entry.name, entry.tags]));
   const { dialect } = context;
   const guarded = <T extends StaticAttribute | BoundAttribute>(
@@ -654,7 +670,9 @@ export function onlyContext(
   ) =>
     function (attribute: T, element: ElementNode, at: JsxContext): AST.JSXAttributeItem[] {
       const tags = only.get(attribute.name);
-      if (!tags) return print(attribute, element, at);
+      if (!tags) {
+        return print(attribute, element, at);
+      }
       const items = print(attribute, { ...element, tag: tags[0]! }, at);
       return items.map((item) => guardJsxAttribute(item, () => tagTest(tag, tags)));
     };
@@ -771,9 +789,13 @@ export function fillJsxAttribute(
  * `({ item }) => …` for a scoped one, its parameter as written, and what it renders otherwise.
  */
 export function jsxFillValue(fill: SlotFill, context: JsxContext): AST.Expression {
-  if (fill.forward !== undefined) return hook(context, "slotValue")(fill.forward, context);
+  if (fill.forward !== undefined) {
+    return hook(context, "slotValue")(fill.forward, context);
+  }
   const body = jsxBranch(fill.children, context);
-  if (!fill.parameter) return body;
+  if (!fill.parameter) {
+    return body;
+  }
   const parameter = fill.parameter.name ?? fill.parameter.pattern!.code;
   return js.arrowFunction([context.placeholders.parameter(parameter)], body);
 }
@@ -800,7 +822,9 @@ function hook<
     | "restAttribute",
 >(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
-  if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
+  if (!found) {
+    throw new Error(`The JSX dialect does not print composition yet (${name}).`);
+  }
   return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;
 }
 
@@ -950,8 +974,11 @@ export function classArrayItems(attribute: ClassAttribute, context: JsxContext):
   for (const item of attribute.items) {
     if (item.kind === "Toggle") {
       const entry = js.property(item.name, jsxExpression(item.condition, context));
-      if (toggles) toggles.properties.push(entry);
-      else items.push((toggles = js.objectExpression([entry])));
+      if (toggles) {
+        toggles.properties.push(entry);
+      } else {
+        items.push((toggles = js.objectExpression([entry])));
+      }
       continue;
     }
     toggles = undefined;
@@ -1002,7 +1029,9 @@ export function styleObject(
  * never change.
  */
 export function styleKey(property: string, keys: "camel" | "kebab"): string {
-  if (keys === "kebab" || property.startsWith("--")) return property;
+  if (keys === "kebab" || property.startsWith("--")) {
+    return property;
+  }
   return property
     .replace(/^-ms-/, "ms-")
     .replace(/^-/, "")
@@ -1050,7 +1079,9 @@ export function spreadRead(
   context: JsxContext,
 ): AST.Expression {
   const source = jsxExpression(attribute.value, context, "operand");
-  if (!attribute.nullish) return js.memberExpression(source, key.name);
+  if (!attribute.nullish) {
+    return js.memberExpression(source, key.name);
+  }
   const read = js.memberExpression(source, key.name, { optional: true });
   return js.chainExpression(read as AST.ChainElement);
 }
@@ -1061,7 +1092,9 @@ export function spreadRead(
  */
 export function spreadClassReads(element: ElementNode, context: JsxContext): AST.Expression[] {
   return element.attributes.flatMap((attribute) => {
-    if (attribute.kind !== "Spread") return [];
+    if (attribute.kind !== "Spread") {
+      return [];
+    }
     const key = attribute.keys.find((entry) => entry.name === "class");
     return key ? [spreadRead(attribute, key, context)] : [];
   });

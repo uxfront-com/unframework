@@ -136,11 +136,15 @@ export function buildReport(input: ReportInput): VisualReport {
       }
       const failure = input.errors?.get(cellKey(example.id, target));
       const images: VisualImages = {};
-      if (result.capture) images.capture = rel(result.capture);
+      if (result.capture) {
+        images.capture = rel(result.capture);
+      }
       const left = recorded.at(-1)?.failure ?? {};
       for (const name of ["reference", "actual", "diff", "geometry"] as const) {
         const file = left[name];
-        if (file !== undefined) images[name] = rel(file);
+        if (file !== undefined) {
+          images[name] = rel(file);
+        }
       }
       // Two captures of one cell would mean a spec ran twice: the last one wins, and fails.
       const once = recorded.length === 1;

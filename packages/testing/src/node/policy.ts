@@ -85,15 +85,21 @@ export function settleArtefact(
   context: ArtefactContext,
 ): ArtefactOutcome {
   const rel = display(path, context.root);
-  if (!isAbsolute(path)) throw new Error(`An artefact path must be absolute: ${path}`);
+  if (!isAbsolute(path)) {
+    throw new Error(`An artefact path must be absolute: ${path}`);
+  }
 
   if (context.update && context.role !== "follower") {
     if (actual === undefined) {
-      if (existsSync(path)) rmSync(path);
+      if (existsSync(path)) {
+        rmSync(path);
+      }
     } else {
       writeIfChanged(path, actual);
     }
-    if (context.role === "reference") recordInLedger(path, context);
+    if (context.role === "reference") {
+      recordInLedger(path, context);
+    }
     return { pass: true, status: "written", message: "" };
   }
 
@@ -127,7 +133,9 @@ export function settleArtefact(
     };
   }
   const expected = readFileSync(path, "utf8");
-  if (expected === actual) return { pass: true, status: "matched", message: "" };
+  if (expected === actual) {
+    return { pass: true, status: "matched", message: "" };
+  }
   const against = context.update ? `${rel}, as the reference wrote it in this run,` : rel;
   return {
     pass: false,
@@ -151,8 +159,12 @@ export function settleArtefactDirectory(
   const stale = existing.filter((file) => !files.has(file));
 
   if (context.update) {
-    for (const file of stale) rmSync(join(directory, file));
-    for (const [file, contents] of files) writeIfChanged(join(directory, file), contents);
+    for (const file of stale) {
+      rmSync(join(directory, file));
+    }
+    for (const [file, contents] of files) {
+      writeIfChanged(join(directory, file), contents);
+    }
     removeEmptyDirectories(directory);
     return { pass: true, status: "written", message: "" };
   }
@@ -169,9 +181,13 @@ export function settleArtefactDirectory(
       update: false,
       root: context.root,
     });
-    if (!outcome.pass) problems.push(outcome.message);
+    if (!outcome.pass) {
+      problems.push(outcome.message);
+    }
   }
-  if (!problems.length) return { pass: true, status: "matched", message: "" };
+  if (!problems.length) {
+    return { pass: true, status: "matched", message: "" };
+  }
   return {
     pass: false,
     status: problems.every((problem) => problem.startsWith("Missing")) ? "missing" : "mismatch",
@@ -184,7 +200,9 @@ export function writeIfChanged(path: string, contents: string | Uint8Array): boo
   if (existsSync(path)) {
     const current = readFileSync(path);
     const next = typeof contents === "string" ? Buffer.from(contents) : Buffer.from(contents);
-    if (current.equals(next)) return false;
+    if (current.equals(next)) {
+      return false;
+    }
   }
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, contents);
@@ -231,12 +249,18 @@ function listFiles(directory: string): string[] {
 }
 
 function removeEmptyDirectories(directory: string): void {
-  if (!existsSync(directory)) return;
+  if (!existsSync(directory)) {
+    return;
+  }
   for (const entry of readdirSync(directory)) {
     const path = join(directory, entry);
-    if (statSync(path).isDirectory()) removeEmptyDirectories(path);
+    if (statSync(path).isDirectory()) {
+      removeEmptyDirectories(path);
+    }
   }
-  if (!readdirSync(directory).length) rmdirSync(directory);
+  if (!readdirSync(directory).length) {
+    rmdirSync(directory);
+  }
 }
 
 function display(path: string, root: string): string {

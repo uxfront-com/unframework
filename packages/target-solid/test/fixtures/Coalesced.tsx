@@ -15,7 +15,9 @@ export interface CoalescedEvents {
 
 function parse(text: string): number {
   const value = Number(text);
-  if (Number.isNaN(value)) throw new Error("Not a number");
+  if (Number.isNaN(value)) {
+    throw new Error("Not a number");
+  }
   return value;
 }
 
@@ -58,7 +60,9 @@ export default function Coalesced(
 
   async function save() {
     setStep("");
-    if (!name()) return;
+    if (!name()) {
+      return;
+    }
     await persist(name());
     props.onSaved?.(name());
   }
@@ -207,7 +211,9 @@ let flushQueued = false;
  */
 function queueWatcher(run: () => void): void {
   queuedWatchers.add(run);
-  if (flushQueued) return;
+  if (flushQueued) {
+    return;
+  }
   flushQueued = true;
   queueMicrotask(() => {
     try {
@@ -245,7 +251,9 @@ function createWatcher(
   onMount(() =>
     onCleanup(() => {
       queuedWatchers.delete(run);
-      for (const cleanup of cleanups.splice(0)) cleanup();
+      for (const cleanup of cleanups.splice(0)) {
+        cleanup();
+      }
     }),
   );
 
@@ -259,14 +267,18 @@ function createWatcher(
 
   function run(): void {
     const values = read();
-    if (values.every((value, index) => Object.is(value, last[index]))) return;
+    if (values.every((value, index) => Object.is(value, last[index]))) {
+      return;
+    }
     const previous = last;
     last = values;
     call(values, previous);
   }
 
   function call(values: unknown[], previous: unknown[] | undefined): void {
-    for (const cleanup of cleanups.splice(0)) cleanup();
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
     const register = (cleanup: () => void) => cleanups.push(cleanup);
     callback(values as never, (previous ?? []) as never, register);
   }

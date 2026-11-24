@@ -33,7 +33,9 @@ function record(): { calls: (view: View) => string[]; reset: () => void; stop: (
   return {
     calls: (view) =>
       traces.flatMap(({ call, el }) => {
-        if (call.startsWith("mounted") && view.container.contains(el)) own.add(el);
+        if (call.startsWith("mounted") && view.container.contains(el)) {
+          own.add(el);
+        }
         return own.has(el) ? [call] : [];
       }),
     reset: () => {

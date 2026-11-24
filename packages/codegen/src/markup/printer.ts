@@ -216,7 +216,9 @@ export interface PrintedModelBinding {
  * `(href ? "a" : "button") === "a"`. Absent where every tag takes every attribute.
  */
 export function onlyGuards(node: DynamicNode, is: string): ReadonlyMap<string, string> | undefined {
-  if (!node.only?.length) return undefined;
+  if (!node.only?.length) {
+    return undefined;
+  }
   const tag = /^[\w$.]+$/.test(is) ? is : `(${is})`;
   return new Map(
     node.only.map((entry) => [
@@ -233,7 +235,9 @@ export function onlyGuards(node: DynamicNode, is: string): ReadonlyMap<string, s
  */
 export function candidateAttributes(node: DynamicNode, tag: string): Attribute[] {
   return tagAttributes(node).filter((attribute) => {
-    if (attribute.kind !== "Static" && attribute.kind !== "Bound") return true;
+    if (attribute.kind !== "Static" && attribute.kind !== "Bound") {
+      return true;
+    }
     const only = node.only?.find((entry) => entry.name === attribute.name);
     return !only || only.tags.includes(tag);
   });
@@ -655,11 +659,14 @@ export function withoutEmptyBranches(branches: readonly ConditionalBranch[]): Co
   for (const each of branches) {
     if (each.branch.children.length === 0) {
       // Only a branch with a condition can be empty (the IR's invariants).
-      if (each.condition !== undefined) negated.push(negate(each.condition));
+      if (each.condition !== undefined) {
+        negated.push(negate(each.condition));
+      }
       continue;
     }
-    if (negated.length === 0) kept.push(each);
-    else {
+    if (negated.length === 0) {
+      kept.push(each);
+    } else {
       const parts = each.condition === undefined ? negated : [...negated, each.condition];
       kept.push({ condition: conjoin(parts), branch: each.branch });
     }
@@ -722,7 +729,9 @@ export function test(code: string): string {
  */
 export function member(object: string, key: string, optional: boolean): string {
   const target = operand(object);
-  if (isIdentifierName(key)) return `${target}${optional ? "?." : "."}${key}`;
+  if (isIdentifierName(key)) {
+    return `${target}${optional ? "?." : "."}${key}`;
+  }
   return `${target}${optional ? "?." : ""}[${JSON.stringify(key)}]`;
 }
 
@@ -755,9 +764,13 @@ export function staticStyleValue(parts: readonly StylePart[]): string {
 /** An object literal of class toggles (`{ active: on, "is-big": big }`), shorthand where it can. */
 export function toggleObject(parts: readonly ClassPart[]): string {
   const entries = parts.flatMap((part) => {
-    if (part.kind !== "Toggle") return [];
+    if (part.kind !== "Toggle") {
+      return [];
+    }
     const { name, condition } = part;
-    if (name === condition && isIdentifierName(name)) return [name];
+    if (name === condition && isIdentifierName(name)) {
+      return [name];
+    }
     return [`${isIdentifierName(name) ? name : JSON.stringify(name)}: ${condition}`];
   });
   return `{ ${entries.join(", ")} }`;
@@ -772,7 +785,9 @@ export function classArrayItems(parts: readonly ClassPart[], statics: boolean): 
   const items: string[] = [];
   let run: ClassPart[] = [];
   const flush = () => {
-    if (run.length) items.push(toggleObject(run));
+    if (run.length) {
+      items.push(toggleObject(run));
+    }
     run = [];
   };
   for (const part of parts) {
@@ -781,8 +796,11 @@ export function classArrayItems(parts: readonly ClassPart[], statics: boolean): 
       continue;
     }
     flush();
-    if (part.kind === "Dynamic") items.push(part.value);
-    else if (statics) items.push(JSON.stringify(part.value));
+    if (part.kind === "Dynamic") {
+      items.push(part.value);
+    } else if (statics) {
+      items.push(JSON.stringify(part.value));
+    }
   }
   flush();
   return items;
@@ -875,7 +893,9 @@ export function printMarkup(
   options: MarkupOptions = {},
 ): string {
   const { rewrite, component } = options;
-  if (rewrite && !component) throw new Error("printMarkup: `rewrite` needs the `component`.");
+  if (rewrite && !component) {
+    throw new Error("printMarkup: `rewrite` needs the `component`.");
+  }
   const code = (expression: Expression, site: RewriteSite = "render"): string =>
     rewrite && component
       ? rewriteExpression(expression, component, rewrite, site)
@@ -913,7 +933,9 @@ export function printMarkup(
    * property (ADR-0065).
    */
   function styleParts(attribute: StyleAttribute): StylePart[] {
-    if (attribute.value) return [{ kind: "Bound", property: "", value: code(attribute.value) }];
+    if (attribute.value) {
+      return [{ kind: "Bound", property: "", value: code(attribute.value) }];
+    }
     return attribute.declarations.map((declaration): StylePart =>
       declaration.kind === "Static"
         ? { kind: "Static", property: declaration.property, value: declaration.value }
@@ -928,7 +950,9 @@ export function printMarkup(
 
   /** A handler's code for the `client` site, as written without a component to rewrite it. */
   function handlerCode(handler: Handler): string {
-    if (component) return handlerText(handler, component, rewrite, "client");
+    if (component) {
+      return handlerText(handler, component, rewrite, "client");
+    }
     return handler.kind === "Function"
       ? bindingName(handler.binding)
       : functionSource(handler.function, handler.function.body.code);
@@ -995,7 +1019,9 @@ export function printMarkup(
           if (child?.kind === "If") {
             for (const [index, branch] of child.branches.entries()) {
               for (const each of branch.children) {
-                if (each.kind === "Element") branches.set(each, index);
+                if (each.kind === "Element") {
+                  branches.set(each, index);
+                }
               }
             }
           }
@@ -1033,13 +1059,17 @@ export function printMarkup(
    */
   function branchOf(node: TransitionNode): string {
     const [child] = node.children;
-    if (child?.kind !== "If") return "0";
+    if (child?.kind !== "If") {
+      return "0";
+    }
     const value = (index: number) => (child.branches[index]!.children.length ? `${index}` : "-1");
     const last = child.branches.length - 1;
     let chain = child.branches[last]!.condition === undefined ? value(last) : "-1";
     for (let index = child.branches.length - 1; index >= 0; index -= 1) {
       const { condition } = child.branches[index]!;
-      if (condition !== undefined) chain = `(${code(condition)}) ? ${value(index)} : ${chain}`;
+      if (condition !== undefined) {
+        chain = `(${code(condition)}) ? ${value(index)} : ${chain}`;
+      }
     }
     return chain;
   }
@@ -1062,16 +1092,22 @@ export function printMarkup(
   /** A conditional's blocks, each branch's segment with the constants the branch declares. */
   function withBranchConstants(pieces: readonly MarkupPiece[], at: Scope): MarkupPiece[] {
     const constants = options.narrowedDirectiveValues;
-    if (!constants?.size || !at.dialect.branchConstant) return [...pieces];
+    if (!constants?.size || !at.dialect.branchConstant) {
+      return [...pieces];
+    }
     const declare = hook(at.dialect, "branchConstant");
     return pieces.map((piece) => {
-      if (piece.kind !== "block") return piece;
+      if (piece.kind !== "block") {
+        return piece;
+      }
       return {
         ...piece,
         segments: piece.segments.map((segment) => {
           const { content } = segment;
           const declared = content.kind === "nodes" ? constants.get(content.container) : undefined;
-          if (!declared?.length) return segment;
+          if (!declared?.length) {
+            return segment;
+          }
           return {
             ...segment,
             leading: declared.map(({ attribute, name }) => declare(name, code(attribute.value))),
@@ -1267,8 +1303,9 @@ export function printMarkup(
         // What falls through (ADR-0118): all at once below where the dialect takes them so, and
         // otherwise each as the element hooks write it on the component's tag.
         case "Static":
-          if (of.fallthroughAttributes) passed.push({ kind: "Static", attribute });
-          else {
+          if (of.fallthroughAttributes) {
+            passed.push({ kind: "Static", attribute });
+          } else {
             printed.push({
               name: attribute.name,
               text:
@@ -1280,8 +1317,9 @@ export function printMarkup(
           break;
         case "Bound": {
           const value = code(attribute.value);
-          if (of.fallthroughAttributes) passed.push({ kind: "Bound", attribute, code: value });
-          else {
+          if (of.fallthroughAttributes) {
+            passed.push({ kind: "Bound", attribute, code: value });
+          } else {
             printed.push({
               name: attribute.name,
               text: of.boundAttribute(attribute.name, value, attributeContext),
@@ -1298,8 +1336,11 @@ export function printMarkup(
             },
             ...(statement === undefined ? {} : { statement }),
           };
-          if (of.fallthroughAttributes) passed.push({ kind: "Event", event });
-          else printed.push(...of.eventAttribute(event, attributeContext));
+          if (of.fallthroughAttributes) {
+            passed.push({ kind: "Event", event });
+          } else {
+            printed.push(...of.eventAttribute(event, attributeContext));
+          }
           break;
         }
         default:
@@ -1349,7 +1390,9 @@ export function printMarkup(
   /** A fill, with its parameter as written and a forwarded slot's presence. */
   function fillParts(fill: SlotFill): PrintedFill {
     const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code;
-    if (fill.forward === undefined) return { fill, ...(parameter ? { parameter } : {}) };
+    if (fill.forward === undefined) {
+      return { fill, ...(parameter ? { parameter } : {}) };
+    }
     const declared = component?.slots?.slots.find((each) => each.name === fill.forward);
     return {
       fill,
@@ -1372,7 +1415,9 @@ export function printMarkup(
 
   /** A slot outlet, with its props as code, key by key when they are an object literal. */
   function slotOutletParts(node: SlotOutletNode): PrintedSlotOutlet {
-    if (!node.props) return { node };
+    if (!node.props) {
+      return { node };
+    }
     const entries = objectEntries(node.props)?.map(({ key, value }) => ({
       key,
       value: code(value),
@@ -1462,7 +1507,9 @@ export function printMarkup(
     const custom = new Map<Attribute, string>();
     for (const attribute of element.attributes) {
       const text = options.attribute?.(attribute, element);
-      if (text !== undefined) custom.set(attribute, text);
+      if (text !== undefined) {
+        custom.set(attribute, text);
+      }
     }
     const spreadClass = element.attributes.some(
       (attribute) =>
@@ -1478,7 +1525,9 @@ export function printMarkup(
     for (const attribute of element.attributes) {
       const text = custom.get(attribute);
       if (text !== undefined) {
-        if (text !== "") printed.push({ name: attributeName(attribute), text });
+        if (text !== "") {
+          printed.push({ name: attributeName(attribute), text });
+        }
         continue;
       }
       // An attribute only some tags take: bound to its value where the test holds (ADR-0119).
@@ -1603,8 +1652,9 @@ export function printMarkup(
           unreachable(attribute);
       }
     }
-    if (classAt !== undefined)
+    if (classAt !== undefined) {
       printed.splice(classAt, 0, ...of.classAttribute(classParts, context));
+    }
     for (const scoped of scopeAttributes(at, context)) {
       values.add(scoped);
       printed.push(scoped);
@@ -1622,7 +1672,9 @@ export function printMarkup(
    * are content between an opening and a closing, whose edges must allow a break.
    */
   function layout(items: readonly Item[], pad: string, edges: boolean): number[][] | undefined {
-    if (!items.length) return undefined;
+    if (!items.length) {
+      return undefined;
+    }
     if (
       edges &&
       (!dialect.stripsEdgeWhitespace || isInline(items[0]!) || isInline(items.at(-1)!))
@@ -1660,9 +1712,13 @@ export function printMarkup(
   function joinRuns(runs: readonly number[][], items: readonly Item[], pad: string): string[] {
     const body = runs.map((run) => {
       const only = items[run[0]!]!;
-      if (run.length === 1 && !isInline(only)) return printItem(only, pad);
+      if (run.length === 1 && !isInline(only)) {
+        return printItem(only, pad);
+      }
       const line = [pad];
-      for (const index of run) writeItem(line, items[index]!);
+      for (const index of run) {
+        writeItem(line, items[index]!);
+      }
       return line;
     });
     return dialect.stripsWhitespaceBetweenElements ? body.flat() : body.reduce(glue);
@@ -1713,18 +1769,26 @@ export function printMarkup(
         lines[lines.length - 1] += item.text;
         return;
       case "element": {
-        if (item.region) lines[lines.length - 1] += item.region.open;
+        if (item.region) {
+          lines[lines.length - 1] += item.region.open;
+        }
         const content = item.children.map(inlineText).join("");
         writeOpenTag(lines, item, content.length + item.close.length);
-        for (const child of item.children) writeItem(lines, child);
+        for (const child of item.children) {
+          writeItem(lines, child);
+        }
         lines[lines.length - 1] += item.close;
-        if (item.region) lines[lines.length - 1] += item.region.close;
+        if (item.region) {
+          lines[lines.length - 1] += item.region.close;
+        }
         return;
       }
       case "block":
         for (const segment of item.segments) {
           lines[lines.length - 1] += segment.open;
-          for (const child of segment.children) writeItem(lines, child);
+          for (const child of segment.children) {
+            writeItem(lines, child);
+          }
         }
         lines[lines.length - 1] += item.close;
         return;
@@ -1772,12 +1836,18 @@ export function printMarkup(
  * found or parsed keeps its lines as they are.
  */
 function rebase(text: string, pad: string, indent: string): string {
-  if (!text.includes("\n")) return text;
+  if (!text.includes("\n")) {
+    return text;
+  }
   const lines = attributeLines(text);
-  if (!lines) return text;
+  if (!lines) {
+    return text;
+  }
   const texts = text.split("\n");
   const moved = lines.filter((line) => line.index > 0 && !line.fixed && !line.blank);
-  if (!moved.length) return text;
+  if (!moved.length) {
+    return text;
+  }
   const width = (index: number) => /^[\t ]*/.exec(texts[index]!)![0].length;
   const common = Math.min(...moved.map(({ index }) => width(index)));
   const opened = lines[1]?.depth ?? 0;
@@ -1785,7 +1855,9 @@ function rebase(text: string, pad: string, indent: string): string {
   const at = closing && width(closing.index) === common ? pad : `${pad}${indent}`;
   return texts
     .map((line, index) => {
-      if (index === 0 || lines[index]!.fixed) return line;
+      if (index === 0 || lines[index]!.fixed) {
+        return line;
+      }
       return lines[index]!.blank ? "" : `${at}${line.slice(common)}`;
     })
     .join("\n");
@@ -1814,7 +1886,9 @@ interface CodeLine {
 function attributeLines(text: string): CodeLine[] | undefined {
   const opening = ATTRIBUTE_CODE.exec(text)?.[0];
   const quoted = opening?.endsWith('"');
-  if (opening === undefined || !text.endsWith(quoted ? '"' : "}")) return undefined;
+  if (opening === undefined || !text.endsWith(quoted ? '"' : "}")) {
+    return undefined;
+  }
   // References never span lines, so decoding them keeps every line where it is.
   const code = text.slice(opening.length, -1);
   const source = quoted ? decodeReferences(code) : code;
@@ -1851,10 +1925,15 @@ function attributeLines(text: string): CodeLine[] | undefined {
       closes: inToken(offset + indentation) ? 0 : closes,
     });
     for (let at = 0; at < line.length; at++) {
-      if (inToken(offset + at)) continue;
+      if (inToken(offset + at)) {
+        continue;
+      }
       const character = line[at]!;
-      if (character === "(" || character === "[" || character === "{") depth++;
-      else if (character === ")" || character === "]" || character === "}") depth--;
+      if (character === "(" || character === "[" || character === "{") {
+        depth++;
+      } else if (character === ")" || character === "]" || character === "}") {
+        depth--;
+      }
     }
     offset += line.length + 1;
   });
@@ -1920,20 +1999,26 @@ export function objectEntries(
   expression: Expression,
 ): { key: string; value: Expression }[] | undefined {
   const parsed = parseExpression(expression.code);
-  if (parsed.type !== "ObjectExpression") return undefined;
+  if (parsed.type !== "ObjectExpression") {
+    return undefined;
+  }
   const entries: { key: string; value: Expression }[] = [];
   for (const property of parsed.properties) {
     if (property.type !== "Property" || property.computed || property.kind !== "init") {
       return undefined;
     }
-    if (property.method) return undefined;
+    if (property.method) {
+      return undefined;
+    }
     const key =
       property.key.type === "Identifier"
         ? property.key.name
         : property.key.type === "Literal" && typeof property.key.value === "string"
           ? property.key.value
           : undefined;
-    if (key === undefined) return undefined;
+    if (key === undefined) {
+      return undefined;
+    }
     const start = expression.span.start + property.value.start;
     const end = expression.span.start + property.value.end;
     entries.push({
@@ -1944,7 +2029,9 @@ export function objectEntries(
         refs: expression.refs
           .filter((ref) => ref.span.start >= start && ref.span.end <= end)
           .map((ref) => {
-            if (ref.kind !== "Binding" || !ref.shorthand) return ref;
+            if (ref.kind !== "Binding" || !ref.shorthand) {
+              return ref;
+            }
             const { shorthand: _shorthand, ...rest } = ref;
             return rest;
           }),
@@ -2022,11 +2109,15 @@ function glue(lines: string[], next: string[]): string[] {
   const last = lines.at(-1)!;
   const [first, ...more] = next;
   const start = first!.trimStart();
-  if (!last.endsWith(">")) return [...lines.slice(0, -1), `${last}${start}`, ...more];
+  if (!last.endsWith(">")) {
+    return [...lines.slice(0, -1), `${last}${start}`, ...more];
+  }
   const closer = last.endsWith("/>") ? "/>" : ">";
   const before = last.slice(0, -closer.length);
   const rest = before.trimEnd();
-  if (rest === "") return [...lines.slice(0, -1), `${before}${closer}${start}`, ...more];
+  if (rest === "") {
+    return [...lines.slice(0, -1), `${before}${closer}${start}`, ...more];
+  }
   const pad = first!.slice(0, first!.length - start.length);
   return [...lines.slice(0, -1), rest, `${pad}${closer}${start}`, ...more];
 }

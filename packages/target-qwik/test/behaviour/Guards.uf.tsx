@@ -43,7 +43,9 @@ export default function Guards() {
         <input
           aria-label="Tag"
           onKeydown={(event) => {
-            if (event.key !== "Enter") return;
+            if (event.key !== "Enter") {
+              return;
+            }
             event.preventDefault();
             tags.value = [...tags.value, (event.target as HTMLInputElement).value];
           }}
@@ -56,7 +58,9 @@ export default function Guards() {
             data-testid="backdrop"
             style={{ padding: "8px" }}
             onClick={(event) => {
-              if (event.target === event.currentTarget) dismiss(event);
+              if (event.target === event.currentTarget) {
+                dismiss(event);
+              }
             }}
           >
             <button type="button" onClick={() => record("kept")}>
@@ -67,7 +71,9 @@ export default function Guards() {
         <a
           href="#elsewhere"
           onClick={(event) => {
-            if (event.target === event.currentTarget) event.preventDefault();
+            if (event.target === event.currentTarget) {
+              event.preventDefault();
+            }
           }}
         >
           Own link
@@ -82,7 +88,9 @@ export default function Guards() {
       <button
         type="button"
         onClick={() => {
-          if (tags.value.length === 0) return;
+          if (tags.value.length === 0) {
+            return;
+          }
           saves.value += 1;
           emit("saved", saves.value);
         }}

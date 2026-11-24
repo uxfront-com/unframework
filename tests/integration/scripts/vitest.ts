@@ -22,7 +22,9 @@ export function runVitest(
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
   });
-  if (result.error) throw result.error;
+  if (result.error) {
+    throw result.error;
+  }
   // A signal (no status) is a failure too.
   return { status: result.status ?? 1, stdout: `${result.stdout ?? ""}${result.stderr ?? ""}` };
 }

@@ -118,7 +118,9 @@ describe("the visitors over M5's kinds", () => {
     ]);
     const module = modules();
     const getter = use(module).arguments[1]!;
-    if (getter.kind !== "Getter") throw new Error("the fixture changed");
+    if (getter.kind !== "Getter") {
+      throw new Error("the fixture changed");
+    }
     use(module).arguments[1] = createCallbackArgument(getter.getter, getter.span);
     expect(functionsOf(list(module)).map(({ context, role }) => [context, role])).toEqual([
       ["client", "function"],
@@ -287,7 +289,9 @@ describe("checkInvariants on M5's contract", () => {
     const errors = problems((module) => {
       const element = list(module).render;
       const shown = element.kind === "Element" ? element.children[0] : undefined;
-      if (shown?.kind !== "Interpolation") throw new Error("the fixture changed");
+      if (shown?.kind !== "Interpolation") {
+        throw new Error("the fixture changed");
+      }
       shown.value.refs[0]!.span = find("on", 0, find("{on.value").start);
     });
     expect(errors.map(({ message }) => message)).toEqual(['must span "on.value"']);
@@ -323,7 +327,9 @@ describe("checkInvariants on M5's contract", () => {
   it("keeps a composable's setup under a component's rules", () => {
     const errors = problems((module) => {
       const item = composable(module).setup[0]!;
-      if (item.kind !== "State" || !item.initial) throw new Error("the fixture changed");
+      if (item.kind !== "State" || !item.initial) {
+        throw new Error("the fixture changed");
+      }
       // `label` is a callback in this change: only client code calls one.
       composable(module).parameters[1]!.kind = "callback";
       const { start } = item.initial.span;

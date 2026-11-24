@@ -36,7 +36,9 @@ export default defineNuxtModule<ModuleOptions>({
     sessionReplaySampleRate: 1,
   }),
   async setup({ apiKey, serverZone, sessionReplaySampleRate }) {
-    if (!apiKey) return;
+    if (!apiKey) {
+      return;
+    }
     const resolver = createResolver(import.meta.url);
     const replay = sessionReplaySampleRate > 0;
 
@@ -73,7 +75,9 @@ export default defineNuxtModule<ModuleOptions>({
         ].join("\n"),
     });
 
-    if (!replay) return;
+    if (!replay) {
+      return;
+    }
     addPluginTemplate({
       filename: "amplitude-session-replay.client.mjs",
       mode: "client",

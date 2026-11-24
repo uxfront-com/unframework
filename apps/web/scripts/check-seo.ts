@@ -103,7 +103,9 @@ export function checkSite(dist: string): Report {
       continue;
     }
     checkPage(page, loc, dist, report);
-    if (page.title) titles.set(page.title, [...(titles.get(page.title) ?? []), path]);
+    if (page.title) {
+      titles.set(page.title, [...(titles.get(page.title) ?? []), path]);
+    }
     const description = first(page, "description");
     if (description) {
       descriptions.set(description, [...(descriptions.get(description) ?? []), path]);
@@ -113,14 +115,16 @@ export function checkSite(dist: string): Report {
   }
   for (const [title, paths] of titles) {
     if (paths.length > 1) {
-      for (const path of paths)
+      for (const path of paths) {
         report(path, "title", `"${title}" is also the title of ${others(paths, path)}`);
+      }
     }
   }
   for (const [, paths] of descriptions) {
     if (paths.length > 1) {
-      for (const path of paths)
+      for (const path of paths) {
         report(path, "description", `the description is also ${others(paths, path)}'s`);
+      }
     }
   }
 
@@ -135,12 +139,16 @@ export function checkSite(dist: string): Report {
   for (const { loc } of sitemap) {
     const path = loc.slice(SITE_URL.length) || "/";
     const page = pages.get(path);
-    if (!page) continue;
-    if (redirected.has(path))
+    if (!page) {
+      continue;
+    }
+    if (redirected.has(path)) {
       report(path, "sitemap", "sitemap.xml lists a page _redirects sends elsewhere");
+    }
     const rule = headerNoindex(headers, path);
-    if (rule)
+    if (rule) {
       report(path, "sitemap", `sitemap.xml lists a page _headers keeps out of the index (${rule})`);
+    }
   }
 
   checkRobots(readText(dist, "robots.txt"), report);
@@ -167,32 +175,42 @@ type Reporter = (target: string, rule: string, message: string) => void;
 function checkPage(page: Page, loc: string, dist: string, report: Reporter) {
   const at = (rule: string, message: string) => report(page.path, rule, message);
 
-  if (!page.title) at("title", "no <title>");
-  else if (page.title.length > TITLE_MAX) {
+  if (!page.title) {
+    at("title", "no <title>");
+  } else if (page.title.length > TITLE_MAX) {
     at("title", `${page.title.length} characters, over ${TITLE_MAX}: "${page.title}"`);
   }
 
   const description = first(page, "description");
   const [min, max] = DESCRIPTION_RANGE;
-  if (!description) at("description", "no meta description");
-  else if (description.length < min || description.length > max) {
+  if (!description) {
+    at("description", "no meta description");
+  } else if (description.length < min || description.length > max) {
     at("description", `${description.length} characters, needs ${min} to ${max}`);
   }
 
-  if (page.h1 !== 1) at("h1", `${page.h1} <h1> elements, needs exactly 1`);
-  if (!page.lang) at("lang", "no lang on <html>");
+  if (page.h1 !== 1) {
+    at("h1", `${page.h1} <h1> elements, needs exactly 1`);
+  }
+  if (!page.lang) {
+    at("lang", "no lang on <html>");
+  }
 
-  if (page.canonical.length !== 1)
+  if (page.canonical.length !== 1) {
     at("canonical", `${page.canonical.length} canonical links, needs 1`);
-  else if (page.canonical[0] !== loc) {
+  } else if (page.canonical[0] !== loc) {
     at("canonical", `${page.canonical[0]} isn't the sitemap's URL, ${loc}`);
   }
 
   for (const key of ["og:title", "og:description", "og:url", "og:type", "og:image"]) {
-    if (!first(page, key)) at("open-graph", `no ${key}`);
+    if (!first(page, key)) {
+      at("open-graph", `no ${key}`);
+    }
   }
   const ogUrl = first(page, "og:url");
-  if (ogUrl && ogUrl !== loc) at("open-graph", `og:url ${ogUrl} isn't the canonical URL, ${loc}`);
+  if (ogUrl && ogUrl !== loc) {
+    at("open-graph", `og:url ${ogUrl} isn't the canonical URL, ${loc}`);
+  }
 
   const [width, height] = IMAGE_SIZE;
   if (first(page, "og:image:width") !== String(width)) {
@@ -210,8 +228,9 @@ function checkPage(page: Page, loc: string, dist: string, report: Reporter) {
   const image = first(page, "og:image");
   if (image) {
     const size = imageSize(dist, image);
-    if (typeof size === "string") at("open-graph", size);
-    else if (size.width !== width || size.height !== height) {
+    if (typeof size === "string") {
+      at("open-graph", size);
+    } else if (size.width !== width || size.height !== height) {
       at(
         "open-graph",
         `the image is ${size.width} × ${size.height}, needs ${width} × ${height}: ${image}`,
@@ -220,10 +239,14 @@ function checkPage(page: Page, loc: string, dist: string, report: Reporter) {
   }
 
   for (const key of ["twitter:card", "twitter:title", "twitter:description", "twitter:image"]) {
-    if (!first(page, key)) at("twitter", `no ${key}`);
+    if (!first(page, key)) {
+      at("twitter", `no ${key}`);
+    }
   }
 
-  if (isNoindex(page)) at("robots", "the page has noindex");
+  if (isNoindex(page)) {
+    at("robots", "the page has noindex");
+  }
 }
 
 function checkJsonLd(
@@ -232,7 +255,9 @@ function checkJsonLd(
   report: Reporter,
 ) {
   const at = (message: string) => report(page.path, "json-ld", message);
-  if (page.invalidJsonLd) at(`${page.invalidJsonLd} JSON-LD block(s) don't parse`);
+  if (page.invalidJsonLd) {
+    at(`${page.invalidJsonLd} JSON-LD block(s) don't parse`);
+  }
 
   const nodes = page.jsonLd.flatMap((block) => {
     const graph = (block as { "@graph"?: unknown })["@graph"];
@@ -241,34 +266,45 @@ function checkJsonLd(
   const ofType = (type: string) => nodes.filter((node) => node["@type"] === type);
 
   for (const node of ofType("Organization")) {
-    if (node.name === "Unframework") at("an Organization calls Unframework an organisation");
+    if (node.name === "Unframework") {
+      at("an Organization calls Unframework an organisation");
+    }
   }
 
   if (page.path === "/") {
     for (const type of ["WebSite", "SoftwareSourceCode", "Organization"]) {
-      if (!ofType(type).length) at(`no ${type}`);
+      if (!ofType(type).length) {
+        at(`no ${type}`);
+      }
     }
     return;
   }
-  if (!page.path.startsWith("/docs/")) return;
+  if (!page.path.startsWith("/docs/")) {
+    return;
+  }
 
   const [article] = ofType("TechArticle");
-  if (!article) at("no TechArticle");
-  else {
+  if (!article) {
+    at("no TechArticle");
+  } else {
     if (lastmod && article.dateModified !== lastmod) {
       at(
         `TechArticle's dateModified ${String(article.dateModified)} isn't the sitemap's ${lastmod}`,
       );
     }
-    if (image && article.image !== image) at(`TechArticle's image isn't the og:image, ${image}`);
+    if (image && article.image !== image) {
+      at(`TechArticle's image isn't the og:image, ${image}`);
+    }
   }
   const [breadcrumbs] = ofType("BreadcrumbList");
-  if (!breadcrumbs) at("no BreadcrumbList");
-  else {
+  if (!breadcrumbs) {
+    at("no BreadcrumbList");
+  } else {
     const items = Array.isArray(breadcrumbs.itemListElement) ? breadcrumbs.itemListElement : [];
     for (const { item } of items as { item?: string }[]) {
-      if (!item || !urls.has(item))
+      if (!item || !urls.has(item)) {
         at(`a breadcrumb links ${item ?? "nothing"}, which isn't in the sitemap`);
+      }
     }
   }
 }
@@ -280,9 +316,13 @@ function checkJsonLd(
  */
 function checkPayload(page: Page, loc: string, dist: string, report: Reporter) {
   const image = first(page, "og:image");
-  if (!page.path.startsWith("/docs/") || !image) return;
+  if (!page.path.startsWith("/docs/") || !image) {
+    return;
+  }
   const text = readText(dist, join(page.path, "_payload.json"));
-  if (text === undefined) return report(page.path, "payload", "no _payload.json");
+  if (text === undefined) {
+    return report(page.path, "payload", "no _payload.json");
+  }
   const entry = payloadImage(text);
   if (entry?.url !== loc || entry.image !== image) {
     report(
@@ -304,11 +344,15 @@ function payloadImage(text: string): { url?: unknown; image?: unknown } | undefi
   } catch {
     return undefined;
   }
-  if (!Array.isArray(values)) return undefined;
+  if (!Array.isArray(values)) {
+    return undefined;
+  }
   const at = (index: unknown): unknown => {
     let value: unknown = typeof index === "number" ? values[index] : undefined;
     // A reducer wraps a value as its name and its index, like `["ShallowReactive", 2]`.
-    for (let depth = 0; depth < 8 && isReduced(value); depth++) value = values[value[1]];
+    for (let depth = 0; depth < 8 && isReduced(value); depth++) {
+      value = values[value[1]];
+    }
     return value;
   };
   const field = (value: unknown, key: string) =>
@@ -337,26 +381,36 @@ function readSitemap(dist: string, report: Reporter): SitemapEntry[] {
     loc: decodeEntities(body.match(/<loc>([\s\S]*?)<\/loc>/)?.[1]?.trim() ?? ""),
     lastmod: body.match(/<lastmod>([\s\S]*?)<\/lastmod>/)?.[1]?.trim(),
   }));
-  if (!entries.length) report("sitemap.xml", "sitemap", "no <url> entries");
+  if (!entries.length) {
+    report("sitemap.xml", "sitemap", "no <url> entries");
+  }
   const seen = new Set<string>();
   for (const { loc, lastmod } of entries) {
-    if (!loc.startsWith(`${SITE_URL}/`))
+    if (!loc.startsWith(`${SITE_URL}/`)) {
       report("sitemap.xml", "sitemap", `${loc} isn't on ${SITE_URL}`);
-    if (seen.has(loc)) report("sitemap.xml", "sitemap", `${loc} is listed twice`);
+    }
+    if (seen.has(loc)) {
+      report("sitemap.xml", "sitemap", `${loc} is listed twice`);
+    }
     seen.add(loc);
-    if (!lastmod) report("sitemap.xml", "lastmod", `${loc} has no <lastmod>`);
-    else if (!isDate(lastmod))
+    if (!lastmod) {
+      report("sitemap.xml", "lastmod", `${loc} has no <lastmod>`);
+    } else if (!isDate(lastmod)) {
       report("sitemap.xml", "lastmod", `${loc} has an invalid <lastmod>, ${lastmod}`);
+    }
   }
   return entries;
 }
 
 function checkRobots(robots: string | undefined, report: Reporter) {
   const at = (message: string) => report("robots.txt", "robots", message);
-  if (robots === undefined) return at("no robots.txt");
+  if (robots === undefined) {
+    return at("no robots.txt");
+  }
   const lines = robots.split("\n").map((line) => line.replace(/#.*/, "").trim());
-  if (!lines.includes(`Sitemap: ${SITE_URL}/sitemap.xml`))
+  if (!lines.includes(`Sitemap: ${SITE_URL}/sitemap.xml`)) {
     at(`no "Sitemap: ${SITE_URL}/sitemap.xml" line`);
+  }
 
   // A group is a run of User-agent lines and the rules after them.
   const groups: { agents: string[]; rules: string[] }[] = [];
@@ -365,7 +419,9 @@ function checkRobots(robots: string | undefined, report: Reporter) {
     const [, field = "", value = ""] = line.match(/^([^:]+):\s*(.*)$/) ?? [];
     const name = field.toLowerCase();
     if (name === "user-agent") {
-      if (!current || current.rules.length) groups.push((current = { agents: [], rules: [] }));
+      if (!current || current.rules.length) {
+        groups.push((current = { agents: [], rules: [] }));
+      }
       current.agents.push(value);
     } else if (current && (name === "allow" || name === "disallow")) {
       current.rules.push(`${name}:${value}`);
@@ -373,8 +429,9 @@ function checkRobots(robots: string | undefined, report: Reporter) {
   }
   for (const crawler of AI_CRAWLERS) {
     const group = groups.find(({ agents }) => agents.includes(crawler));
-    if (!group) at(`no group for ${crawler}`);
-    else if (!group.rules.includes("allow:/") || group.rules.includes("disallow:/")) {
+    if (!group) {
+      at(`no group for ${crawler}`);
+    } else if (!group.rules.includes("allow:/") || group.rules.includes("disallow:/")) {
       at(`${crawler}'s group doesn't allow /`);
     }
   }
@@ -386,32 +443,47 @@ function checkLlms(
   sitemap: SitemapEntry[],
   report: Reporter,
 ) {
-  if (llms === undefined) report("llms.txt", "llms", "no llms.txt");
-  else {
+  if (llms === undefined) {
+    report("llms.txt", "llms", "no llms.txt");
+  } else {
     const lines = llms.split("\n").filter((line) => line.trim());
-    if (!lines[0]?.startsWith("# ")) report("llms.txt", "llms", "doesn't start with an H1");
-    if (!lines[1]?.startsWith("> ")) report("llms.txt", "llms", "no > summary under the H1");
+    if (!lines[0]?.startsWith("# ")) {
+      report("llms.txt", "llms", "doesn't start with an H1");
+    }
+    if (!lines[1]?.startsWith("> ")) {
+      report("llms.txt", "llms", "no > summary under the H1");
+    }
     for (const { loc } of sitemap) {
       const path = loc.slice(SITE_URL.length);
-      if (!path.startsWith("/docs/")) continue;
+      if (!path.startsWith("/docs/")) {
+        continue;
+      }
       const raw = `${SITE_URL}/raw${path}.md`;
-      if (!llms.includes(`(${raw})`)) report("llms.txt", "llms", `no link to ${raw}`);
+      if (!llms.includes(`(${raw})`)) {
+        report("llms.txt", "llms", `no link to ${raw}`);
+      }
     }
   }
-  if (full === undefined) report("llms-full.txt", "llms", "no llms-full.txt");
-  else {
+  if (full === undefined) {
+    report("llms-full.txt", "llms", "no llms-full.txt");
+  } else {
     const residue = full.split("&#x22;").length - 1;
-    if (residue)
+    if (residue) {
       report("llms-full.txt", "llms", `${residue} copies of MDC attribute residue (&#x22;)`);
+    }
     const tables = full.match(/^\s*<(?:table|thead|tbody|tr)\b/gim)?.length ?? 0;
-    if (tables) report("llms-full.txt", "llms", `${tables} lines of HTML tables`);
+    if (tables) {
+      report("llms-full.txt", "llms", `${tables} lines of HTML tables`);
+    }
   }
 }
 
 function checkRedirects(redirects: string, report: Reporter) {
   for (const line of redirects.split("\n")) {
     const [source, destination, status = "302"] = line.trim().split(/\s+/);
-    if (!source || source.startsWith("#") || !destination) continue;
+    if (!source || source.startsWith("#") || !destination) {
+      continue;
+    }
     // Cloudflare redirects with a 302 when a rule names no status.
     if (status === "302" || status === "307") {
       report("_redirects", "redirects", `${source} redirects with a temporary ${status}`);
@@ -436,9 +508,14 @@ export interface HeaderRule {
 function readRules(dist: string, file: string): HeaderRule[] {
   const rules: HeaderRule[] = [];
   for (const line of (readText(dist, file) ?? "").split("\n")) {
-    if (!line.trim() || line.trim().startsWith("#")) continue;
-    if (/^\s/.test(line)) rules.at(-1)?.headers.push(line.trim());
-    else rules.push({ pattern: line.trim(), headers: [] });
+    if (!line.trim() || line.trim().startsWith("#")) {
+      continue;
+    }
+    if (/^\s/.test(line)) {
+      rules.at(-1)?.headers.push(line.trim());
+    } else {
+      rules.push({ pattern: line.trim(), headers: [] });
+    }
   }
   return rules;
 }
@@ -479,7 +556,9 @@ function readPage(path: string, html: string): Page {
     if (tag.toLowerCase() === "meta") {
       const key = props.get("property") ?? props.get("name");
       const content = props.get("content");
-      if (key && content !== undefined) meta.set(key, [...(meta.get(key) ?? []), content]);
+      if (key && content !== undefined) {
+        meta.set(key, [...(meta.get(key) ?? []), content]);
+      }
     } else if (props.get("rel") === "canonical" && props.has("href")) {
       canonical.push(props.get("href")!);
     }
@@ -490,7 +569,9 @@ function readPage(path: string, html: string): Page {
   for (const [, attrs = "", body = ""] of html.matchAll(
     new RegExp(`<script\\b(${ATTRS})>([\\s\\S]*?)</script>`, "gi"),
   )) {
-    if (attributes(attrs).get("type") !== "application/ld+json") continue;
+    if (attributes(attrs).get("type") !== "application/ld+json") {
+      continue;
+    }
     try {
       jsonLd.push(JSON.parse(body));
     } catch {
@@ -532,12 +613,16 @@ const isNoindex = (page: Page) =>
 
 /** The image's width and height from its header, or the problem reading it. */
 function imageSize(dist: string, url: string): { width: number; height: number } | string {
-  if (!url.startsWith(`${SITE_URL}/`)) return `og:image isn't on ${SITE_URL}: ${url}`;
+  if (!url.startsWith(`${SITE_URL}/`)) {
+    return `og:image isn't on ${SITE_URL}: ${url}`;
+  }
   const path = url.slice(SITE_URL.length).split(/[?#]/)[0]!;
   const file = [join(dist, path), join(dist, safeDecode(path))].find((candidate) =>
     existsSync(candidate),
   );
-  if (!file) return `og:image isn't in dist: ${url}`;
+  if (!file) {
+    return `og:image isn't in dist: ${url}`;
+  }
   const bytes = readFileSync(file);
   // PNG: the IHDR chunk's width and height.
   if (bytes.subarray(1, 4).toString("latin1") === "PNG") {
@@ -546,7 +631,9 @@ function imageSize(dist: string, url: string): { width: number; height: number }
   // JPEG: the first start-of-frame segment.
   if (bytes[0] === 0xff && bytes[1] === 0xd8) {
     for (let offset = 2; offset + 9 < bytes.length;) {
-      if (bytes[offset] !== 0xff) break;
+      if (bytes[offset] !== 0xff) {
+        break;
+      }
       const marker = bytes[offset + 1]!;
       if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
         return { height: bytes.readUInt16BE(offset + 5), width: bytes.readUInt16BE(offset + 7) };
@@ -576,7 +663,9 @@ function readText(dist: string, file: string) {
 }
 
 function isDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
@@ -587,7 +676,9 @@ const others = (paths: string[], path: string) =>
 function decodeEntities(value: string) {
   return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (entity, code: string) => {
     const named: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
-    if (code[0] !== "#") return named[code.toLowerCase()] ?? entity;
+    if (code[0] !== "#") {
+      return named[code.toLowerCase()] ?? entity;
+    }
     const point =
       code[1]?.toLowerCase() === "x" ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
     return String.fromCodePoint(point);
@@ -612,7 +703,9 @@ export function format({ targets, problems }: Report): string {
   for (const target of targets) {
     const own = problems.filter((problem) => problem.target === target);
     lines.push(`${own.length ? "✗" : "✓"} ${target}`);
-    for (const { rule, message } of own) lines.push(`    ${target}: ${rule}: ${message}`);
+    for (const { rule, message } of own) {
+      lines.push(`    ${target}: ${rule}: ${message}`);
+    }
   }
   // Pages outside the sitemap, like one missing from it.
   for (const problem of problems.filter(({ target }) => !targets.includes(target))) {

@@ -12,7 +12,9 @@ export const REFERENCE: TargetName = "vue";
  * (`UF_TARGETS=vue,react`). An unknown name throws, so a typo never verifies nothing.
  */
 export function selectTargets(value: string | undefined): TargetName[] {
-  if (!value?.trim()) return [...TARGET_NAMES];
+  if (!value?.trim()) {
+    return [...TARGET_NAMES];
+  }
   const requested = value
     .split(",")
     .map((name) => name.trim())

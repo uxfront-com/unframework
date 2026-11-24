@@ -93,7 +93,9 @@ export interface FallthroughNames {
 /** The component's root, where it is one `<component is>` over tags (ADR-0119). */
 function dynamicRoot(component: UfComponent): DynamicNode | undefined {
   const { render } = component;
-  if (render.kind !== "Fragment" || render.children.length !== 1) return undefined;
+  if (render.kind !== "Fragment" || render.children.length !== 1) {
+    return undefined;
+  }
   const [only] = render.children;
   return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
     ? only
@@ -136,7 +138,9 @@ export function planFallthrough(
     // A root `<component is>` over tags takes what falls through as a root element does, on
     // whichever tag renders (ADR-0122).
     const root = single ?? dynamicRoot(component);
-    if (!root) return { type: exposedType(exposedRef), plan: undefined };
+    if (!root) {
+      return { type: exposedType(exposedRef), plan: undefined };
+    }
     const base = rootBase(root, component, module, names);
     if (base === undefined) {
       // A root component whose own root takes nothing: `class` and `style` alone, as before.
@@ -203,7 +207,9 @@ export function planFallthrough(
   const refType = (target: ElementNode | ComponentNode) =>
     `Pick<${rootBase(target, component, module, names) ?? `${names.componentProps()}<"div">`}, "ref">`;
   if (!element) {
-    if (!ref) return { type: exposedType(exposedRef), plan: undefined };
+    if (!ref) {
+      return { type: exposedType(exposedRef), plan: undefined };
+    }
     return {
       type: refType(ref),
       plan: {
@@ -274,7 +280,9 @@ function rootBase(
   module: UfModule,
   names: FallthroughNames,
 ): string | undefined {
-  if (root.kind === "Element") return `${names.componentProps()}<${JSON.stringify(root.tag)}>`;
+  if (root.kind === "Element") {
+    return `${names.componentProps()}<${JSON.stringify(root.tag)}>`;
+  }
   // What every tag takes, with the listeners and the `ref` of whichever renders, so a listener
   // the root calls after its own takes that element's event (ADR-0122).
   if (root.kind === "Dynamic") {
@@ -285,7 +293,9 @@ function rootBase(
     return `Omit<${each.join(" & ")}, keyof ${dom}> & ${dom}`;
   }
   // Imported only where the type names it.
-  if (childFallthroughTag(module, root.component, component) === undefined) return undefined;
+  if (childFallthroughTag(module, root.component, component) === undefined) {
+    return undefined;
+  }
   return `${names.componentProps()}<typeof ${root.component}>`;
 }
 
@@ -318,7 +328,9 @@ export function declaredNames(component: UfComponent): string[] {
 /** The root a component renders, where it is one element or one component. */
 export function singleRoot(component: UfComponent): ElementNode | ComponentNode | undefined {
   const { render } = component;
-  if (render.kind === "Element") return render;
+  if (render.kind === "Element") {
+    return render;
+  }
   const [only] = render.children;
   return render.children.length === 1 && only?.kind === "Component" ? only : undefined;
 }
@@ -328,8 +340,12 @@ export function restElement(component: UfComponent): ElementNode | undefined {
   let found: ElementNode | undefined;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" || found) return;
-      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+      if (node.kind !== "Element" || found) {
+        return;
+      }
+      if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+        found = node;
+      }
     },
   });
   return found;
@@ -381,7 +397,9 @@ function modelEvents(
   target: ElementNode | ComponentNode | DynamicNode,
   declared: readonly string[],
 ): string[] {
-  if (target.kind !== "Element") return [];
+  if (target.kind !== "Element") {
+    return [];
+  }
   return target.attributes.flatMap((attribute) => {
     const prop = attribute.kind === "Model" ? modelEvent(attribute) : undefined;
     return prop === undefined || declared.includes(prop) ? [] : [prop];
@@ -431,9 +449,13 @@ function childFallthroughTag(
   from: UfComponent,
 ): string | undefined {
   const api = importedApi(module, local);
-  if (api) return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+  if (api) {
+    return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+  }
   const own = module.components.find((each) => each.name === local);
-  if (!own || own === from) return undefined;
+  if (!own || own === from) {
+    return undefined;
+  }
   return ownFallthroughTag(own, module, new Set([from.name]));
 }
 
@@ -441,7 +463,9 @@ function childFallthroughTag(
 export function importedApi(module: UfModule, local: string): ComponentApi | undefined {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     return entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"
@@ -457,17 +481,25 @@ function ownFallthroughTag(
   module: UfModule,
   seen: Set<string>,
 ): string | undefined {
-  if (component.inheritAttrs === false) return restElement(component)?.tag;
+  if (component.inheritAttrs === false) {
+    return restElement(component)?.tag;
+  }
   const root = singleRoot(component);
   if (!root) {
     const dynamic = dynamicRoot(component);
     return dynamic && dynamicTags(dynamic)[0];
   }
-  if (root.kind === "Element") return root.tag;
-  if (seen.has(component.name)) return undefined;
+  if (root.kind === "Element") {
+    return root.tag;
+  }
+  if (seen.has(component.name)) {
+    return undefined;
+  }
   seen.add(component.name);
   const api = importedApi(module, root.component);
-  if (api) return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+  if (api) {
+    return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+  }
   const own = module.components.find((each) => each.name === root.component);
   return own ? ownFallthroughTag(own, module, seen) : undefined;
 }

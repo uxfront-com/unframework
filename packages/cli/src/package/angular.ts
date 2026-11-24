@@ -25,7 +25,9 @@ function entryPoint(files: readonly OutputFile[]): string {
   const barrel = files.find(({ path }) => path === "index.ts")?.contents ?? "";
   const directives = files.flatMap(({ path, contents }) => {
     const specifier = JSON.stringify(`./${path.replace(/\.ts$/, "")}`);
-    if (!barrel.includes(specifier)) return [];
+    if (!barrel.includes(specifier)) {
+      return [];
+    }
     const aliases = new Map(
       [...contents.matchAll(ALIAS)].map(([, local, name]) => [local, name] as const),
     );
@@ -38,7 +40,9 @@ function entryPoint(files: readonly OutputFile[]): string {
 
 /** The format's own paths under `./angular`, each condition in the order ng-packagr wrote it. */
 function prefixed(exports: SubpathExports): SubpathExports {
-  if (typeof exports === "string") return exports.replace(/^\.\//, "./angular/");
+  if (typeof exports === "string") {
+    return exports.replace(/^\.\//, "./angular/");
+  }
   return Object.fromEntries(
     Object.entries(exports).map(([condition, path]) => [condition, prefixed(path)]),
   );
@@ -58,7 +62,9 @@ export const angular: Packager = {
       exports?: Record<string, SubpathExports>;
     };
     const entry = exports?.["."];
-    if (entry === undefined) throw new Error('ng-packagr wrote no exports["."].');
+    if (entry === undefined) {
+      throw new Error('ng-packagr wrote no exports["."].');
+    }
     return prefixed(entry);
   },
   run: async ({ files, out, work, resolve }) => {

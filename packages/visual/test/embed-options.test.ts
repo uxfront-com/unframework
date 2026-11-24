@@ -42,7 +42,9 @@ describe("embedOptions", () => {
       ["theme=dark&theme=x", 'The theme parameter takes light or dark, not "x".'],
       ["theme=%3C%2Fscript%3E", 'The theme parameter takes light or dark, not "</script>".'],
     ];
-    for (const [query, error] of cases) expect(read(query), query).toEqual({ error });
+    for (const [query, error] of cases) {
+      expect(read(query), query).toEqual({ error });
+    }
   });
 });
 

@@ -51,7 +51,9 @@ export function kindsFromShape(
   const memo = new Map<number, Kinds>();
   const read = (at: number): Kinds => {
     const cached = memo.get(at);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
     const value = kindsOf(shape.nodes[at]!, read, reading);
     memo.set(at, value);
     return value;

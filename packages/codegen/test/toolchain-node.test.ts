@@ -30,8 +30,9 @@ import type { CheckerRun } from "../src/toolchain-node/index.ts";
 
 const temporaries: string[] = [];
 afterAll(() => {
-  for (const directory of temporaries.splice(0))
+  for (const directory of temporaries.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
+  }
 });
 afterEach(() => vi.unstubAllEnvs());
 

@@ -108,8 +108,14 @@ function embedScript(
   }
   const url = new URL(frame.src, location.href);
   url.searchParams.set(constants.example, example);
-  if (options.controls) url.searchParams.set(constants.options.controls, "true");
-  if (options.theme) url.searchParams.set(constants.options.theme, options.theme);
-  if (options.resize) url.searchParams.set(constants.options.resize, "true");
+  if (options.controls) {
+    url.searchParams.set(constants.options.controls, "true");
+  }
+  if (options.theme) {
+    url.searchParams.set(constants.options.theme, options.theme);
+  }
+  if (options.resize) {
+    url.searchParams.set(constants.options.resize, "true");
+  }
   location.replace(url.href);
 }

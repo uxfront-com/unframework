@@ -49,10 +49,14 @@ export function awaitQrlCalls(
   const asyncArrows = new Set<Node>();
   const visit = (node: unknown, ancestors: readonly Node[]): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, ancestors);
+      for (const item of node) {
+        visit(item, ancestors);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     if (
       isQrlCall(node, promiseQrls) &&
       !awaited(ancestors) &&
@@ -69,19 +73,28 @@ export function awaitQrlCalls(
       const parent = ancestors.at(-1);
       const wrap = parent !== undefined && needsParentheses(node, parent);
       edits.push({ at: node.start, text: wrap ? "(await " : "await " });
-      if (wrap) edits.push({ at: node.end, text: ")" });
+      if (wrap) {
+        edits.push({ at: node.end, text: ")" });
+      }
       const fn = ancestors.findLast((ancestor) => isFunction(ancestor));
-      if (fn) asyncArrows.add(fn);
-      else ownAsync = true;
+      if (fn) {
+        asyncArrows.add(fn);
+      } else {
+        ownAsync = true;
+      }
     }
     const next = [...ancestors, node];
     for (const [key, value] of Object.entries(node)) {
-      if (key !== "type" && key !== "parent" && typeof value === "object") visit(value, next);
+      if (key !== "type" && key !== "parent" && typeof value === "object") {
+        visit(value, next);
+      }
     }
   };
   visit(root, []);
   for (const fn of asyncArrows) {
-    if (fn.async !== true) edits.push({ at: fn.start, text: "async " });
+    if (fn.async !== true) {
+      edits.push({ at: fn.start, text: "async " });
+    }
   }
   let result = code;
   for (const { at, text } of edits.toSorted((a, b) => b.at - a.at)) {
@@ -108,9 +121,13 @@ function isFunction(node: Node): boolean {
  * optional callback argument. `save?.()` is not one (a QRL is defined).
  */
 function isQrlCall(node: Node, qrls: ReadonlySet<string>): boolean {
-  if (node.type !== "CallExpression") return false;
+  if (node.type !== "CallExpression") {
+    return false;
+  }
   let callee = node.callee as Node;
-  if (callee.type === "TSNonNullExpression") callee = callee.expression as Node;
+  if (callee.type === "TSNonNullExpression") {
+    callee = callee.expression as Node;
+  }
   return callee.type === "Identifier" && qrls.has(callee.name as string);
 }
 
@@ -133,7 +150,9 @@ function returned(node: Node, ancestors: readonly Node[], root: unknown): boolea
       (parent.type === "LogicalExpression" && parent.right === child) ||
       (parent.type === "ConditionalExpression" && parent.test !== child) ||
       (parent.type === "SequenceExpression" && (parent.expressions as Node[]).at(-1) === child);
-    if (!tail) return false;
+    if (!tail) {
+      return false;
+    }
     child = parent;
   }
   return child === root;
@@ -175,23 +194,33 @@ export function passElement(
   event: string,
   element: string,
 ): string {
-  if (callees.size === 0 || ![...callees].some((name) => code.includes(name))) return code;
+  if (callees.size === 0 || ![...callees].some((name) => code.includes(name))) {
+    return code;
+  }
   const { root } = parseCodeSource(code, kind);
   const at: number[] = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     if (isQrlCall(node, callees)) {
       const argument = (node.arguments as Node[]).find(
         (candidate) => candidate.type === "Identifier" && candidate.name === event,
       );
-      if (argument) at.push(argument.end);
+      if (argument) {
+        at.push(argument.end);
+      }
     }
     for (const [key, value] of Object.entries(node)) {
-      if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+      if (key !== "type" && key !== "parent" && typeof value === "object") {
+        visit(value);
+      }
     }
   };
   visit(root);

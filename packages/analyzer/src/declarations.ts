@@ -66,22 +66,33 @@ export function collectTypes(
   let ownProps = false;
   const foreignProps: AST.TSType[] = [];
   for (const candidate of candidates) {
-    for (const name of setupTypes(candidate.node, table)) setupReached.add(name);
+    for (const name of setupTypes(candidate.node, table)) {
+      setupReached.add(name);
+    }
     const parameter = candidate.node.params[0];
     const annotation =
       parameter && "typeAnnotation" in parameter ? parameter.typeAnnotation : undefined;
-    if (!annotation) continue;
+    if (!annotation) {
+      continue;
+    }
     const type = annotation.typeAnnotation;
     const names = closure(type, table);
     const own =
       type.type === "TSTypeReference" &&
       type.typeName.type === "Identifier" &&
       type.typeName.name === "Props";
-    if (own) ownProps = true;
-    else if (names.includes("Props")) foreignProps.push(type);
-    for (const name of names) reached.add(name);
+    if (own) {
+      ownProps = true;
+    } else if (names.includes("Props")) {
+      foreignProps.push(type);
+    }
+    for (const name of names) {
+      reached.add(name);
+    }
   }
-  for (const name of reached) setupReached.delete(name);
+  for (const name of reached) {
+    setupReached.delete(name);
+  }
   return {
     table,
     declarations,
@@ -110,9 +121,13 @@ export function setupTypes(fn: ComponentFunction, table: TypeTable): string[] {
 export function closure(type: unknown, table: TypeTable): string[] {
   const found = new Set<string>();
   const visit = (node: unknown): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) {
+        visit(item);
+      }
       return;
     }
     const typed = node as {
@@ -352,14 +367,20 @@ export function checkType(
     case "TSLiteralType": {
       const { literal } = type;
       if (literal.type === "TemplateLiteral") {
-        if (literal.expressions.length) unevaluated("A template literal type");
+        if (literal.expressions.length) {
+          unevaluated("A template literal type");
+        }
         return;
       }
-      if (literal.type === "Literal" && typeof literal.value === "bigint") later("A BigInt type");
+      if (literal.type === "Literal" && typeof literal.value === "bigint") {
+        later("A BigInt type");
+      }
       return;
     }
     case "TSUnionType":
-      for (const member of type.types) checkType(member, types, reporter, shaped);
+      for (const member of type.types) {
+        checkType(member, types, reporter, shaped);
+      }
       return;
     case "TSArrayType":
       checkType(type.elementType, types, reporter, shaped);
@@ -375,7 +396,9 @@ export function checkType(
       }
       return;
     case "TSTypeLiteral":
-      if (!type.members.length) later("The empty object type `{}`");
+      if (!type.members.length) {
+        later("The empty object type `{}`");
+      }
       checkMembers(type.members, types, reporter, shaped);
       return;
     case "TSTypeReference": {
@@ -385,9 +408,15 @@ export function checkType(
         checkType(argument[0]!, types, reporter, shaped);
         return;
       }
-      if (name !== undefined && !type.typeArguments && types.table.declaration(name)) return;
-      if (name !== undefined && !type.typeArguments && types.parameters?.has(name)) return;
-      if (shaped && (type.typeArguments || (name !== undefined && shaped.has(name)))) return;
+      if (name !== undefined && !type.typeArguments && types.table.declaration(name)) {
+        return;
+      }
+      if (name !== undefined && !type.typeArguments && types.parameters?.has(name)) {
+        return;
+      }
+      if (shaped && (type.typeArguments || (name !== undefined && shaped.has(name)))) {
+        return;
+      }
       // Any other type is one the module neither declares nor reads (a global), or one only a
       // checker evaluates.
       if (name !== undefined && !type.typeArguments) {
@@ -420,19 +449,27 @@ export function checkType(
     case "TSTemplateLiteralType":
       return unevaluated("A template literal type");
     case "TSIntersectionType": {
-      if (!shaped) return later("An intersection type");
+      if (!shaped) {
+        return later("An intersection type");
+      }
       let other = false;
       for (const part of type.types) {
-        if (part.type === "TSTypeLiteral") checkMembers(part.members, types, reporter, shaped);
-        else if (part.type === "TSParenthesizedType" || part.type === "TSIntersectionType") {
+        if (part.type === "TSTypeLiteral") {
+          checkMembers(part.members, types, reporter, shaped);
+        } else if (part.type === "TSParenthesizedType" || part.type === "TSIntersectionType") {
           checkType(part, types, reporter, shaped);
-        } else if (part.type !== "TSTypeReference") other = true;
+        } else if (part.type !== "TSTypeReference") {
+          other = true;
+        }
       }
       const empty = type.types.every(
         (part) => part.type === "TSTypeLiteral" && !part.members.length,
       );
-      if (other) report(types, reporter, "UF6002", type, ...notAProp(INTERSECTION));
-      else if (empty) later("An intersection of empty object types");
+      if (other) {
+        report(types, reporter, "UF6002", type, ...notAProp(INTERSECTION));
+      } else if (empty) {
+        later("An intersection of empty object types");
+      }
       return;
     }
     default:
@@ -469,8 +506,13 @@ export function report(
   help?: string,
 ): void {
   const key = `${code} ${at.start} ${at.end} ${message}`;
-  if (types.reported.has(key)) return;
+  if (types.reported.has(key)) {
+    return;
+  }
   types.reported.add(key);
-  if (code === "UF1002") reporter.unsupported(at, message, help ? { help } : {});
-  else reporter.report(code, at, message, help ? { help } : {});
+  if (code === "UF1002") {
+    reporter.unsupported(at, message, help ? { help } : {});
+  } else {
+    reporter.report(code, at, message, help ? { help } : {});
+  }
 }

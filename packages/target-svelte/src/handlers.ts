@@ -27,16 +27,22 @@ import { commonInterface, handlerInterface } from "./events.ts";
 export function handlerTypes(component: UfComponent): Map<FunctionCode, FunctionCode> {
   const functions = new Map<BindingId, FunctionCode>();
   for (const item of component.setup) {
-    if (item.kind === "Function") functions.set(item.binding, item.function);
+    if (item.kind === "Function") {
+      functions.set(item.binding, item.function);
+    }
   }
   // What each parameter receives, by function and parameter index.
   const received = new Map<FunctionCode, Map<number, Set<string>>>();
   const pending: [FunctionCode, number][] = [];
   const receive = (fn: FunctionCode, index: number, interfaces: Iterable<string>) => {
     let byIndex = received.get(fn);
-    if (!byIndex) received.set(fn, (byIndex = new Map()));
+    if (!byIndex) {
+      received.set(fn, (byIndex = new Map()));
+    }
     let set = byIndex.get(index);
-    if (!set) byIndex.set(index, (set = new Set()));
+    if (!set) {
+      byIndex.set(index, (set = new Set()));
+    }
     let grew = false;
     for (const each of interfaces) {
       if (!set.has(each)) {
@@ -44,11 +50,15 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
         grew = true;
       }
     }
-    if (grew) pending.push([fn, index]);
+    if (grew) {
+      pending.push([fn, index]);
+    }
   };
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Component") return;
+      if (node.kind !== "Element" && node.kind !== "Component") {
+        return;
+      }
       // A listener on a component falls through to the child's element (ADR-0118), whose types
       // hand it what an element's attribute hands its handler: it takes no option.
       const element: ElementNode =
@@ -56,9 +66,13 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
           ? node
           : { kind: "Element", tag: node.component, attributes: [], children: [], span: node.span };
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event") continue;
+        if (attribute.kind !== "Event") {
+          continue;
+        }
         const fn = handlerFunction(attribute.handler, functions);
-        if (fn?.parameters.length) receive(fn, 0, [handlerInterface(attribute, element)]);
+        if (fn?.parameters.length) {
+          receive(fn, 0, [handlerInterface(attribute, element)]);
+        }
       }
     },
   });
@@ -66,11 +80,15 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
   for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
     const [fn, index] = next;
     const name = fn.parameters[index]?.name;
-    if (name === undefined) continue;
+    if (name === undefined) {
+      continue;
+    }
     const interfaces = received.get(fn)!.get(index)!;
     for (const [callee, argument] of callsWith(fn, name, component)) {
       const target = functions.get(callee);
-      if (target && target.parameters[argument]) receive(target, argument, interfaces);
+      if (target && target.parameters[argument]) {
+        receive(target, argument, interfaces);
+      }
     }
   }
 
@@ -80,16 +98,22 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
     let parameters: Parameter[] | undefined;
     for (const [index, interfaces] of byIndex) {
       const parameter = fn.parameters[index];
-      if (!parameter || parameter.event === undefined) continue;
+      if (!parameter || parameter.event === undefined) {
+        continue;
+      }
       const type = parameterType(parameter, interfaces, setupFunctions.has(fn));
-      if (type === undefined) continue;
+      if (type === undefined) {
+        continue;
+      }
       parameters ??= [...fn.parameters];
       parameters[index] = {
         ...parameter,
         type: { code: type, span: parameter.type?.span ?? parameter.span },
       };
     }
-    if (parameters) changed.set(fn, { ...fn, parameters });
+    if (parameters) {
+      changed.set(fn, { ...fn, parameters });
+    }
   }
   return changed;
 }
@@ -107,7 +131,9 @@ function parameterType(
   setupFunction: boolean,
 ): string | undefined {
   const written = parameter.type?.code;
-  if (written === undefined) return setupFunction ? commonInterface(interfaces) : undefined;
+  if (written === undefined) {
+    return setupFunction ? commonInterface(interfaces) : undefined;
+  }
   const members = written
     .split("|")
     .map((member) => member.trim())
@@ -130,7 +156,9 @@ function callsWith(fn: FunctionCode, name: string, component: UfComponent): [Bin
   const calls = body.refs.flatMap((reference) =>
     reference.kind === "Binding" && reference.call === true ? [reference] : [],
   );
-  if (!calls.length) return [];
+  if (!calls.length) {
+    return [];
+  }
   let root: unknown;
   try {
     root = parseCodeSource(body.code, codeKind(body, component)).root;
@@ -139,13 +167,17 @@ function callsWith(fn: FunctionCode, name: string, component: UfComponent): [Bin
   }
   const found: [BindingId, number][] = [];
   visit(root, (node) => {
-    if (node.type !== "CallExpression") return;
+    if (node.type !== "CallExpression") {
+      return;
+    }
     const callee = node["callee"] as { start: number; end: number };
     const reference = calls.find(
       ({ span }) =>
         span.start - body.span.start === callee.start && span.end - body.span.start === callee.end,
     );
-    if (!reference) return;
+    if (!reference) {
+      return;
+    }
     const args = node["arguments"] as { type: string; name?: string }[];
     args.forEach((argument, index) => {
       if (argument.type === "Identifier" && argument.name === name) {

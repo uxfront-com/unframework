@@ -295,7 +295,9 @@ export function solidListeners(
       ? code.component.bindings.find((binding) => binding.id === ref.binding)!.name
       : undefined;
     const statements: string[] = [];
-    if (refName) statements.push(`${refName} = ${parameter};`);
+    if (refName) {
+      statements.push(`${refName} = ${parameter};`);
+    }
     for (const added of planOf(element).added) {
       const option = options(added);
       statements.push(
@@ -322,7 +324,9 @@ export function solidListeners(
     // The consumer's `ref`, where the element takes it beside its own (ADR-0118): Solid 2 calls
     // each callback of a `ref` array, and skips an absent one.
     const forwarded = forwardedRef(element);
-    if (forwarded) entries.push(forwarded);
+    if (forwarded) {
+      entries.push(forwarded);
+    }
     const [only] = entries;
     return js.jsxAttribute(
       "ref",
@@ -351,7 +355,9 @@ export function solidListeners(
     },
     directiveAttribute(attribute, element, context) {
       const plan = planOf(element);
-      if (plan.carrier !== attribute) return [];
+      if (plan.carrier !== attribute) {
+        return [];
+      }
       // The element's one ref is the factory's callback itself, unless a `v-model`'s helper or
       // another directive needs the element too: then one callback calls each.
       if (plan.directives.length === 1 && !modelRef(element, context) && !forwardedRef(element)) {
@@ -465,10 +471,16 @@ function returnsEarly(body: string): boolean {
 
 /** Whether part of an AST holds a `return` of its own function: not one of a function it holds. */
 function holdsReturn(node: unknown): boolean {
-  if (Array.isArray(node)) return node.some(holdsReturn);
-  if (!node || typeof node !== "object") return false;
+  if (Array.isArray(node)) {
+    return node.some(holdsReturn);
+  }
+  if (!node || typeof node !== "object") {
+    return false;
+  }
   const { type } = node as { type?: unknown };
-  if (type === "ReturnStatement") return true;
+  if (type === "ReturnStatement") {
+    return true;
+  }
   if (
     type === "FunctionDeclaration" ||
     type === "FunctionExpression" ||
@@ -507,9 +519,13 @@ function nativeEvents(component: UfComponent): Set<string> {
   const native = new Set<string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event" || !DELEGATED_EVENTS.has(attribute.event)) continue;
+        if (attribute.kind !== "Event" || !DELEGATED_EVENTS.has(attribute.event)) {
+          continue;
+        }
         if (attribute.once || attribute.passive || needsDomType(attribute, component)) {
           native.add(attribute.event);
         }
@@ -584,7 +600,9 @@ function elementPlan(
         SOLID_EVENT_PROPS.has(listener.event) &&
         !needsDomType(listener, component),
     );
-    if (own) props.add(own);
+    if (own) {
+      props.add(own);
+    }
   }
   const added = listeners.filter((listener) => !props.has(listener));
   const ref = element.attributes.find(
@@ -602,9 +620,15 @@ function elementPlan(
 
 /** A listener's option as `addEventListener` takes it, `capture: true`, or none. */
 function options(attribute: EventAttribute): string | undefined {
-  if (attribute.capture) return "capture: true";
-  if (attribute.once) return "once: true";
-  if (attribute.passive) return "passive: true";
+  if (attribute.capture) {
+    return "capture: true";
+  }
+  if (attribute.once) {
+    return "once: true";
+  }
+  if (attribute.passive) {
+    return "passive: true";
+  }
   return undefined;
 }
 

@@ -54,11 +54,17 @@ export function expectationProblems(
       (diagnostic) =>
         `The case expects the internal error ${diagnostic.code} (${diagnostic.message}): an internal error is a compiler bug to fix, never an expectation.`,
     );
-  if (!hasSpec) return problems;
+  if (!hasSpec) {
+    return problems;
+  }
   const declared = capabilityCellDiagnostics(target, capabilities);
   for (const diagnostic of own) {
-    if (diagnostic.severity !== "error" || /^UF9\d{3}$/.test(diagnostic.code)) continue;
-    if (declared.has(cellKey(diagnostic))) continue;
+    if (diagnostic.severity !== "error" || /^UF9\d{3}$/.test(diagnostic.code)) {
+      continue;
+    }
+    if (declared.has(cellKey(diagnostic))) {
+      continue;
+    }
     problems.push(
       `The case has a spec, yet expects the error ${diagnostic.code} for ${target} (${diagnostic.message}), which is not the error the ${target} target declares for a capability it lacks: a feature case compiles on every target, or the target declares the difference (a UF4xxx capability cell).`,
     );
@@ -161,7 +167,9 @@ export async function checkFixes(
 ): Promise<void> {
   const own = forTarget(diagnostics, target);
   const fixable = own.filter((diagnostic) => diagnostic.fixes?.length);
-  if (!fixable.length) return;
+  if (!fixable.length) {
+    return;
+  }
   const fixed = applyFixes(
     source,
     fixable.flatMap((diagnostic) => diagnostic.fixes ?? []),
@@ -200,7 +208,9 @@ export function nondeterminism(
       diagnostics: result.diagnostics,
       files: result.outputs[target],
     });
-  if (stable(first) === stable(second)) return undefined;
+  if (stable(first) === stable(second)) {
+    return undefined;
+  }
   return `Compiling twice gave different results:\n${diffLines(stable(first).replaceAll(",", ",\n"), stable(second).replaceAll(",", ",\n"))}`;
 }
 
@@ -232,7 +242,9 @@ export function moduleCopyProblems(
 ): string[] {
   return modules.flatMap(({ path, contents }) => {
     const copy = outputs.get(path);
-    if (copy === undefined || copy === contents) return [];
+    if (copy === undefined || copy === contents) {
+      return [];
+    }
     return [`${target}/${path} is not the case's ${path} unchanged:\n${diffLines(contents, copy)}`];
   });
 }
@@ -304,7 +316,9 @@ function fileMapProblems(
   modules: ReadonlySet<string>,
 ): string[] {
   const { map } = file;
-  if (!map) return [`${where} has no source map.`];
+  if (!map) {
+    return [`${where} has no source map.`];
+  }
   const copy = modules.has(file.path);
   const expected = copy ? posix.basename(file.path) : posix.basename(source.filename);
   const text = copy ? file.contents : source.text;
@@ -318,7 +332,9 @@ function fileMapProblems(
     return [`${where}'s map does not hold the content of its source ${expected}.`];
   }
   // The decoder reads a character outside the alphabet as zero rather than throw on it.
-  if (!VLQ.test(map.mappings)) return [`${where}'s map does not decode: its mappings are not VLQ.`];
+  if (!VLQ.test(map.mappings)) {
+    return [`${where}'s map does not decode: its mappings are not VLQ.`];
+  }
   const lines = decodedMappings(new TraceMap(map));
   const segments = lines.reduce((count, line) => count + line.length, 0);
   if (file.path.endsWith(".css")) {
@@ -329,7 +345,9 @@ function fileMapProblems(
   const wrong: string[] = [];
   for (const [line, row] of lines.entries()) {
     for (const segment of row) {
-      if (segment.length === 1) continue;
+      if (segment.length === 1) {
+        continue;
+      }
       const [column, index, fromLine, fromColumn] = segment;
       const output = outputLines[line];
       const original = sourceLines[fromLine];
@@ -343,7 +361,9 @@ function fileMapProblems(
         wrong.push(`${line + 1}:${column} points outside its files`);
         continue;
       }
-      if (segment.length === 5) continue;
+      if (segment.length === 5) {
+        continue;
+      }
       const token = sourceTokenAt(original, fromColumn);
       const reads = output.slice(column, column + token.length);
       if (!token || reads !== token) {
@@ -353,7 +373,9 @@ function fileMapProblems(
       }
     }
   }
-  if (!wrong.length) return [];
+  if (!wrong.length) {
+    return [];
+  }
   // One map can hold thousands of wrong tokens, so the first says what the rest would.
   return [`${where}'s map has ${wrong.length} wrong segment(s), the first at ${wrong[0]}.`];
 }
@@ -364,7 +386,9 @@ function fileMapProblems(
  * how the compiler maps a source.
  */
 export function comparedSegments(file: OutputFile): number {
-  if (!file.map || file.map.sources[0] === posix.basename(file.path)) return 0;
+  if (!file.map || file.map.sources[0] === posix.basename(file.path)) {
+    return 0;
+  }
   return decodedMappings(new TraceMap(file.map))
     .flat()
     .filter((segment) => segment.length === 4).length;

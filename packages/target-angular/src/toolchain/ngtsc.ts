@@ -79,7 +79,9 @@ export function createHost(
     let directory = dirname(resolve(fileName));
     while (text !== undefined && !directories.has(directory)) {
       directories.add(directory);
-      if (dirname(directory) === directory) break;
+      if (dirname(directory) === directory) {
+        break;
+      }
       directory = dirname(directory);
     }
     return text;
@@ -90,16 +92,22 @@ export function createHost(
     directories.has(resolve(directory)) || directoryExists(directory);
   host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
     const text = inMemory(fileName);
-    if (text !== undefined) return ts.createSourceFile(fileName, text, languageVersion, true);
+    if (text !== undefined) {
+      return ts.createSourceFile(fileName, text, languageVersion, true);
+    }
     // Only declarations: ngtsc tags the source files it compiles with its type-check shims.
     if (!fileName.includes("/node_modules/") || !DECLARATION.test(fileName)) {
       return getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
     }
     const key = `${fileName}|${JSON.stringify(languageVersion)}`;
     const cached = shouldCreateNewSourceFile ? undefined : declarations.get(key);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
     const parsed = getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
-    if (parsed) declarations.set(key, parsed);
+    if (parsed) {
+      declarations.set(key, parsed);
+    }
     return parsed;
   };
   return host;
@@ -143,7 +151,9 @@ export function collectDiagnostics(
   // An options error fails everything, and a syntax error outside the roots cannot be set
   // aside: report what there is (both reach every file, see groupByFile).
   const global = early.some((diagnostic) => isError(diagnostic) && !diagnostic.file);
-  if (global || parsable.length === 0 || parsable.length === rootNames.length) return early;
+  if (global || parsable.length === 0 || parsable.length === rootNames.length) {
+    return early;
+  }
   return [
     ...early.filter(
       (diagnostic) => diagnostic.file && unparsable.has(resolve(diagnostic.file.fileName)),
@@ -171,8 +181,11 @@ export function groupByFile(
     const input = diagnostic.file && byPath.get(resolve(diagnostic.file.fileName));
     const result = input ? results.get(input)! : global;
     const message = toMessage(compiler, diagnostic, input === undefined);
-    if (diagnostic.category === compiler.ts.DiagnosticCategory.Error) result.errors.push(message);
-    else result.warnings.push(message);
+    if (diagnostic.category === compiler.ts.DiagnosticCategory.Error) {
+      result.errors.push(message);
+    } else {
+      result.warnings.push(message);
+    }
   }
   for (const result of results.values()) {
     result.errors.unshift(...global.errors);
@@ -199,7 +212,9 @@ export function toMessage(
   const text = compiler.ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
   const code = diagnosticCode(diagnostic);
   const position = positionOf(diagnostic);
-  if (located && diagnostic.file) return { message: `${locationOf(diagnostic)}: ${text}`, code };
+  if (located && diagnostic.file) {
+    return { message: `${locationOf(diagnostic)}: ${text}`, code };
+  }
   return position ? { message: text, ...position, code } : { message: text, code };
 }
 
@@ -220,7 +235,9 @@ export function formatDiagnostics(
 }
 
 function positionOf(diagnostic: Diagnostic): { line: number; column: number } | undefined {
-  if (!diagnostic.file || diagnostic.start === undefined) return undefined;
+  if (!diagnostic.file || diagnostic.start === undefined) {
+    return undefined;
+  }
   const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
   return { line: line + 1, column: character + 1 };
 }

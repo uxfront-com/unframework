@@ -220,7 +220,9 @@ function accessCheck(config: ResolvedConfig): AccessCheck {
   const allowed = import("vite").then(({ isFileLoadingAllowed }) => isFileLoadingAllowed);
   return async (file, id) => {
     const isAllowed = await allowed;
-    if (isAllowed(config, file) || isAllowed(config, withoutQuery(id))) return;
+    if (isAllowed(config, file) || isAllowed(config, withoutQuery(id))) {
+      return;
+    }
     throw Object.assign(
       new Error(`The request id "${file}" is outside of Vite's serving allow list.`),
       { code: "ERR_DENIED_ID", id: file },
@@ -265,7 +267,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     );
   }
   // Checked once, so a bad prefix fails the server's start rather than each module's compile.
-  if (options.passThrough) checkPassThrough(options.passThrough);
+  if (options.passThrough) {
+    checkPassThrough(options.passThrough);
+  }
 
   // What the target decides. It is set here when `target` is given, and otherwise by Vite's
   // `configResolved`, which runs before any hook that reads these.
@@ -296,7 +300,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     joins = SCRIPT.test(extension);
     subRequest = new RegExp(`[?&]${extension.slice(1)}(?:[&=]|$)`);
   };
-  if (options.target !== undefined) selectTarget(options.target);
+  if (options.target !== undefined) {
+    selectTarget(options.target);
+  }
   const composableRequest = (id: string) => parseComposableId(id, composableSuffix);
 
   // Every suffix an id may have: a bundler may read a hook's filter only once, so until the target
@@ -334,7 +340,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // `seen` holds what was compiled and a hot update compares like with like.
   const readSource = async (path: string): Promise<string | undefined> => {
     const text = await readFile(path, "utf8").catch(() => undefined);
-    if (text === undefined || !options.transformSource || !isSource(path)) return text;
+    if (text === undefined || !options.transformSource || !isSource(path)) {
+      return text;
+    }
     try {
       return (await options.transformSource(path, text)) ?? text;
     } catch (error) {
@@ -345,7 +353,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   };
   const read = async (path: string) => {
     const text = await readSource(path);
-    if (!seen.has(path)) seen.set(path, text);
+    if (!seen.has(path)) {
+      seen.set(path, text);
+    }
     return text;
   };
   // The package a directory's files belong to: the `name` in its nearest `package.json` that has
@@ -355,17 +365,23 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // package.
   const manifests = new Map<string, { name: string; directory: string } | undefined>();
   const packageAt = (directory: string): { name: string; directory: string } | undefined => {
-    if (manifests.has(directory)) return manifests.get(directory);
+    if (manifests.has(directory)) {
+      return manifests.get(directory);
+    }
     let found: { name: string; directory: string } | undefined;
     try {
       const manifest: unknown = JSON.parse(readFileSync(`${directory}/package.json`, "utf8"));
       const named = manifest && typeof manifest === "object" && "name" in manifest;
-      if (named && typeof manifest.name === "string") found = { name: manifest.name, directory };
+      if (named && typeof manifest.name === "string") {
+        found = { name: manifest.name, directory };
+      }
     } catch {
       // No manifest here, or one that does not parse.
     }
     const parent = posix.dirname(directory);
-    if (found === undefined && parent !== directory) found = packageAt(parent);
+    if (found === undefined && parent !== directory) {
+      found = packageAt(parent);
+    }
     manifests.set(directory, found);
     return found;
   };
@@ -511,17 +527,24 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const packages = new Set<string>();
     for (const file of files) {
       for (const dependency of project.dependencies(file)) {
-        if (dependency.startsWith(PACKAGE)) packages.add(dependency.slice(PACKAGE.length));
-        else files.add(dependency);
+        if (dependency.startsWith(PACKAGE)) {
+          packages.add(dependency.slice(PACKAGE.length));
+        } else {
+          files.add(dependency);
+        }
       }
     }
-    for (const name of packages) reachedPackages.add(name);
+    for (const name of packages) {
+      reachedPackages.add(name);
+    }
     return { files: [...files], packages };
   };
 
   /** The paths of the files the oracle read for the packages, by their real paths. */
   const packageFiles = (packages: ReadonlySet<string>): string[] => {
-    if (!packages.size) return [];
+    if (!packages.size) {
+      return [];
+    }
     return [...seen.keys()].filter((path) => {
       const name = packageOf(posix.dirname(path));
       return name !== undefined && packages.has(name);
@@ -555,31 +578,47 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const handOver = async (paths: Iterable<string>): Promise<boolean> => {
     const changed = new Map<string, string | undefined>();
     for (const path of paths) {
-      if (!seen.has(path)) continue;
+      if (!seen.has(path)) {
+        continue;
+      }
       const text = await readSource(path);
-      if (text !== seen.get(path)) changed.set(path, text);
+      if (text !== seen.get(path)) {
+        changed.set(path, text);
+      }
     }
-    if (!changed.size) return false;
+    if (!changed.size) {
+      return false;
+    }
     const before = new Map([...changed.keys()].map((path) => [path, seen.get(path)]));
-    for (const [path, text] of changed) seen.set(path, text);
+    for (const [path, text] of changed) {
+      seen.set(path, text);
+    }
     // Before `seen` moves on, so no compile kept from before the change reads as current while the
     // projects take it, and again once they have, whether or not they took it.
     generation += 1;
     try {
       for (const graph of graphs.values()) {
         const names = [...changed.keys()].flatMap((path) => namesOf(graph, path));
-        if (!names.length) continue;
+        if (!names.length) {
+          continue;
+        }
         const { compiled: modules } = await graph.project.update([...new Set(names)]);
-        if (meta.framework !== "vite") continue;
+        if (meta.framework !== "vite") {
+          continue;
+        }
         for (const path of changed.keys()) {
           const files = recompiled.get(path) ?? new Set();
-          for (const module of modules) files.add(posix.join(graph.root, module));
+          for (const module of modules) {
+            files.add(posix.join(graph.root, module));
+          }
           recompiled.set(path, files);
         }
       }
     } catch (error) {
       // The project never took the change: the next load hands it over again.
-      for (const [path, text] of before) seen.set(path, text);
+      for (const [path, text] of before) {
+        seen.set(path, text);
+      }
       throw error;
     } finally {
       generation += 1;
@@ -623,7 +662,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const { project } = graph;
     await refresh(graph, filename);
     let result = await project.compile(filename);
-    if (await refresh(graph, filename)) result = await project.compile(filename);
+    if (await refresh(graph, filename)) {
+      result = await project.compile(filename);
+    }
     const source = seen.get(`${graph.root}/${filename}`) ?? "";
     const files = result.outputs[target.name] ?? [];
     const outputs = files.length
@@ -644,13 +685,17 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    */
   const currentCompile = async (file: string): Promise<Compiled | undefined> => {
     const kept = compiles.get(file);
-    if (kept?.generation !== generation) return undefined;
+    if (kept?.generation !== generation) {
+      return undefined;
+    }
     const { graph, filename } = locate(file);
     const paths = [...reachedPaths(graph, filename)].filter((path) => seen.has(path));
     const texts = await Promise.all(
       paths.map((path) => readFile(path, "utf8").catch(() => undefined)),
     );
-    if (paths.some((path, index) => texts[index] !== seen.get(path))) return undefined;
+    if (paths.some((path, index) => texts[index] !== seen.get(path))) {
+      return undefined;
+    }
     // A change handed over while the files were read.
     return compiles.get(file) === kept && kept.generation === generation
       ? kept.compiled
@@ -670,9 +715,13 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     for (let next = pending.pop(); next; next = pending.pop()) {
       for (const entry of next.result.ir?.imports ?? []) {
         const child = posix.join(posix.dirname(next.file), entry.file);
-        if (visited.has(child)) continue;
+        if (visited.has(child)) {
+          continue;
+        }
         visited.add(child);
-        if (!existsSync(child)) continue;
+        if (!existsSync(child)) {
+          continue;
+        }
         const kept = compiles.get(child);
         if (kept?.generation === generation) {
           pending.push({ file: child, result: kept.compiled.result });
@@ -689,7 +738,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
 
   /** The guard's verdict on a load: the message that fails the module, if any. */
   const guard = async (event: CompileEvent): Promise<string | undefined> => {
-    if (!options.onCompile) return undefined;
+    if (!options.onCompile) {
+      return undefined;
+    }
     let verdict: string | void;
     try {
       verdict = await options.onCompile(event);
@@ -697,7 +748,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       const reason = error instanceof Error ? (error.stack ?? error.message) : String(error);
       return `onCompile threw while checking ${event.id}: ${reason}`;
     }
-    if (typeof verdict !== "string") return undefined;
+    if (typeof verdict !== "string") {
+      return undefined;
+    }
     return verdict || `onCompile failed ${event.id} without a message.`;
   };
 
@@ -716,7 +769,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    */
   const failModule = (context: LoadContext, message: string) => {
     context.error(message);
-    if (meta.framework === "esbuild") throw new Error(message);
+    if (meta.framework === "esbuild") {
+      throw new Error(message);
+    }
   };
 
   const bundler = meta.framework === "vite" ? "Vite" : meta.framework;
@@ -744,7 +799,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    * or from an importer whose file is gone.
    */
   const childId = async (file: string, specifier: string): Promise<string | undefined> => {
-    if (!existsSync(file)) return undefined;
+    if (!existsSync(file)) {
+      return undefined;
+    }
     const { result } = await compileFile(file);
     const wanted = posix.join(posix.dirname(file), specifier);
     const files = [
@@ -756,12 +813,16 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       const owners = compiled.owners[target.name] ?? {};
       for (const [path, component] of Object.entries(owners)) {
         const output = posix.join(posix.dirname(candidate), path);
-        if (output !== wanted && output.replace(/\.[^./]+$/, "") !== wanted) continue;
+        if (output !== wanted && output.replace(/\.[^./]+$/, "") !== wanted) {
+          continue;
+        }
         // A composable's output, which its module's id loads with the module's others (ADR-0069).
         if (candidate.endsWith(COMPOSABLE_EXTENSION)) {
           return composableId(candidate, composableSuffix);
         }
-        if (joins || component === mainComponent(compiled.ir)) return moduleId(candidate, suffix);
+        if (joins || component === mainComponent(compiled.ir)) {
+          return moduleId(candidate, suffix);
+        }
         return componentId(candidate, path);
       }
     }
@@ -779,7 +840,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const { graph, filename } = locate(file);
     const { result, source } = await compileFile(file);
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-    if (errors.length > 0) return { error: formatErrors(graph, filename, errors, source) };
+    if (errors.length > 0) {
+      return { error: formatErrors(graph, filename, errors, source) };
+    }
     const path = `${basename(file)}${SHEET_SUFFIX}`;
     const emitted = (result.outputs[target.name] ?? []).find((output) => output.path === path);
     if (!emitted) {
@@ -824,7 +887,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const { result, source } = await compileFile(file);
     const files = result.outputs[target.name] ?? [];
     for (const diagnostic of result.diagnostics) {
-      if (diagnostic.severity !== "error") this.warn(formatDiagnostic(diagnostic, source));
+      if (diagnostic.severity !== "error") {
+        this.warn(formatDiagnostic(diagnostic, source));
+      }
     }
     const verdict = await guard({
       id,
@@ -840,7 +905,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       return failModule(this, verdict ? `${message}\n\n${verdict}` : message);
     };
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-    if (errors.length > 0) return fail(formatErrors(graph, filename, errors, source));
+    if (errors.length > 0) {
+      return fail(formatErrors(graph, filename, errors, source));
+    }
     const owners = result.owners[target.name] ?? {};
     const owned = files.filter((output) => Object.hasOwn(owners, output.path));
     const assembly = assembleModule({
@@ -851,7 +918,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       exports: [],
       siblings: owned.map((output) => output.path),
     });
-    if ("error" in assembly) return fail(assembly.error);
+    if ("error" in assembly) {
+      return fail(assembly.error);
+    }
     compiled.set(id, assembly.code);
     if (verdict === undefined) {
       failed.delete(id);
@@ -884,16 +953,22 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
           await resolveBare
         )(context.environment, path, importer).catch(() => undefined);
         const found = id === undefined ? undefined : withoutQuery(id);
-        if (found?.includes(NODE_MODULES) && isSource(found)) return found;
+        if (found?.includes(NODE_MODULES) && isSource(found)) {
+          return found;
+        }
         // Every other plugin is asked only about a specifier that names a source, as it would be
         // for a path. Asking about each bare import would run them all twice.
-        if (!specifierFilter(suffix).test(path) && !composableIds.test(path)) return found;
+        if (!specifierFilter(suffix).test(path) && !composableIds.test(path)) {
+          return found;
+        }
       }
       const resolved = await context.resolve(path, importer, { skipSelf: true });
       return resolved && !resolved.external ? withoutQuery(resolved.id) : undefined;
     }
     const [named] = moduleIdCandidates(path, root, importer);
-    if (named === undefined) return undefined;
+    if (named === undefined) {
+      return undefined;
+    }
     const stem = /^(.*\.uf)(?:\.jsx?)?$/.exec(named)?.[1];
     const candidates = stem === undefined ? [named] : [named, `${stem}.tsx`, `${stem}.ts`];
     return candidates.find((candidate) => existsSync(candidate));
@@ -959,7 +1034,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       !specifierFilter(suffix).test(path)
     ) {
       const child = await childId(from.file, path);
-      if (child !== undefined) return `${child}${query}`;
+      if (child !== undefined) {
+        return `${child}${query}`;
+      }
     }
     if (
       !(bareSpecifiers && BARE.test(path)) &&
@@ -981,15 +1058,23 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       );
       return id === undefined ? null : `${id}${query}`;
     }
-    if (VITE_FILE_QUERY.test(query)) return null;
+    if (VITE_FILE_QUERY.test(query)) {
+      return null;
+    }
 
     // Decided by the file the specifier resolves to, so `./X.uf` and `./X.uf.js` compile
     // like `./X.uf.tsx`, and a `./X.uf` that is a composable (`X.uf.ts`) loads as one.
     const file = await fileOf(context, path, importer);
-    if (file === undefined) return null;
+    if (file === undefined) {
+      return null;
+    }
     const composable = file.endsWith(COMPOSABLE_EXTENSION);
-    if (!composable && !file.endsWith(SOURCE_EXTENSION)) return null;
-    if (scan) return `${SCAN_ID_PREFIX}${file}`;
+    if (!composable && !file.endsWith(SOURCE_EXTENSION)) {
+      return null;
+    }
+    if (scan) {
+      return `${SCAN_ID_PREFIX}${file}`;
+    }
     // `this.addWatchFile(file)` in `transform` makes Vite's import analysis resolve the
     // file with our module as the importer. Answering with the real file gives the module
     // graph a node for it whose importer is the module: the edge that makes an edit
@@ -1011,7 +1096,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    * query. Vite's own file queries (`?raw`, `?url`) read the authored file, so they stay Vite's.
    */
   const ownerOf = (id: string | null): string | undefined => {
-    if (id === null || VITE_FILE_QUERY.test(id)) return undefined;
+    if (id === null || VITE_FILE_QUERY.test(id)) {
+      return undefined;
+    }
     const owner =
       parseModuleId(id, SHEET_SUFFIX) ??
       composableRequest(id) ??
@@ -1026,7 +1113,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // would follow such a node up to the modules that watch it, whatever the project compiled.
   const served = new Set<string>();
   const isOurs = (node: EnvironmentModuleNode) => {
-    if (ownerOf(node.id) !== undefined) return true;
+    if (ownerOf(node.id) !== undefined) {
+      return true;
+    }
     return (
       node.id !== null &&
       !served.has(node.id) &&
@@ -1040,7 +1129,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const hotUpdates = new Map<string, { timestamp: number; files: Promise<Set<string>> }>();
   const recompiledBy = (file: string, timestamp: number): Promise<Set<string>> => {
     const known = hotUpdates.get(file);
-    if (known?.timestamp === timestamp) return known.files;
+    if (known?.timestamp === timestamp) {
+      return known.files;
+    }
     const files = exclusive(async () => {
       await handOver([file]);
       const taken = recompiled.get(file) ?? new Set<string>();
@@ -1065,7 +1156,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     idToModule: ReadonlyMap<string, EnvironmentModuleNode>,
   ): Promise<EnvironmentModuleNode[]> => {
     const files = new Set(await recompiledBy(file, timestamp));
-    if (type !== "update") files.add(file);
+    if (type !== "update") {
+      files.add(file);
+    }
     const updated = [...idToModule.values()].filter((node) => {
       const owner = ownerOf(node.id);
       return owner !== undefined && files.has(owner);
@@ -1089,13 +1182,18 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     modules: EnvironmentModuleNode[],
   ): EnvironmentModuleNode[] => {
     const ours = modules.filter((node) => ownerOf(node.id) !== undefined);
-    if (ours.length === 0) return modules;
+    if (ours.length === 0) {
+      return modules;
+    }
     const files = new Set(ours.map((node) => ownerOf(node.id)));
     const ssr = server.environments.ssr?.moduleGraph.idToModuleMap.values() ?? [];
-    if ([...ssr].some((node) => files.has(ownerOf(node.id)))) return modules;
+    if ([...ssr].some((node) => files.has(ownerOf(node.id)))) {
+      return modules;
+    }
     const invalidated = new Set<EnvironmentModuleNode>();
-    for (const node of ours)
+    for (const node of ours) {
       environment.moduleGraph.invalidateModule(node, invalidated, timestamp, true);
+    }
     environment.hot.send({ type: "full-reload" });
     return modules.filter((node) => !ours.includes(node));
   };
@@ -1115,10 +1213,14 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       componentRequest(id) ??
       parseModuleId(id, suffix) ??
       parseModuleId(id, "");
-    if (access && requested && isAbsolute(requested.file)) await access(requested.file, id);
+    if (access && requested && isAbsolute(requested.file)) {
+      await access(requested.file, id);
+    }
     const sheet = parseModuleId(id, SHEET_SUFFIX);
     if (sheet) {
-      if (!isAbsolute(sheet.file)) return null;
+      if (!isAbsolute(sheet.file)) {
+        return null;
+      }
       const loaded = await sheetOf(id, sheet.file);
       return "error" in loaded ? failModule(this, loaded.error) : loaded;
     }
@@ -1135,17 +1237,25 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       // An authored `.uf.tsx`, or a `.uf.ts` on a target whose composable ids have a suffix.
       const authored = parseModuleId(id, "") ?? parseComposableId(id, "");
       // Or another target's id, which the filters let through before the target was known.
-      if (!authored || VITE_FILE_QUERY.test(authored.query)) return null;
+      if (!authored || VITE_FILE_QUERY.test(authored.query)) {
+        return null;
+      }
       return failModule(this, bypassed(authored.file));
     }
-    if (!isAbsolute(request.file)) return null;
-    if (VITE_FILE_QUERY.test(request.query) || subRequest.test(request.query)) return null;
+    if (!isAbsolute(request.file)) {
+      return null;
+    }
+    if (VITE_FILE_QUERY.test(request.query) || subRequest.test(request.query)) {
+      return null;
+    }
 
     const { graph, filename } = locate(request.file);
     const { result, source } = await compileFile(request.file);
     const files = result.outputs[target.name] ?? [];
     for (const diagnostic of result.diagnostics) {
-      if (diagnostic.severity !== "error") this.warn(formatDiagnostic(diagnostic, source));
+      if (diagnostic.severity !== "error") {
+        this.warn(formatDiagnostic(diagnostic, source));
+      }
     }
     const verdict = await guard({
       id,
@@ -1162,7 +1272,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     };
 
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-    if (errors.length > 0) return fail(formatErrors(graph, filename, errors, source));
+    if (errors.length > 0) {
+      return fail(formatErrors(graph, filename, errors, source));
+    }
     const owners = result.owners[target.name] ?? {};
     const main = mainComponent(result.ir);
     // A component id loads its component's file; a main id, the main component's files,
@@ -1190,13 +1302,21 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       exports: component ? [] : exports,
       siblings: owned.map((file) => file.path),
     });
-    if ("error" in assembly) return fail(assembly.error);
+    if ("error" in assembly) {
+      return fail(assembly.error);
+    }
     compiled.set(id, assembly.code);
-    if (assembly.map) loadMaps.set(id, assembly.map);
-    else loadMaps.delete(id);
+    if (assembly.map) {
+      loadMaps.set(id, assembly.map);
+    } else {
+      loadMaps.delete(id);
+    }
     const emitted = files.find((file) => file.path === `${basename(request.file)}${SHEET_SUFFIX}`);
-    if (emitted) sheets.set(request.file, emitted.contents);
-    else sheets.delete(request.file);
+    if (emitted) {
+      sheets.set(request.file, emitted.contents);
+    } else {
+      sheets.delete(request.file);
+    }
     if (verdict === undefined) {
       failed.delete(id);
     } else {
@@ -1218,12 +1338,16 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const composables = composableRequest(id);
     const component = composables ? undefined : componentRequest(id);
     const request = composables ?? component ?? parseModuleId(id, suffix);
-    if (!request || !isAbsolute(request.file)) return null;
+    if (!request || !isAbsolute(request.file)) {
+      return null;
+    }
     // A module of composables' id is the file itself where it has no suffix (ADR-0069).
     if (composables ? composableSuffix : suffix || component) {
       this.addWatchFile(request.file);
     }
-    for (const path of watchedFiles(request.file)) this.addWatchFile(path);
+    for (const path of watchedFiles(request.file)) {
+      this.addWatchFile(path);
+    }
     return null;
   }
 
@@ -1278,7 +1402,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     },
     esbuild: {
       config(buildOptions) {
-        if (buildOptions.absWorkingDir) root = toPosix(buildOptions.absWorkingDir);
+        if (buildOptions.absWorkingDir) {
+          root = toPosix(buildOptions.absWorkingDir);
+        }
       },
     },
     vite: {
@@ -1291,12 +1417,17 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
           : "inline Vite configuration";
         if (options.target === undefined) {
           const detected = detectTarget(config.plugins, file, config.root);
-          if ("error" in detected) this.error(detected.error);
-          else selectTarget(detected.target);
+          if ("error" in detected) {
+            this.error(detected.error);
+          } else {
+            selectTarget(detected.target);
+          }
         }
         if (target.name === "vue") {
           const warning = hostOptionWarning(config.plugins, file);
-          if (warning) this.warn(warning);
+          if (warning) {
+            this.warn(warning);
+          }
           fillVueScriptFs(config.plugins);
         }
         chainSvelteOnce(config.plugins, (id) => compiled.has(id));
@@ -1381,7 +1512,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
 function mainComponent(ir: UfModule | undefined): string | undefined {
   const exports = ir?.exports ?? [];
   const main = exports.find((entry) => entry.kind === "default");
-  if (main) return main.local;
+  if (main) {
+    return main.local;
+  }
   const locals = new Set(exports.map((entry) => entry.local));
   return locals.size === 1 ? [...locals][0] : undefined;
 }

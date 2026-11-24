@@ -99,7 +99,9 @@ export const QWIK_EVENT_PROPS: ReadonlyMap<string, string> = new Map(
 /** The listener prop of a DOM event (`QWIK_EVENT_PROPS`), in a scope: `window:onClick$`. */
 export function qwikListenerProp(event: string, scope: "element" | "window" = "element"): string {
   const prop = QWIK_EVENT_PROPS.get(event);
-  if (prop === undefined) throw new Error(`"${event}" is not an event a listener may take.`);
+  if (prop === undefined) {
+    throw new Error(`"${event}" is not an event a listener may take.`);
+  }
   return scope === "window" ? `window:${prop}` : prop;
 }
 

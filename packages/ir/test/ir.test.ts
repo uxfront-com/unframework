@@ -361,8 +361,12 @@ describe("builders", () => {
 
 /** A node, briefly: its tag, its text in quotes, or its kind. */
 function describeNode(node: VisitedNode): string {
-  if (node.kind === "Element") return node.tag;
-  if (node.kind === "Text") return `'${node.value}'`;
+  if (node.kind === "Element") {
+    return node.tag;
+  }
+  if (node.kind === "Text") {
+    return `'${node.value}'`;
+  }
   return node.kind;
 }
 
@@ -669,7 +673,9 @@ describe("summarize", () => {
     expect(impurity(summaries.get(first)!)).toBe("it calls `nextTick`");
     // A piece of code is summarised as a function's body is.
     const [item] = component.setup;
-    if (item?.kind !== "Function") throw new Error("the chain starts with a function");
+    if (item?.kind !== "Function") {
+      throw new Error("the chain starts with a function");
+    }
     expect(plain(summarizeCode(item.function.body, component))).toMatchObject({
       reaches: [second, third],
       async: true,
@@ -686,7 +692,9 @@ describe("summarize", () => {
     }
     const [call] = first.function.body.refs;
     const [, third] = second.function.body.refs;
-    if (call?.kind !== "Binding" || third?.kind !== "Binding") throw new Error("two calls");
+    if (call?.kind !== "Binding" || third?.kind !== "Binding") {
+      throw new Error("two calls");
+    }
     third.later = true;
     expect(plain(summarizeTracked(first.function.body, component))).toMatchObject({
       reaches: ["second@30"],
@@ -834,7 +842,9 @@ describe("spansOf", () => {
   ])("finds every span in %s, each at its pointer", (_, build) => {
     const module = build();
     const located = spansOf(module);
-    for (const entry of located) expect(valueAt(module, entry.path), entry.path).toBe(entry.span);
+    for (const entry of located) {
+      expect(valueAt(module, entry.path), entry.path).toBe(entry.span);
+    }
     // Every span, found by a blind walk of the JSON, is among them: a `span`, and a write's
     // target and value and an emit's arguments.
     const blind: string[] = [];
@@ -842,10 +852,16 @@ describe("spansOf", () => {
       Object.keys(value).join() === "start,end" &&
       Object.values(value).every((item) => typeof item === "number");
     const visit = (value: unknown, path: string): void => {
-      if (Array.isArray(value)) value.forEach((item, index) => visit(item, `${path}/${index}`));
-      else if (value && typeof value === "object") {
-        if (isSpan(value)) blind.push(path);
-        else for (const [key, item] of Object.entries(value)) visit(item, `${path}/${key}`);
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => visit(item, `${path}/${index}`));
+      } else if (value && typeof value === "object") {
+        if (isSpan(value)) {
+          blind.push(path);
+        } else {
+          for (const [key, item] of Object.entries(value)) {
+            visit(item, `${path}/${key}`);
+          }
+        }
       }
     };
     visit(module, "");

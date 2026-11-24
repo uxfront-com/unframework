@@ -58,7 +58,9 @@ function babel(samples: readonly string[], kind: "text" | "attribute"): Reading[
     });
   } catch (error) {
     // Babel fails on a reference past U+10FFFF: find the samples it fails on one by one.
-    if (!(error instanceof RangeError)) throw error;
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
     return samples.length === 1 ? [FAILS] : samples.flatMap((sample) => babel([sample], kind));
   }
 }
@@ -220,7 +222,9 @@ async function conformance(
       ? samples
       : samples.map((sample) => {
           const comparable = asCharacters(sample);
-          if (comparable !== sample) mismatches.push(...asCharacterMismatches(sample, comparable));
+          if (comparable !== sample) {
+            mismatches.push(...asCharacterMismatches(sample, comparable));
+          }
           return comparable;
         });
   const read = kind === "text" ? readJsxText : readJsxAttribute;
@@ -244,10 +248,15 @@ async function conformance(
       mismatches.push(`${label}: read ${JSON.stringify(reading.value)}`);
       return;
     }
-    if (agree) tally.agreed++;
-    else tally.reported++;
+    if (agree) {
+      tally.agreed++;
+    } else {
+      tally.reported++;
+    }
     const fix = fixes[index];
-    if (agree || fix === undefined) return;
+    if (agree || fix === undefined) {
+      return;
+    }
     tally.fixed++;
     if (read(fix).divergences.length) {
       mismatches.push(`${label}: fixed to ${JSON.stringify(fix)}, still reported`);

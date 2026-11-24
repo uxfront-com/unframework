@@ -22,7 +22,9 @@ interface Schema {
 function schema(text: string): Schema {
   const match = /^([a-z0-9]+)(?:\[(.*)\])?$/.exec(text)!;
   const [, name, list] = match;
-  if (list === undefined) return { name: name! };
+  if (list === undefined) {
+    return { name: name! };
+  }
   return {
     name: name!,
     attributes: list.split(",").map((item) => {
@@ -135,7 +137,9 @@ export function handlerProblems(
   handlers: ReadonlySet<string>,
 ): A11yProblem[] {
   const problems: A11yProblem[] = [];
-  if (!handlers.size) return problems;
+  if (!handlers.size) {
+    return problems;
+  }
   const interactivity = elementInteractivity(tag, attributes);
   const interactive = interactivity === "interactive";
   const nonInteractive = interactivity === "non-interactive";
@@ -249,10 +253,18 @@ function elementInteractivity(
 ): Interactivity {
   const matches = (list: readonly Schema[]) =>
     list.some((item) => matchSchema(item, tag, attributes));
-  if (matches(INTERACTIVE_ROLE_SCHEMAS)) return "interactive";
-  if (tag !== "header" && matches(NON_INTERACTIVE_ROLE_SCHEMAS)) return "non-interactive";
-  if (matches(INTERACTIVE_AX_SCHEMAS)) return "interactive";
-  if (matches(NON_INTERACTIVE_AX_SCHEMAS)) return "non-interactive";
+  if (matches(INTERACTIVE_ROLE_SCHEMAS)) {
+    return "interactive";
+  }
+  if (tag !== "header" && matches(NON_INTERACTIVE_ROLE_SCHEMAS)) {
+    return "non-interactive";
+  }
+  if (matches(INTERACTIVE_AX_SCHEMAS)) {
+    return "interactive";
+  }
+  if (matches(NON_INTERACTIVE_AX_SCHEMAS)) {
+    return "non-interactive";
+  }
   return "static";
 }
 
@@ -262,24 +274,34 @@ function matchSchema(
   tag: string,
   attributes: ReadonlyMap<string, A11yValue>,
 ): boolean {
-  if (item.name !== tag) return false;
+  if (item.name !== tag) {
+    return false;
+  }
   return (item.attributes ?? []).every(({ name, value }) => {
-    if (!attributes.has(name)) return false;
+    if (!attributes.has(name)) {
+      return false;
+    }
     return !value || value === staticText(attributes.get(name));
   });
 }
 
 /** Svelte's `is_hidden_from_screen_reader`. */
 function hiddenFromScreenReader(tag: string, attributes: ReadonlyMap<string, A11yValue>): boolean {
-  if (tag === "input" && attributes.get("type") === "hidden") return true;
-  if (!attributes.has("aria-hidden")) return false;
+  if (tag === "input" && attributes.get("type") === "hidden") {
+    return true;
+  }
+  if (!attributes.has("aria-hidden")) {
+    return false;
+  }
   const value = attributes.get("aria-hidden") ?? null;
   return value === null || value === true || value === "true";
 }
 
 /** Svelte's `has_disabled_attribute`. */
 function disabled(attributes: ReadonlyMap<string, A11yValue>): boolean {
-  if (attributes.get("disabled")) return true;
+  if (attributes.get("disabled")) {
+    return true;
+  }
   return attributes.get("aria-disabled") === "true";
 }
 

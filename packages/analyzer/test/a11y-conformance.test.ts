@@ -58,7 +58,9 @@ function svelteWarnings(markup: string): Map<number, string[]> {
   const { warnings } = compile(markup, { generate: false, filename: "Probe.svelte" });
   const found = new Map<number, string[]>();
   for (const warning of warnings) {
-    if (!RULES.has(warning.code)) continue;
+    if (!RULES.has(warning.code)) {
+      continue;
+    }
     const line = warning.start!.line;
     found.set(line, [...(found.get(line) ?? []), warning.code].toSorted());
   }
@@ -176,7 +178,9 @@ describe("UF3030's rules", () => {
     for (const tag of [...HTML_ELEMENTS].filter((name) => !skipped.has(name))) {
       const cases: { attributes: Record<string, A11yValue>; handlers: string[] }[] = [];
       for (const attributes of attributeSets) {
-        for (const handlers of handlerSets) cases.push({ attributes, handlers });
+        for (const handlers of handlerSets) {
+          cases.push({ attributes, handlers });
+        }
       }
       const markup = [
         "<script>let { handle, dynamic } = $props();</script>",
@@ -195,7 +199,9 @@ describe("UF3030's rules", () => {
           expected,
         );
         compared++;
-        if (expected.length) flagged++;
+        if (expected.length) {
+          flagged++;
+        }
       }
     }
     expect(compared).toBeGreaterThan(8000);

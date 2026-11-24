@@ -32,9 +32,13 @@ const SCOPE_PREFIX = "data-uf-";
  */
 export function planRest(component: UfComponent, names: VueNames): RestPlan | undefined {
   const element = restElement(component);
-  if (!element) return undefined;
+  if (!element) {
+    return undefined;
+  }
   const { render } = component;
-  if (render === element) return { element: "$attrs", functions: [] };
+  if (render === element) {
+    return { element: "$attrs", functions: [] };
+  }
   const rest = names.scope.claim("restAttrs");
   const functions = [
     [
@@ -48,7 +52,9 @@ export function planRest(component: UfComponent, names: VueNames): RestPlan | un
   const single =
     render.kind === "Element" ||
     (render.children.length === 1 && render.children[0]!.kind === "Component");
-  if (!single) return { element: `${rest}($attrs)`, functions };
+  if (!single) {
+    return { element: `${rest}($attrs)`, functions };
+  }
   const scope = names.scope.claim("scopeAttrs");
   functions.unshift(
     [
@@ -83,14 +89,18 @@ export function restAttributesType(
       ? `Omit<${type}, ${[...new Set(declared)].map((name) => JSON.stringify(name)).join(" | ")}>`
       : `(${type})`;
   }
-  if (!element || element === component.render) return undefined;
+  if (!element || element === component.render) {
+    return undefined;
+  }
   const declared = declaredNames(component);
   // An input's `autocomplete` is Vue's `InputAutoCompleteAttribute`, a union of every autofill
   // token and `string & {}`, which `defineProps` intersects with itself (`LooseRequired`) past
   // what TypeScript represents (TS2590) once a prop is read: `string` takes the same values. Not
   // a type literal, which `vue/require-default-prop` would read as a prop of its own.
   const input = element.tag === "input";
-  if (input) declared.push("autocomplete");
+  if (input) {
+    declared.push("autocomplete");
+  }
   const type = `${attributes()}[${JSON.stringify(element.tag)}]`;
   const omitted = declared.length
     ? `Omit<${type}, ${[...new Set(declared)].map((name) => JSON.stringify(name)).join(" | ")}>`
@@ -114,11 +124,17 @@ function declaredNames(component: UfComponent): string[] {
  * only node the component renders, with fallthrough on.
  */
 function dynamicRootTags(component: UfComponent): string[] | undefined {
-  if (component.inheritAttrs === false || component.render.kind === "Element") return undefined;
+  if (component.inheritAttrs === false || component.render.kind === "Element") {
+    return undefined;
+  }
   const { render } = component;
   const [only] = render.children;
-  if (render.children.length !== 1 || only?.kind !== "Dynamic") return undefined;
-  if (only.span.start !== render.span.start || only.span.end !== render.span.end) return undefined;
+  if (render.children.length !== 1 || only?.kind !== "Dynamic") {
+    return undefined;
+  }
+  if (only.span.start !== render.span.start || only.span.end !== render.span.end) {
+    return undefined;
+  }
   const tags = only.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
   return tags.length && tags.length === only.candidates.length ? tags : undefined;
 }
@@ -133,8 +149,12 @@ function restElement(component: UfComponent): ElementNode | undefined {
   let found: ElementNode | undefined;
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" || found) return;
-      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+      if (node.kind !== "Element" || found) {
+        return;
+      }
+      if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+        found = node;
+      }
     },
   });
   return found;
@@ -153,11 +173,17 @@ export function rootElementRefs(
   const refs = new Map<BindingId, string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Component" || !exposesNothing(module, node.component)) return;
+      if (node.kind !== "Component" || !exposesNothing(module, node.component)) {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Ref" || refs.has(attribute.binding)) continue;
+        if (attribute.kind !== "Ref" || refs.has(attribute.binding)) {
+          continue;
+        }
         const binding = component.bindings.find((each) => each.id === attribute.binding);
-        if (binding) refs.set(attribute.binding, names.scope.claim(`${binding.name}Component`));
+        if (binding) {
+          refs.set(attribute.binding, names.scope.claim(`${binding.name}Component`));
+        }
       }
     },
   });
@@ -173,9 +199,13 @@ export function changingElementRefs(component: UfComponent, module: UfModule): S
   const refs = new Set<BindingId>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Component" || !rendersTags(module, node.component)) return;
+      if (node.kind !== "Component" || !rendersTags(module, node.component)) {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Ref") refs.add(attribute.binding);
+        if (attribute.kind === "Ref") {
+          refs.add(attribute.binding);
+        }
       }
     },
   });
@@ -186,7 +216,9 @@ export function changingElementRefs(component: UfComponent, module: UfModule): S
 function rendersTags(module: UfModule, local: string): boolean {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     const api = entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"
@@ -195,7 +227,9 @@ function rendersTags(module: UfModule, local: string): boolean {
     return api !== undefined && api.exposes.length === 0 && api.refTags !== undefined;
   }
   const own = module.components.find((each) => each.name === local);
-  if (!own || own.exposes?.functions.length || own.render.kind === "Element") return false;
+  if (!own || own.exposes?.functions.length || own.render.kind === "Element") {
+    return false;
+  }
   const [only] = own.render.children;
   return own.render.children.length === 1 && only?.kind === "Dynamic";
 }
@@ -209,7 +243,9 @@ function rendersTags(module: UfModule, local: string): boolean {
 function exposesNothing(module: UfModule, local: string): boolean {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     const api = entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"

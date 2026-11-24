@@ -177,15 +177,23 @@ function previewPlugin(
       building = config.command === "build";
     },
     resolveId(id) {
-      if (id === page) return page;
-      if (id === FRAME_MODULE) return FRAME_MODULE_ID;
+      if (id === page) {
+        return page;
+      }
+      if (id === FRAME_MODULE) {
+        return FRAME_MODULE_ID;
+      }
       // The Astro adapter imports Vitest's commands, which it reads only without the preview's
       // render transport: the page gets an empty module, since the real one throws on load.
-      if (id === "vitest/browser") return NO_VITEST_ID;
+      if (id === "vitest/browser") {
+        return NO_VITEST_ID;
+      }
       return null;
     },
     load(id) {
-      if (id === page) return framePage(options.target);
+      if (id === page) {
+        return framePage(options.target);
+      }
       if (id === FRAME_MODULE_ID) {
         return frameModule(
           options.target,
@@ -199,7 +207,9 @@ function previewPlugin(
           options.controls,
         );
       }
-      if (id === NO_VITEST_ID) return "export const commands = {};\n";
+      if (id === NO_VITEST_ID) {
+        return "export const commands = {};\n";
+      }
       return null;
     },
     configureServer(server) {
@@ -272,7 +282,9 @@ async function renderRequest(
 }
 
 function send(response: ServerResponse, status: number, type: string, body: string): void {
-  if (response.headersSent) return;
+  if (response.headersSent) {
+    return;
+  }
   response.writeHead(status, { "content-type": `${type}; charset=utf-8` });
   response.end(body);
 }
@@ -499,7 +511,9 @@ export async function renderTargetEntries(
 /** The value of a module whose whole code is `export default <JSON>;`, or `undefined`. */
 function defaultExport(code: string): unknown {
   const match = /^export default (.*);\s*$/s.exec(code);
-  if (!match) return undefined;
+  if (!match) {
+    return undefined;
+  }
   try {
     return JSON.parse(match[1]!) as unknown;
   } catch {
@@ -523,9 +537,13 @@ function isReference(value: unknown): value is { id: string } & Record<string, u
 export function withoutRoot(text: string, root: string): string {
   let result = text;
   for (const directory of [root, repositoryOf(root)]) {
-    if (directory === undefined) continue;
+    if (directory === undefined) {
+      continue;
+    }
     const prefix = `${directory.split(sep).join("/").replace(/\/$/, "")}/`;
-    if (result.includes(prefix)) result = result.split(prefix).join("");
+    if (result.includes(prefix)) {
+      result = result.split(prefix).join("");
+    }
   }
   return result;
 }
@@ -533,8 +551,12 @@ export function withoutRoot(text: string, root: string): string {
 /** The nearest directory above `root`, or `root` itself, that holds `.git`. */
 function repositoryOf(root: string): string | undefined {
   for (let directory = root; ; directory = dirname(directory)) {
-    if (existsSync(join(directory, ".git"))) return directory;
-    if (dirname(directory) === directory) return undefined;
+    if (existsSync(join(directory, ".git"))) {
+      return directory;
+    }
+    if (dirname(directory) === directory) {
+      return undefined;
+    }
   }
 }
 

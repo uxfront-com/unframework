@@ -113,12 +113,19 @@ export function directoryOf(path: string): string {
  * not relative. A `..` that leaves the root stays (`../b`), and one after it adds another.
  */
 export function joinPath(directory: string, specifier: string): string | undefined {
-  if (!specifier.startsWith("./") && !specifier.startsWith("../")) return undefined;
+  if (!specifier.startsWith("./") && !specifier.startsWith("../")) {
+    return undefined;
+  }
   const parts = directory ? directory.split("/") : [];
   for (const part of specifier.split("/")) {
-    if (part === "." || part === "") continue;
-    if (part === ".." && parts.length && parts.at(-1) !== "..") parts.pop();
-    else parts.push(part);
+    if (part === "." || part === "") {
+      continue;
+    }
+    if (part === ".." && parts.length && parts.at(-1) !== "..") {
+      parts.pop();
+    } else {
+      parts.push(part);
+    }
   }
   return parts.join("/");
 }
@@ -128,7 +135,9 @@ export function relativePath(directory: string, path: string): string {
   const from = directory ? directory.split("/") : [];
   const to = path.split("/");
   let shared = 0;
-  while (shared < from.length && shared < to.length - 1 && from[shared] === to[shared]) shared++;
+  while (shared < from.length && shared < to.length - 1 && from[shared] === to[shared]) {
+    shared++;
+  }
   return [...from.slice(shared).map(() => ".."), ...to.slice(shared)].join("/");
 }
 
@@ -143,22 +152,32 @@ export function componentImportNames(
 ): { specifier: string; span: Span; names: string[] }[] {
   const found = new Map<string, { span: Span; names: string[] }>();
   for (const statement of parsed.program.body) {
-    if (statement.type !== "ImportDeclaration" || statement.importKind === "type") continue;
+    if (statement.type !== "ImportDeclaration" || statement.importKind === "type") {
+      continue;
+    }
     const specifier = statement.source.value;
-    if (!COMPONENT_MODULE.test(specifier)) continue;
+    if (!COMPONENT_MODULE.test(specifier)) {
+      continue;
+    }
     const names = statement.specifiers.flatMap((imported) => {
-      if (imported.type === "ImportDefaultSpecifier") return ["default"];
-      if (imported.type !== "ImportSpecifier" || imported.importKind === "type") return [];
+      if (imported.type === "ImportDefaultSpecifier") {
+        return ["default"];
+      }
+      if (imported.type !== "ImportSpecifier" || imported.importKind === "type") {
+        return [];
+      }
       const name = imported.imported;
       return [name.type === "Identifier" ? name.name : String(name.value)];
     });
     const entry = found.get(specifier);
-    if (entry) entry.names.push(...names);
-    else
+    if (entry) {
+      entry.names.push(...names);
+    } else {
       found.set(specifier, {
         span: { start: statement.source.start, end: statement.source.end },
         names,
       });
+    }
   }
   return [...found].map(([specifier, entry]) => ({ specifier, ...entry }));
 }

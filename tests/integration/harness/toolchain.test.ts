@@ -114,9 +114,13 @@ describe(`toolchain:${target}`, () => {
   for (const info of cases) {
     const errors = errorState(info, target);
     // A case with compile errors has no output: the compile project records L3+ as skipped.
-    if (errors === true) continue;
+    if (errors === true) {
+      continue;
+    }
     it(`${info.id} › ${target}`, async ({ task }) => {
-      if (errors instanceof Error) throw errors;
+      if (errors instanceof Error) {
+        throw errors;
+      }
       const subject = { case: info.id, target, quarantine: harness.quarantine };
       await checkLayers(task, subject, {
         L3: () => {
@@ -126,7 +130,9 @@ describe(`toolchain:${target}`, () => {
             casesFiles(files, info),
             outputs,
           );
-          if (problems.length) throw new Error(problems.join("\n"));
+          if (problems.length) {
+            throw new Error(problems.join("\n"));
+          }
         },
         L4: () => {
           const { files, fixtures, typechecked, L4 } = ran();
@@ -135,12 +141,16 @@ describe(`toolchain:${target}`, () => {
             ...typecheckProblems(messages, casesFiles(files, info), typechecked),
             ...consumerProblems(target, info, fixtures.get(info.id) ?? [], messages),
           ];
-          if (problems.length) throw new Error(problems.join("\n"));
+          if (problems.length) {
+            throw new Error(problems.join("\n"));
+          }
         },
         L5: () => {
           const { files, outputs, L5 } = ran();
           const problems = lintProblems(results("L5", L5), casesFiles(files, info), outputs);
-          if (problems.length) throw new Error(problems.join("\n"));
+          if (problems.length) {
+            throw new Error(problems.join("\n"));
+          }
         },
       });
     });
@@ -148,13 +158,17 @@ describe(`toolchain:${target}`, () => {
 });
 
 function ran(): Checked {
-  if (failure !== undefined || !checked) throw new Error(failure ?? "The toolchain did not run.");
+  if (failure !== undefined || !checked) {
+    throw new Error(failure ?? "The toolchain did not run.");
+  }
   return checked;
 }
 
 /** A tool's results, or its failure to run, which fails its layer. */
 function results<T>(layer: keyof typeof TOOLS, settled: PromiseSettledResult<T>): T {
-  if (settled.status === "fulfilled") return settled.value;
+  if (settled.status === "fulfilled") {
+    return settled.value;
+  }
   throw new Error(`The ${target} ${TOOLS[layer]} did not run: ${describeError(settled.reason)}`);
 }
 
@@ -167,7 +181,9 @@ function describeError(error: unknown): string {
 
 function casesFiles(files: Map<string, string[]>, info: CaseInfo): string[] {
   const list = files.get(info.id);
-  if (list?.length) return list;
+  if (list?.length) {
+    return list;
+  }
   const directory = display(join(info.dir, "__output__", target));
   throw new Error(
     harness.canary
@@ -184,7 +200,9 @@ function caseFixtures(files: Map<string, string[]>): Map<string, Fixture[]> {
   const fixtures = new Map<string, Fixture[]>();
   for (const id of files.keys()) {
     const paths = consumerFixtures(target, id);
-    if (!paths.length) continue;
+    if (!paths.length) {
+      continue;
+    }
     fixtures.set(
       id,
       harness.canary

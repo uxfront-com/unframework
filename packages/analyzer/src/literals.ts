@@ -149,7 +149,9 @@ export function reportCharacters(node: StaticString, source: string, reporter: R
     }
     const codePoint = value.codePointAt(0)!;
     const problem = unkeptCharacter(codePoint);
-    if (!problem) continue;
+    if (!problem) {
+      continue;
+    }
     const name = `U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`;
     reporter.report(
       "UF3010",

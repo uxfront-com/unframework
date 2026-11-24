@@ -68,7 +68,9 @@ function workflowJob(file: string, id: string): string {
     .slice(workflow.indexOf("\njobs:\n"))
     .split(/^ {2}(?=[a-z0-9-]+:\n)/m)
     .find((block) => block.startsWith(`${id}:\n`));
-  if (!job) throw new Error(`${file} has no ${id} job.`);
+  if (!job) {
+    throw new Error(`${file} has no ${id} job.`);
+  }
   return job;
 }
 
@@ -170,9 +172,15 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
 /** The elements of a render tree, in document order, through branches and list bodies. */
 function elementsOf(nodes: readonly RenderNode[]): ElementNode[] {
   return nodes.flatMap((node): ElementNode[] => {
-    if (node.kind === "Element") return [node, ...elementsOf(node.children)];
-    if (node.kind === "If") return node.branches.flatMap((branch) => elementsOf(branch.children));
-    if (node.kind === "For") return elementsOf([node.body]);
+    if (node.kind === "Element") {
+      return [node, ...elementsOf(node.children)];
+    }
+    if (node.kind === "If") {
+      return node.branches.flatMap((branch) => elementsOf(branch.children));
+    }
+    if (node.kind === "For") {
+      return elementsOf([node.body]);
+    }
     return [];
   });
 }
@@ -180,7 +188,9 @@ function elementsOf(nodes: readonly RenderNode[]): ElementNode[] {
 /** The root element of a module's first component. */
 function rootElement(ir: UfModule | undefined): ElementNode {
   const render = ir?.components[0]?.render;
-  if (render?.kind !== "Element") throw new Error("The component's root is no element.");
+  if (render?.kind !== "Element") {
+    throw new Error("The component's root is no element.");
+  }
   return render;
 }
 
@@ -263,7 +273,9 @@ describe("canaries", () => {
       "L2-unformatted",
       "L14-map-shifted",
     ]);
-    for (const canary of compileOnly) expect(canaryProjects(canary)).toEqual(["compile"]);
+    for (const canary of compileOnly) {
+      expect(canaryProjects(canary)).toEqual(["compile"]);
+    }
     expect(canarySource(null, source)).toBe(source);
     expect(canaryFormats(null)).toBe(true);
     expect(canaryFormats("L2-output-edited")).toBe(true);
@@ -325,7 +337,9 @@ describe("canaries", () => {
     const runs = new Map<string, string[]>();
     for (const { canaries, shard } of entries) {
       const part = shard ? `${shard.index}/${shard.count}` : "all";
-      for (const { id } of canaries) runs.set(id, [...(runs.get(id) ?? []), part]);
+      for (const { id } of canaries) {
+        runs.set(id, [...(runs.get(id) ?? []), part]);
+      }
     }
     expect([...runs.keys()].toSorted()).toEqual(CANARIES.map(({ id }) => id).toSorted());
     for (const [id, parts] of runs) {
@@ -479,8 +493,9 @@ describe("canaries", () => {
     expect(shardFilters(shardCases(cases, shard), shard)).toEqual(["harness/", ...specs]);
     expect(shardFilters(cases, undefined)).toEqual([]);
     // No spec path holds the filter the other projects' files match.
-    for (const info of listCases().map(canaryCase))
+    for (const info of listCases().map(canaryCase)) {
       expect(info.spec ?? "").not.toContain("harness/");
+    }
   });
 
   it("run each project whose specs fail to load in a Vitest run of its own, named for it", () => {
@@ -747,8 +762,12 @@ describe("canaries", () => {
           expect(part(corrupted, false), where).toEqual(part(clean, false));
           const [sheet, ...more] = part(clean, true);
           expect(more, where).toEqual([]);
-          if (!sheet) continue;
-          if (target === REFERENCE) sheets.add(info.id);
+          if (!sheet) {
+            continue;
+          }
+          if (target === REFERENCE) {
+            sheets.add(info.id);
+          }
           const [dropped] = part(corrupted, true);
           if (target === REFERENCE) {
             expect(dropped, where).toEqual(sheet);
@@ -1200,7 +1219,9 @@ describe("canaries", () => {
     const amount = Number(/^filter: invert\(([\d.]+)\)$/.exec(filter!)![1]);
     // The filter's per-channel function (Filter Effects 1, `invert()`).
     const invert = (channel: number) => amount * (1 - channel) + (1 - amount) * channel;
-    for (const channel of [0, 1]) expect(invert(invert(channel))).not.toBeCloseTo(channel, 2);
+    for (const channel of [0, 1]) {
+      expect(invert(invert(channel))).not.toBeCloseTo(channel, 2);
+    }
   });
 
   describe("on roots that already set what they set", () => {
@@ -1479,7 +1500,9 @@ describe("canaries", () => {
     expect(Object.keys(ssr.evidence)).toEqual(["ssr"]);
     expect(Object.keys(browser.evidence)).toEqual(["browser"]);
     // The compile and its output stay as they were: only the served map moves.
-    for (const id of [ssr.id, browser.id]) expect(canaryPlugins(id, "react")).toEqual([]);
+    for (const id of [ssr.id, browser.id]) {
+      expect(canaryPlugins(id, "react")).toEqual([]);
+    }
   });
 
   it("shift a served module's map down one line, column for column", () => {

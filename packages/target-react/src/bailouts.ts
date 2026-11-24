@@ -30,14 +30,20 @@ export function compilerBailout(
   for (const piece of pieces) {
     if (piece.kind === "default") {
       const { root } = parseCodeSource(piece.code, "expression");
-      if (!reorderable(root as Node, locals, true)) return defaultReason(piece.code);
+      if (!reorderable(root as Node, locals, true)) {
+        return defaultReason(piece.code);
+      }
       const found = new Walk(locals).run(root);
-      if (found) return found;
+      if (found) {
+        return found;
+      }
       continue;
     }
     const { root } = parseCodeSource(piece.code, piece.kind);
     const found = new Walk(locals).run(root);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   return undefined;
 }
@@ -46,11 +52,15 @@ export function compilerBailout(
 export function declaredNames(pieces: readonly ComponentCode[]): Set<string> {
   const names = new Set<string>();
   for (const piece of pieces) {
-    if (piece.kind === "default") continue;
+    if (piece.kind === "default") {
+      continue;
+    }
     const { root } = parseCodeSource(piece.code, piece.kind);
     visit(root, (node) => {
       for (const pattern of declaredPatterns(node)) {
-        for (const name of patternNames(pattern)) names.add(name);
+        for (const name of patternNames(pattern)) {
+          names.add(name);
+        }
       }
     });
   }
@@ -107,15 +117,21 @@ class Walk {
   /** Records each function's declarations, and the names nested functions read of them. */
   #collect(node: unknown, scopes: Scope[]): void {
     if (Array.isArray(node)) {
-      for (const item of node) this.#collect(item, scopes);
+      for (const item of node) {
+        this.#collect(item, scopes);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     let inner = scopes;
     if (FUNCTIONS.has(node.type)) {
       const scope: Scope = { declared: new Set(), captured: new Set() };
       for (const parameter of node.params as Node[]) {
-        for (const name of patternNames(parameter)) scope.declared.add(name);
+        for (const name of patternNames(parameter)) {
+          scope.declared.add(name);
+        }
       }
       this.#scopes.set(node, scope);
       inner = [...scopes, scope];
@@ -124,13 +140,19 @@ class Walk {
       }
     }
     for (const pattern of declaredPatterns(node)) {
-      if (FUNCTIONS.has(node.type)) continue;
-      for (const name of patternNames(pattern)) inner.at(-1)!.declared.add(name);
+      if (FUNCTIONS.has(node.type)) {
+        continue;
+      }
+      for (const name of patternNames(pattern)) {
+        inner.at(-1)!.declared.add(name);
+      }
     }
     if (node.type === "Identifier") {
       const name = node.name as string;
       const owner = inner.findLastIndex((scope) => scope.declared.has(name));
-      if (owner !== -1 && owner < inner.length - 1) inner[owner]!.captured.add(name);
+      if (owner !== -1 && owner < inner.length - 1) {
+        inner[owner]!.captured.add(name);
+      }
     }
     for (const [key, value] of Object.entries(node)) {
       if (key !== "type" && key !== "parent" && typeof value === "object") {
@@ -151,13 +173,19 @@ class Walk {
           parent && { ...parent, last: index === node.length - 1 },
           context,
         );
-        if (found) return found;
+        if (found) {
+          return found;
+        }
       }
       return undefined;
     }
-    if (!isNode(node)) return undefined;
+    if (!isNode(node)) {
+      return undefined;
+    }
     const own = this.#shape(node, parent, context);
-    if (own) return own;
+    if (own) {
+      return own;
+    }
     let inner = context;
     // A function is lowered on its own: a `try` around it is not around its code.
     if (FUNCTIONS.has(node.type)) {
@@ -170,7 +198,9 @@ class Walk {
       const child =
         node.type === "TryStatement" && key === "block" ? { ...inner, inTry: true } : inner;
       const found = this.#check(value, { node, key, last: true }, child);
-      if (found) return found;
+      if (found) {
+        return found;
+      }
     }
     return undefined;
   }
@@ -183,15 +213,21 @@ class Walk {
   ): string | undefined {
     if (context.inTry) {
       const value = TRY_VALUES.get(node.type);
-      if (value) return `${value} inside a \`try\` block`;
+      if (value) {
+        return `${value} inside a \`try\` block`;
+      }
       if (node.type === "LogicalExpression") {
         return `\`${node.operator as string}\` inside a \`try\` block`;
       }
     }
     switch (node.type) {
       case "TryStatement":
-        if (!node.handler) return "a `try` without a `catch` clause";
-        if (node.finalizer) return "a `try` with a `finally` clause";
+        if (!node.handler) {
+          return "a `try` without a `catch` clause";
+        }
+        if (node.finalizer) {
+          return "a `try` with a `finally` clause";
+        }
         return undefined;
       case "CatchClause":
         return isNode(node.param) && node.param.type !== "Identifier"
@@ -207,14 +243,18 @@ class Walk {
         if (!isNode(node.init) || node.init.type !== "VariableDeclaration") {
           return "a `for` loop whose head declares no variable";
         }
-        if (!node.test) return "a `for` loop without a condition";
+        if (!node.test) {
+          return "a `for` loop without a condition";
+        }
         if (isNode(node.update) && node.update.type === "SequenceExpression") {
           return "a `for` loop whose update is a comma expression";
         }
         return undefined;
       case "ForInStatement":
       case "ForOfStatement":
-        if (node.await) return "`for await`";
+        if (node.await) {
+          return "`for await`";
+        }
         return hasDefault(node.left) ? "a default in a `for…of` or `for…in` pattern" : undefined;
       case "Literal":
         return node.bigint !== undefined && node.bigint !== null ? "a BigInt literal" : undefined;
@@ -225,7 +265,9 @@ class Walk {
       case "AssignmentExpression":
       case "UpdateExpression": {
         const target = (node.type === "AssignmentExpression" ? node.left : node.argument) as Node;
-        if (ASSERTIONS.has(target.type)) return "a type assertion on an assignment's target";
+        if (ASSERTIONS.has(target.type)) {
+          return "a type assertion on an assignment's target";
+        }
         if (
           node.type === "AssignmentExpression" &&
           node.operator === "=" &&
@@ -264,7 +306,9 @@ const TRY_VALUES: ReadonlyMap<string, string> = new Map([
 ]);
 
 function defaultReason(code: string): string {
-  if (!code || code.length > 40 || code.includes("\n")) return "a default value it cannot reorder";
+  if (!code || code.length > 40 || code.includes("\n")) {
+    return "a default value it cannot reorder";
+  }
   return `a default value it cannot reorder (${code.includes("`") ? `\`\` ${code} \`\`` : `\`${code}\``})`;
 }
 
@@ -306,7 +350,9 @@ function reorderable(node: Node, locals: ReadonlySet<string>, allowLocals: boole
       );
     case "MemberExpression": {
       let inner: Node = node;
-      while (inner.type === "MemberExpression") inner = inner.object as Node;
+      while (inner.type === "MemberExpression") {
+        inner = inner.object as Node;
+      }
       return inner.type === "Identifier" && !locals.has(inner.name as string);
     }
     case "ArrowFunctionExpression": {
@@ -364,7 +410,9 @@ function valueUsed(parent: { node: Node; key: string; last: boolean }): boolean 
 function hasDefault(pattern: unknown): boolean {
   let found = false;
   visit(pattern, (node) => {
-    if (node.type === "AssignmentPattern") found = true;
+    if (node.type === "AssignmentPattern") {
+      found = true;
+    }
   });
   return found;
 }
@@ -387,7 +435,9 @@ function declaredPatterns(node: Node): unknown[] {
 
 /** The names a binding pattern declares. */
 function patternNames(pattern: unknown): string[] {
-  if (!isNode(pattern)) return [];
+  if (!isNode(pattern)) {
+    return [];
+  }
   switch (pattern.type) {
     case "Identifier":
       return [pattern.name as string];
@@ -420,12 +470,18 @@ function isNode(value: unknown): value is Node {
 /** Calls `callback` on every node of an AST, parents before their children. */
 function visit(root: unknown, callback: (node: Node) => void): void {
   if (Array.isArray(root)) {
-    for (const item of root) visit(item, callback);
+    for (const item of root) {
+      visit(item, callback);
+    }
     return;
   }
-  if (!isNode(root)) return;
+  if (!isNode(root)) {
+    return;
+  }
   callback(root);
   for (const [key, value] of Object.entries(root)) {
-    if (key !== "type" && key !== "parent" && typeof value === "object") visit(value, callback);
+    if (key !== "type" && key !== "parent" && typeof value === "object") {
+      visit(value, callback);
+    }
   }
 }

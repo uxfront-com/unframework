@@ -141,8 +141,11 @@ describe("svelte target", () => {
     };
     for (const [name, cell] of Object.entries(target.capabilities)) {
       const helper = helpers[name];
-      if (helper) expect(cell).toMatchObject({ support: "emulated", helper });
-      else expect(cell).toEqual({ support: "native" });
+      if (helper) {
+        expect(cell).toMatchObject({ support: "emulated", helper });
+      } else {
+        expect(cell).toEqual({ support: "native" });
+      }
     }
   });
 
@@ -859,7 +862,9 @@ describe("svelte setup", () => {
 /** What the target emits for a corpus case's sources, by file name. */
 async function caseOutputs(name: string): Promise<Record<string, string>> {
   const found = corpus().find((each) => each.name === name);
-  if (!found) throw new Error(`no corpus case ${name}`);
+  if (!found) {
+    throw new Error(`no corpus case ${name}`);
+  }
   const files = (await Promise.all(found.modules.map(emitFormatted))).flat();
   return Object.fromEntries(files.map((file) => [file.path, file.contents]));
 }

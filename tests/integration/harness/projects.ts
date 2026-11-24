@@ -80,7 +80,9 @@ export function referencesOnly(
 ): Record<string, string[]> {
   const only: Record<string, string[]> = {};
   for (const [id, config] of Object.entries(cases)) {
-    if (config.reference === undefined || (!pass && targets.includes(config.reference))) continue;
+    if (config.reference === undefined || (!pass && targets.includes(config.reference))) {
+      continue;
+    }
     (only[config.reference] ??= []).push(id);
   }
   return only;
@@ -272,21 +274,31 @@ export function referencePages(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): number | undefined {
   // An update run writes artefacts, so it keeps the page count it has always had.
-  if (setup.mode.update || !fileParallelism(setup.mode)) return undefined;
-  if (env.VITEST_MAX_WORKERS !== undefined) return undefined;
-  if (argv.some((arg) => /^--max-?workers(=|$)/i.test(arg))) return undefined;
+  if (setup.mode.update || !fileParallelism(setup.mode)) {
+    return undefined;
+  }
+  if (env.VITEST_MAX_WORKERS !== undefined) {
+    return undefined;
+  }
+  if (argv.some((arg) => /^--max-?workers(=|$)/i.test(arg))) {
+    return undefined;
+  }
   const selected = projectEntries(setup).filter((entry) =>
     isSelected(entry.name, setup.projectFilter),
   );
   const reference = selected.find(
     (entry) => entry.kind === "browser" && entry.target === REFERENCE,
   );
-  if (!reference) return undefined;
+  if (!reference) {
+    return undefined;
+  }
   const group = projectGroup(setup, reference.kind, reference.target);
   const shared = selected.some(
     (entry) => entry !== reference && projectGroup(setup, entry.kind, entry.target) === group,
   );
-  if (shared) return undefined;
+  if (shared) {
+    return undefined;
+  }
   return Math.min(MAX_REFERENCE_PAGES, Math.max(1, Math.round(cpus * REFERENCE_PAGES_PER_CPU)));
 }
 
@@ -614,7 +626,9 @@ function pageCompilers(
 ): Plugin[] {
   const options = unpluginOptions(setup, target);
   const canary = setup.mode.canary ? findCanary(setup.mode.canary) : undefined;
-  if (kind !== "hydrate" || !canary?.clientOnly) return unframework(options);
+  if (kind !== "hydrate" || !canary?.clientOnly) {
+    return unframework(options);
+  }
   return [
     ...onEnvironments(unframework(options), (name) => name === "client"),
     ...onEnvironments(unframework({ ...options, plugins: [] }), (name) => name !== "client"),
@@ -657,7 +671,9 @@ export function ssrExternals(fragment: ViteUserConfig): Plugin {
     configEnvironment: {
       order: "post",
       handler(name, config) {
-        if (name !== "ssr" || !names.length) return;
+        if (name !== "ssr" || !names.length) {
+          return;
+        }
         const current = config.resolve?.external;
         config.resolve ??= {};
         config.resolve.external = [...(Array.isArray(current) ? current : []), ...names];
@@ -683,7 +699,9 @@ export function noErrorBroadcast(): Plugin {
       hot.send = (...args: unknown[]) => {
         const [payload] = args;
         if (typeof payload === "object" && payload !== null && "type" in payload) {
-          if (payload.type === "error") return;
+          if (payload.type === "error") {
+            return;
+          }
         }
         Reflect.apply(send, undefined, args);
       };
@@ -729,7 +747,9 @@ function resolveModule(specifier: string): string {
  * Without patterns every project is selected.
  */
 export function isSelected(name: string, patterns: readonly string[] | undefined): boolean {
-  if (!patterns?.length) return true;
+  if (!patterns?.length) {
+    return true;
+  }
   if (
     patterns.some((pattern) => pattern.startsWith("!") && toRegExp(pattern.slice(1)).test(name))
   ) {
@@ -750,9 +770,14 @@ export function projectPatterns(argv: readonly string[]): string[] {
   const patterns: string[] = [];
   for (let index = 0; index < argv.length; index += 1) {
     const option = /^(?:--project|-p)(?:=(.*))?$/s.exec(argv[index]!);
-    if (!option) continue;
-    if (option[1] !== undefined) patterns.push(option[1]);
-    else if (argv[index + 1] !== undefined) patterns.push(argv[(index += 1)]!);
+    if (!option) {
+      continue;
+    }
+    if (option[1] !== undefined) {
+      patterns.push(option[1]);
+    } else if (argv[index + 1] !== undefined) {
+      patterns.push(argv[(index += 1)]!);
+    }
   }
   return patterns;
 }

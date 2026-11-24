@@ -102,8 +102,12 @@ export function assertInstalledFromTarball(copy: string, name: string): void {
   const visit = (directory: string): void => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
-      if (lstatSync(path).isSymbolicLink()) throw new Error(`${path} is a symbolic link.`);
-      if (entry.isDirectory()) visit(path);
+      if (lstatSync(path).isSymbolicLink()) {
+        throw new Error(`${path} is a symbolic link.`);
+      }
+      if (entry.isDirectory()) {
+        visit(path);
+      }
     }
   };
   visit(installed);
@@ -165,7 +169,9 @@ export function workspacePackages(root: string = join(repoRoot, "packages")): Ma
   const found = new Map<string, string>();
   for (const directory of readdirSync(root)) {
     const path = join(root, directory);
-    if (existsSync(join(path, "package.json"))) found.set(readManifest(path).name, path);
+    if (existsSync(join(path, "package.json"))) {
+      found.set(readManifest(path).name, path);
+    }
   }
   return found;
 }
@@ -182,9 +188,13 @@ export function workspaceClosure(
   const seen = new Set<string>();
   const visit = (manifest: Manifest): void => {
     for (const [name, specifier] of Object.entries<string>(manifest.dependencies ?? {})) {
-      if (!specifier.startsWith("workspace:") || seen.has(name)) continue;
+      if (!specifier.startsWith("workspace:") || seen.has(name)) {
+        continue;
+      }
       const directory = packages.get(name);
-      if (!directory) throw new Error(`${manifest.name} depends on unknown package ${name}.`);
+      if (!directory) {
+        throw new Error(`${manifest.name} depends on unknown package ${name}.`);
+      }
       seen.add(name);
       visit(read(directory));
     }
@@ -202,10 +212,13 @@ export function copyManifest(
   packageManager: string,
 ): Manifest {
   const consumed = [designSystem];
-  if (app.modes.includes("plugin"))
+  if (app.modes.includes("plugin")) {
     consumed.push("@uxfront/unframework", "@unframework.dev/unplugin");
+  }
   const dependencies = { ...manifest.dependencies };
-  for (const name of consumed) dependencies[name] = `file:${tarballs[name]}`;
+  for (const name of consumed) {
+    dependencies[name] = `file:${tarballs[name]}`;
+  }
   // The pin keeps the install on the pnpm the repository uses, not on whichever version is
   // installed globally.
   return { ...manifest, packageManager, dependencies };
@@ -301,22 +314,30 @@ export function readCatalog(text: string, name?: string): Record<string, string>
   let indent = "  ";
   if (name === undefined) {
     start = lines.indexOf("catalog:");
-    if (start === -1) throw new Error("pnpm-workspace.yaml has no catalog.");
+    if (start === -1) {
+      throw new Error("pnpm-workspace.yaml has no catalog.");
+    }
   } else {
     const catalogs = lines.indexOf("catalogs:");
     const own = catalogs === -1 ? -1 : lines.indexOf(`  ${name}:`, catalogs + 1);
-    if (own === -1) throw new Error(`pnpm-workspace.yaml has no catalog named ${name}.`);
+    if (own === -1) {
+      throw new Error(`pnpm-workspace.yaml has no catalog named ${name}.`);
+    }
     start = own;
     indent = "    ";
   }
   const entryLine = new RegExp(`^${indent}("?)([^":\\s]+)\\1: (\\S+)$`);
   const catalog: Record<string, string> = {};
   for (const line of lines.slice(start + 1)) {
-    if (/^\s*(#.*)?$/.test(line)) continue;
+    if (/^\s*(#.*)?$/.test(line)) {
+      continue;
+    }
     const entry = entryLine.exec(line);
     if (!entry) {
       // The mapping ends where a line is indented less than its entries.
-      if (!line.startsWith(indent) || /^\S/.test(line)) break;
+      if (!line.startsWith(indent) || /^\S/.test(line)) {
+        break;
+      }
       throw new Error(`The catalog has a line this reader can't take: ${line}`);
     }
     catalog[entry[2]!] = entry[3]!;
@@ -331,12 +352,18 @@ export function readCatalog(text: string, name?: string): Record<string, string>
 export function readReleaseAgeExclude(text: string): string[] {
   const lines = text.split("\n");
   const start = lines.indexOf("minimumReleaseAgeExclude:");
-  if (start === -1) return [];
+  if (start === -1) {
+    return [];
+  }
   const excluded: string[] = [];
   for (const line of lines.slice(start + 1)) {
-    if (/^\s*(#.*)?$/.test(line)) continue;
+    if (/^\s*(#.*)?$/.test(line)) {
+      continue;
+    }
     const entry = /^ {2}- ("?)([^"]+)\1$/.exec(line);
-    if (!entry) break;
+    if (!entry) {
+      break;
+    }
     excluded.push(entry[2]!);
   }
   return excluded;
@@ -356,7 +383,9 @@ export function designSystemCopyManifest(
   const devDependencies: Record<string, string> = {};
   for (const name of DESIGN_SYSTEM_TEST_DEPENDENCIES) {
     const version = name === "typescript" ? typescript6 : (tarballs[name] ?? catalog[name]);
-    if (!version) throw new Error(`${name} is neither packed nor in the catalog.`);
+    if (!version) {
+      throw new Error(`${name} is neither packed nor in the catalog.`);
+    }
     devDependencies[name] = name in tarballs ? `file:${version}` : version;
   }
   return {
@@ -403,7 +432,9 @@ export const QWIK_VITEST_PEER = { key: "@qwik.dev/core>vitest", value: "5" };
  */
 export function designSystemCopyConfig(config: string): string {
   const targets = /^ {2}targets: (\[[^\]\n]*\]),$/m.exec(config)?.[1];
-  if (!targets) throw new Error("The design system's unframework.config.ts names no targets.");
+  if (!targets) {
+    throw new Error("The design system's unframework.config.ts names no targets.");
+  }
   return [
     `import { defineConfig } from "@uxfront/unframework/config";`,
     "",

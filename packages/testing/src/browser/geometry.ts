@@ -124,7 +124,9 @@ export function captureGeometry(
     };
     for (const child of children) {
       if (child.nodeType === Node.TEXT_NODE) {
-        if (!child.textContent?.trim()) continue;
+        if (!child.textContent?.trim()) {
+          continue;
+        }
         const range = document.createRange();
         range.selectNodeContents(child);
         nodes[next("#text")] = { box: [...range.getClientRects()].map((r) => toBox(r, origin)) };
@@ -136,14 +138,18 @@ export function captureGeometry(
         nodes[path] = { box: toBox(child.getBoundingClientRect(), origin), style };
         for (const pseudo of PSEUDO_ELEMENTS) {
           const computed = getComputedStyle(child, pseudo);
-          if (computed.content === "none") continue;
+          if (computed.content === "none") {
+            continue;
+          }
           nodes[`${path}${pseudo}`] = {
             style: { ...styleOf(computed), content: computed.content },
           };
         }
         // A `<textarea>`'s text is its default value, which it shows as its value, never laid out:
         // the box holds what it shows, and L7 compares the value (`uf:value`, ADR-0058's 4d).
-        if (child.localName !== "textarea") visit(child, `${path}/`);
+        if (child.localName !== "textarea") {
+          visit(child, `${path}/`);
+        }
       }
     }
   };

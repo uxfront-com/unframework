@@ -87,7 +87,9 @@ export class ImportSet {
       existing.type &&= Boolean(options.type);
       return existing.local;
     }
-    if (options.exact) this.scope.reserve(options.local ?? name);
+    if (options.exact) {
+      this.scope.reserve(options.local ?? name);
+    }
     const local = options.exact ? (options.local ?? name) : this.scope.claim(options.local ?? name);
     entry.names.set(name, { local, type: Boolean(options.type) });
     return local;
@@ -100,7 +102,9 @@ export class ImportSet {
    */
   addDefault(source: string, local: string, options: { exact?: boolean } = {}): string {
     const entry = this.#module(source);
-    if (options.exact) this.scope.reserve(local);
+    if (options.exact) {
+      this.scope.reserve(local);
+    }
     entry.defaultName ??= options.exact ? local : this.scope.claim(local);
     return entry.defaultName;
   }
@@ -118,8 +122,12 @@ export class ImportSet {
    */
   addPassThrough(source: string, name?: { imported: string; local: string }): void {
     let names = this.#passThrough.get(source);
-    if (!names) this.#passThrough.set(source, (names = []));
-    if (!name || names.some(({ local }) => local === name.local)) return;
+    if (!names) {
+      this.#passThrough.set(source, (names = []));
+    }
+    if (!name || names.some(({ local }) => local === name.local)) {
+      return;
+    }
     this.scope.reserve(name.local);
     names.push(name);
   }
@@ -143,7 +151,9 @@ export class ImportSet {
     return [...this.#modules.keys()].toSorted().map((source) => {
       const entry = this.#modules.get(source)!;
       const specifiers: AST.ImportDeclarationSpecifier[] = [];
-      if (entry.defaultName) specifiers.push(importDefaultSpecifier(entry.defaultName));
+      if (entry.defaultName) {
+        specifiers.push(importDefaultSpecifier(entry.defaultName));
+      }
       const names = [
         ...entry.names.entries(),
         ...entry.aliases.map(({ name, ...value }) => [name, value] as const),
@@ -179,7 +189,9 @@ export function passThroughImports(component: UfComponent, module: UfModule): Pa
   const read = new Set<string>();
   for (const { expression } of expressionsOf(component)) {
     for (const reference of expression.refs) {
-      if (reference.kind === "Import") read.add(reference.name);
+      if (reference.kind === "Import") {
+        read.add(reference.name);
+      }
     }
   }
   return (module.passThroughImports ?? []).flatMap((entry): PassThroughUse[] => {
@@ -197,8 +209,12 @@ export function addPassThroughImports(
   imports: ImportSet,
 ): void {
   for (const { specifier, names } of passThroughImports(component, module)) {
-    if (!names.length) imports.addPassThrough(specifier);
-    for (const name of names) imports.addPassThrough(specifier, name);
+    if (!names.length) {
+      imports.addPassThrough(specifier);
+    }
+    for (const name of names) {
+      imports.addPassThrough(specifier, name);
+    }
   }
 }
 
@@ -241,7 +257,11 @@ export function childImports(
           : node.kind === "Dynamic"
             ? node.candidates.flatMap((each) => (each.kind === "Component" ? [each.component] : []))
             : [];
-      for (const name of names) if (!used.includes(name)) used.push(name);
+      for (const name of names) {
+        if (!used.includes(name)) {
+          used.push(name);
+        }
+      }
     },
   });
   return used.map((local): ChildImport => {
@@ -249,7 +269,9 @@ export function childImports(
       const imported = entry.names.find(
         (name) => name.kind === "Component" && name.local === local,
       );
-      if (!imported) continue;
+      if (!imported) {
+        continue;
+      }
       const api = entry.api.components.find((each) =>
         imported.imported === "default"
           ? each.export === "default"
@@ -289,7 +311,9 @@ export function keyOwner(
   exports: readonly { kind: "default" | "named"; local: string }[] = [],
 ): string | undefined {
   const exported = exports.find((entry) => entry.kind === "default") ?? exports[0];
-  if (exported) return exported.local;
+  if (exported) {
+    return exported.local;
+  }
   const main =
     components.find((component) => component.export === "default") ??
     components.find((component) => component.export === "named") ??
@@ -330,7 +354,9 @@ export function keyImports(
     for (const entry of module.imports ?? []) {
       const imported = entry.names.find((name) => name.kind === "Key" && name.local === local);
       const owner = keyOwner(entry.api.components);
-      if (!imported || owner === undefined) continue;
+      if (!imported || owner === undefined) {
+        continue;
+      }
       const directory = entry.file.includes("/")
         ? entry.file.slice(0, entry.file.lastIndexOf("/"))
         : "";
@@ -355,7 +381,9 @@ export function keyImports(
 export function childIsAsync(module: UfModule, local: string): boolean {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
+    if (!imported) {
+      continue;
+    }
     const api = entry.api.components.find((each) =>
       imported.imported === "default"
         ? each.export === "default"

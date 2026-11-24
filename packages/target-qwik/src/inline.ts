@@ -151,10 +151,14 @@ function inlineIn(
   let kindOut = kind;
   const visit = (node: unknown, ancestors: readonly Node[], inFunction: boolean): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, ancestors, inFunction);
+      for (const item of node) {
+        visit(item, ancestors, inFunction);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     const site = siteOf(node, ancestors, inFunction || nested, {
       kind,
       root,
@@ -164,13 +168,19 @@ function inlineIn(
     if (target) {
       const name = (node.callee as Node).name as string;
       const args = (node.arguments as Node[]).map((argument) => {
-        if (argument.type === "SpreadElement") return undefined;
+        if (argument.type === "SpreadElement") {
+          return undefined;
+        }
         const inner = inlineIn(code.slice(argument.start, argument.end), "expression", inliner, {
           nested: inFunction || nested,
           keep: options.keep === true,
         });
-        for (const [local, fn] of inner.locals) locals.set(local, fn);
-        for (const fn of inner.spliced) spliced.add(fn);
+        for (const [local, fn] of inner.locals) {
+          locals.set(local, fn);
+        }
+        for (const fn of inner.spliced) {
+          spliced.add(fn);
+        }
         return inner.result;
       });
       const parent = ancestors.at(-1);
@@ -181,7 +191,9 @@ function inlineIn(
         options.keep !== true && (statement || whole) && !args.includes(undefined)
           ? blockForm(target, args as string[])
           : undefined;
-      if (block) spliced.add(target);
+      if (block) {
+        spliced.add(target);
+      }
       if (block && whole) {
         edits.push({ start: node.start, end: node.end, text: block.statements });
         kindOut = "statements";
@@ -216,8 +228,9 @@ function inlineIn(
     const inner = inFunction || isFunction(node);
     const next = [...ancestors, node];
     for (const [key, value] of Object.entries(node)) {
-      if (key !== "type" && key !== "parent" && typeof value === "object")
+      if (key !== "type" && key !== "parent" && typeof value === "object") {
         visit(value, next, inner);
+      }
     }
   };
   visit(root, [], false);
@@ -248,9 +261,13 @@ function siteOf(
 
 /** The function a call writes in place: a call by name of one the inliner names. */
 function callTarget(node: Node, inliner: Inliner, site: CallSite): InlineFunction | undefined {
-  if (node.type !== "CallExpression" || node.optional) return undefined;
+  if (node.type !== "CallExpression" || node.optional) {
+    return undefined;
+  }
   const callee = node.callee as Node;
-  if (callee.type !== "Identifier") return undefined;
+  if (callee.type !== "Identifier") {
+    return undefined;
+  }
   return inliner.target(callee.name as string, site);
 }
 
@@ -266,7 +283,9 @@ function returnedValue(node: Node, ancestors: readonly Node[], root: unknown): b
       (parent.type === "LogicalExpression" && parent.right === child) ||
       (parent.type === "ConditionalExpression" && parent.test !== child) ||
       (parent.type === "SequenceExpression" && (parent.expressions as Node[]).at(-1) === child);
-    if (!tail) return false;
+    if (!tail) {
+      return false;
+    }
     child = parent;
   }
   return child === root;
@@ -281,10 +300,14 @@ export function callSites(code: string, kind: CodeKind, discarded = false): Map<
   const { root } = parseCodeSource(code, kind);
   const visit = (node: unknown, ancestors: readonly Node[], inFunction: boolean): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, ancestors, inFunction);
+      for (const item of node) {
+        visit(item, ancestors, inFunction);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     if (node.type === "CallExpression" && (node.callee as Node).type === "Identifier") {
       sites.set(
         (node.callee as Node).start,
@@ -294,8 +317,9 @@ export function callSites(code: string, kind: CodeKind, discarded = false): Map<
     const inner = inFunction || isFunction(node);
     const next = [...ancestors, node];
     for (const [key, value] of Object.entries(node)) {
-      if (key !== "type" && key !== "parent" && typeof value === "object")
+      if (key !== "type" && key !== "parent" && typeof value === "object") {
         visit(value, next, inner);
+      }
     }
   };
   visit(root, [], false);
@@ -310,7 +334,9 @@ export function callSites(code: string, kind: CodeKind, discarded = false): Map<
 export function localDeclaration(name: string, target: InlineFunction): string {
   const fn: FunctionCode = { ...target.fn, parameters: [...target.parameters] };
   const asserts = /^asserts\s/.test(fn.returnType?.code.trim() ?? "");
-  if (target.declaration || asserts) return functionSource(fn, target.body, { name });
+  if (target.declaration || asserts) {
+    return functionSource(fn, target.body, { name });
+  }
   return `const ${name} = ${functionSource(fn, target.body)};`;
 }
 
@@ -328,7 +354,9 @@ function blockForm(
   args: readonly string[],
 ): { statements: string; declares: boolean } | undefined {
   const { fn, parameters, body } = target;
-  if (!spliceable(fn, parameters, body)) return undefined;
+  if (!spliceable(fn, parameters, body)) {
+    return undefined;
+  }
   const kind: CodeKind = fn.expression ? "expression" : "statements";
   const { root } = parseCodeSource(body, kind);
   const declared = declaredNames(root);
@@ -342,11 +370,15 @@ function blockForm(
     const used = references(root, name);
     if (!used.length) {
       // An argument nothing reads: dropped where reading it does nothing.
-      if (isLiteral(argument) || isName(argument)) continue;
+      if (isLiteral(argument) || isName(argument)) {
+        continue;
+      }
       return undefined;
     }
     // The caller's own name for it: the body reads the same variable.
-    if (argument === name) continue;
+    if (argument === name) {
+      continue;
+    }
     const substitutable =
       (isLiteral(argument) || (isName(argument) && !declared.has(argument))) &&
       !assigns(root, name) &&
@@ -358,7 +390,9 @@ function blockForm(
     // A `const` evaluates the argument once, before the body, as the call did (a `let` where the
     // body assigns the parameter); an argument that reads a name the block declares would read
     // the block's.
-    if (namesIn(argument).some((read) => block.has(read))) return undefined;
+    if (namesIn(argument).some((read) => block.has(read))) {
+      return undefined;
+    }
     const type = parameter.type
       ? `: ${parameter.type.code}${parameter.optional ? " | undefined" : ""}`
       : "";
@@ -385,11 +419,15 @@ export function spliceable(
   parameters: readonly Parameter[] = fn.parameters,
   body: string = fn.body.code,
 ): boolean {
-  if (fn.async) return false;
+  if (fn.async) {
+    return false;
+  }
   if (parameters.some((parameter) => parameter.name === undefined || parameter.rest)) {
     return false;
   }
-  if (parameters.some((parameter) => parameter.default)) return false;
+  if (parameters.some((parameter) => parameter.default)) {
+    return false;
+  }
   return fn.expression === true || !returns(parseCodeSource(body, "statements").root);
 }
 
@@ -397,7 +435,9 @@ export function spliceable(
 function returns(root: unknown): boolean {
   let found = false;
   walkNodes(root, (node) => {
-    if (node.type === "ReturnStatement") found = true;
+    if (node.type === "ReturnStatement") {
+      found = true;
+    }
     return !isFunction(node);
   });
   return found;
@@ -407,8 +447,11 @@ function returns(root: unknown): boolean {
 function declaredNames(root: unknown): Set<string> {
   const names = new Set<string>();
   walkNodes(root, (node) => {
-    if (node.type === "VariableDeclarator")
-      for (const name of patternNames(node.id)) names.add(name);
+    if (node.type === "VariableDeclarator") {
+      for (const name of patternNames(node.id)) {
+        names.add(name);
+      }
+    }
     if (
       (node.type === "FunctionDeclaration" ||
         node.type === "FunctionExpression" ||
@@ -419,11 +462,15 @@ function declaredNames(root: unknown): Set<string> {
     }
     if (isFunction(node)) {
       for (const parameter of node.params as unknown[]) {
-        for (const name of patternNames(parameter)) names.add(name);
+        for (const name of patternNames(parameter)) {
+          names.add(name);
+        }
       }
     }
     if (node.type === "CatchClause" && node.param) {
-      for (const name of patternNames(node.param)) names.add(name);
+      for (const name of patternNames(node.param)) {
+        names.add(name);
+      }
     }
     return true;
   });
@@ -437,7 +484,9 @@ function topLevelNames(root: unknown): Set<string> {
   for (const statement of (block?.body as Node[] | undefined) ?? []) {
     if (statement.type === "VariableDeclaration") {
       for (const declarator of statement.declarations as Node[]) {
-        for (const name of patternNames(declarator.id)) names.add(name);
+        for (const name of patternNames(declarator.id)) {
+          names.add(name);
+        }
       }
     } else if (
       (statement.type === "FunctionDeclaration" || statement.type === "ClassDeclaration") &&
@@ -451,7 +500,9 @@ function topLevelNames(root: unknown): Set<string> {
 
 /** The names a binding pattern declares. */
 function patternNames(pattern: unknown): string[] {
-  if (!isNode(pattern)) return [];
+  if (!isNode(pattern)) {
+    return [];
+  }
   switch (pattern.type) {
     case "Identifier":
       return [pattern.name as string];
@@ -483,10 +534,14 @@ function references(root: unknown, name: string): Node[] {
   const found: Node[] = [];
   const visit = (node: unknown, parent: Node | undefined, key: string): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, parent, key);
+      for (const item of node) {
+        visit(item, parent, key);
+      }
       return;
     }
-    if (!isNode(node)) return;
+    if (!isNode(node)) {
+      return;
+    }
     if (node.type === "Identifier") {
       const member = parent?.type === "MemberExpression" && key === "property" && !parent.computed;
       const property =
@@ -494,14 +549,22 @@ function references(root: unknown, name: string): Node[] {
       const label = key === "label";
       const type =
         parent !== undefined && parent.type.startsWith("TS") && !TS_VALUE_PARENTS.has(parent.type);
-      if (node.name === name && !member && !property && !label && !type) found.push(node);
+      if (node.name === name && !member && !property && !label && !type) {
+        found.push(node);
+      }
       return;
     }
-    if (shadows(node, name)) return;
+    if (shadows(node, name)) {
+      return;
+    }
     for (const [childKey, value] of Object.entries(node)) {
-      if (childKey === "type" || childKey === "parent" || typeof value !== "object") continue;
+      if (childKey === "type" || childKey === "parent" || typeof value !== "object") {
+        continue;
+      }
       // A shorthand property's key and value are one identifier: the value reads it.
-      if (node.type === "Property" && node.shorthand && childKey === "key") continue;
+      if (node.type === "Property" && node.shorthand && childKey === "key") {
+        continue;
+      }
       visit(value, node, childKey);
     }
   };
@@ -523,7 +586,9 @@ function shadows(node: Node, name: string): boolean {
   if (isFunction(node)) {
     return (node.params as unknown[]).some((parameter) => patternNames(parameter).includes(name));
   }
-  if (node.type === "CatchClause") return patternNames(node.param).includes(name);
+  if (node.type === "CatchClause") {
+    return patternNames(node.param).includes(name);
+  }
   const statements =
     node.type === "BlockStatement" || node.type === "StaticBlock"
       ? (node.body as Node[])
@@ -554,7 +619,9 @@ function assigns(root: unknown, name: string): boolean {
         : node.type === "UpdateExpression"
           ? node.argument
           : undefined;
-    if (isNode(target) && patternNames(target).includes(name)) found = true;
+    if (isNode(target) && patternNames(target).includes(name)) {
+      found = true;
+    }
     return true;
   });
   return found;
@@ -621,7 +688,9 @@ function namesIn(code: string): string[] {
   const { root } = parseCodeSource(code, "expression");
   const names: string[] = [];
   walkNodes(root, (node) => {
-    if (node.type === "Identifier") names.push(node.name as string);
+    if (node.type === "Identifier") {
+      names.push(node.name as string);
+    }
     return true;
   });
   return names;
@@ -638,13 +707,21 @@ function isFunction(node: Node): boolean {
 /** Calls `visit` on each node, parents first; `false` skips a node's children. */
 function walkNodes(root: unknown, visit: (node: Node) => boolean): void {
   if (Array.isArray(root)) {
-    for (const item of root) walkNodes(item, visit);
+    for (const item of root) {
+      walkNodes(item, visit);
+    }
     return;
   }
-  if (!isNode(root)) return;
-  if (!visit(root)) return;
+  if (!isNode(root)) {
+    return;
+  }
+  if (!visit(root)) {
+    return;
+  }
   for (const [key, value] of Object.entries(root)) {
-    if (key !== "type" && key !== "parent" && typeof value === "object") walkNodes(value, visit);
+    if (key !== "type" && key !== "parent" && typeof value === "object") {
+      walkNodes(value, visit);
+    }
   }
 }
 

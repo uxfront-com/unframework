@@ -587,7 +587,9 @@ const FIXED_VALUE_TYPES = [...FIXED_VALUE_INPUT_TYPES];
  */
 function withoutLeadingLineFeed(children: RenderNode[]): RenderNode[] {
   const [first, ...rest] = children;
-  if (first?.kind !== "Text" || !first.value.startsWith("\n")) return children;
+  if (first?.kind !== "Text" || !first.value.startsWith("\n")) {
+    return children;
+  }
   const value = first.value.replace(/^\n+/, "");
   return value ? [createText(value, at), ...rest] : rest;
 }
@@ -620,7 +622,9 @@ export function fuzzCase(seed: number): StaticCase {
     const long = chance(0.1);
     const attributes: Record<string, string | true> = {};
     const add = (probability: number, name: string, value: () => string | true) => {
-      if (chance(long ? 0.7 : probability)) attributes[name] = value();
+      if (chance(long ? 0.7 : probability)) {
+        attributes[name] = value();
+      }
     };
     const longText = () => (long ? `${text()} and some words to make it long ${text()}` : text());
     add(0.3, "title", longText);
@@ -824,7 +828,9 @@ export const PARITY_SUITES: readonly ParitySuite[] = [
  */
 export function expectedTree(parityCase: ParityCase): ElementNode | FragmentNode {
   const { lowered } = parityCase;
-  if (!lowered) return parityCase.render;
+  if (!lowered) {
+    return parityCase.render;
+  }
   let tree = expectedTrees.get(parityCase);
   if (!tree) {
     tree = instantiate(lowered.component, lowered.props);
@@ -842,12 +848,18 @@ export function expectedNodes(parityCase: ParityCase): DomNode[] {
 
 /** The DOM nodes a static tree describes: an element, or a fragment's nodes. */
 export function domNodesOf(tree: ElementNode | FragmentNode): DomNode[] {
-  if (tree.kind === "Element") return [domOf(tree)];
+  if (tree.kind === "Element") {
+    return [domOf(tree)];
+  }
   const nodes: DomNode[] = [];
   for (const child of tree.children) {
-    if (child.kind === "Element") nodes.push(domOf(child));
-    else if (child.kind === "Text") pushText(nodes, child.value);
-    else throw new Error(`a ${child.kind} node is not static`);
+    if (child.kind === "Element") {
+      nodes.push(domOf(child));
+    } else if (child.kind === "Text") {
+      pushText(nodes, child.value);
+    } else {
+      throw new Error(`a ${child.kind} node is not static`);
+    }
   }
   return nodes;
 }
@@ -862,16 +874,24 @@ export function domOf(node: ElementNode, parent: Namespace = "html"): DomElement
   const namespace = elementNamespace(node.tag, parent);
   const attributes: Record<string, string> = {};
   for (const attribute of node.attributes) {
-    if (attribute.kind !== "Static") throw new Error(`a ${attribute.kind} attribute is not static`);
+    if (attribute.kind !== "Static") {
+      throw new Error(`a ${attribute.kind} attribute is not static`);
+    }
     const name = namespace === "html" ? attribute.name.toLowerCase() : attribute.name;
     const value = comparableValue(name, attribute.value === true ? "" : attribute.value, namespace);
-    if (value !== undefined) attributes[name] = value;
+    if (value !== undefined) {
+      attributes[name] = value;
+    }
   }
   const children: DomNode[] = [];
   for (const child of node.children) {
-    if (child.kind === "Element") children.push(domOf(child, namespace));
-    else if (child.kind === "Text") pushText(children, child.value);
-    else throw new Error(`a ${child.kind} node is not static`);
+    if (child.kind === "Element") {
+      children.push(domOf(child, namespace));
+    } else if (child.kind === "Text") {
+      pushText(children, child.value);
+    } else {
+      throw new Error(`a ${child.kind} node is not static`);
+    }
   }
   return { tag: node.tag, attributes, children };
 }
@@ -910,7 +930,9 @@ export function comparableValue(
           .join(" ")
       : undefined;
   }
-  if (namespace !== "html") return value;
+  if (namespace !== "html") {
+    return value;
+  }
   const enumerated = name === "hidden" && value.toLowerCase() === "until-found";
   return isBooleanAttribute(name) && !enumerated ? "" : value;
 }
@@ -942,7 +964,9 @@ export function styleDeclarations(text: string): Declaration[] {
     const colon = splitTopLevel(chunk, ":", 2);
     const property = collapseSpaces(colon[0]!);
     if (colon.length < 2) {
-      if (property !== "") declarations.push({ property });
+      if (property !== "") {
+        declarations.push({ property });
+      }
       continue;
     }
     declarations.push({
@@ -965,7 +989,9 @@ function splitTopLevel(text: string, separator: string, limit = Infinity): strin
       current += char + text[++index];
     } else if (quote) {
       current += char;
-      if (char === quote) quote = "";
+      if (char === quote) {
+        quote = "";
+      }
     } else if (char === "/" && text[index + 1] === "*") {
       const end = text.indexOf("*/", index + 2);
       index = end < 0 ? text.length : end + 1;
@@ -974,9 +1000,13 @@ function splitTopLevel(text: string, separator: string, limit = Infinity): strin
       parts.push(current);
       current = "";
     } else {
-      if (char === '"' || char === "'") quote = char;
-      else if (char === "(") depth++;
-      else if (char === ")" && depth > 0) depth--;
+      if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === "(") {
+        depth++;
+      } else if (char === ")" && depth > 0) {
+        depth--;
+      }
       current += char;
     }
   }
@@ -1009,10 +1039,15 @@ function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
 
 /** Appends text to a node list, merging it into a text node before it. */
 export function pushText(nodes: DomNode[], data: string): void {
-  if (data === "") return;
+  if (data === "") {
+    return;
+  }
   const last = nodes.length - 1;
-  if (typeof nodes[last] === "string") nodes[last] += data;
-  else nodes.push(data);
+  if (typeof nodes[last] === "string") {
+    nodes[last] += data;
+  } else {
+    nodes.push(data);
+  }
 }
 
 /** Options for {@link parseHtml}. */
@@ -1072,7 +1107,9 @@ function caseTable(names: string): ReadonlyMap<string, string> {
 /** A name as the HTML parser reads it in a namespace: lower case, then SVG's case restored. */
 export function parsedName(name: string, namespace: Namespace, table: "tag" | "attribute"): string {
   const lower = name.toLowerCase();
-  if (namespace !== "svg") return lower;
+  if (namespace !== "svg") {
+    return lower;
+  }
   return (table === "tag" ? SVG_TAG_NAMES : SVG_ATTRIBUTE_NAMES).get(lower) ?? lower;
 }
 
@@ -1100,13 +1137,19 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
     const parent = stack.at(-1)!;
     if (html.startsWith("<!--", index)) {
       const end = html.indexOf("-->", index + 4);
-      if (end < 0) fail("unterminated comment");
+      if (end < 0) {
+        fail("unterminated comment");
+      }
       index = end + 3;
     } else if (html.startsWith("</", index)) {
       const match = /^<\/([a-zA-Z][^\s/>]*)\s*>/.exec(html.slice(index));
-      if (!match) fail("malformed end tag");
+      if (!match) {
+        fail("malformed end tag");
+      }
       const tag = parsedName(match![1]!, parent.namespace, "tag");
-      if (tag !== parent.element.tag) fail(`</${tag}> closes <${parent.element.tag}>`);
+      if (tag !== parent.element.tag) {
+        fail(`</${tag}> closes <${parent.element.tag}>`);
+      }
       stack.pop();
       index += match![0].length;
     } else if (html[index] === "<") {
@@ -1118,12 +1161,16 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
       index = stop;
     }
   }
-  if (stack.length > 1) fail(`<${stack.at(-1)!.element.tag}> is never closed`);
+  if (stack.length > 1) {
+    fail(`<${stack.at(-1)!.element.tag}> is never closed`);
+  }
   return root.children;
 
   function startTag(parent: { element: DomElement; namespace: Namespace }): number {
     const name = /^<([a-zA-Z][^\s/>]*)/.exec(html.slice(index));
-    if (!name) fail("a stray <");
+    if (!name) {
+      fail("a stray <");
+    }
     // In SVG, these tags make the HTML parser leave foreign content: no IR holds one there.
     if (parent.namespace === "svg" && FOREIGN_CONTENT_BREAKERS.has(name![1]!.toLowerCase())) {
       fail(`<${name![1]}> inside <svg>`);
@@ -1137,11 +1184,15 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
     index += name![0].length;
     for (;;) {
       index += /^\s*/.exec(html.slice(index))![0].length;
-      if (html.startsWith("/>", index) || html[index] === ">") break;
+      if (html.startsWith("/>", index) || html[index] === ">") {
+        break;
+      }
       const attribute = /^([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/.exec(
         html.slice(index),
       );
-      if (!attribute) fail("malformed attribute");
+      if (!attribute) {
+        fail("malformed attribute");
+      }
       const [source, rawName, double, single, unquoted] = attribute!;
       const attributeName = parsedName(rawName!, namespace, "attribute");
       if (!options.ignoreAttribute?.(attributeName)) {
@@ -1150,32 +1201,46 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
           decode(double ?? single ?? unquoted ?? ""),
           namespace,
         );
-        if (value !== undefined) element.attributes[attributeName] = value;
+        if (value !== undefined) {
+          element.attributes[attributeName] = value;
+        }
       }
       index += source.length;
     }
     const selfClosing = html.startsWith("/>", index);
     index += selfClosing ? 2 : 1;
     parent.element.children.push(element);
-    if (namespace === "html" && isVoidElement(element.tag)) return index;
+    if (namespace === "html" && isVoidElement(element.tag)) {
+      return index;
+    }
     // A foreign element may close itself; an HTML element that is not void may not.
     if (selfClosing) {
-      if (namespace === "html") fail(`<${element.tag}/> is not a void element`);
+      if (namespace === "html") {
+        fail(`<${element.tag}/> is not a void element`);
+      }
       return index;
     }
     stack.push({ element, namespace });
     if (namespace === "html" && /^(?:pre|textarea|listing)$/.test(element.tag)) {
-      if (html[index] === "\n") index++;
+      if (html[index] === "\n") {
+        index++;
+      }
     }
     return index;
   }
 
   function decode(text: string): string {
     return text.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);?/g, (reference, body) => {
-      if (body.startsWith("#x")) return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
-      if (body.startsWith("#")) return String.fromCodePoint(Number.parseInt(body.slice(1), 10));
+      if (body.startsWith("#x")) {
+        return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
+      }
+      if (body.startsWith("#")) {
+        return String.fromCodePoint(Number.parseInt(body.slice(1), 10));
+      }
       const named = NAMED_REFERENCES[body];
-      if (named === undefined || !reference.endsWith(";")) fail(`unexpected entity ${reference}`);
+      if (named === undefined || !reference.endsWith(";")) {
+        fail(`unexpected entity ${reference}`);
+      }
       return named!;
     });
   }
@@ -1231,7 +1296,9 @@ export function compareRendered(
   const outline = (node: DomNode) =>
     typeof node === "string" ? JSON.stringify(node) : `<${node.tag}>`;
   if (root === "self") {
-    if (cases.length !== 1) throw new Error(`a "self" suite has one case, not ${cases.length}`);
+    if (cases.length !== 1) {
+      throw new Error(`a "self" suite has one case, not ${cases.length}`);
+    }
     const [only] = cases;
     return [
       {
@@ -1253,7 +1320,9 @@ export function compareRendered(
       actual: container.children.map(outline),
     },
     ...cases.map(({ name, nodes }, index) => {
-      if (nodes.length !== 1) throw new Error(`${name}: a "div" suite's case is one element`);
+      if (nodes.length !== 1) {
+        throw new Error(`${name}: a "div" suite's case is one element`);
+      }
       return { name, expected: nodes[0], actual: container.children[index] };
     }),
   ];

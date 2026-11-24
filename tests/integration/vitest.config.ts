@@ -42,14 +42,18 @@ if (mode.update && !targets.includes(REFERENCE)) {
     `[uf] Update mode needs the reference target (${REFERENCE}) to write the shared artefacts: add it to UF_TARGETS.`,
   );
 }
-if (mode.canary) findCanary(mode.canary);
+if (mode.canary) {
+  findCanary(mode.canary);
+}
 
 const cases = listCases(CASES_DIR);
 const problems = validateQuarantine(QUARANTINE, {
   cases: cases.map((info) => info.id),
   targets: selectTargets(undefined),
 });
-if (problems.length) throw new Error(`[uf] The quarantine is invalid:\n  ${problems.join("\n  ")}`);
+if (problems.length) {
+  throw new Error(`[uf] The quarantine is invalid:\n  ${problems.join("\n  ")}`);
+}
 
 const harness = createHarnessRun({
   root: ROOT,

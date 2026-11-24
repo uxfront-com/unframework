@@ -23,9 +23,13 @@ export function bindingForms(component: UfComponent): BindingForms {
   const forms: BindingForms = { wholeStyle: false, classCollection: false };
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") {
+        return;
+      }
       for (const attribute of node.attributes) {
-        if (attribute.kind === "Style" && attribute.value) forms.wholeStyle = true;
+        if (attribute.kind === "Style" && attribute.value) {
+          forms.wholeStyle = true;
+        }
         if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
           forms.wholeStyle = true;
         }

@@ -43,13 +43,17 @@ function capture(entry: ConsoleEntry): void {
  * keeps the messages.
  */
 export function installConsoleCapture(): void {
-  if (installed) return;
+  if (installed) {
+    return;
+  }
   installed = true;
   for (const level of ["warn", "error"] as const) {
     const original = console[level].bind(console);
     console[level] = (...args: unknown[]) => {
       capture({ level, message: formatConsoleArgs(args), source: "page" });
-      for (const arg of args) errorWatcher?.(arg);
+      for (const arg of args) {
+        errorWatcher?.(arg);
+      }
       original(...args);
     };
   }
@@ -59,7 +63,9 @@ export function installConsoleCapture(): void {
 export function captureExternalConsole(
   messages: readonly { level: "warn" | "error"; message: string }[],
 ): void {
-  for (const { level, message } of messages) capture({ level, message, source: "server" });
+  for (const { level, message } of messages) {
+    capture({ level, message, source: "server" });
+  }
 }
 
 /**
@@ -67,7 +73,9 @@ export function captureExternalConsole(
  * the only record of why the message is acceptable.
  */
 export function allowConsole(pattern: RegExp, reason: string): void {
-  if (!reason.trim()) throw new Error("allowConsole needs a reason.");
+  if (!reason.trim()) {
+    throw new Error("allowConsole needs a reason.");
+  }
   // Without `g` and `y`: their `test()` carries `lastIndex` from one message to the next, so a
   // second matching message would not match.
   allowances.push({
@@ -81,7 +89,9 @@ export function allowConsole(pattern: RegExp, reason: string): void {
  * and are judged with this one. The previous test's allowances end here.
  */
 export function beginTestConsole(): void {
-  for (const entry of entries) entry.beforeTest = true;
+  for (const entry of entries) {
+    entry.beforeTest = true;
+  }
   allowances.length = 0;
 }
 
@@ -122,8 +132,12 @@ export function consoleMark(): number {
  * pattern would hold for the rest of the test.
  */
 export function excuseConsoleSince(mark: number, reason: string): void {
-  if (!reason.trim()) throw new Error("excuseConsoleSince needs a reason.");
-  for (const entry of entries.slice(mark)) entry.excused = reason;
+  if (!reason.trim()) {
+    throw new Error("excuseConsoleSince needs a reason.");
+  }
+  for (const entry of entries.slice(mark)) {
+    entry.excused = reason;
+  }
 }
 
 /** Every message the current test will be judged on, those logged before it began first. */
@@ -170,10 +184,14 @@ export function formatConsoleArgs(args: readonly unknown[]): string {
           ? safeJson(value)
           : String(value);
   const [first, ...rest] = args;
-  if (typeof first !== "string") return args.map(text).join(" ");
+  if (typeof first !== "string") {
+    return args.map(text).join(" ");
+  }
   let index = 0;
   const head = first.replace(/%[sdifoOc%]/g, (token) => {
-    if (token === "%%") return "%";
+    if (token === "%%") {
+      return "%";
+    }
     if (token === "%c") {
       index += 1;
       return "";

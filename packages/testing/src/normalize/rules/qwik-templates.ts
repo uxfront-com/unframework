@@ -11,7 +11,9 @@ import { isFrameworkAttribute } from "./framework-attributes.ts";
  * task's placeholder (`isTaskPlaceholder`).
  */
 export function removeQwikTemplates(root: TreeParent, target?: NormalizeTarget): void {
-  if (target !== "qwik") return;
+  if (target !== "qwik") {
+    return;
+  }
   remove(root);
 }
 
@@ -39,8 +41,12 @@ function remove(root: TreeParent): void {
   const kept = children.filter(
     (node) => !isElement(node) || (node.tagName !== "q:template" && !isTaskPlaceholder(node)),
   );
-  if (kept.length !== children.length) replaceChildren(root, kept);
+  if (kept.length !== children.length) {
+    replaceChildren(root, kept);
+  }
   for (const node of kept) {
-    if (isElement(node)) remove(node);
+    if (isElement(node)) {
+      remove(node);
+    }
   }
 }

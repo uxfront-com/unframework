@@ -20,7 +20,9 @@ const ITEM_LAYOUTS = new Set(["flex", "inline-flex", "grid", "inline-grid"]);
  * and so boxes, on every target, so the snapshot spaces them anyway.
  */
 export function inlineHosts(root: Element, target?: NormalizeTarget): () => void {
-  if (target !== "angular") return () => {};
+  if (target !== "angular") {
+    return () => {};
+  }
   const hosts = [...root.querySelectorAll("*")].filter(
     (element): element is HTMLElement =>
       element instanceof HTMLElement &&
@@ -38,8 +40,11 @@ export function inlineHosts(root: Element, target?: NormalizeTarget): () => void
   return () => {
     hosts.forEach((host, index) => {
       const style = styles[index]!;
-      if (style === null) host.removeAttribute("style");
-      else host.setAttribute("style", style);
+      if (style === null) {
+        host.removeAttribute("style");
+      } else {
+        host.setAttribute("style", style);
+      }
     });
   };
 }

@@ -171,8 +171,12 @@ function flag(
   options: { allowAny?: boolean } = {},
 ): boolean {
   const value = env[name]?.trim();
-  if (!value || value === "0" || value === "false") return false;
-  if (value === "1" || value === "true" || options.allowAny) return true;
+  if (!value || value === "0" || value === "false") {
+    return false;
+  }
+  if (value === "1" || value === "true" || options.allowAny) {
+    return true;
+  }
   throw new Error(`[uf] ${name} must be 1 or 0, not "${value}".`);
 }
 
@@ -220,9 +224,15 @@ export function groupOrder(
   const named = caseReferences.length ? 1 : 0;
   const namedByCase = target !== undefined && caseReferences.includes(target);
   if (mode.update) {
-    if (kind === "compile" || kind === "harness" || kind === "bench") return 0;
-    if (kind === "hydrate") return 2 + named;
-    if (kind === "toolchain" || isReference) return 1;
+    if (kind === "compile" || kind === "harness" || kind === "bench") {
+      return 0;
+    }
+    if (kind === "hydrate") {
+      return 2 + named;
+    }
+    if (kind === "toolchain" || isReference) {
+      return 1;
+    }
     return namedByCase ? 2 : 2 + named;
   }
   if (mode.pixels === "live" && kind === "hydrate") {
@@ -281,8 +291,11 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
     // A re-evaluated config (watch mode) may have new cases or quarantine entries.
     existing.cases = options.cases;
     existing.quarantine = quarantine;
-    if (options.liveFonts === undefined) delete existing.liveFonts;
-    else existing.liveFonts = options.liveFonts;
+    if (options.liveFonts === undefined) {
+      delete existing.liveFonts;
+    } else {
+      existing.liveFonts = options.liveFonts;
+    }
     return existing;
   }
   const runId = `${Date.now().toString(36)}-${process.pid}`;
@@ -291,7 +304,9 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
     live: join(options.root, ".live"),
     diffs: join(options.root, ".reports", "diffs"),
   };
-  for (const directory of Object.values(scratch)) removeEndedRuns(directory);
+  for (const directory of Object.values(scratch)) {
+    removeEndedRuns(directory);
+  }
   const run: HarnessContext = {
     runId,
     casesDir: options.casesDir,
@@ -322,7 +337,9 @@ function applicableQuarantine(
   pixels: PixelMode,
 ): QuarantineEntry[] {
   for (const entry of entries) {
-    if (entry.pixels === undefined) continue;
+    if (entry.pixels === undefined) {
+      continue;
+    }
     if (entry.layer !== "L10" || (entry.pixels !== "baseline" && entry.pixels !== "live")) {
       throw new Error(
         `[uf] The quarantine entry ${entry.case} › ${entry.target} › ${entry.layer} names pixels: ${JSON.stringify(entry.pixels)}: only L10 depends on the pixel mode, which is "baseline" or "live".`,
@@ -334,10 +351,14 @@ function applicableQuarantine(
 
 /** Removes the run directories under `directory` whose process has ended (`<time>-<pid>`). */
 function removeEndedRuns(directory: string): void {
-  if (!existsSync(directory)) return;
+  if (!existsSync(directory)) {
+    return;
+  }
   for (const name of readdirSync(directory)) {
     const pid = /^[0-9a-z]+-(\d+)$/.exec(name)?.[1];
-    if (pid !== undefined && isRunning(Number(pid))) continue;
+    if (pid !== undefined && isRunning(Number(pid))) {
+      continue;
+    }
     rmSync(join(directory, name), { recursive: true, force: true });
   }
 }

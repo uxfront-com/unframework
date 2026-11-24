@@ -105,7 +105,9 @@ export function spawnNgServe(
     } catch (error) {
       // A group that holds only a zombie answers EPERM on macOS: it's as gone as an empty one.
       const { code } = error as NodeJS.ErrnoException;
-      if (code !== "ESRCH" && code !== "EPERM") throw error;
+      if (code !== "ESRCH" && code !== "EPERM") {
+        throw error;
+      }
     }
   };
   // A worker that exits before its teardown still takes the server with it. One killed by a signal
@@ -141,7 +143,9 @@ export function spawnNgServe(
     for (const stream of [child.stdout, child.stderr]) {
       // These also keep the pipes drained for as long as the server runs.
       createInterface({ input: stream }).on("line", (raw) => {
-        if (started) return;
+        if (started) {
+          return;
+        }
         // Under `FORCE_COLOR`, a colour code splits the URL before its port.
         const line = stripVTControlCharacters(raw);
         output.push(line);
@@ -176,7 +180,11 @@ async function startAngular(copy: string): Promise<StartedServer> {
 
 /** Starts the dev server of one app's mode, from its working copy. */
 export function startDevServer(app: string, mode: string, copy: string): Promise<StartedServer> {
-  if (app === "astro") return startAstro(copy, mode);
-  if (app === "angular") return startAngular(copy);
+  if (app === "astro") {
+    return startAstro(copy, mode);
+  }
+  if (app === "angular") {
+    return startAngular(copy);
+  }
   return startVite(copy, mode);
 }

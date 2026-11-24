@@ -72,8 +72,12 @@ function vocabulary(): ElementNode[] {
       ...ARIA_ATTRIBUTES,
     ];
     for (const name of names.toSorted()) {
-      if (OWN_FORMS.has(name)) continue;
-      if (!nameProblem(tag, "html", name, name)) add(tag, bound(name));
+      if (OWN_FORMS.has(name)) {
+        continue;
+      }
+      if (!nameProblem(tag, "html", name, name)) {
+        add(tag, bound(name));
+      }
       if (BOOLEAN_ATTRIBUTES.has(name) && !nameProblem(tag, "html", name, name)) {
         add(tag, createStaticAttribute(name, true, at));
       }
@@ -87,7 +91,9 @@ function vocabulary(): ElementNode[] {
       ...ARIA_ATTRIBUTES,
     ];
     for (const name of names.toSorted()) {
-      if (OWN_FORMS.has(name) || nameProblem(tag, "svg", name, name)) continue;
+      if (OWN_FORMS.has(name) || nameProblem(tag, "svg", name, name)) {
+        continue;
+      }
       const attribute = bound(name);
       elements.push(
         tag === "svg"
@@ -107,7 +113,9 @@ function component(markup: string): string {
 /** The element and attribute named on a printed line: `<img ismap={x} />`, `<img {...{ ismap`. */
 function pairOn(line: string): string {
   const found = /<([A-Za-z][A-Za-z0-9]*) (?:\{\.\.\.\{ )?([^\s={]+)/.exec(line);
-  if (!found) throw new Error(`No attribute on \`${line}\`.`);
+  if (!found) {
+    throw new Error(`No attribute on \`${line}\`.`);
+  }
   return `${found[1]} ${found[2]}`;
 }
 
@@ -146,7 +154,9 @@ describe("attributes Astro's types do not declare (L4)", () => {
       const untyped = new Set(
         elements.flatMap((element) => {
           const [attribute] = element.attributes;
-          if (element.tag === "svg" || !attribute) return [];
+          if (element.tag === "svg" || !attribute) {
+            return [];
+          }
           const name =
             attribute.kind === "Static" || attribute.kind === "Bound" ? attribute.name : "";
           return isUntypedAttribute(element.tag, name) ? [`${element.tag} ${name}`] : [];

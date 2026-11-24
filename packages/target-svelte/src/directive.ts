@@ -53,7 +53,9 @@ export function attachmentCode(
   const updated = directiveHook(directive, "updated");
   const unmounted = directiveHook(directive, "unmounted");
   const body: string[] = [];
-  if (updated) body.push(`let ${own.current} = ${untrack}(${own.getValue});`);
+  if (updated) {
+    body.push(`let ${own.current} = ${untrack}(${own.getValue});`);
+  }
   if (mounted) {
     const value = updated ? own.current : `${untrack}(${own.getValue})`;
     body.push(`${untrack}(() => ${hookCall(own.hooks, mounted, [own.element, value])});`);
@@ -71,7 +73,9 @@ export function attachmentCode(
       "});",
     );
   }
-  if (unmounted) body.push(`return () => ${hookCall(own.hooks, unmounted, [own.element])};`);
+  if (unmounted) {
+    body.push(`return () => ${hookCall(own.hooks, unmounted, [own.element])};`);
+  }
   const element = directiveElement(directive);
   const hooks = directiveHooksObject(directive).replaceAll("\n", "\n  ");
   return [
@@ -124,18 +128,24 @@ export function narrowedDirectiveValues(
   const visit = (node: RenderNode | FragmentNode, branch: IfBranch | undefined): void => {
     if (node.kind === "If") {
       for (const each of node.branches) {
-        for (const child of each.children) visit(child, each);
+        for (const child of each.children) {
+          visit(child, each);
+        }
       }
       return;
     }
     if (node.kind === "Element" && branch) {
       for (const attribute of node.attributes) {
-        if (attribute.kind !== "Directive" || !attribute.value.refs.length) continue;
+        if (attribute.kind !== "Directive" || !attribute.value.refs.length) {
+          continue;
+        }
         const name = claim(`${attribute.name[1]!.toLowerCase()}${attribute.name.slice(2)}Value`);
         found.set(branch, [...(found.get(branch) ?? []), { attribute, name }]);
       }
     }
-    for (const child of childrenOf(node)) visit(child, branch);
+    for (const child of childrenOf(node)) {
+      visit(child, branch);
+    }
   };
   visit(render, undefined);
   return found;

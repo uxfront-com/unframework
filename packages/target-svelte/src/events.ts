@@ -131,8 +131,12 @@ const SVELTE_PASSIVE_EVENTS: ReadonlySet<string> = new Set(["touchstart", "touch
  * through `on`, so the two run in the order the source writes them.
  */
 export function isAttached(attribute: EventAttribute, element: ElementNode): boolean {
-  if (needsAttachment(attribute)) return true;
-  if (attribute.capture) return false;
+  if (needsAttachment(attribute)) {
+    return true;
+  }
+  if (attribute.capture) {
+    return false;
+  }
   return element.attributes.some(
     (other) =>
       other !== attribute &&
@@ -158,7 +162,9 @@ function needsAttachment(attribute: EventAttribute): boolean {
  */
 export function handlerInterface(attribute: EventAttribute, element: ElementNode): string {
   const dom = DOM_EVENTS.get(attribute.event) ?? "Event";
-  if (isAttached(attribute, element)) return dom;
+  if (isAttached(attribute, element)) {
+    return dom;
+  }
   return SVELTE_EVENT_INTERFACES.get(attribute.event) ?? dom;
 }
 
@@ -169,8 +175,9 @@ export function handlerInterface(attribute: EventAttribute, element: ElementNode
 export function commonInterface(names: Iterable<string>): string {
   let common: string | undefined;
   for (const name of names) {
-    if (common === undefined) common = name;
-    else {
+    if (common === undefined) {
+      common = name;
+    } else {
       while (common !== "Event" && !extendsEventInterface(name, common)) {
         common = EVENT_INTERFACES.get(common) ?? "Event";
       }

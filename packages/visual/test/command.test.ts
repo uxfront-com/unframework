@@ -82,8 +82,9 @@ function context(
   };
   const cdp = {
     async send(method: string) {
-      if (method === "DOM.getDocument")
+      if (method === "DOM.getDocument") {
         return { root: { nodeId: 1, nodeType: 9, children: [container] } };
+      }
       if (method === "CSS.getPlatformFontsForNode") {
         return { fonts: [{ familyName: "Inter", isCustomFont: true, glyphCount: 5 }] };
       }

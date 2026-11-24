@@ -104,7 +104,9 @@ function fillContent({ fill, forwardsProps }: PrintedFill): MarkupPiece {
     throw new Error(`The astro dialect writes no scoped fill (${fill.slot}): it is a render prop.`);
   }
   const slot: PrintedAttribute = { name: "slot", text: quotedAttribute("slot", fill.slot) };
-  if (fill.forward === "default") return { kind: "tag", tag: "slot", attributes: [] };
+  if (fill.forward === "default") {
+    return { kind: "tag", tag: "slot", attributes: [] };
+  }
   if (fill.forward !== undefined) {
     const name = { name: "name", text: quotedAttribute("name", fill.forward) };
     return { kind: "tag", tag: "slot", attributes: [name, slot] };
@@ -184,7 +186,9 @@ export const astroDialect: MarkupDialect = {
   conditional: (branches) => {
     // A trailing empty branch renders nothing either way.
     let last = branches.length;
-    while (last > 0 && branches[last - 1]!.branch.children.length === 0) last--;
+    while (last > 0 && branches[last - 1]!.branch.children.length === 0) {
+      last--;
+    }
     const segments: BlockSegment[] = [];
     let tail = "{";
     for (const { condition, branch } of branches.slice(0, last)) {
@@ -242,7 +246,9 @@ export const astroDialect: MarkupDialect = {
   slotOutlet: ({ node, props }) => {
     if (props) {
       const call = `${node.slot}(${props.code})`;
-      if (!node.fallback.length) return [{ kind: "code", code: `{${node.slot}?.(${props.code})}` }];
+      if (!node.fallback.length) {
+        return [{ kind: "code", code: `{${node.slot}?.(${props.code})}` }];
+      }
       return [
         {
           kind: "block",

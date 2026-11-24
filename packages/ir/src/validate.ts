@@ -65,7 +65,9 @@ function check(schema: Schema, value: unknown, path: string, errors: IrValidatio
       throw new Error(`irSchema uses "${keyword}", which validateModule does not implement.`);
     }
   }
-  if (schema.$ref !== undefined) check(resolve(schema.$ref), value, path, errors);
+  if (schema.$ref !== undefined) {
+    check(resolve(schema.$ref), value, path, errors);
+  }
   if (schema.type !== undefined && !hasType(value, schema.type)) {
     errors.push({ path, message: `must be ${schema.type}` });
     return;
@@ -84,18 +86,25 @@ function check(schema: Schema, value: unknown, path: string, errors: IrValidatio
   if (schema.enum && !schema.enum.includes(value)) {
     errors.push({ path, message: `must be one of ${JSON.stringify(schema.enum)}` });
   }
-  if (schema.anyOf) checkAnyOf(schema.anyOf, value, path, errors);
+  if (schema.anyOf) {
+    checkAnyOf(schema.anyOf, value, path, errors);
+  }
   if (isRecord(value) && schema.properties) {
     // Own properties only, on both sides: IR is JSON data, and a key such as `constructor`
     // must not find a schema, or a value, on a prototype.
     for (const key of schema.required ?? []) {
-      if (!isPresent(value, key)) errors.push({ path, message: `must have "${key}"` });
+      if (!isPresent(value, key)) {
+        errors.push({ path, message: `must have "${key}"` });
+      }
     }
     for (const [key, item] of Object.entries(value)) {
-      if (item === undefined) continue;
+      if (item === undefined) {
+        continue;
+      }
       const property = Object.hasOwn(schema.properties, key) ? schema.properties[key] : undefined;
-      if (property) check(property, item, `${path}/${key}`, errors);
-      else if (schema.additionalProperties === false) {
+      if (property) {
+        check(property, item, `${path}/${key}`, errors);
+      } else if (schema.additionalProperties === false) {
         errors.push({ path, message: `must not have "${key}"` });
       }
     }
@@ -139,7 +148,9 @@ function checkAnyOf(
     check(only!, value, path, errors);
     return;
   }
-  if (candidates.some((branch) => matches(branch, value, path))) return;
+  if (candidates.some((branch) => matches(branch, value, path))) {
+    return;
+  }
   const names = branches.map((branch) => branch.$ref?.split("/").at(-1) ?? "a schema");
   errors.push({ path, message: `must match one of ${names.join(", ")}` });
 }
@@ -151,7 +162,9 @@ function requiredKind(branch: Schema): { const: unknown } | undefined {
     target.properties && Object.hasOwn(target.properties, "kind")
       ? target.properties.kind
       : undefined;
-  if (!kind || !("const" in kind) || !target.required?.includes("kind")) return undefined;
+  if (!kind || !("const" in kind) || !target.required?.includes("kind")) {
+    return undefined;
+  }
   return { const: kind.const };
 }
 
@@ -163,7 +176,9 @@ function isPresent(value: Record<string, unknown>, key: string): boolean {
 function resolve(ref: string): Schema {
   const name = ref.startsWith("#/definitions/") ? ref.slice("#/definitions/".length) : undefined;
   const target = name === undefined ? undefined : root.definitions[name];
-  if (!target) throw new Error(`irSchema has no definition for "${ref}".`);
+  if (!target) {
+    throw new Error(`irSchema has no definition for "${ref}".`);
+  }
   return target;
 }
 

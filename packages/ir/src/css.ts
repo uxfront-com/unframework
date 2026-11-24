@@ -257,15 +257,21 @@ export const CSS_SHORTHANDS: ReadonlyMap<string, ReadonlySet<string>> = table({
  * tests' normaliser read the same answer.
  */
 export function cssPropertiesOverlap(a: string, b: string): boolean {
-  if (a === b) return true;
-  if (isCustomProperty(a) || isCustomProperty(b)) return false;
+  if (a === b) {
+    return true;
+  }
+  if (isCustomProperty(a) || isCustomProperty(b)) {
+    return false;
+  }
   if (a === "all" || b === "all") {
     const other = a === "all" ? b : a;
     return other !== "direction" && other !== "unicode-bidi";
   }
   const own = longhandsOf(a);
   const others = longhandsOf(b);
-  if ([...own].some((longhand) => others.has(longhand))) return true;
+  if ([...own].some((longhand) => others.has(longhand))) {
+    return true;
+  }
   const groups = [...others].map(flowGroup);
   return [...own].some((longhand) => {
     const group = flowGroup(longhand);
@@ -291,18 +297,28 @@ function flowGroup(longhand: string): { name: string; logical: boolean } | undef
     /^(margin|padding|scroll-margin|scroll-padding|inset|border)-(?:(block|inline)-(?:start|end)|top|right|bottom|left)(-width|-style|-color)?$/.exec(
       longhand,
     );
-  if (side) return { name: `${side[1]}${side[3] ?? ""}`, logical: side[2] !== undefined };
-  if (/^(?:top|right|bottom|left)$/.test(longhand)) return { name: "inset", logical: false };
+  if (side) {
+    return { name: `${side[1]}${side[3] ?? ""}`, logical: side[2] !== undefined };
+  }
+  if (/^(?:top|right|bottom|left)$/.test(longhand)) {
+    return { name: "inset", logical: false };
+  }
   const corner = /^border-(?:(?:start|end)-(?:start|end)|(top|bottom)-(?:left|right))-radius$/.exec(
     longhand,
   );
-  if (corner) return { name: "border-radius", logical: corner[1] === undefined };
+  if (corner) {
+    return { name: "border-radius", logical: corner[1] === undefined };
+  }
   const size = /^((?:min-|max-|contain-intrinsic-)?)(?:(inline|block)-size|width|height)$/.exec(
     longhand,
   );
-  if (size) return { name: `${size[1]}size`, logical: size[2] !== undefined };
+  if (size) {
+    return { name: `${size[1]}size`, logical: size[2] !== undefined };
+  }
   const axis = /^(overflow|overscroll-behavior)-(?:(inline|block)|x|y)$/.exec(longhand);
-  if (axis) return { name: axis[1]!, logical: axis[2] !== undefined };
+  if (axis) {
+    return { name: axis[1]!, logical: axis[2] !== undefined };
+  }
   return undefined;
 }
 
@@ -450,12 +466,19 @@ export function angularMisreads(value: string): boolean {
   let depth = 0;
   let quote: string | undefined;
   for (const character of value) {
-    if (character === "(") depth++;
-    else if (character === ")") depth--;
-    else if (character === '"' || character === "'") {
-      if (quote === undefined) quote = character;
-      else if (quote === character) quote = undefined;
-    } else if (character === ";" && depth === 0 && quote === undefined) return true;
+    if (character === "(") {
+      depth++;
+    } else if (character === ")") {
+      depth--;
+    } else if (character === '"' || character === "'") {
+      if (quote === undefined) {
+        quote = character;
+      } else if (quote === character) {
+        quote = undefined;
+      }
+    } else if (character === ";" && depth === 0 && quote === undefined) {
+      return true;
+    }
   }
   return depth !== 0 || quote !== undefined;
 }
@@ -477,15 +500,22 @@ export function isCssPropertyName(name: string): boolean {
  * would set the property to a value the CSSOM rejects.
  */
 export function cssValueProblem(value: string): string | undefined {
-  if (value === "") return "must not be empty";
-  if (value.trim() !== value) return "must not start or end with whitespace";
+  if (value === "") {
+    return "must not be empty";
+  }
+  if (value.trim() !== value) {
+    return "must not start or end with whitespace";
+  }
   const closing: string[] = [];
   let quote: string | undefined;
   for (let index = 0; index < value.length; index++) {
     const character = value[index]!;
     if (quote) {
-      if (character === "\\") index++;
-      else if (character === quote) quote = undefined;
+      if (character === "\\") {
+        index++;
+      } else if (character === quote) {
+        quote = undefined;
+      }
       continue;
     }
     if (character === "\\") {
@@ -494,18 +524,24 @@ export function cssValueProblem(value: string): string | undefined {
       quote = character;
     } else if (character === "/" && value[index + 1] === "*") {
       const end = value.indexOf("*/", index + 2);
-      if (end === -1) return "must close its comments";
+      if (end === -1) {
+        return "must close its comments";
+      }
       index = end + 1;
     } else if (character === "(" || character === "[" || character === "{") {
       closing.push(character === "(" ? ")" : character === "[" ? "]" : "}");
     } else if (character === ")" || character === "]" || character === "}") {
-      if (closing.pop() !== character) return "must balance its brackets";
+      if (closing.pop() !== character) {
+        return "must balance its brackets";
+      }
     } else if (closing.length === 0 && (character === ";" || character === "!")) {
       return character === ";"
         ? "must be one value: a `;` ends the declaration"
         : "must not hold `!important`";
     }
   }
-  if (quote) return "must close its strings";
+  if (quote) {
+    return "must close its strings";
+  }
   return closing.length ? "must balance its brackets" : undefined;
 }

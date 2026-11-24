@@ -54,7 +54,9 @@ function createRoot(files: Record<string, string>): string {
   mkdirSync(join(here, ".uf-tmp"), { recursive: true });
   const root = realpathSync(mkdtempSync(join(here, ".uf-tmp", "hot-")));
   roots.push(root);
-  for (const [path, contents] of Object.entries(files)) write(root, path, contents);
+  for (const [path, contents] of Object.entries(files)) {
+    write(root, path, contents);
+  }
   return root;
 }
 
@@ -65,7 +67,9 @@ function write(root: string, path: string, contents: string): void {
 }
 
 afterEach(() => {
-  for (const root of roots) rmSync(root, { recursive: true, force: true });
+  for (const root of roots) {
+    rmSync(root, { recursive: true, force: true });
+  }
   roots = [];
 });
 
@@ -128,7 +132,11 @@ async function startHot(
       async hotUpdateEnvironments(viteServer, hmr) {
         await Promise.all(Object.values(viteServer.environments).map((each) => hmr(each)));
         inFlight -= 1;
-        if (inFlight === 0) for (const file of started) settle?.(file);
+        if (inFlight === 0) {
+          for (const file of started) {
+            settle?.(file);
+          }
+        }
       },
     },
     optimizeDeps: { noDiscovery: true, include: [] },
@@ -162,7 +170,9 @@ async function startHot(
   const sent: HotPayload[] = [];
   const send = client.hot.send.bind(client.hot);
   vi.spyOn(client.hot, "send").mockImplementation((...args: Parameters<typeof send>) => {
-    if (typeof args[0] === "object") sent.push(args[0]);
+    if (typeof args[0] === "object") {
+      sent.push(args[0]);
+    }
     send(...args);
   });
   return {
@@ -173,7 +183,9 @@ async function startHot(
     edit: async (path, change) => {
       const wanted = join(root, path);
       const elapsed = performance.now() - (reported.get(wanted) ?? Number.NEGATIVE_INFINITY);
-      if (elapsed <= CHANGE_THROTTLE) await delay(CHANGE_THROTTLE - elapsed + 1);
+      if (elapsed <= CHANGE_THROTTLE) {
+        await delay(CHANGE_THROTTLE - elapsed + 1);
+      }
       sent.length = 0;
       ssrModules.length = 0;
       started.clear();
@@ -184,7 +196,9 @@ async function startHot(
           HOT.timeout,
         );
         settle = (file) => {
-          if (file === wanted) resolve();
+          if (file === wanted) {
+            resolve();
+          }
         };
       });
       try {
@@ -197,7 +211,9 @@ async function startHot(
     fetchAll: async () => {
       const seen = new Map<string, string>();
       const visit = async (url: string): Promise<void> => {
-        if (seen.has(url)) return;
+        if (seen.has(url)) {
+          return;
+        }
         const result = await environment.transformRequest(url);
         seen.set(url, result?.code ?? "");
         // Only the imports its code names: a watch edge is in the graph, but no browser asks for it.
@@ -205,7 +221,9 @@ async function startHot(
           /(?:from|import|__vite_ssr_import__\()\s*"([^"]+)"/g,
         ) ?? []) {
           const plain = imported!.replace(/\bt=\d+&?/, "").replace(/[?&]$/, "");
-          if (plain.startsWith("/") && !/node_modules|^\/@/.test(plain)) await visit(plain);
+          if (plain.startsWith("/") && !/node_modules|^\/@/.test(plain)) {
+            await visit(plain);
+          }
         }
       };
       await visit("/main.ts");
@@ -220,7 +238,9 @@ const updates = (sent: readonly HotPayload[]) =>
 
 const contentsOf = (modules: ReadonlyMap<string, string>, part: string): string => {
   const entry = [...modules].find(([url]) => url.includes(part));
-  if (!entry) throw new Error(`no fetched module holds ${part}: ${[...modules.keys()].join(", ")}`);
+  if (!entry) {
+    throw new Error(`no fetched module holds ${part}: ${[...modules.keys()].join(", ")}`);
+  }
   return entry[1];
 };
 
@@ -485,7 +505,9 @@ describe("what a change reaches", () => {
     const parent = realpathSync(mkdtempSync(join(here, ".uf-tmp", "hot-")));
     roots.push(parent);
     const root = join(parent, "R&D app");
-    for (const [path, contents] of Object.entries(FILES)) write(root, path, contents);
+    for (const [path, contents] of Object.entries(FILES)) {
+      write(root, path, contents);
+    }
     const hot = await startHot(root, "vue", vue);
     try {
       await hot.fetchAll();
@@ -611,7 +633,9 @@ describe("a framework with no hot update of its own", () => {
       const seen = new Map<string, string>();
       const visit = async (url: string): Promise<void> => {
         const plain = url.replace(/\bt=\d+&?/, "").replace(/[?&]$/, "");
-        if (seen.has(plain)) return;
+        if (seen.has(plain)) {
+          return;
+        }
         seen.set(plain, "");
         const result = await client.transformRequest(plain);
         seen.set(plain, result?.code ?? "");
@@ -619,7 +643,9 @@ describe("a framework with no hot update of its own", () => {
           []) {
           const resolved = new URL(imported!, `http://host${plain}`);
           const next = `${resolved.pathname}${resolved.search}`;
-          if (!/node_modules|^\/@/.test(next)) await visit(next);
+          if (!/node_modules|^\/@/.test(next)) {
+            await visit(next);
+          }
         }
       };
       await visit("/src/Card.uf.tsx");

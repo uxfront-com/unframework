@@ -25,8 +25,12 @@ import type { Kinds, Member, ObjectShape } from "./kinds.ts";
 
 /** A member key's name: an identifier, or a string literal (`"aria-label": string`). */
 export function memberName(key: AST.PropertyKey): string | undefined {
-  if (key.type === "Identifier") return key.name;
-  if (key.type === "Literal" && typeof key.value === "string") return key.value;
+  if (key.type === "Identifier") {
+    return key.name;
+  }
+  if (key.type === "Literal" && typeof key.value === "string") {
+    return key.value;
+  }
   return undefined;
 }
 
@@ -53,8 +57,12 @@ export class TypeTable {
   /** The kinds of a value of a type. */
   kindsOf(type: AST.TSType): Kinds {
     const cached = this.#memo.get(type);
-    if (cached) return cached;
-    if (this.#resolving.has(type)) return UNKNOWN;
+    if (cached) {
+      return cached;
+    }
+    if (this.#resolving.has(type)) {
+      return UNKNOWN;
+    }
     this.#resolving.add(type);
     const result = this.#read(type);
     this.#resolving.delete(type);
@@ -70,10 +78,14 @@ export class TypeTable {
       members: () => {
         read ??= new Map(
           members.flatMap((member): [string, Member][] => {
-            if (member.type !== "TSPropertySignature" || member.computed) return [];
+            if (member.type !== "TSPropertySignature" || member.computed) {
+              return [];
+            }
             const name = memberName(member.key);
             const type = member.typeAnnotation?.typeAnnotation;
-            if (name === undefined) return [];
+            if (name === undefined) {
+              return [];
+            }
             return [
               [
                 name,
@@ -145,18 +157,24 @@ export class TypeTable {
   }
 
   #reference(type: AST.TSTypeReference): Kinds {
-    if (type.typeName.type !== "Identifier") return UNKNOWN;
+    if (type.typeName.type !== "Identifier") {
+      return UNKNOWN;
+    }
     const { name } = type.typeName;
     const argument = type.typeArguments?.params[0];
     if ((name === "Array" || name === "ReadonlyArray") && argument) {
       return arrayOf(() => this.kindsOf(argument));
     }
     const declaration = type.typeArguments ? undefined : this.#declarations.get(name);
-    if (!declaration) return UNKNOWN;
+    if (!declaration) {
+      return UNKNOWN;
+    }
     const { node } = declaration;
     if (node.type === "TSInterfaceDeclaration") {
       const cached = this.#memo.get(node);
-      if (cached) return cached;
+      if (cached) {
+        return cached;
+      }
       const shape = objectOf({ ...this.shapeOf(node.body.body), interface: true });
       this.#memo.set(node, shape);
       return shape;
@@ -169,9 +187,15 @@ export class TypeTable {
 function literalKinds(literal: AST.TSLiteral): Kinds {
   switch (literal.type) {
     case "Literal":
-      if (typeof literal.value === "string") return stringLiteral(literal.value);
-      if (typeof literal.value === "number") return numberLiteral(literal.value);
-      if (typeof literal.value === "boolean") return booleanLiteral(literal.value);
+      if (typeof literal.value === "string") {
+        return stringLiteral(literal.value);
+      }
+      if (typeof literal.value === "number") {
+        return numberLiteral(literal.value);
+      }
+      if (typeof literal.value === "boolean") {
+        return booleanLiteral(literal.value);
+      }
       return kinds("bigint");
     case "UnaryExpression":
       return literal.argument.type === "Literal" && typeof literal.argument.value === "number"

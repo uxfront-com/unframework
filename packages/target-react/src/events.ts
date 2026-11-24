@@ -196,18 +196,32 @@ const CHILDLESS_TARGETS = new Set(["input", "select", "textarea", "option"]);
  */
 export function synthetic(listener: EventAttribute, element: ElementNode): boolean {
   const entry = REACT_EVENTS.get(listener.event);
-  if (!entry) return false;
-  if (entry.element && entry.element !== element.tag) return false;
-  if (listener.capture && !entry.capture) return false;
-  if (ROOT_PASSIVE.has(listener.event) !== Boolean(listener.passive)) return false;
-  if (listener.event === "change") return changeCommits(element);
+  if (!entry) {
+    return false;
+  }
+  if (entry.element && entry.element !== element.tag) {
+    return false;
+  }
+  if (listener.capture && !entry.capture) {
+    return false;
+  }
+  if (ROOT_PASSIVE.has(listener.event) !== Boolean(listener.passive)) {
+    return false;
+  }
+  if (listener.event === "change") {
+    return changeCommits(element);
+  }
   return true;
 }
 
 /** Whether React's `onChange` fires on this element from the DOM's `change`, and only then. */
 function changeCommits(element: ElementNode): boolean {
-  if (element.tag === "select") return true;
-  if (element.tag !== "input") return false;
+  if (element.tag === "select") {
+    return true;
+  }
+  if (element.tag !== "input") {
+    return false;
+  }
   const type = element.attributes.find(
     (attribute) => attribute.kind === "Static" && attribute.name === "type",
   );
@@ -232,7 +246,9 @@ export function targetGuarded(listener: EventAttribute, element: ElementNode): b
 /** A synthetic listener's prop: `onKeyDown`, `onClickCapture`. */
 export function reactProp(listener: EventAttribute): string {
   const entry = REACT_EVENTS.get(listener.event);
-  if (!entry) throw new Error(`React has no prop for the \`${listener.event}\` event.`);
+  if (!entry) {
+    throw new Error(`React has no prop for the \`${listener.event}\` event.`);
+  }
   return listener.capture ? `${entry.prop}Capture` : entry.prop;
 }
 
@@ -267,7 +283,9 @@ const REACT_EVENT_TYPES: ReadonlyMap<string, string> = new Map([
 export function reactEventType(domInterface: string): string {
   for (let current: string | null | undefined = domInterface; current;) {
     const type = REACT_EVENT_TYPES.get(current);
-    if (type) return type;
+    if (type) {
+      return type;
+    }
     current = EVENT_INTERFACES.get(current);
   }
   return "SyntheticEvent";

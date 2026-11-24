@@ -350,15 +350,21 @@ export function declareSetup(context: SetupContext): Setup {
 
   /** The authoring API a callee is, `undefined` for an import that does not give one, or `null`. */
   const apiOf = (callee: AST.Expression | AST.Super): AuthoringApi | undefined | null => {
-    if (callee.type !== "Identifier") return null;
+    if (callee.type !== "Identifier") {
+      return null;
+    }
     const resolution = context.scopes.resolve(callee);
-    if (resolution.kind !== "import" || !context.authoring.has(resolution.declaration)) return null;
+    if (resolution.kind !== "import" || !context.authoring.has(resolution.declaration)) {
+      return null;
+    }
     return context.authoring.get(resolution.declaration);
   };
 
   /** The composable a callee is, `undefined` for one its import reported, or `null`. */
   const composableOf = (callee: AST.Expression | AST.Super): ComposableApi | undefined | null => {
-    if (callee.type !== "Identifier") return null;
+    if (callee.type !== "Identifier") {
+      return null;
+    }
     const resolution = context.scopes.resolve(callee);
     if (resolution.kind !== "import" || !context.composables?.has(resolution.declaration)) {
       return null;
@@ -391,26 +397,35 @@ export function declareSetup(context: SetupContext): Setup {
           continue;
         }
         const api = expression.type === "CallExpression" ? apiOf(expression.callee) : null;
-        if (api === undefined) continue;
+        if (api === undefined) {
+          continue;
+        }
         if (api === null) {
           other(statement);
           continue;
         }
         const call = expression as AST.CallExpression;
-        if (needsComponent(call, api)) continue;
-        if (api === "watch" || api === "watchEffect") declared.push({ kind: api, statement, call });
-        else if (api === "onMounted" || api === "onUnmounted") {
+        if (needsComponent(call, api)) {
+          continue;
+        }
+        if (api === "watch" || api === "watchEffect") {
+          declared.push({ kind: api, statement, call });
+        } else if (api === "onMounted" || api === "onUnmounted") {
           declared.push({
             kind: "lifecycle",
             statement,
             call,
             hook: api === "onMounted" ? "mounted" : "unmounted",
           });
-        } else if (api === "defineExpose") defineExpose(call);
-        else if (api === "defineOptions") defineOptions(call);
-        else if (api === "provide") provide(statement, call);
-        else if (BOUND_MACROS.has(api)) unbound(call, api, "statement");
-        else if (api === "Teleport") {
+        } else if (api === "defineExpose") {
+          defineExpose(call);
+        } else if (api === "defineOptions") {
+          defineOptions(call);
+        } else if (api === "provide") {
+          provide(statement, call);
+        } else if (BOUND_MACROS.has(api)) {
+          unbound(call, api, "statement");
+        } else if (api === "Teleport") {
           teleportNotTag(call.callee as AST.IdentifierReference, reporter);
         } else if (api === "Transition") {
           transitionNotTag(call.callee as AST.IdentifierReference, reporter);
@@ -418,15 +433,21 @@ export function declareSetup(context: SetupContext): Setup {
           misplacedDirective(call.callee as AST.IdentifierReference, reporter);
         } else if (api === "isDev") {
           misplacedDev(call.callee as AST.IdentifierReference, reporter);
-        } else misplacedNextTick(call.callee as AST.IdentifierReference);
+        } else {
+          misplacedNextTick(call.callee as AST.IdentifierReference);
+        }
         continue;
       }
       case "VariableDeclaration":
         variable(statement);
         continue;
       case "FunctionDeclaration": {
-        if (!statement.id) continue;
-        if (helper(statement, statement.id)) continue;
+        if (!statement.id) {
+          continue;
+        }
+        if (helper(statement, statement.id)) {
+          continue;
+        }
         const binding = declare(statement.id, "localFn", returnKinds(statement), statement);
         declared.push({ kind: "function", statement, fn: statement, form: "declaration", binding });
         continue;
@@ -438,8 +459,11 @@ export function declareSetup(context: SetupContext): Setup {
         // `if (isDev) { … }`: code that runs only in a development build (ADR-0117).
         const test = context.composable ? undefined : devTest(statement, context);
         // A development build must render what a production one does: no early return.
-        if (test && !returnsIn(statement).length) declared.push({ kind: "dev", statement, test });
-        else other(statement);
+        if (test && !returnsIn(statement).length) {
+          declared.push({ kind: "dev", statement, test });
+        } else {
+          other(statement);
+        }
         continue;
       }
       default:
@@ -468,7 +492,9 @@ export function declareSetup(context: SetupContext): Setup {
         : undefined;
     let valid = true;
     for (const node of awaits) {
-      if (node === declaration) continue;
+      if (node === declaration) {
+        continue;
+      }
       valid = false;
       const at = node.type === "ForOfStatement" ? { start: node.start, end: node.start + 9 } : node;
       reporter.report(
@@ -484,7 +510,9 @@ export function declareSetup(context: SetupContext): Setup {
         },
       );
     }
-    if (!valid || !declaration) return;
+    if (!valid || !declaration) {
+      return;
+    }
     const id = declarator!.id as AST.BindingIdentifier;
     const before = declared.find((item) => item.kind !== "await");
     if (before) {
@@ -501,7 +529,9 @@ export function declareSetup(context: SetupContext): Setup {
       ? context.writtenType(id.typeAnnotation.typeAnnotation)
       : undefined;
     const binding = declare(id, "awaited", written?.kinds ?? UNKNOWN);
-    if (written) binding.typed = { complete: written.complete };
+    if (written) {
+      binding.typed = { complete: written.complete };
+    }
     declared.push({
       kind: "await",
       statement: statement as AST.VariableDeclaration,
@@ -515,7 +545,9 @@ export function declareSetup(context: SetupContext): Setup {
    * called. Returns whether it reported.
    */
   function needsComponent(call: AST.CallExpression, api: AuthoringApi): boolean {
-    if (!context.composable || !COMPONENT_APIS.has(api)) return false;
+    if (!context.composable || !COMPONENT_APIS.has(api)) {
+      return false;
+    }
     const name = (call.callee as AST.IdentifierReference).name;
     reporter.report(
       "UF2035",
@@ -553,7 +585,9 @@ export function declareSetup(context: SetupContext): Setup {
         { help: "Write the JSX where it renders, in the returned tree, or extract a component." },
       );
     }
-    if (jsx.length) return;
+    if (jsx.length) {
+      return;
+    }
     if (statement.declarations.length > 1) {
       reporter.unsupported(
         statement,
@@ -566,13 +600,19 @@ export function declareSetup(context: SetupContext): Setup {
     const call = init?.type === "CallExpression" ? init : undefined;
     const composable = call ? composableOf(call.callee) : null;
     if (composable !== null) {
-      if (composable) use(statement, declarator, call!, composable);
+      if (composable) {
+        use(statement, declarator, call!, composable);
+      }
       return;
     }
     const api = call ? apiOf(call.callee) : null;
-    if (api === undefined) return;
+    if (api === undefined) {
+      return;
+    }
     if (api !== null) {
-      if (needsComponent(call!, api)) return;
+      if (needsComponent(call!, api)) {
+        return;
+      }
       macro(statement, declarator, call!, api);
       return;
     }
@@ -622,12 +662,16 @@ export function declareSetup(context: SetupContext): Setup {
         );
       }
       const binding = declare(id, "localVar", kinds);
-      if (written) binding.typed = { complete: written.complete };
+      if (written) {
+        binding.typed = { complete: written.complete };
+      }
       declared.push({ kind: "let", statement, declarator, binding });
       return;
     }
     if (init?.type === "ArrowFunctionExpression") {
-      if (helper(init, id)) return;
+      if (helper(init, id)) {
+        return;
+      }
       const binding = declare(id, "localFn", returnKinds(init), init);
       declared.push({ kind: "function", statement, fn: init, form: "arrow", binding });
       return;
@@ -643,7 +687,9 @@ export function declareSetup(context: SetupContext): Setup {
       ? context.writtenType(id.typeAnnotation.typeAnnotation)
       : undefined;
     const binding = declare(id, "localConst", written?.kinds ?? UNKNOWN);
-    if (written) binding.typed = { complete: written.complete };
+    if (written) {
+      binding.typed = { complete: written.complete };
+    }
     declared.push({ kind: "const", statement, declarator, binding });
   }
 
@@ -720,7 +766,9 @@ export function declareSetup(context: SetupContext): Setup {
       binding.member = found;
       members.push({ member, binding, span: span(property) });
     }
-    if (valid) declared.push({ kind: "use", statement, call, name, api, members });
+    if (valid) {
+      declared.push({ kind: "use", statement, call, name, api, members });
+    }
   }
 
   /** A composable's call whose result is not destructured by a top-level \`const\`. */
@@ -762,7 +810,9 @@ export function declareSetup(context: SetupContext): Setup {
     }
     switch (api) {
       case "ref": {
-        if (!arguments_(call, 0, 1, 1)) return;
+        if (!arguments_(call, 0, 1, 1)) {
+          return;
+        }
         const [type] = call.typeArguments?.params ?? [];
         if (!type && !call.arguments.length) {
           reporter.report(
@@ -781,12 +831,16 @@ export function declareSetup(context: SetupContext): Setup {
             ? UNKNOWN
             : UNDEFINED;
         const binding = declare(id, "state", kinds);
-        if (written) binding.typed = { complete: written.complete };
+        if (written) {
+          binding.typed = { complete: written.complete };
+        }
         declared.push({ kind: "state", statement, call, binding });
         return;
       }
       case "computed": {
-        if (!arguments_(call, 1, 1, 1)) return;
+        if (!arguments_(call, 1, 1, 1)) {
+          return;
+        }
         const [getter] = call.arguments;
         if (getter?.type === "Identifier") {
           reporter.report(
@@ -810,7 +864,9 @@ export function declareSetup(context: SetupContext): Setup {
         return;
       }
       case "useTemplateRef": {
-        if (!arguments_(call, 0, 0, 1)) return;
+        if (!arguments_(call, 0, 0, 1)) {
+          return;
+        }
         const [type] = call.typeArguments?.params ?? [];
         const kinds = union(type ? context.types.kindsOf(type) : UNKNOWN, NULL);
         declared.push({
@@ -822,7 +878,9 @@ export function declareSetup(context: SetupContext): Setup {
         return;
       }
       case "useId":
-        if (!arguments_(call, 0, 0, 0)) return;
+        if (!arguments_(call, 0, 0, 0)) {
+          return;
+        }
         declared.push({ kind: "id", statement, call, binding: declare(id, "localConst", STRING) });
         return;
       case "defineEmits":
@@ -1060,7 +1118,9 @@ export function declareSetup(context: SetupContext): Setup {
           valid = false;
         }
         labels.add(label);
-        if (!payloadType(name, element)) valid = false;
+        if (!payloadType(name, element)) {
+          valid = false;
+        }
         parameters.push(
           createEventParameter(
             label,
@@ -1079,7 +1139,9 @@ export function declareSetup(context: SetupContext): Setup {
       declarations.push(createEventDeclaration(name, parameters, { start: member.start, end }));
       named.push({ name, key });
     }
-    if (!valid) return;
+    if (!valid) {
+      return;
+    }
     events = new Map(
       declarations.map((event) => [
         event.name,
@@ -1228,24 +1290,36 @@ export function declareSetup(context: SetupContext): Setup {
         : key.type === "Literal" && typeof key.value === "string"
           ? key.value
           : undefined;
-    if (name === undefined) return undefined;
+    if (name === undefined) {
+      return undefined;
+    }
     if (member.type === "TSMethodSignature") {
-      if (member.kind !== "method" || member.typeParameters) return undefined;
+      if (member.kind !== "method" || member.typeParameters) {
+        return undefined;
+      }
       return { name, key, optional: member.optional, parameters: member.params };
     }
     const fn = member.typeAnnotation?.typeAnnotation;
-    if (fn?.type !== "TSFunctionType" || fn.typeParameters) return undefined;
+    if (fn?.type !== "TSFunctionType" || fn.typeParameters) {
+      return undefined;
+    }
     return { name, key, optional: member.optional, parameters: fn.params };
   }
 
   /** What else a slot's name names: a prop, or an event's callback (`onClose`). */
   function slotNameTaken(name: string): string | undefined {
-    if (context.props.byName.has(name)) return `the prop \`${name}\``;
-    if (models.has(name)) return `the model \`${name}\``;
+    if (context.props.byName.has(name)) {
+      return `the prop \`${name}\``;
+    }
+    if (models.has(name)) {
+      return `the model \`${name}\``;
+    }
     const event = /^on[A-Z]/.test(name)
       ? `${name.charAt(2).toLowerCase()}${name.slice(3)}`
       : undefined;
-    if (event !== undefined && events?.has(event)) return `the event \`${event}\`'s callback`;
+    if (event !== undefined && events?.has(event)) {
+      return `the event \`${event}\`'s callback`;
+    }
     return undefined;
   }
 
@@ -1313,7 +1387,9 @@ export function declareSetup(context: SetupContext): Setup {
       }
       functions.push(binding.id);
     }
-    if (valid) exposes = createExposes(functions, span(call));
+    if (valid) {
+      exposes = createExposes(functions, span(call));
+    }
   }
 
   /** The setup binding an identifier in the setup's own statements reads, if any. */
@@ -1431,7 +1507,9 @@ export function declareSetup(context: SetupContext): Setup {
       return;
     }
     const checked = options ? modelOptions(options as AST.Expression) : {};
-    if (!checked) return;
+    if (!checked) {
+      return;
+    }
     const [type] = params;
     binding.kinds = type
       ? checked.default || checked.required
@@ -1481,7 +1559,9 @@ export function declareSetup(context: SetupContext): Setup {
         if (value.type !== "Literal" || typeof value.value !== "boolean") {
           return invalid(value, "`required` is `true` or `false`, as a literal.");
         }
-        if (value.value) checked.required = true;
+        if (value.value) {
+          checked.required = true;
+        }
         continue;
       }
       if (!isStatic(value)) {
@@ -1508,7 +1588,9 @@ export function declareSetup(context: SetupContext): Setup {
           ? resolution.declaration
           : undefined;
       const key = declaration ? context.keys.get(declaration) : undefined;
-      if (key) return key;
+      if (key) {
+        return key;
+      }
     }
     reporter.report(
       "UF2032",
@@ -1543,7 +1625,9 @@ export function declareSetup(context: SetupContext): Setup {
       return;
     }
     const key = keyOf(call, node);
-    if (!key) return;
+    if (!key) {
+      return;
+    }
     const first = provided.get(key.name);
     if (first) {
       reporter.report(
@@ -1571,7 +1655,9 @@ export function declareSetup(context: SetupContext): Setup {
     const value = valueType(key);
     const kinds = value ? context.types.kindsOf(value) : UNKNOWN;
     binding.kinds = fallback ? kinds : union(kinds, UNDEFINED);
-    if (holdsRef) binding.ref = true;
+    if (holdsRef) {
+      binding.ref = true;
+    }
     declared.push({ kind: "inject", statement, call, binding, key });
   }
 
@@ -1588,7 +1674,9 @@ export function declareSetup(context: SetupContext): Setup {
       return;
     }
     const key = keyOf(call, node);
-    if (!key) return;
+    if (!key) {
+      return;
+    }
     const first = provided.get(key.name);
     if (first) {
       reporter.report(
@@ -1630,14 +1718,18 @@ export function declareSetup(context: SetupContext): Setup {
       if (node.typeParameters) {
         probe.unsupported(node.typeParameters, `\`${name}\` is generic.`);
       } else if (node.type === "TSInterfaceDeclaration") {
-        if (node.extends.length) probe.unsupported(node, `\`${name}\` extends another type.`);
+        if (node.extends.length) {
+          probe.unsupported(node, `\`${name}\` extends another type.`);
+        }
         checkMembers(node.body.body, types, probe);
       } else {
         checkType(node.typeAnnotation, types, probe);
       }
     }
     const [problem] = probe.diagnostics;
-    if (!problem) return true;
+    if (!problem) {
+      return true;
+    }
     reporter.report(
       "UF2009",
       type,
@@ -1661,9 +1753,13 @@ export function declareSetup(context: SetupContext): Setup {
    * and every emit.
    */
   function checkEventNames(): void {
-    if (!emitBinding) return;
+    if (!emitBinding) {
+      return;
+    }
     const taken = new Map<string, string>();
-    for (const prop of context.props.byName.keys()) taken.set(prop, `the prop \`${prop}\``);
+    for (const prop of context.props.byName.keys()) {
+      taken.set(prop, `the prop \`${prop}\``);
+    }
     const lower = new Map<string, string>();
     for (const { name } of named) {
       lower.set(name.toLowerCase(), lower.get(name.toLowerCase()) ?? name);
@@ -1700,7 +1796,9 @@ export function declareSetup(context: SetupContext): Setup {
       const found = repeated
         ? `\`${name}\` is declared twice: a component declares each event once.`
         : problem(name, name);
-      if (!found) continue;
+      if (!found) {
+        continue;
+      }
       const renamed = canonicalEventName(name);
       const fix =
         !repeated &&
@@ -1724,10 +1822,16 @@ export function declareSetup(context: SetupContext): Setup {
   function renameSlot(name: string, renamed: string, key: AST.PropertyKey): Fix {
     const edits: Fix["edits"] = [{ span: span(key), text: renamed }];
     visit(context.component.body, (node) => {
-      if (node.type !== "MemberExpression" || node.computed) return;
-      if (node.object.type !== "Identifier" || node.property.name !== name) return;
+      if (node.type !== "MemberExpression" || node.computed) {
+        return;
+      }
+      if (node.object.type !== "Identifier" || node.property.name !== name) {
+        return;
+      }
       const resolution = context.scopes.resolve(node.object);
-      if (resolution.kind !== "variable" || resolution.declaration !== slotsBinding) return;
+      if (resolution.kind !== "variable" || resolution.declaration !== slotsBinding) {
+        return;
+      }
       edits.push({ span: span(node.property), text: renamed });
     });
     return { title: `Rename the slot \`${name}\` to \`${renamed}\``, confidence: "likely", edits };
@@ -1737,9 +1841,13 @@ export function declareSetup(context: SetupContext): Setup {
   function renameEvent(name: string, renamed: string, key: AST.PropertyKey): Fix {
     const edits: Fix["edits"] = [{ span: span(key), text: renamed }];
     visit(context.component.body, (node) => {
-      if (node.type !== "CallExpression" || node.callee.type !== "Identifier") return;
+      if (node.type !== "CallExpression" || node.callee.type !== "Identifier") {
+        return;
+      }
       const resolution = context.scopes.resolve(node.callee);
-      if (resolution.kind !== "variable" || resolution.declaration !== emitBinding) return;
+      if (resolution.kind !== "variable" || resolution.declaration !== emitBinding) {
+        return;
+      }
       const [first] = node.arguments;
       if (first?.type === "Literal" && first.value === name) {
         edits.push({ span: { start: first.start + 1, end: first.end - 1 }, text: renamed });
@@ -1756,7 +1864,9 @@ export function declareSetup(context: SetupContext): Setup {
 
   /** The members of `defineEmits`'s type argument: a type literal's, or a local type's. */
   function eventMembers(type: AST.TSType): readonly AST.TSSignature[] | undefined {
-    if (type.type === "TSTypeLiteral") return type.members;
+    if (type.type === "TSTypeLiteral") {
+      return type.members;
+    }
     if (
       type.type !== "TSTypeReference" ||
       type.typeName.type !== "Identifier" ||
@@ -1765,10 +1875,13 @@ export function declareSetup(context: SetupContext): Setup {
       return undefined;
     }
     const declaration = context.types.declaration(type.typeName.name);
-    if (!declaration) return undefined;
+    if (!declaration) {
+      return undefined;
+    }
     const { node } = declaration;
-    if (node.type === "TSInterfaceDeclaration")
+    if (node.type === "TSInterfaceDeclaration") {
       return node.extends.length ? undefined : node.body.body;
+    }
     return node.typeAnnotation.type === "TSTypeLiteral" ? node.typeAnnotation.members : undefined;
   }
 
@@ -1788,7 +1901,9 @@ export function declareSetup(context: SetupContext): Setup {
       body && body.type !== "BlockStatement"
         ? holdsJsx(body)
         : returned?.type === "ReturnStatement" && holdsJsx(returned.argument);
-    if (!jsx) return false;
+    if (!jsx) {
+      return false;
+    }
     reporter.report(
       "UF3012",
       id,
@@ -1820,7 +1935,9 @@ export function declareSetup(context: SetupContext): Setup {
   function other(statement: AST.Statement): void {
     const returns = returnsIn(statement);
     if (returns.length) {
-      for (const item of returns) conditionalReturn(item);
+      for (const item of returns) {
+        conditionalReturn(item);
+      }
       return;
     }
     const apis = apisIn(statement, context);
@@ -1869,7 +1986,9 @@ export function declareSetup(context: SetupContext): Setup {
   function checkModelNames(): void {
     for (const [name, node] of models) {
       const event = `${name}Change`;
-      if (!events?.has(event)) continue;
+      if (!events?.has(event)) {
+        continue;
+      }
       reporter.report(
         "UF2028",
         node,
@@ -1878,7 +1997,9 @@ export function declareSetup(context: SetupContext): Setup {
       );
     }
   }
-  if (exposeCall) checkExpose(exposeCall);
+  if (exposeCall) {
+    checkExpose(exposeCall);
+  }
 
   /**
    * Checks the slots' names against the props and the events' callbacks (UF2029), once every
@@ -1901,7 +2022,9 @@ export function declareSetup(context: SetupContext): Setup {
         continue;
       }
       const taken = slotNameTaken(name);
-      if (!taken) continue;
+      if (!taken) {
+        continue;
+      }
       reporter.report(
         "UF2029",
         key,
@@ -1950,11 +2073,15 @@ export function declareSetup(context: SetupContext): Setup {
       return inheritAttrs;
     },
     lower(render) {
-      if (lowered) return;
+      if (lowered) {
+        return;
+      }
       lowered = true;
       for (const item of declared) {
         const ir = lowerItem(item, render);
-        if (!ir) continue;
+        if (!ir) {
+          continue;
+        }
         items.push(ir);
         sources.set(ir, sourceOf(item));
       }
@@ -1965,7 +2092,9 @@ export function declareSetup(context: SetupContext): Setup {
     },
     finish(render) {
       for (const binding of bindings.values()) {
-        if (binding.kind !== "templateRef" || render.attached.has(binding.declaration)) continue;
+        if (binding.kind !== "templateRef" || render.attached.has(binding.declaration)) {
+          continue;
+        }
         reporter.report(
           "UF3027",
           {
@@ -2021,7 +2150,9 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       const [type] = item.call.typeArguments?.params ?? [];
       const [initial] = item.call.arguments as AST.Expression[];
       const checked = initial ? checkCode(initial, render) : undefined;
-      if (!type && checked) item.binding.kinds = checked.widened;
+      if (!type && checked) {
+        item.binding.kinds = checked.widened;
+      }
       if (has(item.binding.kinds, "function")) {
         render.reporter.report(
           "UF2021",
@@ -2038,7 +2169,9 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       const [type] = item.call.typeArguments?.params ?? [];
       const getter = item.call.arguments[0] as AST.ArrowFunctionExpression;
       const lowered = lowerFunction(getter, render, { role: "getter" });
-      if (!type) item.binding.kinds = lowered.returns;
+      if (!type) {
+        item.binding.kinds = lowered.returns;
+      }
       return createDerivedItem(item.binding.id, lowered.function, at, typeText(type));
     }
     case "templateRef": {
@@ -2053,13 +2186,17 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       const checked = checkCode(value, render);
       const annotation = (declarator.id as AST.BindingIdentifier).typeAnnotation?.typeAnnotation;
       // A `const` keeps a literal's kinds, and widens an object's or an array's (ADR-0046).
-      if (!annotation) item.binding.kinds = checked.literal;
+      if (!annotation) {
+        item.binding.kinds = checked.literal;
+      }
       return createConstItem(item.binding.id, checked.code, at, typeText(annotation));
     }
     case "await": {
       const { declarator } = item;
       const value = (declarator.init as AST.AwaitExpression).argument;
-      if (lateRead(value, item.binding, render)) return undefined;
+      if (lateRead(value, item.binding, render)) {
+        return undefined;
+      }
       const checked = checkCode(value, render);
       const annotation = (declarator.id as AST.BindingIdentifier).typeAnnotation?.typeAnnotation;
       return createAwaitItem(item.binding.id, checked.code, at, typeText(annotation));
@@ -2068,7 +2205,9 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       const { declarator } = item;
       const checked = declarator.init ? checkCode(declarator.init, render) : undefined;
       const annotation = (declarator.id as AST.BindingIdentifier).typeAnnotation?.typeAnnotation;
-      if (!annotation) item.binding.kinds = checked ? checked.widened : UNDEFINED;
+      if (!annotation) {
+        item.binding.kinds = checked ? checked.widened : UNDEFINED;
+      }
       return createVariableItem(item.binding.id, at, checked?.code, typeText(annotation));
     }
     case "function": {
@@ -2078,8 +2217,12 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
         item: true,
         ...(event ? { event } : {}),
       });
-      if (!item.fn.returnType) item.binding.kinds = lowered.returns;
-      if (lowered.nondeterministic) item.binding.nondeterministic = lowered.nondeterministic;
+      if (!item.fn.returnType) {
+        item.binding.kinds = lowered.returns;
+      }
+      if (lowered.nondeterministic) {
+        item.binding.nondeterministic = lowered.nondeterministic;
+      }
       return createFunctionItem(item.binding.id, item.form, lowered.function, at);
     }
     case "watch":
@@ -2089,12 +2232,16 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       if (extra.length) {
         render.reporter.unsupported(extra[0]!, "`watchEffect` takes an effect and its options.");
       }
-      if (!callback(effect, "watchEffect", item.call, render) || extra.length) return undefined;
+      if (!callback(effect, "watchEffect", item.call, render) || extra.length) {
+        return undefined;
+      }
       const flags = watchOptions(options, "watchEffect", item.call, render);
       const fn = effect as AST.ArrowFunctionExpression;
       const lowered = lowerFunction(fn, render, { role: "watchEffect" });
       cleanups(fn, 0, false, render);
-      if (!flags) return undefined;
+      if (!flags) {
+        return undefined;
+      }
       return createWatchEffectItem(lowered.function, at);
     }
     case "model": {
@@ -2111,7 +2258,9 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
     case "inject": {
       const fallback = item.call.arguments[1] as AST.Expression | undefined;
       const code = fallback ? contextValue(fallback, item.key, render) : undefined;
-      if (fallback && !code) return undefined;
+      if (fallback && !code) {
+        return undefined;
+      }
       return createInjectItem(item.binding.id, item.key.name, at, code);
     }
     case "provide": {
@@ -2152,7 +2301,9 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
             : createCallbackArgument(lowered.function, span(argument)),
         );
       }
-      if (!valid) return undefined;
+      if (!valid) {
+        return undefined;
+      }
       return createUseItem(
         item.name,
         args,
@@ -2166,8 +2317,12 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
     case "lifecycle": {
       const [hook, ...extra] = item.call.arguments;
       const name = (item.call.callee as AST.IdentifierReference).name;
-      if (extra.length) render.reporter.unsupported(extra[0]!, `\`${name}\` takes one function.`);
-      if (!callback(hook, name, item.call, render)) return undefined;
+      if (extra.length) {
+        render.reporter.unsupported(extra[0]!, `\`${name}\` takes one function.`);
+      }
+      if (!callback(hook, name, item.call, render)) {
+        return undefined;
+      }
       const lowered = lowerFunction(hook as AST.ArrowFunctionExpression, render, {
         role: "lifecycle",
       });
@@ -2189,10 +2344,16 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
 function lateRead(value: AST.Expression, awaited: SetupBinding, render: RenderContext): boolean {
   let reported = false;
   visit(value, (node) => {
-    if (node.type !== "Identifier") return;
+    if (node.type !== "Identifier") {
+      return;
+    }
     const binding = setupBindingOf(node as AST.IdentifierReference, render);
-    if (!binding) return;
-    if (binding.kind === "awaited" && binding.declaration.start < awaited.declaration.start) return;
+    if (!binding) {
+      return;
+    }
+    if (binding.kind === "awaited" && binding.declaration.start < awaited.declaration.start) {
+      return;
+    }
     reported = true;
     render.reporter.report(
       "UF2039",
@@ -2228,13 +2389,19 @@ function awaitsIn(
 ): (AST.AwaitExpression | AST.ForOfStatement)[] {
   const found: (AST.AwaitExpression | AST.ForOfStatement)[] = [];
   const walk = (value: unknown): void => {
-    if (!value || typeof value !== "object") return;
+    if (!value || typeof value !== "object") {
+      return;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) walk(item);
+      for (const item of value) {
+        walk(item);
+      }
       return;
     }
     const node = value as AST.Node;
-    if (typeof node.type !== "string") return;
+    if (typeof node.type !== "string") {
+      return;
+    }
     if (
       node.type === "ArrowFunctionExpression" ||
       node.type === "FunctionExpression" ||
@@ -2265,7 +2432,9 @@ function contextValue(
   key: InjectionKeyInfo,
   render: RenderContext,
 ): Code | undefined {
-  if (!key.ref) return checkCode(node, render).code;
+  if (!key.ref) {
+    return checkCode(node, render).code;
+  }
   // A `ComputedRef` takes a `computed`, a `ModelRef` a model; a `Ref` any of them, whose types
   // each target's `Ref` accepts.
   const accepted = REF_BINDINGS[key.ref];
@@ -2315,7 +2484,9 @@ export function refTypeOf(type: AST.TSType | undefined): RefType | undefined {
  */
 function valueType(key: InjectionKeyInfo): AST.TSType | undefined {
   const { type } = key;
-  if (typeof type === "string") return undefined;
+  if (typeof type === "string") {
+    return undefined;
+  }
   return key.ref ? (type as AST.TSTypeReference).typeArguments!.params[0] : type;
 }
 
@@ -2337,7 +2508,9 @@ function callback(
   call: AST.CallExpression,
   render: RenderContext,
 ): boolean {
-  if (node?.type === "ArrowFunctionExpression") return true;
+  if (node?.type === "ArrowFunctionExpression") {
+    return true;
+  }
   if (node?.type === "Identifier") {
     const binding = setupBindingOf(node, render);
     const fix = binding?.kind === "localFn" ? wrapFix(node, binding, api, render) : undefined;
@@ -2372,7 +2545,9 @@ function wrapFix(
   render: RenderContext,
 ): Fix | undefined {
   const fn = binding.function;
-  if (!fn) return undefined;
+  if (!fn) {
+    return undefined;
+  }
   const passed = CALLBACK_PARAMETERS[api] ?? [];
   const rest = fn.params.some((parameter) => parameter.type === "RestElement");
   const count = rest ? passed.length : Math.min(passed.length, fn.params.length);
@@ -2385,7 +2560,9 @@ function wrapFix(
     render.propsObject?.name === name ||
     [...render.setup.bindings.values()].some((other) => other.name === name) ||
     reservedParameterName(name) !== undefined;
-  if (names.some(taken) || new Set(names).size !== names.length) return undefined;
+  if (names.some(taken) || new Set(names).size !== names.length) {
+    return undefined;
+  }
   const list = names.join(", ");
   return {
     title: `Wrap \`${node.name}\` in an arrow function`,
@@ -2408,17 +2585,25 @@ function cleanups(
   seen: Set<object> = new Set(),
 ): void {
   const parameter = fn.params[index];
-  if (parameter?.type !== "Identifier" || !fn.body) return;
+  if (parameter?.type !== "Identifier" || !fn.body) {
+    return;
+  }
   const { scopes, reporter } = render;
   const awaited = firstAwait(fn.body);
   const visitAll = (node: unknown, parent: AST.Node | undefined, nested: boolean): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visitAll(item, parent, nested);
+      for (const item of node) {
+        visitAll(item, parent, nested);
+      }
       return;
     }
     const typed = node as AST.Node;
-    if (typeof typed.type !== "string") return;
+    if (typeof typed.type !== "string") {
+      return;
+    }
     if (typed.type === "Identifier") {
       const resolution = scopes.resolve(typed as AST.IdentifierReference);
       if (resolution.kind === "parameter" && resolution.declaration === parameter) {
@@ -2485,13 +2670,19 @@ function cleanups(
 function firstAwait(body: AST.Node): number | undefined {
   let found: number | undefined;
   const visitAll = (node: unknown): void => {
-    if (found !== undefined || !node || typeof node !== "object") return;
+    if (found !== undefined || !node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) visitAll(item);
+      for (const item of node) {
+        visitAll(item);
+      }
       return;
     }
     const typed = node as AST.Node;
-    if (typeof typed.type !== "string") return;
+    if (typeof typed.type !== "string") {
+      return;
+    }
     if (
       typed.type === "ArrowFunctionExpression" ||
       typed.type === "FunctionExpression" ||
@@ -2523,8 +2714,9 @@ function lowerWatch(
 ): SetupItem | undefined {
   const { reporter } = render;
   const [source, handler, options, ...extra] = call.arguments;
-  if (extra.length)
+  if (extra.length) {
     reporter.unsupported(extra[0]!, "`watch` takes a source, a callback and its options.");
+  }
   if (!source || source.type === "SpreadElement") {
     reporter.unsupported(source ?? call, "`watch` takes a source and a callback.");
     return undefined;
@@ -2550,17 +2742,25 @@ function lowerWatch(
   };
   if (source.type === "ArrayExpression") {
     array = true;
-    if (!source.elements.length) one(null);
-    for (const element of source.elements) one(element);
+    if (!source.elements.length) {
+      one(null);
+    }
+    for (const element of source.elements) {
+      one(element);
+    }
   } else {
     one(source);
   }
-  if (!callback(handler, "watch", call, render)) return undefined;
+  if (!callback(handler, "watch", call, render)) {
+    return undefined;
+  }
   const flags = watchOptions(options, "watch", call, render);
   const fn = handler as AST.ArrowFunctionExpression;
   const lowered = lowerFunction(fn, render, { role: "watch" });
   cleanups(fn, 2, flags?.immediate === true, render);
-  if (!valid || !flags) return undefined;
+  if (!valid || !flags) {
+    return undefined;
+  }
   return createWatchItem(sources, lowered.function, span(statement), { array, ...flags });
 }
 
@@ -2729,7 +2929,9 @@ function watchOptions(
   call: AST.CallExpression,
   render: RenderContext,
 ): { immediate?: boolean; post?: boolean } | undefined {
-  if (!node) return {};
+  if (!node) {
+    return {};
+  }
   const { reporter, source } = render;
   const fail = (at: { start: number; end: number }, message: string) => {
     reporter.unsupported(at, message);
@@ -2763,8 +2965,11 @@ function watchOptions(
       value?.type === "Literal" &&
       typeof value.value === "boolean"
     ) {
-      if (value.value) flags.immediate = true;
-      else defaults.push(property);
+      if (value.value) {
+        flags.immediate = true;
+      } else {
+        defaults.push(property);
+      }
       continue;
     }
     if (key === "flush" && value?.type === "Literal" && typeof value.value === "string") {
@@ -2800,7 +3005,9 @@ function watchOptions(
               : '`watchEffect`\'s only option is `{ flush: "post" }`.',
       ) ?? false;
   }
-  if (!valid) return undefined;
+  if (!valid) {
+    return undefined;
+  }
   if (flags.immediate && post) {
     reporter.report(
       "UF2013",
@@ -2865,29 +3072,45 @@ function findEventParameters(
 ): void {
   const uses = new Map<SetupFunction, { index: number; interfaces: string[]; events: string[] }>();
   const functionOf = (identifier: AST.Node): SetupFunction | undefined => {
-    if (identifier.type !== "Identifier") return undefined;
+    if (identifier.type !== "Identifier") {
+      return undefined;
+    }
     const resolution = context.scopes.resolve(identifier as AST.IdentifierReference);
-    if (resolution.kind !== "variable" || resolution.scope !== context.component) return undefined;
+    if (resolution.kind !== "variable" || resolution.scope !== context.component) {
+      return undefined;
+    }
     return bindings.get(resolution.declaration)?.function;
   };
   const use = (fn: SetupFunction, index: number, dom: string, events: readonly string[]) => {
     const known = uses.get(fn);
-    if (known && known.index !== index) return;
+    if (known && known.index !== index) {
+      return;
+    }
     if (!known) {
       uses.set(fn, { index, interfaces: [dom], events: [...events] });
       return;
     }
     known.interfaces.push(dom);
-    for (const event of events) if (!known.events.includes(event)) known.events.push(event);
+    for (const event of events) {
+      if (!known.events.includes(event)) {
+        known.events.push(event);
+      }
+    }
   };
   /** The calls in `node` that pass the identifier `parameter` declares to a local function. */
   const passes = (node: unknown, parameter: object, dom: string, events: readonly string[]) => {
     visit(node, (child) => {
-      if (child.type !== "CallExpression") return;
+      if (child.type !== "CallExpression") {
+        return;
+      }
       const callee = functionOf(child.callee);
-      if (!callee) return;
+      if (!callee) {
+        return;
+      }
       for (const [index, argument] of child.arguments.entries()) {
-        if (argument.type !== "Identifier") continue;
+        if (argument.type !== "Identifier") {
+          continue;
+        }
         const resolution = context.scopes.resolve(argument);
         if (resolution.kind === "parameter" && resolution.declaration === parameter) {
           use(callee, index, dom, events);
@@ -2917,13 +3140,21 @@ function findEventParameters(
           attribute.name.type === "JSXIdentifier" &&
           /^on[A-Z]/.test(attribute.name.name) &&
           passesListener(attribute.name.name, api);
-        if (!passed) componentAttributes.add(attribute);
+        if (!passed) {
+          componentAttributes.add(attribute);
+        }
       }
     }
-    if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") return;
-    if (componentAttributes.has(node)) return;
+    if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") {
+      return;
+    }
+    if (componentAttributes.has(node)) {
+      return;
+    }
     const name = listenerName(node.name.name);
-    if (!name || node.value?.type !== "JSXExpressionContainer") return;
+    if (!name || node.value?.type !== "JSXExpressionContainer") {
+      return;
+    }
     const dom = DOM_EVENTS.get(name.event) ?? "Event";
     const { expression } = node.value;
     const named = functionOf(expression as AST.Node);
@@ -2931,7 +3162,9 @@ function findEventParameters(
       use(named, 0, dom, [name.event]);
     } else if (expression.type === "ArrowFunctionExpression") {
       const [parameter] = expression.params;
-      if (parameter?.type !== "Identifier") return;
+      if (parameter?.type !== "Identifier") {
+        return;
+      }
       const annotation = annotatedInterface(parameter).interface;
       passes(expression.body, parameter, annotation ?? dom, [name.event]);
     }
@@ -2943,16 +3176,22 @@ function findEventParameters(
     size = known();
     for (const [fn, { index, interfaces, events }] of uses) {
       const parameter = fn.params[index];
-      if (parameter?.type !== "Identifier") continue;
+      if (parameter?.type !== "Identifier") {
+        continue;
+      }
       const dom = annotatedInterface(parameter).interface ?? common(interfaces);
       passes(fn.body, parameter, dom, events);
     }
   }
   for (const [fn, { index, interfaces, events }] of uses) {
     const parameter = fn.params[index];
-    if (parameter?.type !== "Identifier") continue;
+    if (parameter?.type !== "Identifier") {
+      continue;
+    }
     const annotation = annotatedInterface(parameter);
-    if (annotation.annotated && !annotation.interface) continue;
+    if (annotation.annotated && !annotation.interface) {
+      continue;
+    }
     found.set(fn, { index, interface: annotation.interface ?? common(interfaces), events });
   }
 }
@@ -2963,11 +3202,15 @@ function findEventParameters(
  */
 function canonicalEventName(name: string): string | undefined {
   const words = name.split(/[^A-Za-z0-9]+/).filter(Boolean);
-  if (!words.length) return undefined;
+  if (!words.length) {
+    return undefined;
+  }
   let result = words
     .map((word, index) => (index ? word.charAt(0).toUpperCase() + word.slice(1) : word))
     .join("");
-  if (/^on[A-Z]/.test(result)) result = result.slice(2);
+  if (/^on[A-Z]/.test(result)) {
+    result = result.slice(2);
+  }
   result = result.charAt(0).toLowerCase() + result.slice(1);
   return /^[a-z][A-Za-z0-9]*$/.test(result) ? result : undefined;
 }
@@ -2975,7 +3218,9 @@ function canonicalEventName(name: string): string | undefined {
 /** The nearest event interface every one of `interfaces` is or extends. */
 function common(interfaces: readonly string[]): string {
   for (let current: string | null | undefined = interfaces[0]; current;) {
-    if (interfaces.every((name) => extendsEventInterface(name, current!))) return current;
+    if (interfaces.every((name) => extendsEventInterface(name, current!))) {
+      return current;
+    }
     current = EVENT_INTERFACES.get(current);
   }
   return "Event";
@@ -2983,13 +3228,19 @@ function common(interfaces: readonly string[]): string {
 
 /** Visits every node in a tree, depth first. */
 function visit(node: unknown, enter: (node: AST.Node) => void): void {
-  if (!node || typeof node !== "object") return;
+  if (!node || typeof node !== "object") {
+    return;
+  }
   if (Array.isArray(node)) {
-    for (const item of node) visit(item, enter);
+    for (const item of node) {
+      visit(item, enter);
+    }
     return;
   }
   const typed = node as AST.Node;
-  if (typeof typed.type !== "string") return;
+  if (typeof typed.type !== "string") {
+    return;
+  }
   enter(typed);
   for (const key of visitorKeys[typed.type] ?? []) {
     visit((typed as unknown as Record<string, unknown>)[key], enter);
@@ -3000,7 +3251,9 @@ function visit(node: unknown, enter: (node: AST.Node) => void): void {
 function holdsJsx(node: unknown): boolean {
   let found = false;
   visit(node, (child) => {
-    if (child.type === "JSXElement" || child.type === "JSXFragment") found = true;
+    if (child.type === "JSXElement" || child.type === "JSXFragment") {
+      found = true;
+    }
   });
   return found;
 }
@@ -3009,9 +3262,13 @@ function holdsJsx(node: unknown): boolean {
 function returnsIn(statement: AST.Statement): AST.ReturnStatement[] {
   const found: AST.ReturnStatement[] = [];
   const walk = (node: unknown): void => {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     if (Array.isArray(node)) {
-      for (const item of node) walk(item);
+      for (const item of node) {
+        walk(item);
+      }
       return;
     }
     const typed = node as AST.Node;
@@ -3024,7 +3281,9 @@ function returnsIn(statement: AST.Statement): AST.ReturnStatement[] {
     ) {
       return;
     }
-    if (typed.type === "ReturnStatement") found.push(typed);
+    if (typed.type === "ReturnStatement") {
+      found.push(typed);
+    }
     for (const key of visitorKeys[typed.type] ?? []) {
       walk((typed as unknown as Record<string, unknown>)[key]);
     }
@@ -3041,10 +3300,16 @@ function apisIn(
   const found: { identifier: AST.IdentifierReference; called: boolean }[] = [];
   const callees = new Set<object>();
   visit(statement, (node) => {
-    if (node.type === "CallExpression") callees.add(node.callee);
-    if (node.type !== "Identifier") return;
+    if (node.type === "CallExpression") {
+      callees.add(node.callee);
+    }
+    if (node.type !== "Identifier") {
+      return;
+    }
     const resolution = context.scopes.resolve(node as AST.IdentifierReference);
-    if (resolution.kind !== "import" || !context.authoring.get(resolution.declaration)) return;
+    if (resolution.kind !== "import" || !context.authoring.get(resolution.declaration)) {
+      return;
+    }
     found.push({ identifier: node as AST.IdentifierReference, called: callees.has(node) });
   });
   return found;
@@ -3064,7 +3329,9 @@ export function isDirective(statement: AST.Directive | AST.Statement): statement
  * to a framework or a bundler (`"use client"`), which the compiler does not write for a target.
  */
 export function checkDirective(statement: AST.Directive, reporter: Reporter): void {
-  if (statement.directive === "use strict") return;
+  if (statement.directive === "use strict") {
+    return;
+  }
   reporter.unsupported(
     statement,
     `Directives such as ${statement.expression.raw ?? JSON.stringify(statement.directive)} are not supported yet: each target's output carries the directives its framework needs.`,
@@ -3082,9 +3349,13 @@ function unreachable(value: never): never {
  * composable's module, which the caller does not declare: each reads as `unknown`.
  */
 function memberKinds(type: string | undefined): Kinds {
-  if (type === undefined) return UNKNOWN;
+  if (type === undefined) {
+    return UNKNOWN;
+  }
   const parsed = parseModule("type.ts", `type T = ${type};`);
   const [statement] = parsed.program.body;
-  if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") return UNKNOWN;
+  if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") {
+    return UNKNOWN;
+  }
   return new TypeTable([]).kindsOf(statement.typeAnnotation);
 }

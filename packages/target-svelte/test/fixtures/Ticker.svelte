@@ -35,7 +35,7 @@
       cleanups.push(cleanup);
     };
     const cleanUp = () => {
-      for (const cleanup of cleanups) cleanup();
+      for (const cleanup of cleanups) {cleanup();}
     };
     const text = label;
     onCleanup(() => {

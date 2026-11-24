@@ -32,15 +32,21 @@ function scan(text: string, onChar: (char: string, depth: number, out: string) =
       out += char + text[++index];
     } else if (quote) {
       out += char;
-      if (char === quote) quote = "";
+      if (char === quote) {
+        quote = "";
+      }
     } else if (char === "/" && text[index + 1] === "*") {
       const end = text.indexOf("*/", index + 2);
       index = end === -1 ? text.length : end + 1;
       out = onChar(" ", depth, out);
     } else {
-      if (char === '"' || char === "'") quote = char;
-      else if (char === "(") depth++;
-      else if (char === ")" && depth > 0) depth--;
+      if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === "(") {
+        depth++;
+      } else if (char === ")" && depth > 0) {
+        depth--;
+      }
       out = onChar(char, depth, out);
     }
   }
@@ -74,7 +80,9 @@ const IMPORTANT = /\s*!\s*important$/i;
 export function parseStyle(text: string): Declaration[] {
   const declarations: Declaration[] = [];
   for (const chunk of split(text, ";", Number.POSITIVE_INFINITY)) {
-    if (collapse(chunk) === "") continue;
+    if (collapse(chunk) === "") {
+      continue;
+    }
     const [name, rest] = split(chunk, ":", 2);
     if (rest === undefined) {
       declarations.push({ property: collapse(chunk), value: undefined, important: false });
@@ -104,7 +112,9 @@ export function parseStyle(text: string): Declaration[] {
 export function dedupeDeclarations(declarations: readonly Declaration[]): Declaration[] {
   const winners = new Map<string, Declaration>();
   for (const declaration of declarations) {
-    if (declaration.value === undefined) continue;
+    if (declaration.value === undefined) {
+      continue;
+    }
     const previous = winners.get(declaration.property);
     if (!previous || declaration.important || !previous.important) {
       winners.set(declaration.property, declaration);
@@ -138,7 +148,9 @@ export function styleValue(
   style: string | undefined,
   ...properties: readonly string[]
 ): string | undefined {
-  if (style === undefined) return undefined;
+  if (style === undefined) {
+    return undefined;
+  }
   return dedupeDeclarations(parseStyle(style))
     .findLast((declaration) => properties.includes(declaration.property))
     ?.value?.toLowerCase();
