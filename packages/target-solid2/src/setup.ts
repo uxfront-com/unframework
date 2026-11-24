@@ -518,7 +518,7 @@ export class SolidCode {
     return `${this.#watchEffect}([${sources.join(", ")}], ${this.callback(effect)});`;
   }
 
-  /** The inline helpers the code printed so far calls. */
+  /** The helpers the code printed so far calls: none that the file shares. */
   helpers(): string[] {
     const helpers: string[] = [];
     if (this.#watcher || this.#watchEffect) {

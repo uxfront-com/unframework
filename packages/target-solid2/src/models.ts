@@ -15,7 +15,7 @@
 //   (`model-modifiers`, emulated).
 // - A value that may be `null` or `undefined` shows as no text: `value={name() ?? ""}`.
 // - Options another component renders, which the `<select>` cannot mark, are selected by an
-//   inline `selectOptions` from the `ref`: once they are rendered, as the state changes, and as
+//   `selectOptions` helper from the `ref`: once they are rendered, as the state changes, and as
 //   options come and go. A single `<select>` calls it with marked options too: Vue's
 //   `vModelSelect` selects none (`selectedIndex` -1) where no option holds the state, also once
 //   the options change, where the browser would select the first.
@@ -348,13 +348,13 @@ function own(element: ElementNode, context: JsxContext): AstExpression {
 }
 
 /**
- * The inline `modelText` helper (emulated `model-modifiers`, ADR-0054): Vue's `vModelText`, as a
- * field's `ref`. The field's initial value is its `value` prop, which the server renders; the
- * helper writes what the user types, trimmed or cast as Vue's `looseToNumber` casts it, on
- * `input` or, when lazy, on `change`, and a trimmed or number field shows that text, trimmed
- * or cast, once it changes; it shows each new value of the state (no text for `null` or `undefined`), except
- * where the text already reads as it, or while the user is typing in a trimmed field what it
- * reads as trimmed.
+ * The `modelText` helper, shared in `_unframework/` (ADR-0121) or inline, (emulated
+ * `model-modifiers`, ADR-0054): Vue's `vModelText`, as a field's `ref`. The field's initial value
+ * is its `value` prop, which the server renders; the helper writes what the user types, trimmed or
+ * cast as Vue's `looseToNumber` casts it, on `input` or, when lazy, on `change`, and a trimmed or
+ * number field shows that text, trimmed or cast, once it changes; it shows each new value of the
+ * state (no text for `null` or `undefined`), except where the text already reads as it, or while
+ * the user is typing in a trimmed field what it reads as trimmed.
  */
 export function modelTextHelperCode(name: string, createRenderEffect: string): string {
   return `/** Binds a text field to a signal as Vue's \`vModelText\` does: see its modifiers. */
@@ -415,20 +415,20 @@ function ${name}(select: HTMLSelectElement): string[] {
 }
 
 /**
- * The inline `selectOptions` helper (emulated `model-array` and `two-way-binding` where the
- * options are another component's): each option selected where it holds the state, or where
- * the state's array holds it, and none where no option holds a single value (`selectedIndex`
- * -1), as Vue's `vModelSelect` sets them, once they are rendered, as the state changes, and as
- * options come and go or change their value. A single value is compared as a string, as Vue's
- * `looseEqual` compares an option's value with it.
+ * The `selectOptions` helper, shared in `_unframework/` (ADR-0121) or inline, (emulated
+ * `model-array` and `two-way-binding` where the options are another component's): each option
+ * selected where it holds the state, or where the state's array holds it, and none where no option
+ * holds a single value (`selectedIndex` -1), as Vue's `vModelSelect` sets them, once they are
+ * rendered, as the state changes, and as options come and go or change their value. A single value
+ * is compared as a string, as Vue's `looseEqual` compares an option's value with it.
  */
 export function selectOptionsHelperCode(
   name: string,
   solid: { createEffect: string; onCleanup: string },
 ): string {
   return `/**
- * The \`ref\` of a \`<select>\` whose options that hold \`value\`, or a value of it for an array, it
- * selects, and none where none holds it: as the value changes, and as options come and go.
+ * The \`ref\` of a \`<select>\` whose options that hold \`value\`, or a value of it for an array,
+ * it selects, and none where none holds it: as the value changes, and as options come and go.
  */
 function ${name}(value: () => unknown): (select: HTMLSelectElement) => void {
   let bound: HTMLSelectElement | undefined;
