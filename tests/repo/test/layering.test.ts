@@ -80,6 +80,10 @@ describe("layering", () => {
     expect(violations).toEqual([]);
   });
 
+  // This test parses every package source and the whole corpus, about 3,500 files that grow with
+  // each case. It takes about 0.5 s on a developer machine, but a loaded CI runner once ran it
+  // about five times slower and passed Vitest's 5 s default (5.2 s, before the scan stopped
+  // reading oxc-parser's full AST). The wider timeout keeps that margin as the corpus grows.
   it("imports TypeScript's API only in type-oracle-tsgo and the test toolchains", () => {
     const allowed = ["packages/type-oracle-tsgo/", "tests/toolchains/"];
     const files = [
@@ -92,7 +96,7 @@ describe("layering", () => {
       .filter((record) => !allowed.some((prefix) => record.file.startsWith(prefix)))
       .map((record) => `${record.file} imports ${record.specifier}`);
     expect(violations).toEqual([]);
-  });
+  }, 15_000);
 
   it("finds imports, including re-exports and dynamic imports", () => {
     const records = importsOf(join(root, "packages", "compiler", "src", "index.ts"));
