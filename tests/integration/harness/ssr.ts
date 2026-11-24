@@ -23,25 +23,22 @@ import type { SsrCase } from "@unframework.dev/testing/ssr";
 import { describe, inject, it } from "vitest";
 
 import { errorState, listCases, specTests } from "./cases.ts";
-import type { CaseInfo } from "./cases.ts";
 import { onlyCases } from "./references.ts";
 import { shardOf } from "./shards.ts";
 import { ssrSkip } from "./ssr-skip.ts";
+import { registersThrows } from "./ssr-throws.ts";
 import { checkMappedStack } from "./thrown.ts";
 import "./context.ts";
 
 const components = import.meta.glob<{ default: unknown }>("../cases/**/*.uf.tsx");
-
-/** Whether a case's server render throws on purpose (`ssrThrows`, ADR-0078). */
-const throwsOnPurpose = (info: CaseInfo) => info.config.ssrThrows !== undefined;
 
 /** Registers shard `index` of this ssr project's renders: its share of the cases. */
 export function describeSsrShard(index: number): void {
   const target = inject("target");
   const harness = inject("ufHarness");
   const server = inject("ufServer")!;
-  const all = onlyCases(listCases(harness.casesDir), inject("ufOnly"));
-  const cases = shardOf(all, index, inject("ufSsrShards"));
+  const corpus = listCases(harness.casesDir);
+  const cases = shardOf(onlyCases(corpus, inject("ufOnly")), index, inject("ufSsrShards"));
 
   describeServerRender(
     cases.flatMap((info): SsrCase[] => {
@@ -77,9 +74,11 @@ export function describeSsrShard(index: number): void {
   }
 
   // L14 (ADR-0078): a render that throws on purpose, apart from the scenarios L6 compares. Vitest
-  // fails a describe without a test, so a shard without such a case leaves it out, unless no
-  // case of the project has one: then each shard fails, as one file of them all did.
-  if (!cases.some(throwsOnPurpose) && all.some(throwsOnPurpose)) return;
+  // fails a describe without a test, so a shard leaves it out unless one of its cases throws on
+  // purpose and has output on the target, as a reference project's cases may not (ADR-0057). When
+  // no case of the corpus throws on purpose, each shard registers it empty and fails
+  // (`ssr-throws.ts`).
+  if (!registersThrows(cases, corpus, (info) => errorState(info, target) !== true)) return;
   describe(`ssr [${target}] throws`, () => {
     for (const info of cases) {
       if (!info.config.ssrThrows) continue;
