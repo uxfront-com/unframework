@@ -2581,7 +2581,7 @@ const entries: CatalogueEntry[] = [
     title: "A selected target cannot support a feature the component uses",
     description: [
       "Each target declares, for every feature, whether it supports it natively, emulates it",
-      "with an inline helper, or cannot support it. The component uses a feature that a selected",
+      "with a helper, or cannot support it. The component uses a feature that a selected",
       "target cannot support; the diagnostic points at its first use, and the message names the",
       "feature and the target's reason. For example, Astro renders on the server only, so event",
       "handlers are inert there.",
