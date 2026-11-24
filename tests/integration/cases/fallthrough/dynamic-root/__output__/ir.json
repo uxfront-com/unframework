@@ -967,6 +967,31 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                },
+                {
+                  "name": "disabled"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                },
+                {
+                  "name": "style",
+                  "value": "padding: 4px 8px"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
             "rootTags": [
               "a",
               "button"
@@ -1029,6 +1054,31 @@
             "inheritAttrs": true,
             "root": "component",
             "rootTags": [
+              "a",
+              "button"
+            ],
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                },
+                {
+                  "name": "disabled"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                },
+                {
+                  "name": "style",
+                  "value": "padding: 4px 8px"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
+            "refTags": [
               "a",
               "button"
             ],

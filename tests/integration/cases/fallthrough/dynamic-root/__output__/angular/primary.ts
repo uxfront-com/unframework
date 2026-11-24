@@ -5,9 +5,11 @@ import {
   ElementRef,
   type OnInit,
   Renderer2,
+  computed,
   inject,
   input,
   output,
+  viewChild,
 } from "@angular/core";
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
@@ -35,6 +37,9 @@ export class ScopeAttributes implements OnInit {
   }
 }
 
+/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
+type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
+
 @Component({
   selector: "uf-primary",
   imports: [Base, ScopeAttributes],
@@ -51,7 +56,10 @@ export class ScopeAttributes implements OnInit {
       [class]="['primary', this.class()].join(' ')"
       (press)="press.emit()"
       [style]="this.style()"
+      [ufAttributes]="this.ufAttributes()"
+      [ufListeners]="this.ufListeners()"
       [ufScope]="this.host"
+      #ufElement
     />
   `,
 })
@@ -61,6 +69,10 @@ export default class Primary {
   readonly text = input.required<string>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufAttributes = input<Record<string, unknown>>();
+  readonly ufListeners = input<Listeners>();
   readonly press = output<void>();
+  private readonly rootComponent = viewChild("ufElement", { read: Base });
+  readonly ufElement = computed(() => this.rootComponent()?.ufElement());
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }
