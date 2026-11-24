@@ -1,4 +1,5 @@
-import { reflectComponentType, type Type } from "@angular/core";
+import { reflectComponentType } from "@angular/core";
+import type { Type } from "@angular/core";
 
 /**
  * The component a test mounts or renders, checked to be an AOT-compiled Angular component, so a

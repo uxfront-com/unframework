@@ -7,7 +7,8 @@
 import { describeTargets, it, mount, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
-import Checklist, { type Entry } from "./Checklist.uf.tsx";
+import Checklist from "./Checklist.uf.tsx";
+import type { Entry } from "./Checklist.uf.tsx";
 
 const milk: Entry = { id: "milk", label: "Milk" };
 const bread: Entry = { id: "bread", label: "Bread" };

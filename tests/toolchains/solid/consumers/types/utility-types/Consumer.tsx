@@ -1,6 +1,5 @@
-import TextField, {
-  type TextFieldProps,
-} from "../../../../../integration/cases/types/utility-types/__output__/solid/TextField";
+import TextField from "../../../../../integration/cases/types/utility-types/__output__/solid/TextField";
+import type { TextFieldProps } from "../../../../../integration/cases/types/utility-types/__output__/solid/TextField";
 
 const field: TextFieldProps = { name: "email", label: "Email" };
 

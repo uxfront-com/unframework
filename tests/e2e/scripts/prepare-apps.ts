@@ -24,7 +24,6 @@ import {
   designSystemSource,
   e2eRoot,
   findApps,
-  type Packed,
   readManifest,
   readCatalog,
   readReleaseAgeExclude,
@@ -37,6 +36,7 @@ import {
   workspacePackages,
   writePacked,
 } from "../harness/apps.ts";
+import type { Packed } from "../harness/apps.ts";
 
 const run = (cwd: string, ...args: Array<string>): void => {
   execFileSync("pnpm", args, { cwd, stdio: "inherit" });

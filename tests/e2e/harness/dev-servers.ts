@@ -7,7 +7,8 @@ import type { Readable } from "node:stream";
 import { pathToFileURL } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 
-import { rebuildWatcher, type Watcher } from "./edit.ts";
+import { rebuildWatcher } from "./edit.ts";
+import type { Watcher } from "./edit.ts";
 import { HOST } from "./ports.ts";
 
 interface StartedServer {

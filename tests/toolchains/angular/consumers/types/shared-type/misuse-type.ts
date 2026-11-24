@@ -1,8 +1,7 @@
 import { Component } from "@angular/core";
 
-import Palette, {
-  type Tone,
-} from "../../../../../integration/cases/types/shared-type/__output__/angular/palette";
+import Palette from "../../../../../integration/cases/types/shared-type/__output__/angular/palette";
+import type { Tone } from "../../../../../integration/cases/types/shared-type/__output__/angular/palette";
 
 @Component({
   selector: "uf-palette-misuse-type",

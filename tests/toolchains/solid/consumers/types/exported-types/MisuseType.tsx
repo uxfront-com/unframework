@@ -1,6 +1,7 @@
-import Button, {
-  type ButtonProps,
-  type ButtonSize,
+import Button from "../../../../../integration/cases/types/exported-types/__output__/solid/Button";
+import type {
+  ButtonProps,
+  ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/solid/Button";
 
 // @uf-expect TS2322 Button.type:ButtonProps

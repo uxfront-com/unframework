@@ -1,6 +1,7 @@
 import { queryCollection } from "@nuxt/content/server";
 
-import { rawMarkdown, type DocsPage } from "../utils/raw-markdown";
+import { rawMarkdown } from "../utils/raw-markdown";
+import type { DocsPage } from "../utils/raw-markdown";
 
 /**
  * Serves `/raw/<path>.md`, the markdown copy of a docs page, from the page's own

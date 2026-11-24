@@ -1,5 +1,6 @@
 ---
-import TextField, { type TextFieldProps } from "../../../../../integration/cases/types/utility-types/__output__/astro/TextField.astro";
+import TextField from '../../../../../integration/cases/types/utility-types/__output__/astro/TextField.astro';
+import type { TextFieldProps } from '../../../../../integration/cases/types/utility-types/__output__/astro/TextField.astro';
 
 // @uf-expect TS2322 TextField.type:TextFieldProps
 const field: TextFieldProps = { name: "email", label: 1 };

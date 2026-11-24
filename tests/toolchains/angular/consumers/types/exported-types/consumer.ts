@@ -1,8 +1,9 @@
 import { Component } from "@angular/core";
 
-import Button, {
-  type ButtonProps,
-  type ButtonSize,
+import Button from "../../../../../integration/cases/types/exported-types/__output__/angular/button";
+import type {
+  ButtonProps,
+  ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/angular/button";
 
 @Component({

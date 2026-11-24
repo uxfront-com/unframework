@@ -1,6 +1,5 @@
-import TextField, {
-  type TextFieldProps,
-} from "../../../../../integration/cases/types/utility-types/__output__/react/TextField";
+import TextField from "../../../../../integration/cases/types/utility-types/__output__/react/TextField";
+import type { TextFieldProps } from "../../../../../integration/cases/types/utility-types/__output__/react/TextField";
 
 export function MisuseType() {
   // @uf-expect TS2322 TextField.type:TextFieldProps

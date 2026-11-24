@@ -40,7 +40,6 @@ export default defineConfig({
     "@nkzw/no-instanceof": "off",
     "array-callback-return": "off",
     eqeqeq: "off",
-    "import/consistent-type-specifier-style": "off",
     "import/no-namespace": "off",
     "no-console": "off",
     "no-fallthrough": "off",
@@ -159,6 +158,9 @@ export default defineConfig({
         "unicorn/prefer-string-raw": "off",
         // Calls in a component reach its outputs as written.
         "unicorn/prefer-string-replace-all": "off",
+        // Imports in a component reach its outputs as written, and a target's fixtures keep the
+        // inline `type` specifiers its output uses.
+        "import/consistent-type-specifier-style": "off",
       },
     },
   ],

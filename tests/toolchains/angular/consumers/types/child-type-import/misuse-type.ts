@@ -1,8 +1,7 @@
 import { Component } from "@angular/core";
 
-import Field, {
-  type FieldProps,
-} from "../../../../../integration/cases/types/child-type-import/__output__/angular/field";
+import Field from "../../../../../integration/cases/types/child-type-import/__output__/angular/field";
+import type { FieldProps } from "../../../../../integration/cases/types/child-type-import/__output__/angular/field";
 
 @Component({
   selector: "uf-field-misuse-type",

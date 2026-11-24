@@ -1,6 +1,5 @@
-import Field, {
-  type FieldProps,
-} from "../../../../../integration/cases/types/child-type-import/__output__/solid2/Field";
+import Field from "../../../../../integration/cases/types/child-type-import/__output__/solid2/Field";
+import type { FieldProps } from "../../../../../integration/cases/types/child-type-import/__output__/solid2/Field";
 
 // @uf-expect TS2322 Field.type:FieldProps
 const field: FieldProps = { name: 1, label: "Email" };

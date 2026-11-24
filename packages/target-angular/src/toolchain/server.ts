@@ -6,8 +6,8 @@ import {
   createApplication,
   provideClientHydration,
   withNoIncrementalHydration,
-  type BootstrapContext,
 } from "@angular/platform-browser";
+import type { BootstrapContext } from "@angular/platform-browser";
 import { provideServerRendering, renderApplication } from "@angular/platform-server";
 import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
 

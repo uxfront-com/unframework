@@ -5,12 +5,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  readUpstream,
-  renderVendoredJsx,
-  VENDORED_FILE,
-  type UpstreamSnapshot,
-} from "../scripts/vendor-jsx.ts";
+import { readUpstream, renderVendoredJsx, VENDORED_FILE } from "../scripts/vendor-jsx.ts";
+import type { UpstreamSnapshot } from "../scripts/vendor-jsx.ts";
 
 const SOURCE = fileURLToPath(new URL("../src", import.meta.url));
 

@@ -1,4 +1,5 @@
-import { type MouseEvent, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import type { MouseEvent } from "react";
 
 import Base from "../../../../../integration/cases/fallthrough/dynamic-root-passthrough/__output__/react/Base";
 

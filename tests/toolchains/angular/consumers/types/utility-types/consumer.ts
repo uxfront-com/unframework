@@ -1,8 +1,7 @@
 import { Component } from "@angular/core";
 
-import TextField, {
-  type TextFieldProps,
-} from "../../../../../integration/cases/types/utility-types/__output__/angular/text-field";
+import TextField from "../../../../../integration/cases/types/utility-types/__output__/angular/text-field";
+import type { TextFieldProps } from "../../../../../integration/cases/types/utility-types/__output__/angular/text-field";
 
 @Component({
   selector: "uf-text-field-consumer",

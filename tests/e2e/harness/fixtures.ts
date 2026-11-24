@@ -5,7 +5,8 @@ import { test as base } from "@playwright/test";
 
 import { workDir } from "./apps.ts";
 import { startDevServer } from "./dev-servers.ts";
-import { createEditor, type Edit, type Watcher } from "./edit.ts";
+import { createEditor } from "./edit.ts";
+import type { Edit, Watcher } from "./edit.ts";
 import { HOST, recordPort } from "./ports.ts";
 
 export { expect } from "@playwright/test";

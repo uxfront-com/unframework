@@ -1,5 +1,6 @@
 // The checks every app's package-mode smoke spec shares, so each framework is held to one page.
-import { expect, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 const button = (page: Page) => page.getByRole("button", { name: "Press me" });
 

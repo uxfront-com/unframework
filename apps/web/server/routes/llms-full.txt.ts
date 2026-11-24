@@ -1,6 +1,7 @@
 import { queryCollection } from "@nuxt/content/server";
 
-import { rawMarkdown, type DocsPage } from "../utils/raw-markdown";
+import { rawMarkdown } from "../utils/raw-markdown";
+import type { DocsPage } from "../utils/raw-markdown";
 
 /**
  * Serves `/llms-full.txt` in place of nuxt-llms's route, from the same source
