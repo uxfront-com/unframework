@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import { once } from "./_unframework/once";
   import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
   import { on } from "svelte/events";
 
@@ -63,15 +64,6 @@
     event.stopPropagation();
     confirming = false;
     record("dismissed");
-  }
-
-  function once<E extends Event>(handler: (event: E) => unknown): (event: E) => void {
-    let ran = false;
-    return (event) => {
-      if (ran) return;
-      ran = true;
-      handler(event);
-    };
   }
 </script>
 

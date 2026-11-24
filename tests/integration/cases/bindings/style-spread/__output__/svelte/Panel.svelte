@@ -28,6 +28,7 @@
 
 <script lang="ts">
   import Hint from "./Hint.svelte";
+  import { styleText } from "./_unframework/styleText";
   import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
   type Props = Omit<
@@ -45,20 +46,6 @@
     ref = $bindable(null),
     ...attributes
   }: Props = $props();
-
-  function styleText(style: object | string | null | undefined): string | undefined {
-    if (style === null || style === undefined || typeof style === "string")
-      return style ?? undefined;
-    return Object.entries(style)
-      .filter(([, value]) => value !== null && value !== undefined && value !== "")
-      .map(([key, value]) => {
-        const property = key.startsWith("--")
-          ? key
-          : key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-        return `${property}: ${value}`;
-      })
-      .join("; ");
-  }
 </script>
 
 <div class={["panels", className]} {style} bind:this={ref} {...attributes}>
