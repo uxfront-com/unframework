@@ -21,7 +21,7 @@ import type { Io } from "./command.ts";
 
 export const TYPE_ORACLE_OPTION = { "type-oracle": { type: "string" } } as const;
 
-const TYPE_ORACLES = ["syntactic", "tsgo"];
+const TYPE_ORACLES = new Set(["syntactic", "tsgo"]);
 const SOURCES = "**/*.uf.{tsx,ts}";
 /**
  * An example (`*.example.uf.tsx`) is `unframework visual`'s to render, never a source to build or
@@ -86,7 +86,7 @@ export async function compileSources(
   oracle: string | undefined,
   alsoCleans: ReadonlyArray<string> = [],
 ): Promise<Compilation> {
-  if (oracle !== undefined && !TYPE_ORACLES.includes(oracle)) {
+  if (oracle !== undefined && !TYPE_ORACLES.has(oracle)) {
     throw new Error(`--type-oracle takes syntactic or tsgo, not "${oracle}".`);
   }
   const loaded = await loadConfig(io.cwd);

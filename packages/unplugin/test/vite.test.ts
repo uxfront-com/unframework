@@ -151,7 +151,7 @@ describe("unframework()", () => {
 });
 
 /** The targets whose module is one markup file, which has only a default export. */
-const MARKUP_TARGETS: ReadonlyArray<string> = ["vue", "svelte", "astro"];
+const MARKUP_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro"]);
 
 describe.each(TARGET_NAMES)("the %s target", (target) => {
   it("resolves an import to its module id and loads compile()'s output", async () => {
@@ -176,7 +176,7 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
   });
 
   it(
-    MARKUP_TARGETS.includes(target)
+    MARKUP_TARGETS.has(target)
       ? "refuses a main component exported by name"
       : "loads a component exported by name, keeping its name",
     async () => {
@@ -185,7 +185,7 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
         const loading = client.pluginContainer.load(
           `${file("Named.uf.tsx")}${ID_SUFFIXES[target]}`,
         );
-        if (!MARKUP_TARGETS.includes(target)) {
+        if (!MARKUP_TARGETS.has(target)) {
           const code = codeOf(await loading);
           expect(code).toBe(expected.outputs[target]![0]!.contents);
           expect(code).toMatch(/^export (?:function|const|class) Hello\b/m);

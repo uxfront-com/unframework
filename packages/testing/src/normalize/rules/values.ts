@@ -40,12 +40,12 @@ export function canonicalizeStyles(root: TreeParent): void {
 }
 
 /** Boolean attributes every HTML element can have. */
-const GLOBAL_BOOLEAN_ATTRIBUTES: ReadonlyArray<string> = [
+const GLOBAL_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
   "autofocus",
   "hidden",
   "inert",
   "itemscope",
-];
+]);
 
 /** Boolean attributes per HTML element, from the HTML standard's attribute index. */
 const BOOLEAN_ATTRIBUTES: Readonly<Record<string, ReadonlyArray<string>>> = {
@@ -94,7 +94,7 @@ export function canonicalizeBooleanAttributes(root: TreeParent): void {
     const own = BOOLEAN_ATTRIBUTES[element.tagName] ?? [];
     for (const attribute of element.attrs) {
       const name = attributeName(attribute);
-      if (!GLOBAL_BOOLEAN_ATTRIBUTES.includes(name) && !own.includes(name)) {
+      if (!GLOBAL_BOOLEAN_ATTRIBUTES.has(name) && !own.includes(name)) {
         continue;
       }
       const value = attribute.value.toLowerCase();

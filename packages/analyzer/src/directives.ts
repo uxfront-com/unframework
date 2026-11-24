@@ -285,7 +285,9 @@ function lowerDirective(
     return undefined;
   }
   const declared = new Set(context.types.declarations.map(({ name }) => name));
-  const types = closure(typeNodes, context.types.table).filter((name) => declared.has(name));
+  const types = new Set(
+    closure(typeNodes, context.types.table).filter((name) => declared.has(name)),
+  );
   return createDirective(
     id.name,
     createTypeText(source.slice(value.start, value.end), span(value)),
@@ -298,7 +300,7 @@ function lowerDirective(
         : {}),
       bindings: bindings.toSorted((a, b) => a.span.start - b.span.start),
       types: context.types.declarations
-        .filter(({ name }) => types.includes(name))
+        .filter(({ name }) => types.has(name))
         .map(({ name }) => name),
     },
   );

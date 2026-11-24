@@ -167,7 +167,7 @@ const SCRIPT = /^\.tsx?$/;
 const BARE = /^[\w@#][^:]*$/;
 
 /** The bundlers whose hook context resolves a bare specifier (see `fileOf`). */
-const RESOLVES_BARE: ReadonlyArray<string> = ["vite", "rollup", "rolldown"];
+const RESOLVES_BARE: ReadonlySet<string> = new Set(["vite", "rollup", "rolldown"]);
 
 const NODE_MODULES = "/node_modules/";
 
@@ -320,7 +320,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   ).map(composableFilter);
   // Whether a bare specifier can name a `.uf.tsx` file here: where the context has no resolver,
   // the hook could only give it back, so the filter leaves those imports to the bundler.
-  const bareSpecifiers = RESOLVES_BARE.includes(meta.framework);
+  const bareSpecifiers = RESOLVES_BARE.has(meta.framework);
   // A file's main component loads under its module id, and each other component under a
   // component id (ADR-0053); a script target joins them all under the module id.
   const moduleIds = [...suffixes.map(moduleIdFilter), COMPONENT_ID_FILTER, ...composableFilters];

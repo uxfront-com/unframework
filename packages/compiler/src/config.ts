@@ -84,7 +84,7 @@ const FIELDS = [
   "liveFonts",
 ];
 const PACKAGE_FIELDS = ["targets", "resolveFrom"];
-const TYPE_ORACLES = ["syntactic", "tsgo"];
+const TYPE_ORACLES = new Set(["syntactic", "tsgo"]);
 
 /** A configuration has no source span to point at: the message names the file, or the field. */
 const NO_SPAN = { start: 0, end: 0 };
@@ -185,7 +185,7 @@ async function checkConfig(
     report,
   );
   const targetOptions = await resolveTargetOptions(raw.targetOptions, report);
-  if (raw.typeOracle !== undefined && !TYPE_ORACLES.includes(raw.typeOracle as string)) {
+  if (raw.typeOracle !== undefined && !TYPE_ORACLES.has(raw.typeOracle as string)) {
     report("UF7002", "/typeOracle", `must be "syntactic" or "tsgo".`);
   }
   if (raw.strict !== undefined && typeof raw.strict !== "boolean") {

@@ -89,13 +89,13 @@ describe("the browser's globals", () => {
   );
 
   it("split lib.dom between what client code reads by name and through `window`", () => {
-    const runtime = ["console", "performance", "crypto", "structuredClone"];
+    const runtime = new Set(["console", "performance", "crypto", "structuredClone"]);
     for (const name of LIB_DOM_GLOBALS) {
       const kept =
         BROWSER_GLOBALS.has(name) ||
         SCHEDULING_GLOBALS.has(name) ||
         PURE_GLOBALS.has(name) ||
-        runtime.includes(name);
+        runtime.has(name);
       expect(kept !== WINDOW_MEMBER_GLOBALS.has(name), name).toBe(true);
       expect(CLIENT_GLOBALS.has(name), name).toBe(kept);
     }
