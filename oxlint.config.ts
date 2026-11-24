@@ -151,6 +151,8 @@ export default defineConfig({
         "typescript/no-unnecessary-type-assertion": "off",
         // A target's fixtures compare with `null` as its output does, `!= null`.
         eqeqeq: "off",
+        // A component's promise reaches its outputs as written.
+        "no-promise-executor-return": "off",
       },
     },
     {
