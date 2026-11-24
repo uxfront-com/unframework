@@ -76,6 +76,7 @@ minimumReleaseAgeExclude:
   - "@uxfront/oxfmt-config@0.1.1"
   - "@uxfront/oxlint-config@0.1.1"
   - "@uxfront/scene@0.5.1"
+  - "@uxfront/site-checks@0.1.0"
   - "@uxfront/ui@0.9.1"
   - "@vitest/mocker@5.0.3"
   - "@vitest/spy@5.0.3"
@@ -149,6 +150,7 @@ catalog:
   "@types/react": 19.3.0
   "@types/react-dom": 19.3.0
   "@typescript-eslint/scope-manager": 8.71.0
+  "@uxfront/site-checks": 0.1.0
   "@uxfront/typescript-config": ^0.1.0
   "@vitejs/plugin-react": 6.1.1
   "@vitejs/plugin-vue": 6.0.9

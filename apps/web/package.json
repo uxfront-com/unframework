@@ -10,7 +10,7 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lighthouse": "pnpm dlx @lhci/cli@0.16.1 autorun",
-    "check:seo": "node scripts/check-seo.ts",
+    "check:seo": "site-checks seo dist --config scripts/site-checks.config.ts",
     "test": "node --test \"scripts/**/*.test.ts\""
   },
   "dependencies": {
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@nuxt/kit": "^4.5.2",
-    "@types/node": "^24.19.0"
+    "@types/node": "^24.19.0",
+    "@uxfront/site-checks": "catalog:"
   }
 }
