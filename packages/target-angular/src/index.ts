@@ -48,6 +48,7 @@ import {
   directiveClassName,
   directiveFile,
   emitDirective,
+  QUEUE_HELPER,
   RUNNER_HELPER,
   runnerCode,
   runnerNames,
@@ -87,6 +88,8 @@ import {
 } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { classRules } from "./rules.ts";
+import { directiveModule, importShared } from "./shared.ts";
+import type { SharedUse } from "./shared.ts";
 import { template, templateReads } from "./template.ts";
 import { declaredTypes } from "./types.ts";
 
@@ -302,7 +305,9 @@ export default angular;
 /** A component's output file. */
 function emitComponent(component: UfComponent, context: EmitContext): OutputFile {
   const { module } = context;
-  const plan = planComponent(component, module);
+  // With `helper`, the helpers that pass R1 to R4 are shared in `_unframework/` (ADR-0121).
+  const shares = context.helper !== undefined;
+  const plan = planComponent(component, module, shares);
   const { imports } = plan;
   const composition = planComposition(plan);
   // Angular matches a child by its selector alone, so two children of one name are reported
@@ -388,9 +393,11 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const nextId = component.setup.some((item) => item.kind === "Id")
     ? imports.claim("idCounter")
     : undefined;
-  const directives = listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
+  const directives = shares
+    ? []
+    : listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
   // `innerHTML` reads its markup through a pure pipe that marks it trusted (ADR-0097).
-  const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
+  const trustedHtml = rendersRawHtml(component) ? plan.helper("TrustedHtmlPipe") : undefined;
   // A teleport mounts its view through an inline directive (ADR-0098).
   const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
   // A transition runs through an inline directive, and a region directive around a conditional
@@ -414,7 +421,10 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ),
   );
   const ownApplied = ownDirectives(component, module);
-  const runner = ownApplied.length ? runnerNames((base) => imports.claim(base)) : undefined;
+  // A shared `queueHook` is imported (ADR-0121); the rest of the runner stays inline (R2).
+  const runner = ownApplied.length
+    ? runnerNames((base) => (base === QUEUE_HELPER ? plan.helper(base) : imports.claim(base)))
+    : undefined;
   const ownClasses = ownApplied.map((directive) => ({
     directive,
     className: imports.claim(directiveClassName(directive.name)),
@@ -423,7 +433,12 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   // attributes the component's styled parents put on its host.
   const roots = scopedRoots(component, fallthrough?.rest === true);
   const scope = roots.size
-    ? { ...scopeNames(component, module, imports), host: plan.members.claim("host") }
+    ? {
+        ...(shares
+          ? { className: plan.helper("ScopeAttributes"), scopes: "" }
+          : scopeNames(component, module, imports)),
+        host: plan.members.claim("host"),
+      }
     : undefined;
   // A teleport root takes its parents' scope attributes off the host (ADR-0098).
   const { render } = component;
@@ -602,7 +617,9 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
         `export const ${key.name} = new ${imports.add("@angular/core", "InjectionToken")}<${tokenType(key)}>(${JSON.stringify(key.description)});\n`,
     ),
     ...(refObject === undefined ? [] : [refObjectCode(refObject)]),
-    ...[...models.helpers, ...models.support].map(({ code }) => `${code}\n`),
+    ...[...models.helpers, ...models.support]
+      .filter(({ shared }) => shared === undefined)
+      .map(({ code }) => `${code}\n`),
     ...composition.slots.map((slot) =>
       slotDirectiveCode(
         component.name,
@@ -611,7 +628,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
         component.typeParameters,
       ),
     ),
-    ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
+    ...(scope && !shares ? [scopeDirectiveCode(scope, imports)] : []),
     ...(passes === undefined
       ? []
       : [
@@ -622,8 +639,10 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
             (name) => imports.add("@angular/common", name),
           ),
         ]),
-    ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
-    ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
+    ...(models.textCaret === undefined || shares
+      ? []
+      : [textCaretDirectiveCode(models.textCaret, imports)]),
+    ...(trustedHtml === undefined || shares ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
     ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
     ...(transition === undefined
       ? []
@@ -631,13 +650,30 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
           transitionRegionCode(transition.regionClass, imports),
           transitionDirectiveCode(transition.className, transition.regionClass, imports),
         ]),
-    ...(runner === undefined ? [] : runnerCode(runner)),
+    ...(runner === undefined ? [] : runnerCode(runner, !shares)),
     ...ownClasses.map(({ directive, className: name }) =>
       directiveClassCode(directive, name, runner?.run ?? RUNNER_HELPER, imports),
     ),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
+  }
+  const path = `${kebabCase(component.name)}.ts`;
+  if (context.helper) {
+    importShared(context.helper, path, imports, [
+      ...listeners.directives.map((spec): SharedUse => ({
+        name: spec.name,
+        local: spec.className,
+        contents: directiveModule(spec),
+      })),
+      ...(scope ? [{ name: "ScopeAttributes", local: scope.className }] : []),
+      ...models.helpers.flatMap(({ name, shared }) =>
+        shared === undefined ? [] : [{ name: shared, local: name }],
+      ),
+      ...(models.textCaret === undefined ? [] : [{ name: "TextCaret", local: models.textCaret }]),
+      ...(trustedHtml === undefined ? [] : [{ name: "TrustedHtmlPipe", local: trustedHtml }]),
+      ...(runner === undefined ? [] : [{ name: QUEUE_HELPER, local: runner.queue }]),
+    ]);
   }
   // The types it imports, by name, from where the source imports them, a child's from its
   // output (`./field`), and in the main component's file the module's type exports, in source
@@ -674,7 +710,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       spaced(printProgram(js.program(statements))),
     ].join("\n"),
   );
-  return { path: `${kebabCase(component.name)}.ts`, contents };
+  return { path, contents };
 }
 
 /** Whether an element of the component's template sets `innerHTML` (ADR-0097). */

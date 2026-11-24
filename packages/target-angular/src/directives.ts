@@ -19,7 +19,9 @@ export interface DirectiveSpec {
   option: "capture" | "once" | "passive";
   /** Its selector's attribute and its output's name: `ufClickCapture`. */
   output: string;
-  /** The class's name, claimed beside the file's other names. */
+  /** The class's export name, `ClickCapture`, its shared module's too (ADR-0121). */
+  name: string;
+  /** The class's local name, claimed beside the file's other names. */
   className: string;
   /** The DOM interface of the event (`PointerEvent`), the output's value type. */
   eventType: string;
