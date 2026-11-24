@@ -369,7 +369,7 @@ function own(element: ElementNode, context: JsxContext): AstExpression {
 }
 
 /**
- * The `modelText` helper, shared in `_unframework/` (ADR-0121) or inline, (emulated
+ * The `modelText` helper, shared in `_unframework/` (ADR-0121) or inline (emulated
  * `model-modifiers`, ADR-0054): Vue's `vModelText`, as a field's `ref`. The field's initial value
  * is its `value` prop, which the server renders; the helper writes what the user types, trimmed or
  * cast as Vue's `looseToNumber` casts it, on `input` or, when lazy, on `change`, and a trimmed or
@@ -429,7 +429,7 @@ function ${name}(select: HTMLSelectElement): string[] {
 }
 
 /**
- * The `selectOptions` helper, shared in `_unframework/` (ADR-0121) or inline, (emulated
+ * The `selectOptions` helper, shared in `_unframework/` (ADR-0121) or inline (emulated
  * `model-array` and `two-way-binding` where the options are another component's): each option
  * selected where it holds the state, or where the state's array holds it, and none where no option
  * holds a single value (`selectedIndex` -1), as Vue's `vModelSelect` sets them, once they are
