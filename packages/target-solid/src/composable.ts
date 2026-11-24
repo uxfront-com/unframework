@@ -52,7 +52,7 @@ type Statement = ReturnType<Placeholders["statements"]>;
  * its setup in source order as a component's is written, hoisting what captures nothing of it.
  * A getter parameter is called and a callback called as the source does, so both are as written.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
   const { module } = context;
   const owner = setupOwner(composable);
   const parameterTypes = composableTypeTexts(composable);
@@ -167,7 +167,7 @@ export function addComposableImports(
 }
 
 /** The names a module declares at its top level for its components to read (ADR-0070). */
-export function moduleValueNames(module: UfModule): string[] {
+export function moduleValueNames(module: UfModule): Array<string> {
   return [
     ...(module.constants ?? []).map(({ name }) => name),
     ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
@@ -180,9 +180,9 @@ export interface ModuleReads {
    * The constants it declares, in source order, as written, and the `export { … }` of what its
    * siblings import from it.
    */
-  constants: Statement[];
+  constants: Array<Statement>;
   /** The module's type declarations its constants name, transitively, beyond its own types. */
-  types: TypeDeclaration[];
+  types: Array<TypeDeclaration>;
 }
 
 /**
@@ -209,7 +209,10 @@ export function moduleReads(
     return { constants: [], types: [] };
   }
   const owners = [
-    ...module.components.map((component) => ({ owner: component, typeTexts: [] as TypeText[] })),
+    ...module.components.map((component) => ({
+      owner: component,
+      typeTexts: [] as Array<TypeText>,
+    })),
     ...(module.composables ?? []).map((composable) => ({
       owner: setupOwner(composable),
       typeTexts: composableTypeTexts(composable),
@@ -284,7 +287,7 @@ interface ModuleReach {
 function ownValues(
   owner: UfComponent,
   module: UfModule,
-  typeTexts: readonly TypeText[] = [],
+  typeTexts: ReadonlyArray<TypeText> = [],
 ): Set<string> {
   const moduleValues = new Set(moduleValueNames(module));
   const values = new Set(
@@ -365,7 +368,7 @@ function closure(values: ReadonlySet<string>, owner: UfComponent, module: UfModu
 }
 
 /** The type text a composable's parameters and type parameters write, beside its IR's. */
-function composableTypeTexts(composable: UfComposable): TypeText[] {
+function composableTypeTexts(composable: UfComposable): Array<TypeText> {
   return [
     ...composable.parameters.map(({ type }) => type),
     ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
@@ -402,8 +405,8 @@ function addNamedTypeImports(
 }
 
 /** The type text an owner's IR writes beside its code: its props', setup's and emits' types. */
-function ownTypes(owner: UfComponent): TypeText[] {
-  const found: TypeText[] = [];
+function ownTypes(owner: UfComponent): Array<TypeText> {
+  const found: Array<TypeText> = [];
   if (owner.propsParameter) {
     found.push(owner.propsParameter.type);
   }
@@ -433,7 +436,7 @@ function ownTypes(owner: UfComponent): TypeText[] {
  * The root identifier of each `typeof` in type text or code: `SIZES` in `keyof typeof SIZES`,
  * `theme` in `typeof theme.dark`.
  */
-function typeQueries(text: string, kind: CodeKind | "type"): string[] {
+function typeQueries(text: string, kind: CodeKind | "type"): Array<string> {
   let root: unknown;
   try {
     root =
@@ -443,7 +446,7 @@ function typeQueries(text: string, kind: CodeKind | "type"): string[] {
   } catch {
     return [];
   }
-  const found: string[] = [];
+  const found: Array<string> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       for (const item of node) {

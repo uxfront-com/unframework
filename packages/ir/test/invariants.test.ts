@@ -110,7 +110,7 @@ const code = (text: string) => createExpression(text, span(0, text.length));
 
 const element = (
   tag: string,
-  attributes: [string, string | true][] = [],
+  attributes: Array<[string, string | true]> = [],
   children: ElementNode["children"] = [],
 ) =>
   createElement(
@@ -373,17 +373,17 @@ describe("checkInvariants", () => {
   });
 });
 
-const svg = (...children: RenderNode[]) =>
+const svg = (...children: Array<RenderNode>) =>
   createElement("svg", [createStaticAttribute("viewBox", "0 0 24 24", at)], children, at);
-const node = (tag: string, attributes: Attribute[] = [], children: RenderNode[] = []) =>
+const node = (tag: string, attributes: Array<Attribute> = [], children: Array<RenderNode> = []) =>
   createElement(tag, attributes, children, at);
 const bound = (name: string) => createBoundAttribute(name, label(), at);
-const style = (...declarations: StyleDeclaration[]) => createStyleAttribute(declarations, at);
+const style = (...declarations: Array<StyleDeclaration>) => createStyleAttribute(declarations, at);
 const text = (value: string) => createText(value, at);
 const interpolation = () => createInterpolation(label(), at);
 /** The item of a list over `label`, which keys it. */
 const item = () => expression("item", 0, [["item", ids.item]]);
-const branch = (children: RenderNode[], condition = true) =>
+const branch = (children: Array<RenderNode>, condition = true) =>
   createBranch(condition ? label() : undefined, children, at);
 
 // M1's render nodes and attribute kinds (ADR-0034–ADR-0040): what the analyser lowers, and the
@@ -1433,7 +1433,7 @@ function nestedList(name: string, id: string, key: Expression): UfModule {
  * A module declaring `interface Props`, with two components: each takes the props type named
  * first, and its props reach the types listed (`Props` among them, or not).
  */
-function twoComponents(...components: [annotation: string, types: string[]][]): UfModule {
+function twoComponents(...components: Array<[annotation: string, types: Array<string>]>): UfModule {
   const declarations = [
     createTypeDeclaration("Props", false, "interface Props {}", span(0, 18)),
     createTypeDeclaration("BadgeProps", false, "interface BadgeProps {}", span(20, 43)),
@@ -1469,7 +1469,10 @@ function twoComponents(...components: [annotation: string, types: string[]][]): 
 }
 
 /** A module whose component takes the props named, each with its own binding, and renders `<p>`. */
-function withProps(names: string[], form: "destructured" | "object" = "destructured"): UfModule {
+function withProps(
+  names: Array<string>,
+  form: "destructured" | "object" = "destructured",
+): UfModule {
   const type = createTypeText("P", span(0, 1));
   const props = names.map((name, index) =>
     createProp(
@@ -1556,7 +1559,7 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
       "references out of order",
       () =>
         changed((module) => {
-          const { value } = card(module).children[1] as { value: { refs: unknown[] } };
+          const { value } = card(module).children[1] as { value: { refs: Array<unknown> } };
           value.refs = value.refs.toReversed();
         }),
       "/children/0/children/1/value/refs/1/span",
@@ -1568,7 +1571,7 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
         changed(
           (module) =>
             void ((
-              card(module).attributes[2] as { value: { refs: { span: unknown }[] } }
+              card(module).attributes[2] as { value: { refs: Array<{ span: unknown }> } }
             ).value.refs[0]!.span = span(240, 245)),
         ),
       "/attributes/2/value/refs/0/span",
@@ -1580,7 +1583,7 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
         changed(
           (module) =>
             void ((
-              card(module).attributes[2] as { value: { refs: { binding: string }[] } }
+              card(module).attributes[2] as { value: { refs: Array<{ binding: string }> } }
             ).value.refs[0]!.binding = "nope@1"),
         ),
       "/attributes/2/value/refs/0/binding",
@@ -2112,7 +2115,10 @@ const shown = (counter: UfComponent) => childAt(counter, 4).children[0] as Inter
 function codeAt(
   text: string,
   start: number,
-  refs: (locate: (part: string, nth?: number) => Span, whole: Span) => CodeReference[] = () => [],
+  refs: (
+    locate: (part: string, nth?: number) => Span,
+    whole: Span,
+  ) => Array<CodeReference> = () => [],
 ): Code {
   const whole = span(start, start + text.length);
   const locate = (part: string, nth = 0): Span => {
@@ -2129,7 +2135,11 @@ function codeAt(
 }
 
 /** An expression at `start` reading the bindings `[text, binding, call?]` at their first occurrence. */
-function expressionAt(text: string, start: number, refs: [string, string, boolean?][]): Expression {
+function expressionAt(
+  text: string,
+  start: number,
+  refs: Array<[string, string, boolean?]>,
+): Expression {
   const code = codeAt(text, start, (locate) =>
     refs.map(([part, binding, call]) => createBindingReference(binding, locate(part), false, call)),
   );
@@ -2716,7 +2726,7 @@ describe("checkInvariants on the setup, events and template refs", () => {
         counterChanged((counter) => {
           const emit = inlineAt(counter.render as ElementNode, 0).body.refs[0] as {
             span: Span;
-            arguments: Span[];
+            arguments: Array<Span>;
           };
           emit.arguments = [span(emit.span.start + 5, emit.span.end - 1)];
         }),
@@ -3379,7 +3389,7 @@ describe("checkInvariants on narrowed reads", () => {
   /** The counter's `select` with `text` for its body, and the references `refs` builds. */
   const selectBody = (
     text: string,
-    refs: (locate: (part: string, nth?: number) => Span) => CodeReference[],
+    refs: (locate: (part: string, nth?: number) => Span) => Array<CodeReference>,
   ) =>
     counterChanged((counter) => withBody(fnAt(counter, 13), (start) => codeAt(text, start, refs)));
 

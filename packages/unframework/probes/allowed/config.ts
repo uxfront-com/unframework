@@ -28,8 +28,8 @@ export default defineConfig({
 // `packages/testing/test/project-vite.test.ts` type-checks Vite's own.
 interface UserConfigLike {
   root?: string;
-  plugins?: { name: string }[];
-  optimizeDeps?: { include?: string[] };
+  plugins?: Array<{ name: string }>;
+  optimizeDeps?: { include?: Array<string> };
 }
 
 export const annotated = defineConfig({

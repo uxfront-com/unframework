@@ -6,4 +6,4 @@ export type Size = keyof typeof SIZES;
 
 export const DEFAULT_SIZE: Size = "md";
 
-export const SIZE_ORDER: readonly Size[] = Object.freeze(["sm", "md", "lg"]);
+export const SIZE_ORDER: ReadonlyArray<Size> = Object.freeze(["sm", "md", "lg"]);

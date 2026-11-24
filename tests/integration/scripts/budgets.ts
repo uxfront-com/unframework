@@ -79,13 +79,13 @@ export function budgetProblems(
   target: TargetName,
   time: number,
   size: OutputSize,
-): string[] {
+): Array<string> {
   const limit = budget?.sizes[target];
   if (!budget || !limit) {
     return ["No budget for this cell. Run `pnpm test:budgets:update`."];
   }
   const update = "Run `pnpm test:budgets:update` if the change is intended.";
-  const problems: string[] = [];
+  const problems: Array<string> = [];
   if (time > budget.time * TIME_MARGIN) {
     problems.push(
       `compile time ${time.toFixed(2)} × ${CALIBRATION} is above ${TIME_MARGIN} × its budget of ${budget.time}. ${update}`,
@@ -105,7 +105,7 @@ export function budgetProblems(
  * What `budgets.json` holds that no cell reads: a case the corpus has left or that has output on
  * no target, and a target of a case that has no output there.
  */
-export function staleBudgets(budgets: Budgets, cases: readonly CaseInfo[]): string[] {
+export function staleBudgets(budgets: Budgets, cases: ReadonlyArray<CaseInfo>): Array<string> {
   const known = new Map(cases.map((info) => [info.id, info]));
   return Object.entries(budgets.cases).flatMap(([id, budget]) => {
     const info = known.get(id);
@@ -119,7 +119,7 @@ export function staleBudgets(budgets: Budgets, cases: readonly CaseInfo[]): stri
 }
 
 /** The cases a budget can judge: a case with output on no target has no cell to fail. */
-export function budgetedCases(cases: readonly CaseInfo[]): CaseInfo[] {
+export function budgetedCases(cases: ReadonlyArray<CaseInfo>): Array<CaseInfo> {
   return cases.filter((info) => TARGET_NAMES.some((target) => errorState(info, target) === false));
 }
 
@@ -130,9 +130,9 @@ export function budgetedCases(cases: readonly CaseInfo[]): CaseInfo[] {
  * compile of all, so one run alone is noisy, and the run's first would still be warming up.
  */
 export async function measureTimes(
-  cases: readonly CaseInfo[],
+  cases: ReadonlyArray<CaseInfo>,
   casesDir: string,
-  plugins: () => readonly CompilerPlugin[] = () => [],
+  plugins: () => ReadonlyArray<CompilerPlugin> = () => [],
 ): Promise<Map<string, number>> {
   const bench = new Bench({
     iterations: ITERATIONS,
@@ -185,7 +185,7 @@ export function cpuTime(): number {
 function compileCase(
   info: CaseInfo,
   casesDir: string,
-  plugins: () => readonly CompilerPlugin[],
+  plugins: () => ReadonlyArray<CompilerPlugin>,
 ): () => Promise<void> {
   const sources = info.sources.map((source) => ({
     source,
@@ -217,12 +217,12 @@ function compileCase(
 export async function measureSize(
   toolchain: Toolchain,
   target: string,
-  files: readonly string[],
+  files: ReadonlyArray<string>,
 ): Promise<OutputSize> {
   if (!files.length) {
     throw new Error(`There's no ${target} output to measure. Run \`pnpm test:update\`.`);
   }
-  const contents: ToolchainFile[] = files.map((path) => ({
+  const contents: Array<ToolchainFile> = files.map((path) => ({
     path,
     contents: readFileSync(path, "utf8"),
   }));
@@ -243,7 +243,7 @@ const moduleKey = (path: string) => path.replace(/\.[cm]?[jt]sx?$/, "");
  * rejects: the bundle would be missing what the module needs.
  */
 export async function bundleSize(
-  lists: readonly (readonly ToolchainFile[])[],
+  lists: ReadonlyArray<ReadonlyArray<ToolchainFile>>,
 ): Promise<OutputSize> {
   const modules = new Map(lists.flat().map((module) => [moduleKey(module.path), module] as const));
   const memory: Plugin = {

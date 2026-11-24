@@ -18,7 +18,7 @@ export interface RestPlan {
    */
   root?: string;
   /** The functions that split `$attrs`, which the script declares. */
-  functions: string[];
+  functions: Array<string>;
 }
 
 /** The prefix of the scope attributes a styled parent passes its child's root (ADR-0063). */
@@ -109,7 +109,7 @@ export function restAttributesType(
 }
 
 /** The names the component declares: its props, its events' listeners and its models'. */
-function declaredNames(component: UfComponent): string[] {
+function declaredNames(component: UfComponent): Array<string> {
   return [
     ...component.props.map((prop) => prop.name),
     ...(component.emits?.events ?? []).map((event) => listenerName(event.name)),
@@ -123,7 +123,7 @@ function declaredNames(component: UfComponent): string[] {
  * The tags of a `<component is>` root over tags that takes `$attrs` (ADR-0119, ADR-0122): the
  * only node the component renders, with fallthrough on.
  */
-function dynamicRootTags(component: UfComponent): string[] | undefined {
+function dynamicRootTags(component: UfComponent): Array<string> | undefined {
   if (component.inheritAttrs === false || component.render.kind === "Element") {
     return undefined;
   }

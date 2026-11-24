@@ -14,13 +14,13 @@ import { mount } from "../src/toolchain/client.ts";
 interface BadgeProps {
   label: string;
   tone?: "info" | "warn";
-  items?: string[];
+  items?: Array<string>;
   count?: number;
 }
 
 /** The shape every target's rerender test renders, with defaults for `tone` and `items`. */
 function Badge(rawProps: BadgeProps) {
-  const props = mergeProps({ tone: "info", items: [] as string[] }, rawProps);
+  const props = mergeProps({ tone: "info", items: [] as Array<string> }, rawProps);
   return html`<div>
     <p class=${() => props.tone} data-count=${() => props.count}>${() => props.label}</p>
     <${Show} when=${() => props.tone === "warn"}><strong>warning</strong><//>
@@ -42,7 +42,7 @@ function read(container: HTMLElement) {
   };
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

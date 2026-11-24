@@ -67,7 +67,7 @@ export interface ComposableCandidate {
 
 /** The top-level statements of a `.uf.ts` module that declare or export composables. */
 export interface FoundComposables {
-  candidates: ComposableCandidate[];
+  candidates: Array<ComposableCandidate>;
   /** The starts of the statements read here, reported or not, which no other check reads. */
   statements: Set<number>;
 }
@@ -82,7 +82,7 @@ export function findComposables(
   exported: ReadonlySet<string>,
   reporter: Reporter,
 ): FoundComposables {
-  const candidates: ComposableCandidate[] = [];
+  const candidates: Array<ComposableCandidate> = [];
   const statements = new Set<number>();
   const functions = new Map<string, AST.Function>();
   for (const statement of program.body) {
@@ -248,7 +248,7 @@ export interface AnalyzedComposable {
  */
 export function analyzeComposable(
   candidate: ComposableCandidate,
-  typeParameters: TypeParameter[],
+  typeParameters: Array<TypeParameter>,
   module: ComposableModule,
 ): AnalyzedComposable | undefined {
   const { parsed, types, reporter, scopes } = module;
@@ -373,15 +373,15 @@ function composableParameters(
   fn: AST.Function,
   module: ComposableModule,
 ): {
-  parameters: ComposableParameter[];
-  bindings: Binding[];
-  reads: PropBinding[];
+  parameters: Array<ComposableParameter>;
+  bindings: Array<Binding>;
+  reads: Array<PropBinding>;
   byDeclaration: Map<object, PropBinding>;
 } {
   const { reporter, parsed } = module;
-  const parameters: ComposableParameter[] = [];
-  const bindings: Binding[] = [];
-  const reads: PropBinding[] = [];
+  const parameters: Array<ComposableParameter> = [];
+  const bindings: Array<Binding> = [];
+  const reads: Array<PropBinding> = [];
   const byDeclaration = new Map<object, PropBinding>();
   for (const parameter of fn.params) {
     if (parameter.type !== "Identifier") {
@@ -617,9 +617,9 @@ function returnedMembers(
   object: AST.ObjectExpression,
   candidate: ComposableCandidate,
   render: RenderContext,
-): Returned[] {
+): Array<Returned> {
   const { reporter, scopes, setup } = render;
-  const members: Returned[] = [];
+  const members: Array<Returned> = [];
   const names = new Set<string>();
   for (const [index, property] of object.properties.entries()) {
     if (
@@ -696,8 +696,8 @@ function returnedMembers(
  */
 function composableApi(
   composable: UfComposable,
-  returns: readonly Returned[],
-  bindings: Binding[],
+  returns: ReadonlyArray<Returned>,
+  bindings: Array<Binding>,
 ): ComposableApi {
   // Its setup, as a component's without props or a template, for the summaries of its functions.
   const owner = createComponent(

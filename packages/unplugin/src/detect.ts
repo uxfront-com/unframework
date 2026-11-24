@@ -57,7 +57,7 @@ export function solidMajor(root: string): number | undefined {
  * was before `solid@2` (ADR-0102).
  */
 export function detectTarget(
-  plugins: readonly NamedPlugin[],
+  plugins: ReadonlyArray<NamedPlugin>,
   file: string,
   root: string = process.cwd(),
 ): { target: TargetName } | { error: string } {
@@ -110,7 +110,7 @@ interface VueApi {
 }
 
 /** plugin-vue's `api`, found by the name it registers. */
-const vueApiOf = (plugins: readonly NamedPlugin[]): VueApi | undefined =>
+const vueApiOf = (plugins: ReadonlyArray<NamedPlugin>): VueApi | undefined =>
   plugins.find(({ name }) => name === VUE_PLUGIN)?.api as VueApi | undefined;
 
 /**
@@ -118,7 +118,7 @@ const vueApiOf = (plugins: readonly NamedPlugin[]): VueApi | undefined =>
  * a template out for `"condense"`, and the option can't be set per file (ADR-0026).
  */
 export function hostOptionWarning(
-  plugins: readonly NamedPlugin[],
+  plugins: ReadonlyArray<NamedPlugin>,
   file: string,
 ): string | undefined {
   const whitespace = vueApiOf(plugins)?.options?.template?.compilerOptions?.whitespace;
@@ -187,7 +187,7 @@ export const NODE_SCRIPT_FS: ScriptFs = {
  * plugin-vue's `configResolved` rebuilds its options from the current ones, so the fill holds
  * whichever of the two plugins' hooks runs first.
  */
-export function fillVueScriptFs(plugins: readonly NamedPlugin[]): void {
+export function fillVueScriptFs(plugins: ReadonlyArray<NamedPlugin>): void {
   const api = vueApiOf(plugins);
   const options = api?.options;
   if (!api || !options || options.script?.fs != null) {

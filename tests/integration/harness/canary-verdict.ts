@@ -22,15 +22,15 @@ export interface CanaryRun {
   /** Each project's own cells (its parity matrix's `byProject`): project → case → target → layer. */
   projects: PartialMatrix["byProject"] | undefined;
   /** The specs it could not load. */
-  loadFailures?: readonly LoadFailure[] | undefined;
+  loadFailures?: ReadonlyArray<LoadFailure> | undefined;
 }
 
 /** Whether a canary was caught, every reason it was not, and what was not judged and why. */
 export interface CanaryVerdict {
   caught: boolean;
-  problems: string[];
+  problems: Array<string>;
   /** The targets the canary corrupts but applies to no case of, which prove nothing. */
-  notes: string[];
+  notes: Array<string>;
 }
 
 /** The project of a kind that verifies a target: `compile`, `bench`, or `<kind>:<target>`. */
@@ -42,11 +42,11 @@ export function projectOf(kind: ProjectKind, target: string): string {
 export function judgeCanary(
   canary: Canary,
   run: CanaryRun,
-  targets: readonly string[],
-  cases: readonly CanaryCase[],
+  targets: ReadonlyArray<string>,
+  cases: ReadonlyArray<CanaryCase>,
 ): CanaryVerdict {
-  const problems: string[] = [];
-  const notes: string[] = [];
+  const problems: Array<string> = [];
+  const notes: Array<string> = [];
   if (run.status === 0) {
     problems.push("the run passed");
   }
@@ -156,7 +156,7 @@ function missingEvidence(
   checks: Readonly<Record<string, Evidence>>,
   target: string,
   message: string,
-): string[] {
+): Array<string> {
   return Object.entries(checks).flatMap(([check, evidence]) => {
     const pattern = typeof evidence === "function" ? evidence(target) : evidence;
     if (pattern.test(message)) {

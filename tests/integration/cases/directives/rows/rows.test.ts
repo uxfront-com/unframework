@@ -22,10 +22,10 @@ interface Trace {
  */
 function record(): {
   mark: () => number;
-  since: (view: View, mark: number) => { name: string | null; calls: string[] }[];
+  since: (view: View, mark: number) => Array<{ name: string | null; calls: Array<string> }>;
   stop: () => void;
 } {
-  const traces: Trace[] = [];
+  const traces: Array<Trace> = [];
   const own = new Set<Element>();
   const listener = (event: Event) => void traces.push((event as CustomEvent<Trace>).detail);
   document.addEventListener("directive-trace", listener);
@@ -37,7 +37,7 @@ function record(): {
           own.add(el);
         }
       }
-      const found = new Map<Element, string[]>();
+      const found = new Map<Element, Array<string>>();
       for (const { call, el } of traces.slice(mark)) {
         if (!own.has(el)) {
           continue;
@@ -55,10 +55,10 @@ function record(): {
  * a count depends neither on which target runs first nor on the order two directives of one
  * element run in, which Vue's attribute order gives and Solid and Angular don't keep.
  */
-function sorted(found: { name: string | null; calls: string[] }[]): string[] {
+function sorted(found: Array<{ name: string | null; calls: Array<string> }>): Array<string> {
   return found
     .flatMap(({ name, calls }) => {
-      const byDirective = new Map<string, string[]>();
+      const byDirective = new Map<string, Array<string>>();
       for (const call of calls) {
         const [directive = "", ...rest] = call.split(" ");
         byDirective.set(directive, [...(byDirective.get(directive) ?? []), rest.join(" ")]);
@@ -69,7 +69,7 @@ function sorted(found: { name: string | null; calls: string[] }[]): string[] {
 }
 
 /** The view's elements that carry a directive, by their names. */
-function elements(view: View, names: string[]): (Element | null)[] {
+function elements(view: View, names: Array<string>): Array<Element | null> {
   return names.map((name) => view.container.querySelector(`[data-name="${name}"]`));
 }
 

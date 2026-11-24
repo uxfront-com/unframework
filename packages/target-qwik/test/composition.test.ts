@@ -1456,10 +1456,10 @@ function lines(code: string): string {
  * files or any other path, may remain.
  */
 async function expectCheckedClean(
-  sources: readonly string[],
+  sources: ReadonlyArray<string>,
   modules: Readonly<Record<string, string>> = {},
 ): Promise<void> {
-  const paths: string[] = [];
+  const paths: Array<string> = [];
   for (const source of sources) {
     const dir = mkdtempSync(join(scratch, "checked-"));
     // The `.ts` modules a source imports, beside its outputs as in an output tree (ADR-0070).
@@ -1467,7 +1467,7 @@ async function expectCheckedClean(
       writeFileSync(join(dir, name), code);
     }
     const module = lower(source);
-    const reported: unknown[] = [];
+    const reported: Array<unknown> = [];
     for (const component of module.components) {
       const emit: EmitContext = {
         module,

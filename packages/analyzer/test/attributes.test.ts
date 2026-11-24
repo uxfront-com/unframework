@@ -801,7 +801,7 @@ describe("fixes", () => {
       ' formaction="/x"',
       ' type="button"',
     ];
-    const combinations: string[] = [];
+    const combinations: Array<string> = [];
     for (const tag of elements) {
       for (const name of names) {
         for (const value of values) {
@@ -830,7 +830,7 @@ describe("fixes", () => {
   // `type=""` did for a submit button's overrides (r3-analyzer-2).
   it("for a bare attribute recompile clean beside every other attribute of its element", () => {
     const values = [null, "", "x", "submit", "button", "1", "true"];
-    const combinations: string[] = [];
+    const combinations: Array<string> = [];
     for (const [tag, own] of ELEMENT_ATTRIBUTES) {
       if (UNRENDERABLE_ELEMENTS.has(tag)) {
         continue;
@@ -852,7 +852,7 @@ describe("fixes", () => {
       }
     }
     replayable(propertyRun(combinations.length, 0), (run) => {
-      const failures: string[] = [];
+      const failures: Array<string> = [];
       let fixed = 0;
       for (const jsx of sampleOf(combinations, run)) {
         const { source, diagnostics } = component(jsx);

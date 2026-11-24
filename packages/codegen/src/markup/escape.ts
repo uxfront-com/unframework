@@ -127,9 +127,13 @@ function isQuasiValue(value: unknown): value is { raw: string; cooked: string | 
  * The literal and comment tokens of code, in source order: an expression's by default, or with
  * `kind` a list of statements' (a handler a template runs as statements, Vue's `@click="a(); b()"`).
  */
-export function codeTokens(code: string, kind: CodeKind = "expression"): CodeToken[] {
+export function codeTokens(code: string, kind: CodeKind = "expression"): Array<CodeToken> {
   const { root, comments } = parseCodeSource(code, kind);
-  const tokens: CodeToken[] = comments.map(({ start, end }) => ({ kind: "comment", start, end }));
+  const tokens: Array<CodeToken> = comments.map(({ start, end }) => ({
+    kind: "comment",
+    start,
+    end,
+  }));
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
       for (const item of value) {

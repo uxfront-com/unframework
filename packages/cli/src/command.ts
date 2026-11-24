@@ -6,4 +6,4 @@ export interface Io {
 }
 
 /** A command's entry: it returns the exit code (ADR-0076). A thrown error is a usage error. */
-export type RunCommand = (args: string[], io: Io) => Promise<number>;
+export type RunCommand = (args: Array<string>, io: Io) => Promise<number>;

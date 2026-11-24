@@ -71,7 +71,7 @@ export function addDirectiveImports(
 }
 
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, exported as Vue's `ObjectDirective`. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
   const dependencies = directiveDependencies(directive, context.module);
   // Vue's type, under a name apart from everything the copied code declares or reads.
   const type = new NameScope(directiveModuleNames(directive, dependencies)).claim(

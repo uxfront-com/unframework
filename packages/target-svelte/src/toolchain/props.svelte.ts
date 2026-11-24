@@ -33,7 +33,7 @@ class Prop {
 export function reactiveProps(initial: Readonly<Record<string, unknown>>): ReactiveProps {
   const boxes = new Map(Object.entries(initial).map(([key, value]) => [key, new Prop(value)]));
   // The keys the props hold, for `in` and for a rest pattern.
-  let keys: readonly string[] = $state.raw(Object.keys(initial));
+  let keys: ReadonlyArray<string> = $state.raw(Object.keys(initial));
   // A key read before a rerender adds it gets its box at that read, so the reader sees it come.
   const box = (key: string): Prop => {
     let found = boxes.get(key);

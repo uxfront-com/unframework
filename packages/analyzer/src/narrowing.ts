@@ -66,7 +66,7 @@ import type { Kinds, Member, ObjectShape, Primitive } from "./types/kinds.ts";
 export interface ReferencePath {
   /** What declares the parameter or the ref. */
   root: object;
-  names: readonly string[];
+  names: ReadonlyArray<string>;
 }
 
 /** Why the checkers read a reference that a condition tests differently. */
@@ -327,7 +327,7 @@ export function narrowingFacts(
   path: ReferencePath,
   declared: Kinds | undefined,
   render: RenderContext,
-): { condition: AST.Expression; child: boolean }[] {
+): Array<{ condition: AST.Expression; child: boolean }> {
   const kinds = declared ?? declaredKinds(path, render) ?? UNKNOWN;
   const ancestors = ancestorsOf(node, render.component);
   return factsAround(ancestors, render.component)
@@ -374,9 +374,9 @@ export function pathFacts(
   kinds: Kinds,
   render: RenderContext,
   kindsOf?: (node: AST.Expression) => Kinds,
-): PathFact[] {
+): Array<PathFact> {
   const ancestors = ancestorsOf(node, render.component);
-  const facts = factsAround(ancestors, render.component).flatMap((fact): PathFact[] => {
+  const facts = factsAround(ancestors, render.component).flatMap((fact): Array<PathFact> => {
     const effect = effectOf(fact, path, render, false, kinds);
     const form = effect === "form";
     const present = effect === "present" || form;
@@ -403,7 +403,7 @@ export function pathFacts(
  * or one in a loop around the read, shows nothing.
  */
 function assignedFact(
-  ancestors: readonly AST.Node[],
+  ancestors: ReadonlyArray<AST.Node>,
   path: ReferencePath,
   kinds: Kinds,
   render: RenderContext,
@@ -434,7 +434,7 @@ interface Assigned {
 
 /** The nearest write before a read in its function that leaves the path as it writes it. */
 function assignedBefore(
-  ancestors: readonly AST.Node[],
+  ancestors: ReadonlyArray<AST.Node>,
   path: ReferencePath,
   kinds: Kinds,
   render: RenderContext,
@@ -679,7 +679,7 @@ function refineOperand(
 }
 
 /** The kinds `typeof` names, by its result. */
-const TYPEOF: ReadonlyMap<string, readonly Primitive[]> = new Map([
+const TYPEOF: ReadonlyMap<string, ReadonlyArray<Primitive>> = new Map([
   ["string", ["string"]],
   ["number", ["number"]],
   ["boolean", ["boolean"]],
@@ -746,7 +746,7 @@ function refineEquality(
 }
 
 /** The kinds without those outside `kept` (`unknown`, which may be any, stays). */
-function only(kinds: Kinds, kept: readonly Primitive[]): Kinds {
+function only(kinds: Kinds, kept: ReadonlyArray<Primitive>): Kinds {
   const others = [...kinds.primitives].filter(
     (primitive) => primitive !== "unknown" && !kept.includes(primitive),
   );
@@ -756,7 +756,7 @@ function only(kinds: Kinds, kept: readonly Primitive[]): Kinds {
 /** What the source's kinds keep where it equals a literal (`==` when `loose`), or does not. */
 function byValue(kinds: Kinds, value: Literal, loose: boolean, equal: boolean): Kinds {
   if (value === null || value === undefined) {
-    const nullish: Primitive[] = loose
+    const nullish: Array<Primitive> = loose
       ? ["null", "undefined"]
       : [value === null ? "null" : "undefined"];
     return equal ? only(kinds, nullish) : without(kinds, ...nullish);
@@ -815,7 +815,7 @@ function keepLiterals<T extends string | number | boolean>(
   kinds: Kinds,
   primitive: "string" | "number" | "boolean",
   keep: (value: T) => boolean,
-  all?: readonly T[],
+  all?: ReadonlyArray<T>,
 ): Kinds {
   if (!has(kinds, primitive)) {
     return kinds;
@@ -879,7 +879,7 @@ function kindsOfMember(member: Member): Kinds {
  * Whether TypeScript narrows a union of object types by a member: one whose type is a literal
  * one (a union of literals, `boolean`, `null` or `undefined`) in some of the shapes.
  */
-function isDiscriminant(shapes: readonly ObjectShape[], key: string): boolean {
+function isDiscriminant(shapes: ReadonlyArray<ObjectShape>, key: string): boolean {
   return shapes.some((shape) => {
     const member = shape.members().get(key);
     if (!member) {
@@ -932,7 +932,7 @@ function narrowsKinds(before: Kinds, after: Kinds): boolean {
 }
 
 /** The primitives of a value that is there: neither `null` nor `undefined`. */
-function presentKinds(kinds: Kinds): Primitive[] {
+function presentKinds(kinds: Kinds): Array<Primitive> {
   return [...kinds.primitives].filter(
     (primitive) => primitive !== "null" && primitive !== "undefined",
   );
@@ -950,7 +950,7 @@ type TestEffect = "present" | "absent" | "none" | "unknown" | Removed;
 
 /** The nullish kinds comparisons take out, and whether a test not followed comes with them. */
 interface Removed {
-  readonly removed: readonly Nullish[];
+  readonly removed: ReadonlyArray<Nullish>;
   readonly unknown: boolean;
 }
 
@@ -1153,7 +1153,7 @@ function isRefRoot(root: object, render: RenderContext): boolean {
 }
 
 /** Whether a node lies in a list's key, which Angular writes as its `@for`'s `track`. */
-function inKey(ancestors: readonly AST.Node[]): boolean {
+function inKey(ancestors: ReadonlyArray<AST.Node>): boolean {
   return ancestors.some(
     (node) =>
       node.type === "JSXAttribute" &&
@@ -1224,8 +1224,8 @@ interface Fact {
  * each `while` or `for` loop whose body does, and of each `if` before it in a block that leaves
  * the block when its test holds (`if (!el) return;`), which then fails.
  */
-function factsAround(ancestors: readonly AST.Node[], component: AST.Node): Fact[] {
-  const facts: Fact[] = [];
+function factsAround(ancestors: ReadonlyArray<AST.Node>, component: AST.Node): Array<Fact> {
+  const facts: Array<Fact> = [];
   let boundary: Fact["boundary"] = "none";
   // Past an attribute, the read is a handler's (or an attribute's value) and the condition the
   // template's around its element.
@@ -1314,7 +1314,7 @@ function exits(statement: AST.Statement): boolean {
  * Whether the conditional at `ancestors[index]` is a child the analyser lowers to an If
  * (ADR-0036): any `&&`, and a `?:` that holds JSX, in a child's place.
  */
-function isIf(ancestors: readonly AST.Node[], index: number): boolean {
+function isIf(ancestors: ReadonlyArray<AST.Node>, index: number): boolean {
   const node = ancestors[index]!;
   const lowered =
     node.type === "LogicalExpression"
@@ -1325,7 +1325,7 @@ function isIf(ancestors: readonly AST.Node[], index: number): boolean {
 }
 
 /** Whether the node at `ancestors[index]` is in a child's place: a child, or a branch of one. */
-function isChild(ancestors: readonly AST.Node[], index: number): boolean {
+function isChild(ancestors: ReadonlyArray<AST.Node>, index: number): boolean {
   const node = ancestors[index]!;
   const parent = ancestors[index - 1];
   if (!parent) {
@@ -1362,8 +1362,8 @@ function containsJsx(node: unknown): boolean {
 }
 
 /** The nodes from `root` down to `target`, both included: none when `target` is not in it. */
-export function ancestorsOf(target: AST.Node, root: AST.Node): AST.Node[] {
-  const path: AST.Node[] = [];
+export function ancestorsOf(target: AST.Node, root: AST.Node): Array<AST.Node> {
+  const path: Array<AST.Node> = [];
   const visit = (value: unknown): boolean => {
     if (Array.isArray(value)) {
       return value.some(visit);
@@ -1383,7 +1383,7 @@ export function ancestorsOf(target: AST.Node, root: AST.Node): AST.Node[] {
 }
 
 /** A node's children, by oxc's visitor keys: nodes, arrays of them, or nothing. */
-function childrenOf(node: AST.Node): unknown[] {
+function childrenOf(node: AST.Node): Array<unknown> {
   const fields = node as unknown as Record<string, unknown>;
   return (visitorKeys[node.type] ?? []).map((key) => fields[key]);
 }
@@ -1570,7 +1570,7 @@ function comparison(
 }
 
 /** A comparison that takes nullish kinds out. */
-function removing(...removed: Nullish[]): Removed {
+function removing(...removed: Array<Nullish>): Removed {
   return { removed, unknown: false };
 }
 
@@ -1625,7 +1625,7 @@ function isArrayCheck(
  */
 function presentWithout(
   source: ReferencePath,
-  removed: readonly Nullish[],
+  removed: ReadonlyArray<Nullish>,
   render: RenderContext,
   declared?: Kinds,
 ): boolean {

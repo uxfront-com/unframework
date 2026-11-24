@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { detectTarget, solidMajor } from "../src/detect.ts";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 /** A project root whose `solid-js` is `version`, or none. */
 function project(version?: string): string {

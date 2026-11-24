@@ -27,7 +27,7 @@ export interface ScopedStylesheet {
    * UF5004 at each selector that cannot be scoped, or UF5002 where the sheet does not parse,
    * in the sheet's own file. A sheet with any is not scoped: `code` is empty.
    */
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
   /** Whether a selector uses `:slotted()`, whose content the parent stamps (ADR-0063). */
   slotted: boolean;
 }
@@ -144,7 +144,7 @@ function anyAncestor(rule: Rule, test: (rule: Rule) => boolean): boolean {
 }
 
 class Scoper {
-  readonly diagnostics: Diagnostic[] = [];
+  readonly diagnostics: Array<Diagnostic> = [];
   slotted = false;
   readonly #file: string;
   readonly #id: string;
@@ -418,7 +418,7 @@ class Scoper {
   /** Why a selector cannot be scoped, or `undefined`. */
   #problem(selector: Selector, nested: boolean, inDeep: boolean): Problem | undefined {
     const items = selector.nodes.filter((item) => item.type !== "comment");
-    const calls = items.filter(isScopingCall) as Pseudo[];
+    const calls = items.filter(isScopingCall) as Array<Pseudo>;
     if (calls.length > 1) {
       return {
         message: "A selector uses one of `:deep()`, `:slotted()` and `:global()`, once.",

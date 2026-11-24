@@ -20,7 +20,7 @@ import {
 
 /** The configuration with its defaults applied, and its paths absolute. */
 export interface ResolvedConfig {
-  targets: readonly TargetName[];
+  targets: ReadonlyArray<TargetName>;
   srcDir: string;
   outDir: string;
   targetOptions: Partial<Record<TargetName, unknown>>;
@@ -30,12 +30,12 @@ export interface ResolvedConfig {
   /** The project's Vite config, as a function each server calls (ADR-0104). */
   vite?: UnframeworkConfig["vite"];
   /** The font families that may draw text when pixels compare live, besides Inter (ADR-0105). */
-  liveFonts: readonly string[];
+  liveFonts: ReadonlyArray<string>;
 }
 
 /** The packaging config with its selectors resolved to target ids (ADR-0102). */
 export interface ResolvedPackageConfig extends Omit<PackageConfig, "targets"> {
-  targets?: readonly TargetName[];
+  targets?: ReadonlyArray<TargetName>;
 }
 
 /** Where a configuration came from: what {@link loadConfig} gives {@link resolveConfig}. */
@@ -54,14 +54,14 @@ export interface LoadedConfig extends ConfigOrigin {
   directory: string;
   /** The file relative to the root, when there is one. */
   file?: string;
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
 }
 
 /** The result of {@link resolveConfig}. */
 export interface ResolveConfigResult {
   /** `undefined` when any field is invalid. */
   config: ResolvedConfig | undefined;
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
 }
 
 /** The file names {@link loadConfig} looks for, the first one found winning. */
@@ -138,7 +138,7 @@ export async function resolveConfig(
   raw: unknown,
   origin: ConfigOrigin = {},
 ): Promise<ResolveConfigResult> {
-  const diagnostics: Diagnostic[] = [];
+  const diagnostics: Array<Diagnostic> = [];
   const report: Report = (code, pointer, problem) => {
     diagnostics.push(
       createDiagnostic(code, {
@@ -217,7 +217,7 @@ async function checkConfig(
 }
 
 /** The font families a live capture may take, each a name that isn't empty (ADR-0105). */
-function fontList(value: unknown, report: Report): string[] {
+function fontList(value: unknown, report: Report): Array<string> {
   if (value === undefined) {
     return [];
   }
@@ -229,8 +229,8 @@ function fontList(value: unknown, report: Report): string[] {
     );
     return [];
   }
-  const names: string[] = [];
-  for (const [index, item] of (value as unknown[]).entries()) {
+  const names: Array<string> = [];
+  for (const [index, item] of (value as Array<unknown>).entries()) {
     // A space at either end would never match the name CDP reports, so it is reported here.
     if (typeof item !== "string" || !item || item.trim() !== item) {
       report(
@@ -293,7 +293,7 @@ function segment(key: string): string {
   return `/${key.replaceAll("~", "~0").replaceAll("/", "~1")}`;
 }
 
-function didYouMean(name: string, names: readonly string[]): string {
+function didYouMean(name: string, names: ReadonlyArray<string>): string {
   const meant = closest(name, names);
   return meant ? ` Did you mean \`${meant}\`?` : "";
 }
@@ -302,7 +302,7 @@ function didYouMean(name: string, names: readonly string[]): string {
 function checkFields(
   record: Record<string, unknown>,
   pointer: string,
-  fields: readonly string[],
+  fields: ReadonlyArray<string>,
   report: Report,
 ): void {
   for (const key of Object.keys(record)) {
@@ -327,7 +327,7 @@ function reportUnknownTarget(
   name: string,
   pointer: string,
   report: Report,
-  names: readonly string[] = TARGET_SELECTORS,
+  names: ReadonlyArray<string> = TARGET_SELECTORS,
 ): void {
   const meant = didYouMean(name, names);
   report(
@@ -342,14 +342,14 @@ function targetList(
   value: unknown,
   pointer: string,
   report: Report,
-  within?: readonly TargetName[],
-): TargetName[] | undefined {
+  within?: ReadonlyArray<TargetName>,
+): Array<TargetName> | undefined {
   if (!Array.isArray(value) || value.length === 0) {
     report("UF7002", pointer, "must be a list of at least one target name.");
     return undefined;
   }
-  const seen: TargetName[] = [];
-  for (const [index, item] of (value as unknown[]).entries()) {
+  const seen: Array<TargetName> = [];
+  for (const [index, item] of (value as Array<unknown>).entries()) {
     const at = `${pointer}/${index}`;
     if (typeof item !== "string") {
       report("UF7002", at, "must be a target name.");
@@ -443,7 +443,7 @@ async function resolveTargetOptions(
 
 function resolvePackage(
   value: unknown,
-  targets: readonly TargetName[] | undefined,
+  targets: ReadonlyArray<TargetName> | undefined,
   directory: string,
   report: Report,
 ): ResolvedPackageConfig | undefined {

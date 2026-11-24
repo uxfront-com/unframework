@@ -13,15 +13,15 @@ export type ExpressionComment = ParsedModule["comments"][number];
 export interface ParsedExpression {
   expression: AST.Expression;
   /** The comments inside the code, in source order. */
-  comments: ExpressionComment[];
+  comments: Array<ExpressionComment>;
 }
 
 /** Statements parsed on their own: offsets are relative to their code. */
 export interface ParsedStatements {
   /** The statements, in order: a block body (`{ … }`) is one block statement. */
-  statements: (AST.Statement | AST.Directive)[];
+  statements: Array<AST.Statement | AST.Directive>;
   /** The comments inside the code, in source order. */
-  comments: ExpressionComment[];
+  comments: Array<ExpressionComment>;
 }
 
 /**
@@ -100,7 +100,7 @@ export function parseStatementsSource(code: string): ParsedStatements {
 export function parseCodeSource(
   code: string,
   kind: CodeKind,
-): { root: AST.Expression | ParsedStatements["statements"]; comments: ExpressionComment[] } {
+): { root: AST.Expression | ParsedStatements["statements"]; comments: Array<ExpressionComment> } {
   if (kind === "expression") {
     const { expression, comments: found } = parseExpressionSource(code);
     return { root: expression, comments: found };
@@ -109,7 +109,7 @@ export function parseCodeSource(
   return { root: statements, comments: found };
 }
 
-function comments(parsed: ParsedModule, offset: number): ExpressionComment[] {
+function comments(parsed: ParsedModule, offset: number): Array<ExpressionComment> {
   return parsed.comments.map((comment) => ({
     ...comment,
     start: comment.start - offset,

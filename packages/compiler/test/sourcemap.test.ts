@@ -10,7 +10,7 @@ import type { CompilerPlugin, TargetName } from "../src/index.ts";
 const BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /** Decodes `mappings`, by hand, so these tests don't lean on the library that wrote them. */
-function decode(mappings: string): number[][][] {
+function decode(mappings: string): Array<Array<Array<number>>> {
   const state = [0, 0, 0, 0, 0];
   return mappings.split(";").map((line) => {
     state[0] = 0;
@@ -18,7 +18,7 @@ function decode(mappings: string): number[][][] {
       .split(",")
       .filter(Boolean)
       .map((text) => {
-        const fields: number[] = [];
+        const fields: Array<number> = [];
         let value = 0;
         let shift = 0;
         for (const character of text) {
@@ -38,10 +38,13 @@ function decode(mappings: string): number[][][] {
 }
 
 /** Every mapped token whose text differs between the output and the source. */
-function broken(contents: string, map: { mappings: string; sourcesContent: string[] }): string[] {
+function broken(
+  contents: string,
+  map: { mappings: string; sourcesContent: Array<string> },
+): Array<string> {
   const output = contents.split("\n");
   const source = map.sourcesContent[0]!.split("\n");
-  const problems: string[] = [];
+  const problems: Array<string> = [];
   for (const [line, segments] of decode(map.mappings).entries()) {
     for (const [column, , fromLine, fromColumn, name] of segments) {
       // A reference's segment carries its name: a target respells it, and only a run stays as written.

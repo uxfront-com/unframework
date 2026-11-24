@@ -24,10 +24,10 @@ const ESLINT_HOSTS: Readonly<Record<string, string>> = {
 interface DryTask {
   taskId: string;
   inputs: Record<string, string>;
-  dependencies: string[];
+  dependencies: Array<string>;
 }
 
-function dryRun(): DryTask[] {
+function dryRun(): Array<DryTask> {
   const result = spawnSync(
     join(REPO_ROOT, "node_modules", ".bin", "turbo"),
     ["run", "test", "--dry=json", "--filter=@unframework.dev/integration"],
@@ -37,7 +37,7 @@ function dryRun(): DryTask[] {
     throw result.error;
   }
   expect(result.status, result.stderr).toBe(0);
-  return (JSON.parse(result.stdout) as { tasks: DryTask[] }).tasks;
+  return (JSON.parse(result.stdout) as { tasks: Array<DryTask> }).tasks;
 }
 
 describe("the integration test task", () => {

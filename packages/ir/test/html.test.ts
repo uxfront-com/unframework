@@ -207,11 +207,11 @@ function random(seed: number): () => number {
 }
 
 /** `scheme:x` with case changes and the characters URL parsers strip or keep put around it. */
-function spellings(scheme: string, count: number): string[] {
+function spellings(scheme: string, count: number): Array<string> {
   const next = random(scheme.length);
   const noise = ["\t", "\n", "\r", " ", "\u0000", "\u0001", "\u001F", "\u00A0", "x", "-", ":", "/"];
   const pick = () => noise[Math.floor(next() * noise.length)]!;
-  const samples: string[] = [];
+  const samples: Array<string> = [];
   for (let index = 0; index < count; index++) {
     let url = next() < 0.5 ? pick() + pick() : "";
     for (const character of `${scheme}:`) {

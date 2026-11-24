@@ -5,7 +5,7 @@ import { propertyRun, replayable, scaledBound } from "./property.ts";
 import { randomSamples } from "./random.ts";
 
 /** The text children of the component's root. */
-function textsOf(jsx: string): string[] {
+function textsOf(jsx: string): Array<string> {
   const { module, diagnostics } = component(jsx);
   expect(diagnostics).toEqual([]);
   return root(module).children.map((child) =>

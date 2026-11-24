@@ -46,7 +46,7 @@ export function formatDiagnostic(
   const header = `${paint(diagnostic.severity, `${diagnostic.severity}[${diagnostic.code}]`)}${paint("bold", `${target}: ${diagnostic.message}`)}`;
   const location = start ? `${diagnostic.file}:${start.line}:${start.column}` : diagnostic.file;
 
-  const frames: { span: Span; label: string | undefined }[] = [
+  const frames: Array<{ span: Span; label: string | undefined }> = [
     { span: diagnostic.span, label: undefined },
     ...(diagnostic.related ?? []).map((related) => ({
       span: related.span,
@@ -86,7 +86,7 @@ export function formatDiagnostic(
 
 /** Renders several diagnostics, separated by blank lines. */
 export function formatDiagnostics(
-  diagnostics: readonly Diagnostic[],
+  diagnostics: ReadonlyArray<Diagnostic>,
   sources: ReadonlyMap<string, string> | Readonly<Record<string, string>>,
   options: FormatOptions = {},
 ): string {
@@ -108,11 +108,11 @@ interface FrameLine {
 }
 
 /** The source line of a span and a caret line under it; multi-line spans show both ends. */
-function frameLines(index: LineIndex, span: Span, label: string | undefined): FrameLine[] {
+function frameLines(index: LineIndex, span: Span, label: string | undefined): Array<FrameLine> {
   const start = index.position(span.start);
   const end = index.position(Math.max(span.start, span.end));
   const first = index.line(start.line);
-  const lines: FrameLine[] = [{ number: start.line, text: first }];
+  const lines: Array<FrameLine> = [{ number: start.line, text: first }];
   const caretEnd = start.line === end.line ? end.column : first.length + 1;
   const width = Math.max(1, caretEnd - start.column);
   const indent = first.slice(0, start.column - 1).replace(/[^\t]/g, " ");

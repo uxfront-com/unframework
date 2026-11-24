@@ -16,7 +16,7 @@ const VIEWS = [
   { key: "reference", label: "Reference", file: "reference.png" },
   { key: "actual", label: "Actual", file: "actual.png" },
   { key: "diff", label: "Diff", file: "diff.png" },
-] as const satisfies readonly { key: keyof VisualImages; label: string; file: string }[];
+] as const satisfies ReadonlyArray<{ key: keyof VisualImages; label: string; file: string }>;
 
 /** The HTML page of a run's report: a whole document, self-contained but for its images. */
 export function renderReport(report: VisualReport): string {
@@ -128,7 +128,7 @@ function renderOverlay(
   example: VisualExample,
   id: string,
   cell: VisualCell,
-  views: readonly (typeof VIEWS)[number][],
+  views: ReadonlyArray<(typeof VIEWS)[number]>,
 ): string {
   const initial = views.at(-1)!.key;
   return [
@@ -168,7 +168,7 @@ function renderAbsent(cell: VisualCell): string {
     : '<p class="absent">The run left no image for this cell.</p>';
 }
 
-function renderDeltas(id: string, deltas: readonly GeometryDelta[]): string {
+function renderDeltas(id: string, deltas: ReadonlyArray<GeometryDelta>): string {
   if (!deltas.length) {
     return '<p class="no-deltas">No geometry or computed-style delta.</p>';
   }
@@ -231,7 +231,7 @@ function count(n: number, noun: string): string {
 const NUMBER = new Intl.NumberFormat("en");
 
 /** `a`, `a or b`, `a, b or c`. */
-function list(items: readonly string[]): string {
+function list(items: ReadonlyArray<string>): string {
   return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items.at(-1)}`;
 }
 

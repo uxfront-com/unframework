@@ -36,7 +36,7 @@ export class NameScope {
   }
 
   /** Marks names as taken, as they are: the source's own names, which never change. */
-  reserve(...names: string[]): void {
+  reserve(...names: Array<string>): void {
     for (const name of names) {
       this.#taken.add(name);
     }
@@ -79,9 +79,9 @@ export class NameScope {
  */
 export function moduleHelperName(
   helper: string,
-  reserved: readonly Iterable<string>[],
+  reserved: ReadonlyArray<Iterable<string>>,
   index: number,
-): { base: string; others: string[] } {
+): { base: string; others: Array<string> } {
   const own = new RegExp(`^${helper}(?:_\\d+)*$`);
   const others = new Set<string>();
   for (const names of reserved) {

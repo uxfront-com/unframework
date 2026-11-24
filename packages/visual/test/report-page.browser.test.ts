@@ -112,7 +112,7 @@ describe("a run with one failed cell", () => {
     ];
     expect(controls.length).toBeGreaterThan(14);
     document.body.focus();
-    const reached: Element[] = [];
+    const reached: Array<Element> = [];
     for (let step = 0; step < controls.length; step += 1) {
       await userEvent.tab();
       reached.push(document.activeElement!);

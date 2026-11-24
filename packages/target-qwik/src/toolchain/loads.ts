@@ -72,7 +72,9 @@ export function segmentLoads(): Plugin {
           .split(",")
           .map((name) => name.trim())
           .filter(Boolean);
-        const factories: string[] = names.filter((name) => name === "qrlDEV" || name === "qrl");
+        const factories: Array<string> = names.filter(
+          (name) => name === "qrlDEV" || name === "qrl",
+        );
         if (!factories.length) {
           return statement;
         }
@@ -102,7 +104,7 @@ interface Resolvable {
 const CONTROLS = ["preventDefault", "stopPropagation", "stopImmediatePropagation"] as const;
 
 /** The events the `$` bodies running now were called with, innermost last. */
-const running: Event[] = [];
+const running: Array<Event> = [];
 
 /** Whether the page's event controls report a call from a running `$` body. */
 let reporting = false;
@@ -133,9 +135,9 @@ function reportControls(): void {
 /** The segments and QRLs the page's modules create, and the imports in flight. */
 export class SegmentLoads {
   /** Every segment a QRL of the page references, in the order the QRLs were created. */
-  readonly #segments: SegmentLoad[] = [];
+  readonly #segments: Array<SegmentLoad> = [];
   /** Every QRL the page's modules created. */
-  readonly #qrls: Resolvable[] = [];
+  readonly #qrls: Array<Resolvable> = [];
   /** How many of `#segments` and `#qrls` the last preload loaded and resolved. */
   #preloaded = { segments: 0, qrls: 0 };
   readonly #pending = new Set<Promise<unknown>>();
@@ -187,8 +189,8 @@ export class SegmentLoads {
     return wrapped;
   }
 
-  #body(fn: (...args: unknown[]) => unknown): (...args: unknown[]) => unknown {
-    return function (this: unknown, ...args: unknown[]): unknown {
+  #body(fn: (...args: Array<unknown>) => unknown): (...args: Array<unknown>) => unknown {
+    return function (this: unknown, ...args: Array<unknown>): unknown {
       // The event a handler, or a local function a handler passed it to, was called with.
       const event = args.find((arg): arg is Event => arg instanceof Event);
       if (event) {

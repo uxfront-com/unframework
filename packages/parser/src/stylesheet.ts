@@ -9,7 +9,7 @@ import type { Span } from "./parse.ts";
 export interface ParsedStylesheet {
   file: string;
   source: string;
-  errors: { message: string; span: Span }[];
+  errors: Array<{ message: string; span: Span }>;
 }
 
 const encoder = new TextEncoder();

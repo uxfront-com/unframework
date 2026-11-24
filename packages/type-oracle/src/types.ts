@@ -46,12 +46,12 @@ export interface DirectiveValueCheck {
 /** The answer to {@link TypeOracle.checkDirectiveValues}. */
 export interface DirectiveValueChecks {
   /** One per query, in order: `null` where the adapter can't type the value or the directive. */
-  checks: (DirectiveValueCheck | null)[];
+  checks: Array<DirectiveValueCheck | null>;
   /**
    * The files the answers read besides the queried one, sorted, named as
    * {@link TypeShape.dependencies} names them.
    */
-  dependencies: string[];
+  dependencies: Array<string>;
 }
 
 /** The files that changed, were created or were deleted, relative to the oracle's root. */
@@ -60,7 +60,7 @@ export interface FileChanges {
    * Files relative to the root, and packages installed, removed or changed as `pkg:<name>`, by
    * the name they are imported under (`pkg:x` for `@types/x`).
    */
-  files: string[];
+  files: Array<string>;
 }
 
 export interface TypeOracle {
@@ -78,7 +78,7 @@ export interface TypeOracle {
   checkDirectiveValues?(
     file: string,
     source: string,
-    queries: DirectiveValueQuery[],
+    queries: Array<DirectiveValueQuery>,
   ): Promise<DirectiveValueChecks>;
   /** Tells the oracle which files changed, for incremental builds. */
   update(changes: FileChanges): Promise<void>;
@@ -93,7 +93,7 @@ export interface TypeOracle {
 export interface TypeShape {
   /** The index in `nodes` of the queried type. */
   root: number;
-  nodes: TypeNode[];
+  nodes: Array<TypeNode>;
   /**
    * How the type is built, each construct once, in the order resolution met it: `import`,
    * `package`, `extends`, `intersection`, `union`, `generic` (an instantiation) and
@@ -104,14 +104,14 @@ export interface TypeShape {
    * met and could not evaluate there, such as a `Pick` of a key the object lacks, is listed too,
    * with its span in `unresolved`.
    */
-  construction: string[];
+  construction: Array<string>;
   /**
    * What the shape was read from, besides the query's own file, sorted: files relative to the
    * root, and packages as `pkg:<name>`. Never an absolute path (P8).
    */
-  dependencies: string[];
+  dependencies: Array<string>;
   /** The spans the adapter could not resolve, in the order it met them. */
-  unresolved: UnresolvedType[];
+  unresolved: Array<UnresolvedType>;
 }
 
 export type TypeNode =
@@ -150,7 +150,7 @@ export interface LiteralNode {
 /** A union, flattened: no member is itself a union, and no node appears twice. */
 export interface UnionNode {
   kind: "union";
-  types: number[];
+  types: Array<number>;
 }
 
 export interface ArrayNode {
@@ -161,7 +161,7 @@ export interface ArrayNode {
 
 export interface TupleNode {
   kind: "tuple";
-  elements: TupleElement[];
+  elements: Array<TupleElement>;
   readonly: boolean;
 }
 
@@ -178,13 +178,13 @@ export interface ObjectNode {
   /** The interface or alias that declares this object, when one does. */
   declaration?: DeclarationRef;
   /** The arguments that instantiate a generic declaration, `ListProps<string>`, in order. */
-  typeArguments?: number[];
-  members: ShapeMember[];
+  typeArguments?: Array<number>;
+  members: Array<ShapeMember>;
 }
 
 export interface FunctionNode {
   kind: "function";
-  parameters: FunctionParameter[];
+  parameters: Array<FunctionParameter>;
   returns: number;
 }
 
@@ -236,7 +236,7 @@ export interface ShapeMember {
   /** The member's type as written in `file`, with its span; absent when it has none. */
   typeText?: TypeText;
   /** The type names its type references, each once, in source order. */
-  references: string[];
+  references: Array<string>;
 }
 
 export interface TypeText {

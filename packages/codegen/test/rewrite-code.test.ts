@@ -45,18 +45,18 @@ const step = createBinding("step", "localConst", span(50, 54));
 const save = createBinding("save", "localFn", span(60, 64));
 const emit = createBinding("emit", "emit", span(70, 74));
 const input = createBinding("input", "templateRef", span(80, 85));
-const bindings: Binding[] = [label, count, doubled, timer, step, save, emit, input];
+const bindings: Array<Binding> = [label, count, doubled, timer, step, save, emit, input];
 
 let offset = BASE;
 /** Setup code at a fresh offset: see {@link codeAt}. */
-const code = (text: string, ...targets: CodeTarget[]): Code => {
+const code = (text: string, ...targets: Array<CodeTarget>): Code => {
   const found = codeAt(offset, text, ...targets);
   offset += text.length + 10;
   return found;
 };
 
 /** A component whose setup holds each piece of code as a `const`'s value: an expression. */
-function component(...pieces: Code[]): UfComponent {
+function component(...pieces: Array<Code>): UfComponent {
   const setup = pieces.map((piece, index): SetupItem =>
     createConstItem(bindings[index % bindings.length]!.id, piece, piece.span),
   );
@@ -202,7 +202,7 @@ describe("rewriteCode: writes", () => {
   });
 
   it("gives the rule the target as read, the value rewritten and the write as written", () => {
-    const seen: [string, WriteParts][] = [];
+    const seen: Array<[string, WriteParts]> = [];
     const recorder: RewriteRules = {
       binding: (_, binding) => `${binding.name}()`,
       write: (write, _, parts) => {
@@ -399,7 +399,7 @@ describe("writtenValue", () => {
 });
 
 describe("rewriteCode: emits, APIs, event members and calls", () => {
-  it.each<[string, CodeTarget[], string, string]>([
+  it.each<[string, Array<CodeTarget>, string, string]>([
     [
       'emit("reset")',
       [{ emit: 'emit("reset")', binding: emit, event: "reset" }],
@@ -507,7 +507,7 @@ describe("rewriteCode: emits, APIs, event members and calls", () => {
   });
 
   it("passes the site to every rule", () => {
-    const sites: string[] = [];
+    const sites: Array<string> = [];
     const record = <T>(kind: string, site: RewriteSite, result: T): T => {
       sites.push(`${kind}:${site}`);
       return result;

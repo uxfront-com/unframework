@@ -37,7 +37,7 @@ export interface VisualRunOptions {
   /** The project's root, where `unframework.config.ts` lies. */
   root: string;
   /** The targets to run: every one of the project's by default. The reference always joins. */
-  targets?: readonly TargetName[];
+  targets?: ReadonlyArray<TargetName>;
   /** `live` (the default) or `baseline`. */
   pixels?: "live" | "baseline";
   /** Write the baselines: baseline pixels only, and only in the baseline environment. */
@@ -59,7 +59,7 @@ export interface VisualRunResult {
   /** `<out>/report.json` (absolute), or the diagnostics UF7011 reported. */
   reportPath?: string;
   /** UF7011 for each example that declares props. */
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
 }
 
 /** A usage or configuration error: the CLI exits 2 with its message. */
@@ -99,7 +99,7 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
       `No example under ${root}: an example is a *.example.uf.tsx file with a component that takes no props, such as examples/Buttons.example.uf.tsx.`,
     );
   }
-  const compileErrors = new Map<string, Diagnostic[]>();
+  const compileErrors = new Map<string, Array<Diagnostic>>();
   const diagnostics = await checkExamples(root, examples, compileErrors);
   if (diagnostics.some((each) => each.severity === "error")) {
     return { exitCode: 1, diagnostics };
@@ -232,7 +232,7 @@ type Specs = ReadonlyMap<string, string>;
  * Writes one case per example under `.unframework/specs/`, after removing the last run's: a spec
  * that captures the example, and a `case.json` whose `main` is the example (ADR-0086).
  */
-export function writeSpecs(root: string, examples: readonly Example[]): Specs {
+export function writeSpecs(root: string, examples: ReadonlyArray<Example>): Specs {
   const directory = join(root, SPECS_DIR);
   rmSync(directory, { recursive: true, force: true });
   const browser = fileURLToPath(import.meta.resolve("@unframework.dev/visual/browser"));
@@ -271,10 +271,10 @@ function specifier(from: string, file: string): string {
 async function visualConfig(
   root: string,
   out: string,
-  examples: readonly Example[],
+  examples: ReadonlyArray<Example>,
   specs: Specs,
   pixels: "live" | "baseline",
-): Promise<{ vite: ViteUserConfig; harness: HarnessContext; targets: TargetName[] }> {
+): Promise<{ vite: ViteUserConfig; harness: HarnessContext; targets: Array<TargetName> }> {
   const config = await defineTestConfig({
     root,
     pixels,
@@ -286,7 +286,7 @@ async function visualConfig(
       examples.map((example) => [example.id, { file: example.file, name: example.name }]),
     ),
   };
-  const projects = (config.test?.projects ?? []) as UserWorkspaceConfig[];
+  const projects = (config.test?.projects ?? []) as Array<UserWorkspaceConfig>;
   const browsers = projects
     .filter((project) => nameOf(project).startsWith("browser:"))
     .map((project): UserWorkspaceConfig => {
@@ -330,7 +330,7 @@ function nameOf(project: UserWorkspaceConfig): string {
  * file judges a test after its capture (L8, L13), so a capture that matched does not mean the
  * cell passed.
  */
-export function testErrors(modules: readonly TestModule[], specs: Specs): Map<string, string> {
+export function testErrors(modules: ReadonlyArray<TestModule>, specs: Specs): Map<string, string> {
   const byFile = new Map([...specs].map(([id, spec]) => [resolve(spec), id]));
   const errors = new Map<string, string>();
   for (const module of modules) {

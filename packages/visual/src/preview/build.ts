@@ -43,7 +43,7 @@ export interface BuildPreviewOptions {
   /** The project's root, where `unframework.config.ts` lies. */
   root: string;
   /** The targets to build: every one of the project's by default, in the project's order. */
-  targets?: readonly TargetName[];
+  targets?: ReadonlyArray<TargetName>;
   /** The site's directory, relative to the root: {@link DEFAULT_PREVIEW_OUT} by default. */
   out?: string;
   /** Where a target's compiler stack resolves from, as {@link PreviewOptions.toolchainDirs}. */
@@ -55,9 +55,9 @@ export interface BuiltPreview {
   /** The site's directory (absolute), whose `index.html` is the shell. */
   out: string;
   /** The targets built, in the order the shell shows them. */
-  targets: TargetName[];
+  targets: Array<TargetName>;
   /** The catalogue's warnings: UF7012 on an example's malformed doc comment (ADR-0110). */
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
 }
 
 /**
@@ -111,7 +111,7 @@ async function buildTargets(
   root: string,
   out: string,
   config: ResolvedConfig,
-  targets: readonly TargetName[],
+  targets: ReadonlyArray<TargetName>,
   catalogue: PreviewCatalogue,
   entries: Readonly<Record<string, string>>,
   toolchainDirs: PreviewOptions["toolchainDirs"],
@@ -139,7 +139,7 @@ async function buildTargets(
     // A target with no client runtime: rendered now, since the site has no server to render it.
     const rendered = await renderTargetEntries(server, props);
     const renders: Record<string, StaticRenders[string]> = {};
-    const files: [string, StaticRender][] = [];
+    const files: Array<[string, StaticRender]> = [];
     for (const [index, [entry, { component, ...result }]] of Object.entries(rendered).entries()) {
       const file = `${STATIC_RENDERS_DIR}/${index}.json`;
       renders[entry] = { component, file };

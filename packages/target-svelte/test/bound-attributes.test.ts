@@ -49,7 +49,7 @@ interface Candidate {
   svg: boolean;
 }
 
-function candidates(): Candidate[] {
+function candidates(): Array<Candidate> {
   const found = new Map<string, Candidate>();
   const add = (tag: string, name: string, svg = false) => {
     for (const kind of ["string", "number", "boolean"]) {
@@ -95,7 +95,7 @@ function markup({ tag, name, svg }: Candidate): string {
 const LINES = 3;
 
 /** Type-checks emitted files with svelte-check and returns the names of the failing ones. */
-async function failing(files: ReadonlyMap<string, string>): Promise<string[]> {
+async function failing(files: ReadonlyMap<string, string>): Promise<Array<string>> {
   const results = await toolchain.typecheck([...files.keys()], { toolchainDir, root: repoRoot });
   return [...results]
     .filter(([, messages]) => messages.length > 0)

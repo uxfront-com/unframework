@@ -111,7 +111,7 @@ function ensureHistory(rootDir: string, logger: ReturnType<typeof useLogger>) {
   }
 }
 
-function git(cwd: string, ...args: string[]) {
+function git(cwd: string, ...args: Array<string>) {
   return execFileSync("git", args, {
     cwd,
     encoding: "utf8",

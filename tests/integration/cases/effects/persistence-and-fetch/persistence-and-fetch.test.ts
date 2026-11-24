@@ -14,7 +14,7 @@ import ReadingList from "./ReadingList.uf.tsx";
 
 const SHELF_KEY = "reading-list:shelf";
 
-const CATALOGUE: Record<string, string[]> = {
+const CATALOGUE: Record<string, Array<string>> = {
   all: ["Dubliners", "Dune", "Emma", "SPQR", "The Guns of August"],
   Fiction: ["Dubliners", "Dune", "Emma"],
   History: ["SPQR", "The Guns of August"],
@@ -27,7 +27,7 @@ const CATALOGUE: Record<string, string[]> = {
  * signal aborts first.
  */
 function fakeNetwork() {
-  const aborted: string[] = [];
+  const aborted: Array<string> = [];
   const real = window.fetch;
   window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const href = input instanceof Request ? input.url : input.toString();

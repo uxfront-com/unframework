@@ -46,7 +46,7 @@ vi.mock("../src/targets.ts", async (original) => {
 
 const SEVEN = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
 const ENTRY = new URL("../src/index.ts", import.meta.url).href;
-const directories: string[] = [];
+const directories: Array<string> = [];
 
 afterEach(() => {
   for (const directory of directories.splice(0)) {
@@ -89,7 +89,7 @@ function failure(files: Record<string, string>, file?: string) {
 }
 
 /** The codes and messages of a raw config's diagnostics. */
-async function problems(raw: unknown): Promise<[string, string][]> {
+async function problems(raw: unknown): Promise<Array<[string, string]>> {
   const { config, diagnostics } = await resolveConfig(raw);
   expect(config).toBeUndefined();
   return diagnostics.map(({ code, message }) => [code, message]);

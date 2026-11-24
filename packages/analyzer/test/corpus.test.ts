@@ -37,8 +37,8 @@ const FIXTURES = new URL("./fixtures/cases/", import.meta.url).pathname;
  * The case sources under a directory, relative to `root`, sorted: its `.uf.tsx` sources, and its
  * modules of composables, which a diagnostics case may report in (ADR-0069).
  */
-function sources(root: string, directory = root): string[] {
-  const found: string[] = [];
+function sources(root: string, directory = root): Array<string> {
+  const found: Array<string> = [];
   for (const name of readdirSync(directory)) {
     if (name.startsWith("__") || name.startsWith(".")) {
       continue;
@@ -87,7 +87,7 @@ const AFTER_ANALYSIS: ReadonlySet<string> = new Set([
 const CHECKER_ONLY: ReadonlySet<string> = new Set(["directive-value-type"]);
 
 /** The warnings the corpus's feature cases hold on purpose. */
-const WARNINGS: Readonly<Record<string, readonly string[]>> = {
+const WARNINGS: Readonly<Record<string, ReadonlyArray<string>>> = {
   "jsx/escaping/TemplateTip.uf.tsx": ["UF3011"],
   // Raw HTML warns at every use (ADR-0097).
   "jsx/raw-html/Article.uf.tsx": ["UF3051", "UF3051"],

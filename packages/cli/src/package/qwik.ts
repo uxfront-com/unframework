@@ -22,7 +22,7 @@ const APP_PLUGIN = "vite-plugin-qwik-post";
 
 /** The part of Qwik's optimizer this calls. */
 interface Optimizer {
-  qwikVite: (options: object) => readonly { name: string }[];
+  qwikVite: (options: object) => ReadonlyArray<{ name: string }>;
 }
 
 /**

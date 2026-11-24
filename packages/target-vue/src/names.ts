@@ -78,7 +78,7 @@ export class VueNames {
   /** The owner's own binding names, which its own text's `typeof` queries read. */
   readonly #own: ReadonlySet<string>;
 
-  constructor(component: UfComponent, module: UfModule, typeTexts: readonly TypeText[] = []) {
+  constructor(component: UfComponent, module: UfModule, typeTexts: ReadonlyArray<TypeText> = []) {
     const reserved = sourceNames(component, module);
     // The source reads `nextTick` as the authoring API, which `vue`'s takes the place of: where
     // every use is written `nextTick`, the import keeps the name. No local of that name can be
@@ -304,7 +304,7 @@ export interface ModuleReach {
 export function moduleReach(
   owner: UfComponent,
   module: UfModule,
-  typeTexts: readonly TypeText[] = [],
+  typeTexts: ReadonlyArray<TypeText> = [],
 ): ModuleReach {
   const shadowed = new Set(
     owner.bindings.filter((binding) => scriptScoped(binding.kind)).map((binding) => binding.name),
@@ -400,9 +400,9 @@ function scriptScoped(kind: BindingKind): boolean {
  */
 function ownText(
   owner: UfComponent,
-): { text: string; kind: CodeKind | "type"; bound: readonly string[] }[] {
-  const found: { text: string; kind: CodeKind | "type"; bound: readonly string[] }[] = [];
-  const visit = (node: unknown, bound: readonly string[]): void => {
+): Array<{ text: string; kind: CodeKind | "type"; bound: ReadonlyArray<string> }> {
+  const found: Array<{ text: string; kind: CodeKind | "type"; bound: ReadonlyArray<string> }> = [];
+  const visit = (node: unknown, bound: ReadonlyArray<string>): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
         visit(item, bound);
@@ -476,7 +476,7 @@ export function typeQueries(
   text: string,
   kind: CodeKind | "type",
   bound: Iterable<string> = [],
-): { name: string; start: number; end: number }[] {
+): Array<{ name: string; start: number; end: number }> {
   // Type text parses as the type of an assertion, whose offsets the prefix shifts.
   const prefix = kind === "type" ? "null as " : "";
   let root: unknown;
@@ -492,7 +492,7 @@ export function typeQueries(
   if (Array.isArray(root)) {
     root = { type: "BlockStatement", body: root };
   }
-  const found: { name: string; start: number; end: number }[] = [];
+  const found: Array<{ name: string; start: number; end: number }> = [];
   const visit = (node: unknown, scope: ReadonlySet<string>): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
@@ -552,24 +552,24 @@ const FUNCTIONS: ReadonlySet<string> = new Set([
 ]);
 
 /** The names a node binds over itself: see {@link typeQueries}. */
-function bindings(node: Node): string[] {
-  const names: string[] = [];
+function bindings(node: Node): Array<string> {
+  const names: Array<string> = [];
   // A type parameter is a type, which a `typeof` never reads: only value bindings count.
   if (FUNCTIONS.has(node.type)) {
-    for (const parameter of (node.params as unknown[] | undefined) ?? []) {
+    for (const parameter of (node.params as Array<unknown> | undefined) ?? []) {
       patternNames(parameter, names);
     }
   } else if (node.type === "BlockStatement" || node.type === "StaticBlock") {
-    for (const statement of (node.body as unknown[] | undefined) ?? []) {
+    for (const statement of (node.body as Array<unknown> | undefined) ?? []) {
       declared(statement, names);
     }
   } else if (node.type === "SwitchStatement") {
     // A `switch`'s cases share one block.
-    for (const each of (node.cases as unknown[] | undefined) ?? []) {
+    for (const each of (node.cases as Array<unknown> | undefined) ?? []) {
       if (!isNode(each)) {
         continue;
       }
-      for (const statement of (each.consequent as unknown[] | undefined) ?? []) {
+      for (const statement of (each.consequent as Array<unknown> | undefined) ?? []) {
         declared(statement, names);
       }
     }
@@ -584,12 +584,12 @@ function bindings(node: Node): string[] {
 }
 
 /** The names a statement declares in its block: its variables, its function's or class's name. */
-function declared(statement: unknown, names: string[]): void {
+function declared(statement: unknown, names: Array<string>): void {
   if (!isNode(statement)) {
     return;
   }
   if (statement.type === "VariableDeclaration") {
-    for (const each of (statement.declarations as unknown[] | undefined) ?? []) {
+    for (const each of (statement.declarations as Array<unknown> | undefined) ?? []) {
       if (isNode(each)) {
         patternNames(each.id, names);
       }
@@ -600,7 +600,7 @@ function declared(statement: unknown, names: string[]): void {
 }
 
 /** The names a binding pattern binds: `a`, `{ b, c: d }`, `[e, ...f]`, `g = 1`. */
-function patternNames(pattern: unknown, names: string[]): void {
+function patternNames(pattern: unknown, names: Array<string>): void {
   if (!isNode(pattern)) {
     return;
   }
@@ -617,12 +617,12 @@ function patternNames(pattern: unknown, names: string[]): void {
       patternNames(pattern.argument, names);
       return;
     case "ArrayPattern":
-      for (const element of (pattern.elements as unknown[] | undefined) ?? []) {
+      for (const element of (pattern.elements as Array<unknown> | undefined) ?? []) {
         patternNames(element, names);
       }
       return;
     case "ObjectPattern":
-      for (const property of (pattern.properties as unknown[] | undefined) ?? []) {
+      for (const property of (pattern.properties as Array<unknown> | undefined) ?? []) {
         if (isNode(property)) {
           patternNames(property.type === "RestElement" ? property.argument : property.value, names);
         }

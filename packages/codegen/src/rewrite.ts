@@ -63,7 +63,7 @@ export interface WriteParts {
 /** What a target's `emit` hook receives besides the emit itself. */
 export interface EmitParts {
   /** Each argument with its references rewritten, parenthesised where an argument needs it. */
-  arguments: string[];
+  arguments: Array<string>;
   /** The call as written, with every reference in its arguments respelled. */
   code: string;
 }
@@ -245,13 +245,13 @@ interface Context {
 /** A reference, with the references inside its value or each of its arguments. */
 interface ReferenceNode {
   reference: CodeReference;
-  slots: SlotNode[];
+  slots: Array<SlotNode>;
 }
 
 /** A write's value or an emit's argument, with the references in it. */
 interface SlotNode {
   span: Span;
-  children: ReferenceNode[];
+  children: Array<ReferenceNode>;
 }
 
 function rewrite(
@@ -280,15 +280,15 @@ function rewrite(
  * that follow it inside them (ADR-0045); every other reference stands alone, after the previous
  * one ends.
  */
-function referenceTree({ code, span, refs }: Expression | Code): ReferenceNode[] {
+function referenceTree({ code, span, refs }: Expression | Code): Array<ReferenceNode> {
   let index = 0;
   const fail = (reference: CodeReference, why: string): never => {
     throw new Error(
       `A reference at ${reference.span.start}–${reference.span.end} ${why} the code \`${code}\` at ${span.start}.`,
     );
   };
-  const level = (start: number, end: number): ReferenceNode[] => {
-    const nodes: ReferenceNode[] = [];
+  const level = (start: number, end: number): Array<ReferenceNode> => {
+    const nodes: Array<ReferenceNode> = [];
     let previous = start;
     while (index < refs.length) {
       const reference = refs[index]!;
@@ -329,7 +329,7 @@ function referenceTree({ code, span, refs }: Expression | Code): ReferenceNode[]
 }
 
 /** The spans that hold references of their own: a write's value, an emit's arguments. */
-function slotsOf(reference: CodeReference): readonly Span[] {
+function slotsOf(reference: CodeReference): ReadonlyArray<Span> {
   switch (reference.kind) {
     case "Write":
       return reference.value ? [reference.value] : [];
@@ -352,7 +352,7 @@ function slotsOf(reference: CodeReference): readonly Span[] {
 function spliced(
   text: string,
   offset: number,
-  nodes: readonly ReferenceNode[],
+  nodes: ReadonlyArray<ReferenceNode>,
   context: Context,
 ): string {
   return replaced(
@@ -372,7 +372,7 @@ function spliced(
 function replaced(
   text: string,
   offset: number,
-  edits: readonly (readonly [Span, string])[],
+  edits: ReadonlyArray<readonly [Span, string]>,
 ): string {
   let output: MagicString | undefined;
   for (const [span, code] of edits) {
@@ -435,7 +435,7 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
 
 function spellWrite(
   write: WriteReference,
-  slots: readonly SlotNode[],
+  slots: ReadonlyArray<SlotNode>,
   written: string,
   context: Context,
 ): string {
@@ -477,7 +477,7 @@ function spellWrite(
 
 function spellEmit(
   emit: EmitReference,
-  slots: readonly SlotNode[],
+  slots: ReadonlyArray<SlotNode>,
   written: string,
   context: Context,
 ): string {
@@ -772,7 +772,7 @@ export function collectNames(root: unknown, names: Set<string>): void {
 }
 
 /** The children of a node that hold names, not variables (a member's property, a key, a label). */
-function ignoredNames(node: { type: string }): unknown[] {
+function ignoredNames(node: { type: string }): Array<unknown> {
   const of = node as Record<string, unknown>;
   switch (node.type) {
     case "MemberExpression":

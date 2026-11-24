@@ -23,7 +23,7 @@ export function Field({ label, tabs }: FieldProps) {
   const text = ref("");
   const count = ref(0);
   const agreed = ref(false);
-  const picked = ref<string[]>([]);
+  const picked = ref<Array<string>>([]);
   const input = useTemplateRef<HTMLInputElement>();
   const parent = inject(TabsKey);
   const fallback = inject(TabsKey, tabs ?? { active: ref("a"), select: () => {} });

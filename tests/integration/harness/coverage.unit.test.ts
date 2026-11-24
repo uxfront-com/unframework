@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import { coverageProblems, kindProblems } from "./coverage.ts";
 
 /** Every kind of a record, but `left`. */
-const all = <T extends string>(kinds: readonly T[], left?: string) =>
+const all = <T extends string>(kinds: ReadonlyArray<T>, left?: string) =>
   new Set(kinds.filter((kind) => kind !== left));
 
 /** Features that use every kind of every record, but those `without` names. */

@@ -91,7 +91,7 @@ export default function Icon({ label, note, count, on, xs }: P) {
 }`;
 
 /** What React renders for {@link TITLES}: the first title, then each title in its `<g>`. */
-const titlesHtml = (first: string, ...titles: string[]): string =>
+const titlesHtml = (first: string, ...titles: Array<string>): string =>
   [
     '<svg viewBox="0 0 10 10" role="img">',
     first,
@@ -746,10 +746,10 @@ export default function Note() {
 
 /** Renders a component element on the server, collecting React's console errors. */
 function renderMarkup(element: Parameters<typeof renderToStaticMarkup>[0]) {
-  const errors: string[] = [];
+  const errors: Array<string> = [];
   const spy = vi
     .spyOn(console, "error")
-    .mockImplementation((...args: unknown[]) => void errors.push(format(...args)));
+    .mockImplementation((...args: Array<unknown>) => void errors.push(format(...args)));
   try {
     return { html: renderToStaticMarkup(element), errors };
   } finally {
@@ -1000,7 +1000,7 @@ describe("react output, rendered by React", () => {
   }
 
   /** Emits a source's default export and renders it with React, once per set of props. */
-  async function renderSource(source: string, ...props: object[]) {
+  async function renderSource(source: string, ...props: Array<object>) {
     const module: UfModule = lower(source);
     const emitted = emitComponent(module);
     expect(emitted.reported).toEqual([]);

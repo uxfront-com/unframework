@@ -11,7 +11,7 @@ const VITEST = join(dirname(require.resolve("vitest/package.json")), "vitest.mjs
 
 /** Runs `vitest run <args>` in the integration package and returns its exit status. */
 export function runVitest(
-  args: readonly string[],
+  args: ReadonlyArray<string>,
   env: NodeJS.ProcessEnv,
   stdio: StdioOptions = "inherit",
 ): { status: number; stdout: string } {

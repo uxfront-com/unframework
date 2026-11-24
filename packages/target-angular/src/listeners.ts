@@ -54,7 +54,7 @@ import { bodyStatements, returnsValue } from "./statements.ts";
 export interface HandlerMethod {
   name: string;
   /** Its parameters, as the method declares them: the event (`event: PointerEvent`) when it takes one. */
-  parameters: string[];
+  parameters: Array<string>;
   async: boolean;
   /** The method's body, its references spelled for the class. */
   body: string;
@@ -69,9 +69,9 @@ export interface Listeners {
   /** The whole attribute of each listener with an option: `(ufClickCapture)="…"`. */
   attributes: ReadonlyMap<EventAttribute, string>;
   /** The methods handlers moved to, in document order. */
-  methods: HandlerMethod[];
+  methods: Array<HandlerMethod>;
   /** The directives the listeners with an option use, each once, in document order. */
-  directives: DirectiveSpec[];
+  directives: Array<DirectiveSpec>;
   /** The bindings the template statements read or call by name, which the template must see. */
   reads: ReadonlySet<BindingId>;
   /**
@@ -85,7 +85,7 @@ export interface Listeners {
    * The members that remember the elements a group's once listener ran on: each a
    * `WeakSet<EventTarget>` the template passes to the guard method (`groupStatement`).
    */
-  guards: string[];
+  guards: Array<string>;
   /** The guard method's name, when a group has a once listener. */
   once?: string;
 }
@@ -105,7 +105,7 @@ export function planListeners(
   const statements = new Map<EventAttribute, string>();
   const outputs = new Map<ListenerAttribute, string>();
   const attributes = new Map<EventAttribute, string>();
-  const methods: HandlerMethod[] = [];
+  const methods: Array<HandlerMethod> = [];
   const directives = new Map<string, DirectiveSpec>();
   const reads = new Set<BindingId>();
   const members = new Set<BindingId>();
@@ -182,7 +182,7 @@ export function planListeners(
             ? {
                 kind: "Element",
                 tag: node.candidates[0].tag,
-                attributes: node.attributes as Attribute[],
+                attributes: node.attributes as Array<Attribute>,
                 children: node.children,
                 span: node.span,
               }
@@ -289,7 +289,7 @@ export function planListeners(
  * output emits one value, nothing for an event without members, the value for one required
  * member, and the tuple of the arguments otherwise.
  */
-function payloadArguments(event: ApiEvent): string[] {
+function payloadArguments(event: ApiEvent): Array<string> {
   const [only, ...more] = event.parameters;
   if (only === undefined) {
     return [];
@@ -312,7 +312,7 @@ function outputStatement(
   plan: Plan,
   attribute: ListenerAttribute,
   event: ApiEvent,
-  methods: HandlerMethod[],
+  methods: Array<HandlerMethod>,
   collected: StatementReads,
 ): string {
   const payload = payloadArguments(event);
@@ -391,7 +391,7 @@ function listenerStatement(
   plan: Plan,
   attribute: EventAttribute,
   methodName: () => string,
-  methods: HandlerMethod[],
+  methods: Array<HandlerMethod>,
   collected: StatementReads,
 ): Statement {
   const { reads, nextTick } = collected;
@@ -442,7 +442,7 @@ function chainStatement(
   plan: Plan,
   attribute: EventAttribute,
   name: string,
-  methods: HandlerMethod[],
+  methods: Array<HandlerMethod>,
   collected: StatementReads,
 ): string {
   const { handler, event } = attribute;
@@ -641,7 +641,7 @@ function templateStatement(
   fn: FunctionCode,
   { reads, members, globals, tested }: StatementReads,
   /** What each parameter reads in the template: the event, `$event`, by default. */
-  payload: readonly string[] = ["$event"],
+  payload: ReadonlyArray<string> = ["$event"],
 ): Statement | undefined {
   const call = singleCall(fn.body, fn.expression === true);
   if (!call) {
@@ -725,7 +725,7 @@ function singleCall(
   | {
       code: string;
       span: { start: number; end: number };
-      arguments: AstNode[];
+      arguments: Array<AstNode>;
       /** The setup function it calls, or none for an `emit`. */
       callee?: BindingId;
     }
@@ -737,7 +737,9 @@ function singleCall(
     const { statements } = parseStatementsSource(body.code);
     const block = statements[0] as unknown as AstNode | undefined;
     const inner =
-      statements.length === 1 && block?.type === "BlockStatement" ? (block.body as AstNode[]) : [];
+      statements.length === 1 && block?.type === "BlockStatement"
+        ? (block.body as Array<AstNode>)
+        : [];
     const [only] = inner;
     if (inner.length !== 1 || only?.type !== "ExpressionStatement") {
       return undefined;
@@ -748,7 +750,7 @@ function singleCall(
     return undefined;
   }
   const callee = node.callee as AstNode;
-  const args = node.arguments as AstNode[];
+  const args = node.arguments as Array<AstNode>;
   if (callee.type !== "Identifier" || args.some((arg) => arg.type === "SpreadElement")) {
     return undefined;
   }
@@ -791,7 +793,7 @@ function isSimple(node: AstNode): boolean {
         ["!", "-", "+"].includes(node.operator as string) && isSimple(node.argument as AstNode)
       );
     case "ArrayExpression":
-      return (node.elements as (AstNode | null)[]).every(
+      return (node.elements as Array<AstNode | null>).every(
         (element) => element !== null && element.type !== "SpreadElement" && isSimple(element),
       );
     default:
@@ -890,7 +892,7 @@ function simpleRead(plan: Plan, reference: CodeReference): boolean {
 
 /** An expression with every read of the name `from` renamed `to`. */
 function renamed(expression: string, from: string, to: string): string {
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
       for (const item of value) {
@@ -952,8 +954,8 @@ function renamed(expression: string, from: string, to: string): string {
 function orderedGroups(
   element: ElementNode,
   writes: ReadonlyMap<EventAttribute, string>,
-): Map<EventAttribute, EventAttribute[]> {
-  const byEvent = new Map<string, EventAttribute[]>();
+): Map<EventAttribute, Array<EventAttribute>> {
+  const byEvent = new Map<string, Array<EventAttribute>>();
   for (const attribute of element.attributes) {
     if (attribute.kind !== "Event" || attribute.capture) {
       continue;
@@ -962,7 +964,7 @@ function orderedGroups(
     group.push(attribute);
     byEvent.set(attribute.event, group);
   }
-  const groups = new Map<EventAttribute, EventAttribute[]>();
+  const groups = new Map<EventAttribute, Array<EventAttribute>>();
   for (const group of byEvent.values()) {
     const [only] = group;
     const option = only !== undefined && (only.once || only.passive);
@@ -978,7 +980,7 @@ function orderedGroups(
 
 /** What a group's listener adds to the class and the template beside it. */
 interface GroupContext {
-  methods: HandlerMethod[];
+  methods: Array<HandlerMethod>;
   collected: StatementReads;
   /** The guard method's name, claimed on first use (`once`). */
   once: () => string;
@@ -1003,7 +1005,7 @@ interface GroupContext {
 function groupStatement(
   plan: Plan,
   element: ElementNode,
-  group: readonly EventAttribute[],
+  group: ReadonlyArray<EventAttribute>,
   context: GroupContext,
 ): string {
   const parts = group.map((attribute) => {

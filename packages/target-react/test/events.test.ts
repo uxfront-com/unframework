@@ -35,8 +35,8 @@ const types = readFileSync(
 );
 
 /** react-dom's registrations: each React prop and the DOM events it listens to. */
-function registrations(): Map<string, string[]> {
-  const found = new Map<string, string[]>();
+function registrations(): Map<string, Array<string>> {
+  const found = new Map<string, Array<string>>();
   const simple = /simpleEventPluginEvents =\s*"([^"]+)"\.split/.exec(reactDom)![1]!.split(" ");
   simple.push(
     ...[...reactDom.matchAll(/simpleEventPluginEvents\.push\("(\w+)"\)/g)].map((m) => m[1]!),

@@ -131,7 +131,7 @@ function ${name}(select: HTMLSelectElement): string[] {
 /** The native controls' `v-model`s of a template, and what they need from the class and the file. */
 export interface Models {
   /** The attributes each `v-model` writes, by its IR attribute. */
-  attributes: ReadonlyMap<ModelAttribute, PrintedAttribute[]>;
+  attributes: ReadonlyMap<ModelAttribute, Array<PrintedAttribute>>;
   /**
    * The model's write that runs first in the template listener of an author's listener of the
    * same element and event, by that listener's attribute (`writeFirst`).
@@ -147,9 +147,9 @@ export interface Models {
   /** The member that tells the server's render apart, for a select's options (`onServer`). */
   server?: string;
   /** The helpers the template calls, each once. */
-  helpers: ModelHelper[];
+  helpers: Array<ModelHelper>;
   /** The files' functions only the helpers call (`looseToNumber`), declared in the file. */
-  support: ModelHelper[];
+  support: Array<ModelHelper>;
   /** The `classNames` helper's name, where a class part may be an array or an object. */
   classNames?: string;
   /** The `styleObject` helper's name, where a style bound to a value is merged (ADR-0065). */
@@ -163,7 +163,7 @@ export interface Models {
 
 /** Plans every native control's `v-model` of the component's template. */
 export function planModels(plan: Plan): Models {
-  const attributes = new Map<ModelAttribute, PrintedAttribute[]>();
+  const attributes = new Map<ModelAttribute, Array<PrintedAttribute>>();
   const writes = new Map<EventAttribute, string>();
   const options = new Map<Attribute, string>();
   const helpers = new Map<keyof typeof HELPERS, ModelHelper>();
@@ -227,7 +227,7 @@ export function planModels(plan: Plan): Models {
       }
       return JSON.stringify(value?.kind === "Static" && value.value !== true ? value.value : "on");
     };
-    const printed: PrintedAttribute[] = [];
+    const printed: Array<PrintedAttribute> = [];
     const bind = (name: string, code: string) =>
       printed.push({ name, text: `${name}="${angularCode(code, "attribute")}"` });
     const listen = (event: string, statement: string) => {

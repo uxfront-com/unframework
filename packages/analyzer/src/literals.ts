@@ -19,9 +19,9 @@ export interface CodePointEscape {
 /** A literal read as pieces, offsets in the source. */
 export interface LiteralReading {
   /** Each character of the value, with the raw text that wrote it (`reference` for escapes). */
-  pieces: Piece[];
+  pieces: Array<Piece>;
   /** The `\u{…}` escapes. */
-  codePointEscapes: CodePointEscape[];
+  codePointEscapes: Array<CodePointEscape>;
 }
 
 const SIMPLE_ESCAPES: ReadonlyMap<string, string> = new Map([
@@ -40,8 +40,8 @@ const SIMPLE_ESCAPES: ReadonlyMap<string, string> = new Map([
  * a template, a raw CR or CRLF reads as LF, as the language's cooked value does.
  */
 export function readLiteral(raw: string, offset: number, template: boolean): LiteralReading {
-  const pieces: Piece[] = [];
-  const codePointEscapes: CodePointEscape[] = [];
+  const pieces: Array<Piece> = [];
+  const codePointEscapes: Array<CodePointEscape> = [];
   const push = (value: string, start: number, end: number, reference: boolean) => {
     pieces.push({ value, start: offset + start, end: offset + end, reference });
   };
@@ -106,7 +106,7 @@ export function readLiteral(raw: string, offset: number, template: boolean): Lit
 export type StaticString = AST.StringLiteral | AST.TemplateLiteral;
 
 /** The pieces of a static string's value, with the source text that wrote each. */
-export function piecesOf(node: StaticString, source: string): Piece[] {
+export function piecesOf(node: StaticString, source: string): Array<Piece> {
   if (node.type === "Literal") {
     return readLiteral(source.slice(node.start + 1, node.end - 1), node.start + 1, false).pieces;
   }

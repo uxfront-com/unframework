@@ -21,7 +21,7 @@ export interface SyntaxReport {
   span: Span;
   message: string;
   help: string | undefined;
-  fixes?: Fix[];
+  fixes?: Array<Fix>;
 }
 
 /**
@@ -77,10 +77,10 @@ function textToken(error: ParseError, source: string, at = error.span.start): st
  * the rewrite only moves the error, so it is not offered. Only the parse is checked: a syntax
  * error stops the analysis, so what the analysis reports after the rewrite was there before.
  */
-function textRewrite(error: ParseError, parsed: ParsedModule): TextEdit[] | undefined {
+function textRewrite(error: ParseError, parsed: ParsedModule): Array<TextEdit> | undefined {
   const { file, source } = parsed;
   const expected = parsed.errors.filter((other) => other !== error).map((other) => key(other));
-  const edits: TextEdit[] = [];
+  const edits: Array<TextEdit> = [];
   let from = error.span.start;
   for (;;) {
     let end = from;
@@ -118,7 +118,7 @@ function textRewrite(error: ParseError, parsed: ParsedModule): TextEdit[] | unde
 }
 
 /** An error as compared before and after the rewrite: its message and its spans in the source. */
-function key(error: ParseError, edits: readonly TextEdit[] = []): string {
+function key(error: ParseError, edits: ReadonlyArray<TextEdit> = []): string {
   const spans = error.labels.map(
     ({ span }) => `${original(span.start, edits)}-${original(span.end, edits)}`,
   );
@@ -126,7 +126,7 @@ function key(error: ParseError, edits: readonly TextEdit[] = []): string {
 }
 
 /** The offset in the source of an offset in it after `edits` (in source order) are applied. */
-function original(offset: number, edits: readonly TextEdit[]): number {
+function original(offset: number, edits: ReadonlyArray<TextEdit>): number {
   let shift = 0;
   for (const edit of edits) {
     const start = edit.span.start + shift;

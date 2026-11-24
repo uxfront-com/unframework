@@ -44,7 +44,7 @@ function Counter(rawProps: CounterProps): JSX.Element {
   return root;
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -64,7 +64,7 @@ afterEach(async () => {
 });
 
 it("passes the test's listeners as event props, and keeps them across a rerender", async () => {
-  const changes: unknown[][] = [];
+  const changes: Array<Array<unknown>> = [];
   mounted = await mount(Counter, container, {
     on: { change: (...args) => void changes.push(args) },
   });

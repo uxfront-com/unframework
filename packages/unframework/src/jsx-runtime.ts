@@ -37,7 +37,7 @@ export interface TypedComponent {
 /** One child of a JSX element. Slot functions and `.map` callbacks return these. */
 export type Child = JSX.Element | string | number | bigint | boolean | null | undefined;
 /** What a JSX element accepts as children: a child, or (nested) arrays of children. */
-export type Children = Child | readonly Children[];
+export type Children = Child | ReadonlyArray<Children>;
 
 /**
  * The consumer side of named and scoped slots: `<Card>{{ default: () => …, title: () => … }}</Card>`.
@@ -229,7 +229,7 @@ export interface ComponentAttributes extends NativeAttributes {
   "v-model"?: unknown;
   [model: `v-model:${string}`]: unknown;
   /** `onChange={…}`: an event declared with `defineEmits`, or a listener that falls through. */
-  [event: `on${Capitalize<string>}`]: ((...payload: any[]) => unknown) | undefined;
+  [event: `on${Capitalize<string>}`]: ((...payload: Array<any>) => unknown) | undefined;
 }
 
 export declare namespace JSX {

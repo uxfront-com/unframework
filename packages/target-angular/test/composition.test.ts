@@ -41,7 +41,7 @@ const composedOf = (name: string) =>
 /** What the emitter reports for each component of a source, with the source text at its span. */
 function reportedFor(source: string) {
   const module = lower(source);
-  const reported: Parameters<EmitContext["report"]>[0][] = [];
+  const reported: Array<Parameters<EmitContext["report"]>[0]> = [];
   for (const component of module.components) {
     target.emit(component, {
       module,
@@ -405,7 +405,7 @@ export default function Toolbar() {
       "./a/Button.uf.tsx": button("A"),
       "./b/Button.uf.tsx": button("B"),
     });
-    const reported: Parameters<EmitContext["report"]>[0][] = [];
+    const reported: Array<Parameters<EmitContext["report"]>[0]> = [];
     target.emit(module.components[0]!, {
       module,
       options: undefined,

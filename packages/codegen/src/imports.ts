@@ -9,7 +9,7 @@ interface ModuleImports {
   defaultName?: string;
   names: Map<string, { local: string; type: boolean }>;
   /** Further local names of a named import the source binds twice (`{ AKey as A, AKey as B }`). */
-  aliases: { name: string; local: string; type: boolean }[];
+  aliases: Array<{ name: string; local: string; type: boolean }>;
   sideEffect: boolean;
 }
 
@@ -27,7 +27,7 @@ interface ModuleImports {
 export class ImportSet {
   readonly #modules = new Map<string, ModuleImports>();
   /** The pass-through imports, by module, in the order added (`addPassThrough`). */
-  readonly #passThrough = new Map<string, { imported: string; local: string }[]>();
+  readonly #passThrough = new Map<string, Array<{ imported: string; local: string }>>();
   /** The output file's names: imports, reserved source names and claimed locals. */
   readonly scope: NameScope;
 
@@ -49,7 +49,7 @@ export class ImportSet {
   }
 
   /** Marks names as taken, as they are: see {@link NameScope.reserve}. */
-  reserve(...names: string[]): void {
+  reserve(...names: Array<string>): void {
     this.scope.reserve(...names);
   }
 
@@ -137,7 +137,7 @@ export class ImportSet {
   }
 
   /** The import declarations, sorted by module and name, then the pass-through ones in order. */
-  toDeclarations(): AST.ImportDeclaration[] {
+  toDeclarations(): Array<AST.ImportDeclaration> {
     const passThrough = [...this.#passThrough].map(([source, names]) =>
       importDeclaration(
         source,
@@ -147,10 +147,10 @@ export class ImportSet {
     return [...this.#sorted(), ...passThrough];
   }
 
-  #sorted(): AST.ImportDeclaration[] {
+  #sorted(): Array<AST.ImportDeclaration> {
     return [...this.#modules.keys()].toSorted().map((source) => {
       const entry = this.#modules.get(source)!;
-      const specifiers: AST.ImportDeclarationSpecifier[] = [];
+      const specifiers: Array<AST.ImportDeclarationSpecifier> = [];
       if (entry.defaultName) {
         specifiers.push(importDefaultSpecifier(entry.defaultName));
       }
@@ -176,7 +176,7 @@ export class ImportSet {
 export interface PassThroughUse {
   specifier: string;
   /** The names the template reads, by the name the module exports and the source's local. */
-  names: { imported: string; local: string }[];
+  names: Array<{ imported: string; local: string }>;
 }
 
 /**
@@ -185,7 +185,10 @@ export interface PassThroughUse {
  * component's template calls, by the name the source binds, which the template reads as written.
  * The plugin that registers each module resolves it.
  */
-export function passThroughImports(component: UfComponent, module: UfModule): PassThroughUse[] {
+export function passThroughImports(
+  component: UfComponent,
+  module: UfModule,
+): Array<PassThroughUse> {
   const read = new Set<string>();
   for (const { expression } of expressionsOf(component)) {
     for (const reference of expression.refs) {
@@ -194,7 +197,7 @@ export function passThroughImports(component: UfComponent, module: UfModule): Pa
       }
     }
   }
-  return (module.passThroughImports ?? []).flatMap((entry): PassThroughUse[] => {
+  return (module.passThroughImports ?? []).flatMap((entry): Array<PassThroughUse> => {
     const names = entry.names
       .filter(({ local }) => read.has(local))
       .map(({ imported, local }) => ({ imported, local }));
@@ -247,8 +250,8 @@ export function childImports(
   component: UfComponent,
   module: UfModule,
   file: (name: string) => string,
-): ChildImport[] {
-  const used: string[] = [];
+): Array<ChildImport> {
+  const used: Array<string> = [];
   walk(component.render, {
     enter(node) {
       const names =
@@ -307,8 +310,8 @@ export function childImports(
  * default export, else its first exported component, else its first.
  */
 export function keyOwner(
-  components: readonly { name: string; export?: "default" | "named" | "local" }[],
-  exports: readonly { kind: "default" | "named"; local: string }[] = [],
+  components: ReadonlyArray<{ name: string; export?: "default" | "named" | "local" }>,
+  exports: ReadonlyArray<{ kind: "default" | "named"; local: string }> = [],
 ): string | undefined {
   const exported = exports.find((entry) => entry.kind === "default") ?? exports[0];
   if (exported) {
@@ -343,8 +346,8 @@ export function keyImports(
   component: UfComponent,
   module: UfModule,
   file: (name: string) => string,
-): KeyImport[] {
-  const used: string[] = [];
+): Array<KeyImport> {
+  const used: Array<string> = [];
   for (const item of component.setup) {
     if ((item.kind === "Provide" || item.kind === "Inject") && !used.includes(item.key)) {
       used.push(item.key);

@@ -506,7 +506,7 @@ export function cssValueProblem(value: string): string | undefined {
   if (value.trim() !== value) {
     return "must not start or end with whitespace";
   }
-  const closing: string[] = [];
+  const closing: Array<string> = [];
   let quote: string | undefined;
   for (let index = 0; index < value.length; index++) {
     const character = value[index]!;

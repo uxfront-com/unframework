@@ -54,7 +54,7 @@ export interface FallthroughPlan {
    * What `splitProps` takes out of the others: the names the component declares, and what the
    * target merges itself. Empty where the target spreads the props as they are.
    */
-  split: string[];
+  split: Array<string>;
   /** The target's own listeners that call the consumer's after them, with the prop of each. */
   composed: ReadonlyMap<EventAttribute, string>;
   /** The event props of the target's `v-model` that call the consumer's after them. */
@@ -104,7 +104,7 @@ function dynamicRoot(component: UfComponent): DynamicNode | undefined {
 }
 
 /** The tags a `<component is>` over tags may render. */
-function dynamicTags(node: DynamicNode): string[] {
+function dynamicTags(node: DynamicNode): Array<string> {
   return node.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
 }
 
@@ -123,7 +123,7 @@ export function planFallthrough(
   const exposes = Boolean(component.exposes);
   const declared = declaredNames(component);
   const exposedRef = exposes ? [`ref?: (api: ${names.exposed()}) => void`] : [];
-  const omitted = (base: string, extra: readonly string[], members: readonly string[]) => {
+  const omitted = (base: string, extra: ReadonlyArray<string>, members: ReadonlyArray<string>) => {
     // A listener prop of no DOM event (`onPick`) is no attribute an element's type declares; a
     // root component's may declare it.
     const element = base.endsWith('">');
@@ -260,7 +260,7 @@ export function planFallthrough(
 }
 
 /** The exposed `ref`'s type alone, or none. */
-function exposedType(members: readonly string[]): string | undefined {
+function exposedType(members: ReadonlyArray<string>): string | undefined {
   return members.length ? `{ ${members.join("; ")} }` : undefined;
 }
 
@@ -308,7 +308,7 @@ function handlerType(base: string, prop: string): string {
  * The names a component declares, which never fall through: its props, its events' listeners
  * (`onPick`), its slots (`children`, `title`) and its models' value and listener.
  */
-export function declaredNames(component: UfComponent): string[] {
+export function declaredNames(component: UfComponent): Array<string> {
   return [
     ...component.props.map((prop) => prop.name),
     ...(component.emits?.events ?? []).map((event) => eventProp(event.name)),
@@ -348,8 +348,8 @@ export function restElement(component: UfComponent): ElementNode | undefined {
 }
 
 /** What the target merges with the consumer's itself: its `class` and its `style`. */
-function mergedNames(target: ElementNode | ComponentNode | DynamicNode): string[] {
-  const attributes: readonly { kind: string; name?: string; keys?: { name: string }[] }[] =
+function mergedNames(target: ElementNode | ComponentNode | DynamicNode): Array<string> {
+  const attributes: ReadonlyArray<{ kind: string; name?: string; keys?: Array<{ name: string }> }> =
     target.attributes;
   const has = (name: "class" | "style") =>
     attributes.some(
@@ -370,9 +370,9 @@ function mergedNames(target: ElementNode | ComponentNode | DynamicNode): string[
 function composedListeners(
   target: ElementNode | ComponentNode | DynamicNode,
   component: UfComponent,
-  declared: readonly string[],
+  declared: ReadonlyArray<string>,
 ): Map<EventAttribute, string> {
-  const attributes: readonly (Attribute | ComponentAttribute)[] = target.attributes;
+  const attributes: ReadonlyArray<Attribute | ComponentAttribute> = target.attributes;
   const listeners =
     target.kind === "Element"
       ? eventProps(target, component)
@@ -391,8 +391,8 @@ function composedListeners(
 /** The event props a target's `v-model` writes (src/models.ts), which the consumer's would replace. */
 function modelEvents(
   target: ElementNode | ComponentNode | DynamicNode,
-  declared: readonly string[],
-): string[] {
+  declared: ReadonlyArray<string>,
+): Array<string> {
   if (target.kind !== "Element") {
     return [];
   }
@@ -411,13 +411,13 @@ function modelEvent(attribute: ModelAttribute): string | undefined {
 }
 
 /** The names a root component's own attributes and fills set on it: not its consumer's to pass. */
-function passedNames(node: ComponentNode): string[] {
+function passedNames(node: ComponentNode): Array<string> {
   const fills = node.fills.map((fill) => (fill.slot === "default" ? "children" : fill.slot));
   return [...fills, ...attributeNames(node)];
 }
 
 /** The names a root component's own attributes set on it. */
-function attributeNames(node: ComponentNode): string[] {
+function attributeNames(node: ComponentNode): Array<string> {
   return node.attributes.flatMap((attribute) => {
     switch (attribute.kind) {
       case "Prop":

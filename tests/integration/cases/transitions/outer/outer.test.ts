@@ -10,7 +10,7 @@ import { expect } from "vitest";
 import Drawer from "./Drawer.uf.tsx";
 
 /** Records every class the element carries from now on, until `stop`. */
-function watchClasses(element: Element): { stop: () => string[] } {
+function watchClasses(element: Element): { stop: () => Array<string> } {
   const seen = new Set(element.classList);
   const observer = new MutationObserver((records) => {
     for (const record of records) {

@@ -23,7 +23,7 @@ function spyOnConsole(): void {
   }
 }
 
-function consoleCalls(): string[] {
+function consoleCalls(): Array<string> {
   return LEVELS.flatMap((level) =>
     vi.mocked(console[level]).mock.calls.map((args) => `${level}: ${args.join(" ")}`),
   );

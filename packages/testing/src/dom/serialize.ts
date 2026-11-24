@@ -97,12 +97,12 @@ const escapeAttribute = (value: string) => value.replace(/&/g, "&amp;").replace(
  *   `<select>`'s value;
  * - `uf:focused=""` on the element that has the focus (see `focusState`).
  */
-function formState(element: Element): [string, string][] {
+function formState(element: Element): Array<[string, string]> {
   return [...controlState(element), ...focusState(element)];
 }
 
 /** The form-control state of `formState`, without the focus. */
-function controlState(element: Element): [string, string][] {
+function controlState(element: Element): Array<[string, string]> {
   if (isHtml(element, "input")) {
     if (element.type === "checkbox") {
       return [
@@ -131,7 +131,7 @@ function controlState(element: Element): [string, string][] {
  * target (ADR-0050). It is read whether the page has the focus or not (`hasFocus()` depends on
  * the frame's), and never on the body, which holds the focus when nothing else does.
  */
-function focusState(element: Element): [string, string][] {
+function focusState(element: Element): Array<[string, string]> {
   const document = element.ownerDocument;
   return element === document.activeElement && element !== document.body
     ? [["uf:focused", ""]]
@@ -144,7 +144,7 @@ function focusState(element: Element): [string, string][] {
  * `el.style.margin = "0"`, which reads back as `margin: 0px;`) and the same style set as an
  * attribute (`margin:0`) compare equal.
  */
-function attributesOf(element: Element): [string, string][] {
+function attributesOf(element: Element): Array<[string, string]> {
   return Array.from(element.attributes, (attribute): [string, string] => [
     attribute.name,
     attribute.name === "style" && hasStyle(element) ? element.style.cssText : attribute.value,
@@ -234,7 +234,7 @@ export function normalizeDom(root: Element, options: NormalizeOptions = {}): str
 export function normalizeDomWithIds(
   root: Element,
   options: NormalizeOptions = {},
-  teleported: readonly Element[] = [],
+  teleported: ReadonlyArray<Element> = [],
 ): { html: string; ids: Map<string, string> } {
   checkOptions(options);
   const markup = teleported
@@ -250,7 +250,7 @@ export function normalizeDomWithIds(
     );
   }
   let mismatch = compareItems(holderOf(root).childNodes, own, "");
-  for (const [index, marker] of (markers as TreeElement[]).entries()) {
+  for (const [index, marker] of (markers as Array<TreeElement>).entries()) {
     // A box of its own in `body`, as the teleported element is.
     recordComputedLayout(marker, TELEPORTED_LAYOUT);
     mismatch ??= compareItems([teleported[index]!], childrenOf(marker), TELEPORTED);
@@ -274,8 +274,8 @@ type Item<E> = { element: E } | { text: string } | { other: string };
 function itemsOf<N, E extends N>(
   children: Iterable<N>,
   kind: (node: N) => { element: E } | { text: string } | { other: string },
-): Item<E>[] {
-  const items: Item<E>[] = [];
+): Array<Item<E>> {
+  const items: Array<Item<E>> = [];
   for (const child of children) {
     const item = kind(child);
     const last = items.at(-1);

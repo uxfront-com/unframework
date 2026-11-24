@@ -21,7 +21,7 @@ const ALIAS = /^export \{ ([\w$]+) as ([\w$]+) \};$/gm;
  * The barrel and the slot directives of the components it exports. A consumer imports the directive
  * that fills a named slot, and the format's one entry point is all a consumer can reach.
  */
-function entryPoint(files: readonly OutputFile[]): string {
+function entryPoint(files: ReadonlyArray<OutputFile>): string {
   const barrel = files.find(({ path }) => path === "index.ts")?.contents ?? "";
   const directives = files.flatMap(({ path, contents }) => {
     const specifier = JSON.stringify(`./${path.replace(/\.ts$/, "")}`);

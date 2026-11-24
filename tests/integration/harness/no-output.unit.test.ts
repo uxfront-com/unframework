@@ -239,7 +239,7 @@ describe("standInCases", () => {
 
 describe("a test run against a stand-in", () => {
   const cause = "angular cannot compile this case yet (fixture).";
-  const subject = (quarantine: readonly QuarantineEntry[] = []) => ({
+  const subject = (quarantine: ReadonlyArray<QuarantineEntry> = []) => ({
     case: "basics/clean",
     target: "angular",
     quarantine,

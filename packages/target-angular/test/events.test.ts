@@ -46,7 +46,7 @@ export default class Counter {
 `;
 
 /** The events as the IR declares them, which the adapter reads the payloads' shapes from. */
-const EVENTS: MountEvent[] = [
+const EVENTS: Array<MountEvent> = [
   { name: "change", optional: [false] },
   { name: "closed", optional: [] },
   { name: "moved", optional: [false, false] },
@@ -85,7 +85,7 @@ afterAll(() => {
   removeScratch();
 });
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -112,9 +112,9 @@ function click(): void {
 }
 
 it("binds each listener to its event's output and gives the payload back by its shape", async () => {
-  const calls: unknown[][] = [];
+  const calls: Array<Array<unknown>> = [];
   const on = Object.fromEntries(
-    EVENTS.map(({ name }) => [name, (...args: unknown[]) => void calls.push([name, ...args])]),
+    EVENTS.map(({ name }) => [name, (...args: Array<unknown>) => void calls.push([name, ...args])]),
   );
   mounted = await mount(Counter, container, { on, events: EVENTS });
   click();

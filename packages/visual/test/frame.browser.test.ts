@@ -10,7 +10,7 @@ import { EMBED_MESSAGE, STATIC_RENDER_MESSAGE } from "../src/preview/protocol.ts
 import type { FrameOptions } from "../src/preview/protocol.ts";
 
 const PAGE = location.pathname + location.search;
-const GROUPS: ExampleControlGroup[] = [
+const GROUPS: Array<ExampleControlGroup> = [
   {
     component: "src/Button",
     name: "Button",
@@ -43,8 +43,8 @@ function framePage(query: string): void {
 
 /** What each call of the mount and of its rerender saw. */
 interface Calls {
-  mounts: { theme: string | undefined; scheme: string; panel: boolean; props: unknown }[];
-  rerenders: unknown[];
+  mounts: Array<{ theme: string | undefined; scheme: string; panel: boolean; props: unknown }>;
+  rerenders: Array<unknown>;
 }
 
 function frameOptions(calls: Calls, fail?: (props: unknown) => boolean): FrameOptions {
@@ -185,7 +185,7 @@ describe("startFrame, standalone with an embed's options", () => {
     const html = document.documentElement;
     const post = (data: unknown, source: Window = window.parent) =>
       window.dispatchEvent(new MessageEvent("message", { data, source }));
-    const ignored: [unknown, Window?][] = [
+    const ignored: Array<[unknown, Window?]> = [
       [{ type: EMBED_MESSAGE, kind: "theme", theme: "dark" }, window],
       [{ type: EMBED_MESSAGE, kind: "theme", theme: "blue" }],
       [{ type: EMBED_MESSAGE, kind: "theme", theme: "dark", extra: 1 }],

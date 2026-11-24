@@ -107,7 +107,7 @@ interface Library {
 
 const asWritten = (_namespace: Namespace, name: string): string => name;
 
-const LIBRARIES: readonly Library[] = [
+const LIBRARIES: ReadonlyArray<Library> = [
   // The authoring types: what the source itself is checked against (Vue's, vendored).
   { name: "Authoring", elements: "AuthoringElements", key: asWritten },
   { name: "Vue", elements: "VueElements", key: asWritten },
@@ -164,7 +164,7 @@ const cache = probeCache(
 );
 
 /** The authoring types' sources, which the probe imports, with their names, in name order. */
-function authoringSources(): string[] {
+function authoringSources(): Array<string> {
   const directory = dirname(AUTHORING);
   return readdirSync(directory, { recursive: true, encoding: "utf8" })
     .toSorted()
@@ -175,7 +175,7 @@ function authoringSources(): string[] {
 }
 
 /** Each check's verdict: whether the library accepts the value, or declares nothing. */
-function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing")[] {
+function verdicts(checks: ReadonlyArray<Check>): Array<"accepted" | "rejected" | "missing"> {
   const vue = packageFolder("packages/target-vue", "vue");
   const svelte = packageFolder("packages/target-svelte", "svelte");
   const paths = {
@@ -242,7 +242,12 @@ function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing
 const TSC_FLAGS = ["--pretty", "false"];
 
 /** Runs `tsc` over the probe, and reads each check's verdict digit from the error it reports. */
-function runProbe(checks: readonly Check[], probe: string, tsconfig: string, tsc: string): string {
+function runProbe(
+  checks: ReadonlyArray<Check>,
+  probe: string,
+  tsconfig: string,
+  tsc: string,
+): string {
   writeFileSync(join(folder, "tsconfig.json"), tsconfig);
   writeFileSync(join(folder, "probe.ts"), probe);
   const result = spawnSync(
@@ -254,7 +259,7 @@ function runProbe(checks: readonly Check[], probe: string, tsconfig: string, tsc
     throw new Error(`could not start tsc: ${result.error.message}`);
   }
   const found = new Map<number, string>();
-  const unexpected: string[] = [];
+  const unexpected: Array<string> = [];
   for (const line of `${result.stdout}${result.stderr}`.split("\n")) {
     if (!line.trim()) {
       continue;
@@ -292,8 +297,8 @@ interface Pair {
  * Every attribute of every element a component can render, but `class` and `style`, which have
  * forms of their own; with whether the analyser accepts its name.
  */
-function pairs(): (Pair & { readonly named: boolean })[] {
-  const found: (Pair & { readonly named: boolean })[] = [];
+function pairs(): Array<Pair & { readonly named: boolean }> {
+  const found: Array<Pair & { readonly named: boolean }> = [];
   const add = (namespace: Namespace, tag: string, names: Iterable<string>) => {
     for (const name of new Set(names)) {
       if (name === "class" || name === "style") {
@@ -326,7 +331,7 @@ function pairs(): (Pair & { readonly named: boolean })[] {
   return found;
 }
 
-const tokensType = (tokens: readonly string[]): string =>
+const tokensType = (tokens: ReadonlyArray<string>): string =>
   tokens.map((token) => JSON.stringify(token)).join(" | ");
 
 const accepts = (pair: Pair, kinds: Kinds): boolean =>
@@ -336,13 +341,14 @@ const accepts = (pair: Pair, kinds: Kinds): boolean =>
  * The attribute names the Vue toolchain's strict templates allow beside Vue's types
  * (`vueCompilerOptions.dataAttributes`, as patterns).
  */
-function vueAllowedAttributes(): RegExp[] {
+function vueAllowedAttributes(): Array<RegExp> {
   const config = readFileSync(new URL("tests/toolchains/vue/tsconfig.json", ROOT), "utf8")
     .split("\n")
     .filter((line) => !/^\s*\/\//.test(line))
     .join("\n");
-  const options = (JSON.parse(config) as { vueCompilerOptions?: { dataAttributes?: string[] } })
-    .vueCompilerOptions;
+  const options = (
+    JSON.parse(config) as { vueCompilerOptions?: { dataAttributes?: Array<string> } }
+  ).vueCompilerOptions;
   return (options?.dataAttributes ?? []).map(
     (pattern) =>
       new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`),
@@ -359,7 +365,7 @@ describe("bound values against the targets' element types", () => {
   // The attributes the analyser accepts by name, whose values it checks.
   const all = known.filter((pair) => pair.named);
   // Every kind of value on every attribute, and an enumerated attribute's tokens.
-  const checks: Check[] = [];
+  const checks: Array<Check> = [];
   const kindsOf = new Map<string, Kinds>([
     ["string", STRING],
     ["number", NUMBER],
@@ -368,7 +374,7 @@ describe("bound values against the targets' element types", () => {
   for (const pair of known) {
     const values = enumeratedValues(pair.tag, pair.namespace, pair.name);
     // A name the analyser rejects is probed for whether the targets declare it.
-    const probed: string[] = pair.named ? [...PRIMITIVES] : ["string"];
+    const probed: Array<string> = pair.named ? [...PRIMITIVES] : ["string"];
     if (pair.named && values?.tokens.length) {
       probed.push(tokensType(values.tokens));
     }
@@ -417,12 +423,12 @@ describe("bound values against the targets' element types", () => {
 
   it("accepts only values every target's types accept", () => {
     // Grouped by attribute, value and targets, with the elements where it happens.
-    const violations = new Map<string, string[]>();
+    const violations = new Map<string, Array<string>>();
     const violation = (pair: Pair, problem: string) => {
       const id = `${pair.namespace} ${pair.name}: ${problem}`;
       (violations.get(id) ?? violations.set(id, []).get(id)!).push(pair.tag);
     };
-    const tokenChecks: Check[] = [];
+    const tokenChecks: Array<Check> = [];
     for (const pair of all) {
       for (const value of PRIMITIVES) {
         const libraries = rejectedBy(pair, value);
@@ -468,7 +474,7 @@ describe("bound values against the targets' element types", () => {
   });
 
   it("lists as a string only what some target declares so", () => {
-    const names = new Map<string, Pair[]>();
+    const names = new Map<string, Array<Pair>>();
     for (const pair of all) {
       if (!isTargetStringAttribute(pair.tag, pair.namespace, pair.name)) {
         continue;
@@ -484,7 +490,7 @@ describe("bound values against the targets' element types", () => {
   });
 
   it("lists only attributes some target restricts, with a boolean only where every target takes one", () => {
-    const groups = new Map<string, { values: Enumerated; pairs: Pair[] }>();
+    const groups = new Map<string, { values: Enumerated; pairs: Array<Pair> }>();
     const ids = new Map<Enumerated, number>();
     for (const pair of all) {
       const values = enumeratedValues(pair.tag, pair.namespace, pair.name);
@@ -497,8 +503,8 @@ describe("bound values against the targets' element types", () => {
       const id = `${pair.namespace} ${pair.name} #${ids.get(values)}`;
       (groups.get(id) ?? groups.set(id, { values, pairs: [] }).get(id)!).pairs.push(pair);
     }
-    const loose: string[] = [];
-    const booleans: string[] = [];
+    const loose: Array<string> = [];
+    const booleans: Array<string> = [];
     for (const [id, group] of groups) {
       if (!group.pairs.some((pair) => rejectedBy(pair, "string").size)) {
         loose.push(id);
@@ -537,7 +543,7 @@ describe("bound values against the targets' element types", () => {
   });
 
   it("rejects a name for the frameworks whose types lack it, and only those", () => {
-    const declared: string[] = [];
+    const declared: Array<string> = [];
     let rejected = 0;
     for (const pair of known) {
       if (pair.named) {
@@ -549,7 +555,7 @@ describe("bound values against the targets' element types", () => {
       }
       rejected++;
       // Vue's types are the authoring types, which TSX checks for a name without a hyphen.
-      const libraries: string[] = [...frameworks];
+      const libraries: Array<string> = [...frameworks];
       if (frameworks.includes("Vue") && !pair.name.includes("-")) {
         libraries.push("Authoring");
       }
@@ -564,7 +570,7 @@ describe("bound values against the targets' element types", () => {
   });
 
   it("accepts the static values a target converts, which the others' types take as written", () => {
-    const problems: string[] = [];
+    const problems: Array<string> = [];
     let probed = 0;
     for (const pair of all) {
       const values = enumeratedValues(pair.tag, pair.namespace, pair.name);

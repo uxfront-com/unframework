@@ -195,7 +195,7 @@ describe("attributes Angular cannot bind", () => {
   const registry = new DomElementSchemaRegistry();
 
   it("are exactly the attributes of the vocabulary in those security contexts", () => {
-    const sensitive: string[] = [];
+    const sensitive: Array<string> = [];
     for (const [tag, own] of ELEMENT_ATTRIBUTES) {
       if (UNRENDERABLE_ELEMENTS.has(tag)) {
         continue;
@@ -228,7 +228,7 @@ describe("attributes Angular cannot bind", () => {
 
 describe("ARIA", () => {
   const { aria, roles } = svelteRequire("aria-query") as {
-    aria: Map<string, { type: string; values?: unknown[] }>;
+    aria: Map<string, { type: string; values?: Array<unknown> }>;
     roles: Map<string, { abstract: boolean }>;
   };
 
@@ -372,8 +372,8 @@ describe("expressions Angular reads", () => {
     "label: string; count: number; on: boolean; items: string[]; user: { name: string }; maybe?: string";
 
   /** A random expression of the accepted subset (ADR-0035), depth-limited. */
-  function expression(next: () => number, depth: number, locals: readonly string[]): string {
-    const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
+  function expression(next: () => number, depth: number, locals: ReadonlyArray<string>): string {
+    const pick = <T>(items: ReadonlyArray<T>) => items[Math.floor(next() * items.length)]!;
     const leaf = () =>
       pick([
         () => pick(["label", "count", "on", "items.length", "user.name", ...locals]),
@@ -418,7 +418,7 @@ describe("expressions Angular reads", () => {
 
   it("parses every accepted expression the generator writes", () => {
     const next = random(7);
-    const failures: string[] = [];
+    const failures: Array<string> = [];
     for (let sample = 0; sample < 1500; sample++) {
       const code = `String(${expression(next, 3, [])})`;
       const { diagnostics } = component(`<p>{${code}}</p>`, { props: PROPS });

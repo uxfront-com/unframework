@@ -165,7 +165,7 @@ ${stop}
       ? `{ flush: "post" }`
       : undefined;
   const values = names.values!;
-  const overloads: string[] = [];
+  const overloads: Array<string> = [];
   if (uses.single.lazy) {
     overloads.push(
       `function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
@@ -365,7 +365,7 @@ function ${schedule}(queue: Set<() => void>, run: () => void): void {
 
 /** A JSDoc comment of prose, wrapped at 100 columns as the formatter leaves comments. */
 function docComment(text: string): string {
-  const lines: string[] = [];
+  const lines: Array<string> = [];
   let line = "";
   for (const word of text.split(" ")) {
     if (line && ` * ${line} ${word}`.length > 100) {

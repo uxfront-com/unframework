@@ -32,9 +32,9 @@ interface Printed extends ToolchainMessage {
  * parser does not understand.
  */
 export async function typecheckWithTsgo(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
   const tsc = resolveTsgo(context.toolchainDir);
   // `--noEmit` on the command line: a toolchain tsconfig without it must never write
   // JavaScript next to the golden files.
@@ -69,11 +69,11 @@ function resolveTsgo(toolchainDir: string): string {
 
 /** Parses tsgo's output into diagnostics by file, rejecting anything it cannot account for. */
 function collect(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   { cwd, tsconfig, code, signal, stdout, stderr }: CheckerRun,
-): Map<string, ToolchainMessage[]> {
-  const printed: Printed[] = [];
-  const unparsed: string[] = [];
+): Map<string, Array<ToolchainMessage>> {
+  const printed: Array<Printed> = [];
+  const unparsed: Array<string> = [];
   for (const line of stdout.split(/\r?\n/)) {
     if (line.trim() === "") {
       continue;

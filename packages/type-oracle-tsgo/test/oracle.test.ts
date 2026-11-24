@@ -18,7 +18,7 @@ import { createTsgoOracle } from "../src/index.ts";
 typeOracleContract("tsgo", ({ root }) => createTsgoOracle({ root }), { checker: true });
 
 /** The processes this test process started and has not reaped. */
-function children(): string[] {
+function children(): Array<string> {
   try {
     return execFileSync("pgrep", ["-P", String(process.pid)], { encoding: "utf8" })
       .split("\n")
@@ -29,7 +29,7 @@ function children(): string[] {
 }
 
 /** Waits until none of `pids` runs: a killed process is reaped on a later turn of the loop. */
-async function exited(pids: readonly string[]): Promise<void> {
+async function exited(pids: ReadonlyArray<string>): Promise<void> {
   const deadline = Date.now() + 5000;
   while (pids.some((pid) => children().includes(pid))) {
     if (Date.now() > deadline) {
@@ -48,7 +48,7 @@ describe("tsgo adapter", () => {
   // The root is a directory of `base`, so a test can write a file outside it.
   let base: string;
   let root: string;
-  let oracles: TypeOracle[];
+  let oracles: Array<TypeOracle>;
   beforeEach(async () => {
     base = await realpath(await mkdtemp(join(tmpdir(), "uf-tsgo-")));
     root = join(base, "root");
@@ -781,7 +781,7 @@ describe("tsgo adapter", () => {
       "}",
       "",
     ].join("\n");
-    const PANEL_USES: [string, string, unknown][] = [
+    const PANEL_USES: Array<[string, string, unknown]> = [
       ["v-focus-trap={1}", "vFocusTrap", { assignable: false, value: "1", expected: "boolean" }],
       [
         'v-tone="loud"',
@@ -1193,7 +1193,7 @@ describe("tsgo adapter", () => {
 
     it("reads the syntactic layer's files through `readFile`", async () => {
       await put("A.uf.tsx", "export function A(props: { a: string }) {}\n");
-      const read: string[] = [];
+      const read: Array<string> = [];
       const oracle = createTsgoOracle({
         root,
         readFile: async (path) => {

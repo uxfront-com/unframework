@@ -17,7 +17,7 @@ const filesOf = (source: string) =>
   new Map(emitModule(lower(source, "Page.uf.tsx")).map(({ path, contents }) => [path, contents]));
 
 /** The messages of ngtsc's L3 check on every file a source emits, together. */
-async function l3Errors(source: string): Promise<string[]> {
+async function l3Errors(source: string): Promise<Array<string>> {
   const directory = scratchDir();
   const files = [...filesOf(source)].map(([path, contents]) => ({
     path: join(directory, path),
@@ -30,9 +30,9 @@ async function l3Errors(source: string): Promise<string[]> {
 }
 
 /** What the emitter reports for each component of a source. */
-function reportedFor(source: string): string[] {
+function reportedFor(source: string): Array<string> {
   const module = lower(source);
-  const messages: string[] = [];
+  const messages: Array<string> = [];
   const emitContext: EmitContext = {
     module,
     options: undefined,

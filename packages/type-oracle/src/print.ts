@@ -17,8 +17,8 @@ export interface PrintOptions {
  * Throws for one with no declaration: TypeScript cannot write that type without a name.
  */
 export function printShape(shape: TypeShape, options: PrintOptions = {}): string {
-  const order = (items: string[]) => (options.canonical ? items.toSorted() : items);
-  const print = (id: number, stack: readonly number[]): string => {
+  const order = (items: Array<string>) => (options.canonical ? items.toSorted() : items);
+  const print = (id: number, stack: ReadonlyArray<number>): string => {
     const node = shape.nodes[id]!;
     const inner = (child: number) => print(child, [...stack, id]);
     // A union, a function or a readonly array or tuple binds looser than `[]` and `?`.

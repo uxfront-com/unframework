@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 const CASES = join(import.meta.dirname, "..", "cases");
 
 /** Each `__output__/ir*.json` under the cases, relative to the cases directory. */
-function goldens(): string[] {
+function goldens(): Array<string> {
   return readdirSync(CASES, { recursive: true, encoding: "utf8" })
     .filter((path) => /(^|[/\\])__output__[/\\]ir(\.[A-Za-z0-9]+)?\.json$/.test(path))
     .toSorted();

@@ -245,8 +245,8 @@ export function isRenderProp(component: UfComponent, slot: string): boolean {
  * The render-prop slots the component's code names, in the order it first names them: an outlet
  * or a forwarded fill, then a presence test.
  */
-function renderedSlots(component: UfComponent): string[] {
-  const found: string[] = [];
+function renderedSlots(component: UfComponent): Array<string> {
+  const found: Array<string> = [];
   const add = (slot: string) => {
     if (isRenderProp(component, slot) && !found.includes(slot)) {
       found.push(slot);
@@ -320,7 +320,7 @@ export function fillAttribute(
   context: JsxContext,
   plan: CompositionPlan,
   locals: RenderLocals,
-): JsxAttribute[] {
+): Array<JsxAttribute> {
   const name = slotProp(fill.slot);
   if (fill.forward !== undefined) {
     // Forwarding the default slot needs its presence, an error on Qwik
@@ -389,13 +389,13 @@ export function modelWriter(value: Expression, plan: SetupPlan): string {
 export class RenderLocals {
   readonly #plan: SetupPlan;
   readonly #declared = new Map<string, string>();
-  readonly statements: string[] = [];
+  readonly statements: Array<string> = [];
   /** The callbacks being printed (a list's, a fill's), innermost last, with what they declare. */
-  readonly #scopes: {
-    statements: string[];
+  readonly #scopes: Array<{
+    statements: Array<string>;
     fill: boolean;
     functions: Map<string, string>;
-  }[] = [];
+  }> = [];
 
   constructor(plan: SetupPlan) {
     this.#plan = plan;
@@ -425,7 +425,7 @@ export class RenderLocals {
   }
 
   /** Ends the callback {@link enter} started: what it declares, its functions first. */
-  leave(): string[] {
+  leave(): Array<string> {
     const scope = this.#scopes.pop()!;
     return [...scope.functions.values(), ...scope.statements];
   }
@@ -451,7 +451,7 @@ export class RenderLocals {
  */
 export function withLocals(
   arrow: ReturnType<typeof js.arrowFunction>,
-  statements: readonly string[],
+  statements: ReadonlyArray<string>,
   context: JsxContext,
 ): ReturnType<typeof js.arrowFunction> {
   const { body } = arrow;
@@ -523,7 +523,7 @@ export function modelAttribute(
   plan: SetupPlan,
   locals: RenderLocals,
   explicit: boolean,
-): JsxAttribute[] {
+): Array<JsxAttribute> {
   const read = expressionCode(attribute.value, context);
   const current = locals.current(read, modelBindingName(attribute.value, plan));
   const { event, handler } = modelListener(attribute, element, context, plan);
@@ -748,7 +748,7 @@ export function optionSelected(
 }
 
 /** The authoring types of a ref a key may hold, and the Qwik signal each is. */
-const REF_SIGNALS: readonly (readonly [string, string])[] = [
+const REF_SIGNALS: ReadonlyArray<readonly [string, string]> = [
   ["Ref", "Signal"],
   ["ComputedRef", "ReadonlySignal"],
   ["ModelRef", "ReadonlySignal"],
@@ -789,7 +789,7 @@ export function textOptionSelected(
   const [prefix, suffix] =
     model.control === "select-multiple" ? [`${read}.includes(`, ")"] : [`${read} === `, ""];
   const at = option.span;
-  const parts: (string | Expression)[] = [];
+  const parts: Array<string | Expression> = [];
   for (const child of optionSource(option)) {
     if (child.kind === "Text") {
       parts.push(child.value);

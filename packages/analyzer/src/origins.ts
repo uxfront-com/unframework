@@ -51,7 +51,7 @@ export function mutable(provenance: Provenance): boolean {
  * What a name holds that may hold any of several values: each one's origins, or what a message
  * says of the name (`name`) where one of them comes from elsewhere.
  */
-export function joined(all: readonly Provenance[], name: string): Provenance {
+export function joined(all: ReadonlyArray<Provenance>, name: string): Provenance {
   const origins = new Set<Origin>();
   for (const item of all) {
     for (const origin of item.origins) {
@@ -75,7 +75,7 @@ export function joined(all: readonly Provenance[], name: string): Provenance {
  * What a value holds that may be any of several values (`a ?? b`, `c ? a : b`): each one's
  * origins, and the first message of one from elsewhere.
  */
-export function either(...all: readonly Provenance[]): Provenance {
+export function either(...all: ReadonlyArray<Provenance>): Provenance {
   const origins = new Set<Origin>();
   for (const item of all) {
     for (const origin of item.origins) {
@@ -243,7 +243,7 @@ const INSERTING: ReadonlyMap<string, number> = new Map([
  */
 export type MemberValues = ReadonlyMap<
   object,
-  readonly { key: string | undefined; value: AST.Expression | null }[]
+  ReadonlyArray<{ key: string | undefined; value: AST.Expression | null }>
 >;
 
 const MEMBERS = new WeakMap<ComponentFunction, MemberValues>();
@@ -254,7 +254,10 @@ export function memberValues(component: ComponentFunction, scopes: Scopes): Memb
   if (known) {
     return known;
   }
-  const values = new Map<object, { key: string | undefined; value: AST.Expression | null }[]>();
+  const values = new Map<
+    object,
+    Array<{ key: string | undefined; value: AST.Expression | null }>
+  >();
   const add = (holder: AST.Node, key: string | undefined, value: AST.Expression | null) => {
     if (holder.type !== "Identifier") {
       return;
@@ -366,7 +369,7 @@ export function globalCallProvenance(global: string, method: string): Provenance
  * starts with none. Names a declarator does not declare (a parameter, a function, a `catch`
  * clause's) have no entry.
  */
-export type AssignedValues = ReadonlyMap<object, readonly (AST.Expression | null)[]>;
+export type AssignedValues = ReadonlyMap<object, ReadonlyArray<AST.Expression | null>>;
 
 const ASSIGNED = new WeakMap<ComponentFunction, AssignedValues>();
 
@@ -376,8 +379,8 @@ export function assignedValues(component: ComponentFunction, scopes: Scopes): As
   if (known) {
     return known;
   }
-  const values = new Map<object, (AST.Expression | null)[]>();
-  const later = new Map<object, (AST.Expression | null)[]>();
+  const values = new Map<object, Array<AST.Expression | null>>();
+  const later = new Map<object, Array<AST.Expression | null>>();
   const loopDeclarations = new WeakSet<object>();
   const assign = (target: AST.Node, value: AST.Expression | null): void => {
     if (target.type !== "Identifier") {
@@ -433,7 +436,7 @@ export function assignedValues(component: ComponentFunction, scopes: Scopes): As
 }
 
 /** The identifiers a pattern assigns or declares, through defaults, rests and nesting. */
-function assignedNames(pattern: AST.Node): AST.Node[] {
+function assignedNames(pattern: AST.Node): Array<AST.Node> {
   switch (pattern.type) {
     case "Identifier":
       return [pattern];

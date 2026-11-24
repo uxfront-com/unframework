@@ -23,7 +23,7 @@ export interface ModuleReach {
   /** The constants and value imports its output declares and imports, by local name. */
   values: Set<string>;
   /** The module's type declarations its constants name, transitively, beyond its own. */
-  types: TypeDeclaration[];
+  types: Array<TypeDeclaration>;
   /** The type names its constants and those declarations read, which its output imports. */
   typeNames: Set<string>;
 }
@@ -38,7 +38,7 @@ export interface ModuleReach {
 export function moduleReach(
   owner: UfComponent,
   module: UfModule,
-  typeTexts: readonly TypeText[] = [],
+  typeTexts: ReadonlyArray<TypeText> = [],
 ): ModuleReach {
   const moduleValues = new Set([
     ...(module.constants ?? []).map(({ name }) => name),
@@ -138,7 +138,7 @@ export function constantsCode(
   module: UfModule,
   reach: ModuleReach,
   locals: ReadonlyMap<string, string>,
-): string[] {
+): Array<string> {
   return (module.constants ?? [])
     .filter((constant) => reach.values.has(constant.name))
     .map((constant) => {
@@ -171,8 +171,8 @@ function topLevelNames(owner: UfComponent): Set<string> {
 }
 
 /** The type text an owner's IR writes beside its code: its props', setup's and emits' types. */
-function ownTypes(owner: UfComponent): TypeText[] {
-  const found: TypeText[] = [];
+function ownTypes(owner: UfComponent): Array<TypeText> {
+  const found: Array<TypeText> = [];
   if (owner.propsParameter) {
     found.push(owner.propsParameter.type);
   }
@@ -203,7 +203,7 @@ function ownTypes(owner: UfComponent): TypeText[] {
  * shorthand property expanded (`{ LIMITS: LIMITS_1 }`).
  */
 function renamedValue(value: Code, locals: ReadonlyMap<string, string>): string {
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   let shorthand: ReadonlySet<number> | undefined;
   for (const reference of value.refs) {
     if (reference.kind !== "Binding") {
@@ -241,7 +241,7 @@ function renamedQueries(
   return applied(text, edits);
 }
 
-function applied(text: string, edits: readonly { start: number; end: number; text: string }[]) {
+function applied(text: string, edits: ReadonlyArray<{ start: number; end: number; text: string }>) {
   let written = "";
   let last = 0;
   for (const edit of edits.toSorted((a, b) => a.start - b.start)) {
@@ -258,7 +258,7 @@ function applied(text: string, edits: readonly { start: number; end: number; tex
 function typeQueries(
   text: string,
   kind: CodeKind | "type",
-): { name: string; start: number; end: number }[] {
+): Array<{ name: string; start: number; end: number }> {
   // Type text parses as the type of an assertion, whose offsets the prefix shifts.
   const prefix = kind === "type" ? "null as " : "";
   let root: unknown;
@@ -270,7 +270,7 @@ function typeQueries(
   } catch {
     return [];
   }
-  const found: { name: string; start: number; end: number }[] = [];
+  const found: Array<{ name: string; start: number; end: number }> = [];
   visit(root, (node) => {
     if (node.type !== "TSTypeQuery") {
       return;

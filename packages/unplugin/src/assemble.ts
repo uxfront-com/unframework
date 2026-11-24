@@ -22,14 +22,14 @@ export interface AssemblyInput {
   /** The extension of the module id, such as `.tsx` or `.vue`. */
   extension: string;
   /** Every file the target emitted for the module, in component order. */
-  files: readonly OutputFile[];
+  files: ReadonlyArray<OutputFile>;
   /** What the `.uf.tsx` file exports (the IR's exports): `name` is `"default"` or a name. */
-  exports: readonly { name: string; local: string }[];
+  exports: ReadonlyArray<{ name: string; local: string }>;
   /**
    * The paths of every file the compile emitted: an output's import of one of them is an import
    * of a component the joined module holds already, which the join leaves out (ADR-0053).
    */
-  siblings?: readonly string[];
+  siblings?: ReadonlyArray<string>;
 }
 
 // Script modules can be joined into one module; markup files (.vue, .svelte, .astro) hold one
@@ -97,17 +97,17 @@ function loaded({ contents, map }: OutputFile, target: string): Assembly {
  * text of a file with no map stays unmapped in the join's.
  */
 export function joinModules(
-  files: readonly OutputFile[],
+  files: ReadonlyArray<OutputFile>,
   context: string,
-  siblings: readonly string[] = [],
+  siblings: ReadonlyArray<string> = [],
 ): Assembly {
   // `./Note` and `./Note.tsx` name a file of the join.
   const joined = new Set(
     siblings.flatMap((path) => [`./${path}`, `./${path.replace(/\.[^./]+$/, "")}`]),
   );
   const seenImports = new Set<string>();
-  const declaredBy = new Map<string, string[]>();
-  const exportedBy = new Map<string, string[]>();
+  const declaredBy = new Map<string, Array<string>>();
+  const exportedBy = new Map<string, Array<string>>();
   const bundle = new Bundle({ separator: "\n" });
 
   for (const file of files) {
@@ -161,7 +161,7 @@ export function joinModules(
 }
 
 /** Notes that the file at `path` declares or exports `name`. */
-function record(names: Map<string, string[]>, name: string, path: string): void {
+function record(names: Map<string, Array<string>>, name: string, path: string): void {
   const paths = names.get(name) ?? [];
   if (!paths.includes(path)) {
     paths.push(path);
@@ -169,14 +169,14 @@ function record(names: Map<string, string[]>, name: string, path: string): void 
   names.set(name, paths);
 }
 
-function clashesOf(names: Map<string, string[]>): [name: string, paths: string][] {
+function clashesOf(names: Map<string, Array<string>>): Array<[name: string, paths: string]> {
   return [...names]
     .filter(([, paths]) => paths.length > 1)
     .map(([name, paths]) => [name, paths.join(" and ")]);
 }
 
 /** The names a top-level statement binds in module scope (imports are handled separately). */
-function declaredNames(statement: AST.Directive | AST.Statement): string[] {
+function declaredNames(statement: AST.Directive | AST.Statement): Array<string> {
   switch (statement.type) {
     case "ExportNamedDeclaration":
       return statement.declaration ? declaredNames(statement.declaration) : [];
@@ -207,7 +207,7 @@ function declaredNames(statement: AST.Directive | AST.Statement): string[] {
   }
 }
 
-function patternNames(pattern: AST.BindingPattern | AST.BindingRestElement): string[] {
+function patternNames(pattern: AST.BindingPattern | AST.BindingRestElement): Array<string> {
   switch (pattern.type) {
     case "Identifier":
       return [pattern.name];
@@ -224,7 +224,7 @@ function patternNames(pattern: AST.BindingPattern | AST.BindingRestElement): str
 }
 
 /** The names a top-level statement exports. */
-function exportedNames(statement: AST.Directive | AST.Statement): string[] {
+function exportedNames(statement: AST.Directive | AST.Statement): Array<string> {
   switch (statement.type) {
     case "ExportDefaultDeclaration":
       return ["default"];

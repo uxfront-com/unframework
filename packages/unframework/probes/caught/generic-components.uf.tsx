@@ -25,7 +25,7 @@ export function InferredFromOneProp() {
   return <Pair first={1} second="two" />;
 }
 
-export function ExplicitTypeArgument(users: Option[]) {
+export function ExplicitTypeArgument(users: Array<Option>) {
   // @ts-expect-error TS2322 an explicit `T` checks the props: an Option has no `email`
   return <Select<User> options={users} />;
 }

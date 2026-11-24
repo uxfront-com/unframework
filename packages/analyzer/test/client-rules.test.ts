@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { applyAndRecheck, problems, setupOf } from "./helpers.ts";
 
 /** The problems of a component with the API imported, the setup and the template. */
-function problemsOf(setup: string, jsx = "<p />"): string[] {
+function problemsOf(setup: string, jsx = "<p />"): Array<string> {
   const { source, diagnostics } = setupOf(setup, jsx);
   return problems(source, diagnostics);
 }

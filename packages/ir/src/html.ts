@@ -529,8 +529,8 @@ export function replaceIdReferences(
 }
 
 /** The ids an attribute value refers to, in order (see {@link replaceIdReferences}). */
-export function idReferencesIn(name: string, value: string): string[] {
-  const ids: string[] = [];
+export function idReferencesIn(name: string, value: string): Array<string> {
+  const ids: Array<string> = [];
   replaceIdReferences(name, value, (id) => {
     ids.push(id);
     return id;

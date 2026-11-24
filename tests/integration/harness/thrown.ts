@@ -33,7 +33,7 @@ export function throwSite(caseDir: string): ThrowSite {
 const FRAME = /^\s*at (?:.*\()?(.+?):(\d+):(\d+)\)?\s*$/;
 
 /** A stack's frames, top first, as written. */
-export function stackFrames(stack: string): { url: string; line: number; column: number }[] {
+export function stackFrames(stack: string): Array<{ url: string; line: number; column: number }> {
   return stack.split("\n").flatMap((text) => {
     const match = FRAME.exec(text);
     return match ? [{ url: match[1]!, line: Number(match[2]), column: Number(match[3]) }] : [];

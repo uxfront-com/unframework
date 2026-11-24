@@ -48,9 +48,9 @@ export interface PackageInput {
   root: string;
   config: ResolvedConfig;
   /** Each target's files. */
-  trees: ReadonlyMap<string, OutputFile[]>;
+  trees: ReadonlyMap<string, Array<OutputFile>>;
   /** The sources and the files they read, relative to the root. */
-  authored: readonly string[];
+  authored: ReadonlyArray<string>;
   /** The config file, which a diagnostic with no source of its own names. */
   configFile: string;
 }
@@ -58,9 +58,9 @@ export interface PackageInput {
 /** A package that has passed what can be checked before anything is written. */
 export interface PackagePlan {
   /** UF7008, one per packager that can't run. `run` isn't safe to call unless this is empty. */
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
   /** Writes the package, and gives UF7009 if a packager failed. */
-  run(): Promise<Diagnostic[]>;
+  run(): Promise<Array<Diagnostic>>;
 }
 
 /** The package a module belongs to. */
@@ -163,12 +163,12 @@ function failure(error: unknown, work: string, tree: string): string {
 
 function manifest(
   fields: Readonly<Record<string, string>>,
-  packagers: readonly (readonly [TargetName, Packager])[],
+  packagers: ReadonlyArray<readonly [TargetName, Packager]>,
   subpaths: ReadonlyMap<TargetName, SubpathExports>,
 ): string {
   // Two packagers may share a peer, as Solid 1 and Solid 2 share `solid-js`: the package takes
   // either major, so the ranges join (ADR-0102).
-  const ranges = new Map<string, string[]>();
+  const ranges = new Map<string, Array<string>>();
   for (const { name, range } of packagers.flatMap(([, { peer }]) => peer)) {
     const each = ranges.get(name) ?? [];
     if (!each.includes(range)) {
@@ -220,7 +220,7 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
     return (typeof each === "string" ? each : each?.[target]) ?? root;
   };
   const realOutDir = await realDirectory(config.outDir);
-  const diagnostics: Diagnostic[] = [];
+  const diagnostics: Array<Diagnostic> = [];
   for (const target of requested) {
     const packager = PACKAGERS[target];
     const resolve = resolverFrom(from(target));
@@ -241,8 +241,8 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
   }
 
   // The registry's order, so the manifest doesn't follow the order of a list in the config (P8).
-  const packagers = (Object.entries(PACKAGERS) as [TargetName, Packager][]).filter(([target]) =>
-    requested.includes(target),
+  const packagers = (Object.entries(PACKAGERS) as Array<[TargetName, Packager]>).filter(
+    ([target]) => requested.includes(target),
   );
 
   return {

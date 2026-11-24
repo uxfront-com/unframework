@@ -96,7 +96,7 @@ describe("defineModel", () => {
   });
 
   it("reports a name, an option or a clash it cannot take (UF2028)", () => {
-    const cases: [string, string][] = [
+    const cases: Array<[string, string]> = [
       ["const v = defineModel<string>(name);", "name"],
       ['const v = defineModel<string>("my-value");', '"my-value"'],
       ['const v = defineModel<string>("v", { get: () => "" });', 'get: () => ""'],
@@ -170,7 +170,7 @@ describe("v-model on a form control", () => {
   });
 
   it("reports what no control binds (UF3042)", () => {
-    const cases: [string, string, string][] = [
+    const cases: Array<[string, string, string]> = [
       ['const t = ref("");', "<div v-model={t.value} />", "v-model"],
       ['const t = ref("");', '<input type="file" v-model={t.value} />', "v-model"],
       ['const t = ref("");', '<input type="radio" v-model={t.value} />', "v-model"],
@@ -345,7 +345,7 @@ describe("provide and inject", () => {
   it("reports what provide and inject cannot take (UF2032)", () => {
     const key = 'export const K: InjectionKey<string> = Symbol("k");\n';
     const refKey = 'export const R: InjectionKey<Ref<number>> = Symbol("r");\n';
-    const cases: [string, string, string][] = [
+    const cases: Array<[string, string, string]> = [
       ['provide(K, "a");\n  const v = inject(K, "b");', key, 'inject(K, "b")'],
       ['provide(K, "a");\n  provide(K, "b");', key, 'provide(K, "b")'],
       ['const v = inject(Other, "b");', key, "Other"],
@@ -363,7 +363,7 @@ describe("provide and inject", () => {
   });
 
   it("reports a key that is not one every target can write (UF2033), and nothing more", () => {
-    const cases: [string, string][] = [
+    const cases: Array<[string, string]> = [
       ['const K: InjectionKey<string> = Symbol("k");\n', "K"],
       ["export const K: InjectionKey<string> = Symbol();\n", "Symbol()"],
       ['export const K = Symbol("k");\n', "K"],

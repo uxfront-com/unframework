@@ -20,7 +20,7 @@ export const IMAGE_SIZE: readonly [number, number] = [1200, 630];
 export const PAYLOAD_IMAGE = "seo-head:image";
 
 /** The crawlers robots.txt allows by name (plan decision Q1). */
-export const AI_CRAWLERS: readonly string[] = [
+export const AI_CRAWLERS: ReadonlyArray<string> = [
   "OAI-SearchBot",
   "ChatGPT-User",
   "PerplexityBot",
@@ -33,7 +33,7 @@ export const AI_CRAWLERS: readonly string[] = [
 ];
 
 /** The hosts `_headers` keeps out of the index: `www` and every workers.dev host. */
-export const NOINDEX_HOSTS: readonly string[] = [
+export const NOINDEX_HOSTS: ReadonlyArray<string> = [
   "https://www.unframework.dev/*",
   "https://:version.:subdomain.workers.dev/*",
 ];
@@ -47,8 +47,8 @@ export interface Problem {
 
 export interface Report {
   /** The sitemap's pages, in its order, then the site-wide files. */
-  targets: string[];
-  problems: Problem[];
+  targets: Array<string>;
+  problems: Array<Problem>;
 }
 
 interface Page {
@@ -56,9 +56,9 @@ interface Page {
   title?: string;
   lang?: string;
   h1: number;
-  meta: Map<string, string[]>;
-  canonical: string[];
-  jsonLd: unknown[];
+  meta: Map<string, Array<string>>;
+  canonical: Array<string>;
+  jsonLd: Array<unknown>;
   invalidJsonLd: number;
 }
 
@@ -68,7 +68,7 @@ interface SitemapEntry {
 }
 
 export function checkSite(dist: string): Report {
-  const problems: Problem[] = [];
+  const problems: Array<Problem> = [];
   const report = (target: string, rule: string, message: string) =>
     problems.push({ target, rule, message });
 
@@ -93,8 +93,8 @@ export function checkSite(dist: string): Report {
   const lastmods = new Map(sitemap.map((entry) => [entry.loc, entry.lastmod]));
 
   // Tags on every sitemap page.
-  const titles = new Map<string, string[]>();
-  const descriptions = new Map<string, string[]>();
+  const titles = new Map<string, Array<string>>();
+  const descriptions = new Map<string, Array<string>>();
   for (const { loc } of sitemap) {
     const path = loc.startsWith(SITE_URL) ? loc.slice(SITE_URL.length) || "/" : loc;
     const page = pages.get(path);
@@ -262,7 +262,7 @@ function checkJsonLd(
   const nodes = page.jsonLd.flatMap((block) => {
     const graph = (block as { "@graph"?: unknown })["@graph"];
     return Array.isArray(graph) ? graph : [block];
-  }) as Record<string, unknown>[];
+  }) as Array<Record<string, unknown>>;
   const ofType = (type: string) => nodes.filter((node) => node["@type"] === type);
 
   for (const node of ofType("Organization")) {
@@ -301,7 +301,7 @@ function checkJsonLd(
     at("no BreadcrumbList");
   } else {
     const items = Array.isArray(breadcrumbs.itemListElement) ? breadcrumbs.itemListElement : [];
-    for (const { item } of items as { item?: string }[]) {
+    for (const { item } of items as Array<{ item?: string }>) {
       if (!item || !urls.has(item)) {
         at(`a breadcrumb links ${item ?? "nothing"}, which isn't in the sitemap`);
       }
@@ -371,7 +371,7 @@ const isReduced = (value: unknown): value is [string, number] =>
   typeof value[0] === "string" &&
   typeof value[1] === "number";
 
-function readSitemap(dist: string, report: Reporter): SitemapEntry[] {
+function readSitemap(dist: string, report: Reporter): Array<SitemapEntry> {
   const xml = readText(dist, "sitemap.xml");
   if (xml === undefined) {
     report("sitemap.xml", "sitemap", "no sitemap.xml");
@@ -413,8 +413,8 @@ function checkRobots(robots: string | undefined, report: Reporter) {
   }
 
   // A group is a run of User-agent lines and the rules after them.
-  const groups: { agents: string[]; rules: string[] }[] = [];
-  let current: { agents: string[]; rules: string[] } | undefined;
+  const groups: Array<{ agents: Array<string>; rules: Array<string> }> = [];
+  let current: { agents: Array<string>; rules: Array<string> } | undefined;
   for (const line of lines) {
     const [, field = "", value = ""] = line.match(/^([^:]+):\s*(.*)$/) ?? [];
     const name = field.toLowerCase();
@@ -440,7 +440,7 @@ function checkRobots(robots: string | undefined, report: Reporter) {
 function checkLlms(
   llms: string | undefined,
   full: string | undefined,
-  sitemap: SitemapEntry[],
+  sitemap: Array<SitemapEntry>,
   report: Reporter,
 ) {
   if (llms === undefined) {
@@ -491,7 +491,7 @@ function checkRedirects(redirects: string, report: Reporter) {
   }
 }
 
-function checkHeaders(headers: HeaderRule[], report: Reporter) {
+function checkHeaders(headers: Array<HeaderRule>, report: Reporter) {
   for (const host of NOINDEX_HOSTS) {
     const rule = headers.find(({ pattern }) => pattern === host);
     if (!rule || !rule.headers.some(isNoindexHeader)) {
@@ -502,11 +502,11 @@ function checkHeaders(headers: HeaderRule[], report: Reporter) {
 
 export interface HeaderRule {
   pattern: string;
-  headers: string[];
+  headers: Array<string>;
 }
 
-function readRules(dist: string, file: string): HeaderRule[] {
-  const rules: HeaderRule[] = [];
+function readRules(dist: string, file: string): Array<HeaderRule> {
+  const rules: Array<HeaderRule> = [];
   for (const line of (readText(dist, file) ?? "").split("\n")) {
     if (!line.trim() || line.trim().startsWith("#")) {
       continue;
@@ -526,7 +526,7 @@ const isNoindexHeader = (header: string) => /^x-robots-tag:.*\bnoindex\b/i.test(
  * The host-less `_headers` rule that sends `noindex` for a path, if any. Host
  * rules don't count: they end in `/*` and would match every path.
  */
-export function headerNoindex(headers: HeaderRule[], path: string): string | undefined {
+export function headerNoindex(headers: Array<HeaderRule>, path: string): string | undefined {
   return headers.find(
     ({ pattern, headers }) =>
       pattern.startsWith("/") && headers.some(isNoindexHeader) && matchesPath(pattern, path),
@@ -547,8 +547,8 @@ const ATTRS = `(?:[^>"']|"[^"]*"|'[^']*')*`;
 
 function readPage(path: string, html: string): Page {
   const head = html.slice(0, Math.max(0, html.indexOf("</head>"))) || html;
-  const meta = new Map<string, string[]>();
-  const canonical: string[] = [];
+  const meta = new Map<string, Array<string>>();
+  const canonical: Array<string> = [];
   for (const [, tag = "", attrs = ""] of head.matchAll(
     new RegExp(`<(meta|link)\\b(${ATTRS})>`, "gi"),
   )) {
@@ -564,7 +564,7 @@ function readPage(path: string, html: string): Page {
     }
   }
 
-  const jsonLd: unknown[] = [];
+  const jsonLd: Array<unknown> = [];
   let invalidJsonLd = 0;
   for (const [, attrs = "", body = ""] of html.matchAll(
     new RegExp(`<script\\b(${ATTRS})>([\\s\\S]*?)</script>`, "gi"),
@@ -644,7 +644,7 @@ function imageSize(dist: string, url: string): { width: number; height: number }
   return `og:image is neither a PNG nor a JPEG with a size in its header: ${url}`;
 }
 
-function htmlFiles(dir: string): string[] {
+function htmlFiles(dir: string): Array<string> {
   return readdirSync(dir, { recursive: true, encoding: "utf8" })
     .map((file) => join(dir, file))
     .filter((file) => file.endsWith(".html") && statSync(file).isFile())
@@ -670,7 +670,7 @@ function isDate(value: string) {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
 
-const others = (paths: string[], path: string) =>
+const others = (paths: Array<string>, path: string) =>
   paths.filter((other) => other !== path).join(", ");
 
 function decodeEntities(value: string) {
@@ -699,7 +699,7 @@ function escapeRegExp(value: string) {
 
 /** Prints the report: one line per target, its problems under it, then a summary. */
 export function format({ targets, problems }: Report): string {
-  const lines: string[] = [];
+  const lines: Array<string> = [];
   for (const target of targets) {
     const own = problems.filter((problem) => problem.target === target);
     lines.push(`${own.length ? "✗" : "✓"} ${target}`);

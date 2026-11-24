@@ -26,7 +26,7 @@ async function outputs(source: string): Promise<Map<string, string>> {
   }
   const files = new Map<string, string>();
   for (const component of module.components) {
-    const reported: unknown[] = [];
+    const reported: Array<unknown> = [];
     const [file] = target.emit(component, {
       module,
       options: undefined,
@@ -211,7 +211,7 @@ export default function Parent() {
 }`,
       ),
     );
-    const reported: { code: string; message: string }[] = [];
+    const reported: Array<{ code: string; message: string }> = [];
     const parent = module!.components.find((component) => component.name === "Parent")!;
     const files = target.emit(parent, {
       module: module!,

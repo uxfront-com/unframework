@@ -223,7 +223,7 @@ const REGEX_ESCAPED = new RegExp(`['"\`;${ANGULAR_SPACE.replace(" ", "")}${NGSP}
  */
 function angularRegex(raw: string, interpolation: boolean): string {
   const close = raw.lastIndexOf("/");
-  const units: { text: string; slash: boolean }[] = [];
+  const units: Array<{ text: string; slash: boolean }> = [];
   let inClass = false;
   for (let index = 1; index < close; index++) {
     const character = raw[index]!;
@@ -277,8 +277,8 @@ interface TemplateNode {
   type: string;
   start: number;
   end: number;
-  quasis?: { value: { cooked: string | null; raw: string } }[];
-  expressions?: { start: number; end: number }[];
+  quasis?: Array<{ value: { cooked: string | null; raw: string } }>;
+  expressions?: Array<{ start: number; end: number }>;
   [key: string]: unknown;
 }
 
@@ -361,7 +361,7 @@ export function withoutTemplateLiterals(code: string, kind: CodeKind = "expressi
     return code;
   }
   const { root } = parseCodeSource(code, kind);
-  const outermost: { template: TemplateNode; fits: boolean }[] = [];
+  const outermost: Array<{ template: TemplateNode; fits: boolean }> = [];
   const visit = (value: unknown, parent: TemplateNode | undefined, key: string): void => {
     if (Array.isArray(value)) {
       for (const item of value) {
@@ -390,7 +390,7 @@ export function withoutTemplateLiterals(code: string, kind: CodeKind = "expressi
   let position = 0;
   for (const { template, fits } of outermost) {
     output += code.slice(position, template.start);
-    const parts: { code: string; string: boolean }[] = [];
+    const parts: Array<{ code: string; string: boolean }> = [];
     template.quasis!.forEach((quasi, index) => {
       const cooked = quasi.value.cooked ?? quasi.value.raw;
       if (cooked !== "") {
@@ -675,7 +675,7 @@ export const angularDialect: MarkupDialect = {
               component: {
                 kind: "Component",
                 component: candidate.component,
-                attributes: node.attributes as ComponentAttribute[],
+                attributes: node.attributes as Array<ComponentAttribute>,
                 fills: node.fills ?? [],
                 span: node.span,
               },
@@ -706,7 +706,7 @@ function isComponentTag(tag: string): boolean {
  * A component's `class`, which falls through to its root through an input (ADR-0056): one
  * string binding, since a static `class` beside a `[class]` would set the input twice.
  */
-function componentClass(parts: readonly ClassPart[]): PrintedAttribute {
+function componentClass(parts: ReadonlyArray<ClassPart>): PrintedAttribute {
   const values = parts.map((part) =>
     part.kind === "Static"
       ? JSON.stringify(part.value)
@@ -726,7 +726,7 @@ function componentClass(parts: readonly ClassPart[]): PrintedAttribute {
  * object, spread last, so a property the consumer leaves `undefined` removes the root's own,
  * as Vue's merge does.
  */
-function componentStyle(parts: readonly StylePart[]): PrintedAttribute {
+function componentStyle(parts: ReadonlyArray<StylePart>): PrintedAttribute {
   readsEveryDeclaration(parts.filter((part) => part.property !== ""));
   const [only] = parts;
   const expression =
@@ -806,7 +806,7 @@ function fillPiece({ fill, parameter, presence }: PrintedFill, tag: string): Mar
  * The `let-` variables of a scoped fill's parameter: a name takes the whole props (the
  * context's `$implicit`), and a destructuring pattern's names each take their key.
  */
-function letVariables(parameter: string | undefined): PrintedAttribute[] {
+function letVariables(parameter: string | undefined): Array<PrintedAttribute> {
   if (parameter === undefined) {
     return [];
   }
@@ -815,12 +815,12 @@ function letVariables(parameter: string | undefined): PrintedAttribute[] {
   }
   const pattern = parseExpression(`(${parameter})`) as unknown as {
     type: string;
-    properties: {
+    properties: Array<{
       type: string;
       computed: boolean;
       key: { type: string; name?: string; value?: unknown };
       value: { type: string; name?: string };
-    }[];
+    }>;
   };
   return pattern.properties.map((property) => {
     const key = property.key.type === "Identifier" ? property.key.name : String(property.key.value);
@@ -852,7 +852,7 @@ function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
   // reads none of: a loop's item or a `@let` called `template` stays the source's.
   const context = props && slotContext(props);
   const alias = unreadName("template", context ?? "");
-  const attributes: PrintedAttribute[] = [
+  const attributes: Array<PrintedAttribute> = [
     { name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${alias}"` },
   ];
   if (context !== undefined) {
@@ -920,7 +920,7 @@ function contextKey(key: string): string {
  * `change`, a checkbox as `[checked]`, and a radio as `[checked]` when it holds the radio's
  * value. The control is the event's target.
  */
-function modelAttributes({ attribute, value }: PrintedModel): PrintedAttribute[] {
+function modelAttributes({ attribute, value }: PrintedModel): Array<PrintedAttribute> {
   const signal = angularCode(value, "attribute");
   const write = (event: string, read: string) => ({
     name: `(${event})`,
@@ -1047,7 +1047,7 @@ function angularReadsStatic(property: string, value: string): boolean {
 }
 
 /** Throws for a declaration Angular would misread, which the analyser keeps out of the IR. */
-function readsEveryDeclaration(parts: readonly StylePart[]): void {
+function readsEveryDeclaration(parts: ReadonlyArray<StylePart>): void {
   const misread = parts.find((part) =>
     part.kind === "Static"
       ? !angularReadsStatic(part.property, part.value)

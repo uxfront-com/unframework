@@ -31,7 +31,7 @@ export function slottedAttribute(scopeId: string): string {
  * `<template v-if>`). So is a component with `inheritAttrs: false`. The JSX targets spread the
  * attributes on these nodes, by their spans.
  */
-export function scopeRoots(component: UfComponent): Span[] {
+export function scopeRoots(component: UfComponent): Array<Span> {
   if (component.inheritAttrs === false) {
     return [];
   }
@@ -52,7 +52,7 @@ export function scopeRoots(component: UfComponent): Span[] {
 }
 
 /** A node's span where it is one element, component or `<component is>`, which Vue scopes. */
-function single(node: RenderNode): Span[] {
+function single(node: RenderNode): Array<Span> {
   return node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
     ? [node.span]
     : [];
@@ -95,8 +95,8 @@ export function childStyles(module: UfModule, local: string): ComponentStylesApi
  */
 export function slottedAttributes(
   module: UfModule | undefined,
-  children: readonly string[],
-): string[] {
+  children: ReadonlyArray<string>,
+): Array<string> {
   if (!module) {
     return [];
   }

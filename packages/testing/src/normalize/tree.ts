@@ -53,7 +53,7 @@ function excerpt(text: string): string {
  * `treeRepairs`).
  */
 export function parseHtml(source: string): TreeFragment {
-  const errors: ParserError[] = [];
+  const errors: Array<ParserError> = [];
   const context = defaultTreeAdapter.createElement("body", spec.NS.HTML, []);
   const fragment = parseFragment(context, source, {
     sourceCodeLocationInfo: true,
@@ -85,8 +85,8 @@ export function parseHtml(source: string): TreeFragment {
  * - `inserted`: an element with no tag in the source (a formatting element reopened after
  *   misnested tags, a `<tr>` around cells), apart from `IMPLIED_ELEMENTS`.
  */
-function treeRepairs(source: string, fragment: TreeFragment): Problem[] {
-  const problems: Problem[] = [];
+function treeRepairs(source: string, fragment: TreeFragment): Array<Problem> {
+  const problems: Array<Problem> = [];
   const covered = new Uint8Array(source.length);
   const quoted = (location: Token.Location) =>
     excerpt(source.slice(location.startOffset, location.endOffset));
@@ -163,12 +163,12 @@ function holderOf(node: TreeParent): TreeParent {
 }
 
 /** The children of a node; a `<template>`'s are those of its content fragment. */
-export function childrenOf(node: TreeParent): TreeChild[] {
+export function childrenOf(node: TreeParent): Array<TreeChild> {
   return holderOf(node).childNodes;
 }
 
 /** Replaces a node's children (a `<template>`'s content) with `children`, in place. */
-export function replaceChildren(node: TreeParent, children: readonly TreeChild[]): void {
+export function replaceChildren(node: TreeParent, children: ReadonlyArray<TreeChild>): void {
   const holder = holderOf(node);
   holder.childNodes.length = 0;
   for (const child of children) {

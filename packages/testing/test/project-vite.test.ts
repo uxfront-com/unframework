@@ -25,7 +25,7 @@ import {
 const FIXTURES = fileURLToPath(new URL("fixtures", import.meta.url));
 const SEVEN = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"] as const;
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterAll(() => {
   for (const root of roots) {
     rmSync(root, { recursive: true, force: true });
@@ -52,14 +52,14 @@ const COMPONENT = "export default function Badge() {\n  return <b>New</b>;\n}\n"
 const SPEC = 'import { it } from "@unframework.dev/testing";\n';
 const CASE = { "test/badge/Badge.uf.tsx": COMPONENT, "test/badge/badge.test.ts": SPEC };
 
-async function projectsOf(root: string): Promise<TestProjectInlineConfiguration[]> {
+async function projectsOf(root: string): Promise<Array<TestProjectInlineConfiguration>> {
   delete process.env.UF_TARGETS;
-  return (await defineTestConfig({ root })).test?.projects as TestProjectInlineConfiguration[];
+  return (await defineTestConfig({ root })).test?.projects as Array<TestProjectInlineConfiguration>;
 }
 
 /** The names of a config's plugins, in order, at any depth. */
-const names = (each: { plugins?: unknown }): string[] =>
-  ((each.plugins ?? []) as unknown[])
+const names = (each: { plugins?: unknown }): Array<string> =>
+  ((each.plugins ?? []) as Array<unknown>)
     .flat(Number.POSITIVE_INFINITY)
     .filter(Boolean)
     .map((plugin) => (plugin as Plugin).name);
@@ -92,7 +92,7 @@ export default {
         { inPackage: true },
       );
       const projects = await projectsOf(root);
-      const calls = (globalThis as { ufViteCalls?: ViteContext[] }).ufViteCalls!;
+      const calls = (globalThis as { ufViteCalls?: Array<ViteContext> }).ufViteCalls!;
       // One call per project: Astro's render server calls it only once it renders.
       expect(calls.map(({ target, mode }) => `${mode}:${target}`).toSorted()).toEqual(
         SEVEN.flatMap((target) => [`browser:${target}`, `ssr:${target}`]).toSorted(),
@@ -191,7 +191,7 @@ describe("withProjectVite", () => {
   });
 
   it("passes the server's target and mode, and leaves the config as it is without a vite", async () => {
-    const seen: ViteContext[] = [];
+    const seen: Array<ViteContext> = [];
     await withProjectVite({}, (each) => (seen.push(each), {}), { target: "qwik", mode: "preview" });
     expect(seen).toEqual([{ target: "qwik", mode: "preview" }]);
     const server = { plugins: [{ name: "unframework" }] };
@@ -308,7 +308,7 @@ describe("withProjectVite", () => {
 describe("projectPlugins", () => {
   it("makes a fresh set of the project's plugins alone for each call, for its server", async () => {
     let made = 0;
-    const seen: ViteContext[] = [];
+    const seen: Array<ViteContext> = [];
     const plugins = projectPlugins(
       (each) => {
         seen.push(each);

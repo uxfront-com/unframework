@@ -53,12 +53,12 @@ function setupOwner(composable: UfComposable): UfComponent {
  * primitive is a `shallowRef`, `watchEffect` is `watchPostEffect`), its parameters as written,
  * since Vue reads a getter and calls a callback as the source does.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
   const { module } = context;
   const owner = setupOwner(composable);
   // The types its parameters and type parameters name, which its IR as a setup owner holds no
   // trace of (ADR-0067).
-  const parameterTexts: TypeText[] = [
+  const parameterTexts: Array<TypeText> = [
     ...composable.parameters.map(({ type }) => type),
     ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
       [constraint, fallback].filter((type): type is TypeText => type !== undefined),
@@ -69,7 +69,7 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const imports = new ImportSet(names.scope);
   const rules = names.scriptRules(() => imports.add("vue", "nextTick"));
   const reads = moduleBindings(owner, module, imports, names);
-  const statements: Statement[] = composable.setup.map((item) => {
+  const statements: Array<Statement> = composable.setup.map((item) => {
     const code = names.ownQueries(itemCode(item, owner, module, names, imports, rules));
     return { code, layout: itemLayout(item, code) };
   });
@@ -120,12 +120,12 @@ export function declarationCode(
 /** What a component or a composable reads of its module (ADR-0070). */
 export interface ModuleReads {
   /** The constants it declares, in source order, each as written but for a renamed name. */
-  constants: string[];
+  constants: Array<string>;
   /**
    * The module's type declarations its constants name, transitively, that its own types leave
    * out, to declare beside them.
    */
-  types: TypeDeclaration[];
+  types: Array<TypeDeclaration>;
   /** The type names its constants and those declarations name, which its output imports. */
   typeNames: Set<string>;
 }
@@ -239,7 +239,7 @@ export function addReadTypeImports(
  */
 function renamed(value: Code, names: VueNames): string {
   // Its references, and the roots of the `typeof`s in it (`as typeof step`), which are none.
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   let shorthand: ReadonlySet<number> | undefined;
   for (const reference of value.refs) {
     if (reference.kind !== "Binding") {

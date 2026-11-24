@@ -87,9 +87,9 @@ function claim(length: number): number {
  * mistake in the case.
  */
 export class Builder {
-  readonly bindings: Binding[] = [];
+  readonly bindings: Array<Binding> = [];
   readonly propBindings: Map<string, Binding> = new Map();
-  private readonly loops: Map<string, BindingId>[] = [];
+  private readonly loops: Array<Map<string, BindingId>> = [];
   private readonly props: Readonly<Record<string, PropSpec>>;
 
   constructor(props: Readonly<Record<string, PropSpec>>) {
@@ -105,7 +105,7 @@ export class Builder {
   /** An expression whose references are found in its code. */
   e(code: string): Expression {
     const start = claim(code.length);
-    const refs: Reference[] = [];
+    const refs: Array<Reference> = [];
     const { expression } = parseExpressionSource(code);
     const resolve = (name: string): { binding: BindingId } | { global: string } | undefined => {
       for (const scope of this.loops.toReversed()) {
@@ -184,7 +184,11 @@ export class Builder {
     return createExpression(code, span(start, start + code.length), refs);
   }
 
-  el(tag: string, attributes: Attribute[] = [], ...children: (RenderNode | string)[]): ElementNode {
+  el(
+    tag: string,
+    attributes: Array<Attribute> = [],
+    ...children: Array<RenderNode | string>
+  ): ElementNode {
     return createElement(
       tag,
       attributes,
@@ -203,7 +207,7 @@ export class Builder {
 
   /** A conditional: `[condition, ...children]` per branch, `[undefined, ...]` for the else. */
   if(
-    ...branches: [condition: string | undefined, ...children: (RenderNode | string)[]][]
+    ...branches: Array<[condition: string | undefined, ...children: Array<RenderNode | string>]>
   ): RenderNode {
     return createIf(
       branches.map(([condition, ...children]): IfBranch =>
@@ -254,7 +258,7 @@ export class Builder {
   }
 
   /** A class from parts: a string is a static part, `[name, condition]` a toggle, `{ code }` dynamic. */
-  cls(...items: (string | [name: string, condition: string] | { code: string })[]): Attribute {
+  cls(...items: Array<string | [name: string, condition: string] | { code: string }>): Attribute {
     return createClassAttribute(
       items.map((item): ClassItem =>
         typeof item === "string"
@@ -268,7 +272,7 @@ export class Builder {
   }
 
   /** A style from declarations: `[property, value]` static, `[property, { code }]` bound. */
-  style(...declarations: [property: string, value: string | { code: string }][]): Attribute {
+  style(...declarations: Array<[property: string, value: string | { code: string }]>): Attribute {
     return createStyleAttribute(
       declarations.map(([property, value]): StyleDeclaration =>
         typeof value === "string"
@@ -280,7 +284,7 @@ export class Builder {
   }
 
   /** A spread of `source`'s keys: a prop by its name, or code that says whether it is nullish. */
-  spread(source: string | { code: string; nullish: boolean }, ...keys: string[]): Attribute {
+  spread(source: string | { code: string; nullish: boolean }, ...keys: Array<string>): Attribute {
     const { code, nullish } = typeof source === "string" ? this.propSource(source) : source;
     return createSpreadAttribute(
       this.e(code),
@@ -303,7 +307,7 @@ export class Builder {
     return { code: name, nullish: !passed || /\|\s*(?:null|undefined)\s*$/.test(spec.type) };
   }
 
-  fragment(...children: (RenderNode | string)[]): FragmentNode {
+  fragment(...children: Array<RenderNode | string>): FragmentNode {
     return createFragment(
       children.map((child) => (typeof child === "string" ? this.text(child) : child)),
       here(),
@@ -339,10 +343,10 @@ const here = () => span(0, 0);
 export interface Suite {
   component: UfComponent;
   /** Each prop by its name in the wrapper (`c3Label`): its type, and the value passed. */
-  props: { name: string; type: string; value?: unknown; passed: boolean }[];
+  props: Array<{ name: string; type: string; value?: unknown; passed: boolean }>;
   /** The allowed globals the expressions read (Angular declares them as members). */
-  globals: string[];
-  cases: { name: string; expected: string }[];
+  globals: Array<string>;
+  cases: Array<{ name: string; expected: string }>;
   /** How a target spells a reference: a prop by its name in the wrapper, `call`ed on Angular. */
   rules(call: boolean): RewriteRules;
 }
@@ -352,12 +356,12 @@ export interface Suite {
  * single root case, the root itself), and each case's props are namespaced (`c3Label`), so
  * one compile and one render check them all.
  */
-export function suite(cases: readonly MarkupCase[], root: "div" | "self" = "div"): Suite {
-  const bindings: Binding[] = [];
+export function suite(cases: ReadonlyArray<MarkupCase>, root: "div" | "self" = "div"): Suite {
+  const bindings: Array<Binding> = [];
   const spelled = new Map<BindingId, string>();
   const props: Suite["props"] = [];
-  const declared: Prop[] = [];
-  const trees: (ElementNode | FragmentNode)[] = [];
+  const declared: Array<Prop> = [];
+  const trees: Array<ElementNode | FragmentNode> = [];
   cases.forEach((each, index) => {
     const builder = new Builder(each.props);
     trees.push(each.render(builder));
@@ -434,7 +438,7 @@ function collectGlobals(value: unknown, found: Set<string>): Set<string> {
  * may differ: a `class` or `style` with nothing in it is no attribute, class tokens are sorted,
  * and style declarations without a value are dropped and the others sorted.
  */
-export function canonical(html: string): DomNode[] {
+export function canonical(html: string): Array<DomNode> {
   const expanded = html.replace(
     /<([A-Za-z][A-Za-z0-9]*)((?:\s+[^\s"'=<>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'))?)*)\s*\/>/g,
     (tag, name: string, attributes: string) =>
@@ -477,9 +481,9 @@ function canonicalNode(node: DomNode): DomNode {
 
 /** What each case rendered, from a suite's rendered root `<div>`, beside what it should. */
 export function compareSuite(
-  rendered: readonly DomNode[],
+  rendered: ReadonlyArray<DomNode>,
   cases: Suite["cases"],
-): { name: string; expected: DomNode[]; actual: DomNode[] }[] {
+): Array<{ name: string; expected: Array<DomNode>; actual: Array<DomNode> }> {
   const [root, ...rest] = rendered.map(canonicalNode);
   if (rest.length || typeof root !== "object" || root.tag !== "div") {
     throw new Error(`expected one root <div>, got ${JSON.stringify(rendered).slice(0, 300)}`);
@@ -509,7 +513,7 @@ const item = (id: string, label: string, on = true) => ({ id, label, on });
  * The cases, by what they show. Each holds only values inside the contract (ADR-0035): keys
  * are unique, arrays dense, numbers in attributes finite.
  */
-export const MARKUP_CASES: readonly MarkupCase[] = [
+export const MARKUP_CASES: ReadonlyArray<MarkupCase> = [
   // Interpolations (ADR-0037): text, numbers, nothing for nullish, beside text.
   {
     name: "a string with markup and every template's delimiters",
@@ -1332,7 +1336,7 @@ export const MARKUP_CASES: readonly MarkupCase[] = [
 ];
 
 /** Cases whose tree is a component's root: a fragment, whose edges a target pads. */
-export const ROOT_CASES: readonly MarkupCase[] = [
+export const ROOT_CASES: ReadonlyArray<MarkupCase> = [
   {
     name: "a root fragment with text and interpolations at its edges",
     props: { s: { type: "string", value: "S" } },

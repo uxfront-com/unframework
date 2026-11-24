@@ -6,20 +6,20 @@ import type { Diagnostic, Severity, Span } from "./types.ts";
 export interface SarifLog {
   $schema: string;
   version: "2.1.0";
-  runs: SarifRun[];
+  runs: Array<SarifRun>;
 }
 
 export interface SarifRun {
   tool: { driver: SarifDriver };
   columnKind: "utf16CodeUnits";
-  results: SarifResult[];
+  results: Array<SarifResult>;
 }
 
 export interface SarifDriver {
   name: string;
   informationUri: string;
   version?: string;
-  rules: SarifRule[];
+  rules: Array<SarifRule>;
 }
 
 export interface SarifRule {
@@ -57,18 +57,18 @@ export interface SarifResult {
   ruleId: string;
   level: SarifLevel;
   message: { text: string };
-  locations: SarifLocation[];
-  relatedLocations?: SarifLocation[];
-  fixes?: {
+  locations: Array<SarifLocation>;
+  relatedLocations?: Array<SarifLocation>;
+  fixes?: Array<{
     description: { text: string };
-    artifactChanges: {
+    artifactChanges: Array<{
       artifactLocation: SarifArtifactLocation;
-      replacements: {
+      replacements: Array<{
         deletedRegion: { charOffset: number; charLength: number };
         insertedContent: { text: string };
-      }[];
-    }[];
-  }[];
+      }>;
+    }>;
+  }>;
   properties?: { target?: string; help?: string };
 }
 
@@ -84,7 +84,7 @@ export interface SarifOptions {
  * instead of writing a wrong region.
  */
 export function toSarif(
-  diagnostics: readonly Diagnostic[],
+  diagnostics: ReadonlyArray<Diagnostic>,
   sources: ReadonlyMap<string, string>,
   options: SarifOptions = {},
 ): SarifLog {

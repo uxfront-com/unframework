@@ -31,7 +31,7 @@ export default function Coalesced(
   const [busy, setBusy] = createSignal(false);
   const [name, setName] = createSignal("");
   const [input, setInput] = createSignal("x");
-  const [cached, setCached] = createSignal<number[] | null>(null);
+  const [cached, setCached] = createSignal<Array<number> | null>(null);
 
   createWatcher([step, count, busy], ([nextStep, nextCount, nextBusy]) => {
     props.onState?.(nextStep, nextCount, nextBusy);
@@ -233,7 +233,7 @@ function queueWatcher(run: () => void): void {
  * callback and a cleanup registrar, whose cleanups run before the next callback and when the
  * component is removed.
  */
-function createWatcher<const S extends readonly (() => unknown)[]>(
+function createWatcher<const S extends ReadonlyArray<() => unknown>>(
   sources: S,
   callback: (
     values: WatchedValues<S>,
@@ -242,10 +242,10 @@ function createWatcher<const S extends readonly (() => unknown)[]>(
   ) => unknown,
 ): void;
 function createWatcher(
-  sources: readonly (() => unknown)[],
+  sources: ReadonlyArray<() => unknown>,
   callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  const cleanups: (() => void)[] = [];
+  const cleanups: Array<() => void> = [];
   const track = createReaction(() => queueWatcher(run));
   let last = read();
   onMount(() =>
@@ -257,8 +257,8 @@ function createWatcher(
     }),
   );
 
-  function read(): unknown[] {
-    let values: unknown[] = [];
+  function read(): Array<unknown> {
+    let values: Array<unknown> = [];
     track(() => {
       values = sources.map((each) => each());
     });
@@ -275,7 +275,7 @@ function createWatcher(
     call(values, previous);
   }
 
-  function call(values: unknown[], previous: unknown[] | undefined): void {
+  function call(values: Array<unknown>, previous: Array<unknown> | undefined): void {
     for (const cleanup of cleanups.splice(0)) {
       cleanup();
     }

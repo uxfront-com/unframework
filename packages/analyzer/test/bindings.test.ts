@@ -25,8 +25,8 @@ function attributes(jsx: string, props = PROPS) {
 }
 
 /** The spreads anywhere in a module's one component, in a compact form. */
-function spreadsOf(module: UfModule | undefined): string[] {
-  const found: string[] = [];
+function spreadsOf(module: UfModule | undefined): Array<string> {
+  const found: Array<string> = [];
   const visit = (node: RenderNode): void => {
     if (node.kind === "Element") {
       for (const attribute of node.attributes) {
@@ -53,7 +53,7 @@ function spreadsOf(module: UfModule | undefined): string[] {
 }
 
 /** The lowered attributes, in a compact form. */
-function lowered(jsx: string, props = PROPS): string[] {
+function lowered(jsx: string, props = PROPS): Array<string> {
   const { module, diagnostics } = component(jsx, { props });
   expect(diagnostics).toEqual([]);
   return root(module).attributes.map(describeAttribute);

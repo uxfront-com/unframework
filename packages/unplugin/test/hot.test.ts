@@ -47,7 +47,7 @@ const FILES: Record<string, string> = {
   "src/types.ts": TYPES,
 };
 
-let roots: string[] = [];
+let roots: Array<string> = [];
 
 function createRoot(files: Record<string, string>): string {
   const here = fileURLToPath(new URL("..", import.meta.url));
@@ -77,9 +77,9 @@ afterEach(() => {
 interface HotServer {
   server: ViteDevServer;
   /** What the server sent the client since the last {@link HotServer.edit}. */
-  sent: HotPayload[];
+  sent: Array<HotPayload>;
   /** The modules the unframework plugin left in the ssr environment's list, by id. */
-  ssrModules: string[];
+  ssrModules: Array<string>;
   /** How many compiles the project has run, from a compiler plugin that sees every one. */
   compiles(): number;
   /** Runs an edit and resolves once Vite has finished the hot update it causes. */
@@ -99,7 +99,7 @@ async function startHot(
   let compiles = 0;
   const counter: CompilerPlugin = { name: "count", output: () => void (compiles += 1) };
   const framework = await toolchain.vite(mode, { root, toolchainDir: root });
-  const ssrModules: string[] = [];
+  const ssrModules: Array<string> = [];
   const probe: Plugin = {
     name: "probe",
     enforce: "post",
@@ -157,7 +157,7 @@ async function startHot(
   // directory before it starts polling it, so a file created between the two is in neither: the
   // read missed it, and the poll's first look already includes it. Rewriting that file never
   // changes its directory again, so each attempt creates a new file, which does.
-  const sentinels: string[] = [];
+  const sentinels: Array<string> = [];
   await vi.waitFor(() => {
     const sentinel = `src/.watching-${sentinels.length}`;
     write(root, sentinel, "");
@@ -167,7 +167,7 @@ async function startHot(
   const client = server.environments.client;
   // The environment the page's modules load in: Qwik and Astro render on the server.
   const environment = mode === "ssr" ? server.environments.ssr : client;
-  const sent: HotPayload[] = [];
+  const sent: Array<HotPayload> = [];
   const send = client.hot.send.bind(client.hot);
   vi.spyOn(client.hot, "send").mockImplementation((...args: Parameters<typeof send>) => {
     if (typeof args[0] === "object") {
@@ -233,7 +233,7 @@ async function startHot(
   };
 }
 
-const updates = (sent: readonly HotPayload[]) =>
+const updates = (sent: ReadonlyArray<HotPayload>) =>
   sent.flatMap((payload) => (payload.type === "update" ? payload.updates.map((u) => u.path) : []));
 
 const contentsOf = (modules: ReadonlyMap<string, string>, part: string): string => {
@@ -255,7 +255,7 @@ const solidWithHmr: Toolchain = {
 //
 // plugin-vue tracks the type files its own compiler read, and updates what imports them whatever
 // changed there. That is Vue's own HMR: the project still compiles nothing.
-const HMR_TARGETS: [TargetName, Toolchain, string, string, string[]][] = [
+const HMR_TARGETS: Array<[TargetName, Toolchain, string, string, Array<string>]> = [
   ["react", react, "", "Card.uf.tsx", []],
   ["vue", vue, ".vue", "Card.uf.tsx.vue", ["/src/Card.uf.tsx.vue"]],
   ["svelte", svelte, ".svelte", "Card.uf.tsx.css", []],
@@ -565,7 +565,7 @@ describe("transformSource", () => {
           'import Card from "./src/Card.uf.tsx";\nimport Other from "./src/Other.uf.tsx";\n\nexport { Card, Other };\n',
         "src/Other.uf.tsx": "export default function Other() {\n  return <p>Other Hello</p>;\n}\n",
       });
-      const calls: string[] = [];
+      const calls: Array<string> = [];
       const hot = await startHot(root, "vue", vue, "browser", (file, source) => {
         calls.push(file);
         return file.endsWith("/src/Card.uf.tsx")
@@ -652,7 +652,7 @@ describe("a framework with no hot update of its own", () => {
       return [...seen.values()].join("\n");
     };
 
-    const reloads = (sent: readonly HotPayload[]) =>
+    const reloads = (sent: ReadonlyArray<HotPayload>) =>
       sent.filter((payload) => payload.type === "full-reload").length;
 
     it(

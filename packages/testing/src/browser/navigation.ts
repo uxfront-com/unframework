@@ -4,7 +4,7 @@
 // component left alone, and the test fails L8 at its next settle, naming what was not prevented.
 
 /** What the guard prevented since a test last took the list. */
-const prevented: string[] = [];
+const prevented: Array<string> = [];
 
 let installed = false;
 
@@ -44,7 +44,7 @@ export function installNavigationGuard(): void {
 }
 
 /** What the guard prevented since this was last called, and forgets it. */
-export function takePreventedNavigations(): string[] {
+export function takePreventedNavigations(): Array<string> {
   return prevented.splice(0);
 }
 

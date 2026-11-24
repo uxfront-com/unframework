@@ -35,11 +35,11 @@ export interface ContractCase {
   expected: string;
   /** For an object, where each member is declared. */
   members?: Record<string, MemberOrigin>;
-  dependencies: string[];
+  dependencies: Array<string>;
   /** Constructs `construction` must list; it may list more. */
-  construction?: string[];
+  construction?: Array<string>;
   /** The unresolved spans, each by its file, its text and the reason. */
-  unresolved?: { file: string; text: string; reason: UnresolvedType["reason"] }[];
+  unresolved?: Array<{ file: string; text: string; reason: UnresolvedType["reason"] }>;
   /**
    * What an adapter backed by a type-checker gives instead, where it evaluates a construct the
    * syntactic adapter leaves unresolved: a conditional or a mapped type (plan §5.5).
@@ -60,7 +60,7 @@ const pkg = (path: string) => `pkg:${path}`;
 const exported = (file: string, declaration: string) => ({ file, declaration, exported: true });
 const local = (file: string, declaration: string) => ({ file, declaration, exported: false });
 
-const CONTRACT_CASES: readonly ContractCase[] = [
+const CONTRACT_CASES: ReadonlyArray<ContractCase> = [
   {
     name: "a type literal",
     project: "local",

@@ -18,7 +18,7 @@ const componentJs = (files: Readonly<Record<string, string>>, name: string): str
   `${files[`vue/${name}.vue.js`]}${files[`vue/${name}.vue_vue_type_script_setup_true_lang.js`]}`;
 
 /** Every module a packaged JS file imports, by the specifier it writes. */
-const specifiers = (code: string): string[] =>
+const specifiers = (code: string): Array<string> =>
   [...code.matchAll(/^(?:import|export)\b[^"]*?(?:from )?"([^"]+)";$/gm)].map((match) => match[1]!);
 
 const packaged = async (root = vue()) => {

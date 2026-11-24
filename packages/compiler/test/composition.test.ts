@@ -11,7 +11,7 @@ describe("composition before M3's lanes", () => {
   // lane lands.
   it("vue emits it", () => {
     const module = composition();
-    const reported: Omit<Diagnostic, "file" | "target">[] = [];
+    const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
     const files = builtinTargets.vue.emit(module.components[0]!, {
       module,
       options: undefined,

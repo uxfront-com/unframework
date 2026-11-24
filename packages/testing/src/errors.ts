@@ -25,7 +25,7 @@ export function formatError(error: unknown): string {
  * Vitest wraps an error it cannot attribute to a test (a failed import, a closed browser
  * connection) in its own, so the cause is the part that says what happened.
  */
-export function errorMessages(error: unknown): string[] {
+export function errorMessages(error: unknown): Array<string> {
   if (typeof error !== "object" || error === null) {
     return [String(error)];
   }

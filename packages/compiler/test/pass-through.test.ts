@@ -63,7 +63,7 @@ describe("the passThrough option", () => {
 
 describe("a plugin's pass-through imports", () => {
   /** Compiles `source` with an `ir` hook that rewrites the pass-through imports. */
-  async function withHook(change: (imports: PassThroughImport[]) => PassThroughImport[]) {
+  async function withHook(change: (imports: Array<PassThroughImport>) => Array<PassThroughImport>) {
     const ir = (module: UfModule): UfModule => ({
       ...module,
       passThroughImports: change(structuredClone([...module.passThroughImports!])),
@@ -81,7 +81,7 @@ describe("a plugin's pass-through imports", () => {
     expect(outputs.vue![0]!.contents).not.toContain("virtual:c.css");
   });
 
-  it.each<[string, (imports: PassThroughImport[]) => PassThroughImport[]]>([
+  it.each<[string, (imports: Array<PassThroughImport>) => Array<PassThroughImport>]>([
     ["add one", (imports) => [...imports, { ...imports[1]!, specifier: "virtual:d.css" }]],
     ["duplicate one", (imports) => [...imports, imports[2]!]],
     ["reorder them", ([a, b, c]) => [a!, c!, b!]],

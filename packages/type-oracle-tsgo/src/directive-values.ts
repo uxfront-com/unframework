@@ -19,7 +19,7 @@ import type { Checker, Type, TypeReference } from "typescript/sync";
 export interface Shadow {
   text: string;
   /** The offset of each query's call in `text`, in the queries' order. */
-  calls: number[];
+  calls: Array<number>;
 }
 
 /** The helper's name, when the source's text doesn't already hold it. */
@@ -33,7 +33,7 @@ const HELPER = "__ufDirectiveValue";
  * JavaScript. A leading byte order mark is dropped, since the parser's spans count it and the
  * checker's positions don't.
  */
-export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]): Shadow {
+export function shadowOf(source: string, queries: ReadonlyArray<DirectiveValueQuery>): Shadow {
   const bom = source.startsWith("\uFEFF") ? 1 : 0;
   let helper = HELPER;
   for (let suffix = 1; source.includes(helper); suffix++) {
@@ -42,7 +42,7 @@ export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]
   const order = queries
     .map((query, index) => ({ query, index }))
     .toSorted((a, b) => a.query.value.start - b.query.value.start);
-  const calls: number[] = Array.from({ length: queries.length }, () => -1);
+  const calls: Array<number> = Array.from({ length: queries.length }, () => -1);
   let text = "";
   let at = bom;
   for (const { query, index } of order) {

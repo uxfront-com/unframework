@@ -129,7 +129,7 @@ export function spawnNgServe(
 
   return new Promise((resolve, reject) => {
     let started = false;
-    const output: string[] = [];
+    const output: Array<string> = [];
     const onExit = (code: number | null): void => fail(`exited with ${code}`);
     const fail = (reason: string): void => {
       clearTimeout(timer);

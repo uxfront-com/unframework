@@ -20,8 +20,8 @@ import { summarise } from "../src/node/summary.ts";
 
 let root: string;
 let reportsDir: string;
-let logs: string[];
-let errors: string[];
+let logs: Array<string>;
+let errors: Array<string>;
 const exitCode = process.exitCode;
 
 beforeEach(() => {
@@ -43,7 +43,7 @@ const test = (project: string, uf?: UfLayerMeta, state: State = "passed", name =
   meta: () => (uf ? { uf } : {}),
   result: () => ({ state }),
 });
-const testModule = (project: string, tests: ReturnType<typeof test>[], uf?: UfLayerMeta) => ({
+const testModule = (project: string, tests: Array<ReturnType<typeof test>>, uf?: UfLayerMeta) => ({
   project: { name: project },
   meta: () => (uf ? { uf } : {}),
   children: { allTests: () => tests },
@@ -69,19 +69,19 @@ function harness(overrides: Partial<HarnessContext> = {}): HarnessContext {
 }
 
 const vitest = (
-  projects: string[],
+  projects: Array<string>,
   options: {
-    filenamePattern?: string[];
+    filenamePattern?: Array<string>;
     testNamePattern?: RegExp;
     shard?: { index: number; count: number };
     changed?: boolean | string;
-    related?: string[];
-    tagsFilter?: string[];
+    related?: Array<string>;
+    tagsFilter?: Array<string>;
     harness?: HarnessContext;
     /** Project → the cases the run adds it for alone (`ufOnly`). */
-    only?: Record<string, string[]>;
+    only?: Record<string, Array<string>>;
     /** Project → the specs it includes, when not every case's. */
-    include?: Record<string, string[]>;
+    include?: Record<string, Array<string>>;
   } = {},
 ) => ({
   projects: projects.map((name) => ({
@@ -113,7 +113,7 @@ const hello = (target: string, layers: UfLayerMeta["layers"]): UfLayerMeta => ({
 });
 
 /** A target's (case, target) pairs of the two cases a run of some targets is tested with. */
-const both = (target: string): [string, string][] => [
+const both = (target: string): Array<[string, string]> => [
   ["basics/hello", target],
   ["semantics/listbox", target],
 ];
@@ -249,7 +249,7 @@ describe("ParityReporter", () => {
 
   describe("a shard", () => {
     const all = ["compile", "ssr:vue"];
-    const shardRun = (index: number, modules: ReturnType<typeof testModule>[]) => {
+    const shardRun = (index: number, modules: Array<ReturnType<typeof testModule>>) => {
       const reporter = new ParityReporter({ reportsDir, allProjects: all });
       reporter.onInit(vitest(all, { shard: { index, count: 2 } }));
       reporter.onTestRunEnd(modules, [], "passed");
@@ -421,7 +421,7 @@ describe("ParityReporter", () => {
 
   it("supersedes, project by project, the records of earlier runs of the projects it ran", () => {
     mkdirSync(reportsDir, { recursive: true });
-    const earlier = (run: string, projects: string[]) =>
+    const earlier = (run: string, projects: Array<string>) =>
       writeFileSync(
         join(reportsDir, `parity-matrix.${run}.json`),
         stringifyMatrix(
@@ -503,7 +503,7 @@ describe("ParityReporter", () => {
           [layerOf(project)]: newer ? { status: "fail", message: "newer" } : { status: "pass" },
         },
       });
-    const moduleOf = (project: string, cells: [string, string][], newer: boolean) =>
+    const moduleOf = (project: string, cells: Array<[string, string]>, newer: boolean) =>
       testModule(
         project,
         cells.map(([caseId, target]) => record(project, caseId, target, newer)),
@@ -523,7 +523,7 @@ describe("ParityReporter", () => {
      * which React's projects record `react`; the summary.
      */
     const runs = (
-      react: (project: string) => [string, string][],
+      react: (project: string) => Array<[string, string]>,
       selected = all.filter((project) => project !== "toolchain:react"),
     ) => {
       vi.useFakeTimers({ toFake: ["Date"] });

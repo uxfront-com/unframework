@@ -34,62 +34,62 @@ export interface UfModule {
   /** The source file as the caller named it: relative and with forward slashes in snapshots. */
   file: string;
   /** The module's components, in source order. */
-  components: UfComponent[];
+  components: Array<UfComponent>;
   /** What the module exports, in source order. Targets keep the same export shape. */
-  exports: UfExport[];
+  exports: Array<UfExport>;
   /**
    * The local type declarations the components' props, events and setup code use, in source
    * order, each name once: the targets that print types copy them into the outputs of the
    * components that use them.
    */
-  types: TypeDeclaration[];
+  types: Array<TypeDeclaration>;
   /**
    * The module's imports of other `.uf.tsx` modules, in source order, each with the API the
    * resolver gave for it (ADR-0053). Absent when it imports none.
    */
-  imports?: ModuleImport[];
+  imports?: Array<ModuleImport>;
   /** The injection keys the module declares and exports, in source order (ADR-0054). */
-  keys?: InjectionKeyDeclaration[];
+  keys?: Array<InjectionKeyDeclaration>;
   /**
    * The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0064): every
    * output keeps them as written, in this order, and the plugin that registers each module
    * resolves it. Absent when it has none.
    */
-  passThroughImports?: PassThroughImport[];
+  passThroughImports?: Array<PassThroughImport>;
   /**
    * The module's `import type` declarations, in source order (ADR-0067): the types its props,
    * events and setup name from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, which
    * every output re-imports by name. Absent when it has none.
    */
-  typeImports?: TypeImport[];
+  typeImports?: Array<TypeImport>;
   /**
    * What the module exports of types that `TypeDeclaration.exported` cannot hold, in source order
    * (ADR-0068): type re-exports, and exported types no component reaches. Every output exports
    * them under the same names. Absent when it has none.
    */
-  typeExports?: TypeExport[];
+  typeExports?: Array<TypeExport>;
   /**
    * The module's imports of values from relative `.ts` modules, in source order (ADR-0070):
    * copied into each output tree unchanged, and read through `import` bindings. Absent when it
    * imports none.
    */
-  moduleImports?: SharedModuleImport[];
+  moduleImports?: Array<SharedModuleImport>;
   /**
    * The module's top-level `const` declarations its components read, in source order (ADR-0070),
    * through `moduleConst` bindings. Absent when it has none.
    */
-  constants?: ModuleConstant[];
+  constants?: Array<ModuleConstant>;
   /**
    * The composables a `.uf.ts` module declares, in source order (ADR-0069): named exports
    * `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module.
    */
-  composables?: UfComposable[];
+  composables?: Array<UfComposable>;
   /**
    * The module's directives, in source order (ADR-0099): a `.uf.ts` module's exports `v[A-Z]…`,
    * each compiled to one module per target, and a `.uf.tsx` module's top-level ones, which every
    * output that applies one declares. Absent when it has none.
    */
-  directives?: UfDirective[];
+  directives?: Array<UfDirective>;
 }
 
 /**
@@ -112,14 +112,14 @@ export interface UfDirective {
   /** The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent. */
   element?: TypeText;
   /** The hooks, in source order, each named once. */
-  hooks: DirectiveHook[];
+  hooks: Array<DirectiveHook>;
   /**
    * The module's constants and value imports the hooks read, in source order: `moduleConst` and
    * `import` bindings, which its output declares and imports as a composable's does (ADR-0070).
    */
-  bindings: Binding[];
+  bindings: Array<Binding>;
   /** The names of the module's `types` its hooks name, in source order. */
-  types: string[];
+  types: Array<string>;
   /** The `const` declaration, from `export` or `const` to its end. */
   span: Span;
 }
@@ -134,7 +134,7 @@ export interface DirectiveHook {
    * Its parameters' names, as written and unannotated: the element, then the value and the
    * previous value, as many as the hook takes.
    */
-  parameters: string[];
+  parameters: Array<string>;
   /** The method's block body, `{ … }`, with every name it reads resolved. */
   body: Code;
   /** The method, from its name to the end of its body. */
@@ -146,7 +146,7 @@ export interface TypeImport {
   /** The specifier as written: a relative module, a `.uf.tsx`, a `.uf.ts` or a package. */
   specifier: string;
   /** The names it binds, in source order. */
-  names: NamedImport[];
+  names: Array<NamedImport>;
   /** The import declaration. */
   span: Span;
 }
@@ -169,7 +169,7 @@ export interface TypeReExport {
   /** The specifier as written. */
   specifier: string;
   /** The names it re-exports, in source order. */
-  names: TypeExportName[];
+  names: Array<TypeExportName>;
   /** The export declaration. */
   span: Span;
 }
@@ -209,7 +209,7 @@ export interface SharedModuleImport {
    * The names it binds, in source order: each an `import` binding of the components that read
    * it.
    */
-  names: NamedImport[];
+  names: Array<NamedImport>;
   /** The import declaration. */
   span: Span;
 }
@@ -248,17 +248,17 @@ export interface UfComposable {
   name: string;
   span: Span;
   /** The function's type parameters, in order. Absent when it has none. */
-  typeParameters?: TypeParameter[];
+  typeParameters?: Array<TypeParameter>;
   /** The parameters, in order, each with its kind. */
-  parameters: ComposableParameter[];
+  parameters: Array<ComposableParameter>;
   /** The names of the module's `types` its output declares, in source order. */
-  types: string[];
+  types: Array<string>;
   /** Every binding the composable declares, by the start of its span: its arguments and setup. */
-  bindings: Binding[];
+  bindings: Array<Binding>;
   /** The body before its return, in source order. */
-  setup: SetupItem[];
+  setup: Array<SetupItem>;
   /** The members of the returned shorthand object, `return { on, toggle }`, in order. */
-  returns: ReturnedMember[];
+  returns: Array<ReturnedMember>;
 }
 
 /**
@@ -317,7 +317,7 @@ export interface PassThroughImport {
    */
   specifier: string;
   /** The names a named import binds, in source order: none for a side-effect import. */
-  names: PassThroughName[];
+  names: Array<PassThroughName>;
   /** The import declaration. */
   span: Span;
 }
@@ -343,7 +343,7 @@ export interface ModuleImport {
   /** What the resolver returned for the module. */
   api: ModuleApi;
   /** The names the import binds, in source order. */
-  names: ImportedName[];
+  names: Array<ImportedName>;
   /** The import declaration. */
   span: Span;
 }
@@ -391,19 +391,19 @@ export interface ModuleApi {
   /** The module's file, relative to the importer, with forward slashes. */
   file: string;
   /** The module's components, in source order, its non-exported ones included. */
-  components: ComponentApi[];
+  components: Array<ComponentApi>;
   /** The injection keys the module exports, in source order. */
-  keys: KeyApi[];
+  keys: Array<KeyApi>;
   /**
    * The composables a `.uf.ts` module exports, in source order (ADR-0069). Absent when it has
    * none.
    */
-  composables?: ComposableApi[];
+  composables?: Array<ComposableApi>;
   /**
    * The directives a `.uf.ts` module exports, in source order (ADR-0099). Absent when it has
    * none.
    */
-  directives?: DirectiveApi[];
+  directives?: Array<DirectiveApi>;
 }
 
 /**
@@ -423,11 +423,11 @@ export interface DirectiveApi {
 export interface ComposableApi {
   name: string;
   /** The names of its type parameters, in order. Absent when it has none. */
-  typeParameters?: string[];
+  typeParameters?: Array<string>;
   /** The parameters, in order. */
-  parameters: ComposableParameterApi[];
+  parameters: Array<ComposableParameterApi>;
   /** The returned members, in order. */
-  members: ComposableMemberApi[];
+  members: Array<ComposableMemberApi>;
   /**
    * Set where its setup runs code in the browser (a watcher, an effect or a lifecycle hook):
    * a call then requires `composable-effect-order`, and its `Use` item copies the flag.
@@ -470,15 +470,15 @@ export interface ComponentApi {
   /** How the module exports it: as the default, by name, or not at all (a sibling file). */
   export: "default" | "named" | "local";
   /** The props, in member order. */
-  props: ApiMember[];
+  props: Array<ApiMember>;
   /** The events `defineEmits` declares, in member order. */
-  events: ApiEvent[];
+  events: Array<ApiEvent>;
   /** The models `defineModel` declares, in source order. */
-  models: ApiMember[];
+  models: Array<ApiMember>;
   /** The slots `defineSlots` declares, in member order. */
-  slots: ApiSlot[];
+  slots: Array<ApiSlot>;
   /** The names `defineExpose` exposes, in source order. */
-  exposes: string[];
+  exposes: Array<string>;
   /** `false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off. */
   inheritAttrs: boolean;
   /**
@@ -515,7 +515,7 @@ export interface ComponentApi {
    * own prop, model or event instead, which the targets do not pass alike, so a parent reports
    * it (UF1002). Absent where the root is no component, or nothing falls through to it.
    */
-  rootDeclarations?: ApiRootDeclaration[];
+  rootDeclarations?: Array<ApiRootDeclaration>;
   /**
    * The root component that exposes functions (ADR-0118), through a chain of root components
    * that expose nothing, where this component exposes nothing either: a ref on it holds neither
@@ -534,7 +534,7 @@ export interface ComponentApi {
    * interfaces. A root component that renders such a root, through a chain of root components
    * that expose nothing, takes them too. Absent otherwise: `refTag` names one element.
    */
-  refTags?: string[];
+  refTags?: Array<string>;
   /**
    * The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it
    * places them, and merges its `class` and `style` into whichever renders. Where the component
@@ -542,7 +542,7 @@ export interface ComponentApi {
    * where every tag takes it (ADR-0122). A root component that renders a `dynamic` root, through
    * a chain of root components that keep `inheritAttrs`, takes its tags too.
    */
-  rootTags?: string[];
+  rootTags?: Array<string>;
   /**
    * Set when the root is a `<component is>` whose `is` the API cannot list the tags of, as a
    * setup value's (ADR-0119), so a parent's UF3045 says why. Absent otherwise.
@@ -554,7 +554,7 @@ export interface ComponentApi {
    * The names of the component's type parameters, in order (ADR-0068), so a parent knows the
    * child is generic. Absent when it has none.
    */
-  typeParameters?: string[];
+  typeParameters?: Array<string>;
   /**
    * Set when the component's setup awaits (ADR-0101), so a parent in another file knows: Vue's
    * parent wraps it in `<Suspense>`. Absent otherwise.
@@ -579,9 +579,9 @@ export interface ApiFallthroughOwn {
    * Each attribute: its static value, `true` written without one, and no value where bound
    * (a form `validateModule` checks, as a static attribute's).
    */
-  attributes: { name: string; value?: string | true }[];
+  attributes: Array<{ name: string; value?: string | true }>;
   /** The DOM events its own listeners listen to, in lower case (`keydown`). */
-  listeners: string[];
+  listeners: Array<string>;
 }
 
 /** A prop, a model or an event that a component's root component declares (ADR-0118). */
@@ -602,13 +602,13 @@ export interface ApiMember {
    * The names its type references, in order of their first use (ADR-0067), so a parent imports
    * what it prints. Absent when it references none.
    */
-  references?: string[];
+  references?: Array<string>;
   /**
    * The literals a prop's type resolves to when it is a union of literals the text as written
    * does not spell, as an alias does (`tone?: Tone`), each as TypeScript writes it (`"info"`,
    * `2`, `true`), so a parent checks a literal it passes against them (UF3039). Absent otherwise.
    */
-  literals?: string[];
+  literals?: Array<string>;
 }
 
 /**
@@ -618,7 +618,7 @@ export interface ApiMember {
 export interface ApiEvent {
   /** @pattern ^[a-z][A-Za-z0-9]*$ */
   name: string;
-  parameters: ApiEventParameter[];
+  parameters: Array<ApiEventParameter>;
 }
 
 /** A member of an event's payload in a child's API. */
@@ -635,7 +635,7 @@ export interface ApiSlot {
   /** The slot's props' type, for a scoped slot. */
   props?: string;
   /** The names its props' type references, as `ApiMember.references`. */
-  references?: string[];
+  references?: Array<string>;
 }
 
 /** An injection key of a child module's API. */
@@ -646,7 +646,7 @@ export interface KeyApi {
   /** The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`. */
   ref?: RefType;
   /** The names its type references, as `ApiMember.references`. */
-  references?: string[];
+  references?: Array<string>;
 }
 
 /** An export of a module. */
@@ -686,16 +686,16 @@ export interface UfComponent {
    * The function's type parameters, `function List<T>(props: ListProps<T>)`, in order
    * (ADR-0068). Absent when it has none.
    */
-  typeParameters?: TypeParameter[];
+  typeParameters?: Array<TypeParameter>;
   /** The members of the props type, in member order: none for a component without props. */
-  props: Prop[];
+  props: Array<Prop>;
   /** The props parameter as written. Absent when the component takes no parameter. */
   propsParameter?: PropsParameter;
   /**
    * The names of the module's `types` this component's output declares: the declarations its
    * props' types, its events' payloads and its setup code's annotations reach, in source order.
    */
-  types: string[];
+  types: Array<string>;
   /**
    * The events the component declares with `const emit = defineEmits<{ … }>()` (ADR-0047).
    * Absent when it declares none.
@@ -715,12 +715,12 @@ export interface UfComponent {
    * destructured prop, or every prop in the object form), the setup's declarations, the `emit`
    * function and the loop variables. Expressions and code refer to them by id.
    */
-  bindings: Binding[];
+  bindings: Array<Binding>;
   /**
    * The setup: what the component's body declares and runs before its return, in source order
    * (plan §4.2, ADR-0045). Empty for a component whose body is only its return.
    */
-  setup: SetupItem[];
+  setup: Array<SetupItem>;
   /** The returned JSX: one element, or several roots in a fragment. */
   render: ElementNode | FragmentNode;
   /**
@@ -728,7 +728,7 @@ export interface UfComponent {
    * ADR-0063): the compiler scopes them under `scopeId`. Only the one component of a module
    * imports any. Absent when it imports none.
    */
-  styles?: StyleSheet[];
+  styles?: Array<StyleSheet>;
   /**
    * The id that scopes the component's sheets, in the attribute `data-uf-<scopeId>` (ADR-0063):
    * eight hex digits of a hash of the component's name and its sheets' text, never of a path
@@ -899,7 +899,7 @@ export interface Expression {
   code: string;
   span: Span;
   /** Each reference to a binding or an allowed global, in source order, without overlap. */
-  refs: Reference[];
+  refs: Array<Reference>;
 }
 
 /** A resolved identifier in an expression. */
@@ -955,7 +955,7 @@ export interface BindingReference {
    * The paths of the read that a condition around it narrows, where the read relies on it
    * (ADR-0046): set on a read of a prop or of a ref's value only, shortest path first.
    */
-  narrowed?: NarrowedPath[];
+  narrowed?: Array<NarrowedPath>;
   /**
    * Set where the reference lies in client code that runs later than the code around it (ADR-0048):
    * in a function that code hands to a call that runs it later or never (a timer's or an
@@ -1026,7 +1026,7 @@ export interface Code {
    * `Emit`'s arguments hold references of their own, which follow it in the list; no other
    * references overlap.
    */
-  refs: CodeReference[];
+  refs: Array<CodeReference>;
 }
 
 /** A resolved name in setup code. */
@@ -1073,7 +1073,7 @@ export interface WriteReference {
    * (`if (count.value !== null) count.value += 1`, ADR-0046): one `local` path spanning `target`.
    * A target that reads the written value through a call asserts it (`count()! + 1`).
    */
-  narrowed?: NarrowedPath[];
+  narrowed?: Array<NarrowedPath>;
 }
 
 /**
@@ -1120,7 +1120,7 @@ export interface EmitReference {
   /** The whole call, from `emit` to its closing parenthesis. */
   span: Span;
   /** The payload's arguments, in order: their references follow this one in the list. */
-  arguments: Span[];
+  arguments: Array<Span>;
 }
 
 /**
@@ -1155,7 +1155,7 @@ export interface FunctionCode {
   /** Set for an `async` function. */
   async?: true;
   /** The parameters, in order. */
-  parameters: Parameter[];
+  parameters: Array<Parameter>;
   /** The return type annotation as written, without its colon. */
   returnType?: TypeText;
   /** The body: a block `{ … }`, or an arrow's expression. */
@@ -1170,7 +1170,7 @@ export interface FunctionCode {
    * after a guard on state), which every target runs in place and codegen's `handlerControls`
    * reads from the body; never one after an `await` or in a function inside it (UF3033).
    */
-  eventControls?: EventControl[];
+  eventControls?: Array<EventControl>;
   /** The whole function, from `async` or its first parameter to the end of its body. */
   span: Span;
 }
@@ -1206,7 +1206,7 @@ export interface ParameterPattern {
   /** Exactly `source.slice(span.start, span.end)`: its defaults are static. */
   code: string;
   /** The names the pattern binds, each an identifier. */
-  names: string[];
+  names: Array<string>;
   span: Span;
 }
 
@@ -1326,7 +1326,7 @@ export interface FunctionItem {
 export interface WatchItem {
   kind: "Watch";
   /** What it watches: one source, or each element of an array of sources. */
-  sources: WatchSource[];
+  sources: Array<WatchSource>;
   /** Set for an array of sources (`watch([a, b], …)`): the callback gets arrays of values. */
   array?: true;
   /** The callback: its parameters are the value, the previous value and `onCleanup`. */
@@ -1436,9 +1436,9 @@ export interface UseItem {
   /** The local name of the imported composable. */
   composable: string;
   /** The arguments, in order, each as its parameter's kind reads it. */
-  arguments: UseArgument[];
+  arguments: Array<UseArgument>;
   /** The destructured members, in source order. */
-  members: UsedMember[];
+  members: Array<UsedMember>;
   /** Copied from the composable's API: a call requires `composable-effect-order`. */
   hasEffects?: true;
   /** The declaration, from `const` to its end. */
@@ -1488,7 +1488,7 @@ export interface Slots {
   /** The type argument as written. */
   type: TypeText;
   /** The slots, in member order, each name once. */
-  slots: SlotDeclaration[];
+  slots: Array<SlotDeclaration>;
   /** The declaration, from `const` to its end. */
   span: Span;
 }
@@ -1505,14 +1505,14 @@ export interface SlotDeclaration {
    * The names its props' type references, in order of their first use (ADR-0067), so a type
    * parameter a slot passes is seen (`generic-slot-props`). Absent when it references none.
    */
-  references?: string[];
+  references?: Array<string>;
   span: Span;
 }
 
 /** What a component exposes with `defineExpose({ focus, clear })` (ADR-0054). */
 export interface Exposes {
   /** The exposed `localFn` bindings, in source order. */
-  functions: BindingId[];
+  functions: Array<BindingId>;
   /** The call. */
   span: Span;
 }
@@ -1524,7 +1524,7 @@ export interface Emits {
   /** The type argument as written: an object type literal, or a reference to a local type. */
   type: TypeText;
   /** The events, in member order, each name once. */
-  events: EventDeclaration[];
+  events: Array<EventDeclaration>;
   /** The declaration, from `const` to its end. */
   span: Span;
 }
@@ -1538,7 +1538,7 @@ export interface EventDeclaration {
    */
   name: string;
   /** The payload: the members of the event's named tuple, in order. */
-  parameters: EventParameter[];
+  parameters: Array<EventParameter>;
   /** The member that declares the event. */
   span: Span;
 }
@@ -1576,9 +1576,9 @@ export interface ComponentNode {
   /** The local name of an imported component, or the name of one of the module's own. */
   component: string;
   /** Each attribute, each name set once. */
-  attributes: ComponentAttribute[];
+  attributes: Array<ComponentAttribute>;
   /** What fills the child's slots: the children as the default slot's, then the named ones. */
-  fills: SlotFill[];
+  fills: Array<SlotFill>;
   span: Span;
 }
 
@@ -1593,7 +1593,7 @@ export interface SlotOutletNode {
   /** The object a scoped slot is called with. */
   props?: Expression;
   /** What renders when the parent leaves the slot empty: nothing when empty. */
-  fallback: RenderNode[];
+  fallback: Array<RenderNode>;
   span: Span;
 }
 
@@ -1607,18 +1607,18 @@ export interface DynamicNode {
   /** What chooses the candidate: an expression whose value is one of `candidates`. */
   is: Expression;
   /** The set it chooses from, in source order. */
-  candidates: DynamicCandidate[];
-  attributes: (Attribute | ComponentAttribute)[];
+  candidates: Array<DynamicCandidate>;
+  attributes: Array<Attribute | ComponentAttribute>;
   /** The children of a tag candidate: none for components, whose content is `fills`. */
-  children: RenderNode[];
+  children: Array<RenderNode>;
   /** The fills of component candidates. */
-  fills?: SlotFill[];
+  fills?: Array<SlotFill>;
   /**
    * The attributes only some tag candidates take, by name, each with the tags that take it
    * (ADR-0119): it renders only when one of them does. An attribute every candidate takes has no
    * entry, and the field is absent when there are none.
    */
-  only?: DynamicOnly[];
+  only?: Array<DynamicOnly>;
   span: Span;
 }
 
@@ -1627,7 +1627,7 @@ export interface DynamicOnly {
   /** The attribute's name, as its `Static` or `Bound` attribute spells it. */
   name: string;
   /** The candidate tags that take it, in candidate order: some of them, never all. */
-  tags: string[];
+  tags: Array<string>;
 }
 
 /**
@@ -1639,7 +1639,7 @@ export interface TeleportNode {
   /** The CSS selector of the element the content mounts into: a static string, not empty. */
   to: string;
   /** The content: exactly one element (ADR-0098). */
-  children: RenderNode[];
+  children: Array<RenderNode>;
   span: Span;
 }
 
@@ -1659,7 +1659,7 @@ export interface TransitionNode {
    * The child: exactly one element, or one `If` whose every branch holds one element or nothing
    * (ADR-0100).
    */
-  children: RenderNode[];
+  children: Array<RenderNode>;
   span: Span;
 }
 
@@ -1691,7 +1691,7 @@ export interface SlotFill {
   /** A scoped fill's parameter, whose names are `slotScope` bindings. */
   parameter?: Parameter;
   /** What fills the slot: none for a forwarded one. */
-  children: RenderNode[];
+  children: Array<RenderNode>;
   /** The parent's own slot this fill passes on, `{{ title: slots.title }}`, with no children. */
   forward?: string;
   span: Span;
@@ -1708,9 +1708,9 @@ export interface ElementNode {
    */
   tag: string;
   /** Each attribute of the element, each name set once. */
-  attributes: Attribute[];
+  attributes: Array<Attribute>;
   /** None for a void element (`<br>`). */
-  children: RenderNode[];
+  children: Array<RenderNode>;
   span: Span;
 }
 
@@ -1747,7 +1747,7 @@ export interface InterpolationNode {
 export interface IfNode {
   kind: "If";
   /** The branches in order: the first whose condition holds renders, or the final else. */
-  branches: IfBranch[];
+  branches: Array<IfBranch>;
   span: Span;
 }
 
@@ -1756,7 +1756,7 @@ export interface IfBranch {
   /** The condition: absent on the final else branch. */
   condition?: Expression;
   /** What the branch renders: nothing for an empty branch, which only the else may not be. */
-  children: RenderNode[];
+  children: Array<RenderNode>;
   span: Span;
 }
 
@@ -1780,7 +1780,7 @@ export interface ForNode {
 export interface FragmentNode {
   kind: "Fragment";
   /** The roots, one or more. */
-  children: RenderNode[];
+  children: Array<RenderNode>;
   span: Span;
 }
 
@@ -1995,7 +1995,7 @@ export interface BoundAttribute {
  */
 export interface ClassAttribute {
   kind: "Class";
-  items: ClassItem[];
+  items: Array<ClassItem>;
   span: Span;
 }
 
@@ -2042,7 +2042,7 @@ export interface DynamicClass {
  */
 export interface StyleAttribute {
   kind: "Style";
-  declarations: StyleDeclaration[];
+  declarations: Array<StyleDeclaration>;
   /**
    * A `style` bound to an expression that is not an object literal, `style={styles}` (ADR-0038's
    * deferred form): a style object keyed as an object literal's are, a style string, or nothing.
@@ -2087,7 +2087,7 @@ export interface SpreadAttribute {
    */
   value: Expression;
   /** The keys the object's type declares, in member order. */
-  keys: SpreadKey[];
+  keys: Array<SpreadKey>;
   /**
    * Whether the object may be `null` or `undefined` where the spread is, as its type says once
    * the conditions around the spread narrow it: then it renders no key, and the targets read

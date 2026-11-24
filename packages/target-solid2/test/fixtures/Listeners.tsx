@@ -2,7 +2,7 @@ import type { ComponentProps, JSX } from "@solidjs/web";
 import { createSignal, getObserver, omit, onCleanup } from "solid-js";
 
 export interface ListenersEvents {
-  onLogged?: (entries: string[]) => void;
+  onLogged?: (entries: Array<string>) => void;
 }
 
 export default function Listeners(
@@ -14,7 +14,7 @@ export default function Listeners(
 ) {
   const others = omit(props, "onLogged");
 
-  const [log, setLog] = createState<string[]>([]);
+  const [log, setLog] = createState<Array<string>>([]);
   const [volume, setVolume] = createState(0);
   let field: HTMLInputElement | null = null;
 

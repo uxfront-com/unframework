@@ -52,12 +52,12 @@ interface OxlintDiagnostic {
   code?: string;
   help?: string;
   filename: string;
-  labels?: { span: { line: number; column: number } }[];
+  labels?: Array<{ span: { line: number; column: number } }>;
 }
 
 /** oxlint's JSON report. */
 interface OxlintReport {
-  diagnostics: OxlintDiagnostic[];
+  diagnostics: Array<OxlintDiagnostic>;
   number_of_files: number;
 }
 
@@ -76,10 +76,10 @@ interface OxlintReport {
  * with a code that disagrees with the report.
  */
 export async function lintWithOxlint(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   context: ToolchainContext,
   options: LintOptions = {},
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
   assertFilesToCheck(files, "lint");
   const config = configFile(context, options, "output.oxlintrc.json", "oxlint");
   const bin = resolveToolBin(context.toolchainDir, "oxlint", "oxlint");
@@ -235,8 +235,8 @@ interface EslintMessage {
 /** ESLint's results for one file. */
 interface EslintResult {
   filePath: string;
-  messages: EslintMessage[];
-  suppressedMessages: EslintMessage[];
+  messages: Array<EslintMessage>;
+  suppressedMessages: Array<EslintMessage>;
 }
 
 /** ESLint's notice for a file it was given and did not lint. */
@@ -260,10 +260,10 @@ const IGNORED = /^File ignored\b/;
  * error.
  */
 export async function lintWithEslint(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   context: ToolchainContext,
   options: EslintOptions = {},
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
   assertFilesToCheck(files, "lint");
   const config = configFile(context, options, "eslint.config.js", "ESLint");
   const base = options.tsconfig === undefined ? undefined : resolve(options.tsconfig);
@@ -333,7 +333,7 @@ interface TypedProject {
 async function writeProject(
   toolchainDir: string,
   base: string,
-  files: readonly string[],
+  files: ReadonlyArray<string>,
 ): Promise<TypedProject> {
   await mkdir(join(toolchainDir, ".uf-tmp"), { recursive: true });
   const directory = await mkdtemp(join(toolchainDir, ".uf-tmp", "lint-"));
@@ -374,7 +374,7 @@ function resolveEslint(toolchainDir: string): string {
 }
 
 /** Reads ESLint's results, rejecting a run that did not end with them. */
-function readEslintResults(run: ProcessRun): EslintResult[] {
+function readEslintResults(run: ProcessRun): Array<EslintResult> {
   if (run.signal) {
     throw checkerFailed("ESLint", run, "it did not finish.");
   }
@@ -429,9 +429,9 @@ function eslintMessage(message: EslintMessage, kind?: "suppressed"): ToolchainMe
  * language): one entry per path, with every run's messages, in a stable order.
  */
 export function mergeLintResults(
-  results: readonly ReadonlyMap<string, readonly ToolchainMessage[]>[],
-): Map<string, ToolchainMessage[]> {
-  const merged = new Map<string, ToolchainMessage[]>();
+  results: ReadonlyArray<ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>>,
+): Map<string, Array<ToolchainMessage>> {
+  const merged = new Map<string, Array<ToolchainMessage>>();
   for (const result of results) {
     for (const [path, messages] of result) {
       merged.set(path, [...(merged.get(path) ?? []), ...messages]);
@@ -455,7 +455,7 @@ function configFile(
 }
 
 /** The deepest directory that holds every path. */
-function commonDirectory(paths: readonly string[]): string {
+function commonDirectory(paths: ReadonlyArray<string>): string {
   const [first = [], ...rest] = paths.map((path) => dirname(path).split(sep));
   let length = first.length;
   for (const parts of rest) {
@@ -472,7 +472,9 @@ function commonDirectory(paths: readonly string[]): string {
  * Sorts each file's messages by position, then code and text: a linter's order depends on its
  * threads (oxlint) or its rules' order, and the results must not.
  */
-function sortMessages(results: Map<string, ToolchainMessage[]>): Map<string, ToolchainMessage[]> {
+function sortMessages(
+  results: Map<string, Array<ToolchainMessage>>,
+): Map<string, Array<ToolchainMessage>> {
   for (const [path, messages] of results) {
     results.set(path, messages.toSorted(compareMessages));
   }

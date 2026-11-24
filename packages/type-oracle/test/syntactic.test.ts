@@ -18,8 +18,8 @@ typeOracleContract("syntactic", ({ root }) =>
 );
 
 /** An oracle over files in memory, under `/project`, that records what it reads. */
-function memory(files: Record<string, string>): { oracle: TypeOracle; reads: string[] } {
-  const reads: string[] = [];
+function memory(files: Record<string, string>): { oracle: TypeOracle; reads: Array<string> } {
+  const reads: Array<string> = [];
   const oracle = createSyntacticOracle({
     root: "/project/",
     readFile: (path) => {
@@ -824,7 +824,7 @@ describe("createSyntacticOracle", () => {
       "D.uf.tsx": "function D(props: { d: string }) {}",
       "types.tsx": "export interface P { a: string }",
     };
-    const reads: string[] = [];
+    const reads: Array<string> = [];
     const oracle = createSyntacticOracle({
       root: "/project",
       readFile: (path) => {
@@ -1043,7 +1043,7 @@ describe("createSyntacticOracle", () => {
 
   it("reads a package again after update names it", async () => {
     const project = fileURLToPath(new URL("fixtures/packages", import.meta.url));
-    const reads: string[] = [];
+    const reads: Array<string> = [];
     const oracle = createSyntacticOracle({
       root: project,
       readFile: (path) => {

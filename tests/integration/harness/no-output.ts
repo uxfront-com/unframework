@@ -30,7 +30,10 @@ export const NO_OUTPUT_PREFIX = "\0uf-no-output:";
  * (as the toolchain and ssr projects judge it, `errorState`), by id: each with the errors it
  * expects for the target, `UF4001 (<message>)`, which the setup's skip reason quotes.
  */
-export function noOutputCases(cases: readonly CaseInfo[], target: string): Record<string, string> {
+export function noOutputCases(
+  cases: ReadonlyArray<CaseInfo>,
+  target: string,
+): Record<string, string> {
   const found: Record<string, string> = {};
   for (const info of cases) {
     if (!info.spec || errorState(info, target) !== true) {
@@ -60,9 +63,9 @@ const TYPE_CHECKED_BUILDS: ReadonlySet<string> = new Set(["angular"]);
  * once the entry is gone.
  */
 export function standInCases(
-  cases: readonly CaseInfo[],
+  cases: ReadonlyArray<CaseInfo>,
   target: string,
-  quarantine: readonly QuarantineEntry[],
+  quarantine: ReadonlyArray<QuarantineEntry>,
 ): Record<string, string> {
   const found: Record<string, string> = {};
   if (!TYPE_CHECKED_BUILDS.has(target)) {
@@ -107,7 +110,7 @@ export function standInReasons(
  * unplugin, as for any other case.
  */
 export function noOutputPlugin(
-  cases: readonly CaseInfo[],
+  cases: ReadonlyArray<CaseInfo>,
   reasons: Readonly<Record<string, string>>,
 ): Plugin {
   const byFile = new Map(

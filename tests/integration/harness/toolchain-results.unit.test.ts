@@ -31,7 +31,7 @@ describe("toolchainFiles", () => {
 
 describe("typecheckProblems", () => {
   it("reports each diagnostic on the case's own files, and nothing for clean files", () => {
-    const results = new Map<string, ToolchainMessage[]>([
+    const results = new Map<string, Array<ToolchainMessage>>([
       [
         hello,
         [{ code: "TS2322", message: "Type 'string' is not assignable.", line: 2, column: 3 }],
@@ -45,7 +45,7 @@ describe("typecheckProblems", () => {
   });
 
   it("fails every case on a problem outside the outputs: a broken tsconfig, an imported file", () => {
-    const results = new Map<string, ToolchainMessage[]>([
+    const results = new Map<string, Array<ToolchainMessage>>([
       [hello, []],
       [card, []],
       [tsconfig, [{ code: "TS5023", message: "Unknown compiler option 'notARealOption'." }]],
@@ -80,7 +80,7 @@ describe("typecheckProblems", () => {
 
 describe("lintProblems", () => {
   it("reports each message on the case's own files, warnings included", () => {
-    const results = new Map<string, ToolchainMessage[]>([
+    const results = new Map<string, Array<ToolchainMessage>>([
       [
         hello,
         [
@@ -103,7 +103,7 @@ describe("lintProblems", () => {
   });
 
   it("fails every case on a message outside the outputs, and a file the linter skipped", () => {
-    const results = new Map<string, ToolchainMessage[]>([
+    const results = new Map<string, Array<ToolchainMessage>>([
       [hello, []],
       [card, []],
       [oxlintrc, [{ message: "Unknown rule." }]],

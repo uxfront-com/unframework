@@ -608,7 +608,7 @@ describe("rebuildWatcher", () => {
 
   it("stops reporting to a listener once it's removed", async () => {
     const watcher = rebuildWatcher(output);
-    const seen: string[] = [];
+    const seen: Array<string> = [];
     const listener = (path: string): void => {
       seen.push(path);
     };
@@ -933,7 +933,7 @@ describe("the global hooks", () => {
 });
 
 describe("the e2e script", () => {
-  const run = (...args: string[]) =>
+  const run = (...args: Array<string>) =>
     spawnSync(process.execPath, ["scripts/e2e.ts", ...args], { cwd: e2eRoot, encoding: "utf8" });
 
   it("honours the flags after pnpm's `--`", () => {

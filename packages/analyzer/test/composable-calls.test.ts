@@ -34,7 +34,7 @@ function toggleApi(): ModuleApi {
 }
 
 /** Analyses a component that imports `useToggle`, with `setup` before it returns `jsx`. */
-function caller(setup: readonly string[], jsx = "<p>{on.value ? label : 'off'}</p>") {
+function caller(setup: ReadonlyArray<string>, jsx = "<p>{on.value ? label : 'off'}</p>") {
   const source = [
     'import { ref } from "@uxfront/unframework";',
     'import { useToggle } from "./useToggle.uf.ts";',

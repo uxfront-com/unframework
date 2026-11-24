@@ -37,7 +37,7 @@ export interface Resolved {
   /** The shape, or `undefined` when the query names no type. */
   shape: TypeShape | undefined;
   /** The files resolution needed and was not given; the shape is final only when it is empty. */
-  missing: string[];
+  missing: Array<string>;
   /** Every file resolution asked for, found or not: the shape holds until one of them changes. */
   files: Set<string>;
 }
@@ -120,7 +120,7 @@ interface Use {
  */
 interface Merge {
   kind: "extends" | "intersection" | "utility";
-  parts: { id: number; use: Use }[];
+  parts: Array<{ id: number; use: Use }>;
   /** A utility's name, and the keys a `Pick` or an `Omit` names. */
   utility?: { name: string; keys?: Set<string> };
 }
@@ -138,18 +138,18 @@ interface Scope {
 class Resolution {
   readonly missing = new Set<string>();
   readonly files = new Set<string>();
-  readonly #nodes: TypeNode[] = [];
+  readonly #nodes: Array<TypeNode> = [];
   readonly #interned = new Map<string, number>();
   readonly #construction = new Set<string>();
   readonly #dependencies = new Set<string>();
-  readonly #unresolved: UnresolvedType[] = [];
+  readonly #unresolved: Array<UnresolvedType> = [];
   /**
    * The nodes that carry each `unresolved` entry: the opaque node it describes, the object that
    * lost the construct, and every object that took that object's members (#merge). The shape
    * keeps an entry while one of its carriers is reachable from the root, so an override that
    * discards a base's member discards what was unresolved in it, and nothing else.
    */
-  readonly #carriers: number[][] = [];
+  readonly #carriers: Array<Array<number>> = [];
   /** Objects with a computed key whose name the adapter cannot know. */
   readonly #open = new Set<number>();
   /** Each type parameter in scope at the query, as its node. */
@@ -425,9 +425,9 @@ class Resolution {
       }
       return text;
     };
-    const covered = (from: readonly number[], to: readonly number[]) => {
+    const covered = (from: ReadonlyArray<number>, to: ReadonlyArray<number>) => {
       const ids = new Set(to);
-      const byPrint = new Map<string, number[]>();
+      const byPrint = new Map<string, Array<number>>();
       for (const u of to) {
         if (scalar(u)) {
           continue;
@@ -620,7 +620,7 @@ class Resolution {
 
   #union(type: AST.TSUnionType, scope: Scope): number {
     this.#construction.add("union");
-    const types: number[] = [];
+    const types: Array<number> = [];
     for (const member of type.types) {
       const id = this.convert(member, scope);
       const node = this.#nodes[id]!;
@@ -703,11 +703,11 @@ class Resolution {
   }
 
   #function(
-    params: readonly AST.ParamPattern[],
+    params: ReadonlyArray<AST.ParamPattern>,
     returnType: AST.TSTypeAnnotation | null,
     scope: Scope,
   ): number {
-    const parameters: FunctionParameter[] = [];
+    const parameters: Array<FunctionParameter> = [];
     params.forEach((param, index) => {
       const rest = param.type === "RestElement";
       const pattern = rest ? param.argument : param;
@@ -753,7 +753,7 @@ class Resolution {
   #named(
     scope: Scope,
     name: string,
-    args: readonly AST.TSType[] | undefined,
+    args: ReadonlyArray<AST.TSType> | undefined,
     at: AST.TSType,
   ): number {
     if (args && !this.#bound(scope.module, name)) {
@@ -781,7 +781,7 @@ class Resolution {
    * is filled (#merge). An argument that is not an object, or keys that are not literals, leave
    * it opaque.
    */
-  #utility(name: string, args: readonly AST.TSType[], scope: Scope, at: AST.TSType): number {
+  #utility(name: string, args: ReadonlyArray<AST.TSType>, scope: Scope, at: AST.TSType): number {
     const construct = `utility:${name}`;
     const keyed = name === "Pick" || name === "Omit";
     if (args.length !== (keyed ? 2 : 1)) {
@@ -854,7 +854,7 @@ class Resolution {
    * A type name used in `module` at `at`, with its arguments' nodes: declared there, imported, or
    * a global.
    */
-  #name(module: SourceModule, name: string, at: AST.TSType, args?: readonly number[]): number {
+  #name(module: SourceModule, name: string, at: AST.TSType, args?: ReadonlyArray<number>): number {
     // A class or an enum, alone or merged with an interface, is not a type this adapter reads.
     if (module.values.has(name)) {
       return this.#unsupported("class-or-enum", module, at);
@@ -883,7 +883,7 @@ class Resolution {
     imported: string,
     use: Use,
     seen: Set<string>,
-    args?: readonly number[],
+    args?: ReadonlyArray<number>,
   ): number {
     if (!this.follow) {
       return this.#report("external", use.module, use.node);
@@ -908,7 +908,7 @@ class Resolution {
     name: string,
     use: Use,
     seen: Set<string>,
-    args?: readonly number[],
+    args?: ReadonlyArray<number>,
   ): number {
     const key = `${module.file}#${name}`;
     if (seen.has(key)) {
@@ -1010,9 +1010,9 @@ class Resolution {
    */
   #declaration(
     module: SourceModule,
-    declarations: Declaration[],
+    declarations: Array<Declaration>,
     use: Use,
-    args: readonly number[] = [],
+    args: ReadonlyArray<number> = [],
   ): number {
     const declaration = declarations[0]!;
     // Interfaces of one name merge only when they declare the same type parameters (TS2428).
@@ -1060,7 +1060,7 @@ class Resolution {
     module: SourceModule,
     declaration: Declaration,
     ref: DeclarationRef,
-    args: readonly number[],
+    args: ReadonlyArray<number>,
   ): Map<string, number> | undefined {
     const parameters = declaration.typeParameters?.params ?? [];
     const bindings = new Map<string, number>();
@@ -1089,7 +1089,7 @@ class Resolution {
   }
 
   /** The key of a declaration's instantiation: the declaration, and its arguments' nodes. */
-  #key(declaration: Declaration, typeArguments: readonly number[]): string {
+  #key(declaration: Declaration, typeArguments: ReadonlyArray<number>): string {
     let id = this.#ids.get(declaration);
     if (id === undefined) {
       id = this.#ids.size;
@@ -1100,9 +1100,9 @@ class Resolution {
 
   /** One instantiation of a declaration, cached by `key` before its members are read. */
   #instantiate(
-    declarations: Declaration[],
+    declarations: Array<Declaration>,
     scope: Scope,
-    typeArguments: number[],
+    typeArguments: Array<number>,
     key: string,
     use: Use,
   ): number {
@@ -1140,7 +1140,7 @@ class Resolution {
       this.#instances.set(key, id);
       return id;
     }
-    const interfaces = declarations as AST.TSInterfaceDeclaration[];
+    const interfaces = declarations as Array<AST.TSInterfaceDeclaration>;
     const id = this.#object(ref, typeArguments);
     this.#instances.set(key, id);
     this.#fill(
@@ -1200,8 +1200,8 @@ class Resolution {
    * overloaded method, which a member cannot hold, is unresolved. A member the adapter cannot
    * read keeps its name, with an opaque type, so no base or other part fills it in.
    */
-  #fill(id: number, signatures: readonly AST.TSSignature[], scope: Scope): void {
-    const members: ShapeMember[] = [];
+  #fill(id: number, signatures: ReadonlyArray<AST.TSSignature>, scope: Scope): void {
+    const members: Array<ShapeMember> = [];
     // Each method's first signature, by name, and the names whose type is kept as written.
     const methods = new Map<string, AST.TSType>();
     const written = new Set<string>();
@@ -1297,7 +1297,7 @@ class Resolution {
     (this.#nodes[id] as ObjectNode).members = members;
   }
 
-  #object(declaration: DeclarationRef | undefined, typeArguments: number[] = []): number {
+  #object(declaration: DeclarationRef | undefined, typeArguments: Array<number> = []): number {
     return (
       this.#nodes.push({
         kind: "object",
@@ -1373,8 +1373,8 @@ function memberName(key: AST.PropertyKey): string | undefined {
 }
 
 /** The type names the type references in some nodes reference, each once, in source order. */
-function references(nodes: readonly unknown[]): string[] {
-  const names: string[] = [];
+function references(nodes: ReadonlyArray<unknown>): Array<string> {
+  const names: Array<string> = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
       for (const item of value) {
@@ -1416,7 +1416,7 @@ interface Found {
  * the top-level type declaration it is written in, if any.
  */
 function findType(program: AST.Program, span: Span): Found | undefined {
-  const ancestors: object[] = [];
+  const ancestors: Array<object> = [];
   let found: AST.TSType | undefined;
   const visit = (value: unknown): void => {
     if (found || !value || typeof value !== "object") {
@@ -1470,7 +1470,7 @@ function findType(program: AST.Program, span: Span): Found | undefined {
     if (
       !declaration &&
       (node.type === "TSInterfaceDeclaration" || node.type === "TSTypeAliasDeclaration") &&
-      (program.body as readonly object[]).some(
+      (program.body as ReadonlyArray<object>).some(
         (statement) =>
           statement === ancestor ||
           (statement as { declaration?: unknown }).declaration === ancestor,

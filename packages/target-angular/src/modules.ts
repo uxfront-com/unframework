@@ -10,9 +10,9 @@ import type { Binding, TypeDeclaration, UfModule } from "@unframework.dev/ir";
 /** What an output reads of its module. */
 export interface ModuleReads {
   /** The constants it declares, in source order, each as the source writes it. */
-  constants: string[];
+  constants: Array<string>;
   /** The module's type declarations its constants name, transitively. */
-  types: TypeDeclaration[];
+  types: Array<TypeDeclaration>;
 }
 
 /**
@@ -22,7 +22,7 @@ export interface ModuleReads {
  * name keeps its name in every Angular output.
  */
 export function moduleReads(
-  bindings: readonly Binding[],
+  bindings: ReadonlyArray<Binding>,
   module: UfModule,
   imports: ImportSet,
   file: (name: string) => string,

@@ -9,7 +9,7 @@ import { listenerName } from "../src/listeners.ts";
 import { applyAndRecheck, functionOf, only, problems, root, setupOf } from "./helpers.ts";
 
 /** An element's listeners and refs, compactly. */
-function ownAttributes(source: string, element: ElementNode): string[] {
+function ownAttributes(source: string, element: ElementNode): Array<string> {
   return element.attributes.flatMap((attribute: Attribute) => {
     if (attribute.kind === "Ref") {
       return [`ref ${attribute.binding.split("@")[0]}`];

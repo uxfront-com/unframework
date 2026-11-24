@@ -72,7 +72,7 @@ code, so read https://unframework.dev/docs before you change one.
   change the source and build again instead of editing an output.
 `;
 
-const FILES: readonly (readonly [path: string, contents: string])[] = [
+const FILES: ReadonlyArray<readonly [path: string, contents: string]> = [
   ["unframework.config.ts", CONFIG],
   ["src/Button.uf.tsx", BUTTON],
   ["src/Button.css", BUTTON_CSS],

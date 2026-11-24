@@ -60,7 +60,7 @@ function declaredAttributes(): Map<string, string> {
 function listener(
   event: string,
   options: { capture?: boolean; once?: boolean; passive?: boolean } = {},
-  others: EventAttribute[] = [],
+  others: Array<EventAttribute> = [],
 ) {
   const handler = createInlineHandler(createFunctionCode([], createCode("{}", at, []), at), at);
   const attribute = createEventAttribute(event, handler, at, options);

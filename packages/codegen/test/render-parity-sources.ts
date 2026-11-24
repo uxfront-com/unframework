@@ -16,7 +16,7 @@ const DELIMITERS =
   "<b>&amp; &lt; {{ x }} }} {#if a} {@html b} @if (c) { ${d} `e` 'f' \"g\" \\h </p>";
 
 /** The hand-written components, each one root element. */
-export const TRICKY_SOURCES: readonly SourceCase[] = [
+export const TRICKY_SOURCES: ReadonlyArray<SourceCase> = [
   // Interpolations (ADR-0035): text, as every target escapes it.
   {
     name: "a string with markup and every template's delimiters",
@@ -803,7 +803,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
 ];
 
 /** Components whose own root is under test, each rendered as a component of its own. */
-export const ROOT_SOURCES: readonly SourceCase[] = [
+export const ROOT_SOURCES: ReadonlyArray<SourceCase> = [
   {
     name: "text and interpolations at a root fragment's edges",
     params: "{ s }: { s: string }",
@@ -865,8 +865,11 @@ export const ROOT_SOURCES: readonly SourceCase[] = [
 ];
 
 /** The seeds of the random components, and of the random roots. */
-export const FUZZ_SOURCE_SEEDS: readonly number[] = Array.from({ length: 60 }, (_, i) => i + 1);
-export const ROOT_SOURCE_SEEDS: readonly number[] = Array.from({ length: 8 }, (_, i) => i + 101);
+export const FUZZ_SOURCE_SEEDS: ReadonlyArray<number> = Array.from({ length: 60 }, (_, i) => i + 1);
+export const ROOT_SOURCE_SEEDS: ReadonlyArray<number> = Array.from(
+  { length: 8 },
+  (_, i) => i + 101,
+);
 
 /** Options for {@link fuzzSource}. */
 export interface FuzzSourceOptions {
@@ -897,12 +900,12 @@ const STATIC_CLASSES = ["a", "b c", "card card--wide", "@y", "w-1/3"];
 const TOGGLE_CLASSES = ["on", "is-active", "w-1/2", "md:flex", "x_y"];
 
 /** CSS properties no two of which overlap, with values every target renders as written. */
-const STYLE_PROPERTIES: readonly {
+const STYLE_PROPERTIES: ReadonlyArray<{
   property: string;
   key: string;
-  values: readonly string[];
-  numbers?: readonly number[];
-}[] = [
+  values: ReadonlyArray<string>;
+  numbers?: ReadonlyArray<number>;
+}> = [
   { property: "color", key: "color", values: ["red", "rgb(1, 2, 3)", "#00f"] },
   { property: "background-color", key: "backgroundColor", values: ["white", "rgba(0, 0, 0, 0.5)"] },
   { property: "margin-top", key: "marginTop", values: ["4px", "1em", "0px"] },
@@ -942,13 +945,13 @@ const PHRASING_PARENTS = new Set(["p", "span", "b", "i", "em", "a", "label", "bu
  */
 export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): SourceCase {
   const next = random(seed * 7919 + (options.root ? 1 : 0) + (options.form === "object" ? 2 : 0));
-  const pick = <T>(items: readonly T[]): T => items[Math.floor(next() * items.length)]!;
+  const pick = <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!;
   const chance = (probability: number) => next() < probability;
   const variant = options.root ? "R" : options.form === "object" ? "O" : "F";
   const prefix = `${variant}${seed}`;
   const defaults = options.form !== "object";
-  const props: FuzzProp[] = [];
-  const types: string[] = [];
+  const props: Array<FuzzProp> = [];
+  const types: Array<string> = [];
   let tokens = 0;
   let keys = 0;
 
@@ -1043,7 +1046,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 
   /** Global attributes and the element's own, static and bound, `class`, `style`, a spread. */
   function attributes(tag: string, svg: boolean): string {
-    const written: string[] = [];
+    const written: Array<string> = [];
     const names = new Set<string>();
     const add = (name: string, source: string) => {
       if (names.has(name)) {
@@ -1257,7 +1260,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
   /** A `class` value, in one of its forms, with names that never repeat on the element. */
   function classValue(): string {
     const used = new Set<string>();
-    const fresh = (pool: readonly string[]) => {
+    const fresh = (pool: ReadonlyArray<string>) => {
       const names = pool.filter((name) => !name.split(" ").some((part) => used.has(part)));
       const chosen = pick(names.length ? names : [token()]);
       for (const part of chosen.split(" ")) {
@@ -1331,7 +1334,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
   }
 
   /** A spread of a typed object, its keys none the element writes, maybe optional. */
-  function spread(names: Set<string>, written: string[]): void {
+  function spread(names: Set<string>, written: Array<string>): void {
     // A spread's `class` merges with the element's own; any other key is the spread's alone.
     const spreadKeys = ["title", "data-x", "aria-label", "class", "lang"].filter(
       (key) => (key === "class" || !names.has(key)) && chance(0.6),
@@ -1480,7 +1483,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
   }
 
   /** A child element of a random allowed tag, one level deeper. */
-  const child = (allowed: readonly string[], place: Place) => {
+  const child = (allowed: ReadonlyArray<string>, place: Place) => {
     const tag = pick(allowed);
     return element(tag, {
       depth: place.depth + 1,
@@ -1489,7 +1492,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
   };
 
   /** A conditional with element, text or several nodes in its branches. */
-  function conditional(allowed: readonly string[], place: Place): string {
+  function conditional(allowed: ReadonlyArray<string>, place: Place): string {
     const branch = (): string => {
       switch (Math.floor(next() * 4)) {
         case 0:
@@ -1501,7 +1504,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
       }
     };
     // A conditional whose branches hold no JSX is an interpolation: keep one element in each.
-    const chain = (...parts: string[]) => {
+    const chain = (...parts: Array<string>) => {
       if (!parts.some((part) => part.startsWith("<"))) {
         parts[0] = child(allowed, place);
       }
@@ -1526,8 +1529,13 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
   }
 
   /** Text, interpolations, conditionals, lists and elements, never two texts in a row. */
-  function mixed(allowed: readonly string[], place: Place, max: number, parent: string): string[] {
-    const children: string[] = [];
+  function mixed(
+    allowed: ReadonlyArray<string>,
+    place: Place,
+    max: number,
+    parent: string,
+  ): Array<string> {
+    const children: Array<string> = [];
     let lastText = false;
     const count =
       (place.depth === 0 ? 2 : 0) + Math.floor(next() * (place.depth >= 3 ? 2 : max + 1));

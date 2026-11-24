@@ -39,7 +39,7 @@ const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts
  */
 async function checkWithBrokenToolchain(
   compilerOptions: object,
-): Promise<{ results: Map<string, ToolchainMessage[]>; tsconfig: string }> {
+): Promise<{ results: Map<string, Array<ToolchainMessage>>; tsconfig: string }> {
   const broken = join(toolchainDir, ".uf-tmp", `broken-toolchain-${process.pid}`);
   mkdirSync(broken, { recursive: true });
   try {
@@ -61,7 +61,7 @@ describe("svelte typecheck", () => {
     const golden = goldenFiles();
     expect(golden.length).toBeGreaterThan(0);
     // Each case in a directory of its own, where its sources' outputs import each other.
-    const fresh: string[] = [];
+    const fresh: Array<string> = [];
     for (const { modules, outputDir } of corpus()) {
       const emitted: Record<string, string> = {};
       for (const module of modules) {

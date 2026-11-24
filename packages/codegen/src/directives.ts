@@ -33,7 +33,7 @@ export function directiveHook(
  * The parameters a hook's output declares: the author's, but the trailing ones its body never
  * reads, which a source's type check allows and every output's lint (L5) reports.
  */
-export function hookParameters(hook: DirectiveHook): string[] {
+export function hookParameters(hook: DirectiveHook): Array<string> {
   const read = codeNames(hook.body.code, "statements");
   let count = hook.parameters.length;
   while (count > 0 && !read.has(hook.parameters[count - 1]!)) {
@@ -46,7 +46,7 @@ export function hookParameters(hook: DirectiveHook): string[] {
  * A hook's parameters, typed as `defineDirective`'s type arguments give them: the element, then
  * the value and the previous value, as many as {@link hookParameters} keeps.
  */
-export function directiveParameters(directive: UfDirective, hook: DirectiveHook): string[] {
+export function directiveParameters(directive: UfDirective, hook: DirectiveHook): Array<string> {
   const types = [directiveElement(directive), directive.value.code, directive.value.code];
   return hookParameters(hook).map((name, index) => `${name}: ${types[index]}`);
 }
@@ -72,7 +72,7 @@ export function directiveHooksObject(directive: UfDirective): string {
  */
 export function wrapperNames<const K extends string>(
   directive: UfDirective,
-  bases: readonly K[],
+  bases: ReadonlyArray<K>,
 ): Record<K, string> {
   const taken = new Set<string>();
   for (const hook of directive.hooks) {
@@ -95,13 +95,13 @@ export function wrapperNames<const K extends string>(
 /** What a directive's own module declares and imports of its source module (ADR-0070). */
 export interface DirectiveDependencies {
   /** Each value import its hooks or constants reach, as written. */
-  imports: { specifier: string; imported: string; local: string }[];
+  imports: Array<{ specifier: string; imported: string; local: string }>;
   /** Each type import its hooks, constants or types name, as written. */
-  typeImports: { specifier: string; imported: string; local: string }[];
+  typeImports: Array<{ specifier: string; imported: string; local: string }>;
   /** The module's type declarations it reaches, in source order, each as written. */
-  types: string[];
+  types: Array<string>;
   /** The module's constants it reaches, in source order, each as written. */
-  constants: string[];
+  constants: Array<string>;
 }
 
 /**
@@ -215,10 +215,10 @@ export function directiveModuleNames(
 }
 
 /** The import declarations of a directive module's dependencies, as written. */
-export function dependencyImports(dependencies: DirectiveDependencies): string[] {
-  const lines: string[] = [];
+export function dependencyImports(dependencies: DirectiveDependencies): Array<string> {
+  const lines: Array<string> = [];
   const group = (entries: DirectiveDependencies["imports"], type: boolean): void => {
-    const bySpecifier = new Map<string, string[]>();
+    const bySpecifier = new Map<string, Array<string>>();
     for (const { specifier, imported, local } of entries) {
       const names = bySpecifier.get(specifier) ?? [];
       names.push(imported === local ? local : `${imported} as ${local}`);
@@ -279,7 +279,7 @@ export function directiveSpecifier(specifier: string, file: string): string {
  * A call of a hook of a directive's hooks object, `hooks.mounted(el, value)`, with as many of the
  * arguments as the hook takes: the element, the value and the previous value.
  */
-export function hookCall(hooks: string, hook: DirectiveHook, args: readonly string[]): string {
+export function hookCall(hooks: string, hook: DirectiveHook, args: ReadonlyArray<string>): string {
   return `${hooks}.${hook.name}(${args.slice(0, hookParameters(hook).length).join(", ")})`;
 }
 
@@ -319,7 +319,7 @@ export function readsElementScope(attribute: DirectiveAttribute, component: UfCo
 }
 
 /** The directives of its own module a component applies, in the module's order (ADR-0099). */
-export function ownDirectives(component: UfComponent, module: UfModule): UfDirective[] {
+export function ownDirectives(component: UfComponent, module: UfModule): Array<UfDirective> {
   const applied = appliedDirectives(component);
   return (module.directives ?? []).filter(
     (directive) => !directive.exported && applied.has(directive.name),
@@ -333,7 +333,7 @@ export function ownDirectives(component: UfComponent, module: UfModule): UfDirec
 export function importedDirectives(
   component: UfComponent,
   module: UfModule,
-): { specifier: string; imported: string; local: string }[] {
+): Array<{ specifier: string; imported: string; local: string }> {
   const applied = appliedDirectives(component);
   return (module.imports ?? []).flatMap((entry) =>
     entry.names

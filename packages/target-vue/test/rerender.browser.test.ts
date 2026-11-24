@@ -15,7 +15,7 @@ const Badge = defineComponent({
   props: {
     label: { type: String, required: true },
     tone: { type: String as PropType<"info" | "warn">, default: "info" },
-    items: { type: Array as PropType<string[]>, default: () => [] },
+    items: { type: Array as PropType<Array<string>>, default: () => [] },
     count: { type: Number, default: undefined },
   },
   setup(props) {
@@ -43,7 +43,7 @@ function read(container: HTMLElement) {
   };
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

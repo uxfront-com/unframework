@@ -59,7 +59,7 @@ const geometry = (width = 100): GeometrySnapshot => ({
 });
 
 /** The browser projects of a run, as the reference-not-run check reads them. */
-const projects = (...targets: string[]) =>
+const projects = (...targets: Array<string>) =>
   targets.map((target) => ({
     name: `browser:${target}`,
     config: { browser: { enabled: true } },

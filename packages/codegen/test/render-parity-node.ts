@@ -75,10 +75,10 @@ type Rejected = "throw" | "drop";
  * that is no prop, or a required prop without a value, fails too: the case would test nothing.
  */
 export function lowerSources(
-  specs: readonly SourceCase[],
+  specs: ReadonlyArray<SourceCase>,
   rejected: Rejected = "throw",
-  codes?: Map<number, string[]>,
-): (ParityCase | undefined)[] {
+  codes?: Map<number, Array<string>>,
+): Array<ParityCase | undefined> {
   const file = "Cases.uf.tsx";
   let text = specs.map(({ types }) => (types ? `${types.trim()}\n\n` : "")).join("");
   const ranges = specs.map((spec, index) => {
@@ -194,8 +194,8 @@ function componentModule(file: string, module: UfModule, component: UfComponent)
 }
 
 /** {@link lowerSources} for cases the analyser must accept. */
-export function sourceCases(specs: readonly SourceCase[]): ParityCase[] {
-  return lowerSources(specs) as ParityCase[];
+export function sourceCases(specs: ReadonlyArray<SourceCase>): Array<ParityCase> {
+  return lowerSources(specs) as Array<ParityCase>;
 }
 
 /** A case's prop as the parity component names it: namespaced by the case's index. */
@@ -252,9 +252,9 @@ function staticModule(suite: ParitySuite): UfModule {
 /** A source suite's module: its cases written into one component, and lowered. */
 function sourceModule(suite: ParitySuite): UfModule {
   const form = suite.form ?? "destructured";
-  const types: string[] = [];
-  const members: string[] = [];
-  const pattern: string[] = [];
+  const types: Array<string> = [];
+  const members: Array<string> = [];
+  const pattern: Array<string> = [];
   const bodies = suite.cases.map((parityCase, index) => {
     const lowered = parityCase.lowered!;
     for (const declaration of lowered.module.types) {
@@ -410,7 +410,10 @@ export function parityProps(suite: ParitySuite): Record<string, unknown> {
  * it is not one of them (ADR-0033, as amended by ADR-0047): the case still renders exactly,
  * listeners inert, and is compared as any other.
  */
-export function unsupportedCapabilities(target: Target, parityCase: ParityCase): CapabilityName[] {
+export function unsupportedCapabilities(
+  target: Target,
+  parityCase: ParityCase,
+): Array<CapabilityName> {
   const module =
     parityCase.lowered?.module ?? parityModule({ title: parityCase.name, cases: [parityCase] });
   return [...requiredCapabilities(module).keys()].filter(
@@ -430,9 +433,9 @@ export async function emitParity(
   target: Target,
   suite: ParitySuite,
   { format }: { format: boolean },
-): Promise<OutputFile[]> {
+): Promise<Array<OutputFile>> {
   const module = parityModule(suite);
-  const reported: Parameters<EmitContext["report"]>[0][] = [];
+  const reported: Array<Parameters<EmitContext["report"]>[0]> = [];
   const context: EmitContext = {
     module,
     options: undefined,
@@ -497,7 +500,7 @@ const SWEEP_CONTEXT: Readonly<Record<string, string>> = { option: "select", optg
 const FIXED_VALUE_TYPES = [...FIXED_VALUE_INPUT_TYPES];
 
 /** The attributes that override a form's submission, which only submit buttons take. */
-export const SUBMISSION_OVERRIDES: readonly string[] = [
+export const SUBMISSION_OVERRIDES: ReadonlyArray<string> = [
   "formaction",
   "formenctype",
   "formmethod",
@@ -515,8 +518,8 @@ const SVG_SWEEP_ELEMENT = "rect";
  * element once (with `class`), each with its own attributes, and SVG's global attributes on a
  * `<rect>` (ADR-0040). `class` and `style` have kinds of their own, tested by the other suites.
  */
-function sweepCandidates(): SweepCandidate[] {
-  const candidates: SweepCandidate[] = [];
+function sweepCandidates(): Array<SweepCandidate> {
+  const candidates: Array<SweepCandidate> = [];
   const add = (
     key: string,
     tag: string,
@@ -565,7 +568,7 @@ function sweepCandidates(): SweepCandidate[] {
  * target accepts comes first (the analyzer checks static values against them). URLs are `data:`
  * URLs, so nothing a browser renders makes a request.
  */
-function sweepValues({ tag, name, namespace }: SweepCandidate): (string | true)[] {
+function sweepValues({ tag, name, namespace }: SweepCandidate): Array<string | true> {
   const keyword = staticTokens(tag, namespace, name)?.[0];
   const first = keyword === undefined ? [] : [keyword];
   if (namespace === "svg") {
@@ -624,18 +627,18 @@ function sweepSource(candidate: SweepCandidate, written: string): string {
   return source;
 }
 
-let sweep: readonly StaticCase[] | undefined;
+let sweep: ReadonlyArray<StaticCase> | undefined;
 
 /**
  * The pairs each sweep leaves out, by key, with the codes the analyzer reported for the last
  * value tried: what the vocabulary lists but no target is asked to render.
  */
-const drops = { static: new Map<string, string[]>(), bound: new Map<string, string[]>() };
+const drops = { static: new Map<string, Array<string>>(), bound: new Map<string, Array<string>>() };
 
 /** The pairs the attribute sweeps leave out, with the analyzer's codes (see `drops`). */
 export function sweepDrops(): {
-  static: ReadonlyMap<string, readonly string[]>;
-  bound: ReadonlyMap<string, readonly string[]>;
+  static: ReadonlyMap<string, ReadonlyArray<string>>;
+  bound: ReadonlyMap<string, ReadonlyArray<string>>;
 } {
   attributeSweep();
   boundAttributeSweep();
@@ -648,7 +651,7 @@ export function sweepDrops(): {
  * to. The analyzer decides, so the sweep follows what it accepts: an attribute it starts
  * accepting is rendered by every target from then on.
  */
-export function attributeSweep(): readonly StaticCase[] {
+export function attributeSweep(): ReadonlyArray<StaticCase> {
   if (sweep) {
     return sweep;
   }
@@ -670,7 +673,7 @@ export function attributeSweep(): readonly StaticCase[] {
     throw new Error("The analyzer rejected the whole attribute sweep.");
   }
   const seen = new Set<string>();
-  const cases: StaticCase[] = [];
+  const cases: Array<StaticCase> = [];
   const invalid = new Set<string>();
   for (const component of module.components) {
     const { candidate } = tries[Number(component.name.slice("Sweep".length))]!;
@@ -723,7 +726,7 @@ const boolean = (value: boolean): BoundValue => ({ type: "boolean", value });
  * number-typed attributes, `about:blank` on URLs (no request, and no scheme a target blocks or
  * prefixes), and a string or a number elsewhere.
  */
-function boundSweepValues({ tag, name, namespace }: SweepCandidate): BoundValue[][] {
+function boundSweepValues({ tag, name, namespace }: SweepCandidate): Array<Array<BoundValue>> {
   // An enumerated attribute is bound to a union of the keywords every typed target accepts: a
   // `string` fails some target's types (UF3018).
   const listed = enumeratedValues(tag, namespace, name);
@@ -764,7 +767,7 @@ function boundSweepValues({ tag, name, namespace }: SweepCandidate): BoundValue[
   return [[string("x"), number(1)]];
 }
 
-let boundSweep: readonly ParityCase[] | undefined;
+let boundSweep: ReadonlyArray<ParityCase> | undefined;
 
 /**
  * The bound attribute sweep: every (element, attribute) pair the analyzer accepts bound to a
@@ -773,12 +776,12 @@ let boundSweep: readonly ParityCase[] | undefined;
  * `set_attribute`, Angular's `[attr.x]`, Solid's compiled attribute and property setters), and
  * booleans and numbers render by rules a static value never meets.
  */
-export function boundAttributeSweep(): readonly ParityCase[] {
+export function boundAttributeSweep(): ReadonlyArray<ParityCase> {
   if (boundSweep) {
     return boundSweep;
   }
-  const slots: { key: string; first: number; count: number }[] = [];
-  const specs: SourceCase[] = [];
+  const slots: Array<{ key: string; first: number; count: number }> = [];
+  const specs: Array<SourceCase> = [];
   for (const candidate of sweepCandidates()) {
     if (candidate.name === "class") {
       continue;
@@ -800,9 +803,9 @@ export function boundAttributeSweep(): readonly ParityCase[] {
       }
     }
   }
-  const codes = new Map<number, string[]>();
+  const codes = new Map<number, Array<string>>();
   const lowered = lowerSources(specs, "drop", codes);
-  const cases: ParityCase[] = [];
+  const cases: Array<ParityCase> = [];
   for (const { key, first, count } of slots) {
     const accepted = lowered.slice(first, first + count).find((each) => each !== undefined);
     if (accepted) {
@@ -818,14 +821,14 @@ export function boundAttributeSweep(): readonly ParityCase[] {
   return boundSweep;
 }
 
-let allSuites: readonly ParitySuite[] | undefined;
+let allSuites: ReadonlyArray<ParitySuite> | undefined;
 
 /**
  * Every suite each target's render-parity tests run: M0's static ones and the attribute sweep;
  * then M1's source components, destructured and read through one object, each root case as a
  * component's root, the seeded random components, and the bound attribute sweep.
  */
-export function paritySuites(): readonly ParitySuite[] {
+export function paritySuites(): ReadonlyArray<ParitySuite> {
   if (allSuites) {
     return allSuites;
   }
@@ -885,7 +888,7 @@ export interface ParityModulesOptions {
    */
   perCase?: boolean;
   /** The suites to serve; by default {@link clientParitySuites}. */
-  suites?: readonly ParitySuite[];
+  suites?: ReadonlyArray<ParitySuite>;
 }
 
 /**
@@ -894,7 +897,7 @@ export interface ParityModulesOptions {
  * escapes for them are checked on the server; Solid's and Svelte's client compiles fold static
  * text and attributes into HTML template strings, whose parsing turns them into line feeds.
  */
-export function clientParitySuites(): readonly ParitySuite[] {
+export function clientParitySuites(): ReadonlyArray<ParitySuite> {
   return paritySuites().filter(({ cases }) => cases !== CARRIAGE_RETURN_CASES);
 }
 
@@ -929,7 +932,7 @@ function servedSuite(suite: ParitySuite, only: number | undefined): ParitySuite 
 export function renderParityModules(options: ParityModulesOptions): Plugin {
   const { target, extension = "" } = options;
   const served = new Map<string, ServedComponent>();
-  let suites: readonly ParitySuite[] | undefined;
+  let suites: ReadonlyArray<ParitySuite> | undefined;
   /** The suites, built when first needed, not whenever the configuration loads. */
   const suitesServed = () => {
     if (suites) {
@@ -1010,10 +1013,10 @@ export function renderParityModules(options: ParityModulesOptions): Plugin {
  */
 function manifest(
   target: Target | undefined,
-  suites: readonly ParitySuite[],
+  suites: ReadonlyArray<ParitySuite>,
   served: ReadonlyMap<string, ServedComponent>,
 ): string {
-  const components = suites.map(() => [] as string[]);
+  const components = suites.map(() => [] as Array<string>);
   for (const [path, { suite, format, only }] of served) {
     const props = jsLiteral(parityProps(servedSuite(suites[suite]!, only)));
     components[suite]!.push(

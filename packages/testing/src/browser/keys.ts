@@ -27,14 +27,14 @@ export function parseKeys(
   text: string,
   action: string,
   held: ReadonlySet<string> = new Set(),
-): KeyInput[] {
+): Array<KeyInput> {
   const refuse = (problem: string): never => {
     throw new TypeError(`${action}: ${problem} in ${JSON.stringify(text)}: ${SYNTAX}.`);
   };
   if (text === "") {
     refuse("no key to press");
   }
-  const keys: KeyInput[] = [];
+  const keys: Array<KeyInput> = [];
   const holding = new Set(held);
   const add = (written: string, key: string, press: boolean, release: boolean) => {
     if (press && holding.has(key)) {
@@ -89,6 +89,6 @@ export function isCharacter(key: string): boolean {
  * `keyboard.type` loops with `for … of`): an emoji of several code points is several keys there
  * too, so a grapheme is not one character here.
  */
-function characters(text: string): string[] {
+function characters(text: string): Array<string> {
   return Array.from(text);
 }

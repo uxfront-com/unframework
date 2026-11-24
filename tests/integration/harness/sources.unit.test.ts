@@ -43,8 +43,8 @@ const source = (name: string, ir = `ir.${name}.json`): CaseSource => ({
 });
 
 async function compileCase(
-  files: readonly (readonly [CaseSource, string])[],
-): Promise<SourceCompile[]> {
+  files: ReadonlyArray<readonly [CaseSource, string]>,
+): Promise<Array<SourceCompile>> {
   return Promise.all(
     files.map(async ([each, text]) => ({
       source: each,

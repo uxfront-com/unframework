@@ -28,7 +28,7 @@ export interface SpecOptions extends Omit<TestOptions, (typeof REFUSED)[number]>
    * test is skipped and every browser layer records `requires <capability>: <the reason>`. A
    * test whose expectations depend on client code requires `"interactivity"`.
    */
-  requires?: readonly CapabilityName[];
+  requires?: ReadonlyArray<CapabilityName>;
 }
 
 /** `it(name, fn)` or `it(name, { requires }, fn)`. */

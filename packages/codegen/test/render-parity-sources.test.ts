@@ -128,11 +128,11 @@ function holdsList(node: RenderNode): boolean {
 }
 
 /** Every attribute and node of a component, and the expressions they hold, with its props. */
-function features(cases: readonly ParityCase[]): Set<string> {
+function features(cases: ReadonlyArray<ParityCase>): Set<string> {
   const found = new Set<string>();
   for (const { lowered } of cases) {
     const { component, props } = lowered!;
-    const values = Object.values(props).flatMap(function flat(value: unknown): unknown[] {
+    const values = Object.values(props).flatMap(function flat(value: unknown): Array<unknown> {
       return Array.isArray(value)
         ? [value, ...value.flatMap(flat)]
         : value && typeof value === "object"
@@ -212,7 +212,7 @@ function features(cases: readonly ParityCase[]): Set<string> {
         if (node.tag !== node.tag.toLowerCase()) {
           found.add("a camel-case SVG element");
         }
-        for (const attribute of node.attributes as Attribute[]) {
+        for (const attribute of node.attributes as Array<Attribute>) {
           found.add(`a ${attribute.kind} attribute`);
           if (attribute.kind === "Class") {
             for (const item of attribute.items) {
@@ -300,7 +300,7 @@ describe("the seeded random components", () => {
   it("start no <pre> or <textarea> with a line feed", () => {
     for (const suite of sourceSuites) {
       for (const parityCase of suite.cases) {
-        const check = (nodes: readonly unknown[]): void => {
+        const check = (nodes: ReadonlyArray<unknown>): void => {
           for (const node of nodes) {
             if (typeof node !== "object" || node === null) {
               continue;

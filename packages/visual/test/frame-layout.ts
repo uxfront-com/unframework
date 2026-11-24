@@ -26,8 +26,8 @@ export function frameLayout(frame: FrameLocator | Page): Promise<FrameLayout> {
     // The boxes of the container's flex items: an element with `display: contents`, as Angular's
     // host, makes none of its own, so its children stand in for it. A range over the container
     // would skip them, since it counts only the outermost elements it holds.
-    const boxes = (node: Node): DOMRect[] =>
-      [...node.childNodes].flatMap((child): DOMRect[] => {
+    const boxes = (node: Node): Array<DOMRect> =>
+      [...node.childNodes].flatMap((child): Array<DOMRect> => {
         if (child instanceof Element) {
           const display = getComputedStyle(child).display;
           if (display === "contents") {

@@ -31,10 +31,10 @@ interface Schema {
   readonly $ref?: string;
   readonly type?: string;
   readonly const?: unknown;
-  readonly enum?: readonly unknown[];
-  readonly anyOf?: readonly Schema[];
+  readonly enum?: ReadonlyArray<unknown>;
+  readonly anyOf?: ReadonlyArray<Schema>;
   readonly properties?: Readonly<Record<string, Schema>>;
-  readonly required?: readonly string[];
+  readonly required?: ReadonlyArray<string>;
   readonly additionalProperties?: boolean;
   readonly items?: Schema;
   readonly pattern?: string;
@@ -53,13 +53,18 @@ const root = irSchema as Schema & { definitions: Readonly<Record<string, Schema>
  * Ajv: a plugin that copies a node with `{ ...node, index: undefined }` hands the targets the
  * same module a JSON round trip of it would.
  */
-export function validateModule(value: unknown): IrValidationError[] {
-  const errors: IrValidationError[] = [];
+export function validateModule(value: unknown): Array<IrValidationError> {
+  const errors: Array<IrValidationError> = [];
   check(root, value, "", errors);
   return errors;
 }
 
-function check(schema: Schema, value: unknown, path: string, errors: IrValidationError[]): void {
+function check(
+  schema: Schema,
+  value: unknown,
+  path: string,
+  errors: Array<IrValidationError>,
+): void {
   for (const keyword of Object.keys(schema)) {
     if (!KEYWORDS.has(keyword)) {
       throw new Error(`irSchema uses "${keyword}", which validateModule does not implement.`);
@@ -112,14 +117,14 @@ function check(schema: Schema, value: unknown, path: string, errors: IrValidatio
   if (Array.isArray(value) && schema.items) {
     // By index, as Ajv does: a hole in a sparse array is checked as `undefined`, where
     // `forEach` would skip it and hand the targets an array with a missing node.
-    for (const [index, item] of (value as unknown[]).entries()) {
+    for (const [index, item] of (value as Array<unknown>).entries()) {
       check(schema.items, item, `${path}/${index}`, errors);
     }
   }
 }
 
 function matches(schema: Schema, value: unknown, path: string): boolean {
-  const errors: IrValidationError[] = [];
+  const errors: Array<IrValidationError> = [];
   check(schema, value, path, errors);
   return errors.length === 0;
 }
@@ -133,10 +138,10 @@ function matches(schema: Schema, value: unknown, path: string): boolean {
  * say where the node is wrong; otherwise the union reports that nothing matched.
  */
 function checkAnyOf(
-  branches: readonly Schema[],
+  branches: ReadonlyArray<Schema>,
   value: unknown,
   path: string,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): void {
   const kind = isRecord(value) && isPresent(value, "kind") ? value.kind : undefined;
   const candidates = branches.filter((branch) => {

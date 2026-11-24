@@ -62,7 +62,7 @@ export interface GeneratedInterface {
 export function generatedInterface(
   component: UfComponent,
   name: string,
-  members: readonly string[],
+  members: ReadonlyArray<string>,
   span: Span,
 ): GeneratedInterface {
   const read = typeNames(`{\n${members.join("\n")}\n}`);

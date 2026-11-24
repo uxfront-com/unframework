@@ -42,7 +42,7 @@ export function teleportNotTag(node: AST.IdentifierReference, reporter: Reporter
 }
 
 /** What a teleport's content is, as written: its children that render something. */
-function contentOf(items: readonly AST.JSXChild[]): AST.JSXChild[] {
+function contentOf(items: ReadonlyArray<AST.JSXChild>): Array<AST.JSXChild> {
   return items.filter((item) => {
     if (item.type === "JSXText") {
       return readJsxText(item.value).value !== "";

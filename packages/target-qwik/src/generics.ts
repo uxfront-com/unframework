@@ -62,7 +62,7 @@ export interface GeneratedInterface {
 export function generatedInterface(
   component: UfComponent,
   name: string,
-  members: readonly string[],
+  members: ReadonlyArray<string>,
   span: Span,
 ): GeneratedInterface {
   // A parameter's constraint or default may name an earlier one (`U extends T`), which the
@@ -178,7 +178,7 @@ function parameterTypeNames(fn: FunctionCode): Set<string> {
  * The component's type parameters that `read` names, in their declared order, with those their
  * constraints and defaults name (`U extends T` keeps `T`).
  */
-function namedParameters(component: UfComponent, read: Set<string>): TypeParameter[] {
+function namedParameters(component: UfComponent, read: Set<string>): Array<TypeParameter> {
   const names = new Set(read);
   const parameters = component.typeParameters ?? [];
   // To a fixed point: a constraint may name a later parameter too (`A extends Box<B>, B extends
@@ -202,7 +202,7 @@ function namedParameters(component: UfComponent, read: Set<string>): TypeParamet
 }
 
 /** `<T extends Item = Item>`, or `""`; `<T,>` for an arrow, which TSX would read as a tag. */
-function parametersText(parameters: readonly TypeParameter[], arrow = false): string {
+function parametersText(parameters: ReadonlyArray<TypeParameter>, arrow = false): string {
   if (!parameters.length) {
     return "";
   }

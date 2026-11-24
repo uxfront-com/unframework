@@ -61,7 +61,7 @@ export interface EvaluateContext {
  */
 const MAX_DEPTH = 50;
 
-const PRIMITIVES: readonly [TypeFlags, PrimitiveNode["name"]][] = [
+const PRIMITIVES: ReadonlyArray<[TypeFlags, PrimitiveNode["name"]]> = [
   [TypeFlags.Any, "any"],
   [TypeFlags.Unknown, "unknown"],
   [TypeFlags.String, "string"],
@@ -90,7 +90,7 @@ const keyOf = (node: { file: string; span: Span }) =>
  */
 export function evaluate(shape: TypeShape, queried: Type, context: EvaluateContext): TypeShape {
   const { checker } = context;
-  const nodes: ShapeNode[] = structuredClone(shape.nodes);
+  const nodes: Array<ShapeNode> = structuredClone(shape.nodes);
   const open = new Set(
     shape.unresolved.filter((entry) => entry.reason === "unsupported").map(keyOf),
   );
@@ -212,7 +212,7 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
 }
 
 /** The parts of a type, without the `undefined` an optional member or parameter adds. */
-function parts(type: Type, optional: boolean): readonly Type[] {
+function parts(type: Type, optional: boolean): ReadonlyArray<Type> {
   // `boolean` is the union of its two literals, and one type.
   if (!type.isUnionType() || type.flags & TypeFlags.Boolean) {
     return [type];
@@ -220,7 +220,7 @@ function parts(type: Type, optional: boolean): readonly Type[] {
   return type.getTypes().filter((part) => !optional || !(part.flags & TypeFlags.Undefined));
 }
 
-function children(node: ShapeNode): number[] {
+function children(node: ShapeNode): Array<number> {
   switch (node.kind) {
     case "union":
       return node.types;
@@ -240,7 +240,11 @@ function children(node: ShapeNode): number[] {
 }
 
 /** Converts checker types into nodes appended to `nodes`, each type once. */
-function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context: EvaluateContext) {
+function createConverter(
+  nodes: Array<ShapeNode>,
+  dependencies: Set<string>,
+  context: EvaluateContext,
+) {
   const { checker } = context;
   const converted = new Map<number, number>();
   const push = (node: ShapeNode) => nodes.push(node) - 1;
@@ -572,7 +576,7 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     const files = new Set<string>();
     const visited = new Set<number>();
     // A worklist, not recursion: an alias chain may be as long as a project makes it.
-    const pending: Node[] = [written];
+    const pending: Array<Node> = [written];
     // Set by `reach`, inside the walk.
     const found = { missing: false };
     /**
@@ -675,8 +679,8 @@ function packageOf(file: string): string {
 }
 
 /** The type names the type references in some nodes reference, each once, in source order. */
-function references(nodes: readonly Node[]): string[] {
-  const names: string[] = [];
+function references(nodes: ReadonlyArray<Node>): Array<string> {
+  const names: Array<string> = [];
   const visit = (node: Node): void => {
     if (isTypeReferenceNode(node)) {
       let name = node.typeName;

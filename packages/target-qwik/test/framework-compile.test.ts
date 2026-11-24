@@ -12,9 +12,9 @@ const context = {
   toolchainDir: `${repo}tests/toolchains/qwik`,
   root: `${repo}tests/integration`,
 };
-const goldens: ToolchainFile[] = qwikGoldens("tests/integration/cases/**/__output__/qwik/*").map(
-  (path) => ({ path, contents: readFileSync(path, "utf8") }),
-);
+const goldens: Array<ToolchainFile> = qwikGoldens(
+  "tests/integration/cases/**/__output__/qwik/*",
+).map((path) => ({ path, contents: readFileSync(path, "utf8") }));
 const fixture = (name: string): string =>
   fileURLToPath(new URL(`fixtures/${name}`, import.meta.url));
 

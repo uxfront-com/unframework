@@ -22,7 +22,7 @@ import { ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain, selectTargets } from "./targets.ts";
 
 /** What an output may import, besides its siblings (M3): its framework only (P7, D11). */
-const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
+const ALLOWED_IMPORTS: Record<string, ReadonlyArray<string>> = {
   // `createPortal` lives in react-dom, React's renderer, which a `<Teleport>` needs (ADR-0098).
   react: ["react", "react/*", "react-dom"],
   vue: ["vue", "vue/*"],
@@ -37,14 +37,14 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
 };
 
 /** What every output may import as written: the `virtual:` modules (plan §4.4, ADR-0064). */
-const PASS_THROUGH_IMPORTS: readonly string[] = ["virtual:*"];
+const PASS_THROUGH_IMPORTS: ReadonlyArray<string> = ["virtual:*"];
 
 /**
  * The baseline rules a target turns off, each because its framework's own idiom needs it: Svelte
  * writes a recursive component as an import of its own file (ADR-0054), which
  * `import/no-self-import` rejects.
  */
-const BASELINE_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+const BASELINE_EXCEPTIONS: Readonly<Record<string, ReadonlyArray<string>>> = {
   svelte: ["import/no-self-import"],
 };
 
@@ -69,7 +69,7 @@ const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
  * the TypeScript 7 the toolchain's tsgo needs (L4). Its oxlint turns them off, and the host runs
  * them alone.
  */
-const TYPED_LAYER: Record<string, { host: string; rules: readonly string[] }> = {
+const TYPED_LAYER: Record<string, { host: string; rules: ReadonlyArray<string> }> = {
   qwik: { host: "qwik-eslint", rules: ["qwik/use-async-top", "qwik/valid-lexical-scope"] },
 };
 
@@ -98,7 +98,7 @@ const UNUSED_RULE: Record<string, string> = {
  * template reads the class, its markup reads a binding beside the unused one, which must not
  * count.
  */
-const PROBES: Record<string, { file: string; contents: string; rules: readonly string[] }> = {
+const PROBES: Record<string, { file: string; contents: string; rules: ReadonlyArray<string> }> = {
   react: {
     file: "Probe.tsx",
     contents: [
@@ -238,13 +238,13 @@ const AUTHOR_RULES = [
 ];
 
 /** A rule's setting as `--print-config` prints it: a severity, or a severity and its options. */
-type RuleSetting = string | [string, unknown[]];
+type RuleSetting = string | [string, Array<unknown>];
 
 /** The parts of oxlint's effective configuration this test reads. */
 interface EffectiveConfig {
   rules: Record<string, RuleSetting>;
   /** Absent without overrides. */
-  overrides?: { files: string[]; rules: Record<string, RuleSetting> }[];
+  overrides?: Array<{ files: Array<string>; rules: Record<string, RuleSetting> }>;
   [key: string]: unknown;
 }
 
@@ -268,7 +268,7 @@ function effectiveConfig(target: string): EffectiveConfig {
 function importGroups(config: EffectiveConfig): unknown {
   const setting = config.rules["no-restricted-imports"];
   const [options] = Array.isArray(setting) ? setting[1] : [];
-  return (options as { patterns?: { group?: unknown }[] } | undefined)?.patterns?.map(
+  return (options as { patterns?: Array<{ group?: unknown }> } | undefined)?.patterns?.map(
     (pattern) => pattern.group,
   );
 }

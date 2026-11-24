@@ -34,7 +34,7 @@ const at = { start: 0, end: 0 };
 function el(
   tag: string,
   attributes: Readonly<Record<string, string | true>> = {},
-  ...children: (RenderNode | string)[]
+  ...children: Array<RenderNode | string>
 ): ElementNode {
   return createElement(
     tag,

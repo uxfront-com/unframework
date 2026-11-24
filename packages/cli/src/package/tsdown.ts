@@ -18,7 +18,7 @@ export interface JsxOptions {
 export interface TsdownRun {
   /** The extension of what it writes. */
   extension: ".js" | ".jsx";
-  plugins?: readonly object[];
+  plugins?: ReadonlyArray<object>;
 }
 
 const SCRIPT = /\.[cm]?[jt]sx?$/;
@@ -63,7 +63,7 @@ async function checkDeclarations(tsdown: string, work: string): Promise<void> {
 export async function buildWithTsdown(
   { files, out, work, resolve }: PackagerInput,
   options: JsxOptions,
-  runs: readonly TsdownRun[],
+  runs: ReadonlyArray<TsdownRun>,
 ): Promise<void> {
   await writeFiles(join(work, "in"), files);
   await writeFile(
@@ -123,6 +123,6 @@ export async function buildWithTsdown(
       { name: "unframework:declarations", renderChunk: dropSideEffectImports },
     ],
   });
-  const sheets: OutputFile[] = files.filter((file) => !SCRIPT.test(file.path));
+  const sheets: Array<OutputFile> = files.filter((file) => !SCRIPT.test(file.path));
   await writeFiles(out, sheets);
 }

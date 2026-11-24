@@ -314,7 +314,7 @@ describe("scopeStylesheet", () => {
 });
 
 /** The rejected selectors' text, as each diagnostic's span covers it in the sheet. */
-function rejected(source: string): string[] {
+function rejected(source: string): Array<string> {
   const { code, diagnostics } = scopeStylesheet("src/Card.css", source, ID);
   for (const diagnostic of diagnostics) {
     expect(diagnostic.code).toBe("UF5004");

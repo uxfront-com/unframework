@@ -159,7 +159,7 @@ export interface FallthroughMarkup {
   /** The root element or component, where a single one is the root. */
   root?: Span;
   /** What the root binds after its own attributes: the `ref` prop. */
-  rootAttributes: string[];
+  rootAttributes: Array<string>;
   /** The text of each template ref the markup writes otherwise: `bind:ref={save}`. */
   refs: ReadonlyMap<RefAttribute, string>;
   /** The text of each own listener of the fallthrough element that calls the consumer's. */
@@ -202,7 +202,7 @@ class Names {
   readonly scope: NameScope;
   readonly #imports = new Map<Module, Map<string, { local: string; type: boolean }>>();
   readonly #locals = new Map<string, LocalImport>();
-  readonly #passThrough = new Map<string, { imported: string; local: string }[]>();
+  readonly #passThrough = new Map<string, Array<{ imported: string; local: string }>>();
 
   constructor(component: UfComponent, module: UfModule) {
     this.scope = new NameScope(sourceNames(component, module));
@@ -297,7 +297,7 @@ class Names {
   }
 
   /** The sibling outputs and the type imports, sorted by specifier. */
-  #sortedLocals(): LocalImport[] {
+  #sortedLocals(): Array<LocalImport> {
     return [...this.#locals.values()].toSorted((a, b) =>
       a.specifier < b.specifier ? -1 : a.specifier > b.specifier ? 1 : 0,
     );
@@ -313,7 +313,7 @@ class Names {
   declarations({
     types: withTypes = true,
     shared = true,
-  }: { types?: boolean; shared?: boolean } = {}): string[] {
+  }: { types?: boolean; shared?: boolean } = {}): Array<string> {
     const locals = this.#sortedLocals().flatMap((each) => {
       const entry =
         shared || !each.shared ? each : { ...each, default: undefined, names: new Map() };
@@ -367,7 +367,7 @@ class Names {
    * constants (ADR-0068, ADR-0070): each module's types, and the values of the `.ts` modules
    * the constants read, `import { BASE, type Size } from "./tokens"`.
    */
-  moduleDeclarations(): string[] {
+  moduleDeclarations(): Array<string> {
     return this.#sortedLocals().flatMap((entry) => {
       if (!entry.shared) {
         return entry.types.size
@@ -438,7 +438,7 @@ function withoutSingleQuotes(text: string): string {
   let written = "";
   // The template literals and holes the text is inside, innermost last: "`" for a literal's
   // text, a number for a hole's code, counting the braces open inside it.
-  const nested: ("`" | number)[] = [];
+  const nested: Array<"`" | number> = [];
   for (let index = 0; index < text.length; index++) {
     const char = text[index]!;
     const inside = nested.at(-1);
@@ -595,7 +595,7 @@ class ScriptWriter {
    */
   #spread: { rest: string; strip?: string } | undefined;
   /** The `ref` prop's local name and its element's tag, where a ref holds the root element. */
-  #ref: { local: string; tags: readonly string[] } | undefined;
+  #ref: { local: string; tags: ReadonlyArray<string> } | undefined;
   /** The name of the props type the script declares, where it declares one. */
   #propsType: string | undefined;
   /** The local of each consumer listener the fallthrough element's own handler calls, by key. */
@@ -624,7 +624,7 @@ class ScriptWriter {
   readonly #results = new Map<UseItem, string>();
   readonly #used = new Map<BindingId, { object: string; member: string }>();
 
-  constructor(component: UfComponent, module: UfModule, typeTexts: readonly TypeText[] = []) {
+  constructor(component: UfComponent, module: UfModule, typeTexts: ReadonlyArray<TypeText> = []) {
     this.#module = module;
     this.#names = new Names(component, module);
     // A fill's snippet is named like its slot, which would hide a binding of that name from
@@ -937,7 +937,7 @@ class ScriptWriter {
     );
   }
 
-  composable(composable: UfComposable, typeTexts: readonly TypeText[]): string {
+  composable(composable: UfComposable, typeTexts: ReadonlyArray<TypeText>): string {
     const owner = this.#component;
     this.#imports();
     // Every type its output names: its parameters', its setup's annotations, its functions' and
@@ -1128,7 +1128,7 @@ class ScriptWriter {
    * another component's constants reach, from that component's output, which declares it
    * (ADR-0068, ADR-0070): `typeExportsCode` knows only components' own types.
    */
-  #siblingConstantTypes(written: ReadonlySet<string>): { code: string; span: Span }[] {
+  #siblingConstantTypes(written: ReadonlySet<string>): Array<{ code: string; span: Span }> {
     const component = this.#component;
     if (keyOwner(this.#module.components, this.#module.exports) !== component.name) {
       return [];
@@ -1161,7 +1161,11 @@ class ScriptWriter {
    * (`contextType`), so the output exports no name of its own that could clash with the module's
    * or a component's.
    */
-  #moduleScript(types: readonly string[], constants: readonly string[], owner: boolean): string {
+  #moduleScript(
+    types: ReadonlyArray<string>,
+    constants: ReadonlyArray<string>,
+    owner: boolean,
+  ): string {
     const imports = this.#names.moduleDeclarations();
     const keys = owner
       ? this.#module.keys!.map(
@@ -1183,8 +1187,8 @@ class ScriptWriter {
    * `const Component = $derived(compact ? Chip : Card)` (ADR-0054). Svelte renders a component
    * held in a variable, and renders the new one when it changes.
    */
-  #dynamicComponents(): string[] {
-    const declarations: string[] = [];
+  #dynamicComponents(): Array<string> {
+    const declarations: Array<string> = [];
     walk(this.#component.render, {
       enter: (node) => {
         if (node.kind !== "Dynamic") {
@@ -1238,8 +1242,8 @@ class ScriptWriter {
    * the template. So does a `<textarea>`: the server renders a spread `value` as an attribute,
    * which a textarea doesn't show, and Svelte never drops a textarea's remembered value.
    */
-  #fieldInitials(fields: readonly ModelAttribute[], untrack: string): string[] {
-    const declarations: string[] = [];
+  #fieldInitials(fields: ReadonlyArray<ModelAttribute>, untrack: string): Array<string> {
+    const declarations: Array<string> = [];
     for (const attribute of fields) {
       if (attribute.control === "textarea") {
         continue;
@@ -1412,7 +1416,7 @@ class ScriptWriter {
    * model is `$bindable`, with its default as its fallback, so a parent may bind it
    * (`bind:value`) or leave it local.
    */
-  #props(): string[] {
+  #props(): Array<string> {
     const component = this.#component;
     const parameter = component.propsParameter;
     const emits = component.emits;
@@ -1475,11 +1479,11 @@ class ScriptWriter {
     }
     // The members the props type adds to the source's, and what the pattern binds of them.
     const members = [...this.#events.values()].map(({ key, type: each }) => `${key}?: ${each};`);
-    const extras: string[] = [];
+    const extras: Array<string> = [];
     // Where the fallthrough element spreads the rest, every name the component declares is bound
     // apart from it, so none falls through (ADR-0118): those nothing reads under a name starting
     // with `_`, which `no-unused-vars` leaves alone.
-    const unread: string[] = [];
+    const unread: Array<string> = [];
     for (const model of models) {
       const local = this.#name(model.binding);
       const optional = model.required ? "" : "?";
@@ -1547,7 +1551,7 @@ class ScriptWriter {
         this.#listeners.set(attribute, local);
       }
     }
-    const pieces: string[] = [];
+    const pieces: Array<string> = [];
     let type = parameter?.type.code;
     if (members.length) {
       const name = scope.scope.has("Props")
@@ -1700,8 +1704,8 @@ class ScriptWriter {
    * and could close what a cleanup still uses. What it does when the component mounts is nothing,
    * so its place changes nothing else.
    */
-  #setup(): string[] {
-    const pieces: string[] = [];
+  #setup(): Array<string> {
+    const pieces: Array<string> = [];
     let previousDeclaration = false;
     const items = setupInTeardownOrder(this.#component.setup);
     for (const item of setupInStartOrder(items, this.#bindings)) {
@@ -1964,7 +1968,7 @@ class ScriptWriter {
     const untrack = names.import("svelte", "untrack");
     const callback = item.callback;
     const [valueParameter, previousParameter, cleanupParameter] = callback.parameters;
-    const lines: string[] = [];
+    const lines: Array<string> = [];
     const sources = item.sources.map((source) => this.#source(source, valueParameter, lines));
     const key = item.array
       ? (valueParameter?.name ??
@@ -1992,7 +1996,7 @@ class ScriptWriter {
       lines.push(`let ${stop}: (() => void) | undefined;`);
     }
 
-    const effect: string[] = [];
+    const effect: Array<string> = [];
     // The new value: under the callback's own parameter where it names one.
     let current: string;
     if (valueParameter?.name !== undefined) {
@@ -2031,7 +2035,7 @@ class ScriptWriter {
     }
     effect.push(`${previous} = ${current};`);
 
-    const run: string[] = [];
+    const run: Array<string> = [];
     if (stop && cleanupParameter) {
       run.push(...this.#cleanups(stop, cleanupParameter));
     }
@@ -2056,7 +2060,7 @@ class ScriptWriter {
   #source(
     source: WatchSource,
     valueParameter: Parameter | undefined,
-    lines: string[],
+    lines: Array<string>,
   ): { read: string; key: string } {
     switch (source.kind) {
       case "Ref": {
@@ -2073,7 +2077,7 @@ class ScriptWriter {
   #getterSource(
     getter: FunctionCode,
     valueParameter: Parameter | undefined,
-    lines: string[],
+    lines: Array<string>,
   ): { read: string; key: string } {
     const only = getter.expression && !getter.async ? soleRead(getter.body) : undefined;
     if (only) {
@@ -2100,7 +2104,7 @@ class ScriptWriter {
    * The `onCleanup` a watcher's callback receives: the callbacks it registers run at the start of
    * the next call, or at unmount (`stop`), never on a run that does not call back.
    */
-  #cleanups(stop: string, parameter: Parameter): string[] {
+  #cleanups(stop: string, parameter: Parameter): Array<string> {
     const cleanups = this.#names.claim("cleanups");
     const name = parameter.name ?? this.#names.claim("onCleanup");
     return [
@@ -2196,11 +2200,11 @@ class ScriptWriter {
     for (const attribute of this.#elementRefs) {
       refs.set(attribute, bind("ref", this.#name(attribute.binding)));
     }
-    const rootAttributes: string[] = [];
+    const rootAttributes: Array<string> = [];
     const ref = this.#ref;
     if (ref && rootNode) {
       const property = rootNode.kind === "Component" ? "ref" : "this";
-      const attributes: readonly (Attribute | ComponentAttribute)[] = rootNode.attributes;
+      const attributes: ReadonlyArray<Attribute | ComponentAttribute> = rootNode.attributes;
       const own = attributes.find(
         (attribute): attribute is RefAttribute => attribute.kind === "Ref",
       );
@@ -2354,7 +2358,7 @@ class ScriptWriter {
  * literal (`{ size: number; onresize?: … }`), or joined to a named type
  * (`StepperProps & { onchange?: … }`), or alone.
  */
-function eventsJoined(type: string | undefined, members: readonly string[]): string {
+function eventsJoined(type: string | undefined, members: ReadonlyArray<string>): string {
   const literal = type?.trim();
   const inner =
     literal !== undefined && isTypeLiteral(literal) ? literal.slice(1, -1).trim() : undefined;
@@ -2387,7 +2391,7 @@ function isTypeLiteral(type: string): boolean {
  * (a watcher's callback or a `watchEffect` that takes `onCleanup`) moved right after that item,
  * the hooks keeping their own order.
  */
-function setupInTeardownOrder(items: readonly SetupItem[]): SetupItem[] {
+function setupInTeardownOrder(items: ReadonlyArray<SetupItem>): Array<SetupItem> {
   const last = items.findLastIndex(registersCleanup);
   const early = items.filter(
     (item, index) => index < last && item.kind === "Lifecycle" && item.hook === "unmounted",
@@ -2411,9 +2415,9 @@ function setupInTeardownOrder(items: readonly SetupItem[]): SetupItem[] {
  * teardown order. A setup without awaits keeps its order.
  */
 function setupInStartOrder(
-  items: readonly SetupItem[],
+  items: ReadonlyArray<SetupItem>,
   bindings: ReadonlyMap<string, Binding>,
-): SetupItem[] {
+): Array<SetupItem> {
   if (!items.some((item) => item.kind === "Await")) {
     return [...items];
   }
@@ -2452,7 +2456,7 @@ function startsProvide(item: ProvideItem, bindings: ReadonlyMap<string, Binding>
  * reads an awaited value or a later item, and `setContext` after an await throws
  * `set_context_after_init`. The target reports them (UF1002) and emits nothing for the component.
  */
-export function lateProvides(component: UfComponent): ProvideItem[] {
+export function lateProvides(component: UfComponent): Array<ProvideItem> {
   if (!component.setup.some((item) => item.kind === "Await")) {
     return [];
   }
@@ -2669,7 +2673,7 @@ function transitionHelpers(names: {
   classes: string;
   runs: string;
   config: string;
-}): string[] {
+}): Array<string> {
   const { enter, leave, classes, runs, config } = names;
   return [
     `/** The stop of the classes each element runs now, which its next phase stops first. */\nconst ${runs} = new WeakMap<Element, () => void>();`,
@@ -2939,8 +2943,8 @@ function usesModelText(attribute: ModelAttribute): boolean {
 }
 
 /** The `v-model`s of fields the markup binds through `modelText`. */
-function modelTextFields(component: UfComponent): ModelAttribute[] {
-  const found: ModelAttribute[] = [];
+function modelTextFields(component: UfComponent): Array<ModelAttribute> {
+  const found: Array<ModelAttribute> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element") {
@@ -3106,7 +3110,7 @@ function modelTextHelper(name: string, on: string): string {
  * event in the spread would replace: the attributes Svelte writes `on<event>`, but in the capture
  * phase (`on<event>capture`, another attribute) and those written as attachments.
  */
-function ownListeners(component: UfComponent): EventAttribute[] {
+function ownListeners(component: UfComponent): Array<EventAttribute> {
   const node =
     component.inheritAttrs === false
       ? restElement(component)
@@ -3116,7 +3120,7 @@ function ownListeners(component: UfComponent): EventAttribute[] {
   if (!node) {
     return [];
   }
-  const attributes: readonly (Attribute | ComponentAttribute)[] = node.attributes;
+  const attributes: ReadonlyArray<Attribute | ComponentAttribute> = node.attributes;
   return attributes.filter(
     (attribute): attribute is EventAttribute =>
       attribute.kind === "Event" &&
@@ -3158,8 +3162,8 @@ function statementOf(statement: string): string {
 }
 
 /** The listeners the markup writes as attachments. */
-function attachedListeners(component: UfComponent): EventAttribute[] {
-  const found: EventAttribute[] = [];
+function attachedListeners(component: UfComponent): Array<EventAttribute> {
+  const found: Array<EventAttribute> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element") {
@@ -3288,7 +3292,8 @@ function withReturns(body: string, returned: () => string): string {
     return body;
   }
   const functions = functionRanges(statements);
-  const returns: { start: number; end: number; argument?: { start: number; end: number } }[] = [];
+  const returns: Array<{ start: number; end: number; argument?: { start: number; end: number } }> =
+    [];
   visit(statements, (node) => {
     if (node.type !== "ReturnStatement") {
       return;
@@ -3390,7 +3395,7 @@ function literalLines(code: string): Set<number> {
   type State = "code" | "line comment" | "block comment" | "'" | '"' | "`";
   let state: State = "code";
   // The depth of `{` inside each open `${…}` substitution, innermost last.
-  const substitutions: number[] = [];
+  const substitutions: Array<number> = [];
   let line = 0;
   for (let index = 0; index < code.length; index++) {
     const char = code[index]!;

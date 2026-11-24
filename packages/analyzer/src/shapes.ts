@@ -28,7 +28,7 @@ const API_MACROS = new Set(["defineEmits", "defineModel", "defineSlots"]);
  * declarations. What `compile()` asks the type
  * oracle for before the module is analysed.
  */
-export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
+export function shapeQueries(parsed: ParsedModule): Array<ShapeQuery> {
   const imported = typeImportNames(parsed.program);
   const found = new Map<string, ShapeQuery>();
   const add = (type: AST.TSType) => {
@@ -140,8 +140,8 @@ export function typeImportNames(program: AST.Program): Set<string> {
 }
 
 /** The functions a module declares at its top level, exported or not, written as values too. */
-function functions(program: AST.Program): AST.Function[] {
-  const found: (AST.Function | AST.ArrowFunctionExpression)[] = [];
+function functions(program: AST.Program): Array<AST.Function> {
+  const found: Array<AST.Function | AST.ArrowFunctionExpression> = [];
   for (const statement of program.body) {
     const declaration =
       (statement.type === "ExportNamedDeclaration" ||
@@ -161,7 +161,7 @@ function functions(program: AST.Program): AST.Function[] {
       }
     }
   }
-  return found as AST.Function[];
+  return found as Array<AST.Function>;
 }
 
 /** Walks a node's tree, entering each node's children when `enter` returns true. */

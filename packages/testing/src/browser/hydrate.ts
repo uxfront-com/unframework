@@ -34,7 +34,7 @@ export function isHydrateProject(): boolean {
 }
 
 /** The attributes whose values are ids, or lists of ids, that the `ids` sub-check reads. */
-export const ID_ATTRIBUTES: readonly string[] = [
+export const ID_ATTRIBUTES: ReadonlyArray<string> = [
   "id",
   "for",
   "headers",
@@ -55,8 +55,8 @@ export const ID_ATTRIBUTES: readonly string[] = [
  * A `<script>`'s are left out: a framework's hydration data (Angular's `ng-state`) is one its
  * adapter takes out of the page as it hydrates.
  */
-export function idsOf(root: ParentNode): string[] {
-  const ids: string[] = [];
+export function idsOf(root: ParentNode): Array<string> {
+  const ids: Array<string> = [];
   for (const element of root.querySelectorAll("*")) {
     if (element.localName === "script") {
       continue;
@@ -72,7 +72,7 @@ export function idsOf(root: ParentNode): string[] {
 }
 
 /** The ids of server HTML, read as the page parses it. */
-export function idsOfHtml(html: string): string[] {
+export function idsOfHtml(html: string): Array<string> {
   const template = document.createElement("template");
   template.innerHTML = html;
   return idsOf(template.content);
@@ -80,8 +80,8 @@ export function idsOfHtml(html: string): string[] {
 
 /** Why two lists of ids differ, or nothing when they are the same. */
 export function compareIds(
-  server: readonly string[],
-  hydrated: readonly string[],
+  server: ReadonlyArray<string>,
+  hydrated: ReadonlyArray<string>,
 ): string | undefined {
   if (server.length === hydrated.length && server.every((id, index) => id === hydrated[index])) {
     return undefined;
@@ -183,8 +183,8 @@ export async function clientRender(
   mount: MountAdapter,
   component: unknown,
   props: Readonly<Record<string, unknown>> | undefined,
-  events: readonly MountEvent[],
-  normalize: (root: HTMLElement, teleported: readonly Element[]) => string,
+  events: ReadonlyArray<MountEvent>,
+  normalize: (root: HTMLElement, teleported: ReadonlyArray<Element>) => string,
 ): Promise<string> {
   // What it teleports is its own, not the hydrated view's (ADR-0098).
   const owner = {};

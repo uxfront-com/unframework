@@ -48,7 +48,7 @@ export function isSharedModuleSpecifier(specifier: string): boolean {
  * is analysed. A re-export is an edge too: every output re-exports as the source does, so its
  * tree needs the module's copy (ADR-0067, ADR-0070).
  */
-export function sharedModuleImports(parsed: ParsedModule): string[] {
+export function sharedModuleImports(parsed: ParsedModule): Array<string> {
   const found = new Set<string>();
   for (const statement of parsed.program.body) {
     const from =
@@ -70,7 +70,7 @@ export function sharedModuleImports(parsed: ParsedModule): string[] {
  * or `@uxfront/unframework`, UF1204). That is its `import` and `export … from` declarations, its
  * `import x = require("…")` and each `import("…")` it holds, whose module its copy loads later.
  */
-export function moduleSpecifiers(parsed: ParsedModule): string[] {
+export function moduleSpecifiers(parsed: ParsedModule): Array<string> {
   const found = new Set<string>();
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") {
@@ -116,8 +116,8 @@ export function moduleSpecifiers(parsed: ParsedModule): string[] {
  * `import()` whose specifier is no string, and `import.meta.glob(…)`. Its copy would load a
  * module no output tree holds, or a framework (UF1202).
  */
-export function unfollowedImports(parsed: ParsedModule): string[] {
-  const found: string[] = [];
+export function unfollowedImports(parsed: ParsedModule): Array<string> {
+  const found: Array<string> = [];
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") {
       return;
@@ -248,9 +248,9 @@ export interface ConstantContext {
  *   none of them (`Object.values(FORMATTERS).length`).
  */
 export function lowerConstants(
-  candidates: readonly ConstantCandidate[],
+  candidates: ReadonlyArray<ConstantCandidate>,
   context: ConstantContext,
-): ModuleConstant[] {
+): Array<ModuleConstant> {
   const { source, scopes, reporter, shared } = context;
   /** The constants each constant reads or calls, by its binding id, for UF2023. */
   const reads = new Map<BindingId, Set<SharedValue>>();
@@ -258,13 +258,13 @@ export function lowerConstants(
    * The module's functions each value calls as the module loads, or passes to a call that may:
    * a constant (`callee`), or an arrow another constant holds (`O.m()`, whose reads `arrow` names).
    */
-  const loadCalls: {
+  const loadCalls: Array<{
     caller: SharedValue;
     name: string;
     callee?: SharedValue;
     arrow?: AST.Node;
     at: AST.Node;
-  }[] = [];
+  }> = [];
   /** The constants each constant holds: what it reads, but for a call it makes as it loads. */
   const held = new Map<BindingId, Set<SharedValue>>();
   /** The constants each arrow a value holds reads, by the arrow. */
@@ -277,7 +277,7 @@ export function lowerConstants(
     candidates.map(({ declarator }) => [shared.values.get(declarator.id), declarator.init]),
   );
   /** Where each value reads a constant as the module loads: direct reads, for UF2023. */
-  const loadReads: { caller: SharedValue; read: SharedValue; at: AST.Node }[] = [];
+  const loadReads: Array<{ caller: SharedValue; read: SharedValue; at: AST.Node }> = [];
   /** Each function constant's own nondeterminism: called later, it is its callers' to report. */
   const reasons = new Map<BindingId, string>();
   /** Each function constant's first read of a global only client code may read, likewise. */
@@ -294,7 +294,7 @@ export function lowerConstants(
     const { id, init } = declarator;
     const own = shared.values.get(id)!;
     const deferred = init.type === "ArrowFunctionExpression";
-    const refs: CodeReference[] = [];
+    const refs: Array<CodeReference> = [];
     const read = new Set<SharedValue>();
     reads.set(own.id, read);
     const holds = new Set<SharedValue>();
@@ -305,7 +305,7 @@ export function lowerConstants(
     /** The identifiers the value calls, or passes to a call, as the module loads. */
     const loadCallees = new Set<object>();
     /** The held arrows being walked, innermost last: what each reads, `O.m()` follows. */
-    const arrows: AST.Node[] = [];
+    const arrows: Array<AST.Node> = [];
     /**
      * The object literal a value is, where it is known: a literal, a name whose value is one (a
      * module's constant, a local given one alone), or a static member of one (`O.inner`).
@@ -597,7 +597,7 @@ export function lowerConstants(
      * A call's arguments: an arrow passed on may run now, as the call runs (UF2023). Where the
      * call's result cannot hold an argument (`readOnly`), the value reads it, and holds nothing.
      */
-    const walkArguments = (args: readonly AST.Node[], load: boolean, onlyRead = false) => {
+    const walkArguments = (args: ReadonlyArray<AST.Node>, load: boolean, onlyRead = false) => {
       if (onlyRead) {
         readOnly++;
       }
@@ -1189,8 +1189,8 @@ const FRESH_OBJECT_FUNCTIONS: ReadonlySet<string> = new Set([
 function assignedValues(
   init: AST.Node,
   scopes: Scopes,
-): { values: Map<object, (AST.Node | null)[]>; accumulators: Set<object> } {
-  const values = new Map<object, (AST.Node | null)[]>();
+): { values: Map<object, Array<AST.Node | null>>; accumulators: Set<object> } {
+  const values = new Map<object, Array<AST.Node | null>>();
   const accumulators = new Set<object>();
   const add = (declaration: object, value: AST.Node | null) => {
     const list = values.get(declaration) ?? [];
@@ -1308,11 +1308,11 @@ function assignedValues(
 }
 
 /** What an arrow function returns: its expression body, or each `return`'s value in its body. */
-function returnedValues(fn: AST.ArrowFunctionExpression): AST.Node[] {
+function returnedValues(fn: AST.ArrowFunctionExpression): Array<AST.Node> {
   if (fn.body.type !== "BlockStatement") {
     return [fn.body];
   }
-  const found: AST.Node[] = [];
+  const found: Array<AST.Node> = [];
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") {
       return;

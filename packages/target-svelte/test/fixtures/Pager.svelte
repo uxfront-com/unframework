@@ -31,7 +31,7 @@
     previousPage = value;
     untrack(() => {
       cleanupPage?.();
-      const cleanups: (() => void)[] = [];
+      const cleanups: Array<() => void> = [];
       cleanupPage = () => {
         for (const cleanup of cleanups) {cleanup();}
       };

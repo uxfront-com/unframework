@@ -8,7 +8,7 @@ import { renameGeneratedIds } from "../normalize/rules/generated-ids.ts";
 /** One emit: the event's source name and its arguments, as plain data. */
 export interface EmittedEvent {
   name: string;
-  args: unknown[];
+  args: Array<unknown>;
 }
 
 /** A payload no trace can record, refused with the event's name and where in it the value was. */
@@ -23,7 +23,7 @@ export class PayloadError extends Error {
  * `undefined` on its immediate first run (semantics contract, watch semantics). An `undefined`
  * before a given argument is still refused.
  */
-export function copyPayload(event: string, args: readonly unknown[]): unknown[] {
+export function copyPayload(event: string, args: ReadonlyArray<unknown>): Array<unknown> {
   let length = args.length;
   while (length > 0 && args[length - 1] === undefined) {
     length -= 1;
@@ -109,8 +109,10 @@ export function renumberIds(value: unknown, names: Map<string, string>): unknown
  * the relative order of different effects that one run triggers is not part of the contract
  * (Vue orders by trigger, Svelte and React by declaration), so a trace never records it.
  */
-export function groupEvents(events: readonly EmittedEvent[]): Record<string, unknown[][]> {
-  const groups = new Map<string, unknown[][]>();
+export function groupEvents(
+  events: ReadonlyArray<EmittedEvent>,
+): Record<string, Array<Array<unknown>>> {
+  const groups = new Map<string, Array<Array<unknown>>>();
   for (const { name, args } of events) {
     groups.set(name, [...(groups.get(name) ?? []), args]);
   }

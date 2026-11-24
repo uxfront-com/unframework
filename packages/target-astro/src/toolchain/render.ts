@@ -155,7 +155,7 @@ export function renderAstroComponent(
   root: string,
   request: AstroRenderRequest,
   childModules?: ChildModules,
-  plugins?: () => Promise<Plugin[]>,
+  plugins?: () => Promise<Array<Plugin>>,
 ): Promise<AstroRenderResult> {
   const run = async () => {
     children = childModules;
@@ -176,7 +176,7 @@ export function renderAstroComponent(
 async function render(
   root: string,
   { id, props }: AstroRenderRequest,
-  plugins: (() => Promise<Plugin[]>) | undefined,
+  plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<AstroRenderResult> {
   if (!ASTRO_VIRTUAL_ID.test(id) || id.includes("?")) {
     throw new TypeError(`ufAstroRender: ${JSON.stringify(id)} is not an Astro output id.`);
@@ -213,7 +213,7 @@ async function render(
   // before its parent's, as an Astro page links them. Read again each render, so a recompile
   // or a canary is seen. An emitted sheet comes from the browser project; another, such as
   // a styling engine's (ADR-0064), from the plugin of the render server's own that serves it.
-  const styles: string[] = [];
+  const styles: Array<string> = [];
   for (const sheet of importedSheets(server.ssr, `${id}?container`)) {
     styles.push(
       `<style>${await (SHEET_ID.test(sheet) ? children!.sheet(sheet) : stylesheet(server.ssr, sheet))}</style>`,
@@ -226,7 +226,7 @@ async function render(
  * The sheets a compiled component imports, through the components it imports, in import order:
  * each child's (depth first) before the importer's own.
  */
-function importedSheets(ssr: RunnableDevEnvironment, id: string): string[] {
+function importedSheets(ssr: RunnableDevEnvironment, id: string): Array<string> {
   const sheets = new Set<string>();
   const seen = new Set<string>();
   const visit = (node: EnvironmentModuleNode | undefined) => {
@@ -271,7 +271,7 @@ function invalidate(ssr: RunnableDevEnvironment, id: string): void {
 
 function renderServer(
   root: string,
-  plugins: (() => Promise<Plugin[]>) | undefined,
+  plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<RenderServer> {
   let server = servers.get(root);
   if (!server) {
@@ -283,7 +283,7 @@ function renderServer(
 
 async function startRenderServer(
   root: string,
-  plugins: (() => Promise<Plugin[]>) | undefined,
+  plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<RenderServer> {
   const { createServer, isRunnableDevEnvironment } = await import("vite");
   const served = new Map<string, string>();
@@ -399,7 +399,7 @@ export async function closeAstroRenderServers(): Promise<void> {
   );
 }
 
-const renders = new AsyncLocalStorage<CapturedConsoleMessage[]>();
+const renders = new AsyncLocalStorage<Array<CapturedConsoleMessage>>();
 
 /**
  * Collects the `console.warn` and `console.error` calls a render makes (layer L13). The console
@@ -408,8 +408,8 @@ const renders = new AsyncLocalStorage<CapturedConsoleMessage[]>();
  */
 async function captureConsole<T>(
   run: () => Promise<T>,
-): Promise<{ value: T; messages: CapturedConsoleMessage[] }> {
-  const messages: CapturedConsoleMessage[] = [];
+): Promise<{ value: T; messages: Array<CapturedConsoleMessage> }> {
+  const messages: Array<CapturedConsoleMessage> = [];
   const { warn, error } = console;
   console.warn = capturing("warn", warn);
   console.error = capturing("error", error);
@@ -422,7 +422,7 @@ async function captureConsole<T>(
 }
 
 function capturing(level: CapturedConsoleMessage["level"], original: Console["warn"]) {
-  return (...args: unknown[]): void => {
+  return (...args: Array<unknown>): void => {
     const sink = renders.getStore();
     if (sink) {
       sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });

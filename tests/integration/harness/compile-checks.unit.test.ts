@@ -33,7 +33,7 @@ const filename = "fixture/badge/Badge.uf.tsx";
 /** `className` is UF3004, with a safe fix that renames it to `class`. */
 const fixable = 'export default function Badge() {\n  return <p className="badge">New</p>;\n}\n';
 
-function compileWith(source: string, plugins: CompilerPlugin[] = []): Promise<CompileResult> {
+function compileWith(source: string, plugins: Array<CompilerPlugin> = []): Promise<CompileResult> {
   return compile(source, { filename, targets: TARGET_NAMES, plugins });
 }
 
@@ -110,7 +110,7 @@ describe("checkFixes (L1)", () => {
   it("fails a fix that does not remove its diagnostic", async () => {
     const { diagnostics } = await compileWith(fixable);
     // The fix rewrites the attribute's name as it was: the source does not change.
-    const broken: Diagnostic[] = diagnostics.map((diagnostic) => ({
+    const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
       ...diagnostic,
       fixes: diagnostic.fixes?.map((fix) => ({
         ...fix,
@@ -125,7 +125,7 @@ describe("checkFixes (L1)", () => {
   it("fails a fix that brings another diagnostic", async () => {
     const { diagnostics } = await compileWith(fixable);
     // `<p id="uf-id-1" class="badge">`: the reserved id prefix is UF3005.
-    const broken: Diagnostic[] = diagnostics.map((diagnostic) => ({
+    const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
       ...diagnostic,
       fixes: diagnostic.fixes?.map((fix) => ({
         ...fix,
@@ -362,7 +362,7 @@ describe("sourceMapProblems (L14)", () => {
 `;
   const source = { filename: "fixture/card/Card.uf.tsx", text: card };
   const none = new Set<string>();
-  const mapped = async (target: TargetName = "react"): Promise<OutputFile[]> => {
+  const mapped = async (target: TargetName = "react"): Promise<Array<OutputFile>> => {
     const result = await compile(card, {
       filename: source.filename,
       targets: [target],
@@ -452,7 +452,7 @@ describe("sourceMapProblems (L14)", () => {
 
   it("counts only the segments that compare text", async () => {
     const [file] = await mapped();
-    const encoded = (lines: SourceMapSegment[][]) =>
+    const encoded = (lines: Array<Array<SourceMapSegment>>) =>
       encodedMappings(new TraceMap({ ...file!.map!, names: ["label"], mappings: lines }));
     expect(
       comparedSegments(

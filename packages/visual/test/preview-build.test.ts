@@ -76,7 +76,7 @@ const BIN = join(
  * without Vitest's `NODE_ENV`, under which Vite would build for development.
  */
 function unframework(
-  args: string[],
+  args: Array<string>,
   cwd: string,
 ): Promise<{ code: number | null; stdout: string; stderr: string }> {
   const { NODE_ENV: _test, ...env } = process.env;
@@ -141,7 +141,7 @@ function fileServer(dir: string): Promise<{ url: string; server: Server }> {
 }
 
 /** Every file under a directory, relative to it. */
-function filesUnder(dir: string): string[] {
+function filesUnder(dir: string): Array<string> {
   return readdirSync(dir, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => join(entry.parentPath, entry.name).slice(dir.length + 1));
@@ -333,7 +333,9 @@ describe("unframework preview build", () => {
       // Nothing listens in a refused frame, so a render would have answered by now.
       await page.waitForTimeout(1000);
       expect(await framed.locator("[data-uf-preview-root], button").count()).toBe(0);
-      expect(await page.evaluate(() => (window as { received?: unknown[] }).received)).toEqual([]);
+      expect(await page.evaluate(() => (window as { received?: Array<unknown> }).received)).toEqual(
+        [],
+      );
     } finally {
       await page.close();
       await new Promise((done) => other.close(done));
@@ -446,9 +448,9 @@ describe("unframework preview build", () => {
           );
           expect(await framed(target).getByText("Release notes").count(), target).toBe(0);
         }
-        expect(await page.evaluate(() => (window as { received?: unknown[] }).received)).toEqual(
-          [],
-        );
+        expect(
+          await page.evaluate(() => (window as { received?: Array<unknown> }).received),
+        ).toEqual([]);
       } finally {
         await page.close();
         await new Promise((done) => other.close(done));
@@ -762,7 +764,7 @@ describe("unframework preview build", () => {
   it("says why on a missing or unknown example or target, never a blank page", async () => {
     const targets = TARGETS.join(", ");
     const usage = `Open an example with embed.html?example=<id>&target=<target>. The targets are ${targets}.`;
-    const cases: [path: string, message: string, stays: string][] = [
+    const cases: Array<[path: string, message: string, stays: string]> = [
       [`${EMBED_FILE}?example=nope&target=vue`, 'This preview has no example "nope".', EMBED_FILE],
       [
         `${EMBED_FILE}?example=examples/Card&target=nope`,
@@ -786,7 +788,7 @@ describe("unframework preview build", () => {
         ["controls=yes", 'The controls parameter takes true, not "yes".'],
         ["theme=blue", 'The theme parameter takes light or dark, not "blue".'],
         ["resize=1", 'The resize parameter takes true, not "1".'],
-      ].flatMap(([query, message]): [string, string, string][] => [
+      ].flatMap(([query, message]): Array<[string, string, string]> => [
         [`${EMBED_FILE}?example=examples/Card&target=vue&${query}`, message!, EMBED_FILE],
         [`vue/frame.html?example=examples/Card&${query}`, message!, "vue/frame.html"],
         [`astro/frame.html?example=examples/Card&${query}`, message!, "astro/frame.html"],
@@ -820,7 +822,7 @@ describe("unframework preview build", () => {
         "src/Hello.uf.tsx": "export default function Hello() {\n  return <p>Hello</p>;\n}\n",
         "notes/todo.md": "Keep me.\n",
       });
-      const cases: [string[], string][] = [
+      const cases: Array<[Array<string>, string]> = [
         [["preview", "build", "--port", "1"], "--port is the served preview's"],
         [["preview", "build", "--out", "."], "holds the project"],
         [["preview", "build", "--out", ".."], "holds the project"],

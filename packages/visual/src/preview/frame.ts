@@ -406,7 +406,7 @@ function errorMessage(error: unknown): string {
 async function serverRender(request: {
   id: string;
   props: Record<string, unknown>;
-}): Promise<{ html: string; console: { level: "warn" | "error"; message: string }[] }> {
+}): Promise<{ html: string; console: Array<{ level: "warn" | "error"; message: string }> }> {
   const response = await fetch(RENDER_PATH, {
     method: "POST",
     headers: { "content-type": "application/json" },

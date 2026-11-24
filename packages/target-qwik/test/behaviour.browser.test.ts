@@ -13,15 +13,15 @@ import { mount } from "../src/toolchain/client.ts";
 const load = async (name: string): Promise<unknown> =>
   ((await import(`./behaviour/${name}.uf.tsx`)) as { default: unknown }).default;
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
-let events: unknown[][] = [];
+let events: Array<Array<unknown>> = [];
 
 /** Listeners that record each emit as `[name, ...args]`. */
-const listening = (...names: string[]) =>
+const listening = (...names: Array<string>) =>
   Object.fromEntries(
-    names.map((name) => [name, (...args: unknown[]) => void events.push([name, ...args])]),
+    names.map((name) => [name, (...args: Array<unknown>) => void events.push([name, ...args])]),
   );
 
 const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
@@ -284,7 +284,7 @@ describe("listener order across elements (ADR-0047)", () => {
     await start("Order", { on: listening("welcomed", "submitted") });
     // After Qwik's loader, which listens in the capture phase; it prevents what it saw, so the
     // page stays.
-    const prevented: boolean[] = [];
+    const prevented: Array<boolean> = [];
     const guard = (event: Event) => {
       prevented.push(event.defaultPrevented);
       event.preventDefault();
@@ -370,7 +370,7 @@ describe("controls at dispatch and calls where another listener follows (ADR-004
 
   it("keeps a listener whose handler only prevents: the form is not submitted, the focus stays", async () => {
     await start("Bare");
-    const submitted: boolean[] = [];
+    const submitted: Array<boolean> = [];
     const guard = (event: Event) => {
       submitted.push(event.defaultPrevented);
       event.preventDefault();
@@ -396,7 +396,7 @@ describe("controls at dispatch and calls where another listener follows (ADR-004
     await act(() => userEvent.click(page.getByTestId("backdrop"), { position: { x: 2, y: 2 } }));
     expect(container.querySelector("[data-testid=backdrop]")).toBeNull();
     expect(logEntries()).toEqual(["kept", "page"]);
-    const prevented: boolean[] = [];
+    const prevented: Array<boolean> = [];
     const guard = (event: Event) => {
       prevented.push(event.defaultPrevented);
       event.preventDefault();

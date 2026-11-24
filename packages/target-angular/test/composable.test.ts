@@ -36,7 +36,7 @@ async function expectClean({ sources }: CompiledCase): Promise<Map<string, strin
   }
   // Two sources that import one module each copy it, the same.
   const files = new Map<string, string>();
-  for (const output of sources.flatMap(({ outputs }): OutputFile[] => outputs)) {
+  for (const output of sources.flatMap(({ outputs }): Array<OutputFile> => outputs)) {
     expect(files.get(output.path) ?? output.contents, output.path).toBe(output.contents);
     files.set(output.path, output.contents);
   }

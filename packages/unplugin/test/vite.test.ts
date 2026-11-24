@@ -125,8 +125,8 @@ describe("unframework()", () => {
   });
 
   it("forwards the passThrough prefixes to compile() (ADR-0064)", async () => {
-    const compiles = async (passThrough?: readonly string[]) => {
-      const events: CompileEvent[] = [];
+    const compiles = async (passThrough?: ReadonlyArray<string>) => {
+      const events: Array<CompileEvent> = [];
       const plugins = [
         ...unframework({
           target: "vue",
@@ -151,7 +151,7 @@ describe("unframework()", () => {
 });
 
 /** The targets whose module is one markup file, which has only a default export. */
-const MARKUP_TARGETS: readonly string[] = ["vue", "svelte", "astro"];
+const MARKUP_TARGETS: ReadonlyArray<string> = ["vue", "svelte", "astro"];
 
 describe.each(TARGET_NAMES)("the %s target", (target) => {
   it("resolves an import to its module id and loads compile()'s output", async () => {
@@ -940,7 +940,7 @@ describe("types read through the type oracle (ADR-0067)", () => {
 
 describe("the golden guard (onCompile)", () => {
   it("receives every compile, and leaves a module it accepts alone", async () => {
-    const events: CompileEvent[] = [];
+    const events: Array<CompileEvent> = [];
     const plugins = [
       ...unframework({ target: "vue", onCompile: (event) => void events.push(event) }),
       fakeVue,
@@ -1133,7 +1133,7 @@ const watchedBy = (graph: Project, client: TestServer["client"], id: string) =>
     .toSorted();
 
 /** The props and the error codes of the last compile `onCompile` saw for an id. */
-const lastCompile = (events: CompileEvent[], id: string) => {
+const lastCompile = (events: Array<CompileEvent>, id: string) => {
   const event = events.findLast((each) => each.id === id)!;
   return {
     props: event.ir?.components[0]?.props.map(({ name }) => name),
@@ -1226,13 +1226,13 @@ describe("the project graph (ADR-0071)", () => {
       client: TestServer["client"];
       ids: Record<"B" | "C" | "D", string>;
       idOf: (name: string) => string;
-      compiled: string[];
-      events: CompileEvent[];
+      compiled: Array<string>;
+      events: Array<CompileEvent>;
     }) => Promise<void>,
   ) {
     const graph = createProject(GRAPH);
-    const compiled: string[] = [];
-    const events: CompileEvent[] = [];
+    const compiled: Array<string> = [];
+    const events: Array<CompileEvent> = [];
     const counter: CompilerPlugin = {
       name: "counter",
       ir: (module) => void compiled.push(module.file),
@@ -1281,7 +1281,7 @@ describe("the project graph (ADR-0071)", () => {
       client.moduleGraph.onFileChange(edited);
       for (const [name, id] of Object.entries(ids)) {
         const result = client.moduleGraph.getModuleById(id)?.transformResult;
-        if ((names as readonly string[]).includes(name)) {
+        if ((names as ReadonlyArray<string>).includes(name)) {
           expect(result, name).toBeNull();
         } else {
           expect(result, name).not.toBeNull();
@@ -1434,7 +1434,7 @@ describe("the project graph (ADR-0071)", () => {
       });
       await typeOracle.dispose();
       // The guard judges their text. Only the module's own file loads, so only that keeps its map.
-      const texts = (files: readonly OutputFile[]) =>
+      const texts = (files: ReadonlyArray<OutputFile>) =>
         files.map(({ path, contents }) => ({ path, contents }));
       expect(texts(filesOf())).toEqual(texts(direct.outputs.html!));
       expect(filesOf()[0]!.map).toEqual(direct.outputs.html![0]!.map);

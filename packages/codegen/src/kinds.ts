@@ -187,7 +187,7 @@ class Kinds {
     }
     switch (node.type) {
       case "TSUnionType":
-        return (node["types"] as Node[]).every((each) => this.#typeNode(each));
+        return (node["types"] as Array<Node>).every((each) => this.#typeNode(each));
       case "TSParenthesizedType":
         return this.#typeNode(node["typeAnnotation"] as Node);
       case "TSTypeReference": {
@@ -268,7 +268,7 @@ class Kinds {
       case "ChainExpression":
         return this.#expression(node["expression"] as Node, code);
       case "SequenceExpression":
-        return this.#expression((node["expressions"] as Node[]).at(-1)!, code);
+        return this.#expression((node["expressions"] as Array<Node>).at(-1)!, code);
       case "Identifier":
       case "MemberExpression":
         return this.#reference(node, code);
@@ -375,8 +375,8 @@ class Kinds {
     } catch {
       return false;
     }
-    const returned: (Node | null)[] = [];
-    collectReturns(statements as unknown as Node[], returned);
+    const returned: Array<Node | null> = [];
+    collectReturns(statements as unknown as Array<Node>, returned);
     return (
       returned.length > 0 &&
       returned.every((each) => each === null || this.#expression(each, fn.body))
@@ -525,7 +525,7 @@ function memberName(node: Node): string | undefined {
  * The value of each `return` statement of a function's body, outside the functions it holds
  * (`null` for a `return` without one).
  */
-function collectReturns(root: unknown, returned: (Node | null)[]): void {
+function collectReturns(root: unknown, returned: Array<Node | null>): void {
   if (Array.isArray(root)) {
     for (const each of root) {
       collectReturns(each, returned);

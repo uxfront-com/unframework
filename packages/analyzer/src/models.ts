@@ -79,7 +79,7 @@ function invalid(
   at: { start: number; end: number },
   message: string,
   help = "Bind a ref's value to a form control, `<input v-model={text.value} />`, or a model a component declares, `<Field v-model:value={text.value} />`.",
-  fixes?: Fix[],
+  fixes?: Array<Fix>,
 ): undefined {
   render.reporter.report("UF3042", at, message, { help, ...(fixes ? { fixes } : {}) });
   return undefined;
@@ -141,7 +141,7 @@ export function lowerControlModel(
     );
   }
   const numeric = control === "number" || modifier === "number";
-  const expected: Primitive[] =
+  const expected: Array<Primitive> =
     control === "checkbox"
       ? ["boolean"]
       : control === "checkbox-group" || control === "select-multiple"
@@ -288,7 +288,7 @@ export function lowerModelBinding(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
-  items: readonly AST.JSXAttributeItem[] | undefined,
+  items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): ModelBindingAttribute | undefined {
   const written = `${name.namespace.name}:${name.name.name}`;
   if (name.namespace.name !== "v-model") {

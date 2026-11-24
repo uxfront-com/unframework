@@ -250,7 +250,7 @@ export function checkExpression(node: AST.Expression, context: RenderContext): C
   const result = walk.value(node, "value", false);
   checkDirectives(span(node), context.comments, reporter);
   inSourceOrder(reporter, mark);
-  const refs = sortReferences(walk.refs) as Reference[];
+  const refs = sortReferences(walk.refs) as Array<Reference>;
   return {
     expression: createExpression(source.slice(node.start, node.end), span(node), refs),
     kinds: result,
@@ -347,14 +347,14 @@ function inSourceOrder(reporter: Reporter, mark: number): void {
  * References in source order: a write or an emit before the references of its value or its
  * arguments, which it starts before or with (ADR-0045).
  */
-function sortReferences(refs: readonly CodeReference[]): CodeReference[] {
+function sortReferences(refs: ReadonlyArray<CodeReference>): Array<CodeReference> {
   return refs.toSorted((a, b) => a.span.start - b.span.start || b.span.end - a.span.end);
 }
 
 /** Reports the lint and type-check directives among the comments in a span the IR copies. */
 export function checkDirectives(
   at: Span,
-  comments: readonly AST.Comment[],
+  comments: ReadonlyArray<AST.Comment>,
   reporter: Reporter,
 ): void {
   for (const comment of comments) {
@@ -537,7 +537,7 @@ type Target = (
   | { kind: "invalid" }
 ) & {
   /** A destructuring pattern's member targets, each of which it writes (UF2004). */
-  members?: AST.MemberExpression[];
+  members?: Array<AST.MemberExpression>;
 };
 
 /** How many parameters each function's role takes, and what it is passed. */
@@ -558,13 +558,13 @@ const ROLE_PARAMETERS: Readonly<
 
 /** One walk of one expression, or of one function the source writes. */
 class Walk {
-  readonly refs: CodeReference[] = [];
+  readonly refs: Array<CodeReference> = [];
   /** Whether a `?.` of the chain being walked may end it, so the chain may be `undefined`. */
   shortCircuits = false;
   /** The kinds the walk read for each expression it walked. */
   readonly #known = new WeakMap<object, Kinds>();
   /** The reports of narrowed reads a `+` decides: none where it concatenates a string. */
-  readonly #concatenations = new Map<object, (() => void)[]>();
+  readonly #concatenations = new Map<object, Array<() => void>>();
   /** The reads reported as narrowed apart (`#readApart`), whose members say nothing new. */
   readonly #apart = new WeakSet<object>();
   readonly #context: RenderContext;
@@ -581,12 +581,12 @@ class Walk {
    */
   readonly #arrowUses = new WeakMap<object, "callback" | "discarded">();
   /** The expressions the function being lowered returns, outside the functions in it. */
-  #returns: AST.Expression[] | undefined;
+  #returns: Array<AST.Expression> | undefined;
   /**
    * The event parameter of the function being lowered, what its `Event` references read: its
    * interface, and the events it receives (UF3032 judges its members by them).
    */
-  #event: { declaration: object; interface: string; events: readonly string[] } | undefined;
+  #event: { declaration: object; interface: string; events: ReadonlyArray<string> } | undefined;
   /** The event parameter's reads passed whole to a local function's event parameter (UF3032). */
   readonly #wholeEvents = new WeakSet<object>();
   /** The `onCleanup` parameter of a watcher's callback or an effect, whose callback runs later. */
@@ -605,7 +605,7 @@ class Walk {
    * The member expressions whose object the walk is reading, outermost first: the member paths
    * off a read of a prop or a ref's value (`draft.value.email`), which narrowing judges.
    */
-  readonly #memberChain: AST.MemberExpression[] = [];
+  readonly #memberChain: Array<AST.MemberExpression> = [];
   /** The statements and paths whose narrowed reads are reported once (UF3031). */
   readonly #narrowingReported = new Set<string>();
   /** The locals UF3031's fixes declare, by the block they declare them in. */
@@ -1727,7 +1727,7 @@ class Walk {
     node: AST.MemberExpression | AST.IdentifierReference,
     binding: SetupBinding,
     fixable: boolean,
-  ): NarrowedPath[] | undefined {
+  ): Array<NarrowedPath> | undefined {
     if (binding.kind === "templateRef" && this.#nonReactive(node, binding)) {
       return undefined;
     }
@@ -1745,7 +1745,7 @@ class Walk {
     node: AST.MemberExpression | AST.IdentifierReference,
     subject: Narrowable,
     fixable: boolean,
-  ): NarrowedPath[] {
+  ): Array<NarrowedPath> {
     const context = this.#context;
     const root = referencePath(node, context);
     if (!root) {
@@ -1753,7 +1753,7 @@ class Walk {
     }
     // The read, then each member read off it with no parentheses or `?.` between, as the walk
     // reads it, with its kinds.
-    const paths: { node: AST.Expression; members: string[]; kinds: Kinds }[] = [
+    const paths: Array<{ node: AST.Expression; members: Array<string>; kinds: Kinds }> = [
       {
         node,
         members: [],
@@ -1780,7 +1780,7 @@ class Walk {
       return [];
     }
     const ancestors = ancestorsOf(node, context.component);
-    const narrowed: NarrowedPath[] = [];
+    const narrowed: Array<NarrowedPath> = [];
     for (const [index, path] of paths.entries()) {
       if (ancestors.at(-1 - index) !== path.node) {
         break;
@@ -1815,11 +1815,11 @@ class Walk {
    */
   #pathRule(
     node: AST.Expression,
-    ancestors: readonly AST.Node[],
+    ancestors: ReadonlyArray<AST.Node>,
     path: ReferencePath,
     declared: Kinds,
     subject: Narrowable,
-    members: readonly string[],
+    members: ReadonlyArray<string>,
     fixable: boolean,
   ): NarrowedPath["scope"] | undefined {
     if (!narrowable(declared)) {
@@ -1875,7 +1875,7 @@ class Walk {
    * unnarrowed one where a call reads it.
    */
   #refUse(
-    ancestors: readonly AST.Node[],
+    ancestors: ReadonlyArray<AST.Node>,
     declared: Kinds,
     nullable: boolean,
     several: boolean,
@@ -2077,11 +2077,11 @@ class Walk {
   #narrowedRead(
     node: AST.Expression,
     subject: Narrowable,
-    members: readonly string[],
+    members: ReadonlyArray<string>,
     present: Kinds,
     use: string,
-    ancestors: readonly AST.Node[],
-    facts: readonly PathFact[],
+    ancestors: ReadonlyArray<AST.Node>,
+    facts: ReadonlyArray<PathFact>,
     fixable: boolean,
   ): void {
     const { reporter, source } = this.#context;
@@ -2135,9 +2135,13 @@ class Walk {
    * The reads of a ref's value (`x.value`) or of a prop (`label`, `props.label`) in a tree, or of
    * a member path off it (`x.value.email`) where `members` names one.
    */
-  #readsOf(root: AST.Node, subject: Narrowable, members: readonly string[]): AST.Expression[] {
+  #readsOf(
+    root: AST.Node,
+    subject: Narrowable,
+    members: ReadonlyArray<string>,
+  ): Array<AST.Expression> {
     const { scopes, propsObject } = this.#context;
-    const found: AST.Expression[] = [];
+    const found: Array<AST.Expression> = [];
     if (members.length) {
       const names = [
         ...(subject.kind === "ref"
@@ -2234,7 +2238,7 @@ class Walk {
   }
 
   /** The names the fix of UF3031 may give the local that holds a value, in order. */
-  #localName(subject: Narrowable, members: readonly string[]): string[] {
+  #localName(subject: Narrowable, members: ReadonlyArray<string>): Array<string> {
     const last = members.at(-1);
     if (last !== undefined) {
       // The member's own name is taken where the path reads it.
@@ -2259,7 +2263,7 @@ class Walk {
   #readIntoLocal(
     anchor: NarrowingAnchor,
     subject: Narrowable,
-    members: readonly string[],
+    members: ReadonlyArray<string>,
     written: string,
   ): Fix | undefined {
     const { source, component } = this.#context;
@@ -2333,7 +2337,7 @@ class Walk {
    * Whether a function returns every kind of a value: where its return type is written and
    * holds them all (UF3031). `ancestors` ends at the `return` or the arrow's body's parent.
    */
-  #returnsAll(ancestors: readonly AST.Node[], declared: Kinds, literal: boolean): boolean {
+  #returnsAll(ancestors: ReadonlyArray<AST.Node>, declared: Kinds, literal: boolean): boolean {
     const fn = ancestors.findLast(
       (node) =>
         node.type === "ArrowFunctionExpression" ||
@@ -3000,7 +3004,7 @@ class Walk {
       return UNKNOWN;
     }
     let result: Kinds = UNKNOWN;
-    let parameters: Kinds[] = [];
+    let parameters: Array<Kinds> = [];
     let calleeKinds: Kinds = UNKNOWN;
     if (callee.type === "MemberExpression") {
       const receiver = this.#receiverOf(callee);
@@ -3876,7 +3880,7 @@ class Walk {
     const text = context.source.slice(inner.start, inner.end);
     switch (inner.type) {
       case "ObjectExpression": {
-        const found: Provenance[] = [];
+        const found: Array<Provenance> = [];
         for (const item of inner.properties.toReversed()) {
           if (item.type === "SpreadElement") {
             found.push(this.#membersOf(item.argument, property, visiting));
@@ -4237,7 +4241,7 @@ class Walk {
     const { property } = callee;
     if (MUTATING_METHODS.has(name)) {
       const copy = MUTATING_METHODS.get(name);
-      const fixes: Fix[] = copy
+      const fixes: Array<Fix> = copy
         ? [
             {
               title: `Write \`${copy}\``,
@@ -4293,8 +4297,8 @@ class Walk {
    * never, or directly in a function's body). `to` names the call, for the message.
    */
   #arguments(
-    items: readonly AST.Argument[],
-    parameters: readonly Kinds[],
+    items: ReadonlyArray<AST.Argument>,
+    parameters: ReadonlyArray<Kinds>,
     runs: Runs = "now",
     to?: { name: string | undefined; arrayMethod: boolean },
   ): void {
@@ -4325,7 +4329,7 @@ class Walk {
   }
 
   #array(node: AST.ArrayExpression): Kinds {
-    const elements: Kinds[] = [];
+    const elements: Array<Kinds> = [];
     let hole = false;
     for (const element of node.elements) {
       if (element === null) {
@@ -4411,7 +4415,7 @@ class Walk {
   #arrow(
     node: AST.ArrowFunctionExpression,
     position: Position,
-    parameters: readonly Kinds[],
+    parameters: ReadonlyArray<Kinds>,
     deferred = false,
   ): Kinds {
     if (this.#mode !== "render") {
@@ -4435,7 +4439,7 @@ class Walk {
         `Type annotations on an arrow function are not supported in template expressions yet: ${angular}`,
       );
     }
-    const declared: { node: AST.BindingIdentifier; local: Local }[] = [];
+    const declared: Array<{ node: AST.BindingIdentifier; local: Local }> = [];
     for (const [index, parameter] of node.params.entries()) {
       if (parameter.type !== "Identifier" || parameter.typeAnnotation || parameter.optional) {
         this.#unsupported(
@@ -4516,7 +4520,7 @@ class Walk {
   #nestedArrow(
     node: AST.ArrowFunctionExpression,
     position: Position,
-    parameters: readonly Kinds[],
+    parameters: ReadonlyArray<Kinds>,
     deferred: boolean,
   ): Kinds {
     if (this.#mode === "pure" && position !== "argument") {
@@ -4527,7 +4531,7 @@ class Walk {
         { help: "Declare a local function, and call it; or compute the value in place." },
       );
     }
-    const declared: { node: AST.BindingIdentifier; local: Local }[] = [];
+    const declared: Array<{ node: AST.BindingIdentifier; local: Local }> = [];
     for (const [index, parameter] of node.params.entries()) {
       this.#declareParameter(parameter, parameters[index] ?? UNKNOWN, declared);
     }
@@ -4568,7 +4572,7 @@ class Walk {
   #declareParameter(
     parameter: AST.ParamPattern | AST.BindingPattern,
     kindsOf: Kinds,
-    declared: { node: AST.BindingIdentifier; local: Local }[],
+    declared: Array<{ node: AST.BindingIdentifier; local: Local }>,
   ): void {
     if (parameter.type === "TSParameterProperty") {
       this.#rejected(parameter, "Parameter properties are not supported in setup code.");
@@ -4614,7 +4618,7 @@ class Walk {
    */
   #parameters(
     node: AST.ArrowFunctionExpression | AST.Function,
-    declared: readonly { node: AST.BindingIdentifier; local: Local }[],
+    declared: ReadonlyArray<{ node: AST.BindingIdentifier; local: Local }>,
     fixable: boolean,
   ): void {
     const context = this.#context;
@@ -4708,8 +4712,8 @@ class Walk {
     }
     // A parameter the role does not take is reported once, above: never as unread too.
     const excess = new Set(fn.params.slice(limits.max));
-    const parameters: Parameter[] = [];
-    const declared: { node: AST.BindingIdentifier; local: Local }[] = [];
+    const parameters: Array<Parameter> = [];
+    const declared: Array<{ node: AST.BindingIdentifier; local: Local }> = [];
     for (const [index, parameter] of fn.params.entries()) {
       const lowered = this.#parameter(parameter, index, options, declared);
       if (lowered) {
@@ -4720,7 +4724,7 @@ class Walk {
     const { body } = fn;
     let code: Code;
     let expression = false;
-    let returned: AST.Expression[];
+    let returned: Array<AST.Expression>;
     if (body?.type === "BlockStatement") {
       this.#statements(body.body);
       code = createCode(source.slice(body.start, body.end), span(body), []);
@@ -4794,7 +4798,7 @@ class Walk {
     parameter: AST.ParamPattern,
     index: number,
     options: FunctionOptions,
-    declared: { node: AST.BindingIdentifier; local: Local }[],
+    declared: Array<{ node: AST.BindingIdentifier; local: Local }>,
   ): Parameter | undefined {
     const context = this.#context;
     const { source, types } = context;
@@ -4930,7 +4934,7 @@ class Walk {
   #eventControls(
     fn: AST.Function | AST.ArrowFunctionExpression,
     bodySpan: Span,
-  ): { method: EventControl["method"]; span: Span; condition?: Span }[] {
+  ): Array<{ method: EventControl["method"]; span: Span; condition?: Span }> {
     const event = this.#event;
     if (!event || !fn.body) {
       return [];
@@ -4965,7 +4969,7 @@ class Walk {
   }
 
   /** Walks statements of setup code, in order. */
-  #statements(statements: readonly (AST.Statement | AST.Directive)[]): void {
+  #statements(statements: ReadonlyArray<AST.Statement | AST.Directive>): void {
     for (const statement of statements) {
       this.#statement(statement);
     }
@@ -5222,7 +5226,7 @@ class Walk {
     target: AST.AssignmentTarget | AST.SimpleAssignmentTarget,
     binding: SetupBinding,
     operator: string,
-  ): NarrowedPath[] {
+  ): Array<NarrowedPath> {
     if (!isWritableRef(binding) || !READING_WRITES.has(operator) || !mayBeAbsent(binding.kinds)) {
       return [];
     }
@@ -5318,7 +5322,7 @@ class Walk {
    */
   #patternWrite(
     node: AST.AssignmentExpression | AST.AssignmentTarget,
-    members: readonly AST.MemberExpression[],
+    members: ReadonlyArray<AST.MemberExpression>,
     position: Position,
   ): void {
     let first: { member: AST.MemberExpression; origin: Provenance } | undefined;
@@ -5392,7 +5396,7 @@ class Walk {
    */
   #copyAndWrite(
     node: AST.AssignmentExpression,
-    members: readonly AST.MemberExpression[],
+    members: ReadonlyArray<AST.MemberExpression>,
     position: Position,
   ): Fix | undefined {
     if (position !== "statement" || node.operator !== "=") {
@@ -5446,7 +5450,7 @@ class Walk {
     const lineStart = source.lastIndexOf("\n", statement.start - 1) + 1;
     const indent = /^[\t ]*/.exec(source.slice(lineStart, statement.start))![0];
     // Every read of the value in the assignment reads the copy, which holds the same members.
-    const reads: AST.Node[] = [];
+    const reads: Array<AST.Node> = [];
     visitNodes(node, (child) => {
       if (
         child.type === "MemberExpression" &&
@@ -5628,7 +5632,7 @@ class Walk {
         // member, which its caller judges (UF2004); a write of state is `x.value = …`, a
         // statement of its own.
         let result: Target = { kind: "local" };
-        const members: AST.MemberExpression[] = [];
+        const members: Array<AST.MemberExpression> = [];
         for (const { target, fallback } of assignedTargets(node)) {
           if (fallback) {
             this.value(fallback, "value", false);
@@ -6167,8 +6171,8 @@ function memberRoot(node: AST.MemberExpression): AST.IdentifierReference | undef
 /** The targets a destructuring assignment writes, each with the default written for it. */
 function assignedTargets(
   pattern: AST.AssignmentTargetPattern,
-): { target: AST.AssignmentTarget; fallback?: AST.Expression }[] {
-  const found: { target: AST.AssignmentTarget; fallback?: AST.Expression }[] = [];
+): Array<{ target: AST.AssignmentTarget; fallback?: AST.Expression }> {
+  const found: Array<{ target: AST.AssignmentTarget; fallback?: AST.Expression }> = [];
   const add = (node: unknown): void => {
     if (!node || typeof node !== "object") {
       return;
@@ -6199,14 +6203,14 @@ function assignedTargets(
  * The values a function returns: its expression body, or the argument of each `return` in its
  * block, outside the functions in it.
  */
-function returnedOf(fn: AST.Function | AST.ArrowFunctionExpression): AST.Expression[] {
+function returnedOf(fn: AST.Function | AST.ArrowFunctionExpression): Array<AST.Expression> {
   if (!fn.body) {
     return [];
   }
   if (fn.body.type !== "BlockStatement") {
     return [fn.body];
   }
-  const found: AST.Expression[] = [];
+  const found: Array<AST.Expression> = [];
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") {
       return;
@@ -6257,26 +6261,26 @@ interface TemplateElement {
   /** Where it is written, its children included. */
   span: Span;
   /** The template refs attached to it. */
-  refs: object[];
+  refs: Array<object>;
   /** The functions its listeners run: each written in place, or the local function named. */
-  listeners: object[];
+  listeners: Array<object>;
   /** Whether it binds a dynamic `class` or `style` (a spread may bind either). */
   class: boolean;
   style: boolean;
 }
 
-const TEMPLATE_ELEMENTS = new WeakMap<object, TemplateElement[]>();
+const TEMPLATE_ELEMENTS = new WeakMap<object, Array<TemplateElement>>();
 
 /**
  * The elements a component's JSX writes, with their template refs, their listeners and bound
  * parts (UF3028).
  */
-function templateElements(context: RenderContext): TemplateElement[] {
+function templateElements(context: RenderContext): Array<TemplateElement> {
   const known = TEMPLATE_ELEMENTS.get(context.component);
   if (known) {
     return known;
   }
-  const found: TemplateElement[] = [];
+  const found: Array<TemplateElement> = [];
   visitNodes(context.component, (jsx) => {
     if (jsx.type !== "JSXElement") {
       return;
@@ -6351,7 +6355,7 @@ function listenerElements(context: RenderContext): ReadonlyMap<object, ListenerE
     return known;
   }
   const found = new Map<object, ListenerElements>();
-  const queue: object[] = [];
+  const queue: Array<object> = [];
   const reach = (fn: object, index: number, elements: Iterable<TemplateElement>) => {
     let entry = found.get(fn);
     if (!entry) {
@@ -6602,15 +6606,15 @@ const FLOWS: ReadonlySet<string> = new Set([LOCAL, RESULT, ASSIGNED, LITERAL]);
  */
 interface NarrowingAnchor {
   statement: AST.Statement;
-  region: AST.Statement[];
+  region: Array<AST.Statement>;
   /** The block that holds the statement, where the local is declared. */
   block: AST.BlockStatement;
 }
 
 /** The anchor of the conditions that narrow a read (see {@link NarrowingAnchor}). */
 function narrowingAnchor(
-  ancestors: readonly AST.Node[],
-  facts: readonly { condition: AST.Expression }[],
+  ancestors: ReadonlyArray<AST.Node>,
+  facts: ReadonlyArray<{ condition: AST.Expression }>,
   component: AST.Node,
 ): NarrowingAnchor | undefined {
   // The blocks around the read in its own function, which is code's: the component's own body
@@ -6637,7 +6641,7 @@ function narrowingAnchor(
       if (block.type !== "BlockStatement") {
         continue;
       }
-      const statements = block.body as AST.Statement[];
+      const statements = block.body as Array<AST.Statement>;
       const holder = statements.find(
         (statement) => statement.start <= condition.start && condition.end <= statement.end,
       );
@@ -6758,7 +6762,7 @@ function calleeName(callee: AST.Expression | AST.Super): string | undefined {
  * The kinds an array method passes its callback, from the array's element kinds: the item and
  * its index, both items of a comparator, or the accumulator and the item of a reduction.
  */
-function callbackParameters(method: string, element: Kinds): Kinds[] {
+function callbackParameters(method: string, element: Kinds): Array<Kinds> {
   switch (method) {
     case "every":
     case "filter":
@@ -6932,7 +6936,7 @@ function closeTo(a: string, b: string): boolean {
 }
 
 /** The indices of a string's UTF-16 units. */
-function indices(text: string): number[] {
+function indices(text: string): Array<number> {
   return Array.from({ length: text.length }, (_, index) => index);
 }
 

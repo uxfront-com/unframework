@@ -81,7 +81,7 @@ export async function formatOutput(file: OutputFile): Promise<FormatOutcome> {
   }
 }
 
-function formatErrors(errors: readonly { message: string }[]): string {
+function formatErrors(errors: ReadonlyArray<{ message: string }>): string {
   return errors.map((error) => error.message).join("\n");
 }
 
@@ -120,7 +120,7 @@ async function formatBlocks(path: string, contents: string): Promise<string> {
  * an `.astro` file's frontmatter, each without its tags or fences. None in any other file. Throws
  * on a block with no end.
  */
-export function codeBlocks(path: string, contents: string): Span[] {
+export function codeBlocks(path: string, contents: string): Array<Span> {
   if (path.endsWith(".astro")) {
     if (!contents.startsWith("---\n")) {
       return [];
@@ -134,7 +134,7 @@ export function codeBlocks(path: string, contents: string): Span[] {
   if (!path.endsWith(".svelte") && !path.endsWith(".vue")) {
     return [];
   }
-  const blocks: Span[] = [];
+  const blocks: Array<Span> = [];
   let last = 0;
   for (const open of contents.matchAll(SCRIPT_BLOCK)) {
     // A line of a block's own code that looks like an opening tag is code.
@@ -180,12 +180,12 @@ async function formatCode(code: string, indent: string): Promise<string> {
 }
 
 /** The spans of the literals in code that run over more than one line. */
-function multilineLiterals(code: string): { start: number; end: number }[] {
+function multilineLiterals(code: string): Array<{ start: number; end: number }> {
   const parsed = parseModule("block.ts", code);
   if (parsed.errors.length) {
     throw new Error(parsed.errors[0]!.message);
   }
-  const ranges: { start: number; end: number }[] = [];
+  const ranges: Array<{ start: number; end: number }> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       for (const item of node) {

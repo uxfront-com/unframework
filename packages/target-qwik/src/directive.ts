@@ -52,7 +52,7 @@ export function hooksCode(directive: UfDirective, exported = false): string {
 }
 
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, as its plain hooks. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
   const dependencies = directiveDependencies(directive, context.module);
   const imports = dependencyImports(dependencies);
   const code = [
@@ -75,7 +75,7 @@ export class QwikDirectives {
    */
   readonly #lists = new Map<
     ElementNode,
-    { name: string; type: string; templateRef?: string; values: DirectiveAttribute[] }
+    { name: string; type: string; templateRef?: string; values: Array<DirectiveAttribute> }
   >();
   /**
    * The list each node's first directive collects into with its `ref`, by the directive: the
@@ -85,7 +85,7 @@ export class QwikDirectives {
    */
   readonly #refs = new Map<
     DirectiveAttribute,
-    { list: string; templateRef?: string; values: DirectiveAttribute[] }
+    { list: string; templateRef?: string; values: Array<DirectiveAttribute> }
   >();
   /** The template refs that a directive's `ref` fills instead of a `ref` of their own. */
   readonly #templateRefs = new Set<RefAttribute>();
@@ -219,7 +219,7 @@ export class QwikDirectives {
     attribute: DirectiveAttribute,
     context: JsxContext,
     passedRef?: string,
-  ): ReturnType<typeof js.jsxAttribute>[] {
+  ): Array<ReturnType<typeof js.jsxAttribute>> {
     const ref = this.#refs.get(attribute);
     const helper = this.#helper;
     if (ref === undefined || !helper) {
@@ -262,7 +262,7 @@ export class QwikDirectives {
     if (!helper) {
       return "";
     }
-    const statements: string[] = [];
+    const statements: Array<string> = [];
     for (const [element, list] of this.#lists) {
       const type = list.type.replace("DirectiveElement", helper.element);
       // An element that passes its directives' values is listed with them (ADR-0108).
@@ -286,7 +286,7 @@ export class QwikDirectives {
         // The element's own value, which its `ref` passed, or one the task reads.
         const index = list.values.indexOf(attribute);
         const valuesName = passed ? names.once("values") : undefined;
-        const lines: string[] = [];
+        const lines: Array<string> = [];
         let value: string;
         if (index >= 0) {
           value = `${valuesName}[${index}]`;
@@ -364,7 +364,7 @@ export class QwikDirectives {
   }
 
   /** The module's helpers: the hooks' type, the runner the tasks call, and the queue. */
-  helpers(names: OutputNames): string[] {
+  helpers(names: OutputNames): Array<string> {
     const helper = this.#helper;
     if (!helper) {
       return [];
@@ -395,7 +395,7 @@ type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : ne
 }
 
 /** The list of elements alone, for an element whose directives' values the tasks read. */
-function plainHelpers(collect: string, forget: string, signal: string): string[] {
+function plainHelpers(collect: string, forget: string, signal: string): Array<string> {
   return [
     `/**
  * Adds an element a directive's \`ref\` receives to the directive's elements, once: on the server
@@ -424,7 +424,7 @@ function valuesHelpers(
   names: { collect: string; forget: string; type: string },
   hooks: string,
   signal: string,
-): string[] {
+): Array<string> {
   const { collect, forget, type } = names;
   return [
     `/**

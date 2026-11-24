@@ -41,13 +41,13 @@ interface ReportedModule {
 /** The part of a Vitest project the reporter reads. */
 interface ReportedProject {
   name: string;
-  config: { root: string; include: string[] };
-  getProvidedContext(): { ufHarness?: HarnessContext; ufOnly?: string[] };
+  config: { root: string; include: Array<string> };
+  getProvidedContext(): { ufHarness?: HarnessContext; ufOnly?: Array<string> };
 }
 
 /** The part of the Vitest instance the reporter reads. */
 interface ReportedVitest {
-  projects: readonly ReportedProject[];
+  projects: ReadonlyArray<ReportedProject>;
   config: {
     testNamePattern?: RegExp | undefined;
     shard?: { index: number; count: number } | undefined;
@@ -55,13 +55,13 @@ interface ReportedVitest {
     /** `--changed [since]`. */
     changed?: boolean | string | undefined;
     /** `vitest related <files>`, and the files `--changed` found. */
-    related?: readonly string[] | undefined;
+    related?: ReadonlyArray<string> | undefined;
     /** `--tags-filter`. */
-    tagsFilter?: readonly string[] | undefined;
+    tagsFilter?: ReadonlyArray<string> | undefined;
   };
-  logger: { log(...messages: unknown[]): void; error(...messages: unknown[]): void };
+  logger: { log(...messages: Array<unknown>): void; error(...messages: Array<unknown>): void };
   /** Internal: the CLI's file filters. */
-  filenamePattern?: readonly string[] | undefined;
+  filenamePattern?: ReadonlyArray<string> | undefined;
 }
 
 /** Options for {@link ParityReporter}. */
@@ -69,7 +69,7 @@ export interface ParityReporterOptions {
   /** Where partial matrices go: `parity-matrix.<run>.json`. */
   reportsDir: string;
   /** Every project the config defines; a run of all of them is named `all`, and is complete. */
-  allProjects?: readonly string[];
+  allProjects?: ReadonlyArray<string>;
   /**
    * A canary run's directory: its matrix goes to `<canaryDir>/parity-matrix.json`, where the
    * canary runner reads it, and it supersedes no partial matrix.
@@ -93,8 +93,8 @@ export class ParityReporter {
   }
 
   onTestRunEnd(
-    testModules: readonly ReportedModule[],
-    errors: readonly unknown[],
+    testModules: ReadonlyArray<ReportedModule>,
+    errors: ReadonlyArray<unknown>,
     reason: string,
   ): void {
     const vitest = this.#vitest;
@@ -115,9 +115,9 @@ export class ParityReporter {
       : null;
     // A shard runs whole files: its skips are real, but it may hold no file of a project.
     const narrowed = narrowing({ filtered, shard });
-    const problems: string[] = [];
+    const problems: Array<string> = [];
     const counts = new Map<string, number>(projects.map((name) => [name, 0]));
-    const records: ProjectRecord[] = [];
+    const records: Array<ProjectRecord> = [];
     const named = new Set<string>();
     for (const module of testModules) {
       const fileRecord = module.meta().uf;
@@ -239,7 +239,7 @@ export class ParityReporter {
  * supersedes nothing; unlike a shard's, its skipped tests may be ones it filtered out.
  */
 function filterOf(vitest: ReportedVitest): string | null {
-  const reasons: string[] = [];
+  const reasons: Array<string> = [];
   if (vitest.filenamePattern?.length) {
     reasons.push(`files matching ${vitest.filenamePattern.join(", ")}`);
   }
@@ -282,7 +282,10 @@ function skipsWithReasons(record: UfLayerMeta | undefined): boolean {
 }
 
 /** A file-name-safe name for the selected projects: `all`, or the project names. */
-export function runName(projects: readonly string[], allProjects?: readonly string[]): string {
+export function runName(
+  projects: ReadonlyArray<string>,
+  allProjects?: ReadonlyArray<string>,
+): string {
   const selected = [...new Set(projects)].sort();
   if (allProjects && [...new Set(allProjects)].sort().join("\n") === selected.join("\n")) {
     return "all";
@@ -308,7 +311,7 @@ function hash(text: string): string {
  */
 export function isPartialMatrixFile(name: string): boolean {
   const run = /^parity-matrix\.(.+)\.json$/.exec(name)?.[1];
-  return run !== undefined && !(BROWSER_ENGINES as readonly string[]).includes(run);
+  return run !== undefined && !(BROWSER_ENGINES as ReadonlyArray<string>).includes(run);
 }
 
 /** The partial matrices in a directory, by file. Throws on one that is not a current matrix. */
@@ -343,8 +346,8 @@ export function readPartialMatrices(reportsDir: string): Map<string, PartialMatr
  * and names no cases re-judged all of it.
  */
 function scopesOf(
-  projects: readonly ReportedProject[],
-  records: readonly ProjectRecord[],
+  projects: ReadonlyArray<ReportedProject>,
+  records: ReadonlyArray<ProjectRecord>,
   harness: HarnessContext | undefined,
 ): Map<string, ProjectScope> {
   const scopes = new Map<string, ProjectScope>();
@@ -369,7 +372,7 @@ function scopesOf(
 function includedCases(
   project: ReportedProject,
   harness: HarnessContext | undefined,
-): string[] | undefined {
+): Array<string> | undefined {
   const { root, include } = project.config;
   if (!harness || !include.length || include.some((entry) => /[*?[\]{}!]/.test(entry))) {
     return undefined;
@@ -392,8 +395,8 @@ function supersede(
   written: string,
   projects: ReadonlySet<string>,
   scopes: ReadonlyMap<string, ProjectScope>,
-): string[] {
-  const done: string[] = [];
+): Array<string> {
+  const done: Array<string> = [];
   for (const name of readdirSync(reportsDir).sort()) {
     if (!isPartialMatrixFile(name)) {
       continue;

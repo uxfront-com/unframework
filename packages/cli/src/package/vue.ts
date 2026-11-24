@@ -75,7 +75,7 @@ interface VueApi {
  */
 const PRODUCTION = {
   name: "unframework:vue-production",
-  configResolved(config: { plugins: readonly { name: string; api?: VueApi }[] }) {
+  configResolved(config: { plugins: ReadonlyArray<{ name: string; api?: VueApi }> }) {
     const api = config.plugins.find(({ name }) => name === PLUGIN_VUE_NAME)?.api;
     if (!api) {
       throw new Error(`${PLUGIN_VUE} exposes no options to compile for production with.`);
@@ -171,7 +171,7 @@ export const vue: Packager = {
     });
     await runScript(resolve(VUE_TSC), ["-p", tsconfig], work);
     await dropDeclarationSideEffects(out);
-    const sheets: OutputFile[] = files.filter((file) => !COMPILED.test(file.path));
+    const sheets: Array<OutputFile> = files.filter((file) => !COMPILED.test(file.path));
     await writeFiles(out, sheets);
   },
 };

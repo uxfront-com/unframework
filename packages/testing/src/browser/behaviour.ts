@@ -60,7 +60,7 @@ export function judgeTest(
   task: RunnerTestCase,
   subject: LayerSubject,
   unmountError?: unknown,
-  late: readonly string[] = [],
+  late: ReadonlyArray<string> = [],
 ): void {
   const errors = task.result?.errors ?? [];
   const own = errors.filter((error) => error.name !== "LayerFailure");

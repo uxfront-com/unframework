@@ -27,7 +27,7 @@ export const BANDS: Readonly<Record<string, string>> = {
   UF9: "Internal",
 };
 
-const entries: CatalogueEntry[] = [
+const entries: Array<CatalogueEntry> = [
   {
     code: "UF1001",
     name: "syntax-error",

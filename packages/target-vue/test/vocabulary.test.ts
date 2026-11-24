@@ -47,8 +47,8 @@ interface Pair {
 const hyphenated = (names: Iterable<string>) => [...names].filter((name) => name.includes("-"));
 
 /** Global attributes on a `<div>`, each element's own on it, SVG's inside an `<svg>`. */
-function pairs(): Pair[] {
-  const found: Pair[] = [];
+function pairs(): Array<Pair> {
+  const found: Array<Pair> = [];
   for (const name of hyphenated([...GLOBAL_ATTRIBUTES, ...ARIA_ATTRIBUTES])) {
     found.push({ tag: "div", name, source: `<div ${name}="VALUE">a</div>` });
   }

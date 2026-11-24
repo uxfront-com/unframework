@@ -28,15 +28,15 @@ export const DEFAULT_BASE = "origin/main";
 
 export interface Command {
   command: string;
-  args: string[];
+  args: Array<string>;
 }
 
 export interface Step {
   name: string;
   /** Run one after another; the step stops at the first that fails. */
-  commands: Command[];
+  commands: Array<Command>;
   /** The CI jobs in `.github/workflows/ci.yml` it stands for. */
-  jobs: string[];
+  jobs: Array<string>;
   /** `canary-paths`: runs only when the branch changes a path on CANARY_PATHS, as CI does. */
   when?: "canary-paths";
 }
@@ -57,7 +57,7 @@ export interface StepResult {
  * since a change to the harness itself would select it. The repo invariants always join, so the
  * run is never empty. Two at a time, as CI runs them: more starve the browser suites.
  */
-export function quickUnitArgs(base: string): string[] {
+export function quickUnitArgs(base: string): Array<string> {
   return [
     "exec",
     "turbo",
@@ -72,10 +72,10 @@ export function quickUnitArgs(base: string): string[] {
 }
 
 /** The Vitest arguments of `test:quick`'s corpus step: L1 and L2 on all seven targets. */
-export const QUICK_COMPILE_VITEST_ARGS: readonly string[] = ["--project", "compile"];
+export const QUICK_COMPILE_VITEST_ARGS: ReadonlyArray<string> = ["--project", "compile"];
 
 /** The steps of `test:quick`, for the merge base <base>. */
-export function quickSteps(base: string): Step[] {
+export function quickSteps(base: string): Array<Step> {
   return [
     { name: "unit", commands: [{ command: "pnpm", args: quickUnitArgs(base) }], jobs: [] },
     {
@@ -93,7 +93,7 @@ export function quickSteps(base: string): Step[] {
 }
 
 /** The steps of `test:full`, each with the CI jobs it stands for. */
-export const FULL_STEPS: readonly Step[] = [
+export const FULL_STEPS: ReadonlyArray<Step> = [
   {
     name: "unit",
     commands: [
@@ -164,7 +164,7 @@ export const EXCLUDED_JOBS: Readonly<Record<string, string>> = {
 };
 
 /** 0 when every step passed or was skipped, 1 otherwise. */
-export function exitCode(results: readonly StepResult[]): number {
+export function exitCode(results: ReadonlyArray<StepResult>): number {
   return results.every((result) => result.status !== "failed") ? 0 : 1;
 }
 
@@ -174,7 +174,7 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`);
 }
 
-function git(args: string[]): { status: number | null; stdout: string; stderr: string } {
+function git(args: Array<string>): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" });
   return { status: result.status, stdout: result.stdout.trim(), stderr: result.stderr.trim() };
 }
@@ -200,7 +200,7 @@ export function resolveMergeBase(ref: string): string {
 }
 
 /** The files the branch changed since <base>: committed, uncommitted and untracked. */
-function changedFiles(base: string): string[] {
+function changedFiles(base: string): Array<string> {
   const tracked = git(["diff", "--no-renames", "--name-only", base]);
   const untracked = git(["ls-files", "--others", "--exclude-standard"]);
   if (tracked.status !== 0 || untracked.status !== 0) {
@@ -251,7 +251,7 @@ function runStep(step: Step, base: string): StepResult {
   return { name: step.name, status: "passed", seconds: seconds() };
 }
 
-function list(mode: "quick" | "full", steps: readonly Step[]): void {
+function list(mode: "quick" | "full", steps: ReadonlyArray<Step>): void {
   for (const step of steps) {
     const jobs = step.jobs.length > 0 ? ` (CI: ${step.jobs.join(", ")})` : "";
     const when = step.when === "canary-paths" ? " [only when a canary path changed]" : "";
@@ -268,7 +268,7 @@ function list(mode: "quick" | "full", steps: readonly Step[]): void {
   }
 }
 
-function parseArgs(argv: string[]): { mode: "quick" | "full"; base: string; list: boolean } {
+function parseArgs(argv: Array<string>): { mode: "quick" | "full"; base: string; list: boolean } {
   const args = argv.filter((arg) => arg !== "--");
   const mode = args.shift();
   if (mode !== "quick" && mode !== "full") {

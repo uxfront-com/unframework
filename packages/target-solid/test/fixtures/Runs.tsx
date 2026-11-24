@@ -31,8 +31,8 @@ export default function Runs(
   const [low, setLow] = createSignal(0);
   const [high, setHigh] = createSignal(10);
   const [query, setQuery] = createSignal("");
-  const [results, setResults] = createSignal<string[]>([]);
-  const [notes, setNotes] = createSignal<string[]>([]);
+  const [results, setResults] = createSignal<Array<string>>([]);
+  const [notes, setNotes] = createSignal<Array<string>>([]);
   let list: HTMLUListElement | null = null;
 
   createWatcher([low, high], ([a, b]) => {
@@ -84,7 +84,7 @@ export default function Runs(
     );
   }
 
-  function update(change: (entries: string[]) => string[]) {
+  function update(change: (entries: Array<string>) => Array<string>) {
     setNotes(change(notes()));
   }
 
@@ -140,7 +140,7 @@ export default function Runs(
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function KeyedFor<T>(props: {
-  each: readonly T[];
+  each: ReadonlyArray<T>;
   by: (item: T, index: number) => unknown;
   children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
@@ -222,7 +222,7 @@ function createWatcher<T>(
   callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
   options?: { flush: "post" },
 ): void;
-function createWatcher<const S extends readonly (() => unknown)[]>(
+function createWatcher<const S extends ReadonlyArray<() => unknown>>(
   sources: S,
   callback: (
     values: WatchedValues<S>,
@@ -232,13 +232,13 @@ function createWatcher<const S extends readonly (() => unknown)[]>(
   options?: { flush: "post" },
 ): void;
 function createWatcher(
-  source: (() => unknown) | readonly (() => unknown)[],
+  source: (() => unknown) | ReadonlyArray<() => unknown>,
   callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
   options?: { flush: "post" },
 ): void {
   // An array of sources changes when one of its values does: one source is an array of one.
   const sources = typeof source === "function" ? [source] : source;
-  const cleanups: (() => void)[] = [];
+  const cleanups: Array<() => void> = [];
   const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;
   const track = createReaction(() => queueWatcher(queue, run));
   let last = read();
@@ -251,8 +251,8 @@ function createWatcher(
     }),
   );
 
-  function read(): unknown[] {
-    let values: unknown[] = [];
+  function read(): Array<unknown> {
+    let values: Array<unknown> = [];
     track(() => {
       values = sources.map((each) => each());
     });
@@ -269,7 +269,7 @@ function createWatcher(
     call(values, previous);
   }
 
-  function call(values: unknown[], previous: unknown[] | undefined): void {
+  function call(values: Array<unknown>, previous: Array<unknown> | undefined): void {
     for (const cleanup of cleanups.splice(0)) {
       cleanup();
     }
@@ -288,11 +288,11 @@ function createWatcher(
  * registrar, whose cleanups run before its next run and when the component is removed.
  */
 function createWatchEffect(
-  sources: readonly (() => unknown)[],
+  sources: ReadonlyArray<() => unknown>,
   effect: (onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
   onMount(() => {
-    const cleanups: (() => void)[] = [];
+    const cleanups: Array<() => void> = [];
     const track = createReaction(() => queueWatcher(queuedWatchers.post, run));
     run();
     onCleanup(() => {

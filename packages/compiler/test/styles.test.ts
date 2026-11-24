@@ -27,7 +27,7 @@ const SLOTS =
 
 /** A resolver over in-memory files under `/project`, which counts its reads. */
 function memoryResolver(files: Record<string, string>) {
-  const reads: string[] = [];
+  const reads: Array<string> = [];
   const resolve = createFileResolver({
     root: "/project",
     readFile: (path) => {
@@ -38,7 +38,7 @@ function memoryResolver(files: Record<string, string>) {
   return { resolve, reads };
 }
 
-const compileCard = (files: Record<string, string>, plugins: CompilerPlugin[] = []) =>
+const compileCard = (files: Record<string, string>, plugins: Array<CompilerPlugin> = []) =>
   compile(CARD, {
     filename: "src/Card.uf.tsx",
     targets: ["vue", "react"],
@@ -137,7 +137,7 @@ describe("compile() with stylesheets", () => {
   });
 
   it("hands the sheet to the `output` hooks with the component's files", async () => {
-    const seen: string[][] = [];
+    const seen: Array<Array<string>> = [];
     const drop: CompilerPlugin = {
       name: "drop-sheet",
       output: (files) => {

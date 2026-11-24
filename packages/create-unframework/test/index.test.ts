@@ -34,7 +34,7 @@ const SCAFFOLD = [
   "unframework.config.ts",
 ];
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -58,7 +58,10 @@ function linked(): string {
   return project;
 }
 
-function run(cwd: string, ...argv: string[]): { code: number; stdout: string; stderr: string } {
+function run(
+  cwd: string,
+  ...argv: Array<string>
+): { code: number; stdout: string; stderr: string } {
   let stdout = "";
   let stderr = "";
   const code = main(argv, {
@@ -69,7 +72,7 @@ function run(cwd: string, ...argv: string[]): { code: number; stdout: string; st
   return { code, stdout, stderr };
 }
 
-function node(cwd: string, ...args: string[]): { status: number | null; output: string } {
+function node(cwd: string, ...args: Array<string>): { status: number | null; output: string } {
   const { status, stdout, stderr } = spawnSync(process.execPath, args, {
     cwd,
     encoding: "utf8",
@@ -96,7 +99,7 @@ describe("create-unframework", () => {
     const bin = join(project, "node_modules", "@uxfront", "unframework", "bin", "unframework.js");
     const check = node(project, bin, "check", "--format", "json");
     expect(check.status).toBe(0);
-    const severities = (JSON.parse(check.output) as { severity: string }[]).map(
+    const severities = (JSON.parse(check.output) as Array<{ severity: string }>).map(
       ({ severity }) => severity,
     );
     expect(new Set(severities)).toEqual(new Set(["info"]));

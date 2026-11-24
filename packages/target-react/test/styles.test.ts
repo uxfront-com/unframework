@@ -72,7 +72,7 @@ function lowered(
 
 /** The formatted React output of a module's component, its first by default. */
 async function output(module: UfModule, index = 0): Promise<string> {
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   const [file] = target.emit(module.components[index]!, {
     module,
     options: undefined,
@@ -208,7 +208,7 @@ describe("react child-root rule, rendered by React", () => {
   afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
   /** Writes each source's output beside the others and loads the last one's component. */
-  async function load(...sources: [file: string, source: string][]) {
+  async function load(...sources: Array<[file: string, source: string]>) {
     let path = "";
     for (const [file, source] of sources) {
       const { module } = lowered(file, source, {}, apis(sources, file));
@@ -219,7 +219,7 @@ describe("react child-root rule, rendered by React", () => {
   }
 
   /** The APIs of the sources before `file`, by the specifier a later one imports them with. */
-  function apis(sources: [string, string][], file: string): Record<string, ModuleApi> {
+  function apis(sources: Array<[string, string]>, file: string): Record<string, ModuleApi> {
     const before = sources.slice(
       0,
       sources.findIndex(([each]) => each === file),

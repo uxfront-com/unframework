@@ -36,7 +36,7 @@ function makeCorpus(files: Record<string, string>): string {
 }
 
 const input = "export default function Card() {\n  return <p>Card</p>;\n}\n";
-const spec = (...names: string[]) =>
+const spec = (...names: Array<string>) =>
   names.map((name) => `await view.expectParity(${name});`).join("\n");
 
 describe("listCases", () => {

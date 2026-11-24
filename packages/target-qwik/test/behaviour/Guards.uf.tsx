@@ -8,9 +8,9 @@ import { defineEmits, ref } from "@uxfront/unframework";
 export default function Guards() {
   const emit = defineEmits<{ seen: [status: string]; saved: [count: number]; firstSave: [] }>();
 
-  const log = ref<string[]>([]);
+  const log = ref<Array<string>>([]);
   const status = ref("idle");
-  const tags = ref<string[]>([]);
+  const tags = ref<Array<string>>([]);
   const saves = ref(0);
   const open = ref(true);
 

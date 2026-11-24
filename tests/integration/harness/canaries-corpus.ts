@@ -32,7 +32,7 @@ import { REFERENCE } from "./targets.ts";
 const MAP_CANARY = "L14-map-shifted";
 
 /** The targets a canary corrupts: every one, the followers, or the ones it names. */
-export function corruptedTargets(canary: Canary): TargetName[] {
+export function corruptedTargets(canary: Canary): Array<TargetName> {
   return (
     canary.followersOnly ? TARGET_NAMES.filter((name) => name !== REFERENCE) : [...TARGET_NAMES]
   ).filter((name) => corrupts(canary, name));
@@ -44,7 +44,7 @@ export function corruptedTargets(canary: Canary): TargetName[] {
  * That test compiles the corpus on its own, so it comes last, which puts it in a shard without
  * the slowest plugin canaries while their order stays as it is.
  */
-export function corpusChecks(canaries: readonly Canary[] = CANARIES): string[] {
+export function corpusChecks(canaries: ReadonlyArray<Canary> = CANARIES): Array<string> {
   return [
     ...canaries
       .filter(
@@ -72,7 +72,7 @@ export function describeCorpusShard(
         const evidence = canary.evidence.compile!["round trip"]!;
         const pattern = (target: string) =>
           typeof evidence === "function" ? evidence(target) : evidence;
-        const problems: string[] = [];
+        const problems: Array<string> = [];
         let corrupted = 0;
         for (const info of cases) {
           const modules = new Set(info.modules.map(({ source }) => basename(source)));
@@ -158,7 +158,7 @@ export function describeCorpusShard(
     it.each(plugins)(
       "$id corrupts every case with output on every target it corrupts, keeping the IR valid",
       async (canary) => {
-        const problems: string[] = [];
+        const problems: Array<string> = [];
         for (const info of cases) {
           const { input, result } = await clean(info);
           // Only the cases it applies to on each target: the verdict judges no other.

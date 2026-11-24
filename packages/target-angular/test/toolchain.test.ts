@@ -29,7 +29,7 @@ import {
 afterAll(removeScratch);
 
 const read = (path: string) => ({ path, contents: readFileSync(path, "utf8") });
-const codes = (messages: readonly { code?: string }[]) =>
+const codes = (messages: ReadonlyArray<{ code?: string }>) =>
   messages.map((message) => message.code ?? "(no code)");
 
 describe("the toolchain", () => {
@@ -305,7 +305,7 @@ describe("vite", () => {
 
   it("compiles with ngtsc ahead of Analog, and links the pre-bundled runtime", async () => {
     const config = await toolchain.vite("browser", context);
-    const names = (config.plugins as { name: string }[]).map((plugin) => plugin.name);
+    const names = (config.plugins as Array<{ name: string }>).map((plugin) => plugin.name);
     expect(names[0]).toBe("unframework:angular-ngtsc");
     expect(names).toContain("@analogjs/vite-plugin-angular");
     expect(config.optimizeDeps?.include).toEqual([
@@ -313,7 +313,7 @@ describe("vite", () => {
       "@angular/common",
       "@angular/platform-browser",
     ]);
-    const optimizer = config.optimizeDeps?.rolldownOptions?.plugins as { name: string }[];
+    const optimizer = config.optimizeDeps?.rolldownOptions?.plugins as Array<{ name: string }>;
     expect(optimizer.map((plugin) => plugin.name)).toEqual(["unframework:angular-linker"]);
     expect(config.resolve?.dedupe).toContain("@angular/core");
   });
@@ -321,10 +321,10 @@ describe("vite", () => {
   // Rendering with them is tested in server.test.ts, on this configuration.
   it("inlines Angular's packages into the SSR module graph, and links them there", async () => {
     const config = await toolchain.vite("ssr", context);
-    const names = (config.plugins as { name: string }[]).map((plugin) => plugin.name);
+    const names = (config.plugins as Array<{ name: string }>).map((plugin) => plugin.name);
     expect(names[0]).toBe("unframework:angular-ngtsc");
     expect(names.at(-1)).toBe("unframework:angular-ssr-linker");
-    const [angular, ...others] = (config.ssr?.noExternal ?? []) as RegExp[];
+    const [angular, ...others] = (config.ssr?.noExternal ?? []) as Array<RegExp>;
     expect(others).toEqual([]);
     // Vite matches the specifier, Vitest the resolved path.
     for (const id of [
@@ -391,9 +391,9 @@ describe("the toolchain's tsconfig", () => {
     expect(options.extendedDiagnostics).toEqual({ defaultCategory: "error" });
     expect(extendedDiagnostics).toEqual({ defaultCategory: "warning" });
     const base = options.pathsBasePath as string;
-    const resolved = (options.paths as Record<string, string[]>)["@angular/*"]!.map((target) =>
+    const resolved = (options.paths as Record<string, Array<string>>)["@angular/*"]!.map((target) =>
       resolve(base, target),
     );
-    expect(resolved).toEqual((paths as Record<string, string[]>)["@angular/*"]);
+    expect(resolved).toEqual((paths as Record<string, Array<string>>)["@angular/*"]);
   });
 });

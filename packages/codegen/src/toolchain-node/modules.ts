@@ -19,7 +19,7 @@ interface TransformError {
  * warnings by path.
  */
 export async function compileScriptModules(
-  files: readonly ToolchainFile[],
+  files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
   const results = new Map<string, FrameworkCompileResult>();
   for (const file of files) {
@@ -41,7 +41,7 @@ export async function transformScriptModule(
     const { code, warnings } = await transformWithOxc(file.contents, file.path, { lang: "ts" });
     return { code, result: { errors: [], warnings: warnings.map(fromTransformError) } };
   } catch (error) {
-    const errors = (error as { errors?: TransformError[] }).errors;
+    const errors = (error as { errors?: Array<TransformError> }).errors;
     return {
       code: undefined,
       result: {

@@ -34,7 +34,7 @@ const COMPILER = "@astrojs/compiler-rs";
  * Rejects when the compiler is not the version the project's `astro` depends on.
  */
 export async function astroFrameworkCompile(
-  files: readonly ToolchainFile[],
+  files: ReadonlyArray<ToolchainFile>,
   context: ToolchainContext,
 ): Promise<Map<string, FrameworkCompileResult>> {
   assertFilesToCompile(files);
@@ -68,9 +68,9 @@ export async function astroFrameworkCompile(
  * for the bundler's TypeScript transform.
  */
 export async function astroFrameworkEmit(
-  files: readonly ToolchainFile[],
+  files: ReadonlyArray<ToolchainFile>,
   context: ToolchainContext,
-): Promise<Map<string, ToolchainFile[]>> {
+): Promise<Map<string, Array<ToolchainFile>>> {
   assertFilesToCompile(files);
   const { transform } = await import("@astrojs/compiler-rs");
   return new Map(

@@ -26,7 +26,7 @@ export function embedOptions(
   params: URLSearchParams,
   names: EmbedParamNames,
 ): EmbedOptions | { error: string } {
-  const accepted: [name: string, values: string[]][] = [
+  const accepted: Array<[name: string, values: Array<string>]> = [
     [names.controls, ["true"]],
     [names.theme, ["light", "dark"]],
     [names.resize, ["true"]],

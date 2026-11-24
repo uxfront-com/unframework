@@ -29,9 +29,9 @@ export function lower(source: string, file = "Card.uf.tsx", shapes?: Shapes): Uf
 }
 
 /** The files this target emits for each component of a source, which must report nothing. */
-export function emitSource(source: string, file?: string, shapes?: Shapes): OutputFile[] {
+export function emitSource(source: string, file?: string, shapes?: Shapes): Array<OutputFile> {
   const module = lower(source, file, shapes);
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   const context: EmitContext = {
     module,
     options: undefined,

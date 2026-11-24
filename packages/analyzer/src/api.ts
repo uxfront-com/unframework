@@ -38,7 +38,7 @@ export interface ApiCandidate {
   readonly name: string;
   readonly node: ComponentFunction;
   /** How the module exports it: by its export kinds, none for a local component. */
-  readonly exports: readonly { kind: "default" | "named" }[];
+  readonly exports: ReadonlyArray<{ kind: "default" | "named" }>;
 }
 
 /** Reads a component's API from its declarations (ADR-0055). */
@@ -153,7 +153,7 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
  * root names, if it is known.
  */
 export function fillRootComponents(
-  apis: readonly { node: ComponentFunction; api: ComponentApi }[],
+  apis: ReadonlyArray<{ node: ComponentFunction; api: ComponentApi }>,
   rootApi: (name: AST.JSXIdentifier) => ComponentApi | undefined,
 ): void {
   const roots = apis.flatMap(({ node, api }) => {
@@ -225,7 +225,7 @@ export function fillRootComponents(
  * What a root component declares (ADR-0118), its own names then its own root's, through which
  * the names a consumer passes to the component that renders it would fall through.
  */
-function declarationsOf(child: ComponentApi): ApiRootDeclaration[] {
+function declarationsOf(child: ComponentApi): Array<ApiRootDeclaration> {
   const component = child.name;
   return [
     ...child.props.map(({ name }) => ({ name, kind: "prop" as const, component })),
@@ -409,7 +409,7 @@ export interface MembersContext {
 export function typeMembers(
   type: AST.TSType,
   context: MembersContext,
-): readonly TypeMember[] | undefined {
+): ReadonlyArray<TypeMember> | undefined {
   const shape = context.shapes({ start: type.start, end: type.end });
   const root = shape?.nodes[shape.root];
   if (!shape || root?.kind !== "object") {
@@ -457,7 +457,7 @@ function memberText(
  * The type names some type's text references, each once, in source order: what a parent that
  * prints the type imports (ADR-0067), read as the oracle reads a member's.
  */
-function referencesOf(type: string | AST.TSType): string[] {
+function referencesOf(type: string | AST.TSType): Array<string> {
   let root = typeof type === "string" ? undefined : type;
   if (typeof type === "string") {
     const [statement] = parseModule("type.ts", `type T = ${type};`).program.body;
@@ -465,7 +465,7 @@ function referencesOf(type: string | AST.TSType): string[] {
       root = statement.typeAnnotation;
     }
   }
-  const names: string[] = [];
+  const names: Array<string> = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
       for (const item of value) {
@@ -502,7 +502,7 @@ function referencesOf(type: string | AST.TSType): string[] {
  * `references`, present only when the type references a name. A type already parsed is read as
  * it is: a component's every prop would otherwise parse its type again.
  */
-export function withReferences(type: string | AST.TSType): { references?: string[] } {
+export function withReferences(type: string | AST.TSType): { references?: Array<string> } {
   const references = referencesOf(type);
   return references.length ? { references } : {};
 }
@@ -511,10 +511,14 @@ export function withReferences(type: string | AST.TSType): { references?: string
  * The literals a member's type resolves to, when it is a union of literals, `null` and
  * `undefined` with at least one literal, and its text as written does not spell them (UF3039).
  */
-function aliasedLiterals(code: string, shape: TypeShape, type: number): { literals?: string[] } {
+function aliasedLiterals(
+  code: string,
+  shape: TypeShape,
+  type: number,
+): { literals?: Array<string> } {
   const node = shape.nodes[type];
   const members = node?.kind === "union" ? node.types : [type];
-  const literals: string[] = [];
+  const literals: Array<string> = [];
   for (const id of members) {
     const each = shape.nodes[id];
     if (each?.kind === "literal") {
@@ -545,7 +549,7 @@ const text = (node: { start: number; end: number }, source: string) =>
   source.slice(node.start, node.end);
 
 /** The props: the members of the first parameter's type, in member order. */
-function propsOf(node: ComponentFunction, context: ApiContext): ApiMember[] {
+function propsOf(node: ComponentFunction, context: ApiContext): Array<ApiMember> {
   const [parameter] = node.params;
   const annotation =
     parameter?.type === "Identifier" || parameter?.type === "ObjectPattern"
@@ -572,7 +576,7 @@ function propsOf(node: ComponentFunction, context: ApiContext): ApiMember[] {
 }
 
 /** The events: each member a named tuple of its payload. */
-function eventsOf(type: AST.TSType, context: ApiContext): ApiEvent[] {
+function eventsOf(type: AST.TSType, context: ApiContext): Array<ApiEvent> {
   return (typeMembers(type, context) ?? []).flatMap(({ signature, source }) => {
     const name = keyName(signature);
     const tuple =
@@ -600,7 +604,7 @@ function eventsOf(type: AST.TSType, context: ApiContext): ApiEvent[] {
 }
 
 /** The slots: each an optional method, whose one parameter, when it has one, is its props. */
-function slotsOf(type: AST.TSType, context: ApiContext): ApiSlot[] {
+function slotsOf(type: AST.TSType, context: ApiContext): Array<ApiSlot> {
   return (typeMembers(type, context) ?? []).flatMap(({ signature, source }) => {
     const name = keyName(signature);
     if (name === undefined) {
@@ -692,7 +696,7 @@ function modelOf(call: AST.CallExpression, context: ApiContext): ApiMember | und
 }
 
 /** The names `defineExpose`'s object literal exposes, in shorthand. */
-function exposedOf(call: AST.CallExpression): string[] {
+function exposedOf(call: AST.CallExpression): Array<string> {
   const [object] = call.arguments;
   if (object?.type !== "ObjectExpression") {
     return [];
@@ -735,12 +739,12 @@ export function inheritAttrsOption(object: AST.ObjectExpression): AST.ObjectProp
  */
 function rootOf(
   node: ComponentFunction,
-  props: readonly ApiMember[],
+  props: ReadonlyArray<ApiMember>,
   context: ApiContext,
 ): {
   kind: ComponentApi["root"];
   tag?: string;
-  tags?: string[];
+  tags?: Array<string>;
   unlisted?: true;
 } {
   const returned = rootElementOf(node);
@@ -777,9 +781,9 @@ function rootOf(
 function dynamicRoot(
   opening: AST.JSXOpeningElement,
   node: ComponentFunction,
-  props: readonly ApiMember[],
+  props: ReadonlyArray<ApiMember>,
   context: ApiContext,
-): { kind: ComponentApi["root"]; tags?: string[]; unlisted?: true } {
+): { kind: ComponentApi["root"]; tags?: Array<string>; unlisted?: true } {
   const is = opening.attributes.find(
     (item): item is AST.JSXAttribute =>
       item.type === "JSXAttribute" && item.name.type === "JSXIdentifier" && item.name.name === "is",
@@ -810,9 +814,9 @@ function dynamicRoot(
 function tagsOf(
   node: AST.Expression | AST.StringLiteral,
   component: ComponentFunction,
-  props: readonly ApiMember[],
+  props: ReadonlyArray<ApiMember>,
   context: ApiContext,
-): string[] | "component" | undefined {
+): Array<string> | "component" | undefined {
   switch (node.type) {
     case "ParenthesizedExpression":
       return tagsOf(node.expression, component, props, context);
@@ -895,9 +899,9 @@ function propNamed(
 }
 
 /** The strings a prop's type is a union of, as written or through an alias, or undefined. */
-function stringLiterals(prop: ApiMember): string[] | undefined {
+function stringLiterals(prop: ApiMember): Array<string> | undefined {
   const members = prop.literals ?? prop.type.split("|").map((member) => member.trim());
-  const strings: string[] = [];
+  const strings: Array<string> = [];
   for (const member of members) {
     const literal = /^"([^"\\]*)"$/.exec(member) ?? /^'([^'\\]*)'$/.exec(member);
     if (!literal) {

@@ -12,7 +12,7 @@ const scratch = mkdtempSync(join(tmpdir(), "uf-composable-cases-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** An integration directory holding the given case directories. */
-function corpus(name: string, directories: string[]): string {
+function corpus(name: string, directories: Array<string>): string {
   const root = join(scratch, name);
   for (const directory of directories) {
     mkdirSync(join(root, directory), { recursive: true });

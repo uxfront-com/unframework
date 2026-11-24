@@ -10,7 +10,7 @@ import { codeOf, expressionsOf } from "./visit.ts";
 /** What a piece of code does, itself and through the local functions it calls. */
 export interface CodeSummary {
   /** The local functions it calls itself, by binding, in source order, each once. */
-  calls: readonly BindingId[];
+  calls: ReadonlyArray<BindingId>;
   /** Every local function it reaches through calls, transitively. */
   reaches: ReadonlySet<BindingId>;
   /** The bindings it and what it reaches read, other than as the callee of a call. */
@@ -46,7 +46,7 @@ export interface FunctionSummary extends CodeSummary {
 
 /** What one piece of code does itself, before the functions it calls are followed. */
 interface Facts {
-  calls: BindingId[];
+  calls: Array<BindingId>;
   reads: Set<BindingId>;
   writes: Set<BindingId>;
   emits: Set<string>;
@@ -56,7 +56,7 @@ interface Facts {
 }
 
 /** What references say, each kind read exhaustively. */
-function factsOf(refs: readonly CodeReference[]): Facts {
+function factsOf(refs: ReadonlyArray<CodeReference>): Facts {
   const facts: Facts = {
     calls: [],
     reads: new Set(),
@@ -190,7 +190,7 @@ export function summarizeTracked(code: Code, component: UfComponent): CodeSummar
 }
 
 /** The references code makes while it runs: all but those marked `later`. */
-function now(refs: readonly CodeReference[]): CodeReference[] {
+function now(refs: ReadonlyArray<CodeReference>): Array<CodeReference> {
   return refs.filter((ref) => ref.kind !== "Binding" || ref.later !== true);
 }
 

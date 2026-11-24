@@ -10,7 +10,7 @@ import { compile, createFileResolver, createSyntacticOracle } from "../src/index
  * the same files.
  */
 function memoryResolver(files: Record<string, string>) {
-  const reads: string[] = [];
+  const reads: Array<string> = [];
   const readFile = (path: string) => Promise.resolve(files[path]);
   const resolve = createFileResolver({
     root: "/project",

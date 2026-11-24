@@ -26,7 +26,7 @@ describe("vue toolchain", () => {
     "configures plugin-vue to keep asset URLs as written (%s)",
     async (mode) => {
       const config = await toolchain.vite(mode, context);
-      const plugins = config.plugins as VuePlugin[];
+      const plugins = config.plugins as Array<VuePlugin>;
       expect(plugins.map((plugin) => plugin.name)).toEqual(["vite:vue"]);
       expect(plugins[0]!.api.options.template?.transformAssetUrls).toBe(false);
       expect(config.resolve?.dedupe).toEqual(["vue"]);

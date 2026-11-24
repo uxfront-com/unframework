@@ -14,7 +14,7 @@ import type { SetupPlan } from "./plan.ts";
 export interface SyncBatch {
   fn: FunctionCode;
   tests: LiftedControl["tests"];
-  controls: LiftedControl[];
+  controls: Array<LiftedControl>;
 }
 
 /**
@@ -27,7 +27,7 @@ export interface SyncBatch {
  */
 export function syncHandler(
   plan: SetupPlan,
-  syncs: readonly SyncBatch[],
+  syncs: ReadonlyArray<SyncBatch>,
   type: string,
 ): string | undefined {
   if (!syncs.length) {
@@ -56,8 +56,8 @@ export function syncHandler(
 }
 
 /** Controls grouped by the function that makes them and the tests they run under, in order. */
-export function batches(controls: readonly LiftedControl[]): SyncBatch[] {
-  const found: SyncBatch[] = [];
+export function batches(controls: ReadonlyArray<LiftedControl>): Array<SyncBatch> {
+  const found: Array<SyncBatch> = [];
   for (const lifted of controls) {
     const batch = found.find(
       (each) => each.fn === lifted.fn && sameTests(each.tests, lifted.tests),

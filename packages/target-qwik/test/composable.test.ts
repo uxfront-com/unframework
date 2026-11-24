@@ -95,7 +95,10 @@ describe("qwik composable cases", () => {
  * Writes outputs into a scratch directory of their own and expects the optimizer (L3), tsgo (L4)
  * and the lint rules (L5) to accept each with no message.
  */
-async function expectToolchainClean(name: string, outputs: readonly OutputFile[]): Promise<void> {
+async function expectToolchainClean(
+  name: string,
+  outputs: ReadonlyArray<OutputFile>,
+): Promise<void> {
   const directory = join(scratch, name);
   mkdirSync(directory, { recursive: true });
   const files = outputs.map(({ path, contents }) => {

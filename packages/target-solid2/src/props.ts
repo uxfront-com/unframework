@@ -20,9 +20,9 @@ type Statement = Parameters<typeof js.program>[0][number];
 /** How the component takes its props, and how its code reads them and calls its listeners. */
 export interface SolidProps {
   /** The component's parameters: none, or the props object. */
-  parameters: Parameter[];
+  parameters: Array<Parameter>;
   /** What the component runs before its setup: `const props = mergeProps(…)`. */
-  statements: Statement[];
+  statements: Array<Statement>;
   /**
    * The props object's name, which reads a prop and calls an event's listener
    * (`props.onChange?.(…)`): absent when the output reads nothing through it.
@@ -64,7 +64,7 @@ export function solidProps(
   component: UfComponent,
   imports: ImportSet,
   placeholders: Placeholders,
-  composition: { types: readonly string[]; reads: boolean },
+  composition: { types: ReadonlyArray<string>; reads: boolean },
 ): SolidProps {
   const parameter = component.propsParameter;
   const generated = eventsInterface(component, imports);

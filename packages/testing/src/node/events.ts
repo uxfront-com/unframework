@@ -52,7 +52,7 @@ export function recordCompiledModule(module: CompiledModule): void {
  * composes components mounts a harness parent from a source of its own (ADR-0057). Throws
  * when the module was never compiled for the target, or failed to.
  */
-export function compiledEvents(file: string, target: string): MountEvent[] {
+export function compiledEvents(file: string, target: string): Array<MountEvent> {
   const key = keyOf(file, target);
   const entries = store();
   if (!entries.has(key)) {
@@ -70,7 +70,7 @@ export function compiledEvents(file: string, target: string): MountEvent[] {
 }
 
 /** The events a module's component declares (see {@link compiledEvents}). */
-export function eventsOfModule(ir: UfModule, file: string = ir.file): MountEvent[] {
+export function eventsOfModule(ir: UfModule, file: string = ir.file): Array<MountEvent> {
   const lists = ir.components.map((component) =>
     (component.emits?.events ?? []).map((event): MountEvent => ({
       name: event.name,

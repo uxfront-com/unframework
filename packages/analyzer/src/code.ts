@@ -84,7 +84,7 @@ export function functionSpan(fn: AST.Function | AST.ArrowFunctionExpression, sou
 /** The identifiers a binding pattern declares, in source order. */
 export function patternNames(
   pattern: AST.ParamPattern | AST.BindingPattern | AST.BindingRestElement,
-): AST.BindingIdentifier[] {
+): Array<AST.BindingIdentifier> {
   switch (pattern.type) {
     case "Identifier":
       return [pattern];
@@ -106,7 +106,7 @@ export function patternNames(
 /** The defaults written inside a pattern (`{ size = 1 }`, `[first = ""]`), in source order. */
 export function patternDefaults(
   pattern: AST.ParamPattern | AST.BindingPattern | AST.BindingRestElement,
-): AST.Expression[] {
+): Array<AST.Expression> {
   switch (pattern.type) {
     case "AssignmentPattern":
       return [...patternDefaults(pattern.left), pattern.right];
@@ -253,7 +253,7 @@ function fresh(node: AST.Expression): boolean {
  * widens (`() => "x"` returns `string`) and a union of literals stays (`c ? "a" : "b"`).
  */
 export function returnedKinds(
-  returned: readonly AST.Expression[],
+  returned: ReadonlyArray<AST.Expression>,
   known: (node: AST.Node) => Kinds,
 ): Kinds {
   if (!returned.length) {
@@ -381,8 +381,8 @@ function mayLeave(node: unknown, caught = false): boolean {
 export function eventControlsOf(
   body: AST.BlockStatement | { node: AST.Expression; span: Span },
   isEvent: (identifier: AST.IdentifierReference) => boolean,
-): { controls: ControlStatement[]; deferred: DeferredControl[] } {
-  const controls: ControlStatement[] = [];
+): { controls: Array<ControlStatement>; deferred: Array<DeferredControl> } {
+  const controls: Array<ControlStatement> = [];
   const control = (node: AST.Node | null | undefined): ControlCall | undefined => {
     if (node?.type !== "CallExpression" || node.optional || node.arguments.length) {
       return undefined;
@@ -449,7 +449,7 @@ export function eventControlsOf(
       controls.push({ ...direct, statement: body.span });
     }
   }
-  const deferred: DeferredControl[] = [];
+  const deferred: Array<DeferredControl> = [];
   const visit = (node: unknown, inFunction: boolean, afterAwait: { value: boolean }): void => {
     if (!node || typeof node !== "object") {
       return;
@@ -553,8 +553,8 @@ const TYPE_KEYS: ReadonlySet<string> = new Set([
  * The identifiers an expression reads as names: not a member's name after `.`, nor an object
  * literal's key, nor a name in a type (`event.target as HTMLInputElement` reads only `event`).
  */
-export function readIdentifiers(node: unknown): AST.IdentifierReference[] {
-  const found: AST.IdentifierReference[] = [];
+export function readIdentifiers(node: unknown): Array<AST.IdentifierReference> {
+  const found: Array<AST.IdentifierReference> = [];
   const visit = (value: unknown): void => {
     if (!value || typeof value !== "object") {
       return;

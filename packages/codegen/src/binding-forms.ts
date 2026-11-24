@@ -61,7 +61,7 @@ export function spreadStyleExpression(attribute: SpreadAttribute): Expression {
 }
 
 /** Whether attributes hold a style bound to one value, or a spread's `style` key. */
-function whole(attributes: readonly (Attribute | ComponentAttribute)[]): boolean {
+function whole(attributes: ReadonlyArray<Attribute | ComponentAttribute>): boolean {
   return attributes.some(
     (attribute) =>
       (attribute.kind === "Style" && attribute.value !== undefined) ||

@@ -35,7 +35,7 @@ export async function emitSource(
   if (options.frozen) {
     deepFreeze(module);
   }
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   const context: EmitContext = {
     module,
     options: undefined,

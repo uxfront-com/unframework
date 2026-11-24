@@ -57,13 +57,13 @@ export function framing(src: string, height?: number): string {
 export interface PanelGroup {
   component: string;
   name: string;
-  controls: string[];
-  setByExample: string[];
-  uncontrolled: string[];
+  controls: Array<string>;
+  setByExample: Array<string>;
+  uncontrolled: Array<string>;
 }
 
 /** The groups a panel should show for an example's controls (ADR-0113). */
-export function expectedPanel(groups: readonly ExampleControlGroup[]): PanelGroup[] {
+export function expectedPanel(groups: ReadonlyArray<ExampleControlGroup>): Array<PanelGroup> {
   return groups.map((group) => ({
     component: group.component,
     name: group.name,
@@ -74,7 +74,7 @@ export function expectedPanel(groups: readonly ExampleControlGroup[]): PanelGrou
 }
 
 /** The groups an embed's panel shows, read through its shadow root, or `null` with no panel. */
-export function panel(frame: FrameLocator | Page | Frame): Promise<PanelGroup[] | null> {
+export function panel(frame: FrameLocator | Page | Frame): Promise<Array<PanelGroup> | null> {
   return frame.locator("body").evaluate(() => {
     const root = document.querySelector("uf-embed-controls")?.shadowRoot;
     if (!root) {
@@ -188,8 +188,10 @@ export function expectNoScroll(boxes: Scrolls, at: string): void {
 }
 
 /** The heights an embed has reported to the host page, in order. */
-export async function reports(page: Page): Promise<number[]> {
-  const received = await page.evaluate(() => (window as { received?: unknown[] }).received ?? []);
+export async function reports(page: Page): Promise<Array<number>> {
+  const received = await page.evaluate(
+    () => (window as { received?: Array<unknown> }).received ?? [],
+  );
   return received.flatMap((each) =>
     typeof each === "object" &&
     each !== null &&

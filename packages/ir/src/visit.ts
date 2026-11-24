@@ -115,43 +115,45 @@ const codeReferenceKinds = {
  * Every kind of render node. The coverage gate requires a corpus case for each. A root
  * `Fragment` is not a render node; the `fragment` capability covers it.
  */
-export const RENDER_NODE_KINDS: readonly RenderNode["kind"][] = Object.keys(
+export const RENDER_NODE_KINDS: ReadonlyArray<RenderNode["kind"]> = Object.keys(
   renderNodeKinds,
-) as RenderNode["kind"][];
+) as Array<RenderNode["kind"]>;
 
 /**
  * Every kind of attribute, an element's or a component's. The coverage gate requires a corpus case
  * for each.
  */
-export const ATTRIBUTE_KINDS: readonly AnyAttribute["kind"][] = Object.keys(
+export const ATTRIBUTE_KINDS: ReadonlyArray<AnyAttribute["kind"]> = Object.keys(
   attributeKinds,
-) as AnyAttribute["kind"][];
+) as Array<AnyAttribute["kind"]>;
 
 /** Every kind of binding. The coverage gate requires a corpus case for each. */
-export const BINDING_KINDS: readonly BindingKind[] = Object.keys(bindingKinds) as BindingKind[];
+export const BINDING_KINDS: ReadonlyArray<BindingKind> = Object.keys(
+  bindingKinds,
+) as Array<BindingKind>;
 
 /** Every kind of setup item. The coverage gate requires a corpus case for each. */
-export const SETUP_ITEM_KINDS: readonly SetupItem["kind"][] = Object.keys(
+export const SETUP_ITEM_KINDS: ReadonlyArray<SetupItem["kind"]> = Object.keys(
   setupItemKinds,
-) as SetupItem["kind"][];
+) as Array<SetupItem["kind"]>;
 
 /** Every kind of event handler. The coverage gate requires a corpus case for each. */
-export const HANDLER_KINDS: readonly Handler["kind"][] = Object.keys(
-  handlerKinds,
-) as Handler["kind"][];
+export const HANDLER_KINDS: ReadonlyArray<Handler["kind"]> = Object.keys(handlerKinds) as Array<
+  Handler["kind"]
+>;
 
 /** Every kind of watch source. The coverage gate requires a corpus case for each. */
-export const WATCH_SOURCE_KINDS: readonly WatchSource["kind"][] = Object.keys(
+export const WATCH_SOURCE_KINDS: ReadonlyArray<WatchSource["kind"]> = Object.keys(
   watchSourceKinds,
-) as WatchSource["kind"][];
+) as Array<WatchSource["kind"]>;
 
 /**
  * Every kind of reference in setup code, and in render expressions, whose kinds are among them.
  * The coverage gate requires a corpus case for each.
  */
-export const CODE_REFERENCE_KINDS: readonly CodeReference["kind"][] = Object.keys(
+export const CODE_REFERENCE_KINDS: ReadonlyArray<CodeReference["kind"]> = Object.keys(
   codeReferenceKinds,
-) as CodeReference["kind"][];
+) as Array<CodeReference["kind"]>;
 
 /** A node {@link walk} visits: a render node, or a component's root fragment. */
 export type VisitedNode = RenderNode | FragmentNode;
@@ -173,7 +175,7 @@ export interface Visitor {
  * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', a `Teleport`'s
  * or a `Transition`'s content, and nothing for text.
  */
-export function childrenOf(node: VisitedNode): readonly RenderNode[] {
+export function childrenOf(node: VisitedNode): ReadonlyArray<RenderNode> {
   switch (node.kind) {
     case "Element":
     case "Fragment":
@@ -292,7 +294,7 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
 }
 
 /** The attributes of a node: an element's, a component's or a `Dynamic` node's, or none. */
-function attributesOf(node: VisitedNode): readonly AnyAttribute[] {
+function attributesOf(node: VisitedNode): ReadonlyArray<AnyAttribute> {
   switch (node.kind) {
     case "Element":
     case "Component":
@@ -327,8 +329,8 @@ export interface LocatedExpression {
  * `base` prefixes each path, such as `/components/0`. Setup code and handlers are
  * {@link codeOf}'s: a template reads only these (ADR-0045).
  */
-export function expressionsOf(component: UfComponent, base = ""): LocatedExpression[] {
-  const found: LocatedExpression[] = [];
+export function expressionsOf(component: UfComponent, base = ""): Array<LocatedExpression> {
+  const found: Array<LocatedExpression> = [];
   const add = (expression: Expression, path: string) => found.push({ expression, path });
   for (const [index, prop] of component.props.entries()) {
     if (prop.default) {
@@ -340,12 +342,12 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
       add(item.default, `${base}/setup/${index}/default`);
     }
   }
-  const attributes = (node: { attributes: readonly AnyAttribute[] }, path: string) => {
+  const attributes = (node: { attributes: ReadonlyArray<AnyAttribute> }, path: string) => {
     for (const [index, attribute] of node.attributes.entries()) {
       attributeExpressions(attribute, `${path}/attributes/${index}`, add);
     }
   };
-  const fills = (list: readonly SlotFill[], path: string) => {
+  const fills = (list: ReadonlyArray<SlotFill>, path: string) => {
     for (const [index, fill] of list.entries()) {
       const at = `${path}/${index}`;
       if (fill.parameter?.default) {
@@ -503,7 +505,10 @@ export interface LocatedFunction {
  * A setup function's body is client code: what a template or a getter may call of it, its
  * summary says (`summarize`).
  */
-export function functionsOf(component: UfComponent | UfComposable, base = ""): LocatedFunction[] {
+export function functionsOf(
+  component: UfComponent | UfComposable,
+  base = "",
+): Array<LocatedFunction> {
   return partsOf(component, base).flatMap((part) => ("function" in part ? [part] : []));
 }
 
@@ -520,8 +525,8 @@ interface LocatedValue {
 function partsOf(
   component: UfComponent | UfComposable,
   base: string,
-): (LocatedValue | LocatedFunction)[] {
-  const parts: (LocatedValue | LocatedFunction)[] = [];
+): Array<LocatedValue | LocatedFunction> {
+  const parts: Array<LocatedValue | LocatedFunction> = [];
   const add = (
     fn: FunctionCode,
     path: string,
@@ -615,14 +620,14 @@ function walkHandlers(
   path: string,
   visit: (attribute: EventAttribute | ListenerAttribute, path: string) => void,
 ): void {
-  const attributes = (list: readonly AnyAttribute[]) => {
+  const attributes = (list: ReadonlyArray<AnyAttribute>) => {
     for (const [index, attribute] of list.entries()) {
       if (attribute.kind === "Event" || attribute.kind === "Listener") {
         visit(attribute, `${path}/attributes/${index}`);
       }
     }
   };
-  const fills = (list: readonly SlotFill[]) => {
+  const fills = (list: ReadonlyArray<SlotFill>) => {
     for (const [index, fill] of list.entries()) {
       for (const [child, nested] of fill.children.entries()) {
         walkHandlers(nested, `${path}/fills/${index}/children/${child}`, visit);
@@ -691,8 +696,8 @@ export interface LocatedCode {
  * ({@link functionsOf}), and after each body the conditions of its `preventDefault()` and
  * `stopPropagation()` calls, which repeat a part of it. `base` prefixes each path.
  */
-export function codeOf(component: UfComponent | UfComposable, base = ""): LocatedCode[] {
-  return partsOf(component, base).flatMap((part): LocatedCode[] => {
+export function codeOf(component: UfComponent | UfComposable, base = ""): Array<LocatedCode> {
+  return partsOf(component, base).flatMap((part): Array<LocatedCode> => {
     if ("value" in part) {
       return [{ code: part.value, path: part.path, context: "pure" }];
     }
@@ -730,8 +735,8 @@ type AddSpan = (span: Span, path: string) => void;
  * another file, so they have none. What points into the source (diagnostics, a plugin's module)
  * is checked span by span with it.
  */
-export function spansOf(module: UfModule): LocatedSpan[] {
-  const found: LocatedSpan[] = [];
+export function spansOf(module: UfModule): Array<LocatedSpan> {
+  const found: Array<LocatedSpan> = [];
   const at: AddSpan = (span, path) => found.push({ span, path });
   const add: AddSpan = (span, path) => at(span, `${path}/span`);
   for (const [index, component] of module.components.entries()) {
@@ -864,7 +869,7 @@ export function spansOf(module: UfModule): LocatedSpan[] {
 
 /** The spans of a component's or a composable's type parameters. */
 function typeParameterSpans(
-  parameters: readonly TypeParameter[] | undefined,
+  parameters: ReadonlyArray<TypeParameter> | undefined,
   base: string,
   add: AddSpan,
 ): void {
@@ -1028,7 +1033,7 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
  * The spans of fills: each fill, its parameter (a default's expression is
  * {@link expressionsOf}'s) and its children.
  */
-function fillSpans(fills: readonly SlotFill[], path: string, add: AddSpan): void {
+function fillSpans(fills: ReadonlyArray<SlotFill>, path: string, add: AddSpan): void {
   for (const [index, fill] of fills.entries()) {
     const at = `${path}/${index}`;
     add(fill.span, at);

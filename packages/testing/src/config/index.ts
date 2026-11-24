@@ -43,9 +43,9 @@ export type { DiscoverOptions, ProjectCase } from "./cases.ts";
 /** The options of {@link defineTestConfig}. */
 export interface TestConfigOptions {
   /** The targets to test: `unframework.config.ts`'s `targets` by default. */
-  targets?: readonly TargetName[];
+  targets?: ReadonlyArray<TargetName>;
   /** Globs of test files, relative to the root: `["**\/*.test.ts"]` by default. */
-  include?: readonly string[];
+  include?: ReadonlyArray<string>;
   /**
    * The target that writes the shared expectations, which every other target must match: `vue`
    * when the project tests it, the first target otherwise. It always joins the run.
@@ -67,7 +67,7 @@ export interface TestConfigOptions {
 }
 
 /** The test files a project's run finds by default. */
-export const DEFAULT_INCLUDE: readonly string[] = ["**/*.test.ts"];
+export const DEFAULT_INCLUDE: ReadonlyArray<string> = ["**/*.test.ts"];
 
 /**
  * This package's modules, wherever a project installs it: the server render comparison imports
@@ -177,10 +177,10 @@ async function projectConfig(root: string): Promise<ResolvedConfig> {
 /** Throws unless every name is one of `allowed`. */
 function checkTargets(
   what: string,
-  names: readonly string[],
-  allowed: readonly TargetName[],
-): asserts names is readonly TargetName[] {
-  const unknown = names.filter((name) => !(allowed as readonly string[]).includes(name));
+  names: ReadonlyArray<string>,
+  allowed: ReadonlyArray<TargetName>,
+): asserts names is ReadonlyArray<TargetName> {
+  const unknown = names.filter((name) => !(allowed as ReadonlyArray<string>).includes(name));
   if (unknown.length) {
     throw new Error(
       `[uf] defineTestConfig: ${what} names ${unknown.join(", ")}, which ${unknown.length > 1 ? "are" : "is"} not among ${allowed === TARGET_NAMES ? "the targets" : "the project's targets"} (${allowed.join(", ")}).`,
@@ -194,8 +194,8 @@ function checkTargets(
  */
 export function selectedTargets(
   value: string | undefined,
-  targets: readonly TargetName[],
-): TargetName[] {
+  targets: ReadonlyArray<TargetName>,
+): Array<TargetName> {
   if (!value?.trim()) {
     return [...targets];
   }
@@ -203,7 +203,7 @@ export function selectedTargets(
     .split(",")
     .map((name) => name.trim())
     .filter(Boolean);
-  const unknown = requested.filter((name) => !(targets as readonly string[]).includes(name));
+  const unknown = requested.filter((name) => !(targets as ReadonlyArray<string>).includes(name));
   if (unknown.length) {
     throw new Error(
       `[uf] UF_TARGETS names ${unknown.join(", ")}, which ${unknown.length > 1 ? "are" : "is"} not among the project's targets (${targets.join(", ")}).`,
@@ -218,10 +218,10 @@ export function selectedTargets(
  * compare with (ADR-0057), so they always join.
  */
 export function runTargets(
-  targets: readonly TargetName[],
-  selected: readonly TargetName[],
-  writers: readonly TargetName[],
-): TargetName[] {
+  targets: ReadonlyArray<TargetName>,
+  selected: ReadonlyArray<TargetName>,
+  writers: ReadonlyArray<TargetName>,
+): Array<TargetName> {
   return targets.filter((name) => selected.includes(name) || writers.includes(name));
 }
 
@@ -247,13 +247,13 @@ interface ProjectSetup {
   root: string;
   harness: HarnessContext;
   mode: HarnessMode;
-  cases: readonly ProjectCase[];
-  targets: readonly TargetName[];
+  cases: ReadonlyArray<ProjectCase>;
+  targets: ReadonlyArray<TargetName>;
   toolchainDir(target: TargetName): string;
   /** The project's `vite` function (ADR-0104). */
   vite: ProjectVite;
   /** The declarations of the pass-through modules, which Angular's compile reads (ADR-0104). */
-  declarations: readonly string[];
+  declarations: ReadonlyArray<string>;
 }
 
 function group(setup: ProjectSetup, kind: ProjectKind, target: TargetName): number {
@@ -305,7 +305,7 @@ export async function loadToolchain(target: TargetName): Promise<Toolchain> {
   return toolchain;
 }
 
-async function unpluginOf(target: TargetName): Promise<Plugin[]> {
+async function unpluginOf(target: TargetName): Promise<Array<Plugin>> {
   const { default: unframework } = await import("@unframework.dev/unplugin/vite");
   // Every compile is recorded, so a mount listens to the events of the module it compiled.
   const options: UnframeworkOptions = { target, onCompile: (event) => recordCompiledModule(event) };

@@ -25,12 +25,12 @@ import type {
 /** What an owner's output declares of its module. */
 export interface ModuleReads {
   /** The constants it reaches, in source order, as written. */
-  constants: string[];
+  constants: Array<string>;
   /**
    * The module's type declarations its constants name, transitively, that the owner's own types
    * leave out, to declare beside them.
    */
-  types: TypeDeclaration[];
+  types: Array<TypeDeclaration>;
 }
 
 /**
@@ -44,7 +44,7 @@ export function moduleReads(
   owner: UfComponent,
   module: UfModule,
   imports: ImportSet,
-  typeTexts: readonly TypeText[] = [],
+  typeTexts: ReadonlyArray<TypeText> = [],
 ): ModuleReads {
   const constants = module.constants ?? [];
   const moduleValues = new Set([
@@ -161,8 +161,8 @@ export function moduleReads(
  * The type text an owner's IR writes beside its code: its props', setup's, functions' and emits'
  * types, and its type parameters'.
  */
-function ownTypes(owner: UfComponent): TypeText[] {
-  const found: TypeText[] = [];
+function ownTypes(owner: UfComponent): Array<TypeText> {
+  const found: Array<TypeText> = [];
   if (owner.propsParameter) {
     found.push(owner.propsParameter.type);
   }
@@ -202,7 +202,7 @@ function ownTypes(owner: UfComponent): TypeText[] {
  * The root identifier of each `typeof` in type text or code: `SIZES` in `keyof typeof SIZES`,
  * `theme` in `typeof theme.dark`.
  */
-function typeQueries(text: string, kind: CodeKind | "type"): string[] {
+function typeQueries(text: string, kind: CodeKind | "type"): Array<string> {
   let root: unknown;
   try {
     root =
@@ -212,7 +212,7 @@ function typeQueries(text: string, kind: CodeKind | "type"): string[] {
   } catch {
     return [];
   }
-  const found: string[] = [];
+  const found: Array<string> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       for (const each of node) {

@@ -123,9 +123,9 @@ export function createHost(
  */
 export function collectDiagnostics(
   compiler: AngularCompiler,
-  rootNames: readonly string[],
-  createProgram: (rootNames: readonly string[]) => NgtscProgram,
-): Diagnostic[] {
+  rootNames: ReadonlyArray<string>,
+  createProgram: (rootNames: ReadonlyArray<string>) => NgtscProgram,
+): Array<Diagnostic> {
   const program = createProgram(rootNames);
   const isError = (diagnostic: Diagnostic) =>
     diagnostic.category === compiler.ts.DiagnosticCategory.Error;
@@ -169,8 +169,8 @@ export function collectDiagnostics(
  */
 export function groupByFile(
   compiler: AngularCompiler,
-  fileNames: readonly string[],
-  diagnostics: readonly Diagnostic[],
+  fileNames: ReadonlyArray<string>,
+  diagnostics: ReadonlyArray<Diagnostic>,
 ): Map<string, FrameworkCompileResult> {
   const byPath = new Map(fileNames.map((fileName) => [resolve(fileName), fileName]));
   const results = new Map<string, FrameworkCompileResult>(
@@ -221,7 +221,7 @@ export function toMessage(
 /** Diagnostics as ngc prints them, one per line: `file(line,column): error NG8002: …`. */
 export function formatDiagnostics(
   compiler: AngularCompiler,
-  diagnostics: readonly Diagnostic[],
+  diagnostics: ReadonlyArray<Diagnostic>,
 ): string {
   return diagnostics
     .map((diagnostic) => {

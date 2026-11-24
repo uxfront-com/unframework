@@ -12,7 +12,7 @@ const DARK_BACKGROUND = "rgb(22, 23, 27)";
 const LIGHT_BACKGROUND = "rgb(255, 255, 255)";
 
 /** Opens a fixture's shell in this document, as a fresh load of the page, at `hash`, would. */
-async function open(name: ShellFixture, targets?: string[], hash = ""): Promise<void> {
+async function open(name: ShellFixture, targets?: Array<string>, hash = ""): Promise<void> {
   const { html } = await commands.ufShellFixture(name, targets);
   const shell = new DOMParser().parseFromString(html, "text/html");
   history.replaceState(null, "", location.pathname + location.search + hash);
@@ -41,7 +41,7 @@ async function open(name: ShellFixture, targets?: string[], hash = ""): Promise<
 }
 
 /** The names of a tree's or a group's own items, in order. */
-function names(list: Element): string[] {
+function names(list: Element): Array<string> {
   return [...list.querySelectorAll(":scope > [role='treeitem']")].map((item) => {
     const label = item.getAttribute("aria-labelledby");
     return (label ? document.getElementById(label)! : item).textContent!.trim();
@@ -59,7 +59,7 @@ const item = (name: string) => page.getByRole("treeitem", { name, exact: true })
 const focused = () => document.activeElement;
 
 /** Each render a frame answered: the stub frame gives back the entry and the props it was sent. */
-const renders: { entry: unknown; props: unknown }[] = [];
+const renders: Array<{ entry: unknown; props: unknown }> = [];
 addEventListener("message", (event) => {
   const data = event.data as { kind?: unknown; entry?: unknown; props?: unknown } | null;
   if (data?.kind === "rendered") {

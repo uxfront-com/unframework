@@ -46,7 +46,7 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-const SAME: readonly (readonly [string, string, string])[] = [
+const SAME: ReadonlyArray<readonly [string, string, string]> = [
   [
     "Svelte's spaces between blocks",
     "<section><h2>Title</h2> <p>x</p> <p>y</p></section>",
@@ -169,7 +169,7 @@ const SAME: readonly (readonly [string, string, string])[] = [
   ],
 ];
 
-const DIFFERENT: readonly (readonly [string, string, string])[] = [
+const DIFFERENT: ReadonlyArray<readonly [string, string, string]> = [
   [
     "a space between two images",
     "<p><img width=10 height=10> <img width=10 height=10></p>",
@@ -423,7 +423,7 @@ const VOID = new Set(["br", "wbr", "img"]);
  * rather than repairing the markup: a `<p>` closes at a block, an `<li>` at another `<li>`,
  * and an `<rt>` or `<rp>` closes everything up to the ruby around it.
  */
-function fits(tag: string, ancestors: readonly string[]): boolean {
+function fits(tag: string, ancestors: ReadonlyArray<string>): boolean {
   if (ancestors.includes("p") && ["div", "p", "li"].includes(tag)) {
     return false;
   }
@@ -440,13 +440,13 @@ function fits(tag: string, ancestors: readonly string[]): boolean {
 type Item =
   | { kind: "slot"; id: number }
   | { kind: "word"; word: string }
-  | { kind: "element"; open: string; tag: string; children: Item[] };
+  | { kind: "element"; open: string; tag: string; children: Array<Item> };
 
-function fragment(next: () => number): { items: Item[]; slots: number } {
+function fragment(next: () => number): { items: Array<Item>; slots: number } {
   let slots = 0;
-  const pick = <T>(items: readonly T[]): T => items[Math.floor(next() * items.length)]!;
-  const level = (depth: number, ancestors: readonly string[]): Item[] => {
-    const items: Item[] = [];
+  const pick = <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!;
+  const level = (depth: number, ancestors: ReadonlyArray<string>): Array<Item> => {
+    const items: Array<Item> = [];
     for (let count = 1 + Math.floor(next() * 4); count > 0; count -= 1) {
       items.push({ kind: "slot", id: slots++ });
       const open = depth > 2 || next() < 0.3 ? undefined : pick(ELEMENTS);
@@ -467,7 +467,7 @@ function fragment(next: () => number): { items: Item[]; slots: number } {
   return { items: level(0, []), slots };
 }
 
-function render(items: readonly Item[], spaces: readonly string[]): string {
+function render(items: ReadonlyArray<Item>, spaces: ReadonlyArray<string>): string {
   return items
     .map((item) => {
       if (item.kind === "slot") {
@@ -486,8 +486,8 @@ function render(items: readonly Item[], spaces: readonly string[]): string {
 
 describe("rule 6 against Chromium's layout, fuzzed", () => {
   it("never calls two fragments equal that Chromium lays out differently, on either path", () => {
-    const falseEquals: string[] = [];
-    const liveFalseEquals: string[] = [];
+    const falseEquals: Array<string> = [];
+    const liveFalseEquals: Array<string> = [];
     let equal = 0;
     let liveEqual = 0;
     for (let seed = 1; seed <= 20_000; seed += 1) {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { applyAndRecheck, codes, component, problems, root, run } from "./helpers.ts";
 
 /** The diagnostics of a component that returns `jsx`, with the text under each. */
-function found(jsx: string, props?: string): string[] {
+function found(jsx: string, props?: string): Array<string> {
   const { source, diagnostics } = component(jsx, props ? { props } : {});
   return problems(source, diagnostics);
 }

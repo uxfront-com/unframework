@@ -28,8 +28,8 @@ export function printExpression(expression: AST.Expression): string {
  * file.
  */
 export function printModule(
-  imports: readonly AST.ImportDeclaration[],
-  body: readonly AST.Statement[],
+  imports: ReadonlyArray<AST.ImportDeclaration>,
+  body: ReadonlyArray<AST.Statement>,
   options: { jsx?: boolean } = {},
 ): string {
   const head = imports.length ? printProgram(program([...imports]), options) : "";
@@ -40,16 +40,16 @@ export function printModule(
 /** The parts of a component's output file, in the order {@link printComponentModule} prints them. */
 export interface ComponentModule {
   /** The imports, sorted by `ImportSet`. */
-  imports?: ImportSet | readonly AST.ImportDeclaration[];
+  imports?: ImportSet | ReadonlyArray<AST.ImportDeclaration>;
   /** The type declarations the component's props use, copied as written (`componentTypes`). */
-  types?: readonly TypeDeclaration[];
+  types?: ReadonlyArray<TypeDeclaration>;
   /** The component's own statements: its declaration and exports. */
-  body: readonly AST.Statement[];
+  body: ReadonlyArray<AST.Statement>;
   /**
    * The inline helpers of emulated capabilities, after the component (a reader meets the
    * component first): built statements, or source code joined as written.
    */
-  helpers?: readonly (AST.Statement | string)[];
+  helpers?: ReadonlyArray<AST.Statement | string>;
   /** The placeholders the statements hold, spliced once the module is printed. */
   placeholders?: Placeholders;
 }

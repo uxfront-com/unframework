@@ -52,7 +52,7 @@ export function reactiveProps(initial: Record<string, unknown>): {
     }
     return signal;
   };
-  const [keys, setKeys] = createSignal<readonly string[]>([], {
+  const [keys, setKeys] = createSignal<ReadonlyArray<string>>([], {
     equals: (a, b) => a.length === b.length && a.every((key, index) => key === b[index]),
   });
   const assign = (next: Record<string, unknown>) =>

@@ -129,7 +129,7 @@ describe("projects", () => {
 });
 
 describe("the bench project", () => {
-  const names = (projectFilter?: string[]) =>
+  const names = (projectFilter?: Array<string>) =>
     harnessProjects({ harness, mode, targets: ["vue"], projectFilter })
       .filter((project) => typeof project === "object")
       .map((project) => (project as UserWorkspaceConfig).test?.name);
@@ -192,7 +192,7 @@ describe("project factories", () => {
       const project = await (factory as () => Promise<UserWorkspaceConfig>)();
       expect(project.test?.include).toEqual(["harness/unavailable.test.ts"]);
       const provided = project.test?.provide as
-        | { ufUnavailable: { layers: string[]; message: string } }
+        | { ufUnavailable: { layers: Array<string>; message: string } }
         | undefined;
       const unavailable = provided?.ufUnavailable;
       if (!unavailable) {
@@ -253,8 +253,8 @@ describe("browser projects", () => {
   });
 
   it("send no compile error to the pages, whose overlay would cover every later spec", () => {
-    const sent: unknown[][] = [];
-    const hot = { send: (...args: unknown[]) => void sent.push(args) };
+    const sent: Array<Array<unknown>> = [];
+    const hot = { send: (...args: Array<unknown>) => void sent.push(args) };
     const server = { environments: { client: { hot } } };
     const plugin = noErrorBroadcast();
     (plugin.configureServer as (server: unknown) => void)(server);
@@ -284,7 +284,7 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
       projects.slice(6).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
     );
     expect(ssr!.test?.name).toBe("ssr:react");
-    const provided = ssr!.test?.provide as { ufOnly?: string[] } | undefined;
+    const provided = ssr!.test?.provide as { ufOnly?: Array<string> } | undefined;
     expect(provided?.ufOnly).toEqual(["semantics/listbox"]);
     expect(browser!.test?.name).toBe("browser:react");
     expect(browser!.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
@@ -312,7 +312,7 @@ describe("the reference's own page count (ADR-0092)", () => {
   const targets = selectTargets(undefined);
   const live = { ...mode, pixels: "live" } as const;
   const modes = { live, update: { ...live, update: true }, baseline: mode } as const;
-  const filters: Record<string, string[] | undefined> = {
+  const filters: Record<string, Array<string> | undefined> = {
     "no filter": undefined,
     "browser:*": ["browser:*"],
     "harness and browser:vue": ["harness", "browser:vue"],

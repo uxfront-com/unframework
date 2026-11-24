@@ -165,7 +165,7 @@ export interface ComponentContext {
   tag: string;
   namespace: Namespace;
   /** The `-s` attributes the content of its fills carries (ADR-0063). */
-  slotted: readonly string[];
+  slotted: ReadonlyArray<string>;
 }
 
 /** A prop passed to a component, as code: `literal` is the string a static prop holds. */
@@ -233,7 +233,7 @@ export function onlyGuards(node: DynamicNode, is: string): ReadonlyMap<string, s
  * static and bound ones its `only` gives to other tags, for a target that writes one element per
  * tag (Angular's `@case`, Qwik's branches).
  */
-export function candidateAttributes(node: DynamicNode, tag: string): Attribute[] {
+export function candidateAttributes(node: DynamicNode, tag: string): Array<Attribute> {
   return tagAttributes(node).filter((attribute) => {
     if (attribute.kind !== "Static" && attribute.kind !== "Bound") {
       return true;
@@ -244,7 +244,7 @@ export function candidateAttributes(node: DynamicNode, tag: string): Attribute[]
 }
 
 /** A `<component is>`'s attributes as an element's: a tag candidate's are (ADR-0054). */
-export function tagAttributes(node: DynamicNode): Attribute[] {
+export function tagAttributes(node: DynamicNode): Array<Attribute> {
   return node.attributes.filter(
     (attribute): attribute is Attribute =>
       attribute.kind !== "Prop" &&
@@ -304,7 +304,7 @@ export interface PrintedTransitionElement {
 /** A slot outlet, with its props as code, and key by key when they are an object literal. */
 export interface PrintedSlotOutlet {
   node: SlotOutletNode;
-  props?: { code: string; entries?: { key: string; value: string }[] };
+  props?: { code: string; entries?: Array<{ key: string; value: string }> };
 }
 
 /** A branch of a conditional, with its condition as code: absent on the final else. */
@@ -337,11 +337,11 @@ export interface ListParts {
  *   #title>`), closing itself without content.
  */
 export type MarkupPiece =
-  | { kind: "nodes"; nodes: readonly RenderNode[]; container: Container }
+  | { kind: "nodes"; nodes: ReadonlyArray<RenderNode>; container: Container }
   | {
       kind: "element";
       element: ElementNode;
-      directives: readonly PrintedAttribute[];
+      directives: ReadonlyArray<PrintedAttribute>;
       /**
        * The attributes that render only where a test holds, by name, with the test as code: a
        * `<component is>`'s attributes that only some tags take (ADR-0119, {@link onlyGuards}).
@@ -351,18 +351,18 @@ export type MarkupPiece =
   | {
       kind: "wrapper";
       tag: string;
-      attributes: readonly PrintedAttribute[];
+      attributes: ReadonlyArray<PrintedAttribute>;
       content: MarkupPiece;
     }
-  | { kind: "block"; segments: readonly BlockSegment[]; close: string }
+  | { kind: "block"; segments: ReadonlyArray<BlockSegment>; close: string }
   | { kind: "code"; code: string }
-  | { kind: "component"; component: ComponentNode; directives: readonly PrintedAttribute[] }
+  | { kind: "component"; component: ComponentNode; directives: ReadonlyArray<PrintedAttribute> }
   | {
       kind: "tag";
       tag: string;
-      attributes: readonly PrintedAttribute[];
+      attributes: ReadonlyArray<PrintedAttribute>;
       /** Its content: none for a tag that closes itself. */
-      content?: readonly MarkupPiece[];
+      content?: ReadonlyArray<MarkupPiece>;
     };
 
 /** A segment of a block: what opens it, and what it holds. */
@@ -370,7 +370,7 @@ export interface BlockSegment {
   open: string;
   content: MarkupPiece;
   /** Code the segment writes before its content: the constants a branch declares. */
-  leading?: readonly string[];
+  leading?: ReadonlyArray<string>;
   /**
    * Whether the content goes in parentheses when it takes lines of its own, as JSX in an
    * expression does (Astro's `{c ? (` … `) : null}`).
@@ -436,39 +436,48 @@ export interface MarkupDialect {
    */
   boundAttribute(name: string, code: string, context: AttributeContext): string;
   /** Writes an element's class: the union of its parts' tokens, none when there are none. */
-  classAttribute(parts: readonly ClassPart[], context: AttributeContext): PrintedAttribute[];
+  classAttribute(
+    parts: ReadonlyArray<ClassPart>,
+    context: AttributeContext,
+  ): Array<PrintedAttribute>;
   /** Writes an element's style: its declarations whose value is present, in any order. */
-  styleAttribute(parts: readonly StylePart[], context: AttributeContext): PrintedAttribute[];
+  styleAttribute(
+    parts: ReadonlyArray<StylePart>,
+    context: AttributeContext,
+  ): Array<PrintedAttribute>;
   /** Writes a conditional: the first branch whose condition is truthy renders, or the else. */
-  conditional(branches: readonly ConditionalBranch[]): MarkupPiece[];
+  conditional(branches: ReadonlyArray<ConditionalBranch>): Array<MarkupPiece>;
   /**
    * Writes a constant a branch declares before its content, for a language that declares one in
    * markup (Svelte's `{@const name = value}`, ADR-0099).
    */
   branchConstant?(name: string, value: string): string;
   /** Writes a list: the body for each item of the source, in order. */
-  list(list: ListParts): MarkupPiece[];
+  list(list: ListParts): Array<MarkupPiece>;
   /**
    * Writes a listener (ADR-0047): the handler runs, with the DOM event, each time the element's
    * event of that name fires, in the phase and with the option it asks for. A language without a
    * spelling for an option, or for the handler, throws: its target writes the listener itself
    * (`MarkupOptions.attribute` or `handler`), or declares the capability unsupported.
    */
-  eventAttribute(event: PrintedEvent, context: AttributeContext): PrintedAttribute[];
+  eventAttribute(event: PrintedEvent, context: AttributeContext): Array<PrintedAttribute>;
   /** Writes a template ref (ADR-0049): the element is the ref's value while it is rendered. */
-  refAttribute(ref: PrintedRef, context: AttributeContext): PrintedAttribute[];
+  refAttribute(ref: PrintedRef, context: AttributeContext): Array<PrintedAttribute>;
   /**
    * Writes a directive (ADR-0099): its hooks run in the browser with the value, once the element
    * is in the DOM, after a render that changes the value, and once it leaves (Vue's
    * `v-focus-trap`, Svelte's `{@attach}`, Angular's `[vFocusTrap]`).
    */
-  directiveAttribute?(directive: PrintedDirective, context: AttributeContext): PrintedAttribute[];
+  directiveAttribute?(
+    directive: PrintedDirective,
+    context: AttributeContext,
+  ): Array<PrintedAttribute>;
   /**
    * Writes `innerHTML={markup}` (ADR-0097) as an attribute: the element's content is the markup
    * the code's string holds, parsed, never escaped (Vue's `v-html`, Angular's `[innerHTML]`,
    * Astro's `set:html`). A language that writes it as content implements `rawHtmlContent`.
    */
-  rawHtmlAttribute?(code: string, context: AttributeContext): PrintedAttribute[];
+  rawHtmlAttribute?(code: string, context: AttributeContext): Array<PrintedAttribute>;
   /** Writes `innerHTML={markup}` as the element's content instead (Svelte's `{@html markup}`). */
   rawHtmlContent?(code: string): string;
   /**
@@ -477,79 +486,79 @@ export interface MarkupDialect {
    */
   inert?: boolean;
   /** Orders an element's printed attributes, when the language's lint rules want an order. */
-  orderAttributes?(attributes: readonly PrintedAttribute[]): PrintedAttribute[];
+  orderAttributes?(attributes: ReadonlyArray<PrintedAttribute>): Array<PrintedAttribute>;
   /**
    * The tag a component element is written with (ADR-0053): its local name when absent
    * (`<Field>`), or the language's own (Angular's `<uf-field>`).
    */
   componentTag?(name: string): string;
   /** Writes a prop passed to a component (ADR-0053). */
-  propAttribute?(prop: PrintedProp, context: ComponentContext): PrintedAttribute[];
+  propAttribute?(prop: PrintedProp, context: ComponentContext): Array<PrintedAttribute>;
   /**
    * Writes a listener of a child's event (ADR-0053): the handler runs with the event's payload
    * each time the child emits it.
    */
-  componentEvent?(listener: PrintedListener, context: ComponentContext): PrintedAttribute[];
+  componentEvent?(listener: PrintedListener, context: ComponentContext): Array<PrintedAttribute>;
   /**
    * Writes what a component element passes through to the child's fallthrough element
    * (ADR-0118), all at once, in source order. Without it, each is written as the element hooks
    * write it on the component's tag (`attribute`, `boundAttribute`, `eventAttribute`).
    */
   fallthroughAttributes?(
-    attributes: readonly PrintedFallthrough[],
+    attributes: ReadonlyArray<PrintedFallthrough>,
     context: ComponentContext & { attributes: AttributeContext },
-  ): PrintedAttribute[];
+  ): Array<PrintedAttribute>;
   /**
    * Writes `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it
    * does not declare. No default: each target names and spreads its rest its own way.
    */
-  restAttribute?(context: AttributeContext): PrintedAttribute[];
+  restAttribute?(context: AttributeContext): Array<PrintedAttribute>;
   /**
    * Writes a component element's content from its fills (ADR-0054): the default slot's
    * children, the named slots' templates, and the forwarded slots. None closes the tag.
    */
-  fills?(fills: readonly PrintedFill[], context: ComponentContext): MarkupPiece[];
+  fills?(fills: ReadonlyArray<PrintedFill>, context: ComponentContext): Array<MarkupPiece>;
   /** Writes a slot outlet (ADR-0054): what the parent filled the slot with, or the fallback. */
-  slotOutlet?(outlet: PrintedSlotOutlet): MarkupPiece[];
+  slotOutlet?(outlet: PrintedSlotOutlet): Array<MarkupPiece>;
   /**
    * Writes a form control's `v-model` (ADR-0054): the control shows the value, and each change
    * the control's kind and modifiers say writes it.
    */
-  modelAttribute?(model: PrintedModel, context: AttributeContext): PrintedAttribute[];
+  modelAttribute?(model: PrintedModel, context: AttributeContext): Array<PrintedAttribute>;
   /**
    * Writes a component's `v-model:<name>` (ADR-0054): the child shows the value, and its writes
    * of the model write it.
    */
-  modelBinding?(binding: PrintedModelBinding, context: ComponentContext): PrintedAttribute[];
+  modelBinding?(binding: PrintedModelBinding, context: ComponentContext): Array<PrintedAttribute>;
   /**
    * Writes `<component is>` (ADR-0054): the candidate `is` names renders, with the node's
    * attributes, and its children or fills. The printer prints an `element` piece's tag and a
    * `component` piece's name as the dialect gives them, with the node's attributes.
    */
-  dynamic?(dynamic: PrintedDynamic): MarkupPiece[];
+  dynamic?(dynamic: PrintedDynamic): Array<MarkupPiece>;
   /** Writes `<Teleport to>` (ADR-0098): see {@link PrintedTeleport}. */
-  teleport?(teleport: PrintedTeleport): MarkupPiece[];
+  teleport?(teleport: PrintedTeleport): Array<MarkupPiece>;
   /**
    * A child component in the tree (ADR-0101): the pieces it prints as, around a `component`
    * piece of it, such as Vue's `<Suspense>` around an async child. Absent: the component alone.
    */
-  component?(component: ComponentNode): MarkupPiece[];
+  component?(component: ComponentNode): Array<MarkupPiece>;
   /**
    * Writes `<Transition>` around its child (ADR-0100): see {@link PrintedTransition}. By default
    * the child prints in its place, with no wrapper, and {@link transitionAttributes} marks it.
    */
-  transition?(transition: PrintedTransition): MarkupPiece[];
+  transition?(transition: PrintedTransition): Array<MarkupPiece>;
   /**
    * The attributes that run a transition's classes on its element, or on each branch's element
    * of its conditional (ADR-0100), written before the element's own: Svelte's `in:` and `out:`,
    * Angular's directive and `(animate.leave)`. See {@link PrintedTransitionElement}.
    */
-  transitionAttributes?(element: PrintedTransitionElement): PrintedAttribute[];
+  transitionAttributes?(element: PrintedTransitionElement): Array<PrintedAttribute>;
   /**
    * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
    * them against the child's props (Svelte): `name=""` each, as on an element, without it.
    */
-  componentScopeAttributes?(names: readonly string[]): PrintedAttribute[];
+  componentScopeAttributes?(names: ReadonlyArray<string>): Array<PrintedAttribute>;
 }
 
 /**
@@ -605,7 +614,7 @@ export interface MarkupOptions {
    */
   narrowedDirectiveValues?: ReadonlyMap<
     Container,
-    readonly { attribute: DirectiveAttribute; name: string }[]
+    ReadonlyArray<{ attribute: DirectiveAttribute; name: string }>
   >;
   /**
    * The component's module, whose imports give a child's scoped styles: without it, the content
@@ -632,18 +641,18 @@ export interface MarkupOptions {
    * for each node at the template's top level, where the roots are: the element, or the tag in an
    * element's shape, with the node's span.
    */
-  scopeRootAttributes?(element: ElementNode): string[];
+  scopeRootAttributes?(element: ElementNode): Array<string>;
   /**
    * The components a component element stands for, where the target writes a `<component is>`
    * as one (Svelte's `$derived`): its fills take each candidate's `-s`, as they do printed
    * through the dialect's `dynamic` (ADR-0063).
    */
-  candidates?(node: ComponentNode): readonly string[] | undefined;
+  candidates?(node: ComponentNode): ReadonlyArray<string> | undefined;
   /**
    * The `-s` attributes the root's nodes carry: those of the child whose scoped fill the markup
    * is, where the target prints a fill apart (Astro's render prop, ADR-0063).
    */
-  slotted?: readonly string[];
+  slotted?: ReadonlyArray<string>;
 }
 
 /**
@@ -653,9 +662,11 @@ export interface MarkupOptions {
  * `!c && d` for A and `!c` for B), and a trailing empty branch, which renders nothing either
  * way, goes. Conditions test truthiness, so the conjunction renders the same branch.
  */
-export function withoutEmptyBranches(branches: readonly ConditionalBranch[]): ConditionalBranch[] {
-  const kept: ConditionalBranch[] = [];
-  const negated: string[] = [];
+export function withoutEmptyBranches(
+  branches: ReadonlyArray<ConditionalBranch>,
+): Array<ConditionalBranch> {
+  const kept: Array<ConditionalBranch> = [];
+  const negated: Array<string> = [];
   for (const each of branches) {
     if (each.branch.children.length === 0) {
       // Only a branch with a condition can be empty (the IR's invariants).
@@ -692,7 +703,7 @@ const LOOSER_THAN_AND: ReadonlySet<string> = new Set([
 ]);
 
 /** `a && b && …`, with parentheses around the operands that need them. */
-export function conjoin(parts: readonly string[]): string {
+export function conjoin(parts: ReadonlyArray<string>): string {
   return parts
     .map((part) => {
       const expression = parseExpression(part);
@@ -750,19 +761,19 @@ export function isRoot(container: Container): container is FragmentNode {
 }
 
 /** The static parts of a class, as one `class` value (`a b`). */
-export function staticClassValue(parts: readonly ClassPart[]): string {
+export function staticClassValue(parts: ReadonlyArray<ClassPart>): string {
   return parts.flatMap((part) => (part.kind === "Static" ? [part.value] : [])).join(" ");
 }
 
 /** The static declarations of a style, as one `style` value (`color: red; margin: 0`). */
-export function staticStyleValue(parts: readonly StylePart[]): string {
+export function staticStyleValue(parts: ReadonlyArray<StylePart>): string {
   return parts
     .flatMap((part) => (part.kind === "Static" ? [`${part.property}: ${part.value}`] : []))
     .join("; ");
 }
 
 /** An object literal of class toggles (`{ active: on, "is-big": big }`), shorthand where it can. */
-export function toggleObject(parts: readonly ClassPart[]): string {
+export function toggleObject(parts: ReadonlyArray<ClassPart>): string {
   const entries = parts.flatMap((part) => {
     if (part.kind !== "Toggle") {
       return [];
@@ -781,9 +792,9 @@ export function toggleObject(parts: readonly ClassPart[]): string {
  * Astro's `class:list`), in source order: static names as string literals unless `statics` is
  * false, dynamic values, and consecutive toggles in one object.
  */
-export function classArrayItems(parts: readonly ClassPart[], statics: boolean): string[] {
-  const items: string[] = [];
-  let run: ClassPart[] = [];
+export function classArrayItems(parts: ReadonlyArray<ClassPart>, statics: boolean): Array<string> {
+  const items: Array<string> = [];
+  let run: Array<ClassPart> = [];
   const flush = () => {
     if (run.length) {
       items.push(toggleObject(run));
@@ -828,10 +839,10 @@ interface AttributeText {
 interface ElementItem {
   kind: "element";
   tag: string;
-  attributes: AttributeText[];
+  attributes: Array<AttributeText>;
   /** `>`, or ` />` for a self-closing element. */
   end: string;
-  children: Item[];
+  children: Array<Item>;
   /** `</tag>`, or nothing for a void or self-closing element. */
   close: string;
   /** Whether its content stays on its line: whitespace-preserving, or in a literal region. */
@@ -845,7 +856,7 @@ interface ElementItem {
 /** A block of segments: each opens, holds content, and the last is followed by `close`. */
 interface BlockItem {
   kind: "block";
-  segments: { open: string; children: Item[]; parentheses: boolean }[];
+  segments: Array<{ open: string; children: Array<Item>; parentheses: boolean }>;
   close: string;
 }
 
@@ -856,9 +867,9 @@ interface Scope {
   namespace: Namespace;
   preformatted: boolean;
   /** The `-s` attributes of the children whose slot the nodes fill (ADR-0063). */
-  slotted: readonly string[];
+  slotted: ReadonlyArray<string>;
   /** The components a `<component is>` whose pieces are printed may render. */
-  candidates: readonly string[] | undefined;
+  candidates: ReadonlyArray<string> | undefined;
   /**
    * The transition whose child the nodes are (ADR-0100): its element, or each branch's element of
    * its conditional, takes the dialect's {@link MarkupDialect.transitionAttributes}, with the
@@ -932,7 +943,7 @@ export function printMarkup(
    * A style's parts: its declarations, or the one value it is bound to, as a part without a
    * property (ADR-0065).
    */
-  function styleParts(attribute: StyleAttribute): StylePart[] {
+  function styleParts(attribute: StyleAttribute): Array<StylePart> {
     if (attribute.value) {
       return [{ kind: "Bound", property: "", value: code(attribute.value) }];
     }
@@ -959,8 +970,8 @@ export function printMarkup(
   }
 
   /** The items of a container's children, each laid out as its kind and the dialect say. */
-  function itemsOf(nodes: readonly RenderNode[], container: Container, at: Scope): Item[] {
-    return nodes.flatMap((node, index): Item[] => {
+  function itemsOf(nodes: ReadonlyArray<RenderNode>, container: Container, at: Scope): Array<Item> {
+    return nodes.flatMap((node, index): Array<Item> => {
       switch (node.kind) {
         case "Text":
           return [inline(at.dialect.escapeText(node.value, position(nodes, index, container, at)))];
@@ -1037,7 +1048,7 @@ export function printMarkup(
   }
 
   function position(
-    nodes: readonly RenderNode[],
+    nodes: ReadonlyArray<RenderNode>,
     index: number,
     container: Container,
     at: Scope,
@@ -1090,7 +1101,7 @@ export function printMarkup(
   }
 
   /** A conditional's blocks, each branch's segment with the constants the branch declares. */
-  function withBranchConstants(pieces: readonly MarkupPiece[], at: Scope): MarkupPiece[] {
+  function withBranchConstants(pieces: ReadonlyArray<MarkupPiece>, at: Scope): Array<MarkupPiece> {
     const constants = options.narrowedDirectiveValues;
     if (!constants?.size || !at.dialect.branchConstant) {
       return [...pieces];
@@ -1117,11 +1128,11 @@ export function printMarkup(
     });
   }
 
-  function piecesItems(pieces: readonly MarkupPiece[], at: Scope): Item[] {
+  function piecesItems(pieces: ReadonlyArray<MarkupPiece>, at: Scope): Array<Item> {
     return pieces.flatMap((piece) => pieceItems(piece, at));
   }
 
-  function pieceItems(piece: MarkupPiece, at: Scope): Item[] {
+  function pieceItems(piece: MarkupPiece, at: Scope): Array<Item> {
     switch (piece.kind) {
       case "nodes":
         return itemsOf(piece.nodes, piece.container, at);
@@ -1190,7 +1201,7 @@ export function printMarkup(
    */
   function componentItem(
     node: ComponentNode,
-    directives: readonly PrintedAttribute[],
+    directives: ReadonlyArray<PrintedAttribute>,
     at: Scope,
   ): ElementItem {
     const tag =
@@ -1223,10 +1234,10 @@ export function printMarkup(
   /** A component's attributes as its dialect writes them, `class` parts merged as an element's. */
   function componentAttributesOf(
     node: ComponentNode,
-    directives: readonly PrintedAttribute[],
+    directives: ReadonlyArray<PrintedAttribute>,
     at: Scope,
     context: ComponentContext,
-  ): AttributeText[] {
+  ): Array<AttributeText> {
     const of = at.dialect;
     // The element-shaped context the class, style and ref hooks take: the component's tag.
     const element: ElementNode = {
@@ -1242,9 +1253,9 @@ export function printMarkup(
       namespace: context.namespace,
       ...(spread.length ? { spreads: true } : {}),
     };
-    const printed: PrintedAttribute[] = [...directives];
-    const passed: PrintedFallthrough[] = [];
-    for (const attribute of node.attributes as readonly ComponentAttribute[]) {
+    const printed: Array<PrintedAttribute> = [...directives];
+    const passed: Array<PrintedFallthrough> = [];
+    for (const attribute of node.attributes as ReadonlyArray<ComponentAttribute>) {
       switch (attribute.kind) {
         case "Prop": {
           const value = code(attribute.value);
@@ -1369,7 +1380,7 @@ export function printMarkup(
    * rule), and the `-s` of each child whose slot it fills. Each is `name=""`, as the JSX
    * builder writes it.
    */
-  function scopeAttributes(at: Scope, context: AttributeContext): PrintedAttribute[] {
+  function scopeAttributes(at: Scope, context: AttributeContext): Array<PrintedAttribute> {
     return scopeNames(at).map((name) => ({
       name,
       text: at.dialect.attribute(name, "", context.element.tag, context),
@@ -1377,12 +1388,12 @@ export function printMarkup(
   }
 
   /** What the target spreads on a node at the top level (`MarkupOptions.scopeRootAttributes`). */
-  function rootAttributes(element: ElementNode, at: Scope): string[] {
+  function rootAttributes(element: ElementNode, at: Scope): Array<string> {
     return at.top ? (options.scopeRootAttributes?.(element) ?? []) : [];
   }
 
   /** The names of the scope attributes a node carries (see {@link scopeAttributes}). */
-  function scopeNames(at: Scope): string[] {
+  function scopeNames(at: Scope): Array<string> {
     const scopeId = component?.scopeId;
     return [...(scopeId ? [scopeAttribute(scopeId)] : []), ...at.slotted];
   }
@@ -1427,7 +1438,7 @@ export function printMarkup(
 
   function elementItem(
     element: ElementNode,
-    directives: readonly PrintedAttribute[],
+    directives: ReadonlyArray<PrintedAttribute>,
     at: Scope,
     guards?: ReadonlyMap<string, string>,
   ): ElementItem {
@@ -1490,18 +1501,18 @@ export function printMarkup(
    */
   function attributesOf(
     element: ElementNode,
-    directives: readonly PrintedAttribute[],
+    directives: ReadonlyArray<PrintedAttribute>,
     at: Scope,
-    spread: readonly string[],
+    spread: ReadonlyArray<string>,
     guards?: ReadonlyMap<string, string>,
-  ): AttributeText[] {
+  ): Array<AttributeText> {
     const of = at.dialect;
     const context: AttributeContext = {
       element,
       namespace: at.namespace,
       ...(spread.length ? { spreads: true } : {}),
     };
-    const printed: PrintedAttribute[] = [...directives];
+    const printed: Array<PrintedAttribute> = [...directives];
     // The attributes whose text is a static value, never code.
     const values = new Set<PrintedAttribute>();
     const custom = new Map<Attribute, string>();
@@ -1517,7 +1528,7 @@ export function printMarkup(
         !custom.has(attribute) &&
         attribute.keys.some((key) => key.name === "class"),
     );
-    const classParts: ClassPart[] = [];
+    const classParts: Array<ClassPart> = [];
     let classAt: number | undefined;
     const claimClass = () => {
       classAt ??= printed.length;
@@ -1671,7 +1682,11 @@ export function printMarkup(
    * `undefined` when they must stay on the line they start on. `edges` says whether the items
    * are content between an opening and a closing, whose edges must allow a break.
    */
-  function layout(items: readonly Item[], pad: string, edges: boolean): number[][] | undefined {
+  function layout(
+    items: ReadonlyArray<Item>,
+    pad: string,
+    edges: boolean,
+  ): Array<Array<number>> | undefined {
     if (!items.length) {
       return undefined;
     }
@@ -1681,7 +1696,7 @@ export function printMarkup(
     ) {
       return undefined;
     }
-    const runs: number[][] = [[0]];
+    const runs: Array<Array<number>> = [[0]];
     // The width of the current run's line, for a dialect that keeps whitespace between
     // siblings: there a run of inline siblings breaks only when it is too long, and inside a
     // tag (`glue`), which puts the next run's first `>` before it.
@@ -1709,7 +1724,11 @@ export function printMarkup(
   }
 
   /** Each run on its lines at `pad`, joined where the compiler drops the line breaks, or glued. */
-  function joinRuns(runs: readonly number[][], items: readonly Item[], pad: string): string[] {
+  function joinRuns(
+    runs: ReadonlyArray<Array<number>>,
+    items: ReadonlyArray<Item>,
+    pad: string,
+  ): Array<string> {
     const body = runs.map((run) => {
       const only = items[run[0]!]!;
       if (run.length === 1 && !isInline(only)) {
@@ -1725,7 +1744,7 @@ export function printMarkup(
   }
 
   /** An item that starts a line at `pad`, with its content on its line or on lines of its own. */
-  function printItem(item: Item, pad: string): string[] {
+  function printItem(item: Item, pad: string): Array<string> {
     const lines = [pad];
     switch (item.kind) {
       case "inline":
@@ -1747,7 +1766,7 @@ export function printMarkup(
           writeItem(lines, item);
           return lines;
         }
-        const out: string[] = [];
+        const out: Array<string> = [];
         let after = "";
         item.segments.forEach((segment, index) => {
           out.push(`${pad}${after}${segment.open}${segment.parentheses ? "(" : ""}`);
@@ -1763,7 +1782,7 @@ export function printMarkup(
   }
 
   /** Writes an item on one line from the end of the last line, breaking only inside tags. */
-  function writeItem(lines: string[], item: Item): void {
+  function writeItem(lines: Array<string>, item: Item): void {
     switch (item.kind) {
       case "inline":
         lines[lines.length - 1] += item.text;
@@ -1804,7 +1823,7 @@ export function printMarkup(
    * puts one attribute per line, indented from that line. Code that spans lines is moved to its
    * attribute's column (`rebase`).
    */
-  function writeOpenTag(lines: string[], item: ElementItem, after: number): void {
+  function writeOpenTag(lines: Array<string>, item: ElementItem, after: number): void {
     const items = item.attributes;
     const tag = `<${item.tag}${items.map(({ text }) => ` ${text}`).join("")}${item.end}`;
     const line = lines[lines.length - 1]!;
@@ -1883,7 +1902,7 @@ interface CodeLine {
  * found or parsed. The code is read token by token (`codeTokens`), so a bracket or a line break
  * in a literal or a comment is no code.
  */
-function attributeLines(text: string): CodeLine[] | undefined {
+function attributeLines(text: string): Array<CodeLine> | undefined {
   const opening = ATTRIBUTE_CODE.exec(text)?.[0];
   const quoted = opening?.endsWith('"');
   if (opening === undefined || !text.endsWith(quoted ? '"' : "}")) {
@@ -1892,7 +1911,7 @@ function attributeLines(text: string): CodeLine[] | undefined {
   // References never span lines, so decoding them keeps every line where it is.
   const code = text.slice(opening.length, -1);
   const source = quoted ? decodeReferences(code) : code;
-  let tokens: CodeToken[];
+  let tokens: Array<CodeToken>;
   try {
     tokens = codeTokens(source, "expression");
   } catch {
@@ -1911,7 +1930,7 @@ function attributeLines(text: string): CodeLine[] | undefined {
     );
   const inToken = (offset: number) =>
     tokens.some((token) => token.start <= offset && offset < token.end);
-  const lines: CodeLine[] = [];
+  const lines: Array<CodeLine> = [];
   let depth = 0;
   let offset = 0;
   source.split("\n").forEach((line, index) => {
@@ -1997,12 +2016,12 @@ function stringLiteralValue(code: string): string | undefined {
  */
 export function objectEntries(
   expression: Expression,
-): { key: string; value: Expression }[] | undefined {
+): Array<{ key: string; value: Expression }> | undefined {
   const parsed = parseExpression(expression.code);
   if (parsed.type !== "ObjectExpression") {
     return undefined;
   }
-  const entries: { key: string; value: Expression }[] = [];
+  const entries: Array<{ key: string; value: Expression }> = [];
   for (const property of parsed.properties) {
     if (property.type !== "Property" || property.computed || property.kind !== "init") {
       return undefined;
@@ -2105,7 +2124,7 @@ function attributeName(attribute: Attribute): string {
  * a tag is never content. A closing `/>` alone on its line takes the next run after it, and so
  * does a block's closing (`{/if}`), which has no inside to break in.
  */
-function glue(lines: string[], next: string[]): string[] {
+function glue(lines: Array<string>, next: Array<string>): Array<string> {
   const last = lines.at(-1)!;
   const [first, ...more] = next;
   const start = first!.trimStart();

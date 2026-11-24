@@ -58,7 +58,7 @@ import type { Kinds } from "./types/kinds.ts";
 
 /** Where nodes are lowered: the open elements around them, the parent last. */
 export interface Place {
-  readonly ancestors: readonly OpenElement[];
+  readonly ancestors: ReadonlyArray<OpenElement>;
   /** The namespace of the nodes here: an `<svg>` and everything inside it are SVG. */
   readonly namespace: Namespace;
   /** Whether the nodes here start a conditional's branch, which Solid creates on its own. */
@@ -180,7 +180,7 @@ export function lowerElement(
     listBody,
     render,
   });
-  let children: RenderNode[] = [];
+  let children: Array<RenderNode> = [];
   let childrenBind = false;
   if (namespace === "svg" || !isVoidElement(tag)) {
     const list = new Children(inside(place, tag, name, namespace), render);
@@ -229,7 +229,7 @@ interface TextPart {
 }
 
 /** The pieces each lowered text was joined from, for the checks that point into them. */
-const PARTS = new WeakMap<TextNode, readonly TextPart[]>();
+const PARTS = new WeakMap<TextNode, ReadonlyArray<TextPart>>();
 
 /**
  * A child that was reported and left out, in its place: whether it can render nothing, as what
@@ -248,7 +248,7 @@ type Slot = RenderNode | LeftOut;
  * which text can come first is read from what the source writes, so a fix that lets a reported
  * child lower changes no other diagnostic.
  */
-const SLOTS = new WeakMap<readonly RenderNode[], readonly Slot[]>();
+const SLOTS = new WeakMap<ReadonlyArray<RenderNode>, ReadonlyArray<Slot>>();
 
 /**
  * Whether each conditional can render nothing, as the source writes it: the branches whose
@@ -262,12 +262,12 @@ const CAN_BE_EMPTY = new WeakMap<IfNode, boolean>();
  * added, or the list ends, and checked where they sit then.
  */
 class Children {
-  readonly nodes: RenderNode[] = [];
+  readonly nodes: Array<RenderNode> = [];
   /** Whether a child binds anything, as written (`LoweredElement.binds`). */
   binds = false;
   /** The nodes, and where each child that was reported and left out sits. */
-  readonly #slots: Slot[] = [];
-  #pending: TextPart[] = [];
+  readonly #slots: Array<Slot> = [];
+  #pending: Array<TextPart> = [];
   readonly #place: Place;
   readonly #render: RenderContext;
 
@@ -335,7 +335,7 @@ class Children {
     this.#slots.push(node ?? { kind: "LeftOut", empty });
   }
 
-  finish(): RenderNode[] {
+  finish(): Array<RenderNode> {
     this.flush();
     SLOTS.set(this.nodes, this.#slots);
     return this.nodes;
@@ -350,7 +350,7 @@ export function lowerContent(
   expression: AST.Expression,
   place: Place,
   render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
   const children = new Children(place, render);
   lowerChild(expression, span(expression), children, place, render);
   return children.finish();
@@ -358,17 +358,17 @@ export function lowerContent(
 
 /** Lowers JSX children in a place. */
 export function lowerChildren(
-  items: readonly AST.JSXChild[],
+  items: ReadonlyArray<AST.JSXChild>,
   place: Place,
   render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
   const children = new Children(place, render);
   collect(items, children, place, render);
   return children.finish();
 }
 
 function collect(
-  items: readonly AST.JSXChild[],
+  items: ReadonlyArray<AST.JSXChild>,
   children: Children,
   place: Place,
   render: RenderContext,
@@ -570,7 +570,7 @@ function conditionalFix(
   expression: AST.LogicalExpression,
   kinds: Kinds,
   render: RenderContext,
-): Fix[] {
+): Array<Fix> {
   const { left, right, operator } = expression;
   const { source } = render;
   const between = { start: left.end, end: right.start };
@@ -642,7 +642,7 @@ function lowerBranch(
   expression: AST.Expression,
   place: Place,
   render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
   const at: Place = { ...place, branch: true };
   const children = new Children(at, render);
   lowerChild(expression, span(expression), children, at, render);
@@ -660,7 +660,7 @@ function lowerIf(
   place: Place,
   render: RenderContext,
 ): { node: IfNode | undefined; empty: boolean } {
-  const branches: IfBranch[] = [];
+  const branches: Array<IfBranch> = [];
   let current: AST.Expression = node;
   for (;;) {
     if (current.type === "LogicalExpression" && current.operator === "&&") {
@@ -819,7 +819,7 @@ function checkJsxText(
 function checkTextPlacement(
   value: string,
   at: Span,
-  parts: readonly TextPart[],
+  parts: ReadonlyArray<TextPart>,
   place: Place,
   render: RenderContext,
 ): boolean {
@@ -924,7 +924,7 @@ function checkTextPlacement(
  */
 function checkLeadingLineFeed(
   tag: string,
-  children: readonly RenderNode[],
+  children: ReadonlyArray<RenderNode>,
   render: RenderContext,
 ): void {
   for (const { text, after } of leading(children).texts) {
@@ -949,10 +949,10 @@ function checkLeadingLineFeed(
  * node; and whether the list can render nothing.
  */
 function leading(
-  children: readonly RenderNode[],
+  children: ReadonlyArray<RenderNode>,
   after = false,
-): { texts: { text: TextNode; after: boolean }[]; empty: boolean } {
-  const texts: { text: TextNode; after: boolean }[] = [];
+): { texts: Array<{ text: TextNode; after: boolean }>; empty: boolean } {
+  const texts: Array<{ text: TextNode; after: boolean }> = [];
   for (const slot of SLOTS.get(children) ?? children) {
     if (slot.kind === "Text") {
       texts.push({ text: slot, after });
@@ -981,7 +981,7 @@ function leading(
 }
 
 /** Whether JSX children have content: an element, an expression, or text some JSX reads. */
-export function hasContent(items: readonly AST.JSXChild[]): boolean {
+export function hasContent(items: ReadonlyArray<AST.JSXChild>): boolean {
   return items.some((item) => {
     if (item.type !== "JSXText") {
       return (
@@ -997,7 +997,7 @@ export function hasContent(items: readonly AST.JSXChild[]): boolean {
 export function lowerRootChildren(
   node: AST.JSXFragment | AST.Expression,
   render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
   const children = new Children(ROOT, render);
   if (node.type === "JSXFragment") {
     collect(node.children, children, ROOT, render);

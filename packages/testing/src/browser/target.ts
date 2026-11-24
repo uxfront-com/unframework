@@ -11,7 +11,7 @@ export interface TargetOptions {
    * components are not compiled. Without it, `mount` asks the project which events the case's
    * compiled component declares (the `ufComponentEvents` command).
    */
-  events?(component: unknown): readonly MountEvent[];
+  events?(component: unknown): ReadonlyArray<MountEvent>;
 }
 
 interface Registration extends TargetOptions {

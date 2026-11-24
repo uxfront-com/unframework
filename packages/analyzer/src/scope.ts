@@ -37,7 +37,7 @@ export class Scopes {
   /** The identifiers that read or write a value, not a type. */
   readonly #values = new Set<object>();
   /** The identifier of each declaration, by its name: a variable, a parameter, a function. */
-  readonly #declarations = new Map<string, AST.Node[]>();
+  readonly #declarations = new Map<string, Array<AST.Node>>();
 
   constructor(program: AST.Program) {
     const manager = analyze(program as unknown as Parameters<typeof analyze>[0], {
@@ -63,7 +63,7 @@ export class Scopes {
   }
 
   /** The identifiers that declare `name` anywhere in the module, in no particular order. */
-  declarationsOf(name: string): readonly AST.Node[] {
+  declarationsOf(name: string): ReadonlyArray<AST.Node> {
     return this.#declarations.get(name) ?? [];
   }
 

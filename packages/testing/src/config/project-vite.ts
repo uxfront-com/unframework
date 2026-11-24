@@ -23,7 +23,7 @@ export type ProjectPlugins = NonNullable<ToolchainContext["plugins"]>;
  * caches, its Vitest options, and the preview's refusal to load a Vite config of its own or to
  * listen beyond this machine (ADR-0088).
  */
-export const OWNED_KEYS: readonly string[] = [
+export const OWNED_KEYS: ReadonlyArray<string> = [
   "root",
   "base",
   "cacheDir",
@@ -36,14 +36,14 @@ export const OWNED_KEYS: readonly string[] = [
  * The `server` keys every server sets for itself: the preview listens on `127.0.0.1` alone, and an
  * HMR server of its own (`server.hmr`) would open a WebSocket server that listens beyond it.
  */
-export const OWNED_SERVER_KEYS: readonly string[] = ["host", "port", "strictPort", "hmr"];
+export const OWNED_SERVER_KEYS: ReadonlyArray<string> = ["host", "port", "strictPort", "hmr"];
 
 /** Where every message about the field points. */
 const FIELD = "vite in unframework.config.ts";
 
 /** The project's config for one server: its plugins, flattened, and every other key. */
 interface ServerConfig {
-  plugins: Plugin[];
+  plugins: Array<Plugin>;
   rest: Record<string, unknown>;
 }
 
@@ -120,7 +120,7 @@ export function projectPlugins(vite: ProjectVite, context: ViteContext): Project
 }
 
 /** A plugin option in any shape Vite's `plugins` takes, flattened: read as `unknown`, since the project's code gives it. */
-async function flattenPlugins(option: unknown): Promise<Plugin[]> {
+async function flattenPlugins(option: unknown): Promise<Array<Plugin>> {
   let value: unknown;
   try {
     value = await option;
@@ -194,7 +194,7 @@ export const PASS_THROUGH_DECLARATIONS: string = [
  * `dist` alone. It is written only when it differs, through a rename, so runs that share a root
  * never read half of it.
  */
-export function passThroughDeclarations(root: string): string[] {
+export function passThroughDeclarations(root: string): Array<string> {
   const file = join(root, "node_modules", ".cache", "unframework", "pass-through.d.ts");
   let current: string | undefined;
   try {

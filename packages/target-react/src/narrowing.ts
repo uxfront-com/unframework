@@ -28,7 +28,7 @@ export function assertedPaths(
   reference: BindingReference,
   binding: Binding,
   start: number = reference.span.start,
-): NarrowedPath[] {
+): Array<NarrowedPath> {
   if (!reference.narrowed || plan.narrowedReads.has(start)) {
     return [];
   }
@@ -79,7 +79,7 @@ export function assertedPaths(
  */
 export function assertedCode(
   code: Code,
-  asserts: (reference: BindingReference) => readonly NarrowedPath[],
+  asserts: (reference: BindingReference) => ReadonlyArray<NarrowedPath>,
 ): { code: Code; original: (position: number) => number } {
   const at = code.refs
     .flatMap((reference) =>
@@ -121,7 +121,7 @@ export function assertedCode(
 }
 
 /** The spans of a reference, its own first. */
-function spansOf(reference: CodeReference): Span[] {
+function spansOf(reference: CodeReference): Array<Span> {
   switch (reference.kind) {
     case "Binding":
       return [reference.span, ...(reference.narrowed ?? []).map(({ span }) => span)];

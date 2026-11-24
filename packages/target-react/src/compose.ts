@@ -49,12 +49,12 @@ type AstExpression = Parameters<typeof js.jsxExpressionContainer>[0];
 /** A handler a `v-model` adds: as a function, and as statements given the event's name. */
 export interface ModelHandler {
   code: string;
-  statements: (event: string) => string[];
+  statements: (event: string) => Array<string>;
 }
 
 /** What a control's `v-model` writes on its element (ReactComposer.modelParts). */
 export interface ModelParts {
-  state: [string, string][];
+  state: Array<[string, string]>;
   handlers: Map<string, ModelHandler>;
   /** The `modelText` field, whose props spread where no listener shares one. */
   field?: string;
@@ -69,7 +69,7 @@ export class ReactComposer {
   /** The `style`s the root merges a consumer's into. */
   readonly fallthroughStyles: WeakSet<StyleAttribute> = new WeakSet();
   /** The `modelText` fields, in render order. */
-  readonly fields: string[] = [];
+  readonly fields: Array<string> = [];
   readonly #parts = new WeakMap<ModelAttribute, ModelParts>();
   #listeners: ReactListeners | undefined;
   /** The root nodes still to spread the scope attributes on, by span. */
@@ -212,11 +212,11 @@ export class ReactComposer {
    * The scope attributes of the styled parents that render the component, spread on each of its
    * root nodes (the child-root rule, ADR-0063): `{...scopeAttributes(attributes)}`.
    */
-  scopeRootAttributes(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
+  scopeRootAttributes(element: ElementNode, context: JsxContext): Array<JsxAttributeItem> {
     return [...this.#scopeAttributes(element, context), ...this.#passed(element, context)];
   }
 
-  #scopeAttributes(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
+  #scopeAttributes(element: ElementNode, context: JsxContext): Array<JsxAttributeItem> {
     const { scope } = this.#plan.composition;
     // Each root takes them once: the first node printed with its span, which is the root
     // itself, printed before what it holds.
@@ -233,10 +233,10 @@ export class ReactComposer {
    * styled parents' scope attributes leave, `{...restAttributes(attributes)}`. The root takes
    * the consumer's `ref` there, where it prints none of its own.
    */
-  #passed(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
+  #passed(element: ElementNode, context: JsxContext): Array<JsxAttributeItem> {
     const { passing } = this.#plan.composition;
     const key = spanKey(element.span);
-    const items: JsxAttributeItem[] = [];
+    const items: Array<JsxAttributeItem> = [];
     if (this.#takesRef && key === this.#refRoot && !this.#ownRef) {
       this.#ownRef = true;
       const consumer = this.#consumerRef();
@@ -276,7 +276,7 @@ export class ReactComposer {
    * A fill of a child's slot as its prop: `title={<h2 />}`, a scoped one as a render prop,
    * `renderItem={({ item }) => …}`, and a forwarded one the component's own slot.
    */
-  fillAttribute(fill: SlotFill, node: ComponentNode, context: JsxContext): JsxAttributeItem[] {
+  fillAttribute(fill: SlotFill, node: ComponentNode, context: JsxContext): Array<JsxAttributeItem> {
     // The child's declaration decides: a scoped slot takes a function, with a parameter or not.
     const scoped = this.#plan.composition.scoped(node.component, fill.slot);
     const unnamed = fill.parameter && !fill.parameter.name && !fill.parameter.pattern;
@@ -300,7 +300,7 @@ export class ReactComposer {
     attribute: ListenerAttribute,
     _node: ComponentNode,
     context: JsxContext,
-  ): JsxAttributeItem[] {
+  ): Array<JsxAttributeItem> {
     const { handler } = attribute;
     const code =
       handler.kind === "Function"
@@ -323,7 +323,7 @@ export class ReactComposer {
     attribute: ModelAttribute,
     element: ElementNode,
     context: JsxContext,
-  ): JsxAttributeItem[] {
+  ): Array<JsxAttributeItem> {
     const parts = this.modelParts(attribute, element, context);
     // A handler a listener of the element shares runs first in the listener's (ReactListeners).
     const merged = this.#listeners!.modelHeads(element, context);
@@ -501,7 +501,7 @@ export class ReactComposer {
     attribute: ModelBindingAttribute,
     _node: ComponentNode,
     context: JsxContext,
-  ): JsxAttributeItem[] {
+  ): Array<JsxAttributeItem> {
     const binding = this.#bound(attribute.value);
     const name = this.#plan.bindings.get(binding)!.name;
     const { value } = locals([name, ...this.#assign(binding, "")], ["value"]);
@@ -569,7 +569,7 @@ export class ReactComposer {
    * The statements that write `value` to a state or a model: the mirror first where client code
    * reads it, then the setter; a model's local state and its change callback (ADR-0054).
    */
-  #assign(binding: BindingId, value: string): string[] {
+  #assign(binding: BindingId, value: string): Array<string> {
     const state = this.#plan.state.get(binding);
     if (state) {
       if (!state.mirror) {
@@ -579,7 +579,7 @@ export class ReactComposer {
       return [`${mirror} = ${value}`, `${state.setter!}(${mirror})`];
     }
     const model = this.#plan.composition.models.get(binding)!;
-    const statements: string[] = [];
+    const statements: Array<string> = [];
     let written = value;
     if (model.mirror) {
       statements.push(`${model.mirror}.current = ${value}`);

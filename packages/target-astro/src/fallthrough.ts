@@ -61,7 +61,7 @@ export interface Fallthrough {
    */
   scopeless?: string;
   /** The target element's own attributes, each the consumer's wherever it passes the key. */
-  own: OwnAttribute[];
+  own: Array<OwnAttribute>;
   /**
    * The tag whose attributes a consumer may pass, which `Props` takes (`HTMLAttributes<"button">`):
    * the target element's, or the root component's own. Absent where it is not known.
@@ -71,12 +71,12 @@ export interface Fallthrough {
    * The tags of a `<component is>` root, whose attributes `Props` takes where every tag takes
    * them (ADR-0122). Absent otherwise.
    */
-  tags?: string[];
+  tags?: Array<string>;
   /**
    * The names `Props` leaves out of the tag's attributes: those it declares itself, and a root
    * component's props and models, which its own type declares as the root component reads them.
    */
-  omitted: string[];
+  omitted: Array<string>;
 }
 
 /**
@@ -113,7 +113,7 @@ export function planFallthrough(
   const style = scope.claim("style");
   const attributes = scope.claim("attrs");
   const declared = declaredNames(component);
-  const own: OwnAttribute[] = [];
+  const own: Array<OwnAttribute> = [];
   if (target.kind !== "Component") {
     const seen = new Set<string>();
     // A `<component is>`'s attribute only some tags take renders behind its guard, and no
@@ -185,7 +185,10 @@ export function declaredNames(component: UfComponent): Set<string> {
  * root spreads what falls through, which holds them, and where the props' rest sits on another
  * element, the root, one element or one component, as it would be without the rest.
  */
-export function scopeRootsOf(component: UfComponent, fallthrough: Fallthrough | undefined): Span[] {
+export function scopeRootsOf(
+  component: UfComponent,
+  fallthrough: Fallthrough | undefined,
+): Array<Span> {
   if (!fallthrough || fallthrough.attributes === undefined) {
     return scopeRoots(component);
   }
@@ -233,7 +236,7 @@ function componentFallthroughTags(
   module: UfModule,
   local: string,
   seen: ReadonlySet<string> = new Set(),
-): string[] | undefined {
+): Array<string> | undefined {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
     if (!imported) {

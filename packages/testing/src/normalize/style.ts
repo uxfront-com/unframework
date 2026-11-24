@@ -54,8 +54,8 @@ function scan(text: string, onChar: (char: string, depth: number, out: string) =
 }
 
 /** Splits at top-level `separator`s, at most `limit` parts. */
-function split(text: string, separator: string, limit: number): string[] {
-  const parts: string[] = [];
+function split(text: string, separator: string, limit: number): Array<string> {
+  const parts: Array<string> = [];
   const last = scan(text, (char, depth, out) => {
     if (char === separator && depth === 0 && parts.length < limit - 1) {
       parts.push(out);
@@ -77,8 +77,8 @@ function collapse(text: string): string {
 const IMPORTANT = /\s*!\s*important$/i;
 
 /** Parses a declaration list (the value of a `style` attribute). */
-export function parseStyle(text: string): Declaration[] {
-  const declarations: Declaration[] = [];
+export function parseStyle(text: string): Array<Declaration> {
+  const declarations: Array<Declaration> = [];
   for (const chunk of split(text, ";", Number.POSITIVE_INFINITY)) {
     if (collapse(chunk) === "") {
       continue;
@@ -109,7 +109,7 @@ export function parseStyle(text: string): Declaration[] {
  * It assumes every declaration is valid, which only a browser can check, so it only reads
  * values (`styleValue`, the Angular host check) and never rewrites a `style` attribute.
  */
-export function dedupeDeclarations(declarations: readonly Declaration[]): Declaration[] {
+export function dedupeDeclarations(declarations: ReadonlyArray<Declaration>): Array<Declaration> {
   const winners = new Map<string, Declaration>();
   for (const declaration of declarations) {
     if (declaration.value === undefined) {
@@ -130,7 +130,7 @@ export function dedupeDeclarations(declarations: readonly Declaration[]): Declar
  * Prints declarations the way the CSSOM serialises `style.cssText`: `property: value;`,
  * separated by one space, with ` !important` before the semicolon.
  */
-export function printStyle(declarations: readonly Declaration[]): string {
+export function printStyle(declarations: ReadonlyArray<Declaration>): string {
   return declarations
     .map(({ property, value, important }) =>
       value === undefined
@@ -146,7 +146,7 @@ export function printStyle(declarations: readonly Declaration[]): string {
  */
 export function styleValue(
   style: string | undefined,
-  ...properties: readonly string[]
+  ...properties: ReadonlyArray<string>
 ): string | undefined {
   if (style === undefined) {
     return undefined;
@@ -164,7 +164,7 @@ export function styleValue(
  * pair renders the same in any order, and the targets write it in theirs (an object's key order,
  * the CSSOM's, or static declarations first).
  */
-export function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
+export function sortDeclarations(declarations: ReadonlyArray<Declaration>): Array<Declaration> {
   const ordered = declarations.some((declaration, index) =>
     declarations
       .slice(index + 1)

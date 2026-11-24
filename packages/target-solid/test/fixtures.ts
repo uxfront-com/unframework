@@ -34,7 +34,7 @@ const next = () => ({ start: offset, end: ++offset });
 export function el(
   tag: string,
   attributes: Record<string, string | true> = {},
-  ...children: (RenderNode | string)[]
+  ...children: Array<RenderNode | string>
 ): ElementNode {
   return createElement(
     tag,
@@ -76,10 +76,10 @@ export const AVATAR =
 export function emit(
   render: ElementNode,
   { name = "Fixture", kind = "default" }: { name?: string; kind?: "default" | "named" } = {},
-): { files: OutputFile[]; reported: Omit<Diagnostic, "file" | "target">[] } {
+): { files: Array<OutputFile>; reported: Array<Omit<Diagnostic, "file" | "target">> } {
   const component = createComponent(name, render, next());
   const module = createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, next())]);
-  const reported: Omit<Diagnostic, "file" | "target">[] = [];
+  const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
   const context: EmitContext = {
     module,
     options: undefined,
@@ -93,7 +93,7 @@ export function emit(
  * sheets (`<source>.css`), which no framework compiler or checker reads: the compile project
  * parses them instead (ADR-0063).
  */
-export function goldens(targetName: string): ToolchainFile[] {
+export function goldens(targetName: string): Array<ToolchainFile> {
   const pattern = new RegExp(`(?:^|/)__output__/${targetName}/[^/]+$`);
   return readdirSync(cases, { recursive: true })
     .map((entry) => String(entry).split("\\").join("/"))
@@ -130,7 +130,7 @@ export async function emitSource(source: string, name?: string): Promise<string>
   const component = name
     ? module.components.find((each) => each.name === name)!
     : module.components[0]!;
-  const reported: Omit<Diagnostic, "file" | "target">[] = [];
+  const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
   const context: EmitContext = {
     module,
     options: undefined,

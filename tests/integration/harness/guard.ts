@@ -28,7 +28,7 @@ export function goldenGuard(
   const produced = new Map(event.files.map((file) => [file.path, file.contents]));
   // Every source a case compiles: its components and its composables (ADR-0069).
   const shared = readdirSync(dirname(event.file)).filter((file) => /\.uf\.tsx?$/.test(file));
-  const problems: string[] = [];
+  const problems: Array<string> = [];
   for (const path of shared.length > 1 ? [] : golden) {
     if (!produced.has(path)) {
       problems.push(`${rel(join(directory, path))} is not produced by the compiler.`);
@@ -55,8 +55,8 @@ export function goldenGuard(
   ].join("\n");
 }
 
-function listFiles(directory: string): string[] {
-  return (readdirSync(directory, { recursive: true }) as string[])
+function listFiles(directory: string): Array<string> {
+  return (readdirSync(directory, { recursive: true }) as Array<string>)
     .filter((entry) => statSync(join(directory, entry)).isFile())
     .map((entry) => entry.split(sep).join("/"))
     .sort();

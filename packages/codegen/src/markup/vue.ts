@@ -91,7 +91,7 @@ function singleQuoted(raw: string): string {
  * part alone, an object of toggles alone, or an array of both in source order, consecutive
  * toggles in one object.
  */
-export function vueClassValue(parts: readonly ClassPart[]): string {
+export function vueClassValue(parts: ReadonlyArray<ClassPart>): string {
   const bound = parts.filter((part) => part.kind !== "Static");
   const [only, ...more] = bound;
   if (only?.kind === "Dynamic" && more.length === 0) {
@@ -122,7 +122,7 @@ function vueReadsStatic(value: string): boolean {
  * root's hyphenated declaration beside it, which a nullish value then never removes, and which
  * the server renders twice.
  */
-function styleObject(parts: readonly StylePart[]): string {
+function styleObject(parts: ReadonlyArray<StylePart>): string {
   return `{ ${parts
     .flatMap((part) =>
       part.kind === "Bound"
@@ -242,7 +242,7 @@ export const vueDialect: MarkupDialect = {
   boundAttribute: (name, code) => `:${name}="${vueAttributeCode(code)}"`,
   classAttribute: (parts) => {
     const value = staticClassValue(parts);
-    const printed: PrintedAttribute[] = value
+    const printed: Array<PrintedAttribute> = value
       ? [{ name: "class", text: vueDialect.attribute("class", value, "") }]
       : [];
     if (parts.some((part) => part.kind !== "Static")) {
@@ -263,7 +263,7 @@ export const vueDialect: MarkupDialect = {
         : part,
     );
     const value = staticStyleValue(parts);
-    const printed: PrintedAttribute[] = value
+    const printed: Array<PrintedAttribute> = value
       ? [{ name: "style", text: vueDialect.attribute("style", value, "") }]
       : [];
     if (parts.some((part) => part.kind === "Bound")) {
@@ -292,7 +292,7 @@ export const vueDialect: MarkupDialect = {
           };
     }),
   list: ({ node, source, item, index, key }) => {
-    const directives: PrintedAttribute[] = [
+    const directives: Array<PrintedAttribute> = [
       {
         name: "v-for",
         text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
@@ -381,7 +381,9 @@ export const vueDialect: MarkupDialect = {
   // `<component :is>`, with the candidates' attributes and content as an element's (tags) or a
   // component's (components).
   dynamic: ({ node, is }) => {
-    const directives: PrintedAttribute[] = [{ name: ":is", text: `:is="${vueAttributeCode(is)}"` }];
+    const directives: Array<PrintedAttribute> = [
+      { name: ":is", text: `:is="${vueAttributeCode(is)}"` },
+    ];
     if (node.candidates.every((candidate) => candidate.kind === "Tag")) {
       return [
         {
@@ -389,7 +391,7 @@ export const vueDialect: MarkupDialect = {
           element: {
             kind: "Element",
             tag: "component",
-            attributes: node.attributes as Attribute[],
+            attributes: node.attributes as Array<Attribute>,
             children: node.children,
             span: node.span,
           },
@@ -405,7 +407,7 @@ export const vueDialect: MarkupDialect = {
         component: {
           kind: "Component",
           component: "component",
-          attributes: node.attributes as ComponentAttribute[],
+          attributes: node.attributes as Array<ComponentAttribute>,
           fills: node.fills ?? [],
           span: node.span,
         },
@@ -463,7 +465,7 @@ function slotTemplate({ fill, parameter, presence, forwardsProps }: PrintedFill)
  * (camelCase, as the slot's fill reads them), and its fallback as its content.
  */
 function slotElement({ node, props }: PrintedSlotOutlet): MarkupPiece {
-  const attributes: PrintedAttribute[] = [];
+  const attributes: Array<PrintedAttribute> = [];
   if (node.slot !== "default") {
     attributes.push({ name: "name", text: quotedAttribute("name", node.slot) });
   }

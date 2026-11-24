@@ -24,7 +24,7 @@ export type LayerName =
   | "L15";
 
 /** Every layer, in order. */
-export const LAYERS: readonly LayerName[] = [
+export const LAYERS: ReadonlyArray<LayerName> = [
   "L1",
   "L2",
   "L3",
@@ -60,7 +60,7 @@ export interface UfLayerMeta {
    * them. A target that leaves out a scenario the reference checks would otherwise go unseen,
    * as a cell merges every test of its case (see `summarise`).
    */
-  scenarios?: string[];
+  scenarios?: Array<string>;
   /**
    * The test, by its full name without the target `describeTargets` adds (`state/counter >
    * increments`): the same on every target, so the summary compares each target's scenarios of
@@ -85,7 +85,15 @@ export interface UfLayerMeta {
 }
 
 /** The layers a browser test records, which a test skipped by capability records as skipped. */
-export const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13", "L14"];
+export const BROWSER_LAYERS: ReadonlyArray<LayerName> = [
+  "L7",
+  "L8",
+  "L9",
+  "L10",
+  "L11",
+  "L13",
+  "L14",
+];
 
 /** The skip of the layers that need output, on a target a case has compile errors for. */
 export const NO_OUTPUT_SKIP = "compile errors: no output";
@@ -185,7 +193,7 @@ export interface QuarantineEntry {
 export interface LayerSubject {
   case: string;
   target: string;
-  quarantine?: readonly QuarantineEntry[];
+  quarantine?: ReadonlyArray<QuarantineEntry>;
 }
 
 /** A layer check returns this to skip the layer, with the reason the matrix shows. */
@@ -209,7 +217,7 @@ declare module "vitest" {
      * The capabilities the test requires (`it(name, { requires }, fn)`): the setup skips it on a
      * target whose cell for one of them is unsupported.
      */
-    ufRequires?: readonly string[];
+    ufRequires?: ReadonlyArray<string>;
   }
 }
 
@@ -226,7 +234,7 @@ const PRECEDENCE: Record<LayerOutcome["status"], number> = {
  * keeps the message of every record that failed (each distinct one once, in order), so no
  * sub-check's evidence is lost (the canaries require each of them).
  */
-export function mergeOutcomes(...outcomes: readonly LayerOutcome[]): LayerOutcome {
+export function mergeOutcomes(...outcomes: ReadonlyArray<LayerOutcome>): LayerOutcome {
   const [first, ...rest] = outcomes;
   if (!first) {
     throw new Error("mergeOutcomes needs at least one outcome.");
@@ -258,7 +266,7 @@ function rank(outcome: LayerOutcome): number {
 
 /** The quarantine entry for a case, target and layer, if any. */
 export function quarantineFor(
-  quarantine: readonly QuarantineEntry[] | undefined,
+  quarantine: ReadonlyArray<QuarantineEntry> | undefined,
   subject: { case: string; target: string },
   layer: LayerName,
 ): QuarantineEntry | undefined {
@@ -368,7 +376,7 @@ function metaOf(task: LayerTask, subject: LayerSubject): UfLayerMeta {
 }
 
 /** The messages of every failed layer a task recorded, in layer order. */
-export function layerFailures(task: LayerTask): string[] {
+export function layerFailures(task: LayerTask): Array<string> {
   const layers = task.meta.uf?.layers ?? {};
   return LAYERS.flatMap((layer) => {
     const outcome = layers[layer];
@@ -408,8 +416,8 @@ export async function recordLayerChecks(
   task: LayerTask,
   subject: LayerSubject,
   checks: Partial<Record<LayerName, LayerCheck>>,
-): Promise<string[]> {
-  const failures: string[] = [];
+): Promise<Array<string>> {
+  const failures: Array<string> = [];
   for (const layer of LAYERS) {
     const check = checks[layer];
     if (!check) {
@@ -448,9 +456,9 @@ export async function checkLayers(
 /** The error a test fails with when one or more layers failed. */
 export class LayerFailure extends Error {
   override name = "LayerFailure";
-  readonly failures: readonly string[];
+  readonly failures: ReadonlyArray<string>;
 
-  constructor(subject: { case: string; target: string }, failures: readonly string[]) {
+  constructor(subject: { case: string; target: string }, failures: ReadonlyArray<string>) {
     super(
       `${subject.case} › ${subject.target}: ${failures.length} layer(s) failed\n\n${failures.join("\n\n")}`,
     );

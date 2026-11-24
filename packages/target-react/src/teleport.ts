@@ -26,7 +26,7 @@ export function teleportCall(plan: ReactPlan): JsxDialect["teleport"] {
 }
 
 /** The inline helpers a teleport needs, after the component. */
-export function teleportHelpers(names: TeleportNames, imports: ImportSet): string[] {
+export function teleportHelpers(names: TeleportNames, imports: ImportSet): Array<string> {
   const createPortal = imports.add("react-dom", "createPortal");
   const node = imports.add("react", "ReactNode", { type: true });
   const portal = imports.add("react", "ReactPortal", { type: true });

@@ -72,7 +72,7 @@ function create(dir: string, io: Io): number {
   return init.status ?? 2;
 }
 
-function directoryOf(argv: readonly string[]): string {
+function directoryOf(argv: ReadonlyArray<string>): string {
   const { positionals } = parseArgs({ args: [...argv], allowPositionals: true });
   const [dir] = positionals;
   // An empty name, like an unset shell variable, would resolve to the working directory.
@@ -90,7 +90,7 @@ const messageOf = (error: unknown): string =>
  * 1 when the project needs its dependencies installed before `init` can run, and 2 for a usage
  * error, a refusal or a failure. It never throws.
  */
-export function main(argv: readonly string[], io: Io = PROCESS_IO): number {
+export function main(argv: ReadonlyArray<string>, io: Io = PROCESS_IO): number {
   if (argv.includes("--help") || argv.includes("-h")) {
     io.stdout(USAGE);
     return 0;

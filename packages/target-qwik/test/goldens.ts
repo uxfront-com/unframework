@@ -15,10 +15,10 @@ function expectsErrors(golden: string): boolean {
   if (!existsSync(path)) {
     return false;
   }
-  const diagnostics = JSON.parse(readFileSync(path, "utf8")) as {
+  const diagnostics = JSON.parse(readFileSync(path, "utf8")) as Array<{
     severity: string;
     target?: string;
-  }[];
+  }>;
   return diagnostics.some(
     (diagnostic) =>
       diagnostic.severity === "error" &&
@@ -30,7 +30,7 @@ function expectsErrors(golden: string): boolean {
  * The absolute paths of the goldens matching `pattern` (from the repository's root), sorted, but
  * the scoped sheets (`<source>.css`), which the compile project parses instead (ADR-0063).
  */
-export function goldens(pattern: string): string[] {
+export function goldens(pattern: string): Array<string> {
   return globSync(pattern, { cwd: repo })
     .toSorted()
     .map((file) => join(repo, file))

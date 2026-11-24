@@ -71,7 +71,7 @@ function lowered(
 
 /** The formatted Solid 2 output of a module's component, its first by default. */
 async function output(module: UfModule, index = 0): Promise<string> {
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   const [file] = target.emit(module.components[index]!, {
     module,
     options: undefined,
@@ -205,7 +205,7 @@ describe("solid2 child-root rule, rendered by Solid 2's server", () => {
   afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
   /** Compiles each source's output for the server beside the others, and loads the last one's. */
-  async function load(...sources: [file: string, source: string][]) {
+  async function load(...sources: Array<[file: string, source: string]>) {
     let path = "";
     const apis: Record<string, ModuleApi> = {};
     for (const [file, source] of sources) {

@@ -28,7 +28,7 @@ import {
 } from "../src/toolchain-node/index.ts";
 import type { CheckerRun } from "../src/toolchain-node/index.ts";
 
-const temporaries: string[] = [];
+const temporaries: Array<string> = [];
 afterAll(() => {
   for (const directory of temporaries.splice(0)) {
     rmSync(directory, { recursive: true, force: true });

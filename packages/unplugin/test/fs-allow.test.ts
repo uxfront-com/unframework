@@ -64,7 +64,7 @@ interface Answer {
 /** A listening dev server whose allow list is its root alone, with strict checks on. */
 async function serve(
   target: TargetName,
-  extra: Plugin[],
+  extra: Array<Plugin>,
   fn: (get: (url: string) => Promise<Answer>, root: string) => Promise<void>,
 ): Promise<void> {
   const app = createProject({

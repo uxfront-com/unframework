@@ -75,7 +75,7 @@ export function readDom(element: Element): DomElement {
       attributes[attribute.name] = value;
     }
   }
-  const children: DomNode[] = [];
+  const children: Array<DomNode> = [];
   for (const child of element.childNodes) {
     if (child instanceof Element) {
       children.push(readDom(child));
@@ -115,7 +115,7 @@ function formState(element: Element): Record<string, string> | undefined {
  * The DOM nodes a static tree describes, as {@link readDom} reads them: an element, or a root
  * fragment's nodes, built in a container as a component's roots are mounted in one.
  */
-export function expectedDom(tree: ElementNode | FragmentNode): DomNode[] {
+export function expectedDom(tree: ElementNode | FragmentNode): Array<DomNode> {
   if (tree.kind === "Element") {
     return [readDom(buildDom(tree))];
   }
@@ -149,15 +149,15 @@ export interface ClientCase {
   /** What it renders, as a static tree (`expectedTree`). */
   expected: ElementNode | FragmentNode;
   /** The capabilities it uses that the target's matrix marks unsupported. */
-  unsupported: readonly CapabilityName[];
+  unsupported: ReadonlyArray<CapabilityName>;
 }
 
 /** One suite ./render-parity-manifest.ts lists. */
 export interface ClientSuite {
   title: string;
   root: SuiteRoot;
-  cases: readonly ClientCase[];
-  components: readonly ClientComponent[];
+  cases: ReadonlyArray<ClientCase>;
+  components: ReadonlyArray<ClientComponent>;
 }
 
 /**
@@ -170,7 +170,7 @@ export interface ClientSuite {
  */
 export function describeClientParity(
   target: string,
-  suites: readonly ClientSuite[],
+  suites: ReadonlyArray<ClientSuite>,
   mount: MountAdapter,
 ): void {
   describe.each(suites)(`${target} client render of $title`, ({ root, cases, components }) => {
@@ -187,7 +187,7 @@ export function describeClientParity(
         `${target}: the plugin served ${components.length} components for ${cases.length} cases${cases.some(unsupported) ? ", some of which use a capability its matrix marks unsupported (serve each case alone)" : ""}.`,
       );
     }
-    let expected: ExpectedCase[] | undefined;
+    let expected: Array<ExpectedCase> | undefined;
     /** What each case renders, read from a DOM built for it: once per suite. */
     const expectations = () =>
       (expected ??= cases.map(({ name, expected: tree }) => ({ name, nodes: expectedDom(tree) })));
@@ -259,12 +259,12 @@ function unsupported(parityCase: ClientCase): boolean {
 async function renderComponent(
   component: ClientComponent,
   mount: MountAdapter,
-): Promise<{ rendered: DomNode[]; logged: string[] }> {
+): Promise<{ rendered: Array<DomNode>; logged: Array<string> }> {
   const { default: loaded } = await component.load();
   const container = document.createElement("div");
   document.body.append(container);
-  const logged: string[] = [];
-  const capture = (...args: unknown[]) => void logged.push(args.map(String).join(" "));
+  const logged: Array<string> = [];
+  const capture = (...args: Array<unknown>) => void logged.push(args.map(String).join(" "));
   const spies = [
     vi.spyOn(console, "error").mockImplementation(capture),
     vi.spyOn(console, "warn").mockImplementation(capture),

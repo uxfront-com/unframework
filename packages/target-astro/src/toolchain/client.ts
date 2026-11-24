@@ -66,10 +66,10 @@ export const mount: MountAdapter = async (component, container, options) => {
 };
 
 /** Inserts server HTML into the container, its leading `<style>` elements into `<head>`. */
-function insert(container: HTMLElement, name: string, html: string): HTMLStyleElement[] {
+function insert(container: HTMLElement, name: string, html: string): Array<HTMLStyleElement> {
   const template = document.createElement("template");
   template.innerHTML = html;
-  const styles: HTMLStyleElement[] = [];
+  const styles: Array<HTMLStyleElement> = [];
   while (template.content.firstChild instanceof HTMLStyleElement) {
     const style = template.content.firstChild;
     style.dataset.ufAstroStyle = name;

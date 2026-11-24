@@ -21,10 +21,10 @@ const MISMATCH = /\[svelte\] hydration_|svelte\.dev\/e\/hydration_/;
 export const hydrate: HydrateAdapter = async (component, container, html, { props, on }) => {
   const listeners = listenerProps(on);
   const current = reactiveProps({ ...props, ...listeners });
-  const mismatches: string[] = [];
+  const mismatches: Array<string> = [];
   container.innerHTML = html;
   const { warn } = console;
-  console.warn = (...args: unknown[]) => {
+  console.warn = (...args: Array<unknown>) => {
     const message = args.map(String).join(" ");
     if (MISMATCH.test(message)) {
       mismatches.push(message.replace(/%c/g, ""));

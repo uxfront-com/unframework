@@ -40,7 +40,7 @@ export function transitionHelpers(
   names: TransitionNames,
   imports: ImportSet,
   subscribes: boolean,
-): string[] {
+): Array<string> {
   const react = (name: string) => imports.add("react", name);
   const type = (name: string) => imports.add("react", name, { type: true });
   const { component, item, entry, subscribe, attach } = names;

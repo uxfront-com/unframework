@@ -89,7 +89,7 @@ export interface EventFunction {
   /** Whether it takes Qwik's element argument after its event. */
   element: boolean;
   /** The functions taking an event that it calls, which it passes its event. */
-  passes: readonly BindingId[];
+  passes: ReadonlyArray<BindingId>;
 }
 
 /**
@@ -100,7 +100,7 @@ export interface ListenerGroup {
   readonly element: ElementNode;
   readonly event: string;
   readonly scope: "element" | "window";
-  readonly listeners: readonly EventAttribute[];
+  readonly listeners: ReadonlyArray<EventAttribute>;
   /**
    * Whether its handler runs its calls of local functions in place (./inline.ts), and an async
    * one returns after its synchronous part (./listeners.ts): where it holds several listeners, or
@@ -469,7 +469,7 @@ export interface StablePlan {
   /** The references, by their offset in the source, that read a function through the holder. */
   readonly lazy: ReadonlySet<number>;
   /** The holder, where some reference reads through it: its name and the functions it holds. */
-  readonly holder?: { name: string; members: readonly BindingId[] };
+  readonly holder?: { name: string; members: ReadonlyArray<BindingId> };
 }
 
 /** Plans which functions keep their identity, and the holder (see {@link StablePlan}). */
@@ -511,7 +511,7 @@ function planStable(
         ) {
           return;
         }
-        const listener = (node.arguments as SyntaxNode[])[1];
+        const listener = (node.arguments as Array<SyntaxNode>)[1];
         const id = listener ? values.get(unwrappedNode(listener).start) : undefined;
         if (id !== undefined) {
           stable.add(id);
@@ -520,7 +520,7 @@ function planStable(
     );
   }
   // The references between client functions, and which function reaches which.
-  const edges = new Map<BindingId, { to: BindingId; at: number; call: boolean }[]>();
+  const edges = new Map<BindingId, Array<{ to: BindingId; at: number; call: boolean }>>();
   for (const [id, fnPlan] of functions) {
     if (!qrl(id)) {
       continue;
@@ -548,7 +548,7 @@ function planStable(
     return seen;
   };
   const lazy = new Set<number>();
-  const members: BindingId[] = [];
+  const members: Array<BindingId> = [];
   for (const [from, list] of edges) {
     for (const edge of list) {
       // A reference by value that closes a cycle: the function it reads reaches back to this one.
@@ -717,7 +717,7 @@ export function returnsPromise(fn: FunctionCode): boolean {
   if (/^(?:Promise|PromiseLike)\s*</.test(fn.returnType?.code.trim() ?? "")) {
     return true;
   }
-  const returned: unknown[] = [];
+  const returned: Array<unknown> = [];
   if (fn.expression) {
     returned.push(parseCodeSource(fn.body.code, "expression").root);
   } else {
@@ -852,14 +852,14 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
   interface Entry {
     group: Omit<ListenerGroup, "synchronous">;
     phase: "capture" | "bubble" | "window";
-    path: readonly ElementNode[];
+    path: ReadonlyArray<ElementNode>;
   }
-  const entries: Entry[] = [];
+  const entries: Array<Entry> = [];
   const components = new Map<string, ElementNode>();
-  const visit = (node: RenderNode, path: readonly ElementNode[]): void => {
+  const visit = (node: RenderNode, path: ReadonlyArray<ElementNode>): void => {
     switch (node.kind) {
       case "Element": {
-        const events = new Map<string, EventAttribute[]>();
+        const events = new Map<string, Array<EventAttribute>>();
         for (const attribute of node.attributes) {
           if (attribute.kind !== "Event") {
             continue;
@@ -1177,10 +1177,10 @@ const kindOf = (fn: FunctionCode): CodeKind => (fn.expression ? "expression" : "
 
 /** The functions taking an event that code calls, in order, each once. */
 export function eventCallees(
-  refs: readonly CodeReference[],
+  refs: ReadonlyArray<CodeReference>,
   functions: ReadonlyMap<BindingId, unknown>,
-): BindingId[] {
-  const found: BindingId[] = [];
+): Array<BindingId> {
+  const found: Array<BindingId> = [];
   for (const reference of refs) {
     if (reference.kind === "Binding" && reference.call && functions.has(reference.binding)) {
       if (!found.includes(reference.binding)) {
@@ -1295,7 +1295,7 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
 const isClient = (site: RewriteSite) => site === "client";
 
 /** The bindings a piece of code references, writes included. */
-export function referencedIds(refs: readonly CodeReference[]): Set<BindingId> {
+export function referencedIds(refs: ReadonlyArray<CodeReference>): Set<BindingId> {
   const found = new Set<BindingId>();
   for (const reference of refs) {
     switch (reference.kind) {
@@ -1319,7 +1319,7 @@ export function referencedIds(refs: readonly CodeReference[]): Set<BindingId> {
 }
 
 /** The code of a setup function: its body and its parameters' defaults (static). */
-function functionRefs(fn: FunctionCode): CodeReference[] {
+function functionRefs(fn: FunctionCode): Array<CodeReference> {
   return fn.body.refs;
 }
 
@@ -1329,7 +1329,7 @@ function functionRefs(fn: FunctionCode): CodeReference[] {
  * function as a `$()` QRL (./composable.ts), whose call gives a promise, so these are reported
  * (P2).
  */
-export function usedFunctionRenderCalls(component: UfComponent): BindingReference[] {
+export function usedFunctionRenderCalls(component: UfComponent): Array<BindingReference> {
   const used = new Set(
     component.bindings.filter(({ kind }) => kind === "usedFn").map(({ id }) => id),
   );
@@ -1337,7 +1337,7 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
     return [];
   }
   // A named or scoped slot's fill is a render prop the child calls as it renders: render code too.
-  const codes: Code[] = expressionsOf(component).map(({ expression }) => expression);
+  const codes: Array<Code> = expressionsOf(component).map(({ expression }) => expression);
   for (const item of component.setup) {
     switch (item.kind) {
       case "State":
@@ -1426,9 +1426,9 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
  */
 export function selfReadingArguments(
   component: UfComponent,
-): { reference: BindingReference; member: BindingId }[] {
+): Array<{ reference: BindingReference; member: BindingId }> {
   const declared = declarationReads(component);
-  const found: { reference: BindingReference; member: BindingId }[] = [];
+  const found: Array<{ reference: BindingReference; member: BindingId }> = [];
   for (const item of component.setup) {
     if (item.kind !== "Use") {
       continue;
@@ -1479,8 +1479,8 @@ export function hooksReadByOtherCalls(component: UfComponent): Set<string> {
 }
 
 /** What each setup declaration's code reads, by the binding it declares. */
-function declarationReads(component: UfComponent): Map<BindingId, Code[]> {
-  const declared = new Map<BindingId, Code[]>();
+function declarationReads(component: UfComponent): Map<BindingId, Array<Code>> {
+  const declared = new Map<BindingId, Array<Code>>();
   for (const item of component.setup) {
     switch (item.kind) {
       case "Function":
@@ -1530,7 +1530,7 @@ export function argumentCode(argument: UseArgument): Code {
 function reachedMember(
   start: BindingId,
   members: ReadonlySet<BindingId>,
-  declared: ReadonlyMap<BindingId, Code[]>,
+  declared: ReadonlyMap<BindingId, Array<Code>>,
 ): BindingId | undefined {
   const seen = new Set<BindingId>();
   const queue = [start];
@@ -1573,7 +1573,7 @@ function hoistable(
   returned: ReadonlySet<BindingId>,
   declaresModule: boolean,
 ): Set<BindingId> {
-  const candidates = new Map<BindingId, readonly CodeReference[]>();
+  const candidates = new Map<BindingId, ReadonlyArray<CodeReference>>();
   // Code typed by a type parameter stays in the generic arrow, where `T` is (ADR-0068).
   const typed = typedByParameters(component);
   for (const item of component.setup) {
@@ -1655,7 +1655,7 @@ function planFunctions(
   const client = new Set<BindingId>();
   // Getters call plain functions as render code does, but declare a kept one themselves.
   const getters = new Set<BindingId>();
-  const mark = (target: Set<BindingId>, refs: readonly CodeReference[]) => {
+  const mark = (target: Set<BindingId>, refs: ReadonlyArray<CodeReference>) => {
     for (const reference of refs) {
       if (reference.kind === "Binding" && items.has(reference.binding)) {
         target.add(reference.binding);
@@ -1910,7 +1910,7 @@ function nothingToWait(type: SyntaxNode): boolean {
     case "TSUndefinedKeyword":
       return true;
     case "TSUnionType":
-      return (type.types as SyntaxNode[]).every(nothingToWait);
+      return (type.types as Array<SyntaxNode>).every(nothingToWait);
     case "TSParenthesizedType":
       return nothingToWait(type.typeAnnotation as SyntaxNode);
     case "TSTypeReference": {
@@ -1964,7 +1964,7 @@ export function isReactive(kind: BindingKind): boolean {
 /** The events some code of the component emits. */
 function emittedEvents(component: UfComponent): Set<string> {
   const found = new Set<string>();
-  const visit = (refs: readonly CodeReference[]) => {
+  const visit = (refs: ReadonlyArray<CodeReference>) => {
     for (const reference of refs) {
       if (reference.kind === "Emit") {
         found.add(reference.event);
@@ -2032,8 +2032,8 @@ function emittedEvents(component: UfComponent): Set<string> {
 }
 
 /** The listeners of child components' events, on components and on `<component is>`. */
-export function componentListeners(component: UfComponent): ListenerAttribute[] {
-  const found: ListenerAttribute[] = [];
+export function componentListeners(component: UfComponent): Array<ListenerAttribute> {
+  const found: Array<ListenerAttribute> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Component" && node.kind !== "Dynamic") {

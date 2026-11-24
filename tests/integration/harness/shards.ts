@@ -27,7 +27,7 @@ export const SHARDS: Readonly<Record<ShardKind, number>> = {
 
 /** The share of `items` that shard `index` of `count` takes: every item whose position, modulo
  * the count, is the index. Over `0 … count - 1`, the shards hold every item exactly once. */
-export function shardOf<T>(items: readonly T[], index: number, count: number): T[] {
+export function shardOf<T>(items: ReadonlyArray<T>, index: number, count: number): Array<T> {
   if (!Number.isInteger(count) || count < 1) {
     throw new Error(`A shard count must be a whole number of at least 1, not ${count}.`);
   }
@@ -38,7 +38,7 @@ export function shardOf<T>(items: readonly T[], index: number, count: number): T
 }
 
 /** The shard files of a kind, relative to the integration root: `harness/<kind>.<k>.<suffix>`. */
-export function shardFiles(kind: ShardKind, count: number = SHARDS[kind]): string[] {
+export function shardFiles(kind: ShardKind, count: number = SHARDS[kind]): Array<string> {
   const suffix = kind === "ssr" ? "test.ts" : "unit.test.ts";
   return Array.from({ length: count }, (_, index) => `harness/${kind}.${index}.${suffix}`);
 }

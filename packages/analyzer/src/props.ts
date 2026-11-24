@@ -61,12 +61,12 @@ import type { Kinds } from "./types/kinds.ts";
 
 /** What a component's props parameter declares. */
 export interface PropsAnalysis {
-  props: Prop[];
+  props: Array<Prop>;
   propsParameter: PropsParameter | undefined;
   /** The props' bindings, in source order. */
-  bindings: Binding[];
+  bindings: Array<Binding>;
   /** The names of the module's types the props reach, in source order. */
-  types: string[];
+  types: Array<string>;
   byName: Map<string, PropBinding>;
   byDeclaration: Map<object, PropBinding>;
   object: { declaration: object; name: string } | undefined;
@@ -409,7 +409,7 @@ function shapeMembers(
   shapes: Shapes,
   parsed: ParsedModule,
   reporter: Reporter,
-): { members: PropMember[]; failed: boolean } | undefined {
+): { members: Array<PropMember>; failed: boolean } | undefined {
   const at = span(annotation);
   const shape = shapes(at);
   if (!shape) {
@@ -470,7 +470,7 @@ function shapeMembers(
       .filter((entry) => entry.file === file)
       .map((entry) => `${entry.span.start}:${entry.span.end}`),
   );
-  const checked: Span[] = [];
+  const checked: Array<Span> = [];
   const syntax = (check: (probe: Reporter) => void) => {
     const probe = new Reporter(reporter.file);
     check(probe);
@@ -781,7 +781,7 @@ function shapeMembers(
         : undefined;
     return type && types.table.kindsOf(type);
   };
-  const result: PropMember[] = [];
+  const result: Array<PropMember> = [];
   for (const member of members) {
     const local = member.file === file;
     // The syntactic oracle names a declaration for every member another file writes: a file is
@@ -832,9 +832,9 @@ function shapeMembers(
 /** What the syntax checks of a props type (`shapeMembers`). */
 interface SyntaxScope {
   /** The member lists whose members are props, or members of a prop's object type. */
-  members: (readonly AST.TSSignature[])[];
+  members: Array<ReadonlyArray<AST.TSSignature>>;
   /** The aliased types a prop's type names, each checked as a prop's type. */
-  types: AST.TSType[];
+  types: Array<AST.TSType>;
   /** Where each member signature the syntax checks starts. */
   signatures: Set<number>;
 }
@@ -856,13 +856,13 @@ function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
     const declaration = types.table.declaration(name);
     return declaration && !declaration.node.typeParameters ? declaration : undefined;
   };
-  const mark = (list: readonly AST.TSSignature[]) => {
+  const mark = (list: ReadonlyArray<AST.TSSignature>) => {
     for (const member of list) {
       scope.signatures.add(member.start);
     }
   };
   /** A list of members, each a prop or a member of a prop's object type. */
-  const members = (list: readonly AST.TSSignature[]) => {
+  const members = (list: ReadonlyArray<AST.TSSignature>) => {
     scope.members.push(list);
     mark(list);
     for (const member of list) {
@@ -1032,7 +1032,7 @@ type MemberCheck = (member: ShapeMember, where: Span) => boolean;
  * parameter, a type argument or an operator's operand, which are no prop's type. A type
  * literal's members and the declarations a reference names are read as their own members.
  */
-function emptyObjects(type: AST.TSType): AST.TSTypeLiteral[] {
+function emptyObjects(type: AST.TSType): Array<AST.TSTypeLiteral> {
   switch (type.type) {
     case "TSTypeLiteral":
       return type.members.length ? [] : [type];
@@ -1162,7 +1162,7 @@ function overrides(
     );
   };
   /** The members of the signatures this module writes, by name. */
-  const signatures = (list: readonly AST.TSSignature[]) => {
+  const signatures = (list: ReadonlyArray<AST.TSSignature>) => {
     const members = new Map<string, PartMember>();
     for (const signature of list) {
       const member = written.get(signature.start);
@@ -1175,7 +1175,7 @@ function overrides(
   /** The members of a part a type reference names, `L` or `Partial<L>`. */
   const reference = (
     name: string,
-    args: readonly AST.TSType[] | undefined,
+    args: ReadonlyArray<AST.TSType> | undefined,
     seen: Set<string>,
   ): Map<string, PartMember> | undefined => {
     if (!args) {
@@ -1425,7 +1425,11 @@ function sameMember(shape: TypeShape, left: PartMember, right: PartMember): bool
  * A type's alternatives, a union's members flattened: `boolean` is `true | false`, as TypeScript
  * reads it, and `undefined` is left out when `dropUndefined` says so.
  */
-function alternatives(shape: TypeShape, id: number, dropUndefined: boolean): (number | boolean)[] {
+function alternatives(
+  shape: TypeShape,
+  id: number,
+  dropUndefined: boolean,
+): Array<number | boolean> {
   const node = shape.nodes[id]!;
   if (node.kind === "union") {
     return node.types.flatMap((each) => alternatives(shape, each, dropUndefined));
@@ -1444,8 +1448,8 @@ function alternatives(shape: TypeShape, id: number, dropUndefined: boolean): (nu
 
 function sameAlternatives(
   shape: TypeShape,
-  left: readonly (number | boolean)[],
-  right: readonly (number | boolean)[],
+  left: ReadonlyArray<number | boolean>,
+  right: ReadonlyArray<number | boolean>,
 ): boolean {
   const matches = (a: number | boolean, b: number | boolean) =>
     typeof a === "boolean" || typeof b === "boolean" ? a === b : sameType(shape, a, b, new Set());
@@ -1561,7 +1565,7 @@ function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): bo
  * which TypeScript rejects (TS2300).
  */
 function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem): void {
-  const check = (signatures: readonly AST.TSSignature[]) => {
+  const check = (signatures: ReadonlyArray<AST.TSSignature>) => {
     const names = new Set<string>();
     for (const member of signatures) {
       // A method may be overloaded, and an accessor pair writes one name twice: TypeScript takes
@@ -1819,7 +1823,7 @@ function signaturesOf(program: AST.Program): Signatures {
 /** Checks a destructured props pattern, and returns its properties by prop name. */
 function destructured(
   pattern: AST.ObjectPattern,
-  members: readonly PropMember[],
+  members: ReadonlyArray<PropMember>,
   reporter: Reporter,
   restFound: (rest: RestProps) => void,
 ): Map<string, AST.BindingProperty> {
@@ -1893,7 +1897,7 @@ function checkDefault(
   member: PropMember,
   declared: Kinds,
   source: string,
-  comments: readonly AST.Comment[],
+  comments: ReadonlyArray<AST.Comment>,
   reporter: Reporter,
 ): AST.Expression | undefined {
   const { name } = member;

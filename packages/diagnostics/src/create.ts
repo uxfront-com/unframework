@@ -15,8 +15,8 @@ export interface DiagnosticInit {
   message: string;
   severity?: Severity;
   help?: string;
-  fixes?: Fix[];
-  related?: RelatedInformation[];
+  fixes?: Array<Fix>;
+  related?: Array<RelatedInformation>;
   target?: string;
 }
 
@@ -59,12 +59,12 @@ export function createDiagnostic(code: DiagnosticCode, init: DiagnosticInit): Di
 }
 
 /** Whether any diagnostic is an error. */
-export function hasErrors(diagnostics: readonly Diagnostic[]): boolean {
+export function hasErrors(diagnostics: ReadonlyArray<Diagnostic>): boolean {
   return diagnostics.some((diagnostic) => diagnostic.severity === "error");
 }
 
 /** Sorts diagnostics by file, position, target and code, so output is deterministic. */
-export function sortDiagnostics(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+export function sortDiagnostics(diagnostics: ReadonlyArray<Diagnostic>): Array<Diagnostic> {
   return diagnostics.toSorted(
     (a, b) =>
       compare(a.file, b.file) ||

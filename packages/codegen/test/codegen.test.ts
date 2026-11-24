@@ -62,7 +62,7 @@ const escape = (text: string) =>
   text.replace(/[^\x21-\x7e]/g, (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`);
 
 /** A classic JSX pragma that makes each element its text. */
-const textOf = (_tag: string, _props: unknown, ...children: string[]) => children.join("");
+const textOf = (_tag: string, _props: unknown, ...children: Array<string>) => children.join("");
 
 describe("jsx", () => {
   it("writes text as JSX text with references, or as a string where JSX would change it", () => {

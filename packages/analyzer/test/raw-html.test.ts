@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { applyAndRecheck, component, problems, root } from "./helpers.ts";
 
 /** The diagnostics a component returning `jsx` gets, as `code text-at-span`. */
-function reported(jsx: string, props?: string): string[] {
+function reported(jsx: string, props?: string): Array<string> {
   const { source, diagnostics } = component(jsx, props === undefined ? {} : { props });
   return problems(source, diagnostics);
 }

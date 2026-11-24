@@ -30,7 +30,7 @@ afterAll(removeScratch);
 async function render(
   suite: ParitySuite,
   format: boolean,
-): Promise<{ rendered: DomNode[]; logged: string[] }> {
+): Promise<{ rendered: Array<DomNode>; logged: Array<string> }> {
   const [file] = await emitParity(target, suite, { format });
   const directory = scratchDir();
   const { transform } = await ngtscPlugin();
@@ -38,8 +38,8 @@ async function render(
   const compiled = join(directory, "render-parity.js");
   writeFileSync(compiled, code);
   const component = ((await import(pathToFileURL(compiled).href)) as { default: unknown }).default;
-  const logged: string[] = [];
-  const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+  const logged: Array<string> = [];
+  const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
   const spies = [
     vi.spyOn(console, "error").mockImplementation(capture),
     vi.spyOn(console, "warn").mockImplementation(capture),

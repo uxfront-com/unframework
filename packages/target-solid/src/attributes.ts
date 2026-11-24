@@ -4,7 +4,7 @@
 // TypeScript leaves unchecked: `<stop offset="0" {...{ fill: props.colour }} />`. Pinned by
 // test/attributes.test.ts, which type-checks every binding the analyser accepts.
 
-const words = (text: string): readonly string[] => text.trim().split(/\s+/);
+const words = (text: string): ReadonlyArray<string> => text.trim().split(/\s+/);
 
 /** The SVG elements that take no presentation attribute in Solid's types. */
 const FILTERS = words(`

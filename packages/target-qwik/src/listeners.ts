@@ -63,12 +63,12 @@ interface Handler {
 
 /** What a group lowers to: the controls its `sync$` runs, its `$` handler, the element's markers. */
 interface Lowered {
-  syncs: SyncBatch[];
+  syncs: Array<SyncBatch>;
   handler?: Handler;
   /** `preventdefault:submit`, `stoppropagation:click`: the loader's markers. */
-  markers: string[];
+  markers: Array<string>;
   /** Every control of the group, with the listener that makes it. */
-  controls: { listener: EventAttribute; lifted: LiftedControl }[];
+  controls: Array<{ listener: EventAttribute; lifted: LiftedControl }>;
   /** The type of the group's event, as its listeners take it. */
   eventType: string;
 }
@@ -83,16 +83,16 @@ interface Member {
   /** The setup function it names: how a call spells it, and the parameters it takes. */
   named?: {
     name: string;
-    takes: readonly Parameter[];
+    takes: ReadonlyArray<Parameter>;
     /** A module-level function, called synchronously. */
     module: boolean;
     /** Whether nothing is left of it (its body was only controls). */
     empty: boolean;
   };
-  controls: LiftedControl[];
+  controls: Array<LiftedControl>;
   /** The markers of its controls, and the controls that run in a `sync$`. */
-  markers: string[];
-  syncs: LiftedControl[];
+  markers: Array<string>;
+  syncs: Array<LiftedControl>;
 }
 
 /** The listeners of a component, printed per element and event at the first of them. */
@@ -101,7 +101,7 @@ export class Listeners {
   /** The elements and events already printed. */
   readonly #printed = new Set<EventAttribute>();
   /** The `once` listeners' WeakSets, declared after the component. */
-  readonly helpers: string[] = [];
+  readonly helpers: Array<string> = [];
   /**
    * The listeners and models in a fill and in a list, whose `$` handler is written `$(…)` in
    * place: Qwik's optimizer (2.1.0-rc.11, with core 2.0.0-rc.5) hoists the capture of an arrow
@@ -134,7 +134,11 @@ export class Listeners {
   }
 
   /** The JSX attributes of `attribute`'s event on `element`, at its first listener; `[]` after. */
-  attributes(attribute: EventAttribute, element: ElementNode, context: JsxContext): JsxAttribute[] {
+  attributes(
+    attribute: EventAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): Array<JsxAttribute> {
     const listeners = element.attributes.filter(
       (other): other is EventAttribute => other.kind === "Event" && other.event === attribute.event,
     );
@@ -182,20 +186,20 @@ export class Listeners {
 
   #event(
     event: string,
-    listeners: readonly EventAttribute[],
+    listeners: ReadonlyArray<EventAttribute>,
     context: JsxContext,
     explicit: boolean,
     component: boolean,
     model?: string,
     passed?: string,
     typed = false,
-  ): JsxAttribute[] {
+  ): Array<JsxAttribute> {
     const plan = this.#plan;
     const groups = [
       ...new Set(listeners.map((listener) => plan.listeners.groups.get(listener)!)),
     ].toSorted((a, b) => (a.scope === b.scope ? 0 : a.scope === "element" ? -1 : 1));
     const window = groups.some((group) => group.scope === "window");
-    const attributes: JsxAttribute[] = [];
+    const attributes: Array<JsxAttribute> = [];
     if (!window && listeners.some((listener) => listener.capture)) {
       attributes.push(js.jsxAttribute(`capture:${event}`));
     }
@@ -288,7 +292,7 @@ export class Listeners {
     const usesElement = readsName(body, element);
     const usesEvent = readsName(body, eventName);
     const parameters = (typed: boolean) => {
-      const list: string[] = [];
+      const list: Array<string> = [];
       if (usesEvent || usesElement) {
         list.push(`${usesEvent ? eventName : "_"}${typed ? `: ${eventType}` : ""}`);
       }
@@ -338,8 +342,8 @@ export class Listeners {
       ({ control }) =>
         !(listener.passive && !options.passive && control.method === "preventDefault"),
     );
-    const markers: string[] = [];
-    const syncs: LiftedControl[] = [];
+    const markers: Array<string> = [];
+    const syncs: Array<LiftedControl> = [];
     for (const lifted of controls) {
       const always = !lifted.tests.length && lifted.control.condition === undefined;
       if (always && options.markers && group.scope === "element") {
@@ -362,7 +366,7 @@ export class Listeners {
     const eventParameter = fn.parameters.find((parameter) => parameter.event !== undefined);
     const eventName = eventParameter?.name ?? localName("event", fn, plan);
     const element = plan.names.once("element");
-    const guards: string[] = [];
+    const guards: Array<string> = [];
     if (group.scope === "window") {
       guards.push(`if (!${element}.contains(${eventName}.target as Node)) return;`);
     }
@@ -401,7 +405,7 @@ export class Listeners {
         guards.some((guard) => readsName(guard, element)) || readsName(statements, element);
       const eventType = eventParameter?.type?.code ?? eventParameter?.event ?? "Event";
       const parameters = (typed: boolean) => {
-        const list: string[] = [];
+        const list: Array<string> = [];
         if (usesEvent || usesElement) {
           list.push(`${usesEvent ? eventName : "_"}${typed ? `: ${eventType}` : ""}`);
         }
@@ -496,12 +500,12 @@ export class Listeners {
    */
   #guarded(statements: string): string {
     const { root } = parseCodeSource(`{\n${statements}\n}`, "statements");
-    const [block] = root as { type: string; body: GuardNode[] }[];
+    const [block] = root as Array<{ type: string; body: Array<GuardNode> }>;
     const body = block!.body;
     const offset = 2;
     const text = (node: { start: number; end: number }) =>
       statements.slice(node.start - offset, node.end - offset);
-    const guards: string[] = [];
+    const guards: Array<string> = [];
     let index = 0;
     for (; index < body.length; index++) {
       const statement = body[index]!;
@@ -557,7 +561,7 @@ export class Listeners {
   #inline(
     fn: FunctionCode,
     split: SplitHandler,
-    guards: readonly string[],
+    guards: ReadonlyArray<string>,
     eventName: string,
     typed: boolean,
     synchronous: boolean,
@@ -595,7 +599,7 @@ export class Listeners {
       readsName(statements, name) || guards.some((guard) => readsName(guard, name));
     const needsElement = reads(element);
     const needsEvent = needsElement || reads(eventName);
-    const parameters: Parameter[] = [];
+    const parameters: Array<Parameter> = [];
     const at = { start: 0, end: 0 };
     const own = fn.parameters[0];
     const type = (code: string | undefined) =>
@@ -657,7 +661,7 @@ interface GuardNode {
   test?: GuardNode;
   consequent?: GuardNode;
   alternate?: GuardNode | null;
-  body?: GuardNode[];
+  body?: Array<GuardNode>;
   argument?: GuardNode | null;
 }
 
@@ -713,7 +717,7 @@ interface ValueNode {
   right?: ValueNode;
   consequent?: ValueNode;
   alternate?: ValueNode;
-  expressions?: ValueNode[];
+  expressions?: Array<ValueNode>;
 }
 
 function valueNodeIsCall(node: ValueNode): boolean {
@@ -775,12 +779,12 @@ function statementCount(statements: string): number {
     return 0;
   }
   const { root } = parseCodeSource(`{\n${statements}\n}`, "statements");
-  const [block] = root as { body: unknown[] }[];
+  const [block] = root as Array<{ body: Array<unknown> }>;
   return block!.body.length;
 }
 
 /** The event parameter a merged group's handler takes: its first listener's name for it. */
-function commonEventName(members: readonly Member[], plan: SetupPlan): string {
+function commonEventName(members: ReadonlyArray<Member>, plan: SetupPlan): string {
   for (const { fn } of members) {
     const name = fn.parameters.find((parameter) => parameter.event !== undefined)?.name;
     if (name !== undefined) {
@@ -791,7 +795,7 @@ function commonEventName(members: readonly Member[], plan: SetupPlan): string {
 }
 
 /** The DOM interface of a merged group's event: its listeners' annotation, or the event's own. */
-function groupEventType(members: readonly Member[]): string {
+function groupEventType(members: ReadonlyArray<Member>): string {
   for (const { fn } of members) {
     const parameter = fn.parameters.find((candidate) => candidate.event !== undefined);
     if (parameter) {

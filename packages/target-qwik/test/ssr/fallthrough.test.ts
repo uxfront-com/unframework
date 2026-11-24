@@ -23,7 +23,7 @@ async function render(source: string): Promise<string> {
   const module = lower(source);
   const dir = join(scratch, randomUUID());
   mkdirSync(dir);
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   for (const component of module.components) {
     const files = target.emit(component, {
       module,

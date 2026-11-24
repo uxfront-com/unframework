@@ -15,7 +15,7 @@ function source(jsx: string, setup = ""): string {
 }
 
 /** The diagnostics `jsx` gets, as `code text-at-span`. */
-function reported(jsx: string, setup = ""): string[] {
+function reported(jsx: string, setup = ""): Array<string> {
   const text = source(jsx, setup);
   return problems(text, run(text).diagnostics);
 }
@@ -25,7 +25,7 @@ describe("<Teleport>", () => {
     const text = source('<div><Teleport to="body"><p class="toast">Saved</p></Teleport></div>');
     const { module, diagnostics } = run(text);
     expect(diagnostics).toEqual([]);
-    const [teleport] = (only(module).render as { children: TeleportNode[] }).children;
+    const [teleport] = (only(module).render as { children: Array<TeleportNode> }).children;
     expect(teleport!.kind).toBe("Teleport");
     expect(teleport!.to).toBe("body");
     expect(teleport!.children.map((child) => child.kind)).toEqual(["Element"]);
@@ -37,7 +37,7 @@ describe("<Teleport>", () => {
     (to) => {
       const { module, diagnostics } = run(source(`<div><Teleport ${to}><p /></Teleport></div>`));
       expect(diagnostics).toEqual([]);
-      const [teleport] = (only(module).render as { children: TeleportNode[] }).children;
+      const [teleport] = (only(module).render as { children: Array<TeleportNode> }).children;
       expect(teleport!.to).toBe("#overlays");
     },
   );
@@ -49,7 +49,7 @@ describe("<Teleport>", () => {
   ])("reads %s as JSX reads it", (to, selector) => {
     const { module, diagnostics } = run(source(`<div><Teleport ${to}><p /></Teleport></div>`));
     expect(diagnostics).toEqual([]);
-    const [teleport] = (only(module).render as { children: TeleportNode[] }).children;
+    const [teleport] = (only(module).render as { children: Array<TeleportNode> }).children;
     expect(teleport!.to).toBe(selector);
   });
 
@@ -59,7 +59,7 @@ describe("<Teleport>", () => {
     expect(problems(text, diagnostics)).toEqual(["UF3011 &lbrace;"]);
     // No fix: `{{` in a selector is text Angular's template refuses (UF9001).
     expect(diagnostics[0]!.fixes ?? []).toEqual([]);
-    const [teleport] = (only(module).render as { children: TeleportNode[] }).children;
+    const [teleport] = (only(module).render as { children: Array<TeleportNode> }).children;
     expect(teleport!.to).toBe("#a&lbrace;b");
   });
 
@@ -68,7 +68,7 @@ describe("<Teleport>", () => {
 export function A() { return <div><Portal to="body"><p /></Portal></div>; }`;
     const { module, diagnostics } = run(text);
     expect(diagnostics).toEqual([]);
-    const [teleport] = (only(module).render as { children: TeleportNode[] }).children;
+    const [teleport] = (only(module).render as { children: Array<TeleportNode> }).children;
     expect(teleport!.kind).toBe("Teleport");
   });
 
@@ -88,7 +88,7 @@ export function A() { return <div><Portal to="body"><p /></Portal></div>; }`;
       ),
     );
     expect(diagnostics).toEqual([]);
-    const [condition] = (only(module).render as { children: IfNode[] }).children;
+    const [condition] = (only(module).render as { children: Array<IfNode> }).children;
     expect(condition!.branches[0]!.children.map((child) => child.kind)).toEqual(["Teleport"]);
   });
 
@@ -253,7 +253,7 @@ export function A() { return <div><Teleport /></div>; }`;
     expect(diagnostics).toEqual([]);
     const [child] = (
       module!.components.find((each) => each.name === "A")!.render as {
-        children: { kind: string }[];
+        children: Array<{ kind: string }>;
       }
     ).children;
     expect(child!.kind).toBe("Component");

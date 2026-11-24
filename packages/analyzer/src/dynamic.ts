@@ -106,7 +106,7 @@ export function lowerDynamic(
     lowerChildren(node.children, place, render);
     return undefined;
   }
-  const refs: Reference[] = [];
+  const refs: Array<Reference> = [];
   const leaves = leavesOf(expression, render, refs);
   if (!leaves) {
     return undefined;
@@ -152,7 +152,7 @@ export function lowerDynamic(
   if (generic) {
     return undefined;
   }
-  const candidates: DynamicCandidate[] = [];
+  const candidates: Array<DynamicCandidate> = [];
   for (const leaf of leaves) {
     const candidate: DynamicCandidate =
       leaf.kind === "Tag"
@@ -200,8 +200,8 @@ export function lowerDynamic(
 function leavesOf(
   node: AST.Expression | AST.StringLiteral,
   render: RenderContext,
-  refs: Reference[],
-): Leaf[] | undefined {
+  refs: Array<Reference>,
+): Array<Leaf> | undefined {
   switch (node.type) {
     case "ParenthesizedExpression":
       return leavesOf(node.expression, render, refs);
@@ -262,7 +262,7 @@ function leavesOf(
 }
 
 /** A tag leaf: an HTML element's name (UF3044 otherwise). */
-function tag(value: string, node: AST.Node, render: RenderContext): Leaf[] | undefined {
+function tag(value: string, node: AST.Node, render: RenderContext): Array<Leaf> | undefined {
   if (isHtmlElement(value)) {
     return [{ kind: "Tag", tag: value, node }];
   }
@@ -298,10 +298,10 @@ function componentBinding(
 
 /** What a dynamic node holds once lowered. */
 interface Lowered {
-  attributes: (Attribute | ComponentAttribute)[];
+  attributes: Array<Attribute | ComponentAttribute>;
   children: DynamicNode["children"];
-  fills?: SlotFill[];
-  only?: DynamicOnly[];
+  fills?: Array<SlotFill>;
+  only?: Array<DynamicOnly>;
 }
 
 /**
@@ -362,7 +362,7 @@ function adopt(render: RenderContext, probe: RenderContext): void {
 function lowerTags(
   node: AST.JSXElement,
   name: AST.JSXIdentifier,
-  candidates: readonly DynamicCandidate[],
+  candidates: ReadonlyArray<DynamicCandidate>,
   place: Place,
   render: RenderContext,
   isAttribute: AST.JSXAttribute,
@@ -433,7 +433,7 @@ function lowerTags(
   const mark = render.reporter.diagnostics.length;
   // An attribute only some tags take renders on those alone, and one none takes is UF3006, once
   // for them all (ADR-0119). Each tag lowers the attributes it takes.
-  const only: DynamicOnly[] = [];
+  const only: Array<DynamicOnly> = [];
   const skipped = new Map(tags.map((each) => [each, new Set<AST.JSXAttributeItem>()]));
   for (const item of opening.attributes) {
     if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") {
@@ -527,12 +527,12 @@ function lowerTags(
 function lowerComponents(
   node: AST.JSXElement,
   name: AST.JSXIdentifier,
-  leaves: readonly Leaf[],
+  leaves: ReadonlyArray<Leaf>,
   place: Place,
   render: RenderContext,
   isAttribute: AST.JSXAttribute,
 ): Lowered | undefined {
-  const infos: ComponentInfo[] = [];
+  const infos: Array<ComponentInfo> = [];
   for (const leaf of leaves) {
     if (leaf.kind === "Component" && !infos.some((each) => each.name === leaf.info.name)) {
       infos.push(leaf.info);

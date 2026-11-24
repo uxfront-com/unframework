@@ -45,7 +45,7 @@ export interface ModeInput {
   platform: NodeJS.Platform;
   /** The CPU architecture, `process.arch` by default: the baseline environment is x64. */
   arch?: NodeJS.Architecture;
-  argv: readonly string[];
+  argv: ReadonlyArray<string>;
   /**
    * The run has no committed visual baselines (the testing package's own fixture, whose one
    * target is its own reference): pixels are always live, in CI too, and `UF_PIXELS` is refused.
@@ -216,8 +216,8 @@ export function groupOrder(
   target: string | undefined,
   mode: Pick<HarnessMode, "update" | "pixels" | "browser">,
   reference: string,
-  caseReferences: readonly string[] = [],
-  targets: readonly string[] = [],
+  caseReferences: ReadonlyArray<string> = [],
+  targets: ReadonlyArray<string> = [],
 ): number {
   const isReference = target === reference;
   // A group for the targets some case names runs only where a case names one.
@@ -266,12 +266,12 @@ export interface HarnessRunOptions {
   casesDir: string;
   reference: string;
   mode: HarnessMode;
-  quarantine: QuarantineEntry[];
+  quarantine: Array<QuarantineEntry>;
   cases: Record<string, CaseConfig>;
   /** The command a failure names to write the artefacts (`HarnessContext.updateCommand`). */
   updateCommand?: string;
   /** The font families a live capture may take (`HarnessContext.liveFonts`, ADR-0105). */
-  liveFonts?: readonly string[];
+  liveFonts?: ReadonlyArray<string>;
 }
 
 const RUN = Symbol.for("unframework.harness.run");
@@ -333,9 +333,9 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
  * other mode. Throws on an entry that names a pixel mode for a layer that has none.
  */
 function applicableQuarantine(
-  entries: readonly QuarantineEntry[],
+  entries: ReadonlyArray<QuarantineEntry>,
   pixels: PixelMode,
-): QuarantineEntry[] {
+): Array<QuarantineEntry> {
   for (const entry of entries) {
     if (entry.pixels === undefined) {
       continue;

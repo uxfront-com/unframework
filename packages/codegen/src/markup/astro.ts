@@ -65,7 +65,7 @@ function listParameters(node: ForNode, item: string, index: string | undefined):
  * What a branch, a list body or a slot's fallback holds, as an expression in a ternary or a
  * `.map` callback.
  */
-function content(nodes: readonly RenderNode[], container: Container): MarkupPiece {
+function content(nodes: ReadonlyArray<RenderNode>, container: Container): MarkupPiece {
   const [only, ...more] = nodes;
   if (more.length === 0 && only?.kind === "Element") {
     return { kind: "element", element: only, directives: [] };
@@ -189,7 +189,7 @@ export const astroDialect: MarkupDialect = {
     while (last > 0 && branches[last - 1]!.branch.children.length === 0) {
       last--;
     }
-    const segments: BlockSegment[] = [];
+    const segments: Array<BlockSegment> = [];
     let tail = "{";
     for (const { condition, branch } of branches.slice(0, last)) {
       const head = condition === undefined ? "" : `${test(condition)} ? `;

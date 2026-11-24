@@ -49,7 +49,7 @@ export function unwrapAngularHosts(root: TreeParent, target?: NormalizeTarget): 
 
 function unwrap(root: TreeParent): void {
   const children = childrenOf(root);
-  const unwrapped: TreeChild[] = [];
+  const unwrapped: Array<TreeChild> = [];
   let changed = false;
   for (const node of children) {
     if (!isElement(node)) {

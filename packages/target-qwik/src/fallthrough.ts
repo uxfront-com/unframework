@@ -43,7 +43,7 @@ export class Passed {
    * The tags a `<component is>` root may render, where it spreads the rest: each branch takes it
    * (ADR-0122), and the props take what every tag takes. Absent otherwise.
    */
-  readonly tags: readonly string[] | undefined;
+  readonly tags: ReadonlyArray<string> | undefined;
   /** The span of the node that spreads the rest: the root, or the `{...rest}` element. */
   readonly target: Span | undefined;
   /** Whether the rest spreads on the root, which then takes the scope attributes in it. */
@@ -194,7 +194,7 @@ function dynamicRoot(component: UfComponent): DynamicNode | undefined {
 }
 
 /** The tags a `<component is>` over tags may render. */
-function dynamicTags(node: DynamicNode): string[] {
+function dynamicTags(node: DynamicNode): Array<string> {
   return node.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
 }
 
@@ -390,7 +390,7 @@ function childTag(
 export function declaredBy(
   module: UfModule,
   local: string,
-): { props: string[]; models: string[]; events: string[] } {
+): { props: Array<string>; models: Array<string>; events: Array<string> } {
   const api = importedApi(module, local);
   if (api) {
     return {

@@ -18,7 +18,7 @@ type Run = (directive: object, element: FakeElement, value: string, follow?: Fol
 
 /** The runner's code with its types stripped, its globals faked, and what a test reads of it. */
 function runner() {
-  const observers: { callback: () => void; disconnected: boolean }[] = [];
+  const observers: Array<{ callback: () => void; disconnected: boolean }> = [];
   class FakeObserver {
     readonly #entry: { callback: () => void; disconnected: boolean };
     constructor(callback: () => void) {
@@ -41,7 +41,7 @@ function runner() {
       return collected.now ? undefined : this.#value;
     }
   }
-  const calls: string[] = [];
+  const calls: Array<string> = [];
   const queueHook = (element: FakeElement, run: () => void, hook: string) => {
     calls.push(`${hook} ${element.name}`);
     run();
@@ -87,7 +87,7 @@ describe("the directive runner", () => {
 
   it("takes a left element out of its caller's list, and back in when it returns", () => {
     const { runDirective, calls, mutate } = runner();
-    const listed: string[] = [];
+    const listed: Array<string> = [];
     const follow: Follow = {
       leave: (element) => listed.push(`leave ${element.name}`),
       back: (element) => listed.push(`back ${element.name}`),
@@ -107,7 +107,7 @@ describe("the directive runner", () => {
 
   it("mounts a left element that comes back after its owner's task ran again without it", async () => {
     const { runDirective, calls, mutate } = runner();
-    let listed: FakeElement[] = [];
+    let listed: Array<FakeElement> = [];
     const follow: Follow = {
       leave: (element) => (listed = listed.filter((each) => each !== element)),
       back: (element) => void listed.push(element),

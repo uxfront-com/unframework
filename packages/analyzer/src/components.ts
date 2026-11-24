@@ -114,8 +114,8 @@ export function lowerComponentAs(
       : []) {
     checkPlacement(tag, name, place.ancestors, reporter, false);
   }
-  const attributes: ComponentAttribute[] = [];
-  const fallthrough: AST.JSXAttribute[] = [];
+  const attributes: Array<ComponentAttribute> = [];
+  const fallthrough: Array<AST.JSXAttribute> = [];
   let key: AST.JSXAttribute | undefined;
   let after = name.end;
   /** Each name set so far: a component takes each once, as an element does (UF3007). */
@@ -274,7 +274,7 @@ export function lowerComponentAs(
 function dynamicRefProblem(
   item: AST.JSXAttribute,
   binding: string,
-  tags: readonly string[],
+  tags: ReadonlyArray<string>,
   info: ComponentInfo,
   render: RenderContext,
 ): boolean {
@@ -384,7 +384,10 @@ function componentRefProblem(
  * `interface`'s or `type`'s of one. Read from the syntax, not the type oracle's shapes: UF3046
  * needs only the member names, and a shape cannot say which unread parts hide a member.
  */
-function refMembers(type: AST.TSType, table: TypeTable): readonly AST.TSSignature[] | undefined {
+function refMembers(
+  type: AST.TSType,
+  table: TypeTable,
+): ReadonlyArray<AST.TSSignature> | undefined {
   if (type.type === "TSTypeLiteral") {
     return type.members;
   }
@@ -493,7 +496,7 @@ function lowerProp(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
-  items: readonly AST.JSXAttributeItem[] | undefined,
+  items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): ComponentAttribute | undefined {
   const { reporter, source } = render;
   const prop = api.props.find((each) => each.name === name.name);
@@ -619,7 +622,7 @@ function lowerComponentListener(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
-  items: readonly AST.JSXAttributeItem[] | undefined,
+  items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): ComponentAttribute | undefined {
   const { reporter } = render;
   const event = eventName(name.name);
@@ -725,7 +728,7 @@ function kebabMember(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
-  items: readonly AST.JSXAttributeItem[] | undefined,
+  items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): boolean {
   if (!name.name.includes("-")) {
     return false;
@@ -828,7 +831,7 @@ function passesAttribute(attribute: string, api: ComponentApi): boolean {
  * through is checked against (ADR-0122): where the component keeps `inheritAttrs` and has no
  * fallthrough element of its own. Absent otherwise.
  */
-function dynamicTags(api: ComponentApi): readonly string[] | undefined {
+function dynamicTags(api: ComponentApi): ReadonlyArray<string> | undefined {
   return api.fallthroughTag === undefined && api.inheritAttrs ? api.rootTags : undefined;
 }
 
@@ -859,12 +862,12 @@ export function passesListener(attribute: string, api: ComponentApi): boolean {
  * be, then passed to it. UF3045 reports them where the component takes nothing.
  */
 function lowerFallthrough(
-  items: readonly AST.JSXAttribute[],
+  items: ReadonlyArray<AST.JSXAttribute>,
   opening: AST.JSXOpeningElement,
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
-): ComponentAttribute[] {
+): Array<ComponentAttribute> {
   if (!items.length) {
     return [];
   }
@@ -919,13 +922,13 @@ function lowerFallthrough(
  * attributes', and each later tag is checked in a probe (ADR-0119).
  */
 function lowerDynamicFallthrough(
-  items: readonly AST.JSXAttribute[],
+  items: ReadonlyArray<AST.JSXAttribute>,
   opening: AST.JSXOpeningElement,
-  tags: readonly string[],
+  tags: ReadonlyArray<string>,
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
-): ComponentAttribute[] {
+): Array<ComponentAttribute> {
   const passed = items.filter((item) => {
     const written = item.name.type === "JSXIdentifier" ? item.name.name : "";
     if (/^on[A-Z]/.test(written)) {
@@ -973,10 +976,10 @@ function lowerDynamicFallthrough(
  * static `class` is one class, and a listener option is not supported yet.
  */
 function passedAttributes(
-  attributes: readonly Attribute[],
+  attributes: ReadonlyArray<Attribute>,
   render: RenderContext,
-): ComponentAttribute[] {
-  return attributes.flatMap((attribute): ComponentAttribute[] => {
+): Array<ComponentAttribute> {
+  return attributes.flatMap((attribute): Array<ComponentAttribute> => {
     switch (attribute.kind) {
       case "Class":
       case "Style":
@@ -1031,7 +1034,7 @@ function lowerFills(
   info: ComponentInfo,
   render: RenderContext,
   fixable: boolean,
-): SlotFill[] | undefined {
+): Array<SlotFill> | undefined {
   const { reporter } = render;
   const content = node.children.filter((child) => hasContent([child]));
   if (!content.length) {
@@ -1089,7 +1092,7 @@ function declares(api: ComponentApi, slot: string): boolean {
  * Children that are only `{slots.default?.()}`, with no fallback: the parent's default slot
  * forwarded (ADR-0054), which lowers to the fill `{{ default: slots.default }}` lowers to.
  */
-function forwardedDefault(content: readonly AST.JSXChild[], render: RenderContext): boolean {
+function forwardedDefault(content: ReadonlyArray<AST.JSXChild>, render: RenderContext): boolean {
   const [only] = content;
   if (content.length !== 1 || only?.type !== "JSXExpressionContainer") {
     return false;
@@ -1131,9 +1134,9 @@ function lowerSlotObject(
   info: ComponentInfo,
   render: RenderContext,
   fixable: boolean,
-): SlotFill[] | undefined {
+): Array<SlotFill> | undefined {
   const { reporter } = render;
-  const fills: SlotFill[] = [];
+  const fills: Array<SlotFill> = [];
   let valid = true;
   const invalid = (at: { start: number; end: number }, message: string) => {
     reporter.report("UF3040", at, message, {
@@ -1235,7 +1238,7 @@ function lowerSlotObject(
       invalid(param, `The slot \`${slot}\` passes no props, so its fill takes no parameter.`);
       continue;
     }
-    const variables: LoopVariable[] = [];
+    const variables: Array<LoopVariable> = [];
     let parameter: Parameter | undefined;
     if (param) {
       const read = fillParameter(param, render);
@@ -1291,7 +1294,7 @@ function forwardedSlot(node: AST.MemberExpression, render: RenderContext): strin
 function fillParameter(
   param: AST.ParamPattern,
   render: RenderContext,
-): { parameter: Parameter; variables: LoopVariable[] } | undefined {
+): { parameter: Parameter; variables: Array<LoopVariable> } | undefined {
   const { reporter, source } = render;
   const invalid = (at: { start: number; end: number }) => {
     reporter.report(
@@ -1308,7 +1311,7 @@ function fillParameter(
   if (param.typeAnnotation || param.optional) {
     return invalid(param.typeAnnotation ?? param);
   }
-  const identifiers: AST.BindingIdentifier[] = [];
+  const identifiers: Array<AST.BindingIdentifier> = [];
   if (param.type === "Identifier") {
     identifiers.push(param);
   } else {
@@ -1323,7 +1326,7 @@ function fillParameter(
       identifiers.push(property.value);
     }
   }
-  const variables: LoopVariable[] = [];
+  const variables: Array<LoopVariable> = [];
   for (const identifier of identifiers) {
     if (shadowing(identifier, render)) {
       return undefined;

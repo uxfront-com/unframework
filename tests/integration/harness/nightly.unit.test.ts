@@ -13,7 +13,7 @@ import { REFERENCE, selectTargets } from "./targets.ts";
 const WORKFLOW = readFileSync(join(REPO_ROOT, ".github", "workflows", "nightly.yml"), "utf8");
 
 /** Each engine's batches, from the browser job's matrix: none means one run of every target. */
-function batchesOf(engine: string): string[][] | undefined {
+function batchesOf(engine: string): Array<Array<string>> | undefined {
   const entry = new RegExp(`^ {10}- browser: ${engine}\\n {12}batches: "([^"]*)"$`, "m").exec(
     WORKFLOW,
   );
@@ -21,7 +21,7 @@ function batchesOf(engine: string): string[][] | undefined {
 }
 
 describe("the nightly's browser job", () => {
-  const targets: readonly string[] = selectTargets(undefined);
+  const targets: ReadonlyArray<string> = selectTargets(undefined);
 
   it("runs WebKit in batches that each hold the reference, and every follower once", () => {
     const batches = batchesOf("webkit");

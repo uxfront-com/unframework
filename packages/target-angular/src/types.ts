@@ -81,7 +81,7 @@ function referencedNames(node: TypeNode): Set<string> {
 
 /** A type declaration as written, parsed: offsets in its nodes are relative to its code. */
 function parseDeclaration(code: string): TypeNode {
-  const [statement] = parseStatementsSource(code).statements as unknown[];
+  const [statement] = parseStatementsSource(code).statements as Array<unknown>;
   if (
     !isTypeNode(statement) ||
     (statement.type !== "TSInterfaceDeclaration" && statement.type !== "TSTypeAliasDeclaration")
@@ -113,8 +113,9 @@ function declaredType(declaration: TypeDeclaration): string {
 function declarationReferences(declaration: TypeDeclaration): Set<string> {
   const node = parseDeclaration(declaration.code);
   const names = referencedNames(node);
-  const parameters = (node.typeParameters as { params?: { name?: { name?: unknown } }[] } | null)
-    ?.params;
+  const parameters = (
+    node.typeParameters as { params?: Array<{ name?: { name?: unknown } }> } | null
+  )?.params;
   for (const parameter of parameters ?? []) {
     const name = parameter.name?.name;
     if (typeof name === "string") {
@@ -134,9 +135,9 @@ function declarationReferences(declaration: TypeDeclaration): Set<string> {
  * access ({@link propType}).
  */
 export function declaredTypes(
-  closure: readonly TypeDeclaration[],
+  closure: ReadonlyArray<TypeDeclaration>,
   roots: Iterable<string>,
-): TypeDeclaration[] {
+): Array<TypeDeclaration> {
   const byName = new Map(closure.map((declaration) => [declaration.name, declaration]));
   const kept = new Set<string>();
   const pending = [
@@ -160,7 +161,10 @@ export function declaredTypes(
  * written; a reference to a local alias that admits `undefined`, or an indexed access, becomes
  * `Exclude<…, undefined>`.
  */
-export function withoutUndefined(code: string, declarations: readonly TypeDeclaration[]): string {
+export function withoutUndefined(
+  code: string,
+  declarations: ReadonlyArray<TypeDeclaration>,
+): string {
   return without(code, declarations, false);
 }
 
@@ -169,11 +173,15 @@ export function withoutUndefined(code: string, declarations: readonly TypeDeclar
  * left out as written; a reference to a local alias that admits either, or an indexed access,
  * becomes `NonNullable<…>`.
  */
-export function withoutNullish(code: string, declarations: readonly TypeDeclaration[]): string {
+export function withoutNullish(code: string, declarations: ReadonlyArray<TypeDeclaration>): string {
   return without(code, declarations, true);
 }
 
-function without(code: string, declarations: readonly TypeDeclaration[], nullish: boolean): string {
+function without(
+  code: string,
+  declarations: ReadonlyArray<TypeDeclaration>,
+  nullish: boolean,
+): string {
   const left = (type: TypeNode) =>
     type.type === "TSUndefinedKeyword" || (nullish && type.type === "TSNullKeyword");
   const aliases = new Map(
@@ -192,7 +200,7 @@ function without(code: string, declarations: readonly TypeDeclaration[], nullish
       case "TSIndexedAccessType":
         return true;
       case "TSUnionType":
-        return (type.types as TypeNode[]).some((member) => admits(member, seen));
+        return (type.types as Array<TypeNode>).some((member) => admits(member, seen));
       case "TSTypeReference": {
         const name = (type.typeName as { name?: unknown }).name;
         if (typeof name !== "string" || seen.has(name)) {
@@ -206,7 +214,7 @@ function without(code: string, declarations: readonly TypeDeclaration[], nullish
     }
   };
   const type = parseType(code);
-  const members = type.type === "TSUnionType" ? (type.types as TypeNode[]) : [type];
+  const members = type.type === "TSUnionType" ? (type.types as Array<TypeNode>) : [type];
   const kept = members.filter((member) => !left(member));
   if (!kept.length) {
     return "never";
@@ -240,7 +248,7 @@ export function arrayElement(code: string): string | undefined {
   }
   if (type.type === "TSTypeReference") {
     const name = (type.typeName as { name?: unknown }).name;
-    const parameters = (type.typeArguments as { params?: TypeNode[] } | null)?.params ?? [];
+    const parameters = (type.typeArguments as { params?: Array<TypeNode> } | null)?.params ?? [];
     if ((name === "Array" || name === "ReadonlyArray") && parameters.length === 1) {
       return text(parameters[0]!);
     }
@@ -277,7 +285,7 @@ export function propType(prop: Prop, component: UfComponent): string {
 export function defaultedType(
   prop: Prop,
   component: UfComponent,
-  declarations: readonly TypeDeclaration[],
+  declarations: ReadonlyArray<TypeDeclaration>,
 ): string {
   const type = propType(prop, component);
   return prop.declaredBy && type !== prop.type.code
@@ -293,13 +301,13 @@ export function defaultedType(
  * (`TcbGenericContextBehavior.FallbackToAny`): as `unknown`, a fill could read none of its
  * members. A constraint that names another parameter reads it the same way.
  */
-export function atConstraints(code: string, parameters: readonly TypeParameter[]): string {
+export function atConstraints(code: string, parameters: ReadonlyArray<TypeParameter>): string {
   if (!parameters.length) {
     return code;
   }
   const byName = new Map(parameters.map((parameter) => [parameter.name, parameter]));
   const read = (text: string, seen: ReadonlySet<string>): string => {
-    const found: { start: number; end: number; name: string }[] = [];
+    const found: Array<{ start: number; end: number; name: string }> = [];
     const visit = (value: unknown, shadowed: ReadonlySet<string>): void => {
       if (Array.isArray(value)) {
         for (const item of value) {
@@ -357,13 +365,13 @@ export function atConstraints(code: string, parameters: readonly TypeParameter[]
 }
 
 /** The type parameters a node declares for its own subtree: `<T>(x: T) => T`, `[K in …]`. */
-function declaredNames(node: TypeNode): string[] {
+function declaredNames(node: TypeNode): Array<string> {
   if (node.type === "TSMappedType") {
     const key = node.key as { name?: unknown } | undefined;
     return typeof key?.name === "string" ? [key.name] : [];
   }
   const declaration = node.typeParameters as
-    | { type?: string; params?: { name?: { name?: unknown } }[] }
+    | { type?: string; params?: Array<{ name?: { name?: unknown } }> }
     | null
     | undefined;
   if (declaration?.type !== "TSTypeParameterDeclaration") {
@@ -375,7 +383,7 @@ function declaredNames(node: TypeNode): string[] {
 }
 
 /** The names a conditional type's extends clause declares with `infer`. */
-function inferredNames(value: unknown): string[] {
+function inferredNames(value: unknown): Array<string> {
   if (Array.isArray(value)) {
     return value.flatMap(inferredNames);
   }

@@ -46,9 +46,9 @@ export class SolidComposition {
   readonly module: UfModule;
   readonly #imports: ImportSet;
   /** The interfaces the props parameter takes beside its own type: the models', the slots'. */
-  readonly types: TypeDeclaration[] = [];
+  readonly types: Array<TypeDeclaration> = [];
   /** How the props parameter names each of `types`: `PickerSlots<T>` (src/generics.ts). */
-  readonly #references: string[] = [];
+  readonly #references: Array<string> = [];
   /**
    * The type the props parameter takes for fallthrough and `ref`, or none: the attributes of the
    * element they land on but the names the component declares (src/fallthrough.ts).
@@ -72,7 +72,7 @@ export class SolidComposition {
    */
   readonly resolved: ReadonlyMap<string, string>;
   /** The slots resolved once in each row of the lists being printed, innermost last. */
-  readonly #rows: ReadonlyMap<string, string>[] = [];
+  readonly #rows: Array<ReadonlyMap<string, string>> = [];
 
   constructor(component: UfComponent, module: UfModule, imports: ImportSet) {
     this.component = component;
@@ -187,7 +187,7 @@ export class SolidComposition {
   }
 
   /** The type texts the props parameter takes beside the props type and the events. */
-  parameterTypes(): string[] {
+  parameterTypes(): Array<string> {
     return [...this.#references, ...(this.inline ? [this.inline] : [])];
   }
 
@@ -212,7 +212,7 @@ export class SolidComposition {
    * The statements that resolve slots, before the setup or at the start of a list's row
    * (`const content = children(() => props.children);`).
    */
-  statements(object: string, slots: ReadonlyMap<string, string> = this.resolved): string[] {
+  statements(object: string, slots: ReadonlyMap<string, string> = this.resolved): Array<string> {
     if (!slots.size) {
       return [];
     }
@@ -261,7 +261,7 @@ export class SolidComposition {
   }
 
   /** The module's keys, as contexts, when this component's output declares them. */
-  keys(): string[] {
+  keys(): Array<string> {
     const keys = this.module.keys ?? [];
     if (
       !keys.length ||
@@ -288,7 +288,7 @@ export class SolidComposition {
 }
 
 /** Where the first model is declared. */
-function model0Span(models: readonly ModelItem[]): Span {
+function model0Span(models: ReadonlyArray<ModelItem>): Span {
   return models[0]!.span;
 }
 
@@ -368,7 +368,7 @@ function slotUse(root: unknown): SlotUse {
     };
     if (node.kind === "SlotOutlet") {
       named(node.slot, true);
-      if (!row && node.slot === "default" && (node.fallback as unknown[]).length) {
+      if (!row && node.slot === "default" && (node.fallback as Array<unknown>).length) {
         use.fallsBack.add("default");
       }
     } else if (node.kind === "Slot") {

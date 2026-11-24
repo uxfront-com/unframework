@@ -12,7 +12,7 @@ function container(html = ""): HTMLDivElement {
   return root;
 }
 
-const lines = (...text: string[]) => `${text.join("\n")}\n`;
+const lines = (...text: Array<string>) => `${text.join("\n")}\n`;
 
 afterEach(() => {
   document.body.replaceChildren();

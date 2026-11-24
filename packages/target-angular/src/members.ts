@@ -53,18 +53,18 @@ export interface MemberContext {
   plan: Plan;
   placeholders: Placeholders;
   /** The types the props reach, for an input with a default whose type admits `undefined`. */
-  declarations: readonly TypeDeclaration[];
+  declarations: ReadonlyArray<TypeDeclaration>;
   rules: RewriteRules;
   /** The members the template reads, which it sees only when they are `protected`. */
   templateMembers: ReadonlySet<string>;
   /** The globals the template reads: each is a member of its own name. */
-  globals: readonly string[];
+  globals: ReadonlyArray<string>;
   /** The module values the template reads, by name: each is a member, `moduleMember`'s. */
   moduleMembers: ReadonlyMap<string, string>;
   /** The methods listeners' handlers moved to. */
-  handlers: readonly HandlerMethod[];
+  handlers: ReadonlyArray<HandlerMethod>;
   /** The members that remember the elements a once listener ran on (./listeners.ts). */
-  guards: readonly string[];
+  guards: ReadonlyArray<string>;
   /** The guard method a group's once listener runs under, when one does (./listeners.ts). */
   once?: string;
   /** The `nextTick` helper's name, when code calls `nextTick()`. */
@@ -72,7 +72,7 @@ export interface MemberContext {
   /** The injection token of the application's id counter, when the component declares an id. */
   nextId?: string;
   /** The component's own slot directives, whose templates it queries (./composition.ts). */
-  slots: readonly SlotDirective[];
+  slots: ReadonlyArray<SlotDirective>;
   /**
    * What the component takes from its consumer (ADR-0056, ADR-0118): the `class` and `style`
    * inputs it merges into its root, and, where it `passes` them on, the records of attributes and
@@ -93,13 +93,13 @@ export interface MemberContext {
   /** The member that tells the server's render apart, for a select's options (./models.ts). */
   server?: string;
   /** The native controls' helpers the template calls (./models.ts). */
-  helpers: readonly ModelHelper[];
+  helpers: ReadonlyArray<ModelHelper>;
 }
 
 /** The class's members, and the interfaces it implements (`OnInit`). */
 export function classMembers(context: MemberContext): {
-  members: Member[];
-  implements: string[];
+  members: Array<Member>;
+  implements: Array<string>;
 } {
   const { plan, placeholders } = context;
   const { component, imports } = plan;
@@ -115,7 +115,7 @@ export function classMembers(context: MemberContext): {
       : context.templateMembers.has(name)
         ? ("protected" as const)
         : ("private" as const);
-  const members: Member[] = component.props.map((prop) =>
+  const members: Array<Member> = component.props.map((prop) =>
     inputMember(prop, component, core("input"), placeholders, context.declarations),
   );
   if (context.fallthrough !== undefined) {
@@ -333,16 +333,16 @@ export function classMembers(context: MemberContext): {
     member: service,
   };
 
-  const fields: Member[] = [];
-  const arrows: Member[] = [];
+  const fields: Array<Member> = [];
+  const arrows: Array<Member> = [];
   // Each a block of statements: a hook or a watcher, or the reads of the seeded values.
-  const constructorCode: string[] = [];
-  const initCode: string[] = [];
-  const destroyCode: string[] = [];
-  const unmounted: string[] = [];
-  const refs: Member[] = [];
+  const constructorCode: Array<string> = [];
+  const initCode: Array<string> = [];
+  const destroyCode: Array<string> = [];
+  const unmounted: Array<string> = [];
+  const refs: Array<Member> = [];
   /** Adds an effect's code: its statements, its member, what `ngOnDestroy` runs. */
-  const effect = (into: string[], code: EffectCode, hook = false) => {
+  const effect = (into: Array<string>, code: EffectCode, hook = false) => {
     if (code.code !== undefined) {
       into.push(code.code);
     }
@@ -358,7 +358,7 @@ export function classMembers(context: MemberContext): {
       (hook ? unmounted : destroyCode).push(code.destroy);
     }
   };
-  let pins: string[] | undefined;
+  let pins: Array<string> | undefined;
   /**
    * Reads a seeded value in `ngOnInit` (`this.amount();`), or assigns a seeded `let`, so that it
    * keeps the inputs' first values.
@@ -371,9 +371,9 @@ export function classMembers(context: MemberContext): {
     pins.push(statement);
     initCode[initCode.length - 1] = pins.join("\n");
   };
-  const methods: Member[] = [];
+  const methods: Array<Member> = [];
   // The awaits, in source order, which `ngOnInit` runs before the rest of the setup (ADR-0101).
-  const awaits: string[] = [];
+  const awaits: Array<string> = [];
   const expression = (code: string) => placeholders.expression(code);
   const typed = (type: string | undefined) => (type ? [placeholders.type(type)] : []);
 
@@ -840,8 +840,8 @@ export function classMembers(context: MemberContext): {
       readonly: true,
     }),
   );
-  const lifecycle: Member[] = [];
-  const implementing: string[] = [];
+  const lifecycle: Array<Member> = [];
+  const implementing: Array<string> = [];
   if (constructorCode.length) {
     lifecycle.push(
       js.methodDefinition(
@@ -953,7 +953,7 @@ function pure(context: MemberContext, code: Code): string {
 function statements(
   placeholders: Placeholders,
   code: string,
-): ReturnType<Placeholders["statements"]>[] {
+): Array<ReturnType<Placeholders["statements"]>> {
   return code.trim() === "" ? [] : [placeholders.statements(code)];
 }
 
@@ -975,7 +975,7 @@ function inputMember(
   component: UfComponent,
   input: string,
   placeholders: Placeholders,
-  declarations: readonly TypeDeclaration[],
+  declarations: ReadonlyArray<TypeDeclaration>,
 ): Member {
   const callee = js.identifier(input);
   const { default: initial } = prop;

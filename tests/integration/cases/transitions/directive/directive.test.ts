@@ -10,8 +10,8 @@ import { expect } from "vitest";
 import Banner from "./Banner.uf.tsx";
 
 /** Records the `unmounted` calls the directive reports on the document, for one element. */
-function record(element: Element): { calls: () => string[]; stop: () => void } {
-  const calls: string[] = [];
+function record(element: Element): { calls: () => Array<string>; stop: () => void } {
+  const calls: Array<string> = [];
   const listener = (event: Event) => {
     if ((event as CustomEvent<Element>).detail === element) {
       calls.push("unmounted");

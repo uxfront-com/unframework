@@ -21,7 +21,7 @@ import {
   toolchainDirOf,
 } from "../src/config/index.ts";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterAll(() => {
   for (const root of roots) {
     rmSync(root, { recursive: true, force: true });
@@ -58,16 +58,16 @@ afterEach(() => {
 /** A configuration's projects, in order. */
 async function projectsOf(
   options: Parameters<typeof defineTestConfig>[0],
-): Promise<TestProjectInlineConfiguration[]> {
+): Promise<Array<TestProjectInlineConfiguration>> {
   const projects = (await defineTestConfig(options)).test?.projects;
   if (!projects) {
     throw new Error("defineTestConfig gave no projects.");
   }
-  return projects as TestProjectInlineConfiguration[];
+  return projects as Array<TestProjectInlineConfiguration>;
 }
 
 /** The names of a configuration's projects, in order. */
-async function projectNames(root: string): Promise<string[]> {
+async function projectNames(root: string): Promise<Array<string>> {
   return (await projectsOf({ root })).map((each) => each.test?.name as string);
 }
 
@@ -82,7 +82,7 @@ function twoTargets(): string {
 }
 
 /** Each project's name and group. */
-async function groups(): Promise<unknown[][]> {
+async function groups(): Promise<Array<Array<unknown>>> {
   return (await projectsOf({ root: twoTargets() })).map((each) => [
     each.test?.name,
     each.test?.sequence?.groupOrder,
@@ -309,7 +309,7 @@ describe("defineTestConfig", () => {
 
 describe("noErrorBroadcast", () => {
   it("keeps a compile error off every page, and passes every other message on", () => {
-    const sent: unknown[] = [];
+    const sent: Array<unknown> = [];
     const hot = { send: (payload: unknown) => void sent.push(payload) };
     const server = { environments: { client: { hot } } } as unknown as ViteDevServer;
     const hook = noErrorBroadcast().configureServer as (server: ViteDevServer) => void;

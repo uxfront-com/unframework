@@ -78,7 +78,7 @@ import type { CodeTarget, ReferenceTarget } from "./expressions.ts";
 const at = span(0, 0);
 let offset = 1000;
 /** An expression at a fresh offset of an imaginary source. */
-const expr = (code: string, ...refs: ReferenceTarget[]) => {
+const expr = (code: string, ...refs: Array<ReferenceTarget>) => {
   const expression = expressionAt(offset, code, ...refs);
   offset += code.length + 10;
   return expression;
@@ -93,7 +93,7 @@ const index = createBinding("index", "loopVar", span(66, 71));
 const count = createBinding("count", "state", span(80, 85));
 const save = createBinding("save", "localFn", span(90, 94));
 const input = createBinding("input", "templateRef", span(100, 105));
-const bindings: Binding[] = [label, tone, attrs, items, item, index, count, save, input];
+const bindings: Array<Binding> = [label, tone, attrs, items, item, index, count, save, input];
 const type = createTypeText("string", at);
 
 /** A component over `render`, whose props are the four props above (`attrs` optional). */
@@ -114,10 +114,10 @@ function component(render: ElementNode | FragmentNode): UfComponent {
   );
 }
 
-const el = (tag: string, attributes: ElementNode["attributes"], ...children: RenderNode[]) =>
+const el = (tag: string, attributes: ElementNode["attributes"], ...children: Array<RenderNode>) =>
   createElement(tag, attributes, children, at);
 const text = (value: string) => createText(value, at);
-const show = (code: string, ...refs: ReferenceTarget[]) =>
+const show = (code: string, ...refs: Array<ReferenceTarget>) =>
   createInterpolation(expr(code, ...refs), at);
 
 /** Prints a render root through a dialect, with every placeholder spliced. */
@@ -144,7 +144,7 @@ async function formatted(render: ElementNode | FragmentNode, options = {}): Prom
 }
 
 /** Whether printed JSX parses as TSX, with oxc. */
-function parses(code: string): string[] {
+function parses(code: string): Array<string> {
   return parseModule("A.tsx", `export const x = ${code};`).errors.map((error) => error.message);
 }
 
@@ -497,7 +497,7 @@ describe("attributes", () => {
   // The analyser's `nullish`, not the printer, says when a source may be nullish: a member, a
   // conditional or an item may be, and a spread of nothing renders no key (ADR-0039).
   it("reads every key through `?.` when the spread's source may be nullish", () => {
-    const spread = (code: string, ...names: ReferenceTarget[]) =>
+    const spread = (code: string, ...names: Array<ReferenceTarget>) =>
       createSpreadAttribute(
         expr(code, ...names),
         [createSpreadKey("title", at), createSpreadKey("data-x", at)],
@@ -586,13 +586,13 @@ describe("dialect hooks", () => {
 
 describe("listeners and template refs", () => {
   /** Setup code at a fresh offset. */
-  const code = (text: string, ...targets: CodeTarget[]) => {
+  const code = (text: string, ...targets: Array<CodeTarget>) => {
     const found = codeAt(offset, text, ...targets);
     offset += text.length + 10;
     return found;
   };
   /** An inline handler, `() => body`, with the event as its parameter when `event` is set. */
-  const inline = (body: string, targets: CodeTarget[], event?: string) =>
+  const inline = (body: string, targets: Array<CodeTarget>, event?: string) =>
     createInlineHandler(
       createFunctionCode(
         event ? [createParameter("event", at, { event })] : [],
@@ -643,7 +643,7 @@ describe("listeners and template refs", () => {
   });
 
   it("prints a handler's code with the rules, for the client site", () => {
-    const sites: RewriteSite[] = [];
+    const sites: Array<RewriteSite> = [];
     const rules: RewriteRules = {
       ...solid,
       binding: (reference, binding, written, site) => {
@@ -722,7 +722,7 @@ describe("listeners and template refs", () => {
   });
 
   it("spells a list's key for the key site", () => {
-    const sites: string[] = [];
+    const sites: Array<string> = [];
     const rules: RewriteRules = {
       binding: (_, __, written, site) => {
         sites.push(`${written}:${site}`);

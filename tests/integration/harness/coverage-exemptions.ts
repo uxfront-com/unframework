@@ -22,7 +22,7 @@ const LANES: Readonly<Partial<Record<Exclude<TargetName, "vue">, string>>> = {};
 
 /** The lanes of every target but those whose cell is unsupported. */
 function lanesBut(
-  ...unsupported: Exclude<TargetName, "vue">[]
+  ...unsupported: Array<Exclude<TargetName, "vue">>
 ): Partial<Record<TargetName, string>> {
   return Object.fromEntries(
     Object.entries(LANES).filter(([target]) => !unsupported.includes(target as never)),

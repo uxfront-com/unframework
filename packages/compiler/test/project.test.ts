@@ -732,7 +732,7 @@ describe("a child's own children (ADR-0118)", () => {
     const gate = new Promise<void>((resolve) => (open = resolve));
     let reached!: () => void;
     const reading = new Promise<void>((resolve) => (reached = resolve));
-    const reads: string[] = [];
+    const reads: Array<string> = [];
     let failing = true;
     const readFile = async (path: string) => {
       reads.push(path);
@@ -768,7 +768,7 @@ describe("a child's own children (ADR-0118)", () => {
 
   it("cuts a cycle where the graph says, however concurrent compiles reach it (P8)", async () => {
     // C1 ↔ C3, C3 → C4 → C3 and C0 ↔ C2 are cycles; Page sits outside them, and passes each a `title`.
-    const component = (name: string, imports: string[], root: string) =>
+    const component = (name: string, imports: Array<string>, root: string) =>
       `${imports.map((each) => `import ${each} from "./${each}.uf.tsx";\n`).join("")}export default function ${name}() {\n  return ${root};\n}\n`;
     const initial = {
       "C0.uf.tsx": component("C0", ["C2"], "<C2 />"),
@@ -791,8 +791,9 @@ describe("a child's own children (ADR-0118)", () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;
       return new Promise((resolve) => setTimeout(resolve, seed % 7));
     };
-    const codes = (result: { diagnostics: readonly { code: string; span: { start: number } }[] }) =>
-      result.diagnostics.map((each) => `${each.code}@${each.span.start}`);
+    const codes = (result: {
+      diagnostics: ReadonlyArray<{ code: string; span: { start: number } }>;
+    }) => result.diagnostics.map((each) => `${each.code}@${each.span.start}`);
     const fresh = (delayed: boolean) =>
       createProject({
         root: "/project",

@@ -47,8 +47,8 @@ function holdsRoot(element: Element): boolean {
  * `stamp` is the test id each element it claims carries for its view; an element with a test id
  * of its own fails, since the stamp would replace it.
  */
-export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
-  const found: Element[] = [];
+export function teleportedBy(owner: TeleportOwner, stamp?: string): Array<Element> {
+  const found: Array<Element> = [];
   for (const element of document.body.children) {
     if (!owners.has(element) && !baseline.has(element) && !holdsRoot(element)) {
       if (stamp !== undefined) {
@@ -74,7 +74,11 @@ export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
  * Runs `read` with the stamps taken off the elements, synchronously, so no framework sees them
  * gone: the DOM capture shows what the component rendered.
  */
-export function withoutStamps<T>(elements: readonly Element[], stamp: string, read: () => T): T {
+export function withoutStamps<T>(
+  elements: ReadonlyArray<Element>,
+  stamp: string,
+  read: () => T,
+): T {
   const stamped = elements.filter((element) => element.getAttribute("data-testid") === stamp);
   for (const element of stamped) {
     element.removeAttribute("data-testid");
@@ -93,7 +97,7 @@ export function withoutStamps<T>(elements: readonly Element[], stamp: string, re
  * holds no mount root, once its views are unmounted. A component that appends to `body`, a
  * teleport's content included, removes it when it unmounts.
  */
-export function leftInBody(): string[] {
+export function leftInBody(): Array<string> {
   return [...document.body.children]
     .filter((element) => !baseline.has(element) && !holdsRoot(element))
     .map((element) => {

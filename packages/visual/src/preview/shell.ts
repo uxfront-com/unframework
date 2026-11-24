@@ -21,31 +21,31 @@ import { PREVIEW_HOST } from "./servers.ts";
  * static preview, where every frame shares the shell's origin.
  */
 export interface ShellData {
-  frames: { target: string; src: string }[];
+  frames: Array<{ target: string; src: string }>;
   /** In the catalogue's order, with the metadata of ADR-0110. */
-  examples: {
+  examples: Array<{
     key: string;
     id: string;
-    category: string[];
+    category: Array<string>;
     title: string;
     description?: string;
     order?: number;
     /** Its controls, by component (ADR-0113): none for one the preview serves as written. */
-    controls: ExampleControlGroup[];
-  }[];
-  components: {
+    controls: Array<ExampleControlGroup>;
+  }>;
+  components: Array<{
     key: string;
     id: string;
     name: string;
     controls: PreviewCatalogue["components"][number]["controls"];
     uncontrolled: PreviewCatalogue["components"][number]["uncontrolled"];
-  }[];
+  }>;
 }
 
 /** The shell's data, from the catalogue and the frame pages' URLs. */
 export function shellData(
   catalogue: PreviewCatalogue,
-  frames: readonly { target: string; src: string }[],
+  frames: ReadonlyArray<{ target: string; src: string }>,
 ): ShellData {
   return {
     frames: frames.map(({ target, src }) => ({ target, src })),
@@ -464,7 +464,7 @@ function shellScript(
   });
 
   // Controls.
-  const propsOf = (controls: readonly Control[]): Record<string, unknown> =>
+  const propsOf = (controls: ReadonlyArray<Control>): Record<string, unknown> =>
     kit.componentProps(
       controls,
       (name) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement,
@@ -540,7 +540,7 @@ function shellScript(
   interface Item {
     element: HTMLElement;
     parent: Item | undefined;
-    children: Item[];
+    children: Array<Item>;
     key?: string;
     text: string;
   }

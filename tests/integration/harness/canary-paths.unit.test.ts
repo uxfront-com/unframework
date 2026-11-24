@@ -17,7 +17,7 @@ import {
 import { REPO_ROOT, ROOT } from "./paths.ts";
 
 /** A file for each entry of the list. */
-const ON_THE_LIST: readonly (readonly [string, string])[] = [
+const ON_THE_LIST: ReadonlyArray<readonly [string, string]> = [
   [".github/workflows/ci.yml", ".github/workflows/ci.yml"],
   [".github/actions/setup/**", ".github/actions/setup/action.yml"],
   ["tests/integration/harness/**", "tests/integration/harness/guard.ts"],
@@ -53,7 +53,7 @@ function runScript(input: string): { status: number | null; stdout: string } {
 }
 
 /** PR #147's files: the docs pages, an ADR, the plan and a README under a listed package. */
-const PR_147: readonly string[] = [
+const PR_147: ReadonlyArray<string> = [
   "apps/web/content/docs/4.tooling/3.bundler-plugin.md",
   "apps/web/content/docs/4.tooling/4.packaging.md",
   "docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md",
@@ -62,7 +62,7 @@ const PR_147: readonly string[] = [
 ];
 
 /** The changes that are documentation alone: neither the canaries nor the tests run. */
-const DOCS_ONLY: readonly (readonly [string, readonly string[]])[] = [
+const DOCS_ONLY: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [
   ["PR #147's files", PR_147],
   ["a README under a listed package", ["packages/testing/README.md"]],
   ["the harness's README", ["tests/integration/README.md"]],
@@ -86,7 +86,7 @@ describe("the canary path filter", () => {
     expect(runScript("")).toMatchObject({ status: 0, stdout: "canaries=false\ntests=true\n" });
   });
 
-  it.each<readonly [string, boolean, boolean, readonly string[]]>([
+  it.each<readonly [string, boolean, boolean, ReadonlyArray<string>]>([
     ...DOCS_ONLY.map(([name, files]) => [name, false, false, files] as const),
     [
       "the diagnostics page, which tests/repo compares with the catalogue",
@@ -149,7 +149,7 @@ describe("the canary path filter", () => {
   it("lists every page a test reads in TESTED_DOCS", () => {
     const tested = TESTED_DOCS.map(globToRegExp);
     const named = new Set<string>();
-    const unlisted: string[] = [];
+    const unlisted: Array<string> = [];
     const files = globSync("**/*.test.ts", {
       cwd: REPO_ROOT,
       exclude: ["**/node_modules", "**/.git", "packages/compiler-v1"],

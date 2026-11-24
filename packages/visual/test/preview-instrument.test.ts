@@ -37,7 +37,7 @@ const withHelper = (source: string) =>
       'function Helper() {\n  return <Flag label="helper" />;\n}\n\nexport default function Flags',
     )
     .replace("<Plain />", "<Plain />\n      <Helper />");
-const TARGETS: TargetName[] = [
+const TARGETS: Array<TargetName> = [
   "react",
   "vue",
   "svelte",

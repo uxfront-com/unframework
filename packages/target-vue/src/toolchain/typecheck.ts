@@ -23,9 +23,9 @@ const UNLOCATED = /^(error|warning|message) (TS\d+): (.*)$/;
  * not understand: a checker whose output is not fully read cannot pass a file.
  */
 export async function typecheck(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
   assertFilesToCheck(files);
   const bin = resolveToolBin(context.toolchainDir, "vue-tsc", "vue-tsc");
   const run = await runChecker(context.toolchainDir, bin, files, (tsconfig) => [
@@ -37,7 +37,7 @@ export async function typecheck(
   ]);
 
   const diagnostics = diagnosticsByFile(files, run.tsconfig);
-  const unknown: string[] = [];
+  const unknown: Array<string> = [];
   let last: ToolchainMessage | undefined;
   let errors = 0;
   for (const line of run.stdout.split(/\r?\n/)) {

@@ -32,7 +32,7 @@ export function hooksCode(directive: UfDirective, exported = false): string {
 }
 
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, as its plain hooks. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
   const dependencies = directiveDependencies(directive, context.module);
   const code = [
     ...(dependencyImports(dependencies).length ? [dependencyImports(dependencies).join("\n")] : []),
@@ -47,8 +47,8 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
  * The directives a component's elements apply, in a post-order of the elements (a descendant's
  * before its ancestor's, siblings' in document order), each element's in attribute order.
  */
-export function directivesInPostOrder(component: UfComponent): DirectiveAttribute[] {
-  const found: DirectiveAttribute[] = [];
+export function directivesInPostOrder(component: UfComponent): Array<DirectiveAttribute> {
+  const found: Array<DirectiveAttribute> = [];
   walk(component.render, {
     leave(node) {
       if (node.kind !== "Element") {

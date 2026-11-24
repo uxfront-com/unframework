@@ -66,7 +66,7 @@ export interface CompilerPlugin {
   /** Transforms the IR after analysis. Return a new module, or nothing to keep it. */
   ir?(module: UfModule): UfModule | void;
   /** Transforms one component's files for one target, before formatting. */
-  output?(files: readonly OutputFile[], context: OutputHookContext): OutputFile[] | void;
+  output?(files: ReadonlyArray<OutputFile>, context: OutputHookContext): Array<OutputFile> | void;
 }
 
 /** Options for {@link compile}. */
@@ -80,7 +80,7 @@ export interface CompileOptions {
    * The targets to emit, by selector (`solid@2`, ADR-0102) or as target objects. Outputs are keyed
    * by each target's id, so `solid@2`'s are under `solid2`.
    */
-  targets: readonly (TargetSelector | Target)[];
+  targets: ReadonlyArray<TargetSelector | Target>;
   /** Formats the output with oxfmt. Defaults to `true`; the dev server may skip it. */
   format?: boolean;
   /**
@@ -90,7 +90,7 @@ export interface CompileOptions {
    * without one.
    */
   sourceMap?: boolean;
-  plugins?: readonly CompilerPlugin[];
+  plugins?: ReadonlyArray<CompilerPlugin>;
   /** Each target's options, by target name. */
   targetOptions?: Readonly<Record<string, unknown>>;
   /**
@@ -112,7 +112,7 @@ export interface CompileOptions {
    * absolute throws (`checkPassThrough`). An import the analyser classifies itself (the
    * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
    */
-  passThrough?: readonly string[];
+  passThrough?: ReadonlyArray<string>;
   /**
    * The type oracle the props, events, models, slots and injection keys' types are resolved
    * through (plan §5.5, ADR-0067): `compile()` asks it for each type the analyser reads before it
@@ -130,7 +130,7 @@ export interface CompileOptions {
  * `/`, `\\` or a drive letter, since such a specifier names a file of the project, a component's
  * own sheet or a child, never a module a plugin registers.
  */
-export function checkPassThrough(prefixes: readonly string[]): void {
+export function checkPassThrough(prefixes: ReadonlyArray<string>): void {
   for (const prefix of prefixes) {
     if (typeof prefix !== "string" || !prefix || /^(?:[./\\]|[A-Za-z]:)/.test(prefix)) {
       throw new TypeError(
@@ -146,13 +146,13 @@ export interface CompileResult {
   /** The module's IR (frozen), or `undefined` when module-level errors stop compilation. */
   ir: UfModule | undefined;
   /** Every diagnostic, sorted. Portability diagnostics carry their target. */
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
   /**
    * Each target's files, by target name, in the order of `targets`: each component's, then a copy
    * of each shared `.ts` module the source reaches, unchanged, at its path relative to the source
    * (ADR-0070).
    */
-  outputs: Record<string, OutputFile[]>;
+  outputs: Record<string, Array<OutputFile>>;
   /**
    * The component each output file is written for, by target name, then by the file's path, or
    * the composable for a `.uf.ts` source's: the unplugin loads a file's components under ids of
@@ -167,7 +167,7 @@ export interface CompileResult {
    * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is
    * not installed included. Never an absolute path (P8).
    */
-  dependencies: string[];
+  dependencies: Array<string>;
 }
 
 /**
@@ -184,9 +184,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
   if (options.passThrough) {
     checkPassThrough(options.passThrough);
   }
-  const diagnostics: Diagnostic[] = [];
+  const diagnostics: Array<Diagnostic> = [];
   const targets = options.targets.map(resolveTarget);
-  const outputs: Record<string, OutputFile[]> = {};
+  const outputs: Record<string, Array<OutputFile>> = {};
   const owners: Record<string, Record<string, string>> = {};
   for (const target of targets) {
     if (Object.hasOwn(outputs, target.name)) {
@@ -314,7 +314,7 @@ export async function compile(source: string, options: CompileOptions): Promise<
     // project finds, not the analyser: components that import each other to render cannot each
     // load before the others, on Angular (ADR-0053, ADR-0071). A key, a type or another value
     // imported back closes none, so the context pattern stays valid (UF2033).
-    const cycles: Diagnostic[] = [];
+    const cycles: Array<Diagnostic> = [];
     const edges = componentImportNames(parsed).filter(({ specifier, names }) =>
       takesComponent(imports.get(specifier), names),
     );
@@ -463,7 +463,7 @@ function copyCollisions(
   module: UfModule,
   copies: ReadonlyMap<string, Copy>,
   file: string,
-): Diagnostic[] {
+): Array<Diagnostic> {
   const names = new Map<string, string>();
   const add = (directory: string, name: string) => {
     for (const stem of [name, kebabCase(name)]) {
@@ -499,7 +499,7 @@ function copyCollisions(
  * The source's relative imports and re-exports, each specifier once with the span of its first
  * declaration's specifier.
  */
-function relativeImports(parsed: ParsedModule): { specifier: string; span: Span }[] {
+function relativeImports(parsed: ParsedModule): Array<{ specifier: string; span: Span }> {
   const found = new Map<string, Span>();
   for (const statement of parsed.program.body) {
     const from =
@@ -520,7 +520,12 @@ function relativeImports(parsed: ParsedModule): { specifier: string; span: Span 
 }
 
 /** UF1205 at an import that closes a cycle, which names its files relative to the source. */
-function importCycle(file: string, specifier: string, span: Span, files: string[]): Diagnostic {
+function importCycle(
+  file: string,
+  specifier: string,
+  span: Span,
+  files: Array<string>,
+): Diagnostic {
   const names = files.map((path) => relativePath(directoryOf(file), path));
   return createDiagnostic("UF1205", {
     file,
@@ -550,17 +555,17 @@ async function emitTarget(
   module: UfModule,
   source: string,
   options: CompileOptions,
-  diagnostics: Diagnostic[],
+  diagnostics: Array<Diagnostic>,
   sheets: ReadonlyMap<string, string>,
   copies: ReadonlyMap<string, Copy>,
-): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
+): Promise<{ files: Array<OutputFile>; owners: Record<string, string> }> {
   const file = options.filename;
   const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
   diagnostics.push(...checkCapabilities(module, target));
-  const written: OutputFile[] = [];
+  const written: Array<OutputFile> = [];
   const owners = new Map<string, { path: string; component: string }>();
   for (const component of module.components) {
-    let files: readonly OutputFile[];
+    let files: ReadonlyArray<OutputFile>;
     try {
       const emitted = readFiles(
         target.emit(component, {
@@ -652,13 +657,13 @@ async function emitTarget(
   // ADR-0099). The `output` hooks are a component's, so they see none of it.
   const emitComposable = target.emitComposable?.bind(target);
   const emitDirective = target.emitDirective?.bind(target);
-  const modules: {
+  const modules: Array<{
     name: string;
     span: Span;
     what: string;
-    emit: ((context: EmitContext) => OutputFile[]) | undefined;
+    emit: ((context: EmitContext) => Array<OutputFile>) | undefined;
     own: Pick<UfModule, "composables" | "directives">;
-  }[] = [
+  }> = [
     ...(module.composables ?? []).map((composable) => ({
       name: composable.name,
       span: composable.span,
@@ -688,7 +693,7 @@ async function emitTarget(
       );
       continue;
     }
-    let files: OutputFile[];
+    let files: Array<OutputFile>;
     try {
       const emitted = readFiles(
         each.emit({
@@ -775,7 +780,7 @@ function remapped(
   { file: after, error }: FormatOutcome,
   file: string,
   target: string,
-  diagnostics: Diagnostic[],
+  diagnostics: Array<Diagnostic>,
 ): OutputFile {
   if (!before.map || error) {
     return after;
@@ -823,7 +828,7 @@ function diagnosticProblem(value: unknown, length: number): string | undefined {
   ) {
     return malformed;
   }
-  const edits: Record<string, unknown>[] = [];
+  const edits: Array<Record<string, unknown>> = [];
   for (const fix of fixes) {
     const { title, confidence, edits: written } = fix;
     if (typeof title !== "string" || !CONFIDENCES.has(confidence) || !isRecordList(written)) {
@@ -851,7 +856,7 @@ function diagnosticProblem(value: unknown, length: number): string | undefined {
 const SEVERITIES: ReadonlySet<unknown> = new Set(["error", "warning", "info"]);
 const CONFIDENCES: ReadonlySet<unknown> = new Set(["safe", "likely"]);
 
-function isRecordList(value: unknown): value is Record<string, unknown>[] {
+function isRecordList(value: unknown): value is Array<Record<string, unknown>> {
   return Array.isArray(value) && value.every(isRecord);
 }
 
@@ -860,12 +865,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** A target's or a plugin's files, copied, or why the value is not a list of output files. */
-function readFiles(value: unknown): { files: OutputFile[] } | { problem: string } {
+function readFiles(value: unknown): { files: Array<OutputFile> } | { problem: string } {
   if (!Array.isArray(value)) {
     return { problem: `${describe(value)} instead of a list of files` };
   }
-  const files: OutputFile[] = [];
-  for (const [index, item] of (value as unknown[]).entries()) {
+  const files: Array<OutputFile> = [];
+  for (const [index, item] of (value as Array<unknown>).entries()) {
     if (
       typeof item !== "object" ||
       item === null ||
@@ -894,7 +899,7 @@ function describe(value: unknown): string {
 }
 
 /** The first problems with a module, by JSON Pointer: `/components/0/render/tag must …`. */
-function describeProblems(problems: readonly IrValidationError[]): string {
+function describeProblems(problems: ReadonlyArray<IrValidationError>): string {
   const first = problems.slice(0, 3).map(({ path, message }) => `${path || "/"} ${message}`);
   const more = problems.length > 3 ? ` (and ${problems.length - 3} more)` : "";
   return `${first.join("; ")}${more}`;

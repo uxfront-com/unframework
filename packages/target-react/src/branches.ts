@@ -103,7 +103,7 @@ export function keyedBranches(node: IfNode, context: JsxContext, imports: Import
  * about two children with one key and reconciles them by it. Call it on the children a parent
  * prints (an element's, the root fragment's), before they print.
  */
-export function placeConditionals(children: readonly RenderNode[], module?: UfModule): void {
+export function placeConditionals(children: ReadonlyArray<RenderNode>, module?: UfModule): void {
   const keyed = children.flatMap((child, position) =>
     child.kind === "If" && conflicts(child, module) ? [[child, position] as const] : [],
   );
@@ -240,7 +240,7 @@ function conflicts(node: IfNode, module: UfModule | undefined): boolean {
  * The tags of the elements nodes can render at their top, where React reconciles them: their own
  * elements, those their nested conditionals' branches render there, and a list's rows.
  */
-function topTags(nodes: readonly RenderNode[], module: UfModule | undefined): Set<string> {
+function topTags(nodes: ReadonlyArray<RenderNode>, module: UfModule | undefined): Set<string> {
   const tags = new Set<string>();
   for (const node of nodes) {
     switch (node.kind) {

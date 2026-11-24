@@ -29,15 +29,21 @@ export interface LoweredClass {
   /** The attribute, when nothing in it was reported. */
   attribute: ClassAttribute | undefined;
   /** The static names, when every part is static: the attribute is then `class="…"`. */
-  names: string[] | undefined;
+  names: Array<string> | undefined;
   /** Whether anything in it was reported. */
   reported: boolean;
 }
 
 /** A part as it is collected, before the names are checked against each other. */
 type Part =
-  | { kind: "static"; names: string[]; at: Span }
-  | { kind: "toggle"; names: string[]; condition: CheckedExpression; static: boolean; at: Span }
+  | { kind: "static"; names: Array<string>; at: Span }
+  | {
+      kind: "toggle";
+      names: Array<string>;
+      condition: CheckedExpression;
+      static: boolean;
+      at: Span;
+    }
   | { kind: "dynamic"; value: CheckedExpression; collection: boolean; at: Span };
 
 /**
@@ -47,7 +53,7 @@ type Part =
 export function lowerClass(value: AST.Expression, context: RenderContext): LoweredClass {
   const { reporter } = context;
   const mark = reporter.diagnostics.length;
-  const parts: Part[] = [];
+  const parts: Array<Part> = [];
   collect(value, parts, context);
   // A name set twice by the static parts and toggles (UF3007).
   const seen = new Map<string, Span>();
@@ -82,7 +88,7 @@ export function lowerClass(value: AST.Expression, context: RenderContext): Lower
   if (reported || allStatic) {
     return { attribute: undefined, names, reported };
   }
-  const items: ClassItem[] = parts.flatMap((part): ClassItem[] => {
+  const items: Array<ClassItem> = parts.flatMap((part): Array<ClassItem> => {
     switch (part.kind) {
       case "static":
         return [createStaticClass(part.names.join(" "), part.at)];
@@ -98,7 +104,10 @@ export function lowerClass(value: AST.Expression, context: RenderContext): Lower
 }
 
 /** The names of a static string, split at ASCII whitespace, with other whitespace reported. */
-function namesOf(node: AST.StringLiteral | AST.TemplateLiteral, context: RenderContext): string[] {
+function namesOf(
+  node: AST.StringLiteral | AST.TemplateLiteral,
+  context: RenderContext,
+): Array<string> {
   const value = valueOf(node);
   reportCharacters(node, context.source, context.reporter);
   checkWhitespace(value, node, context);
@@ -120,7 +129,7 @@ function checkWhitespace(value: string, at: Span, context: RenderContext): void 
   );
 }
 
-function collect(node: AST.Expression, parts: Part[], context: RenderContext): void {
+function collect(node: AST.Expression, parts: Array<Part>, context: RenderContext): void {
   const { reporter } = context;
   if (isStaticString(node)) {
     const names = namesOf(node, context);
@@ -174,7 +183,11 @@ function isNothing(node: AST.Expression): boolean {
 }
 
 /** `cond && "a b"` toggles each name; `cond && expr` is written `cond ? expr : undefined`. */
-function collectToggle(node: AST.LogicalExpression, parts: Part[], context: RenderContext): void {
+function collectToggle(
+  node: AST.LogicalExpression,
+  parts: Array<Part>,
+  context: RenderContext,
+): void {
   const { reporter, source } = context;
   // A condition, where a slot's presence may be read (ADR-0054).
   const condition = checkExpression(node.left, { ...context, presence: true });
@@ -190,7 +203,7 @@ function collectToggle(node: AST.LogicalExpression, parts: Part[], context: Rend
   const fixable = condition.clean && value.clean && !kinds.length;
   const left = source.slice(node.left.start, node.left.end);
   const right = source.slice(node.right.start, node.right.end);
-  const fixes: Fix[] = fixable
+  const fixes: Array<Fix> = fixable
     ? [
         {
           title: "Write it as a conditional",
@@ -234,7 +247,11 @@ function parenthesised(node: AST.Expression, text: string): string {
 }
 
 /** An object's keys are names, toggled by their values. */
-function collectObject(node: AST.ObjectExpression, parts: Part[], context: RenderContext): void {
+function collectObject(
+  node: AST.ObjectExpression,
+  parts: Array<Part>,
+  context: RenderContext,
+): void {
   const { reporter } = context;
   for (const property of node.properties) {
     if (
@@ -365,8 +382,8 @@ function checkDynamic(
  * target reads alike: numbers, which Vue's `normalizeClass` and Qwik skip and clsx renders as
  * digits, and `true`, which Qwik's `ClassList` rejects. Arrays are walked once each.
  */
-function collectionKinds(kinds: Kinds): { shapes: ObjectShape[]; entries: Primitive[] } {
-  const shapes: ObjectShape[] = [];
+function collectionKinds(kinds: Kinds): { shapes: Array<ObjectShape>; entries: Array<Primitive> } {
+  const shapes: Array<ObjectShape> = [];
   const entries = new Set<Primitive>();
   const seen = new Set<() => Kinds>();
   const visit = (value: Kinds, entry: boolean): void => {

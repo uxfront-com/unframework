@@ -97,8 +97,8 @@ export interface LoweredStyle {
 
 /** The declarations seen so far, for the overlap check. */
 class Declarations {
-  readonly #seen: { property: string; at: Span }[] = [];
-  readonly declarations: StyleDeclaration[] = [];
+  readonly #seen: Array<{ property: string; at: Span }> = [];
+  readonly declarations: Array<StyleDeclaration> = [];
 
   /** Reports a property another declaration sets already, or overlaps (UF3022). */
   claim(property: string, at: Span, reporter: Reporter): void {
@@ -127,7 +127,7 @@ class Declarations {
  */
 export function lowerStaticStyle(
   value: string,
-  pieces: readonly Piece[],
+  pieces: ReadonlyArray<Piece>,
   at: Span,
   reporter: Reporter,
 ): LoweredStyle {
@@ -174,9 +174,9 @@ export function lowerStaticStyle(
 }
 
 /** Maps a span of a decoded value back to the source, through the pieces that wrote it. */
-function mapper(value: string, pieces: readonly Piece[], at: Span): (range: Span) => Span {
+function mapper(value: string, pieces: ReadonlyArray<Piece>, at: Span): (range: Span) => Span {
   // Each UTF-16 unit of the value, and the piece that wrote it.
-  const origins: Piece[] = [];
+  const origins: Array<Piece> = [];
   for (const piece of pieces) {
     for (let unit = 0; unit < piece.value.length; unit++) {
       origins.push(piece);
@@ -445,7 +445,7 @@ export function lowerStyleObject(node: AST.ObjectExpression, context: RenderCont
     if (read.kebab) {
       const camel = camelCase(read.property);
       // A rename that would set a property twice changes which value wins: no fix then.
-      const fixes: Fix[] =
+      const fixes: Array<Fix> =
         counts.get(read.property) === 1 && !property.shorthand
           ? [
               {
@@ -612,7 +612,7 @@ export function interfaceProblem(attribute: "class" | "style"): { message: strin
  * The object literals a value may be at run time: itself, a conditional's branches, either side
  * of `??` and `||`, the right of `&&`, inside parentheses. Each is checked where it is written.
  */
-function objectLeaves(node: AST.Expression): AST.ObjectExpression[] {
+function objectLeaves(node: AST.Expression): Array<AST.ObjectExpression> {
   switch (node.type) {
     case "ObjectExpression":
       return [node];
@@ -679,7 +679,7 @@ function checkObjectLeaf(leaf: AST.ObjectExpression, context: RenderContext, mar
  */
 export function styleValueProblem(
   kinds: Kinds,
-  inPlace: readonly Span[] = [],
+  inPlace: ReadonlyArray<Span> = [],
 ): { message: string; help: string; at?: Span } | undefined {
   const others = outside(kinds, ["string", "object", "null", "undefined"]);
   if (others.length) {

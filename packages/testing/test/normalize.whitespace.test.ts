@@ -13,7 +13,7 @@ function collapse(html: string): string {
 }
 
 /** The canonical text, one line per array entry. */
-const lines = (...text: string[]) => `${text.join("\n")}\n`;
+const lines = (...text: Array<string>) => `${text.join("\n")}\n`;
 
 describe("rule 6: collapseWhitespace, inside a line", () => {
   it("collapses runs of spaces, tabs and line breaks to one space", () => {

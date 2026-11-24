@@ -29,7 +29,7 @@ export async function captureVisual(
     container: HTMLElement;
     locator: Locator;
     /** What the view teleported (ADR-0098), and the locator of each, in `body` order. */
-    teleported?: readonly { element: Element; locator: Locator }[];
+    teleported?: ReadonlyArray<{ element: Element; locator: Locator }>;
     tolerance?: PixelTolerance;
   },
   send: CaptureCommand = (request) => commands.ufVisualCapture(request),

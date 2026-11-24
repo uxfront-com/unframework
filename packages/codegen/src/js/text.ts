@@ -23,9 +23,9 @@ export type TextPart = string | AST.Expression;
  * expression. Texts are escaped for a template literal's raw text: backslashes, backticks and
  * `${`, and control characters (a line feed, a tab) as the escapes a string literal writes.
  */
-export function textTemplate(parts: readonly TextPart[]): AST.TemplateLiteral | string {
+export function textTemplate(parts: ReadonlyArray<TextPart>): AST.TemplateLiteral | string {
   const texts = [""];
-  const expressions: AST.Expression[] = [];
+  const expressions: Array<AST.Expression> = [];
   for (const part of parts) {
     if (typeof part === "string") {
       texts[texts.length - 1] += part;

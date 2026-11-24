@@ -123,7 +123,7 @@ export type ListenerMode = "synthetic" | "native";
  */
 export interface NativeElement {
   /** The native listeners in attribute order, those of one event and phase together. */
-  groups: EventAttribute[][];
+  groups: Array<Array<EventAttribute>>;
   /** The ref callback's name, when it is declared once. */
   callback?: string;
 }
@@ -297,7 +297,7 @@ export function planComponent(
   addPassThroughImports(component, module, names);
   const nativeElements = nativeElementsOf(listeners);
   const narrowedReads = narrowedReadsOf(component);
-  const stable = (groups: readonly EventAttribute[][]) =>
+  const stable = (groups: ReadonlyArray<Array<EventAttribute>>) =>
     stableCallback(groups, kindOf, narrowedReads);
 
   // Client code: the inline handlers, the functions handlers name or client code calls, and
@@ -383,7 +383,7 @@ export function planComponent(
     }
   }
   const live = new Set<BindingId>();
-  const pendingLive: BindingId[] = [];
+  const pendingLive: Array<BindingId> = [];
   const needLive = (id: BindingId) => {
     if (live.has(id)) {
       return;
@@ -457,7 +457,7 @@ export function planComponent(
   }
   const mirroredProps = new Set<BindingId>();
   const mirroredEvents = new Set<string>();
-  const ranges = new Map<FunctionCode, readonly Span[]>();
+  const ranges = new Map<FunctionCode, ReadonlyArray<Span>>();
   for (let grew = true; grew;) {
     grew = false;
     const clientCode = [...clientFunctions, ...[...live].map((id) => getters.get(id)!)];
@@ -574,7 +574,7 @@ export function planComponent(
   // template, the values the setup evaluates, the functions a template calls, the watch sources
   // and the values `watchEffect` reads, which effects list; a memo's getter reads others.
   const memos = new Set<BindingId>();
-  const pendingMemos: BindingId[] = [];
+  const pendingMemos: Array<BindingId> = [];
   const needMemo = (id: BindingId) => {
     if (kindOf(id) !== "derived" || memos.has(id)) {
       return;
@@ -1025,7 +1025,7 @@ export function composableApi(module: UfModule, local: string): ComposableApi {
  * hook and its callers agree on every name.
  */
 export function liveReaderNames(
-  members: readonly Pick<ComposableMemberApi, "name" | "kind">[],
+  members: ReadonlyArray<Pick<ComposableMemberApi, "name" | "kind">>,
 ): Map<string, string> {
   const taken = new Set(members.map(({ name }) => name));
   const readers = new Map<string, string>();
@@ -1159,9 +1159,9 @@ function listenerModes(
   component: UfComponent,
   module?: UfModule,
 ): Map<EventAttribute, { element: ElementNode; mode: ListenerMode }> {
-  const found: [EventAttribute, ElementNode][] = [];
+  const found: Array<[EventAttribute, ElementNode]> = [];
   /** The tags each element may render: one, or a `<component is>`'s candidates. */
-  const tags = new Map<ElementNode, string[]>();
+  const tags = new Map<ElementNode, Array<string>>();
   walk(component.render, {
     enter(node) {
       const element = node.kind === "Dynamic" ? tagElementOf(node) : node;
@@ -1283,7 +1283,7 @@ function nativeElementsOf(
  * or a value its branch narrows, which only the render that wrote the element holds.
  */
 function stableCallback(
-  groups: readonly EventAttribute[][],
+  groups: ReadonlyArray<Array<EventAttribute>>,
   kindOf: (id: BindingId) => BindingKind | undefined,
   narrowedReads: ReadonlySet<number>,
 ): boolean {
@@ -1374,9 +1374,9 @@ const FED_BY: ReadonlyMap<string, string> = new Map([
 ]);
 
 /** Each element of a render tree with the elements from it up to the root, itself first. */
-function elementPaths(component: UfComponent): Map<ElementNode, ElementNode[]> {
-  const paths = new Map<ElementNode, ElementNode[]>();
-  const stack: ElementNode[] = [];
+function elementPaths(component: UfComponent): Map<ElementNode, Array<ElementNode>> {
+  const paths = new Map<ElementNode, Array<ElementNode>>();
+  const stack: Array<ElementNode> = [];
   walk(component.render, {
     enter(node) {
       const element = node.kind === "Dynamic" ? tagElementOf(node) : node;
@@ -1401,7 +1401,7 @@ const tagElements = new WeakMap<DynamicNode, ElementNode>();
  * The tags of the element what a parent passes a child lands on, by the element its listeners
  * are planned on: one, or a `<component is>` root's, each of which may render (ADR-0122).
  */
-export const passedTags: WeakMap<ElementNode, readonly string[]> = new WeakMap();
+export const passedTags: WeakMap<ElementNode, ReadonlyArray<string>> = new WeakMap();
 
 /**
  * A `<component is>` over tags as the element its listeners are planned on, the same object
@@ -1428,7 +1428,7 @@ export function tagElementOf(node: DynamicNode): ElementNode | undefined {
 }
 
 /** The tags a `<component is>` over tags may render. */
-function candidateTags(node: DynamicNode): string[] {
+function candidateTags(node: DynamicNode): Array<string> {
   return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
 }
 
@@ -1626,10 +1626,10 @@ function hoistable(
   moduleLevel: ReadonlySet<string>,
 ): Set<BindingId> {
   const nameOf = new Map(component.bindings.map(({ id, name }) => [id, name]));
-  const code = new Map<BindingId, Code[]>();
+  const code = new Map<BindingId, Array<Code>>();
   const parameters = new Set(component.typeParameters?.map(({ name }) => name));
   const typed = new Set<BindingId>();
-  const names = (types: readonly (TypeText | undefined)[], pieces: readonly Code[]) => {
+  const names = (types: ReadonlyArray<TypeText | undefined>, pieces: ReadonlyArray<Code>) => {
     const found = new Set<string>();
     for (const type of types) {
       if (type) {
@@ -1743,12 +1743,12 @@ function hoistable(
  * (and the whole of a loop that awaits), and inside the functions it writes. Conservative: a
  * read there goes through a mirror, which is right wherever it runs.
  */
-function deferredRanges(fn: FunctionCode): Span[] {
+function deferredRanges(fn: FunctionCode): Array<Span> {
   const { body } = fn;
   const offset = body.span.start;
   const kind = fn.expression ? "expression" : "statements";
   const { root } = parseCodeSource(body.code, kind);
-  const spans: Span[] = [];
+  const spans: Array<Span> = [];
   let firstAwait = Number.POSITIVE_INFINITY;
   const loops = new Set([
     "ForStatement",

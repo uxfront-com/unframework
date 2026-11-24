@@ -7,7 +7,11 @@ import { join } from "node:path";
 import type { Plugin } from "vite";
 
 /** Solid 2's runtime packages: what an output, the adapters and Solid itself import. */
-export const SOLID_PACKAGES: readonly string[] = ["solid-js", "@solidjs/web", "@solidjs/signals"];
+export const SOLID_PACKAGES: ReadonlyArray<string> = [
+  "solid-js",
+  "@solidjs/web",
+  "@solidjs/signals",
+];
 
 /** Whether a specifier names one of Solid 2's packages or a subpath of one. */
 export function isSolidSpecifier(specifier: string): boolean {
@@ -18,7 +22,7 @@ export function isSolidSpecifier(specifier: string): boolean {
  * The packages an output or an adapter imports, which resolve in the toolchain directory:
  * `@solidjs/signals` is `solid-js`'s own dependency, which resolves from `solid-js` itself.
  */
-const IMPORTED: readonly string[] = ["solid-js", "@solidjs/web"];
+const IMPORTED: ReadonlyArray<string> = ["solid-js", "@solidjs/web"];
 
 /**
  * Resolves every import of Solid 2's packages as if the toolchain directory imported it, through

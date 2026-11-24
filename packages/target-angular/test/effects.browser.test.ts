@@ -328,7 +328,7 @@ describe("async setup (ADR-0101)", () => {
   it("runs none of the rest, and no `onUnmounted`, when destroyed before the setup resolves", async () => {
     const errors = vi.spyOn(console, "error");
     // What the rest of the setup would throw, run against a destroyed injector (NG0205).
-    const thrown: unknown[] = [];
+    const thrown: Array<unknown> = [];
     const caught = (event: ErrorEvent | PromiseRejectionEvent) =>
       thrown.push("reason" in event ? event.reason : event.error);
     window.addEventListener("error", caught);

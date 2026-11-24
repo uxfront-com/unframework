@@ -93,9 +93,9 @@ export const ids: Readonly<Record<"label" | "slots" | "text" | "open" | "theme",
 /** An expression at `at`, with a reference to a binding for each `[text, binding]` in it. */
 export function expression(
   at: Span,
-  refs: readonly (readonly [string, string])[] = [],
+  refs: ReadonlyArray<readonly [string, string]> = [],
 ): Expression {
-  const references: Reference[] = refs.map(([part, binding]) => {
+  const references: Array<Reference> = refs.map(([part, binding]) => {
     const offset = text(at).indexOf(part);
     return createBindingReference(
       binding,

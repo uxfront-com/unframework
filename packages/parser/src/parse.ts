@@ -13,7 +13,7 @@ export interface Span {
 export interface ParseError {
   message: string;
   span: Span;
-  labels: { span: Span; message: string | undefined }[];
+  labels: Array<{ span: Span; message: string | undefined }>;
   help: string | undefined;
 }
 
@@ -25,8 +25,8 @@ export interface ParsedModule {
   program: Program;
   /** Static imports and exports, as the parser records them. */
   module: EcmaScriptModule;
-  comments: Comment[];
-  errors: ParseError[];
+  comments: Array<Comment>;
+  errors: Array<ParseError>;
 }
 
 /**

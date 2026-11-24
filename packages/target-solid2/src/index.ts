@@ -219,7 +219,7 @@ export const solid2: Target = defineTarget({
       note: "Solid 2's <Portal> inserts its content with no wrapper, but throws on the server and renders where it is created, so a `<Teleport>` goes through an inline helper, `Teleport`, that renders a <Portal> into `to` once the component has mounted, the teleports in the order they rendered (ADR-0098).",
     },
   },
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
+  emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
     // Every name the source declares or reads is taken before the output claims its own
     // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035); so is
     // every name the module declares for its components to read, which keep theirs (ADR-0070).
@@ -426,7 +426,7 @@ function rendered(
   code: SolidCode,
   types: BindingTypes,
   context: JsxContext,
-  spreads: readonly Span[],
+  spreads: ReadonlyArray<Span>,
 ): JsxExpression {
   const render = forSolid(component, code.rules, types, spreads);
   const [only] = render.children;
@@ -463,7 +463,7 @@ function rendered(
  * `<Show>` callback, not an inner component: the rest of the setup closes over `props`, which an
  * inner component would read through props of its own, and `solid/reactivity` (L5) reports.
  */
-function pending(resource: SolidResource, body: Statement[], code: SolidCode): JsxExpression {
+function pending(resource: SolidResource, body: Array<Statement>, code: SolidCode): JsxExpression {
   // Keyed: the child takes the record itself, which Solid 2 reads nowhere but where it tracks.
   const show = js.jsxElement(
     code.solid("Show"),
@@ -491,8 +491,8 @@ function pending(resource: SolidResource, body: Statement[], code: SolidCode): J
 function moduleTypes(
   component: UfComponent,
   module: UfModule,
-  types: readonly TypeDeclaration[],
-): TypeDeclaration[] {
+  types: ReadonlyArray<TypeDeclaration>,
+): Array<TypeDeclaration> {
   const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
     name: "",
     exported: false,
@@ -509,7 +509,7 @@ function moduleTypes(
  * a parameter or a local, which shadows the module's own where it is declared, or the API's call;
  * a component's binding of either name keeps it taken.
  */
-function freeNames(component: UfComponent, names: ReadonlySet<string>): string[] {
+function freeNames(component: UfComponent, names: ReadonlySet<string>): Array<string> {
   const bindings = new Set(component.bindings.map((binding) => binding.name));
   return ["onCleanup", NEXT_TICK_HELPER].filter((name) => names.has(name) && !bindings.has(name));
 }

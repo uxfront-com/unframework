@@ -154,7 +154,7 @@ describe("the capability check on code that runs in the browser", () => {
   });
   /** The IR package's counter: every listener option, `useId`, `nextTick` and effects. */
   const counter = () => createModule("Counter.uf.tsx", [everyKind().components[1]!]);
-  const report = (diagnostics: Diagnostic[]) =>
+  const report = (diagnostics: Array<Diagnostic>) =>
     diagnostics.map(({ code, severity, span, message }) => [
       code,
       severity,

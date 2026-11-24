@@ -77,7 +77,7 @@ const MAIN = [
   "",
 ].join("\n");
 
-let roots: string[] = [];
+let roots: Array<string> = [];
 
 function write(root: string, path: string, contents: string): void {
   const file = join(root, path);
@@ -116,7 +116,7 @@ afterEach(() => {
   roots = [];
 });
 
-const VITE_TARGETS: [TargetName, Toolchain][] = [
+const VITE_TARGETS: Array<[TargetName, Toolchain]> = [
   ["react", react],
   ["vue", vue],
   ["svelte", svelte],
@@ -182,7 +182,7 @@ const joined = (modules: ReadonlyMap<string, string>) => [...modules.values()].j
 
 /** The text of every chunk a build wrote. */
 const chunksOf = (output: unknown): string => {
-  const outputs = (Array.isArray(output) ? output : [output]) as Rollup.RollupOutput[];
+  const outputs = (Array.isArray(output) ? output : [output]) as Array<Rollup.RollupOutput>;
   return outputs
     .flatMap((each) => each.output)
     .map((chunk) => (chunk.type === "chunk" ? chunk.code : String(chunk.source)))

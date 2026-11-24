@@ -48,7 +48,7 @@ function emit(kind: "default" | "named" = "default") {
   );
   const component = createComponent("Hello", render, at);
   const module = createModule("Hello.uf.tsx", [component], [createExport(kind, "Hello", at)]);
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   const context: EmitContext = {
     module,
     options: undefined,
@@ -60,13 +60,13 @@ function emit(kind: "default" | "named" = "default") {
 const OPTIONS = "<svelte:options runes={true} preserveWhitespace={false} />";
 
 /** A Svelte file: the options, then each block, a blank line between them. */
-const svelteFile = (...blocks: string[]) => `${[OPTIONS, ...blocks].join("\n\n")}\n`;
+const svelteFile = (...blocks: Array<string>) => `${[OPTIONS, ...blocks].join("\n\n")}\n`;
 
 /** A `<script lang="ts">` block holding these lines. */
-const script = (...lines: string[]) => `<script lang="ts">\n${lines.join("\n")}\n</script>`;
+const script = (...lines: Array<string>) => `<script lang="ts">\n${lines.join("\n")}\n</script>`;
 
 /** A `<script lang="ts" module>` block holding these lines. */
-const moduleScript = (...lines: string[]) =>
+const moduleScript = (...lines: Array<string>) =>
   `<script lang="ts" module>\n${lines.join("\n")}\n</script>`;
 
 describe("svelte target", () => {
@@ -1123,7 +1123,7 @@ const ASYNC_API = [
 ].join("\n");
 
 /** A source's lines: the imports, then the component's. */
-const asyncSource = (imports: string[], ...component: string[]) =>
+const asyncSource = (imports: Array<string>, ...component: Array<string>) =>
   [...imports, 'import { loadTeam, loadUser } from "./api.ts";', "", ...component].join("\n");
 
 /** `compile()` of one source beside `api.ts`, as the corpus compiles a case. */

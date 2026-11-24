@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest";
 
 const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
   bin: Record<string, string>;
-  files: string[];
+  files: Array<string>;
 };
 const BIN = fileURLToPath(new URL("../bin/unframework.js", import.meta.url));
 
-const unframework = (...argv: string[]) =>
+const unframework = (...argv: Array<string>) =>
   spawnSync(process.execPath, [BIN, ...argv], { encoding: "utf8" });
 
 describe("the bin", () => {

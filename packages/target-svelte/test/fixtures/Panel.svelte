@@ -12,7 +12,7 @@
 
   let { class: className, style, ref = $bindable(null), onclick, ...attributes }: Props = $props();
 
-  let log = $state.raw<string[]>([]);
+  let log = $state.raw<Array<string>>([]);
   let draft = $state("");
 
   function record(line: string) {

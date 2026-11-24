@@ -99,7 +99,7 @@ describe("the segment registry", () => {
   it("preloads every segment the QRLs reference, and those their segments' QRLs reference", async () => {
     const loads = new SegmentLoads();
     loads.install();
-    const imported: string[] = [];
+    const imported: Array<string> = [];
     // The component's module creates the component's QRL; its segment, once evaluated, creates
     // a handler's and a local function's, whose segments create none.
     register(async () => {
@@ -121,7 +121,7 @@ describe("the segment registry", () => {
   it("resolves every QRL the page created, and those the segments it loads create", async () => {
     const loads = new SegmentLoads();
     loads.install();
-    const resolved: string[] = [];
+    const resolved: Array<string> = [];
     /** A QRL as Qwik's `resolve()` sees it: loading its segment may create more QRLs. */
     const qrl = (name: string, then?: () => void) => ({
       resolve: async () => {
@@ -164,7 +164,7 @@ describe("the segment registry", () => {
     const second = deferred<string>();
     const loadFirst = register(() => first.promise.then((name) => ({ name })));
     const loadSecond = register(() => second.promise.then((name) => ({ name })));
-    const arrived: string[] = [];
+    const arrived: Array<string> = [];
     // The QRLs of two events of one action, asked for in dispatch order.
     const handlers = [
       loadFirst().then((module) => void arrived.push((module as { name: string }).name)),

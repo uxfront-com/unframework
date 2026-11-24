@@ -11,7 +11,11 @@ export function random(seed: number): () => number {
 }
 
 /** `count` strings of one to six pieces each, drawn from `pieces` with the seed. */
-export function randomSamples(seed: number, count: number, pieces: readonly string[]): string[] {
+export function randomSamples(
+  seed: number,
+  count: number,
+  pieces: ReadonlyArray<string>,
+): Array<string> {
   const next = random(seed);
   return Array.from({ length: count }, () =>
     Array.from(

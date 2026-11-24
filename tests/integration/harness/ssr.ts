@@ -41,7 +41,7 @@ export function describeSsrShard(index: number): void {
   const cases = shardOf(onlyCases(corpus, inject("ufOnly")), index, inject("ufSsrShards"));
 
   describeServerRender(
-    cases.flatMap((info): SsrCase[] => {
+    cases.flatMap((info): Array<SsrCase> => {
       const errors = errorState(info, target);
       // A case with compile errors has no output: the compile project records L6 as skipped.
       if (errors === true) {
@@ -116,7 +116,7 @@ export function describeSsrShard(index: number): void {
                 }
               };
               const original = console.error;
-              console.error = (...args: unknown[]) => {
+              console.error = (...args: Array<unknown>) => {
                 args.forEach(take);
                 original.apply(console, args);
               };

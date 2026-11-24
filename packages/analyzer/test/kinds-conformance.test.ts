@@ -45,7 +45,7 @@ interface Case {
   read: string;
 }
 
-const CASES: readonly Case[] = [
+const CASES: ReadonlyArray<Case> = [
   ...[
     "ref(0)",
     'ref("x")',
@@ -86,7 +86,7 @@ const CASES: readonly Case[] = [
 
 /** The TypeScript type kinds stand for, as the probe writes it. */
 function typeOf(kinds: Kinds): string {
-  const parts: string[] = [];
+  const parts: Array<string> = [];
   for (const primitive of kinds.primitives) {
     switch (primitive) {
       case "string":
@@ -154,7 +154,7 @@ const folder = mkdtempSync(join(tmpdir(), "uf-kinds-"));
 afterAll(() => rmSync(folder, { recursive: true, force: true }));
 
 /** Runs `tsc` over the probe: the lines it rejects, by case. */
-function rejected(lines: readonly string[]): Map<number, string> {
+function rejected(lines: ReadonlyArray<string>): Map<number, string> {
   writeFileSync(
     join(folder, "tsconfig.json"),
     JSON.stringify({

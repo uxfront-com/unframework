@@ -42,10 +42,10 @@ async function load(name: string, source: string): Promise<unknown> {
 
 const at = { start: 0, end: 0 };
 const text = (value: string) => createText(value, at);
-const element = (tag: string, children: RenderNode[]) => createElement(tag, [], children, at);
+const element = (tag: string, children: Array<RenderNode>) => createElement(tag, [], children, at);
 
 /** Emits a component rendering `<div>{children}</div>` and returns the div's server HTML. */
-async function renderEmitted(children: RenderNode[]): Promise<string> {
+async function renderEmitted(children: Array<RenderNode>): Promise<string> {
   const render = element("div", children);
   const module = createModule(
     "Text.uf.tsx",
@@ -142,7 +142,7 @@ describe("effects on the server", () => {
   });
 
   it("runs no immediate watcher, `watchEffect` or `onUnmounted` there", async () => {
-    const logged: unknown[][] = [];
+    const logged: Array<Array<unknown>> = [];
     const spies = (["log", "warn", "error"] as const).map((level) =>
       vi.spyOn(console, level).mockImplementation((...args) => void logged.push(args)),
     );

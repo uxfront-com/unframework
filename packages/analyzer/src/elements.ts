@@ -32,8 +32,8 @@ interface Problem {
   code: DiagnosticCode;
   message: string;
   help?: string;
-  fixes?: Fix[];
-  related?: RelatedInformation[];
+  fixes?: Array<Fix>;
+  related?: Array<RelatedInformation>;
   /** The element the fix turns it into, which the rest of the checks treat it as. */
   fixedTag?: string;
   /** Whether its content is in another language, which the analyser does not check. */
@@ -202,7 +202,7 @@ function tagProblem(node: AST.JSXElement, tag: string, root: boolean): Problem |
  * the same, but the element is not (type selectors and `querySelector("search")` stop
  * matching), so the fix is only likely.
  */
-function searchFix(node: AST.JSXElement): Fix[] {
+function searchFix(node: AST.JSXElement): Array<Fix> {
   const hasRole = node.openingElement.attributes.some(
     (item) =>
       item.type === "JSXAttribute" &&
@@ -244,7 +244,7 @@ function renameFix(node: AST.JSXElement, tag: string): Fix {
 export function checkPlacement(
   tag: string,
   name: AST.JSXIdentifier,
-  ancestors: readonly OpenElement[],
+  ancestors: ReadonlyArray<OpenElement>,
   reporter: Reporter,
   atRoot = true,
 ): void {
@@ -275,7 +275,7 @@ function svgPlacementProblem(tag: string, parent: OpenElement): Problem | undefi
 
 function placementProblem(
   tag: string,
-  ancestors: readonly OpenElement[],
+  ancestors: ReadonlyArray<OpenElement>,
   atRoot: boolean,
 ): Problem | undefined {
   const parent = ancestors.at(-1);
@@ -293,7 +293,7 @@ function placementProblem(
       help: `Write the ${list(tags(parents), "or")} it belongs in around it, in this template.`,
     };
   }
-  const opened = (element: OpenElement, message: string): RelatedInformation[] => [
+  const opened = (element: OpenElement, message: string): Array<RelatedInformation> => [
     { span: element.name, message },
   ];
   if (TEXT_ONLY_ELEMENTS.has(parent.tag)) {
@@ -349,7 +349,7 @@ function repairOf(ancestor: string): string {
   return `the browser closes the <${ancestor}> before it.`;
 }
 
-function tags(names: ReadonlySet<string>): string[] {
+function tags(names: ReadonlySet<string>): Array<string> {
   return [...names].filter((name) => !UNRENDERABLE_ELEMENTS.has(name)).map((name) => `<${name}>`);
 }
 

@@ -77,7 +77,7 @@ export function watcherCode(
 ): EffectCode {
   const { locals } = plan;
   const [valueParameter, previousParameter, cleanupParameter] = item.callback.parameters;
-  const lines: string[] = [];
+  const lines: Array<string> = [];
   // The value the effect watches: one signal, whose value changes only when it differs.
   let read: string;
   let hint: string;
@@ -151,7 +151,7 @@ export function watcherCode(
   // annotated, `current`, which the parameter takes (the last values keep the sources' tuple).
   const own = item.array && valueParameter?.type ? undefined : valueParameter?.name;
   const value = own ?? inner.claim(item.array ? "current" : "value");
-  const body: string[] = [
+  const body: Array<string> = [
     `const ${value}${own !== undefined && !item.array ? annotation(valueParameter) : ""} = ${read};`,
   ];
   if (!item.immediate) {

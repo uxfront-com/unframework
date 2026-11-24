@@ -116,7 +116,7 @@ function compileWith(
   id: string | null,
   target?: TargetName,
   input: string = source,
-  targets: readonly TargetName[] = target ? [target] : TARGET_NAMES,
+  targets: ReadonlyArray<TargetName> = target ? [target] : TARGET_NAMES,
 ): Promise<CompileResult> {
   return compile(canarySource(id, input), {
     filename,
@@ -127,7 +127,7 @@ function compileWith(
 }
 
 /** Code's lines without their indentation, and without blank ones. */
-function trimmedLines(code: string): string[] {
+function trimmedLines(code: string): Array<string> {
   return code
     .split("\n")
     .map((line) => line.trim())
@@ -135,7 +135,7 @@ function trimmedLines(code: string): string[] {
 }
 
 /** The kinds of project that verify each live layer (plan §7.3). */
-const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
+const VERIFIED_BY: Record<string, ReadonlyArray<ProjectKind>> = {
   L1: ["compile"],
   L2: ["compile"],
   L3: ["toolchain"],
@@ -170,8 +170,8 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
 });
 
 /** The elements of a render tree, in document order, through branches and list bodies. */
-function elementsOf(nodes: readonly RenderNode[]): ElementNode[] {
-  return nodes.flatMap((node): ElementNode[] => {
+function elementsOf(nodes: ReadonlyArray<RenderNode>): Array<ElementNode> {
+  return nodes.flatMap((node): Array<ElementNode> => {
     if (node.kind === "Element") {
       return [node, ...elementsOf(node.children)];
     }
@@ -202,7 +202,7 @@ async function corruptedRoot(id: string, input: string): Promise<ElementNode> {
 }
 
 /** An element's style declarations, as `property: value` (`…` for a bound value). */
-function declarationsOf(element: ElementNode): string[] {
+function declarationsOf(element: ElementNode): Array<string> {
   return element.attributes.flatMap((attribute) =>
     attribute.kind === "Style"
       ? attribute.declarations.map(
@@ -214,7 +214,7 @@ function declarationsOf(element: ElementNode): string[] {
 }
 
 /** The tags of the elements that hold the text canaries' marker, under L7-wrong-text. */
-async function markedElements(input: string): Promise<string[]> {
+async function markedElements(input: string): Promise<Array<string>> {
   const render = (await compileWith("L7-wrong-text", "vue", input)).ir!.components[0]!.render;
   return elementsOf(render.kind === "Element" ? [render] : render.children)
     .filter(({ children }) =>
@@ -334,7 +334,7 @@ describe("canaries", () => {
     // Every entry read: one in another shape would drop out of the checks below.
     expect(entries.length).toBe(include.match(/^ {10}- /gm)?.length);
     // Each canary runs once on every case, or in shards 1 to n of one count.
-    const runs = new Map<string, string[]>();
+    const runs = new Map<string, Array<string>>();
     for (const { canaries, shard } of entries) {
       const part = shard ? `${shard.index}/${shard.count}` : "all";
       for (const { id } of canaries) {
@@ -1366,7 +1366,7 @@ describe("canaries", () => {
       handler: { kind: "Function", binding: "add@3", span: { start: 0, end: 1 } },
       span: { start: 0, end: 1 },
     });
-    const element = (tag: string, attributes: unknown[], children: unknown[] = []) => ({
+    const element = (tag: string, attributes: Array<unknown>, children: Array<unknown> = []) => ({
       kind: "Element",
       tag,
       attributes,

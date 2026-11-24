@@ -274,7 +274,7 @@ export function Outer() {
     const { module, diagnostics } = run(source);
     expect(diagnostics).toEqual([]);
     const render = module!.components[1]!.render;
-    const [first, second] = (render as { children: ComponentNode[] }).children;
+    const [first, second] = (render as { children: Array<ComponentNode> }).children;
     expect(first!.fills.map(({ slot, forward }) => [slot, forward])).toEqual([
       ["default", "default"],
       ["hint", "hint"],

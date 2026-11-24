@@ -134,7 +134,7 @@ describe("angular child-root rule, rendered by Angular", () => {
    * writes them beside each other and loads the last one's component. A child's output is
    * imported by its kebab-case name (`./button`).
    */
-  async function load(...sources: [file: string, source: string, sheet?: string][]) {
+  async function load(...sources: Array<[file: string, source: string, sheet?: string]>) {
     const directory = scratchDir();
     const apis: Record<string, ModuleApi> = {};
     const outputs = new Map<string, { name: string; code: string }>();

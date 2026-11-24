@@ -33,7 +33,7 @@ type Location = Babel.types.SourceLocation | symbol | null | undefined;
  *   nothing to compile. A composable's module declares its hook (ADR-0069).
  */
 export async function compileWithReactCompiler(
-  files: readonly ToolchainFile[],
+  files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
   assertFilesToCompile(files);
   const babel: typeof Babel = await import("@babel/core");
@@ -54,8 +54,8 @@ export async function compileWithReactCompiler(
  * bundler, as a React build runs it before the JSX transform.
  */
 export async function emitWithReactCompiler(
-  files: readonly ToolchainFile[],
-): Promise<Map<string, ToolchainFile[]>> {
+  files: ReadonlyArray<ToolchainFile>,
+): Promise<Map<string, Array<ToolchainFile>>> {
   assertFilesToCompile(files);
   const babel: typeof Babel = await import("@babel/core");
   const require = createRequire(import.meta.url);
@@ -89,8 +89,8 @@ function compileFile(
   typescript: string,
   file: ToolchainFile,
 ): FrameworkCompileResult {
-  const errors: ToolchainMessage[] = [];
-  const warnings: ToolchainMessage[] = [];
+  const errors: Array<ToolchainMessage> = [];
+  const warnings: Array<ToolchainMessage> = [];
   let compiled = 0;
   // The functions that opt out, by where they start, and those React Compiler cannot compile.
   const optedOut = optOuts(babel, typescript, file);
@@ -258,7 +258,7 @@ function optOuts(
       return;
     }
     const { body, loc } = node as {
-      body?: { directives?: { value: { value: string } }[]; loc?: Location };
+      body?: { directives?: Array<{ value: { value: string } }>; loc?: Location };
       loc?: Location;
     };
     const start = key(loc);
@@ -280,7 +280,7 @@ function optOuts(
 }
 
 /** The 1-based line and column of the first usable location (Babel's columns are 0-based). */
-function at(...locations: Location[]): { line?: number; column?: number } {
+function at(...locations: Array<Location>): { line?: number; column?: number } {
   const location = locations.find(isSourceLocation);
   return location ? { line: location.start.line, column: location.start.column + 1 } : {};
 }

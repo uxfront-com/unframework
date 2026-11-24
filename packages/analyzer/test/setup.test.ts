@@ -67,7 +67,7 @@ function itemOf(source: string, item: SetupItem): string {
 }
 
 /** The setup of the one component a source declares, compactly, with no diagnostic. */
-function itemsOf(setup: string, jsx = "<p />", props?: string): string[] {
+function itemsOf(setup: string, jsx = "<p />", props?: string): Array<string> {
   const { source, module, diagnostics } = setupOf(setup, jsx, props);
   expect(problems(source, diagnostics)).toEqual([]);
   return only(module).setup.map((item) => itemOf(source, item));
@@ -187,7 +187,9 @@ describe("setup items", () => {
       "<p>{format(1250)}</p>",
     );
     const [child] = (
-      only(module).render as { children: { kind: string; value?: { refs: CodeReference[] } }[] }
+      only(module).render as {
+        children: Array<{ kind: string; value?: { refs: Array<CodeReference> } }>;
+      }
     ).children;
     expect(child!.value!.refs.map((ref) => referenceOf(source, ref))).toEqual(["format():format"]);
   });
@@ -198,8 +200,8 @@ describe("setup items", () => {
       "<p id={id}>{count.value * step}</p>",
     );
     const root = only(module).render as {
-      attributes: { value: { refs: CodeReference[] } }[];
-      children: { value: { refs: CodeReference[] } }[];
+      attributes: Array<{ value: { refs: Array<CodeReference> } }>;
+      children: Array<{ value: { refs: Array<CodeReference> } }>;
     };
     expect(root.attributes[0]!.value.refs.map((ref) => referenceOf(source, ref))).toEqual([
       "id:id",

@@ -9,7 +9,7 @@ import { closeTraces, Trace, TRACE_VERSION, traceFile } from "../src/browser/tra
 /** A trace over a fake view whose DOM and events the test sets. */
 function fake() {
   const state = { html: '<p>\n  "0"\n</p>\n', ids: new Map<string, string>() };
-  const events: EmittedEvent[] = [];
+  const events: Array<EmittedEvent> = [];
   const trace = new Trace({
     root: "uf-root-7",
     dom: () => ({ html: state.html, ids: state.ids }),

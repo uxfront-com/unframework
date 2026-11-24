@@ -33,7 +33,7 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
   }
   // What each parameter receives, by function and parameter index.
   const received = new Map<FunctionCode, Map<number, Set<string>>>();
-  const pending: [FunctionCode, number][] = [];
+  const pending: Array<[FunctionCode, number]> = [];
   const receive = (fn: FunctionCode, index: number, interfaces: Iterable<string>) => {
     let byIndex = received.get(fn);
     if (!byIndex) {
@@ -95,7 +95,7 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
   const changed = new Map<FunctionCode, FunctionCode>();
   const setupFunctions = new Set(functions.values());
   for (const [fn, byIndex] of received) {
-    let parameters: Parameter[] | undefined;
+    let parameters: Array<Parameter> | undefined;
     for (const [index, interfaces] of byIndex) {
       const parameter = fn.parameters[index];
       if (!parameter || parameter.event === undefined) {
@@ -151,7 +151,11 @@ function parameterType(
  * The setup functions a function calls with its parameter `name` as an argument, each with the
  * argument's index: `pick(item, event)` hands `event` on as `pick`'s second parameter.
  */
-function callsWith(fn: FunctionCode, name: string, component: UfComponent): [BindingId, number][] {
+function callsWith(
+  fn: FunctionCode,
+  name: string,
+  component: UfComponent,
+): Array<[BindingId, number]> {
   const body = fn.body;
   const calls = body.refs.flatMap((reference) =>
     reference.kind === "Binding" && reference.call === true ? [reference] : [],
@@ -165,7 +169,7 @@ function callsWith(fn: FunctionCode, name: string, component: UfComponent): [Bin
   } catch {
     return [];
   }
-  const found: [BindingId, number][] = [];
+  const found: Array<[BindingId, number]> = [];
   visit(root, (node) => {
     if (node.type !== "CallExpression") {
       return;
@@ -178,7 +182,7 @@ function callsWith(fn: FunctionCode, name: string, component: UfComponent): [Bin
     if (!reference) {
       return;
     }
-    const args = node["arguments"] as { type: string; name?: string }[];
+    const args = node["arguments"] as Array<{ type: string; name?: string }>;
     args.forEach((argument, index) => {
       if (argument.type === "Identifier" && argument.name === name) {
         found.push([reference.binding, index]);

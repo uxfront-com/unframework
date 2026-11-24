@@ -30,7 +30,7 @@ export interface ProbeInputs {
    * The other files the probe reads, as text: the typed libraries' resolved folders (whose pnpm
    * paths carry their versions and patch hashes), the lockfile, and local type sources.
    */
-  readonly files: readonly string[];
+  readonly files: ReadonlyArray<string>;
 }
 
 /** The cache key of a probe: a hash of every input, each length-prefixed so none runs into the next. */

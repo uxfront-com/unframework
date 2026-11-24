@@ -112,7 +112,7 @@ describe("compile", () => {
 
 describe("plugins", () => {
   it("runs the ir hook before emitting and the output hook before formatting", async () => {
-    const calls: string[] = [];
+    const calls: Array<string> = [];
     const plugin: CompilerPlugin = {
       name: "test",
       ir(module) {

@@ -104,9 +104,9 @@ export interface View<P = Props> {
    * Throws for an event the component does not declare, and on a target that runs no client
    * code.
    */
-  emitted(name: string): unknown[][];
+  emitted(name: string): Array<Array<unknown>>;
   /** Every emit, in order, as `[name, ...args]`; as {@link View.emitted}. */
-  events(): unknown[][];
+  events(): Array<Array<unknown>>;
   /**
    * Verifies L7, L9, L10 and L11 for a scenario against the case's shared expectations: L9 the
    * steps since the mount or the previous `expectParity`.
@@ -143,7 +143,7 @@ export interface ComponentMountOptions<P> extends ViewOptions {
  * objects only, so a component's props are never checked against `MountOptions` instead of
  * its own type.
  */
-export type NotAFunction<C> = C extends (...args: never[]) => unknown ? never : C;
+export type NotAFunction<C> = C extends (...args: Array<never>) => unknown ? never : C;
 
 /** The rounds of settling after an action before the page counts as never quiet. */
 const SETTLE_ROUNDS = 10;
@@ -229,7 +229,7 @@ function currentCase(caller: string): string {
 async function declaredEvents(
   registration: TargetOptions,
   component: unknown,
-): Promise<readonly MountEvent[]> {
+): Promise<ReadonlyArray<MountEvent>> {
   if (registration.events) {
     return registration.events(component);
   }
@@ -262,12 +262,12 @@ async function mountWith(
 
   // What the component emits, copied as it arrives; a payload no trace can hold fails the
   // test at its next settle, naming the event.
-  const log: EmittedEvent[] = [];
-  const refused: string[] = [];
+  const log: Array<EmittedEvent> = [];
+  const refused: Array<string> = [];
   const on = Object.fromEntries(
     declared.map(({ name }) => [
       name,
-      (...args: unknown[]) => {
+      (...args: Array<unknown>) => {
         try {
           log.push({ name, args: copyPayload(name, args) });
         } catch (error) {
@@ -324,7 +324,7 @@ async function mountWith(
    * teleported element itself, which a query chained from it never matches.
    */
   const query =
-    <A extends unknown[]>(find: (root: LocatorSelectors, ...args: A) => Locator) =>
+    <A extends Array<unknown>>(find: (root: LocatorSelectors, ...args: A) => Locator) =>
     (...args: A): Locator =>
       find(locator, ...args)
         .or(find(teleportedRoots, ...args))
@@ -352,7 +352,7 @@ async function mountWith(
     const roots = [{ element: container, locator: containerLocator }, ...teleportedLocators()];
     const restores = roots.map(({ element }) => inlineHosts(element, hostTarget));
     try {
-      const snapshots: string[] = [];
+      const snapshots: Array<string> = [];
       for (const root of roots) {
         snapshots.push((await commands.ufAriaSnapshot(root.locator.serialize())).trimEnd());
       }
@@ -434,11 +434,11 @@ async function mountWith(
     await step(action);
   };
   const declaredNames = declared.map(({ name }) => name);
-  const emittedArgs = (what: string): EmittedEvent[] => {
+  const emittedArgs = (what: string): Array<EmittedEvent> => {
     assertInteractive(what);
     raise();
     const { ids } = dom();
-    return log.map((event) => ({ ...event, args: renumberIds(event.args, ids) as unknown[] }));
+    return log.map((event) => ({ ...event, args: renumberIds(event.args, ids) as Array<unknown> }));
   };
 
   const view: View<never> = {
@@ -665,7 +665,7 @@ function isProps(value: unknown): value is Props {
 
 /** Unmounts every view the current test left mounted, newest first. */
 export async function cleanup(): Promise<void> {
-  const errors: unknown[] = [];
+  const errors: Array<unknown> = [];
   for (const view of [...mounted].reverse()) {
     try {
       await view.unmount();

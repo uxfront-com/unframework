@@ -27,8 +27,8 @@ export function visit(root: unknown, fn: (node: AstNode) => void): void {
 }
 
 /** The ranges of the functions inside a parsed tree. */
-export function functionRanges(root: unknown): { start: number; end: number }[] {
-  const ranges: { start: number; end: number }[] = [];
+export function functionRanges(root: unknown): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
   visit(root, (node) => {
     if (
       node.type === "ArrowFunctionExpression" ||

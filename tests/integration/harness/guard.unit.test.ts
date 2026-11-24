@@ -18,7 +18,7 @@ mkdirSync(join(caseDir, "__output__", "vue"), { recursive: true });
 writeFileSync(source, "export default function Greeting() {\n  return <p>Hello</p>;\n}\n");
 writeFileSync(join(caseDir, "__output__", "vue", "Greeting.vue"), golden);
 
-const guard = (target: string, files: { path: string; contents: string }[], file = source) =>
+const guard = (target: string, files: Array<{ path: string; contents: string }>, file = source) =>
   goldenGuard({ file, target, files }, root);
 
 describe("goldenGuard", () => {

@@ -21,7 +21,7 @@ export const casesDir: string = join(integrationDir, "cases");
 export const toolchainDir: string = join(repoRoot, "tests/toolchains/svelte");
 
 /** Every file under a directory, recursively, as absolute paths. */
-function filesUnder(directory: string): string[] {
+function filesUnder(directory: string): Array<string> {
   return readdirSync(directory, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => join(entry.parentPath, entry.name))
@@ -29,7 +29,7 @@ function filesUnder(directory: string): string[] {
 }
 
 /** The committed Svelte golden outputs of the integration corpus. */
-export function goldenFiles(): string[] {
+export function goldenFiles(): Array<string> {
   return filesUnder(casesDir).filter((path) => /\/__output__\/svelte\/[^/]+\.svelte$/.test(path));
 }
 
@@ -38,7 +38,7 @@ export function goldenFiles(): string[] {
  * `compile()` copies into the output tree (ADR-0070), whose types an output imports (ADR-0067).
  */
 export function sharedModules(outputDir: string): Record<string, string> {
-  let names: string[];
+  let names: Array<string>;
   try {
     names = readdirSync(outputDir).filter((name) => name.endsWith(".ts"));
   } catch {
@@ -55,7 +55,7 @@ export function sharedModules(outputDir: string): Record<string, string> {
  */
 function hasErrors(caseDir: string): boolean {
   const path = join(caseDir, "__expected__/diagnostics.json");
-  let diagnostics: { severity: string; target?: string }[];
+  let diagnostics: Array<{ severity: string; target?: string }>;
   try {
     diagnostics = JSON.parse(readFileSync(path, "utf8")) as typeof diagnostics;
   } catch {
@@ -75,12 +75,12 @@ const readModule = (file: string) => JSON.parse(readFileSync(file, "utf8")) as U
  * compiler emits a Svelte output for. `module` is the main source's; `modules` holds every
  * source's (ADR-0057), the main one first, whose outputs import each other.
  */
-export function corpus(): {
+export function corpus(): Array<{
   name: string;
   module: UfModule;
-  modules: UfModule[];
+  modules: Array<UfModule>;
   outputDir: string;
-}[] {
+}> {
   return filesUnder(casesDir)
     .filter((path) => path.endsWith("/__output__/ir.json") && !hasErrors(join(path, "../..")))
     .map((path) => {
@@ -99,7 +99,7 @@ export function corpus(): {
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */
-export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
+export async function emitFormatted(module: UfModule): Promise<Array<OutputFile>> {
   const files = module.components.flatMap((component) => target.emit(component, context(module)));
   return Promise.all(
     files.map(async (file) => {
@@ -181,7 +181,7 @@ function context(module: UfModule): EmitContext {
   };
 }
 
-const scratch: string[] = [];
+const scratch: Array<string> = [];
 
 /**
  * A fresh directory inside this package (gitignored `.uf-tmp/`), so files written there resolve

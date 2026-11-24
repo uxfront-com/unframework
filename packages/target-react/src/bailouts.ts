@@ -24,7 +24,7 @@ export interface ComponentCode {
  * Compiler reorders a read of a module's or a global's binding, never a local one.
  */
 export function compilerBailout(
-  pieces: readonly ComponentCode[],
+  pieces: ReadonlyArray<ComponentCode>,
   locals: ReadonlySet<string>,
 ): string | undefined {
   for (const piece of pieces) {
@@ -49,7 +49,7 @@ export function compilerBailout(
 }
 
 /** The names code declares anywhere in it: variables, functions, parameters, `catch` parameters. */
-export function declaredNames(pieces: readonly ComponentCode[]): Set<string> {
+export function declaredNames(pieces: ReadonlyArray<ComponentCode>): Set<string> {
   const names = new Set<string>();
   for (const piece of pieces) {
     if (piece.kind === "default") {
@@ -115,7 +115,7 @@ class Walk {
   }
 
   /** Records each function's declarations, and the names nested functions read of them. */
-  #collect(node: unknown, scopes: Scope[]): void {
+  #collect(node: unknown, scopes: Array<Scope>): void {
     if (Array.isArray(node)) {
       for (const item of node) {
         this.#collect(item, scopes);
@@ -128,7 +128,7 @@ class Walk {
     let inner = scopes;
     if (FUNCTIONS.has(node.type)) {
       const scope: Scope = { declared: new Set(), captured: new Set() };
-      for (const parameter of node.params as Node[]) {
+      for (const parameter of node.params as Array<Node>) {
         for (const name of patternNames(parameter)) {
           scope.declared.add(name);
         }
@@ -164,7 +164,7 @@ class Walk {
   #check(
     node: unknown,
     parent: { node: Node; key: string; last: boolean } | undefined,
-    context: { inTry: boolean; scopes: Scope[] },
+    context: { inTry: boolean; scopes: Array<Scope> },
   ): string | undefined {
     if (Array.isArray(node)) {
       for (const [index, item] of node.entries()) {
@@ -209,7 +209,7 @@ class Walk {
   #shape(
     node: Node,
     parent: { node: Node; key: string; last: boolean } | undefined,
-    context: { inTry: boolean; scopes: Scope[] },
+    context: { inTry: boolean; scopes: Array<Scope> },
   ): string | undefined {
     if (context.inTry) {
       const value = TRY_VALUES.get(node.type);
@@ -259,7 +259,7 @@ class Walk {
       case "Literal":
         return node.bigint !== undefined && node.bigint !== null ? "a BigInt literal" : undefined;
       case "ObjectPattern":
-        return (node.properties as Node[]).some((property) => property.computed === true)
+        return (node.properties as Array<Node>).some((property) => property.computed === true)
           ? "a computed key in a destructuring pattern"
           : undefined;
       case "AssignmentExpression":
@@ -289,7 +289,7 @@ class Walk {
    * Whether a name is a variable of the function the code is in that no nested function reads:
    * React Compiler stores another as a context variable, which it can read back as a value.
    */
-  #ownVariable(name: string, scopes: readonly Scope[]): boolean {
+  #ownVariable(name: string, scopes: ReadonlyArray<Scope>): boolean {
     const scope = scopes.at(-1)!;
     return scope.declared.has(name) && !scope.captured.has(name);
   }
@@ -336,11 +336,11 @@ function reorderable(node: Node, locals: ReadonlySet<string>, allowLocals: boole
     case "ConditionalExpression":
       return recurse(node.test) && recurse(node.consequent) && recurse(node.alternate);
     case "ArrayExpression":
-      return (node.elements as unknown[]).every(
+      return (node.elements as Array<unknown>).every(
         (element) => isNode(element) && element.type !== "SpreadElement" && recurse(element),
       );
     case "ObjectExpression":
-      return (node.properties as Node[]).every(
+      return (node.properties as Array<Node>).every(
         (property) =>
           property.type === "Property" &&
           property.kind === "init" &&
@@ -358,14 +358,14 @@ function reorderable(node: Node, locals: ReadonlySet<string>, allowLocals: boole
     case "ArrowFunctionExpression": {
       const body = node.body as Node;
       if (body.type === "BlockStatement" || body.type === "FunctionBody") {
-        return (body.body as unknown[]).length === 0;
+        return (body.body as Array<unknown>).length === 0;
       }
       return reorderable(body, locals, false);
     }
     case "CallExpression":
       return (
         recurse(node.callee) &&
-        (node.arguments as Node[]).every(
+        (node.arguments as Array<Node>).every(
           (argument) => argument.type !== "SpreadElement" && recurse(argument),
         )
       );
@@ -418,14 +418,14 @@ function hasDefault(pattern: unknown): boolean {
 }
 
 /** The patterns a node declares names with: a variable's, a function's parameters, a `catch`'s. */
-function declaredPatterns(node: Node): unknown[] {
+function declaredPatterns(node: Node): Array<unknown> {
   switch (node.type) {
     case "VariableDeclarator":
       return [node.id];
     case "ArrowFunctionExpression":
     case "FunctionExpression":
     case "FunctionDeclaration":
-      return [...(node.params as unknown[]), ...(isNode(node.id) ? [node.id] : [])];
+      return [...(node.params as Array<unknown>), ...(isNode(node.id) ? [node.id] : [])];
     case "CatchClause":
       return node.param ? [node.param] : [];
     default:
@@ -434,7 +434,7 @@ function declaredPatterns(node: Node): unknown[] {
 }
 
 /** The names a binding pattern declares. */
-function patternNames(pattern: unknown): string[] {
+function patternNames(pattern: unknown): Array<string> {
   if (!isNode(pattern)) {
     return [];
   }
@@ -446,9 +446,9 @@ function patternNames(pattern: unknown): string[] {
     case "RestElement":
       return patternNames(pattern.argument);
     case "ArrayPattern":
-      return (pattern.elements as unknown[]).flatMap(patternNames);
+      return (pattern.elements as Array<unknown>).flatMap(patternNames);
     case "ObjectPattern":
-      return (pattern.properties as Node[]).flatMap((property) =>
+      return (pattern.properties as Array<Node>).flatMap((property) =>
         patternNames(property.type === "RestElement" ? property : property.value),
       );
     case "TSParameterProperty":

@@ -24,12 +24,12 @@ import type {
 /** What an owner's output declares of its module. */
 export interface ModuleReads {
   /** The constants, in source order, each as written but for the module names it reads. */
-  constants: string[];
+  constants: Array<string>;
   /**
    * The module's type declarations its constants name, transitively, that the owner's own types
    * leave out, to declare beside them.
    */
-  types: TypeDeclaration[];
+  types: Array<TypeDeclaration>;
   /** Rewrites the `typeof` of a module name declared under another name in copied type text. */
   renamed: (text: string, kind: CodeKind | "type") => string;
 }
@@ -114,8 +114,8 @@ export function moduleReads(
 function constantTypes(
   owner: UfComponent,
   module: UfModule,
-  constants: readonly ModuleConstant[],
-): TypeDeclaration[] {
+  constants: ReadonlyArray<ModuleConstant>,
+): Array<TypeDeclaration> {
   const read = new Set<string>();
   for (const constant of constants) {
     if (constant.type) {
@@ -152,7 +152,7 @@ function constantTypes(
  * shorthand property expanded (`{ LIMITS: LIMITS_1 }`), and each `typeof` of one too.
  */
 function renamedValue(value: Code, locals: ReadonlyMap<string, string>): string {
-  const edits: Edit[] = [];
+  const edits: Array<Edit> = [];
   let shorthand: ReadonlySet<number> | undefined;
   for (const reference of value.refs) {
     if (reference.kind !== "Binding") {
@@ -199,7 +199,7 @@ interface Edit {
   text: string;
 }
 
-function applied(text: string, edits: readonly Edit[]): string {
+function applied(text: string, edits: ReadonlyArray<Edit>): string {
   let written = "";
   let last = 0;
   for (const edit of edits.toSorted((a, b) => a.start - b.start)) {
@@ -243,14 +243,14 @@ function visit(root: unknown, each: (node: AstNode) => void): void {
 function typeQueries(
   text: string,
   kind: CodeKind | "type",
-): { name: string; start: number; end: number }[] {
+): Array<{ name: string; start: number; end: number }> {
   // Type text parses as the type of an assertion, whose offsets the prefix shifts.
   const prefix = kind === "type" ? "null as " : "";
   const root =
     kind === "type"
       ? parseExpressionSource(`${prefix}${text}`).expression
       : parseCodeSource(text, kind).root;
-  const found: { name: string; start: number; end: number }[] = [];
+  const found: Array<{ name: string; start: number; end: number }> = [];
   visit(root, (node) => {
     if (node.type !== "TSTypeQuery") {
       return;

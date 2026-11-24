@@ -79,7 +79,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   head.use({
     key: "seo-head",
     hooks: {
-      "tags:beforeResolve": ({ tags }: { tags: Tag[] }) => {
+      "tags:beforeResolve": ({ tags }: { tags: Array<Tag> }) => {
         const placeholders = tags.filter((tag) => typeof tag.props[INFER] === "string");
         const meta = (key: string) =>
           tags.find(
@@ -97,7 +97,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         }
       },
 
-      "tags:resolve": ({ tags }: { tags: Tag[] }) => {
+      "tags:resolve": ({ tags }: { tags: Array<Tag> }) => {
         // nuxt-og-image makes the URL absolute only as the tags render.
         const og = tags.find((tag) => tag.tag === "meta" && metaKey(tag) === "og:image")?.props
           .content as string | undefined;

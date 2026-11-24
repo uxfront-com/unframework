@@ -216,7 +216,7 @@ export type CapabilityName =
   | "async-setup";
 
 /** Every capability name, in a stable order. */
-export const CAPABILITY_NAMES: readonly CapabilityName[] = [
+export const CAPABILITY_NAMES: ReadonlyArray<CapabilityName> = [
   "element",
   "text",
   "static-attribute",
@@ -362,9 +362,9 @@ export type Capabilities = Readonly<Record<CapabilityName, CapabilityCell>>;
 export interface SourceMapV3 {
   version: 3;
   file: string;
-  sources: string[];
-  sourcesContent: string[];
-  names: string[];
+  sources: Array<string>;
+  sourcesContent: Array<string>;
+  names: Array<string>;
   mappings: string;
 }
 
@@ -397,20 +397,20 @@ export interface Target {
   /** Validates the target's options. */
   readonly options?: StandardSchemaV1;
   /** Emits one component as one or more files. Never throws: report problems instead. */
-  emit(component: UfComponent, context: EmitContext): OutputFile[];
+  emit(component: UfComponent, context: EmitContext): Array<OutputFile>;
   /**
    * Emits one composable of a `.uf.ts` module as its module, in the target's idiom (ADR-0069).
    * Never throws: report problems instead. Every built-in target has it. It is optional for a
    * third-party target: `compile()` reports UF1002 for a composable of a target without it.
    */
-  emitComposable?(composable: UfComposable, context: EmitContext): OutputFile[];
+  emitComposable?(composable: UfComposable, context: EmitContext): Array<OutputFile>;
   /**
    * Emits one directive a `.uf.ts` module exports as its module, in the target's idiom
    * (ADR-0099), or no file where the target runs no hook. Never throws: report problems instead.
    * Every built-in target has it. It is optional for a third-party target: `compile()` reports
    * UF1002 for a directive of a target without it.
    */
-  emitDirective?(directive: UfDirective, context: EmitContext): OutputFile[];
+  emitDirective?(directive: UfDirective, context: EmitContext): Array<OutputFile>;
 }
 
 /** Declares a target, checking its shape at compile time. */

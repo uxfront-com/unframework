@@ -38,14 +38,14 @@ export interface ParityView {
   /** The container's locator, which matches nothing the view teleported (ADR-0098). */
   containerLocator: Locator;
   /** What the view teleported, each with its own locator, in `body` order (ADR-0098). */
-  teleported(): { element: Element; locator: Locator }[];
+  teleported(): Array<{ element: Element; locator: Locator }>;
   /** Playwright's ARIA snapshot of the root, without Angular's host spaces (ADR-0060). */
   aria(): Promise<string>;
   /** The normalised DOM, and the renaming of the generated ids it found. */
   dom(): { html: string; ids: Map<string, string> };
   settle(): Promise<void>;
   /** The view's trace: the steps since the mount or the previous `expectParity`. */
-  trace: { take(): TraceStep[] };
+  trace: { take(): Array<TraceStep> };
 }
 
 /** The scenarios each spec file has checked, by file: a name names one scenario of a case. */
@@ -95,7 +95,7 @@ export async function expectParity(
   const pixels = !isHydrateProject();
   await recordLayerChecks(test, subject, {
     async L7() {
-      const failures: string[] = [];
+      const failures: Array<string> = [];
       const { html, ids } = view.dom();
       const dom = await commands.ufArtefact({
         case: caseId,

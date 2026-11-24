@@ -59,7 +59,7 @@ export interface ControlKit {
   propList(
     id: string,
     title: string,
-    items: readonly (string | Node)[][],
+    items: ReadonlyArray<Array<string | Node>>,
   ): [HTMLElement, HTMLElement];
   /** A prop's name as code. */
   code(text: string): HTMLElement;
@@ -67,15 +67,15 @@ export interface ControlKit {
    * An example's control groups (ADR-0113): one group per component it renders, headed by the
    * component's name, and its id too where two groups share a name.
    */
-  exampleGroups(groups: readonly ExampleControlGroup[]): HTMLElement[];
+  exampleGroups(groups: ReadonlyArray<ExampleControlGroup>): Array<HTMLElement>;
   /** A component's props from its fields, each under the prop's name. */
   componentProps(
-    controls: readonly PropControl[],
+    controls: ReadonlyArray<PropControl>,
     field: (name: string) => ControlField,
   ): Record<string, unknown>;
   /** An example's props from its fields, each under its control's key. */
   exampleProps(
-    controls: readonly ExampleControl[],
+    controls: ReadonlyArray<ExampleControl>,
     field: (key: string) => ControlField,
   ): Record<string, unknown>;
 }

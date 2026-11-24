@@ -542,8 +542,8 @@ export class SolidCode {
   }
 
   /** The inline helpers the code printed so far calls. */
-  helpers(): string[] {
-    const helpers: string[] = [];
+  helpers(): Array<string> {
+    const helpers: Array<string> = [];
     if (this.#watcher || this.#watchEffect) {
       const arrays = this.#uses.array.lazy || this.#uses.array.immediate;
       helpers.push(
@@ -627,7 +627,7 @@ export class SolidCode {
    * Where code reads what Solid tracks: a prop, state, a derived value; an emit reads a prop; and
    * a call of a local function that reads one, which the rule reads as a derived signal.
    */
-  #reactive(refs: readonly CodeReference[]): Span[] {
+  #reactive(refs: ReadonlyArray<CodeReference>): Array<Span> {
     return refs.flatMap((ref) => {
       switch (ref.kind) {
         case "Binding":
@@ -692,12 +692,12 @@ function tracked(kind: Binding["kind"]): boolean {
 /** What the setup prints: module-level declarations, and the component body's statements. */
 export interface SolidSetup {
   /** Constants and functions that capture nothing of the component, at module scope (ADR-0045). */
-  hoisted: Statement[];
+  hoisted: Array<Statement>;
   /**
    * The setup's statements, in source order: an async setup's from its awaited bindings on,
    * which run once its awaits resolve (ADR-0101).
    */
-  statements: Statement[];
+  statements: Array<Statement>;
   /** An async setup's awaits, as one resource (ADR-0101), or none. */
   resource?: SolidResource;
 }
@@ -709,7 +709,7 @@ export interface SolidSetup {
  */
 export interface SolidResource {
   /** What the component runs first: its ids, then the resource. */
-  statements: Statement[];
+  statements: Array<Statement>;
   /** The resource's accessor, `awaited`. */
   accessor: string;
   /** The parameter of `<Show>`'s function child, `resolved`. */
@@ -722,8 +722,8 @@ export interface SolidResource {
 export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSetup {
   const { component } = code;
   const hoisted = hoistable(component, code.module);
-  const module: Statement[] = [];
-  const body: Statement[] = [];
+  const module: Array<Statement> = [];
+  const body: Array<Statement> = [];
   const bindingOf = (id: BindingId) => component.bindings.find((binding) => binding.id === id)!;
   // Printed in source order, so names are claimed in it.
   const texts = new Map<SetupItem, string>(
@@ -793,7 +793,7 @@ export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSe
  * so every watcher's and effect's cleanup then runs before the hooks, which run in source order,
  * as Vue stops a component's effects before it calls its `onUnmounted` hooks.
  */
-function teardownFirst(items: readonly SetupItem[]): SetupItem[] {
+function teardownFirst(items: ReadonlyArray<SetupItem>): Array<SetupItem> {
   const hooks = items.filter(unmounted);
   if (!hooks.length) {
     return [...items];
@@ -922,7 +922,7 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
   // An owner that imports its module's values from a sibling's output reads them only once they
   // are declared, inside its function: never in a constant at module scope (src/composable.ts).
   const imported = importsModuleValues(module, component.name);
-  const candidates = new Map<BindingId, Code[]>();
+  const candidates = new Map<BindingId, Array<Code>>();
   const functions = new Set<BindingId>();
   for (const item of component.setup) {
     // A generic component's type parameters are in scope only inside its function (ADR-0068).
@@ -1017,7 +1017,7 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
 }
 
 /** The code of a setup item, in source order. */
-function itemCode(item: SetupItem): Code[] {
+function itemCode(item: SetupItem): Array<Code> {
   switch (item.kind) {
     case "State":
     case "Variable":
@@ -1068,8 +1068,8 @@ function itemCode(item: SetupItem): Code[] {
 }
 
 /** The functions of a component's inline handlers, in document order. */
-function inlineHandlers(component: UfComponent): FunctionCode[] {
-  const found: FunctionCode[] = [];
+function inlineHandlers(component: UfComponent): Array<FunctionCode> {
+  const found: Array<FunctionCode> = [];
   const visit = (node: UfComponent["render"] | UfComponent["render"]["children"][number]) => {
     switch (node.kind) {
       case "Element":
@@ -1127,8 +1127,8 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
 }
 
 /** The state and models a `v-model` binds: an element's, or a component's `v-model:<name>`. */
-function modelTargets(component: UfComponent): BindingId[] {
-  const found: BindingId[] = [];
+function modelTargets(component: UfComponent): Array<BindingId> {
+  const found: Array<BindingId> = [];
   walk(component.render, {
     enter(node) {
       const attributes =

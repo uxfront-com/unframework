@@ -33,7 +33,7 @@ export interface DirectiveRunnerNames {
  * directive's elements and `runDirective`, which a caller calls whenever the element or the value
  * may have changed, and whose returned stop it calls when the element's owner goes.
  */
-export function directiveRunnerCode(names: DirectiveRunnerNames): string[] {
+export function directiveRunnerCode(names: DirectiveRunnerNames): Array<string> {
   const { run, hooks, states, watch, watches, checker, leftWatch, queue } = names;
   return [
     `/** The hooks of a directive, which \`${run}\` runs on its element. */
@@ -172,7 +172,7 @@ function ${run}<E extends Element, T>(
  * `MutationObserver` the output starts with its first watch and stops with its last, and returns
  * the end of the watch.
  */
-export function watchCode(name: string, state: string): string[] {
+export function watchCode(name: string, state: string): Array<string> {
   return [
     `/** The checks \`${name}\` calls, and its observer while it has any. */
 const ${state}: { checks: Set<() => void>; observer?: MutationObserver } = { checks: new Set() };`,

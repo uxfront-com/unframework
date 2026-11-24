@@ -58,8 +58,8 @@ const bound = (name: string) => createBoundAttribute(name, createExpression("x",
  * One element per (element, attribute) pair the analyser accepts (an element it renders, a name
  * it takes there): bound to `x`, and bare when it is an HTML boolean attribute.
  */
-function vocabulary(): ElementNode[] {
-  const elements: ElementNode[] = [];
+function vocabulary(): Array<ElementNode> {
+  const elements: Array<ElementNode> = [];
   const add = (tag: string, attribute: Attribute) =>
     elements.push(createElement(tag, [attribute], [], at));
   for (const tag of [...HTML_ELEMENTS].toSorted()) {

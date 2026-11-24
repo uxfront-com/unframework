@@ -30,7 +30,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 let directories = 0;
 /** Writes files into a directory of their own and returns their paths, in order. */
-function write(files: Record<string, string>): string[] {
+function write(files: Record<string, string>): Array<string> {
   const directory = join(scratch, String(directories++));
   mkdirSync(directory);
   return Object.entries(files).map(([name, contents]) => {
@@ -41,7 +41,7 @@ function write(files: Record<string, string>): string[] {
 }
 
 /** The codes of every message on one component, sorted. */
-async function lintCodes(contents: string): Promise<string[]> {
+async function lintCodes(contents: string): Promise<Array<string>> {
   const [path] = write({ "Probe.svelte": contents });
   const messages = (await toolchain.lint([path!], context)).get(path!) ?? [];
   return messages.map((message) => message.code ?? message.message).toSorted();

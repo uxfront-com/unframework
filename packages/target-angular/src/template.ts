@@ -67,7 +67,7 @@ export interface TemplateReads {
   /** The bindings lists' keys read, from the class (`track this.label()`). */
   keyed: ReadonlySet<BindingId>;
   /** The allowed globals the expressions read, each a member of its own name. */
-  globals: readonly string[];
+  globals: ReadonlyArray<string>;
   /** The slots whose templates the template renders or tests, through their queries. */
   slots: ReadonlySet<string>;
   /** The `v-model`s' values, which the template writes as the state's signal (`this.name`). */
@@ -106,7 +106,7 @@ export function template(
   // A setup that awaits renders its template, `@let`s included, once it resolves (ADR-0101).
   const level = plan.resolved === undefined ? LEVEL : LEVEL + 1;
   const pad = INDENT.repeat(level);
-  const lets: string[] = [];
+  const lets: Array<string> = [];
   const declare = (id: BindingId | undefined) => {
     if (id === undefined || !reads.read.has(id)) {
       return;
@@ -340,7 +340,7 @@ function takingPassed(
 ): ElementNode | ComponentNode | DynamicNode {
   const span = root.span;
   const expression = (code: string): Expression => ({ code, span, refs: [] });
-  const attributes: (Attribute | ComponentAttribute)[] = [...root.attributes];
+  const attributes: Array<Attribute | ComponentAttribute> = [...root.attributes];
   const item: ClassItem = { kind: "Dynamic", value: expression("this.class()"), span };
   const classAt = attributes.findIndex((attribute) => attribute.kind === "Class");
   const found = attributes[classAt];
@@ -389,7 +389,7 @@ function takingPassed(
   if (fallthrough.passes && root.kind === "Component") {
     // A root component takes the consumer's records whole where the component passes it none
     // of its own, which `fallthroughAttributes` merges with them.
-    const has = (...kinds: string[]) => attributes.some(({ kind }) => kinds.includes(kind));
+    const has = (...kinds: Array<string>) => attributes.some(({ kind }) => kinds.includes(kind));
     const prop = (name: string, code: string): ComponentAttribute => ({
       kind: "Prop",
       name,
@@ -472,15 +472,15 @@ function fallthroughRecords(
   context: FallthroughHook[1],
   plan: Plan,
   own: FallthroughPlan | undefined,
-): PrintedAttribute[] {
+): Array<PrintedAttribute> {
   const forwards =
     own !== undefined &&
     own.passes &&
     own.target.kind === "Component" &&
     sameSpan(own.target.span, context.component.span);
   const svg = childApi(plan.module, context.component.component)?.fallthroughTag === "svg";
-  const attributes: string[] = [];
-  const listeners: string[] = [];
+  const attributes: Array<string> = [];
+  const listeners: Array<string> = [];
   for (const entry of passed) {
     switch (entry.kind) {
       case "Static": {
@@ -510,8 +510,8 @@ function fallthroughRecords(
         unreachable(entry);
     }
   }
-  const printed: PrintedAttribute[] = [];
-  const record = (input: string, entries: string[], consumer: string) => {
+  const printed: Array<PrintedAttribute> = [];
+  const record = (input: string, entries: Array<string>, consumer: string) => {
     if (!entries.length) {
       return;
     }

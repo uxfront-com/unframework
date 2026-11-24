@@ -29,7 +29,7 @@ export interface Problem {
   code: DiagnosticCode;
   message: string;
   help?: string;
-  fixes?: Fix[];
+  fixes?: Array<Fix>;
 }
 
 /**
@@ -136,7 +136,7 @@ export function isAttributeOf(tag: string, namespace: Namespace, name: string): 
  * The attributes an element takes in its namespace, by name, `data-*` aside: what a misspelt
  * attribute may mean (UF3035). One whose name alone is a problem (`autofocus`, `slot`) is none.
  */
-export function attributesOf(tag: string, namespace: Namespace): string[] {
+export function attributesOf(tag: string, namespace: Namespace): Array<string> {
   const names =
     namespace === "svg"
       ? [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])]
@@ -290,7 +290,7 @@ export function takesByName(tag: string, authored: string): boolean {
  * The problem with a name that no tag `<component is>` may render takes (ADR-0119), reported
  * once for them all: "`colspan` is not an attribute of <a> or <button>."
  */
-export function unknownOnEvery(tags: readonly string[], authored: string): Problem {
+export function unknownOnEvery(tags: ReadonlyArray<string>, authored: string): Problem {
   const [first = "div"] = tags;
   const name = canonicalName(first, "html", authored);
   const problem = unknownProblem(first, "html", authored, name);
@@ -401,7 +401,7 @@ export function reservedSpreadKey(message: string): Problem {
 }
 
 /** `a`, `a and b`, `a, b and c` (or `or`, for alternatives). */
-export function list(items: readonly string[], conjunction: "and" | "or" = "and"): string {
+export function list(items: ReadonlyArray<string>, conjunction: "and" | "or" = "and"): string {
   return items.length < 2
     ? (items[0] ?? "")
     : `${items.slice(0, -1).join(", ")} ${conjunction} ${items.at(-1)}`;

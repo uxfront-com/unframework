@@ -15,7 +15,7 @@ import {
 import type { OutputFile, SourceMapV3 } from "../src/index.ts";
 
 /** The `Code` covering `text` in `source`, with a reference at each of `refs`, by their text. */
-function code(source: string, text: string, refs: readonly string[] = []): Code {
+function code(source: string, text: string, refs: ReadonlyArray<string> = []): Code {
   const start = source.indexOf(text);
   if (start < 0) {
     throw new Error(`The source doesn't hold ${text}.`);
@@ -37,7 +37,7 @@ function reference(source: string, name: string, from = 0): CodeReference {
 }
 
 /** A module whose IR holds these `Code`s: `anchorOutput` reads them wherever the IR keeps them. */
-function moduleOf(file: string, codes: readonly Code[]): UfModule {
+function moduleOf(file: string, codes: ReadonlyArray<Code>): UfModule {
   return { irVersion: 1, file, components: [], codes } as unknown as UfModule;
 }
 
@@ -68,10 +68,10 @@ function originOf(file: OutputFile, map: SourceMapV3, source: string, token: str
 }
 
 /** Each segment's token, in the output and in the source, which L14 reads as one text. */
-function mismatches(contents: string, map: SourceMapV3): string[] {
+function mismatches(contents: string, map: SourceMapV3): Array<string> {
   const output = contents.split("\n");
   const source = map.sourcesContent[0]!.split("\n");
-  const problems: string[] = [];
+  const problems: Array<string> = [];
   for (const [line, segments] of decodedMappings(new TraceMap(map)).entries()) {
     for (const segment of segments) {
       if (segment.length !== 4) {

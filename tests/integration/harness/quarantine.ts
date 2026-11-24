@@ -18,7 +18,7 @@ import { QUARANTINE as SVELTE } from "./quarantine/svelte.ts";
 import { QUARANTINE as VUE } from "./quarantine/vue.ts";
 
 /** Each target's file of entries, by target. */
-export const QUARANTINE_FILES: Readonly<Record<TargetName, readonly QuarantineEntry[]>> = {
+export const QUARANTINE_FILES: Readonly<Record<TargetName, ReadonlyArray<QuarantineEntry>>> = {
   react: REACT,
   vue: VUE,
   svelte: SVELTE,
@@ -34,8 +34,8 @@ export const QUARANTINE_FILES: Readonly<Record<TargetName, readonly QuarantineEn
  * lane that empties its own file must see every entry it owns.
  */
 export function joinQuarantine(
-  files: Readonly<Record<string, readonly QuarantineEntry[]>>,
-): QuarantineEntry[] {
+  files: Readonly<Record<string, ReadonlyArray<QuarantineEntry>>>,
+): Array<QuarantineEntry> {
   const misfiled = Object.entries(files).flatMap(([target, entries]) =>
     entries
       .filter((entry) => entry.target !== target)
@@ -51,14 +51,14 @@ export function joinQuarantine(
 }
 
 /** Every known failure, from every target's file. */
-export const QUARANTINE: readonly QuarantineEntry[] = joinQuarantine(QUARANTINE_FILES);
+export const QUARANTINE: ReadonlyArray<QuarantineEntry> = joinQuarantine(QUARANTINE_FILES);
 
 /**
  * The layers a quarantine entry may name: the live ones, where a failure can occur. M1 made L5
  * (lint, ADR-0042) and L8 (behaviour, ADR-0043) live; M2 made L9 (interaction traces, ADR-0050),
  * and M6 made L14 (source maps) and L15 (budgets, ADR-0078).
  */
-export const LIVE_LAYERS: readonly LayerName[] = [
+export const LIVE_LAYERS: ReadonlyArray<LayerName> = [
   "L1",
   "L2",
   "L3",
@@ -82,10 +82,10 @@ export const LIVE_LAYERS: readonly LayerName[] = [
  * reason or an issue cannot be followed up.
  */
 export function validateQuarantine(
-  entries: readonly QuarantineEntry[],
-  known: { cases: readonly string[]; targets: readonly string[] },
-): string[] {
-  const problems: string[] = [];
+  entries: ReadonlyArray<QuarantineEntry>,
+  known: { cases: ReadonlyArray<string>; targets: ReadonlyArray<string> },
+): Array<string> {
+  const problems: Array<string> = [];
   const seen = new Set<string>();
   for (const entry of entries) {
     const key = `${entry.case} › ${entry.target} › ${entry.layer}`;

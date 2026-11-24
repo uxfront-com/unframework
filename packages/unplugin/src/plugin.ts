@@ -67,9 +67,9 @@ export interface CompileEvent {
   /** The target's name. */
   target: string;
   /** Every file the target emitted for the module: what the golden files hold. */
-  files: OutputFile[];
+  files: Array<OutputFile>;
   /** Every diagnostic of the compile, sorted. */
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
   /**
    * The compile's IR, absent when the file did not parse: what the module's components declare,
    * such as the events a test listens to (the harness's `ufComponentEvents`).
@@ -108,7 +108,7 @@ export interface UnframeworkOptions {
    */
   transformSource?(file: string, source: string): string | undefined | Promise<string | undefined>;
   /** Compiler plugins, passed to `compile()` (the harness's canaries). */
-  plugins?: readonly CompilerPlugin[];
+  plugins?: ReadonlyArray<CompilerPlugin>;
   /** Formats the output with oxfmt. Defaults to `true`, so modules equal the golden files. */
   format?: boolean;
   /**
@@ -116,7 +116,7 @@ export interface UnframeworkOptions {
    * `compile()` (ADR-0064): `["virtual:"]` when absent. The plugin never resolves such an import:
    * the plugin that registers the module does, such as a styling engine's.
    */
-  passThrough?: readonly string[];
+  passThrough?: ReadonlyArray<string>;
 }
 
 /** What the pre plugin exposes as `api`, for other plugins that need the compiled sources. */
@@ -167,13 +167,13 @@ const SCRIPT = /^\.tsx?$/;
 const BARE = /^[\w@#][^:]*$/;
 
 /** The bundlers whose hook context resolves a bare specifier (see `fileOf`). */
-const RESOLVES_BARE: readonly string[] = ["vite", "rollup", "rolldown"];
+const RESOLVES_BARE: ReadonlyArray<string> = ["vite", "rollup", "rolldown"];
 
 const NODE_MODULES = "/node_modules/";
 
 interface FailedModule {
   message: string;
-  exports: string[];
+  exports: Array<string>;
 }
 
 /** One project graph (ADR-0071), over the project's root or the root of a package (ADR-0075). */
@@ -486,7 +486,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const formatErrors = (
     graph: Graph,
     filename: string,
-    errors: Diagnostic[],
+    errors: Array<Diagnostic>,
     source: string,
   ): string => {
     const message = formatDiagnostics(errors, { [filename]: source });
@@ -541,7 +541,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   };
 
   /** The paths of the files the oracle read for the packages, by their real paths. */
-  const packageFiles = (packages: ReadonlySet<string>): string[] => {
+  const packageFiles = (packages: ReadonlySet<string>): Array<string> => {
     if (!packages.size) {
       return [];
     }
@@ -557,7 +557,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    * file may have both: a workspace package that one module imports by name and another by path,
    * or a library's own files that its playground imports by the library's name.
    */
-  const namesOf = (graph: Graph, path: string): string[] => {
+  const namesOf = (graph: Graph, path: string): Array<string> => {
     const name = packageOf(posix.dirname(path));
     return [
       ...(path.startsWith(`${graph.root}/`) ? [path.slice(graph.root.length + 1)] : []),
@@ -860,7 +860,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    * fails an import it cannot resolve: once created, it reaches its dependents on their next
    * load, which the project checks.
    */
-  const watchedFiles = (file: string): string[] => {
+  const watchedFiles = (file: string): Array<string> => {
     const { graph, filename } = locate(file);
     const { files, packages } = reachedFrom(graph, filename);
     const paths = files
@@ -1154,7 +1154,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const hotModules = async (
     { type, file, timestamp, modules }: HotUpdateOptions,
     idToModule: ReadonlyMap<string, EnvironmentModuleNode>,
-  ): Promise<EnvironmentModuleNode[]> => {
+  ): Promise<Array<EnvironmentModuleNode>> => {
     const files = new Set(await recompiledBy(file, timestamp));
     if (type !== "update") {
       files.add(file);
@@ -1179,8 +1179,8 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const reloadQwikClient = (
     environment: DevEnvironment,
     { server, timestamp }: HotUpdateOptions,
-    modules: EnvironmentModuleNode[],
-  ): EnvironmentModuleNode[] => {
+    modules: Array<EnvironmentModuleNode>,
+  ): Array<EnvironmentModuleNode> => {
     const ours = modules.filter((node) => ownerOf(node.id) !== undefined);
     if (ours.length === 0) {
       return modules;

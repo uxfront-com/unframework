@@ -77,7 +77,7 @@ interface ComposableContext {
   /** The function's own locals: none its code reads or declares, nor Angular's imports. */
   locals: Pick<NameScope, "claim">;
   /** The names the function's code reads or declares, and those it claimed so far. */
-  taken: string[];
+  taken: Array<string>;
   /** `isPlatformBrowser(inject(PLATFORM_ID))`'s local, declared once where code needs it. */
   browser(): string;
 }
@@ -86,14 +86,14 @@ interface ComposableContext {
  * `use-toggle.ts`: `export function useToggle(initial: boolean) { …; return { on:
  * on.asReadonly(), toggle }; }`, its setup in source order, its parameters as written.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
   const { module } = context;
   const owner = assertedSetup(setupOwner(composable));
   const source = sourceNames(owner, module);
   const imports = new ImportSet(new NameScope([...source]));
   const core = (name: string) => imports.add("@angular/core", name);
   const kinds = new Map(owner.bindings.map((binding) => [binding.id, binding.kind]));
-  const head: string[] = [];
+  const head: Array<string> = [];
   let nextTick: string | undefined;
   let browser: string | undefined;
   const taken = [...source, ...ANGULAR_IMPORTS, "Object"];
@@ -189,7 +189,7 @@ function addParameterTypeImports(
   imports: ImportSet,
   module: EmitContext["module"],
 ): void {
-  const texts: TypeText[] = [
+  const texts: Array<TypeText> = [
     ...composable.parameters.map(({ type }) => type),
     ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
       [constraint, fallback].filter((type): type is TypeText => type !== undefined),
@@ -301,7 +301,7 @@ function watcherCode(item: WatchItem, context: ComposableContext): string {
         return unreachable(source);
     }
   });
-  const lines: string[] = [];
+  const lines: Array<string> = [];
   const hint = item.array ? "values" : sources[0]!.hint;
   const signal = locals.claim(`current${pascalCase(hint)}`);
   if (item.array) {
@@ -373,7 +373,7 @@ function arrowBody(code: string): string {
 }
 
 /** The names a callback declares and reads, which the effect's own locals leave alone. */
-function callbackNames(fn: FunctionCode, owner: UfComponent): string[] {
+function callbackNames(fn: FunctionCode, owner: UfComponent): Array<string> {
   return [
     ...codeNames(fn.body.code, codeKind(fn.body, owner)),
     ...fn.parameters.flatMap((parameter) =>

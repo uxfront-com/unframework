@@ -23,16 +23,16 @@ export interface UnportableCharacter {
  */
 export function unportableCharacters(
   raw: string,
-  kept: readonly Piece[],
-  reported: readonly { start: number; end: number }[],
-): UnportableCharacter[] {
+  kept: ReadonlyArray<Piece>,
+  reported: ReadonlyArray<{ start: number; end: number }>,
+): Array<UnportableCharacter> {
   const pieces = kept.filter(
     (piece) => !reported.some((range) => piece.start >= range.start && piece.start < range.end),
   );
   // The decoded value, and the piece each of its UTF-16 units came from: a raw astral
   // character is two pieces, one per surrogate.
   let value = "";
-  const origin: number[] = [];
+  const origin: Array<number> = [];
   pieces.forEach((piece, index) => {
     value += piece.value;
     for (let unit = 0; unit < piece.value.length; unit++) {

@@ -102,7 +102,7 @@ function arrayMethod(name: string, array: Kinds): Kinds | undefined {
 
 /** The kinds a method call returns, from its receiver's kinds and its name. */
 export function methodResult(receiver: Kinds, name: string): Kinds {
-  const results: Kinds[] = [];
+  const results: Array<Kinds> = [];
   let unknown = has(receiver, "unknown") || has(receiver, "object");
   const pick = (table: ReadonlyMap<string, Kinds>) => {
     const result = table.get(name);

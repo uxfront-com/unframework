@@ -15,7 +15,7 @@ const DOCUMENT = /^<!DOCTYPE html><html><head>[\s\S]*?<\/head><body>([\s\S]*)<\/
  * prepends them to the component's HTML. The result is the content of `<body>`.
  */
 export const renderToString: SsrRenderer = async (component, options) => {
-  const errors: unknown[] = [];
+  const errors: Array<unknown> = [];
   const tree = createElement(
     "html",
     null,
@@ -43,7 +43,7 @@ export const renderToString: SsrRenderer = async (component, options) => {
  * hoists (a `<link rel="preload">` for an `<img>`) then comes first.
  */
 export const renderForHydration: HydrationRenderer = async (component, options) => {
-  const errors: unknown[] = [];
+  const errors: Array<unknown> = [];
   const { prelude } = await prerender(createElement(asComponent(component), { ...options.props }), {
     onError: (error) => void errors.push(error),
   });

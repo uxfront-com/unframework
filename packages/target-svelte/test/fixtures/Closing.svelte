@@ -30,7 +30,7 @@
     previousQuery = value;
     untrack(() => {
       cleanupQuery?.();
-      const cleanups: (() => void)[] = [];
+      const cleanups: Array<() => void> = [];
       cleanupQuery = () => {
         for (const cleanup of cleanups) {cleanup();}
       };

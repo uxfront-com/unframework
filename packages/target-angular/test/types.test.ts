@@ -11,7 +11,8 @@ function declaration(name: string, code: string, exported = false): TypeDeclarat
   return createTypeDeclaration(name, exported, code, span(0, code.length));
 }
 
-const names = (declarations: readonly TypeDeclaration[]) => declarations.map(({ name }) => name);
+const names = (declarations: ReadonlyArray<TypeDeclaration>) =>
+  declarations.map(({ name }) => name);
 
 describe("declaredTypes", () => {
   it("reads an interface whose type parameter's constraint is an object type", () => {

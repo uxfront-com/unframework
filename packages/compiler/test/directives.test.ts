@@ -256,7 +256,7 @@ export default function Panel() {
       expected: string;
     } | null,
   ) => {
-    const calls: { file: string; source: string; queries: DirectiveValueQuery[] }[] = [];
+    const calls: Array<{ file: string; source: string; queries: Array<DirectiveValueQuery> }> = [];
     const syntactic = createSyntacticOracle({
       root: "/project",
       readFile: (path) =>

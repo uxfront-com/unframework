@@ -40,7 +40,7 @@ export interface ComposedRender {
    * The candidates of the `<component is>` each component element stands for: its fills take
    * each candidate's `-s`, as Vue's do (ADR-0063).
    */
-  candidates: ReadonlyMap<ComponentNode, readonly string[]>;
+  candidates: ReadonlyMap<ComponentNode, ReadonlyArray<string>>;
 }
 
 /** The prop a slot is passed as: a snippet named like the slot, `children` for the default. */
@@ -223,8 +223,8 @@ export function composedRender(
   fillParameter: (parameter: Parameter) => Parameter,
   code: (expression: Expression) => string,
 ): ComposedRender {
-  const candidates = new Map<ComponentNode, readonly string[]>();
-  const rewrite = (nodes: readonly RenderNode[]): RenderNode[] =>
+  const candidates = new Map<ComponentNode, ReadonlyArray<string>>();
+  const rewrite = (nodes: ReadonlyArray<RenderNode>): Array<RenderNode> =>
     nodes.map((node) => rewriteNode(node));
   const rewriteElement = (element: ElementNode): ElementNode => {
     const rewritten = { ...element, children: rewrite(element.children) };
@@ -293,7 +293,7 @@ export function composedRender(
   // A forwarded slot is the parent's own snippet, passed as the child's prop of that slot: the
   // child sees it absent where the parent got none, as forwarding keeps presence (ADR-0054).
   const composedComponent = (node: ComponentNode): ComponentNode => {
-    const forwarded = node.fills.flatMap((fill): ComponentAttribute[] =>
+    const forwarded = node.fills.flatMap((fill): Array<ComponentAttribute> =>
       fill.forward === undefined
         ? []
         : [
@@ -408,7 +408,7 @@ function rootElement(
   code: (expression: Expression) => string,
 ): ElementNode {
   const { className } = fallthrough;
-  const attributes: Attribute[] = [];
+  const attributes: Array<Attribute> = [];
   let classed = false;
   let own: StyleAttribute | undefined;
   for (const attribute of element.attributes) {
@@ -474,7 +474,7 @@ function rootComponent(
   code: (expression: Expression) => string,
 ): ComponentNode {
   const { className } = fallthrough;
-  const attributes: ComponentAttribute[] = [];
+  const attributes: Array<ComponentAttribute> = [];
   let classed = false;
   let own: StyleAttribute | undefined;
   for (const attribute of node.attributes) {

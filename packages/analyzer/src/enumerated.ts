@@ -18,14 +18,14 @@ import type { Kinds } from "./types/kinds.ts";
 /** The values every typed target accepts for an enumerated attribute. */
 export interface Enumerated {
   /** The tokens, in the order the specifications list them. */
-  readonly tokens: readonly string[];
+  readonly tokens: ReadonlyArray<string>;
   /** Whether every target also accepts a boolean (ARIA's true/false states, `draggable`). */
   readonly boolean: boolean;
 }
 
-const words = (text: string): string[] => text.trim().split(/\s+/);
+const words = (text: string): Array<string> => text.trim().split(/\s+/);
 
-const keywords = (values: string | readonly string[]): Enumerated => ({
+const keywords = (values: string | ReadonlyArray<string>): Enumerated => ({
   tokens: typeof values === "string" ? words(values) : values,
   boolean: false,
 });
@@ -302,7 +302,7 @@ function lookup(
 const LISTED = 12;
 
 /** The accepted values, for a message: the tokens (the first `LISTED`), and a boolean. */
-function accepted(tokens: readonly string[], boolean: boolean): string {
+function accepted(tokens: ReadonlyArray<string>, boolean: boolean): string {
   const quoted = tokens.map((token) => JSON.stringify(token));
   return list(
     [
@@ -331,7 +331,7 @@ export function enumeratedProblem(
     return undefined;
   }
   const { values } = found;
-  const outside: string[] = [];
+  const outside: Array<string> = [];
   if (kinds.primitives.has("string")) {
     if (!kinds.strings) {
       outside.push("any string");
@@ -369,7 +369,7 @@ export function enumeratedProblem(
  * the boolean its types take (the Qwik target's `qwikStaticValue`), and a `contenteditable` of
  * "plaintext-only" under its HTML name in an object spread, which its types do not check.
  */
-const CONVERTED: ReadonlyMap<string, readonly string[]> = new Map([
+const CONVERTED: ReadonlyMap<string, ReadonlyArray<string>> = new Map([
   ["contenteditable", ["plaintext-only"]],
   ["draggable", ["true", "false"]],
   ["spellcheck", ["true", "false"]],
@@ -411,7 +411,7 @@ export function staticTokens(
   tag: string,
   namespace: Namespace,
   name: string,
-): readonly string[] | undefined {
+): ReadonlyArray<string> | undefined {
   const found = lookup(tag, namespace, name);
   if (!found) {
     return undefined;

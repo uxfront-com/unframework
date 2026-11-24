@@ -22,9 +22,9 @@ export interface AxeComparison {
    * One line for each reported rule that was not expected, with its impact, its help and the
    * elements it failed on.
    */
-  unexpected: string[];
+  unexpected: Array<string>;
   /** The expected rules axe did not report. */
-  missing: string[];
+  missing: Array<string>;
 }
 
 /**
@@ -33,8 +33,8 @@ export interface AxeComparison {
  */
 export async function compareAxe(
   element: Element,
-  expected: readonly string[],
-  teleported: readonly Element[] = [],
+  expected: ReadonlyArray<string>,
+  teleported: ReadonlyArray<Element> = [],
 ): Promise<AxeComparison> {
   // What the view teleported is checked with it (ADR-0098).
   const results = await axe.run(

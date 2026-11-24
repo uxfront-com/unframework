@@ -8,7 +8,7 @@ import { importsOf, packageOf, packages, root, sourceFiles } from "./workspace.t
  * The package layers, lowest first (plan §5.2). A package never imports one above it, nor one
  * on its own layer. Packages not listed yet must be added here when they are created.
  */
-const LAYERS: readonly (readonly string[])[] = [
+const LAYERS: ReadonlyArray<ReadonlyArray<string>> = [
   ["@unframework.dev/ir", "@unframework.dev/diagnostics"],
   ["@unframework.dev/parser", "@unframework.dev/type-oracle"],
   ["@unframework.dev/type-oracle-tsgo", "@unframework.dev/codegen"],

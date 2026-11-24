@@ -138,7 +138,7 @@ export interface Canary {
    * The targets it corrupts, when not every one: a corruption of one framework's own code. The
    * runner runs only these targets' projects, and the verdict judges only these.
    */
-  targets?: readonly TargetName[];
+  targets?: ReadonlyArray<TargetName>;
   /**
    * Leaves the golden guard on. Every other canary turns it off: it changes the output on
    * purpose, and the guard would fail every module before the canary's layer could.
@@ -167,13 +167,13 @@ export interface Canary {
    * (L1). No compiler hook reaches the fixes, so the harness corrupts them; a case with compile
    * errors has them too. Only the compile project.
    */
-  fixes?(diagnostics: readonly Diagnostic[], source: string, target: string): Diagnostic[];
+  fixes?(diagnostics: ReadonlyArray<Diagnostic>, source: string, target: string): Array<Diagnostic>;
   /**
    * Corrupts a target's output files after the compiler built their source maps (L14). The
    * `output` hook runs before a map exists, so the harness corrupts the result. Only the compile
    * project.
    */
-  map?(files: readonly OutputFile[]): OutputFile[];
+  map?(files: ReadonlyArray<OutputFile>): Array<OutputFile>;
   /**
    * The map a module the `ssr` and `browser` projects serve is given on top of its own (L14): a
    * Vite plugin that runs after every other gives back the module's code with one more line break
@@ -198,7 +198,14 @@ export interface Canary {
 }
 
 /** The targets that hydrate (ADR-0095): Qwik resumes instead, and Astro runs nothing in a page. */
-const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "solid2", "angular"];
+const HYDRATING: ReadonlyArray<TargetName> = [
+  "react",
+  "vue",
+  "svelte",
+  "solid",
+  "solid2",
+  "angular",
+];
 
 /**
  * The L12 sub-checks that catch a client render's text that differs from the server's, on each
@@ -283,7 +290,7 @@ let compiles = 0;
 const ACTION_EVENTS = ["click", "pointerover", "keydown", "input", "focusin", "wheel"];
 
 /** Every canary: at least one per live layer, and one per sub-check a sibling could hide. */
-export const CANARIES: readonly Canary[] = [
+export const CANARIES: ReadonlyArray<Canary> = [
   {
     id: "L1-diagnostic-added",
     layer: "L1",
@@ -880,7 +887,7 @@ export const CANARIES: readonly Canary[] = [
 type DecodedLines = ReturnType<typeof decodedMappings>;
 
 /** One map changed, so that L14 finds a segment whose text differs (`L14-map-shifted`). */
-function shiftSegment(files: readonly OutputFile[]): OutputFile[] {
+function shiftSegment(files: ReadonlyArray<OutputFile>): Array<OutputFile> {
   const code = files.filter(({ path, map }) => map && !path.endsWith(".css"));
   for (const file of code) {
     const mappings = shiftedMappings(file);
@@ -943,10 +950,10 @@ function withWrongSegment(file: OutputFile): DecodedLines {
 }
 
 function replaceMappings(
-  files: readonly OutputFile[],
+  files: ReadonlyArray<OutputFile>,
   file: OutputFile,
   mappings: DecodedLines,
-): OutputFile[] {
+): Array<OutputFile> {
   const encoded = encodedMappings(new TraceMap({ ...file.map!, mappings }));
   return files.map((each) =>
     each === file ? { ...each, map: { ...each.map!, mappings: encoded } } : each,
@@ -1044,7 +1051,7 @@ export function canaryServePlugin(
   id: string | null,
   target: string,
   casesDir: string,
-  cases: readonly CaseInfo[],
+  cases: ReadonlyArray<CaseInfo>,
 ): Plugin | undefined {
   const canary = id ? findCanary(id) : undefined;
   const servedMap = canary?.servedMap;
@@ -1095,10 +1102,10 @@ export function findCanary(id: string): Canary {
 }
 
 /** The kinds of project that verify a canary: the ones its evidence names, cells or loads. */
-export function canaryProjects(canary: Canary): ProjectKind[] {
+export function canaryProjects(canary: Canary): Array<ProjectKind> {
   return [
     ...new Set([...Object.keys(canary.evidence), ...Object.keys(canary.loadEvidence ?? {})]),
-  ] as ProjectKind[];
+  ] as Array<ProjectKind>;
 }
 
 /**
@@ -1111,7 +1118,7 @@ export function canaryPlugins(
   id: string | null,
   target?: string,
   references: Readonly<Record<string, string>> = {},
-): CompilerPlugin[] {
+): Array<CompilerPlugin> {
   if (!id) {
     return [];
   }
@@ -1163,7 +1170,7 @@ function keepingSheets(plugin: CompilerPlugin): CompilerPlugin {
 }
 
 /** A plugin that leaves the modules of some cases, by id, as they are. */
-function sparing(plugin: CompilerPlugin, cases: readonly string[]): CompilerPlugin {
+function sparing(plugin: CompilerPlugin, cases: ReadonlyArray<string>): CompilerPlugin {
   if (!cases.length) {
     return plugin;
   }
@@ -1178,7 +1185,7 @@ function sparing(plugin: CompilerPlugin, cases: readonly string[]): CompilerPlug
       : {}),
     ...(plugin.output
       ? {
-          output: (files: readonly OutputFile[], context: OutputHookContext) =>
+          output: (files: ReadonlyArray<OutputFile>, context: OutputHookContext) =>
             spared(context.module) ? undefined : plugin.output!(files, context),
         }
       : {}),
@@ -1187,7 +1194,7 @@ function sparing(plugin: CompilerPlugin, cases: readonly string[]): CompilerPlug
 
 /** Whether a canary corrupts a target: every one, unless it names its targets. */
 export function corrupts(canary: Canary, target: string): boolean {
-  return !canary.targets || (canary.targets as readonly string[]).includes(target);
+  return !canary.targets || (canary.targets as ReadonlyArray<string>).includes(target);
 }
 
 /** A case's source as the compile project compiles it: corrupted by a source canary. */
@@ -1205,8 +1212,8 @@ export function canaryFixes(
   info: CanaryCase,
   target: string,
   source: string,
-  diagnostics: readonly Diagnostic[],
-): readonly Diagnostic[] {
+  diagnostics: ReadonlyArray<Diagnostic>,
+): ReadonlyArray<Diagnostic> {
   const canary = id ? findCanary(id) : undefined;
   if (!canary?.fixes || (canary.appliesTo && !canary.appliesTo(info, target))) {
     return diagnostics;
@@ -1215,7 +1222,10 @@ export function canaryFixes(
 }
 
 /** A target's output files as the compile project's map check reads them: under a map canary. */
-export function canaryMaps(id: string | null, files: readonly OutputFile[]): readonly OutputFile[] {
+export function canaryMaps(
+  id: string | null,
+  files: ReadonlyArray<OutputFile>,
+): ReadonlyArray<OutputFile> {
   const canary = id ? findCanary(id) : undefined;
   return canary?.map ? canary.map(files) : files;
 }
@@ -1296,8 +1306,8 @@ function hasListener(element: ElementNode): boolean {
 }
 
 /** Every element of a render tree, through branches and lists. */
-function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[] {
-  return nodes.flatMap((node): ElementNode[] => {
+function elementsOf(nodes: ReadonlyArray<RenderNode | FragmentNode>): Array<ElementNode> {
+  return nodes.flatMap((node): Array<ElementNode> => {
     switch (node.kind) {
       case "Element":
         return [node, ...elementsOf(node.children)];
@@ -1359,7 +1369,7 @@ export function dropFirstRule(file: OutputFile): string {
     return end;
   };
   /** The open blocks: whether each is a `@keyframes` block. */
-  const blocks: boolean[] = [];
+  const blocks: Array<boolean> = [];
   /** Where the current statement's prelude starts, past whitespace and comments. */
   let start: number | undefined;
   for (let at = 0; at < text.length; at++) {
@@ -1449,7 +1459,7 @@ function markText(render: ElementNode | FragmentNode): boolean {
   const always =
     render.kind === "Element"
       ? [render]
-      : render.children.flatMap((node): ElementNode[] =>
+      : render.children.flatMap((node): Array<ElementNode> =>
           node.kind === "Element"
             ? [node]
             : // A root component's fills render in it (ADR-0054).
@@ -1607,13 +1617,13 @@ function mapRoots(module: UfModule, change: (root: ElementNode) => void): UfModu
 }
 
 /** A component's root elements: the root, or the elements among a root fragment's roots. */
-function rootElements(render: ElementNode | FragmentNode): ElementNode[] {
+function rootElements(render: ElementNode | FragmentNode): Array<ElementNode> {
   return render.kind === "Element" ? [render] : topElements(render.children);
 }
 
 /** The elements among some roots, through branches and list bodies. */
-function topElements(nodes: readonly RenderNode[]): ElementNode[] {
-  return nodes.flatMap((node): ElementNode[] => {
+function topElements(nodes: ReadonlyArray<RenderNode>): Array<ElementNode> {
+  return nodes.flatMap((node): Array<ElementNode> => {
     switch (node.kind) {
       case "Element":
         return [node];
@@ -1643,7 +1653,7 @@ function topElements(nodes: readonly RenderNode[]): ElementNode[] {
  * name, or a spread's key (a spread left without keys goes), since the IR sets a name once.
  */
 function setAttribute(element: ElementNode, attribute: StaticAttribute): void {
-  element.attributes = element.attributes.flatMap((existing): Attribute[] => {
+  element.attributes = element.attributes.flatMap((existing): Array<Attribute> => {
     if (existing.kind === "Spread") {
       const keys = existing.keys.filter((key) => key.name !== attribute.name);
       return keys.length ? [{ ...existing, keys }] : [];
@@ -2100,7 +2110,7 @@ export function injectScript(
  * A Qwik output whose value import from `@qwik.dev/core` also names `names`: each one it lacks
  * is added to it, so the canary's code can call it.
  */
-export function withQwikImports(file: OutputFile, names: readonly string[]): string {
+export function withQwikImports(file: OutputFile, names: ReadonlyArray<string>): string {
   const { path, contents } = file;
   const declaration = /^import \{([^}]*)\} from "@qwik\.dev\/core";$/m.exec(contents);
   if (!declaration) {

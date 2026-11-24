@@ -134,7 +134,7 @@ export interface Plan {
    * The names a function the emitter writes around one of the source's must leave alone: those
    * the source's function reads or declares, Angular's imports and `Object`.
    */
-  reserved(fn: FunctionCode): string[];
+  reserved(fn: FunctionCode): Array<string>;
   /** How each binding is declared. */
   forms: ReadonlyMap<BindingId, MemberForm>;
   /**
@@ -152,7 +152,7 @@ export interface Plan {
    */
   recipes: ReadonlyMap<string, string>;
   /** Each composable's call, in source order (ADR-0069). */
-  calls: readonly ComposableCall[];
+  calls: ReadonlyArray<ComposableCall>;
   /**
    * What a composable returns, read through its call's holder, by the `used*` binding:
    * `toggle_1.on` (ADR-0069).
@@ -183,7 +183,7 @@ export interface Plan {
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
-export const ANGULAR_MEMBERS: readonly string[] = [
+export const ANGULAR_MEMBERS: ReadonlyArray<string> = [
   "constructor",
   "ngOnInit",
   "ngOnDestroy",
@@ -192,7 +192,7 @@ export const ANGULAR_MEMBERS: readonly string[] = [
 ];
 
 /** Every name the output may import from Angular: no local the emitter declares takes one. */
-export const ANGULAR_IMPORTS: readonly string[] = [
+export const ANGULAR_IMPORTS: ReadonlyArray<string> = [
   "Component",
   "AfterRenderRef",
   "ApplicationRef",
@@ -300,7 +300,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   const { forms, seeded, placements, late } = formsOf(component, elementRefs);
   // Each call's result is held by a member named for its composable (`useMediaQuery` →
   // `mediaQuery`), past every name of the class, the fallthrough inputs included (ADR-0069).
-  const calls = component.setup.flatMap((item): ComposableCall[] => {
+  const calls = component.setup.flatMap((item): Array<ComposableCall> => {
     if (item.kind !== "Use") {
       return [];
     }

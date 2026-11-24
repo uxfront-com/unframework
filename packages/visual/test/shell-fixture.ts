@@ -49,7 +49,7 @@ const STUB_FRAME = `<!doctype html>
 `;
 
 /** `ufShellFixture`: the shell page of a fixture, which only Node can read the catalogue for. */
-export const ufShellFixture: BrowserCommand<[name: ShellFixture, targets?: string[]]> = async (
+export const ufShellFixture: BrowserCommand<[name: ShellFixture, targets?: Array<string>]> = async (
   _context,
   name,
   targets = TARGETS,

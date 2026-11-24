@@ -66,7 +66,7 @@ function createWatcher<T>(
   source: () => T,
   callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  const cleanups: (() => void)[] = [];
+  const cleanups: Array<() => void> = [];
   const [track, dispose] = runWithOwner(null, () =>
     createRoot((stop) => [createReaction(() => queueWatcher(run)), stop] as const),
   );

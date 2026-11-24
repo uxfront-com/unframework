@@ -40,7 +40,7 @@ async function render(
 }
 
 /** svelte-check's messages on every output of the sources, by file name. */
-async function check(sources: Record<string, string>): Promise<Record<string, string[]>> {
+async function check(sources: Record<string, string>): Promise<Record<string, Array<string>>> {
   const paths = writeScratch(await compileSources(sources));
   const results = await toolchain.typecheck(Object.values(paths), {
     toolchainDir,

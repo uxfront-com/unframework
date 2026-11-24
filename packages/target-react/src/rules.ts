@@ -40,7 +40,7 @@ export interface ReactCode {
 
 /** A write of state, as the statements it expands to once the code around it is spelled. */
 interface Expansion {
-  statements: string[];
+  statements: Array<string>;
   /** Whether the statements need a block: an arrow's body, or an `if`'s or a loop's. */
   block: boolean;
   /** Whether a `;` after the marker ends a statement the expansion replaces. */
@@ -331,7 +331,10 @@ function parseCode(code: string): { root: unknown; base: number } {
 const FUNCTIONS = new Set(["ArrowFunctionExpression", "FunctionExpression", "FunctionDeclaration"]);
 
 /** Applies edits, none overlapping another, to code. */
-function applyEdits(code: string, edits: readonly { start: number; end: number; text: string }[]) {
+function applyEdits(
+  code: string,
+  edits: ReadonlyArray<{ start: number; end: number; text: string }>,
+) {
   let result = code;
   for (const edit of edits.toSorted((a, b) => b.start - a.start)) {
     result = `${result.slice(0, edit.start)}${edit.text}${result.slice(edit.end)}`;
@@ -345,7 +348,7 @@ function rewriteLogical(code: string): string {
     return code;
   }
   const { root } = parseCode(code);
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
@@ -414,7 +417,7 @@ const IGNORED_RETURNS = new WeakSet<Node>();
 
 /** Records the callback of a `forEach` call: what it returns is ignored. */
 function noteIgnoredReturn(node: Node): void {
-  const call = node as unknown as { type: string; callee?: Node; arguments?: Node[] };
+  const call = node as unknown as { type: string; callee?: Node; arguments?: Array<Node> };
   const callee = call.callee as unknown as
     | { type: string; computed?: boolean; property?: { type: string; name?: string } }
     | undefined;
@@ -480,7 +483,7 @@ function rewriteUpdates(code: string): string {
   }
   const { root, base } = parseCode(code);
   const captured = new Set<string>();
-  const updates: { node: Node; name: string; text: string }[] = [];
+  const updates: Array<{ node: Node; name: string; text: string }> = [];
   const visit = (node: unknown, depth: number, dropped: boolean, level: Level): void => {
     if (!isNode(node)) {
       return;
@@ -511,7 +514,7 @@ function rewriteUpdates(code: string): string {
       if (key === "type" || key === "parent" || typeof value !== "object") {
         continue;
       }
-      const items: unknown[] = Array.isArray(value) ? value : [value];
+      const items: Array<unknown> = Array.isArray(value) ? value : [value];
       for (const [index, item] of items.entries()) {
         const last = index === items.length - 1;
         visit(item, inner, dropsValue(node, key, dropped, last), levelAt(node, key));

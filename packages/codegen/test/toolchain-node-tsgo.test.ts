@@ -15,7 +15,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { typecheckWithTsgo } from "../src/toolchain-node/index.ts";
 
-const temporaries: string[] = [];
+const temporaries: Array<string> = [];
 afterAll(() => {
   for (const directory of temporaries.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
@@ -37,7 +37,7 @@ function write(name: string, contents: string): string {
   return path;
 }
 
-const check = (toolchainDir: string, files: readonly string[]) =>
+const check = (toolchainDir: string, files: ReadonlyArray<string>) =>
   typecheckWithTsgo(files, { toolchainDir, root: toolchainDir });
 
 /** The workspace's own TypeScript 7, installed into a toolchain directory of the test's own. */

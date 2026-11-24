@@ -17,7 +17,7 @@ export interface PackagePeer {
 /** What one target's packager works on. */
 export interface PackagerInput {
   /** The target's files as `compile()` gave them, so with no map (ADR-0077). */
-  files: readonly OutputFile[];
+  files: ReadonlyArray<OutputFile>;
   /** The directory to fill, which becomes `package/<target>`. */
   out: string;
   /** A scratch directory inside the project, from which the framework resolves. */
@@ -29,9 +29,9 @@ export interface PackagerInput {
 /** One target's line in the registry (ADR-0077). */
 export interface Packager {
   /** The framework, an optional peer of the package, or its packages where there are several. */
-  peer: PackagePeer | readonly PackagePeer[];
+  peer: PackagePeer | ReadonlyArray<PackagePeer>;
   /** What must resolve from `package.resolveFrom`, checked before anything is written (UF7008). */
-  needs: readonly string[];
+  needs: ReadonlyArray<string>;
   /**
    * The package whose types a declaration's inferred types come from, which must be in the project.
    * tsgo and vue-tsc write declarations with `--noCheck`, so without it a return type is `any`,
@@ -103,7 +103,7 @@ export const sanitizeBelow =
       : name.replace(UNSAFE_IN_A_NAME, "_");
 
 /** The script a package's manifest names for the first of these binaries it has. */
-export async function binOf(manifest: string, ...names: readonly string[]): Promise<string> {
+export async function binOf(manifest: string, ...names: ReadonlyArray<string>): Promise<string> {
   const { name: owner, bin }: { name: string; bin: Readonly<Record<string, string>> } = JSON.parse(
     await readFile(manifest, "utf8"),
   );
@@ -124,7 +124,7 @@ export const tscOf = (manifest: string): Promise<string> => binOf(manifest, "tsc
  */
 export async function runScript(
   script: string,
-  args: readonly string[],
+  args: ReadonlyArray<string>,
   cwd: string,
   errors: "stdout" | "stderr" = "stdout",
 ): Promise<string> {
@@ -138,7 +138,10 @@ export async function runScript(
   return stderr;
 }
 
-export async function writeFiles(directory: string, files: readonly OutputFile[]): Promise<void> {
+export async function writeFiles(
+  directory: string,
+  files: ReadonlyArray<OutputFile>,
+): Promise<void> {
   for (const file of files) {
     const path = join(directory, file.path);
     await mkdir(dirname(path), { recursive: true });

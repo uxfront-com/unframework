@@ -25,18 +25,18 @@ export type Manifest = Record<string, any>;
 export interface App {
   name: string;
   /** The directories under the app's `e2e/`: each is one Playwright project. */
-  modes: string[];
+  modes: Array<string>;
 }
 
 /** Every app under `apps/`, in a stable order. */
-export function findApps(root: string = join(e2eRoot, "apps")): App[] {
+export function findApps(root: string = join(e2eRoot, "apps")): Array<App> {
   return subdirectories(root).map((name) => ({
     name,
     modes: subdirectories(join(root, name, "e2e")),
   }));
 }
 
-function subdirectories(directory: string): string[] {
+function subdirectories(directory: string): Array<string> {
   return readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
@@ -181,10 +181,10 @@ export function workspacePackages(root: string = join(repoRoot, "packages")): Ma
  * on them at `0.0.0`, so each one must be packed too.
  */
 export function workspaceClosure(
-  roots: Manifest[],
+  roots: Array<Manifest>,
   packages: Map<string, string>,
   read: (directory: string) => Manifest = readManifest,
-): string[] {
+): Array<string> {
   const seen = new Set<string>();
   const visit = (manifest: Manifest): void => {
     for (const [name, specifier] of Object.entries<string>(manifest.dependencies ?? {})) {
@@ -232,7 +232,7 @@ export function copyManifest(
  */
 export function copyWorkspace(
   tarballs: Record<string, string>,
-  releaseAgeExclude: readonly string[] = [],
+  releaseAgeExclude: ReadonlyArray<string> = [],
 ): string {
   const overrides = Object.fromEntries(
     Object.entries(tarballs).map(([name, path]) => [name, `file:${path}`]),
@@ -265,7 +265,7 @@ export const designSystemCopyName = "design-system";
  * included, since a target's tarball keeps them as devDependencies. The copy installs exactly
  * these, so a package the docs forgot fails here, as it would in a user's project.
  */
-export const DESIGN_SYSTEM_TEST_DEPENDENCIES: readonly string[] = [
+export const DESIGN_SYSTEM_TEST_DEPENDENCIES: ReadonlyArray<string> = [
   "@uxfront/unframework",
   "@unframework.dev/testing",
   "@unframework.dev/visual",
@@ -349,13 +349,13 @@ export function readCatalog(text: string, name?: string): Record<string, string>
  * The `minimumReleaseAgeExclude` of a `pnpm-workspace.yaml`: the versions pnpm 11 installs though
  * they were published in the last day. A copy installs from the registry too, so it takes them.
  */
-export function readReleaseAgeExclude(text: string): string[] {
+export function readReleaseAgeExclude(text: string): Array<string> {
   const lines = text.split("\n");
   const start = lines.indexOf("minimumReleaseAgeExclude:");
   if (start === -1) {
     return [];
   }
-  const excluded: string[] = [];
+  const excluded: Array<string> = [];
   for (const line of lines.slice(start + 1)) {
     if (/^\s*(#.*)?$/.test(line)) {
       continue;
@@ -446,4 +446,4 @@ export function designSystemCopyConfig(config: string): string {
 }
 
 /** The design system's files a copy takes: its sources, examples and cases, not its scratch. */
-export const DESIGN_SYSTEM_COPIED: readonly string[] = ["src", "examples", "test"];
+export const DESIGN_SYSTEM_COPIED: ReadonlyArray<string> = ["src", "examples", "test"];

@@ -283,7 +283,7 @@ export const qwik: Target = defineTarget({
     // component runs no setup again, which the `hydration` cell covers.
     "async-setup": { support: "native" },
   },
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
+  emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
     const { module } = context;
     // A composable's functions are QRLs (./composable.ts): a call outside client code would give
     // a promise, so it is reported, never emitted (P2).
@@ -626,7 +626,7 @@ export default qwik;
  * captures (./composable.ts), and what it returns as the source returns it, each function by its
  * QRL.
  */
-function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
   const { module } = context;
   const owner = setupOwner(composable);
   const reserved = sourceNames(owner, module);
@@ -694,7 +694,7 @@ function addParameterTypeImports(
   module: UfModule,
   imports: ImportSet,
 ): void {
-  const texts: TypeText[] = [
+  const texts: Array<TypeText> = [
     ...composable.parameters.map(({ type }) => type),
     ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
       [constraint, fallback].filter((type): type is TypeText => type !== undefined),
@@ -859,8 +859,8 @@ function propsParameter(
 function unreadProps(
   component: UfComponent,
   plan: SetupPlan,
-  read: readonly Prop[],
-): [prop: string, local: string][] {
+  read: ReadonlyArray<Prop>,
+): Array<[prop: string, local: string]> {
   const unused = (prop: string): [string, string] => [prop, plan.names.fresh(`_${prop}`)];
   const { composition } = plan;
   return [
@@ -882,7 +882,7 @@ function unreadProps(
  * locals (./fallthrough.ts): the fallthrough element runs each listener after its own, and the
  * root fills the ref beside its own.
  */
-function passedProps(plan: SetupPlan): [prop: string, local: string][] {
+function passedProps(plan: SetupPlan): Array<[prop: string, local: string]> {
   const { passed } = plan.composition;
   if (!passed) {
     return [];
@@ -975,7 +975,7 @@ function elementProps(plan: SetupPlan): string | undefined {
  * slots. The attributes and listeners it passes on to its own element are left in, as a
  * consumer's win over them (ADR-0118).
  */
-function setByRoot(root: ComponentNode): string[] {
+function setByRoot(root: ComponentNode): Array<string> {
   const names = root.attributes.flatMap((attribute) => {
     switch (attribute.kind) {
       case "Prop":
@@ -1002,9 +1002,9 @@ function setByRoot(root: ComponentNode): string[] {
  * their callbacks, its render-prop slots, the `class` and `style` that fall through, and the
  * `ref` it exposes through (./composition.ts).
  */
-function compositionProps(plan: SetupPlan): [prop: string, local: string][] {
+function compositionProps(plan: SetupPlan): Array<[prop: string, local: string]> {
   const { composition } = plan;
-  const found: [string, string][] = [];
+  const found: Array<[string, string]> = [];
   for (const model of composition.models.values()) {
     found.push([model.name, model.prop]);
     if (model.written) {
@@ -1076,7 +1076,7 @@ function modelsInterface(component: UfComponent, plan: SetupPlan): GeneratedInte
  * they fall through, and the `ref` a component that exposes functions fills.
  */
 function ownProps(component: UfComponent, plan: SetupPlan): string | undefined {
-  const members: string[] = [];
+  const members: Array<string> = [];
   if (plan.composition.fallthrough) {
     members.push(
       `class?: ${plan.names.core("ClassList", { type: true })}`,
@@ -1152,7 +1152,7 @@ function passThrough(
 ): { message: string; span: Span; help: string } | undefined {
   const { fallthrough } = plan.composition;
   // A `<component is>` root's branches each take it, one of which shows (ADR-0122).
-  const roots = (): JsxElementNode[] => {
+  const roots = (): Array<JsxElementNode> => {
     if (passed.tags) {
       return rootElements(root);
     }
@@ -1296,7 +1296,7 @@ function isJsxElement(node: object): node is JsxElementNode {
  * branch of the ternary a `<component is>` with listeners writes, one element per tag
  * (`candidateBranches`, ADR-0119).
  */
-function rootElements(node: AstExpression | JsxChild): JsxElementNode[] {
+function rootElements(node: AstExpression | JsxChild): Array<JsxElementNode> {
   switch (node.type) {
     case "JSXElement":
       return [node];
@@ -1405,7 +1405,7 @@ function eventParameters(event: EventDeclaration): string {
  * the output of the module's main component the module's type exports (ADR-0068), each a
  * statement of its own, `export type { Tone } from "./types";`, that the module prints as it is.
  */
-function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
+function moduleTypes(component: UfComponent, module: UfModule): Array<TypeDeclaration> {
   const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
     name: "",
     exported: false,
@@ -1464,7 +1464,7 @@ function apiNames(component: UfComponent): Set<string> {
 }
 
 /** Module-level declarations, one-line `const`s together, a blank line around anything else. */
-function joinHoisted(declarations: readonly string[]): string {
+function joinHoisted(declarations: ReadonlyArray<string>): string {
   let text = "";
   declarations.forEach((code, index) => {
     if (index > 0) {
@@ -1484,9 +1484,9 @@ function oneLineConst(code: string): boolean {
  * The inline helpers after the component (ADR-0033): the `once` listeners' WeakSets, `nextTick`
  * and `rendered`, each only where the output uses it.
  */
-function helpers(plan: SetupPlan, listeners: Listeners): string[] {
+function helpers(plan: SetupPlan, listeners: Listeners): Array<string> {
   const { names } = plan;
-  const found: string[] = [];
+  const found: Array<string> = [];
   if (listeners.helpers.length) {
     found.push(
       [
@@ -2014,7 +2014,7 @@ function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | Mo
  */
 function replacedBeforeSiblings(root: ElementNode | FragmentNode): Set<RenderNode> {
   const found = new Set<RenderNode>();
-  const visit = (children: readonly RenderNode[]) => {
+  const visit = (children: ReadonlyArray<RenderNode>) => {
     children.forEach((child, index) => {
       if ((child.kind === "If" || child.kind === "Dynamic") && index < children.length - 1) {
         found.add(child);

@@ -22,7 +22,11 @@ export type ReferenceTarget = [text: string, target: Binding | "Global"];
  * `text:`), as a binding reference (a shorthand one between `{`/`,` and `,`/`}`) or a
  * reference to the global `text`.
  */
-export function expressionAt(offset: number, code: string, ...refs: ReferenceTarget[]): Expression {
+export function expressionAt(
+  offset: number,
+  code: string,
+  ...refs: Array<ReferenceTarget>
+): Expression {
   let from = 0;
   const references = refs.map(([text, target]): Reference => {
     const variable = new RegExp(`(?<![.\\w$])${text.replace(".", "\\.")}(?![\\w$]|\\s*:)`, "g");
@@ -61,14 +65,14 @@ export type CodeTarget =
       value?: string;
       arrowBody?: boolean;
     }
-  | { emit: string; binding: Binding; event: string; arguments?: string[] };
+  | { emit: string; binding: Binding; event: string; arguments?: Array<string> };
 
 /**
  * Setup code at `offset` whose references are found in its code, in order: each target takes the
  * next occurrence of its text, after the previous reference, or inside the previous write's value
  * or emit's arguments, where the references that follow a write or an emit start (ADR-0045).
  */
-export function codeAt(offset: number, code: string, ...targets: CodeTarget[]): Code {
+export function codeAt(offset: number, code: string, ...targets: Array<CodeTarget>): Code {
   let from = 0;
   const at = (start: number, text: string) => span(offset + start, offset + start + text.length);
   const variable = (text: string): number => {
@@ -148,7 +152,7 @@ export function codeAt(offset: number, code: string, ...targets: CodeTarget[]): 
 
 /** The innermost bracket left open in code (strings aside, which the tests' code avoids). */
 function innermostBracket(code: string): string | undefined {
-  const open: string[] = [];
+  const open: Array<string> = [];
   for (const character of code) {
     if ("{[(".includes(character)) {
       open.push(character);

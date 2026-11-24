@@ -50,7 +50,7 @@ describe("sourceFiles", () => {
 describe("importsOf", () => {
   // The layering test reads `typeOnly` to tell a runtime import of `typescript` from a type-only
   // one, so each form is pinned here, the ones oxc-parser lists with no entry included.
-  const forms: [source: string, typeOnly: boolean][] = [
+  const forms: Array<[source: string, typeOnly: boolean]> = [
     ['import type { A } from "typescript";', true],
     ['import type A from "typescript";', true],
     ['import type * as ts from "typescript";', true],

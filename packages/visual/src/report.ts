@@ -43,7 +43,7 @@ export interface VisualCell {
   /** Pixels that differ from the expectation; `null` when no pixels were compared. */
   diffPixels: number | null;
   /** The geometry and computed-style deltas of a failed comparison, every one. */
-  geometry: GeometryDelta[];
+  geometry: Array<GeometryDelta>;
   images: VisualImages;
 }
 
@@ -52,7 +52,7 @@ export interface VisualExample {
   id: string;
   /** The example's file relative to the project's root, with forward slashes. */
   file: string;
-  cells: VisualCell[];
+  cells: Array<VisualCell>;
 }
 
 /** `report.json`. */
@@ -64,10 +64,10 @@ export interface VisualReport {
   update: boolean;
   reference: string;
   /** The targets of the run, in the project's order. */
-  targets: string[];
+  targets: Array<string>;
   /** Whether every cell passed. */
   passed: boolean;
-  examples: VisualExample[];
+  examples: Array<VisualExample>;
 }
 
 /** One capture the run recorded, by example and target. */
@@ -90,9 +90,9 @@ export interface ReportInput {
   pixels: "live" | "baseline";
   update: boolean;
   reference: string;
-  targets: readonly string[];
-  examples: readonly { id: string; file: string }[];
-  captures: readonly RecordedCapture[];
+  targets: ReadonlyArray<string>;
+  examples: ReadonlyArray<{ id: string; file: string }>;
+  captures: ReadonlyArray<RecordedCapture>;
   /**
    * The cells whose test failed, by `<example> <target>`, with the test's errors: a cell passes
    * only when its capture matched and its test passed.
@@ -183,8 +183,8 @@ export function posixRelative(from: string, file: string): string {
 }
 
 /** The report's lines for the terminal: one per example, then each failed cell's message. */
-export function formatReport(report: VisualReport): string[] {
-  const lines: string[] = [];
+export function formatReport(report: VisualReport): Array<string> {
+  const lines: Array<string> = [];
   for (const example of report.examples) {
     const failed = example.cells.filter((cell) => cell.status === "failed");
     const status = failed.length

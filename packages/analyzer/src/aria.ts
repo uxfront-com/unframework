@@ -12,12 +12,12 @@ export type AriaType =
   | { type: "idlist" }
   | { type: "integer" }
   | { type: "number" }
-  | { type: "token"; values: readonly string[] }
-  | { type: "tokenlist"; values: readonly string[] };
+  | { type: "token"; values: ReadonlyArray<string> }
+  | { type: "tokenlist"; values: ReadonlyArray<string> };
 
-const words = (text: string): string[] => text.trim().split(/\s+/);
+const words = (text: string): Array<string> => text.trim().split(/\s+/);
 
-const of = (type: AriaType, names: string): [string, AriaType][] =>
+const of = (type: AriaType, names: string): Array<[string, AriaType]> =>
   words(names).map((name) => [name, type]);
 
 /** Each ARIA attribute's value type, by name (`ARIA_ATTRIBUTES` lists the names). */
@@ -138,7 +138,7 @@ export function roleProblem(value: string): string | undefined {
   return undefined;
 }
 
-function alternatives(values: readonly string[]): string {
+function alternatives(values: ReadonlyArray<string>): string {
   const quoted = values.map((value) => `\`"${value}"\``);
   return `${quoted.slice(0, -1).join(", ")} or ${quoted.at(-1)}`;
 }

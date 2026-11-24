@@ -35,7 +35,7 @@ function editDistance(a: string, b: string): number {
 }
 
 /** The name among `names` closest to `name`, when one is close: a likely misspelling. */
-export function closest(name: string, names: readonly string[]): string | undefined {
+export function closest(name: string, names: ReadonlyArray<string>): string | undefined {
   let best: { name: string; distance: number } | undefined;
   for (const candidate of names) {
     const distance = editDistance(name.toLowerCase(), candidate.toLowerCase());
@@ -59,8 +59,8 @@ export function renameFix(
   meant: string,
   text: string,
   at: Located,
-  others: readonly string[] | undefined,
-): Fix[] {
+  others: ReadonlyArray<string> | undefined,
+): Array<Fix> {
   if (!others || others.some((other) => closest(other, [meant]) !== undefined)) {
     return [];
   }
@@ -133,7 +133,7 @@ export function literalOutsideUnion(
  * The string literal a value may mean: the closest one, or the one it begins (`"warn"` for
  * `"warning"`), which an edit distance counts as far.
  */
-function meantString(value: string, literals: readonly string[]): string | undefined {
+function meantString(value: string, literals: ReadonlyArray<string>): string | undefined {
   const near = closest(value, literals);
   if (near !== undefined) {
     return near;
@@ -152,7 +152,7 @@ export function spellsLiterals(type: string): boolean {
  * member a string, number or boolean literal, or `undefined` or `null`, which an optional prop
  * may hold and a parent never writes as a literal here. `undefined` for any other type.
  */
-function literalsOf(type: string): { value: LiteralValue; text: string }[] | undefined {
+function literalsOf(type: string): Array<{ value: LiteralValue; text: string }> | undefined {
   const source = `type T = ${type};`;
   const parsed = parseModule("type.ts", source);
   const [statement] = parsed.program.body;
@@ -165,7 +165,7 @@ function literalsOf(type: string): { value: LiteralValue; text: string }[] | und
   }
   const annotation = statement.typeAnnotation;
   const members = annotation.type === "TSUnionType" ? annotation.types : [annotation];
-  const literals: { value: LiteralValue; text: string }[] = [];
+  const literals: Array<{ value: LiteralValue; text: string }> = [];
   for (const member of members) {
     if (member.type === "TSUndefinedKeyword" || member.type === "TSNullKeyword") {
       continue;

@@ -26,11 +26,11 @@ export interface ExampleControlGroup {
   /** Its name. */
   name: string;
   /** The props an instance leaves unset somewhere, in member order: each optional. */
-  controls: ExampleControl[];
+  controls: Array<ExampleControl>;
   /** The controllable props every instance sets, in member order. */
-  setByExample: string[];
+  setByExample: Array<string>;
   /** The props no control can set, as a component entry lists them. */
-  uncontrolled: UncontrolledProp[];
+  uncontrolled: Array<UncontrolledProp>;
 }
 
 /** A catalogue component, as the analysis matches an instance to it. */
@@ -54,7 +54,7 @@ interface Instance {
 
 /** An example the preview can instrument: its instances, and where its parameter goes. */
 interface Analysis {
-  instances: Instance[];
+  instances: Array<Instance>;
   /** Just after the `(` of the default export's empty parameter list. */
   parameterAt: number;
 }
@@ -78,7 +78,7 @@ async function analyse(
   file: string,
   root: string,
   resolver: Resolver,
-  components: readonly CatalogueComponent[],
+  components: ReadonlyArray<CatalogueComponent>,
 ): Promise<Analysis | undefined> {
   const filename = posix.relative(toPosix(root), toPosix(file));
   let ir: UfModule | undefined;
@@ -124,7 +124,7 @@ async function analyse(
 
   // Only the default export's render: a component the file declares is not the example, and an
   // instance under `<component is>` is a `Dynamic` node, whose candidates all take its attributes.
-  const instances: Instance[] = [];
+  const instances: Array<Instance> = [];
   let placed = true;
   walk(example.render, {
     enter(node) {
@@ -197,27 +197,27 @@ export async function exampleControls(
   file: string,
   root: string,
   resolver: Resolver,
-  components: readonly CatalogueComponent[],
-): Promise<ExampleControlGroup[]> {
+  components: ReadonlyArray<CatalogueComponent>,
+): Promise<Array<ExampleControlGroup>> {
   const analysis = await analyse(source, file, root, resolver, components);
   if (!analysis) {
     return [];
   }
-  const order: CatalogueComponent[] = [];
+  const order: Array<CatalogueComponent> = [];
   for (const { component } of analysis.instances) {
     if (!order.includes(component)) {
       order.push(component);
     }
   }
-  const groups: ExampleControlGroup[] = [];
+  const groups: Array<ExampleControlGroup> = [];
   let next = 0;
   for (const component of order) {
     if (!component.controls.length) {
       continue;
     }
     const instances = analysis.instances.filter((each) => each.component === component);
-    const controls: ExampleControl[] = [];
-    const setByExample: string[] = [];
+    const controls: Array<ExampleControl> = [];
+    const setByExample: Array<string> = [];
     for (const control of component.controls) {
       if (instances.every((each) => each.set.has(control.name))) {
         setByExample.push(control.name);
@@ -250,8 +250,8 @@ export async function instrumentExample(
   file: string,
   root: string,
   resolver: Resolver,
-  components: readonly CatalogueComponent[],
-  groups: readonly ExampleControlGroup[],
+  components: ReadonlyArray<CatalogueComponent>,
+  groups: ReadonlyArray<ExampleControlGroup>,
 ): Promise<string | undefined> {
   if (!groups.some((group) => group.controls.length)) {
     return undefined;
@@ -261,7 +261,7 @@ export async function instrumentExample(
     return undefined;
   }
   const parameter = freeName(source);
-  const insertions: [at: number, text: string][] = [];
+  const insertions: Array<[at: number, text: string]> = [];
   const used = new Set<ExampleControl>();
   for (const instance of analysis.instances) {
     const group = groups.find((each) => each.component === instance.component.id);
@@ -330,8 +330,8 @@ export type SourceTransform = (file: string, source: string) => Promise<string |
 export function exampleTransform(
   root: string,
   catalogue: {
-    examples: readonly { file: string; controls: readonly ExampleControlGroup[] }[];
-    components: readonly CatalogueComponent[];
+    examples: ReadonlyArray<{ file: string; controls: ReadonlyArray<ExampleControlGroup> }>;
+    components: ReadonlyArray<CatalogueComponent>;
   },
 ): SourceTransform | undefined {
   const examples = new Map(

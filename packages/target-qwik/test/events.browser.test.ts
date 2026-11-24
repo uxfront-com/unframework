@@ -15,7 +15,7 @@ const load = async (name: string): Promise<{ default: unknown }> =>
   import(`./fixtures/${name}.tsx`);
 const Emitter = (await load("Emitter")).default;
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -35,7 +35,7 @@ afterEach(async () => {
 });
 
 it("passes the test's listeners as QRL props, and waits for the handlers an action loads", async () => {
-  const changes: unknown[][] = [];
+  const changes: Array<Array<unknown>> = [];
   mounted = await mount(Emitter, container, {
     on: { change: (...args) => void changes.push(args) },
   });

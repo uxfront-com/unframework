@@ -17,7 +17,7 @@ const load = async (name: string): Promise<{ default: unknown }> =>
   import(`./fixtures/${name}.tsx`);
 const FirstRun = (await load("FirstRun")).default;
 
-const errors: string[] = [];
+const errors: Array<string> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

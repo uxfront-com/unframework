@@ -65,8 +65,8 @@ interface Statement {
 /** A setup item's statements, with what it declares and what it captures. */
 interface Entry {
   index: number;
-  statements: Statement[];
-  declares: BindingId[];
+  statements: Array<Statement>;
+  declares: Array<BindingId>;
   captures: Set<BindingId>;
   /** Whether it is an `onUnmounted` hook. */
   unmounted: boolean;
@@ -75,15 +75,15 @@ interface Entry {
 /** The output of a component's setup. */
 export interface SetupOutput {
   /** Module-level declarations, before the component, in source order. */
-  hoisted: string[];
+  hoisted: Array<string>;
   /** The component body's code before its `return`: empty when there is none. */
   body: string;
 }
 
 /** Prints a component's setup (see the module comment). */
 export function printSetup(plan: SetupPlan): SetupOutput {
-  const hoisted: string[] = [];
-  const entries: Entry[] = [];
+  const hoisted: Array<string> = [];
+  const entries: Array<Entry> = [];
   for (const [index, item] of plan.component.setup.entries()) {
     const module = moduleCode(plan, item);
     if (module !== undefined) {
@@ -154,7 +154,7 @@ export function printSetup(plan: SetupPlan): SetupOutput {
  * runs their tasks in (ADR-0048). The analyser rejects recursion, so the captures form no cycle;
  * one would keep the rest in source order.
  */
-function order(entries: readonly Entry[]): Entry[] {
+function order(entries: ReadonlyArray<Entry>): Array<Entry> {
   const declaredBy = new Map<BindingId, Entry>();
   for (const entry of entries) {
     for (const id of entry.declares) {
@@ -163,7 +163,7 @@ function order(entries: readonly Entry[]): Entry[] {
   }
   const placed = new Set<Entry>();
   const visiting = new Set<Entry>();
-  const result: Entry[] = [];
+  const result: Array<Entry> = [];
   const place = (entry: Entry): void => {
     if (placed.has(entry) || visiting.has(entry)) {
       return;
@@ -208,7 +208,7 @@ function withCallees(plan: SetupPlan, captures: Set<BindingId>): Set<BindingId> 
 }
 
 /** The references a `$` scope captures: all but those it reads through the holder. */
-function captures_(plan: SetupPlan, refs: readonly CodeReference[]): CodeReference[] {
+function captures_(plan: SetupPlan, refs: ReadonlyArray<CodeReference>): Array<CodeReference> {
   return refs.filter((reference) => !plan.stable.lazy.has(reference.span.start));
 }
 
@@ -338,7 +338,7 @@ function rewritten(
 }
 
 /** An item's statements in the component's body. */
-function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
+function itemStatements(plan: SetupPlan, item: SetupItem): Array<Statement> {
   const { names } = plan;
   const pure = (code: Code) => rewritten(plan, code, "expression", undefined, "pure");
   switch (item.kind) {
@@ -455,7 +455,7 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
  * `useComputed$(…).value` to `computed$`, and two such bindings that a later `$` scope
  * captures make a module that declares `computed$` twice.
  */
-function awaitStatements(plan: SetupPlan, item: AwaitItem): Statement[] {
+function awaitStatements(plan: SetupPlan, item: AwaitItem): Array<Statement> {
   const { names } = plan;
   const name = bindingName(plan, item.binding);
   const load = names.fresh(`${name}Load`);
@@ -552,7 +552,7 @@ function readBindings(plan: SetupPlan): Set<BindingId> {
  * value the component reads, and the setter its writes call, which writes the signal while
  * unbound and asks the consumer through its callback, awaited.
  */
-function modelStatements(plan: SetupPlan, item: ModelItem): Statement[] {
+function modelStatements(plan: SetupPlan, item: ModelItem): Array<Statement> {
   const { names } = plan;
   const model = plan.composition.models.get(item.binding)!;
   const type = item.type ? `<${item.type.code}>` : "";
@@ -623,7 +623,7 @@ function functionDeclaration(plan: SetupPlan, item: FunctionItem, site: RewriteS
 }
 
 /** A setup function in the component: plain, a `$()` QRL, or both (./plan.ts). */
-function functionStatements(plan: SetupPlan, item: FunctionItem): Statement[] {
+function functionStatements(plan: SetupPlan, item: FunctionItem): Array<Statement> {
   const fnPlan = plan.functions.get(item.binding)!;
   // One whose only plain callers are getters is declared in each of them instead
   // ({@link getterSource}): client code calls its QRL.
@@ -671,7 +671,7 @@ export interface PrintOptions {
   /** A `function` declaration's name; an arrow otherwise. */
   name?: string;
   /** The parameters to print instead of the function's own. */
-  parameters?: readonly Parameter[];
+  parameters?: ReadonlyArray<Parameter>;
   /** The body to print instead of the function's own (a `Code` with control statements removed). */
   body?: Code;
   /** Whether client code runs its calls of local functions in place (./inline.ts). */
@@ -1035,7 +1035,7 @@ function taskContext(
   options: { track: boolean; cleanup?: string },
 ): { parameter: string; track: string } {
   const track = plan.names.once("track");
-  const parts: string[] = [];
+  const parts: Array<string> = [];
   if (options.track) {
     parts.push(track === "track" ? "track" : `track: ${track}`);
   }
@@ -1046,10 +1046,10 @@ function taskContext(
 }
 
 /** A watcher's statements: see the module comment. */
-function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
+function watchStatements(plan: SetupPlan, item: WatchItem): Array<Statement> {
   const { names } = plan;
   // The task with the computed and the signals it reads, together.
-  const statements: string[] = [];
+  const statements: Array<string> = [];
   const track = names.once("track");
   const [valueParameter, previousParameter, cleanupParameter] = item.callback.parameters;
   const valueName = valueParameter?.name;
@@ -1086,7 +1086,7 @@ function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
       : undefined;
   const base = previousBase(plan, item, valueName);
   const local = valueName ?? localName(plan, item.array ? "values" : "value", item.callback);
-  const lines: string[] = [];
+  const lines: Array<string> = [];
   const valueType =
     valueName !== undefined && valueParameter?.type
       ? `: ${valueParameter.type.code}`
@@ -1272,7 +1272,7 @@ function watchEffectCode(plan: SetupPlan, item: WatchEffectItem): string {
     });
     return `${visibleTask}((${context.parameter}) => {\n${floated(body)}\n}, { strategy: "document-ready" });`;
   }
-  const statements: string[] = [];
+  const statements: Array<string> = [];
   const sources = dependencies.map((id) => tracked(plan, id, track));
   const tuple = `[${sources.map((source) => source.type ?? `typeof ${source.read}`).join(", ")}]`;
   const previous = names.fresh("previousEffect");

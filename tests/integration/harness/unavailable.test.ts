@@ -21,7 +21,7 @@ describe(`${project} (unavailable)`, () => {
       continue;
     }
     it(`${info.id} › ${target}`, ({ task }) => {
-      for (const layer of layers as LayerName[]) {
+      for (const layer of layers as Array<LayerName>) {
         recordLayer(task, { case: info.id, target, quarantine: harness.quarantine }, layer, {
           status: "fail",
           message: `${project} could not start: ${message.split("\n")[0]}`,

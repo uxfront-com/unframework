@@ -149,7 +149,7 @@ interface Node {
 
 /** Class code with each template ref's read used as a value ending `?? null` (see `tidied`). */
 function withNullElements(code: string, kind: CodeKind): string {
-  const edits: { start: number; end: number }[] = [];
+  const edits: Array<{ start: number; end: number }> = [];
   const visit = (value: unknown, parent: Node | undefined, key: string): void => {
     if (Array.isArray(value)) {
       for (const item of value) {
@@ -193,7 +193,7 @@ function isElementRead(node: Node): boolean {
   }
   const callee = object.callee as Node;
   return (
-    (object.arguments as unknown[]).length === 0 &&
+    (object.arguments as Array<unknown>).length === 0 &&
     callee.type === "MemberExpression" &&
     (callee.object as Node).type === "ThisExpression"
   );
@@ -482,7 +482,11 @@ function eventOf(plan: Plan, emit: EmitReference): EventDeclaration {
  * members, the value for one required member, and a tuple of exactly the arguments given
  * otherwise (the mount adapter spreads it back).
  */
-export function emitCall(output: string, event: EventDeclaration, args: readonly string[]): string {
+export function emitCall(
+  output: string,
+  event: EventDeclaration,
+  args: ReadonlyArray<string>,
+): string {
   const [only, ...more] = event.parameters;
   if (only === undefined) {
     return `${output}.emit()`;

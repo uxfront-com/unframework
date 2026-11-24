@@ -29,7 +29,7 @@ export default function AsyncRuns(
   const [low, setLow] = createState(0);
   const [high, setHigh] = createState(0);
   const [limit] = createState(3);
-  const [items, setItems] = createState<number[]>([]);
+  const [items, setItems] = createState<Array<number>>([]);
   let stop: (() => void) | undefined = undefined;
 
   onSettled(() => () => {
@@ -216,7 +216,7 @@ function createWatcher<T>(
   ) => unknown,
   options: { immediate: true; flush?: "post" },
 ): void;
-function createWatcher<const S extends readonly (() => unknown)[]>(
+function createWatcher<const S extends ReadonlyArray<() => unknown>>(
   sources: S,
   callback: (
     values: WatchedValues<S>,
@@ -226,13 +226,13 @@ function createWatcher<const S extends readonly (() => unknown)[]>(
   options?: { flush: "post" },
 ): void;
 function createWatcher(
-  source: (() => unknown) | readonly (() => unknown)[],
+  source: (() => unknown) | ReadonlyArray<() => unknown>,
   callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
   options?: { immediate?: true; flush?: "post" },
 ): void {
   // An array of sources changes when one of its values does: one source is an array of one.
   const sources = typeof source === "function" ? [source] : source;
-  const cleanups: (() => void)[] = [];
+  const cleanups: Array<() => void> = [];
   const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;
   const [track, dispose] = runWithOwner(null, () =>
     createRoot((stop) => [createReaction(() => queueWatcher(queue, run)), stop] as const),
@@ -249,8 +249,8 @@ function createWatcher(
     dispose();
   });
 
-  function read(): unknown[] {
-    let values: unknown[] = [];
+  function read(): Array<unknown> {
+    let values: Array<unknown> = [];
     track(() => {
       values = sources.map((each) => each());
     });
@@ -267,7 +267,7 @@ function createWatcher(
     call(values, previous);
   }
 
-  function call(values: unknown[], previous: unknown[] | undefined): void {
+  function call(values: Array<unknown>, previous: Array<unknown> | undefined): void {
     for (const cleanup of cleanups.splice(0)) {
       cleanup();
     }
@@ -286,10 +286,10 @@ function createWatcher(
  * registrar, whose cleanups run before its next run and when the component is removed.
  */
 function createWatchEffect(
-  sources: readonly (() => unknown)[],
+  sources: ReadonlyArray<() => unknown>,
   effect: (onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-  const cleanups: (() => void)[] = [];
+  const cleanups: Array<() => void> = [];
   const [track, dispose] = runWithOwner(null, () =>
     createRoot(
       (stop) => [createReaction(() => queueWatcher(queuedWatchers.post, run)), stop] as const,

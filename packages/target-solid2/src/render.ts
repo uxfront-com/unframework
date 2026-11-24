@@ -63,7 +63,7 @@ export function forSolid(
   component: UfComponent,
   rules: RewriteRules,
   types: BindingTypes,
-  spreads: readonly Span[] = [],
+  spreads: ReadonlyArray<Span> = [],
 ): UfComponent["render"] {
   // A root that spreads its styled parents' scope attributes, or an element that spreads what
   // falls through (`spreads`, ADR-0118), renders through Solid's `ssrElement`, which writes its
@@ -107,10 +107,10 @@ export function forSolid(
   };
   // The paths the branch callbacks around a node receive, and those a keyed one receives, which
   // print as plain names (src/narrowing.ts); an accessor's read is a call.
-  const around: ReferencePath[][] = [];
-  const keyed: ReferencePath[][] = [];
-  const children = (nodes: readonly RenderNode[]): RenderNode[] =>
-    nodes.flatMap((node): RenderNode[] => {
+  const around: Array<Array<ReferencePath>> = [];
+  const keyed: Array<Array<ReferencePath>> = [];
+  const children = (nodes: ReadonlyArray<RenderNode>): Array<RenderNode> =>
+    nodes.flatMap((node): Array<RenderNode> => {
       switch (node.kind) {
         case "Element":
           return [element(node)];
@@ -188,7 +188,7 @@ export function forSolid(
           return node satisfies never;
       }
     });
-  const fills = (list: readonly SlotFill[]): SlotFill[] =>
+  const fills = (list: ReadonlyArray<SlotFill>): Array<SlotFill> =>
     list.map((fill) => ({ ...fill, children: children(fill.children) }));
   return element(component.render);
 }
@@ -201,10 +201,10 @@ export function forSolid(
  * reads it.
  */
 function selectedOptions(
-  nodes: readonly RenderNode[],
+  nodes: ReadonlyArray<RenderNode>,
   model: Expression,
   multiple: boolean,
-): RenderNode[] {
+): Array<RenderNode> {
   return nodes.map((node): RenderNode => {
     switch (node.kind) {
       case "For":
@@ -234,7 +234,7 @@ function selectedOptions(
  * Whether some of a `<select>`'s options are not its own to mark: a component, a slot, an
  * interpolation or a `<component is>` renders them, or a list's row that is no `<option>`.
  */
-export function unmarkedOptions(nodes: readonly RenderNode[]): boolean {
+export function unmarkedOptions(nodes: ReadonlyArray<RenderNode>): boolean {
   return nodes.some((node) => {
     switch (node.kind) {
       case "Text":
@@ -277,7 +277,7 @@ function selectedOption(option: ElementNode, model: Expression, multiple: boolea
  * `value` strips and collapses it (a static text's own).
  */
 function optionText(option: ElementNode): Expression | string {
-  const parts = option.children.flatMap((child): (Expression | string)[] => {
+  const parts = option.children.flatMap((child): Array<Expression | string> => {
     if (child.kind === "Text") {
       return [child.value];
     }
@@ -302,7 +302,7 @@ function optionText(option: ElementNode): Expression | string {
  * collapsed as the DOM's (`String("a " + (x)).replace(…)`), each reference at its place in the
  * new code.
  */
-function joined(parts: readonly (Expression | string)[]): Expression {
+function joined(parts: ReadonlyArray<Expression | string>): Expression {
   const start = parts.find((part): part is Expression => typeof part !== "string")!.span.start;
   let code = "String(";
   const refs: Expression["refs"] = [];
@@ -351,7 +351,7 @@ function selects(model: Expression, value: Expression | string, multiple: boolea
  * rather than compiling into the template (a string would be compiled in). Once moved, the
  * next static child may start the template in turn. The DOM text is the same.
  */
-function insertedLineFeed(nodes: readonly RenderNode[]): RenderNode[] {
+function insertedLineFeed(nodes: ReadonlyArray<RenderNode>): Array<RenderNode> {
   let children = [...nodes];
   for (;;) {
     const first = children.findIndex((node) => node.kind === "Text" || node.kind === "Element");
@@ -384,7 +384,10 @@ function insertedLineFeed(nodes: readonly RenderNode[]): RenderNode[] {
  * branches interpolate each side (nothing for `null`, `undefined` or `""`); any other
  * interpolation as it is. Only the outermost conditional counts: the rule reads nothing nested.
  */
-function interpolation(node: InterpolationNode, bare: (part: Expression) => boolean): RenderNode[] {
+function interpolation(
+  node: InterpolationNode,
+  bare: (part: Expression) => boolean,
+): Array<RenderNode> {
   const parsed = parseExpression(node.value.code);
   if (parsed.type !== "ConditionalExpression") {
     return [node];
@@ -394,7 +397,7 @@ function interpolation(node: InterpolationNode, bare: (part: Expression) => bool
   }
   const branch = (part: typeof parsed.test, condition?: Expression): IfBranch => {
     const value = slice(node.value, part);
-    const content: InterpolationNode[] = isNothing(part)
+    const content: Array<InterpolationNode> = isNothing(part)
       ? []
       : [{ kind: "Interpolation", value, span: value.span }];
     return condition
@@ -440,7 +443,7 @@ export function escapedOnServer(
   position: "child" | "attribute",
 ): Expression {
   const significant = SIGNIFICANT[position];
-  const wrapped: Parsed[] = [];
+  const wrapped: Array<Parsed> = [];
   const visit = (node: Parsed, top: boolean): void => {
     switch (node.type) {
       case "Literal":

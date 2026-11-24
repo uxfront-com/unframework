@@ -25,8 +25,8 @@ export interface TypeDeclarationStatement {
  * `type X = …`, plain or exported. A component's props type is one of them, or an object type
  * literal (ADR-0034); the analyser checks what they hold.
  */
-export function findTypeDeclarations(program: Program): TypeDeclarationStatement[] {
-  const found: TypeDeclarationStatement[] = [];
+export function findTypeDeclarations(program: Program): Array<TypeDeclarationStatement> {
+  const found: Array<TypeDeclarationStatement> = [];
   for (const statement of program.body) {
     const declaration = typeDeclarationOf(statement);
     if (!declaration) {

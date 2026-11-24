@@ -19,15 +19,15 @@ export interface TraceStep {
    */
   action: string;
   /** The normalised DOM, one line each, the focused element marked `uf:focused`. */
-  dom: string[];
+  dom: Array<string>;
   /** Playwright's ARIA snapshot of the root, one line each. */
-  aria: string[];
+  aria: Array<string>;
   /**
    * The events emitted since the step before (or since the mount), grouped by name: names
    * sorted, each name's argument lists in the order they came (the order of different effects
    * one run triggers is not part of the contract, ADR-0050).
    */
-  events: Record<string, unknown[][]>;
+  events: Record<string, Array<Array<unknown>>>;
 }
 
 /** What a view's trace needs to record a step: its DOM, its ARIA tree and its events so far. */
@@ -38,13 +38,13 @@ export interface TraceSource {
   dom(): { html: string; ids: Map<string, string> };
   aria(): Promise<string>;
   /** Every event the component emitted since it mounted. */
-  readonly events: readonly EmittedEvent[];
+  readonly events: ReadonlyArray<EmittedEvent>;
 }
 
 /** The steps of one view not yet compared, and the events they have seen. */
 export class Trace {
   readonly #source: TraceSource;
-  #steps: TraceStep[] = [];
+  #steps: Array<TraceStep> = [];
   /** How many of the view's events earlier steps took. */
   #cursor = 0;
 
@@ -66,13 +66,16 @@ export class Trace {
       dom: lines(html),
       aria: lines(aria),
       events: groupEvents(
-        events.map((event) => ({ ...event, args: renumberIds(event.args, names) as unknown[] })),
+        events.map((event) => ({
+          ...event,
+          args: renumberIds(event.args, names) as Array<unknown>,
+        })),
       ),
     });
   }
 
   /** The steps since the previous call, which `expectParity` compares; the trace forgets them. */
-  take(): TraceStep[] {
+  take(): Array<TraceStep> {
     return this.#steps.splice(0);
   }
 
@@ -103,19 +106,19 @@ const open = new Set<Trace>();
  * The steps of the current test's views that no `expectParity` compared, as L9's failures, and
  * forgets every trace: the setup file calls it when a test ends.
  */
-export function closeTraces(): string[] {
+export function closeTraces(): Array<string> {
   const messages = [...open].flatMap((trace) => trace.leftover() ?? []);
   open.clear();
   return messages;
 }
 
 /** A trace file's contents: pretty JSON, so a diff names the line that changed. */
-export function traceFile(steps: readonly TraceStep[]): string {
+export function traceFile(steps: ReadonlyArray<TraceStep>): string {
   return `${JSON.stringify({ version: TRACE_VERSION, steps }, null, 2)}\n`;
 }
 
 /** Text as lines, without the final line break. */
-function lines(text: string): string[] {
+function lines(text: string): Array<string> {
   const trimmed = text.replace(/\n+$/, "");
   return trimmed ? trimmed.split("\n") : [];
 }

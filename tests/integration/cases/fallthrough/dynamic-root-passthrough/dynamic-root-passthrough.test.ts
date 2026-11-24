@@ -25,7 +25,7 @@ async function expectAttributes(view: View, role: "link" | "button") {
 }
 
 /** The log's entries, in order. */
-function entries(view: View): (string | null)[] {
+function entries(view: View): Array<string | null> {
   const items = view.getByRole("list", { name: "Log" }).getByRole("listitem");
   return items.elements().map((entry) => entry.textContent);
 }

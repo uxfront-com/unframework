@@ -23,7 +23,11 @@ function source(jsx: string, setup = "", directives = MARK): string {
 }
 
 /** The diagnostics a source gets, as `code text-at-span`. */
-function reported(text: string, file = "Test.uf.tsx", imports?: Map<string, ModuleApi>): string[] {
+function reported(
+  text: string,
+  file = "Test.uf.tsx",
+  imports?: Map<string, ModuleApi>,
+): Array<string> {
   return problems(text, run(text, file, imports ? { imports } : {}).diagnostics);
 }
 
@@ -49,7 +53,7 @@ describe("a module's own directive", () => {
     expect(directive!.hooks.map((hook) => [hook.name, hook.parameters])).toEqual([
       ["mounted", ["el", "value"]],
     ]);
-    const [attribute] = root(module).attributes as DirectiveAttribute[];
+    const [attribute] = root(module).attributes as Array<DirectiveAttribute>;
     expect(attribute).toMatchObject({ kind: "Directive", name: "vMark" });
     expect(attribute!.value.code).toBe('"title"');
   });
@@ -72,7 +76,7 @@ describe("a module's own directive", () => {
     );
     const { module, diagnostics } = run(text);
     expect(diagnostics).toEqual([]);
-    const [attribute] = root(module).attributes as DirectiveAttribute[];
+    const [attribute] = root(module).attributes as Array<DirectiveAttribute>;
     expect(attribute!.value.refs).toEqual([
       expect.objectContaining({ kind: "Binding", binding: expect.stringMatching(/^close@/) }),
     ]);

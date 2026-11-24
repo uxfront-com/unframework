@@ -25,7 +25,7 @@ export interface NoAxeViolationsOptions {
    * L11: a rule axe reports that is not listed fails, and so does a listed rule it doesn't
    * report. None by default.
    */
-  expected?: readonly string[];
+  expected?: ReadonlyArray<string>;
 }
 
 declare module "vitest" {

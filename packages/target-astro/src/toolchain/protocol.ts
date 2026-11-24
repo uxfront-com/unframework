@@ -32,7 +32,7 @@ export interface AstroRenderResult {
   /** The component's HTML, preceded by its own `<style>` elements. */
   html: string;
   /** `console.warn` and `console.error` calls made while rendering (layer L13). */
-  console: CapturedConsoleMessage[];
+  console: Array<CapturedConsoleMessage>;
 }
 
 /** A compiled Astro component, as the Container API renders it. */

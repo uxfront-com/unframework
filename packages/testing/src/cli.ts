@@ -18,10 +18,10 @@ export interface TestIo {
 
 /** The command's arguments, read. */
 export interface TestArguments {
-  targets: string[];
+  targets: Array<string>;
   update: boolean;
   /** What follows `--`, for Vitest. */
-  vitest: string[];
+  vitest: Array<string>;
 }
 
 /** The files a project's own Vitest configuration may have, the first one found winning. */
@@ -33,7 +33,7 @@ const VITEST_CONFIGS = [
 ];
 
 /** Reads the arguments, throwing on a usage error: the CLI exits 2 with the message. */
-export function parseTestArguments(args: readonly string[]): TestArguments {
+export function parseTestArguments(args: ReadonlyArray<string>): TestArguments {
   const parsed: TestArguments = { targets: [], update: false, vitest: [] };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]!;
@@ -74,7 +74,7 @@ export function parseTestArguments(args: readonly string[]): TestArguments {
  * usage or configuration error, which it reports, as the CLI's other commands do (ADR-0076).
  * Vitest's own options (`--reporter`, a file filter) follow `--`.
  */
-export async function run(args: string[], io: TestIo): Promise<number> {
+export async function run(args: Array<string>, io: TestIo): Promise<number> {
   const parsed = parseTestArguments(args);
   const help = parsed.vitest.some((arg) => arg === "--help" || arg === "-h");
   const { filter, options } = parseCLI(["vitest", ...parsed.vitest]);

@@ -52,12 +52,12 @@ export interface Kinds {
   readonly strings?: ReadonlySet<string>;
   readonly numbers?: ReadonlySet<number>;
   readonly booleans?: ReadonlySet<boolean>;
-  readonly objects?: readonly ObjectShape[];
-  readonly elements?: readonly (() => Kinds)[];
+  readonly objects?: ReadonlyArray<ObjectShape>;
+  readonly elements?: ReadonlyArray<() => Kinds>;
 }
 
 /** Kinds of the given primitives, without literals. */
-export function kinds(...primitives: Primitive[]): Kinds {
+export function kinds(...primitives: Array<Primitive>): Kinds {
   return { primitives: new Set(primitives) };
 }
 
@@ -96,7 +96,7 @@ export function objectOf(shape: ObjectShape): Kinds {
 }
 
 /** The kinds any of the given kinds may have. */
-export function union(...all: Kinds[]): Kinds {
+export function union(...all: Array<Kinds>): Kinds {
   const primitives = new Set<Primitive>();
   for (const item of all) {
     for (const primitive of item.primitives) {
@@ -108,8 +108,8 @@ export function union(...all: Kinds[]): Kinds {
     strings?: Set<string>;
     numbers?: Set<number>;
     booleans?: Set<boolean>;
-    objects?: ObjectShape[];
-    elements?: (() => Kinds)[];
+    objects?: Array<ObjectShape>;
+    elements?: Array<() => Kinds>;
   } = { primitives };
   const literals = <T>(primitive: Primitive, pick: (item: Kinds) => ReadonlySet<T> | undefined) => {
     if (!primitives.has(primitive)) {
@@ -155,7 +155,7 @@ export function union(...all: Kinds[]): Kinds {
 }
 
 /** The kinds without the given primitives (and their literals, shapes or elements). */
-export function without(value: Kinds, ...removed: Primitive[]): Kinds {
+export function without(value: Kinds, ...removed: Array<Primitive>): Kinds {
   const primitives = new Set([...value.primitives].filter((item) => !removed.includes(item)));
   return {
     primitives,
@@ -194,7 +194,7 @@ export function mayBeNullish(value: Kinds): boolean {
  * The primitives of a value that lie outside `allowed`: none when it fits. `unknown` is always
  * allowed: the model trusts what it cannot type (ADR-0035).
  */
-export function outside(value: Kinds, allowed: readonly Primitive[]): Primitive[] {
+export function outside(value: Kinds, allowed: ReadonlyArray<Primitive>): Array<Primitive> {
   return [...value.primitives].filter(
     (primitive) => primitive !== "unknown" && !allowed.includes(primitive),
   );
@@ -215,7 +215,7 @@ export function elementsOf(value: Kinds): Kinds {
  * cannot type, or a member it does not know, gives `unknown`.
  */
 export function memberOf(value: Kinds, name: string): Kinds {
-  const found: Kinds[] = [];
+  const found: Array<Kinds> = [];
   let unknown = has(value, "unknown") || has(value, "function") || has(value, "symbol");
   if (name === "length" && (has(value, "string") || has(value, "array"))) {
     found.push(NUMBER);
@@ -264,7 +264,7 @@ const NAMES: Readonly<Record<Primitive, string>> = {
 };
 
 /** `a string`, `a string or a number`: the primitives, for a message. */
-export function describe(primitives: readonly Primitive[]): string {
+export function describe(primitives: ReadonlyArray<Primitive>): string {
   const names = primitives.map((primitive) => NAMES[primitive]);
   return names.length < 2
     ? (names[0] ?? "nothing")
@@ -281,7 +281,7 @@ export function kindsType(value: Kinds, depth = 3): string {
   if (depth < 0) {
     return "unknown";
   }
-  const parts: string[] = [];
+  const parts: Array<string> = [];
   for (const primitive of value.primitives) {
     switch (primitive) {
       case "string":

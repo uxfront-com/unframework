@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { defineConfig } from "../src/config.ts";
 
 const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
-const directories: string[] = [];
+const directories: Array<string> = [];
 
 afterEach(() => {
   for (const directory of directories.splice(0)) {

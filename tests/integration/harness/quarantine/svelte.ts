@@ -3,4 +3,4 @@
 import type { QuarantineEntry } from "@unframework.dev/testing/node";
 
 /** Empty: every live layer is green on Svelte (ADR-0063). */
-export const QUARANTINE: readonly QuarantineEntry[] = [];
+export const QUARANTINE: ReadonlyArray<QuarantineEntry> = [];

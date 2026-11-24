@@ -17,7 +17,7 @@ const HYDRATION_CODE = /NG050\d/;
 
 /** Records what Angular reports during and after hydration: a hydration error is a mismatch. */
 class RecordingErrorHandler extends ErrorHandler {
-  readonly mismatches: string[] = [];
+  readonly mismatches: Array<string> = [];
 
   override handleError(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
@@ -43,7 +43,7 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
   const type = angularComponent(component);
   const template = document.createElement("template");
   template.innerHTML = html;
-  const moved: ChildNode[] = [];
+  const moved: Array<ChildNode> = [];
   // A copy: the loop moves nodes out of the live list.
   for (const node of Array.from(template.content.childNodes)) {
     const marker = node.nodeType === Node.COMMENT_NODE && node.nodeValue === "nghm";
@@ -66,7 +66,7 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
   container.append(template.content);
   const errors = new RecordingErrorHandler();
   const { warn } = console;
-  console.warn = (...args: unknown[]) => {
+  console.warn = (...args: Array<unknown>) => {
     const message = args.map(String).join(" ");
     if (/NG0505/.test(message)) {
       errors.mismatches.push(message);

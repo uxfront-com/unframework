@@ -37,7 +37,7 @@ export interface InlineFunction {
   /** Whether the source declares it as a `function` (else as a `const` arrow). */
   declaration: boolean;
   /** The parameters it is printed with (an event nothing reads renamed, Qwik's element added). */
-  parameters: readonly Parameter[];
+  parameters: ReadonlyArray<Parameter>;
   /** Its body as printed, its own calls already in place: a block `{ … }`, or an expression. */
   body: string;
   /** The functions its body declares for the calls it keeps (./setup.ts `clientCode`). */
@@ -145,11 +145,11 @@ function inlineIn(
 } {
   const nested = options.nested === true;
   const { root } = parseCodeSource(code, kind);
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   const locals = new Map<string, InlineFunction>();
   const spliced = new Set<InlineFunction>();
   let kindOut = kind;
-  const visit = (node: unknown, ancestors: readonly Node[], inFunction: boolean): void => {
+  const visit = (node: unknown, ancestors: ReadonlyArray<Node>, inFunction: boolean): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
         visit(item, ancestors, inFunction);
@@ -167,7 +167,7 @@ function inlineIn(
     const target = callTarget(node, inliner, site);
     if (target) {
       const name = (node.callee as Node).name as string;
-      const args = (node.arguments as Node[]).map((argument) => {
+      const args = (node.arguments as Array<Node>).map((argument) => {
         if (argument.type === "SpreadElement") {
           return undefined;
         }
@@ -189,7 +189,7 @@ function inlineIn(
         kind === "expression" && node === root && !inFunction && options.discarded === true;
       const block =
         options.keep !== true && (statement || whole) && !args.includes(undefined)
-          ? blockForm(target, args as string[])
+          ? blockForm(target, args as Array<string>)
           : undefined;
       if (block) {
         spliced.add(target);
@@ -204,7 +204,7 @@ function inlineIn(
         // the code's own: what it declares cannot meet anything else there.
         const alone =
           grand?.type === "BlockStatement" &&
-          (grand.body as Node[]).length === 1 &&
+          (grand.body as Array<Node>).length === 1 &&
           (ancestors.length === 2
             ? kind === "statements" && !inFunction
             : owner !== undefined && !isFunction(owner));
@@ -217,7 +217,7 @@ function inlineIn(
       } else {
         // The call stays, of the function the code declares (see the module comment).
         locals.set(name, target);
-        const call = `${name}(${(node.arguments as Node[])
+        const call = `${name}(${(node.arguments as Array<Node>)
           .map((argument, index) => args[index] ?? code.slice(argument.start, argument.end))
           .join(", ")})`;
         const floating = target.fn.async === true && (statement !== undefined || whole);
@@ -244,7 +244,7 @@ function inlineIn(
 /** Where a node is, if it is a call (see {@link CallSite}). */
 function siteOf(
   node: Node,
-  ancestors: readonly Node[],
+  ancestors: ReadonlyArray<Node>,
   nested: boolean,
   code: { kind: CodeKind; root: unknown; discarded: boolean },
 ): CallSite {
@@ -275,14 +275,15 @@ function callTarget(node: Node, inliner: Inliner, site: CallSite): InlineFunctio
  * Whether an expression body returns the node's value: the body is the node, or the node is the
  * body's value through `a && node`, `a ? node : b` or `a, node`.
  */
-function returnedValue(node: Node, ancestors: readonly Node[], root: unknown): boolean {
+function returnedValue(node: Node, ancestors: ReadonlyArray<Node>, root: unknown): boolean {
   let child: Node = node;
   for (let index = ancestors.length - 1; index >= 0; index--) {
     const parent = ancestors[index]!;
     const tail =
       (parent.type === "LogicalExpression" && parent.right === child) ||
       (parent.type === "ConditionalExpression" && parent.test !== child) ||
-      (parent.type === "SequenceExpression" && (parent.expressions as Node[]).at(-1) === child);
+      (parent.type === "SequenceExpression" &&
+        (parent.expressions as Array<Node>).at(-1) === child);
     if (!tail) {
       return false;
     }
@@ -298,7 +299,7 @@ function returnedValue(node: Node, ancestors: readonly Node[], root: unknown): b
 export function callSites(code: string, kind: CodeKind, discarded = false): Map<number, CallSite> {
   const sites = new Map<number, CallSite>();
   const { root } = parseCodeSource(code, kind);
-  const visit = (node: unknown, ancestors: readonly Node[], inFunction: boolean): void => {
+  const visit = (node: unknown, ancestors: ReadonlyArray<Node>, inFunction: boolean): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
         visit(item, ancestors, inFunction);
@@ -351,7 +352,7 @@ function asStatement(code: string): string {
  */
 function blockForm(
   target: InlineFunction,
-  args: readonly string[],
+  args: ReadonlyArray<string>,
 ): { statements: string; declares: boolean } | undefined {
   const { fn, parameters, body } = target;
   if (!spliceable(fn, parameters, body)) {
@@ -362,7 +363,7 @@ function blockForm(
   const declared = declaredNames(root);
   const topLevel = kind === "statements" ? topLevelNames(root) : new Set<string>();
   const block = new Set([...topLevel, ...parameters.map((parameter) => parameter.name!)]);
-  const constants: string[] = [];
+  const constants: Array<string> = [];
   const substitutions = new Map<string, string>();
   for (const [index, parameter] of parameters.entries()) {
     const name = parameter.name!;
@@ -416,7 +417,7 @@ function blockForm(
  */
 export function spliceable(
   fn: FunctionCode,
-  parameters: readonly Parameter[] = fn.parameters,
+  parameters: ReadonlyArray<Parameter> = fn.parameters,
   body: string = fn.body.code,
 ): boolean {
   if (fn.async) {
@@ -461,7 +462,7 @@ function declaredNames(root: unknown): Set<string> {
       names.add(node.id.name as string);
     }
     if (isFunction(node)) {
-      for (const parameter of node.params as unknown[]) {
+      for (const parameter of node.params as Array<unknown>) {
         for (const name of patternNames(parameter)) {
           names.add(name);
         }
@@ -480,10 +481,10 @@ function declaredNames(root: unknown): Set<string> {
 /** The names a block body declares at its top level. */
 function topLevelNames(root: unknown): Set<string> {
   const names = new Set<string>();
-  const [block] = root as Node[];
-  for (const statement of (block?.body as Node[] | undefined) ?? []) {
+  const [block] = root as Array<Node>;
+  for (const statement of (block?.body as Array<Node> | undefined) ?? []) {
     if (statement.type === "VariableDeclaration") {
-      for (const declarator of statement.declarations as Node[]) {
+      for (const declarator of statement.declarations as Array<Node>) {
         for (const name of patternNames(declarator.id)) {
           names.add(name);
         }
@@ -499,7 +500,7 @@ function topLevelNames(root: unknown): Set<string> {
 }
 
 /** The names a binding pattern declares. */
-function patternNames(pattern: unknown): string[] {
+function patternNames(pattern: unknown): Array<string> {
   if (!isNode(pattern)) {
     return [];
   }
@@ -507,13 +508,13 @@ function patternNames(pattern: unknown): string[] {
     case "Identifier":
       return [pattern.name as string];
     case "ObjectPattern":
-      return (pattern.properties as Node[]).flatMap((property) =>
+      return (pattern.properties as Array<Node>).flatMap((property) =>
         property.type === "RestElement"
           ? patternNames(property.argument)
           : patternNames(property.value),
       );
     case "ArrayPattern":
-      return (pattern.elements as unknown[]).flatMap(patternNames);
+      return (pattern.elements as Array<unknown>).flatMap(patternNames);
     case "AssignmentPattern":
       return patternNames(pattern.left);
     case "RestElement":
@@ -530,8 +531,8 @@ function patternNames(pattern: unknown): string[] {
  * member's or a key's name, nor a type's, and not inside a function or a block that declares a
  * `name` of its own.
  */
-function references(root: unknown, name: string): Node[] {
-  const found: Node[] = [];
+function references(root: unknown, name: string): Array<Node> {
+  const found: Array<Node> = [];
   const visit = (node: unknown, parent: Node | undefined, key: string): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
@@ -584,14 +585,16 @@ const TS_VALUE_PARENTS = new Set([
 /** Whether a function, a block or a `catch` declares its own `name`, hiding the body's. */
 function shadows(node: Node, name: string): boolean {
   if (isFunction(node)) {
-    return (node.params as unknown[]).some((parameter) => patternNames(parameter).includes(name));
+    return (node.params as Array<unknown>).some((parameter) =>
+      patternNames(parameter).includes(name),
+    );
   }
   if (node.type === "CatchClause") {
     return patternNames(node.param).includes(name);
   }
   const statements =
     node.type === "BlockStatement" || node.type === "StaticBlock"
-      ? (node.body as Node[])
+      ? (node.body as Array<Node>)
       : node.type === "ForStatement" ||
           node.type === "ForOfStatement" ||
           node.type === "ForInStatement"
@@ -600,7 +603,7 @@ function shadows(node: Node, name: string): boolean {
   return statements.some(
     (statement) =>
       (statement.type === "VariableDeclaration" &&
-        (statement.declarations as Node[]).some((declarator) =>
+        (statement.declarations as Array<Node>).some((declarator) =>
           patternNames(declarator.id).includes(name),
         )) ||
       ((statement.type === "FunctionDeclaration" || statement.type === "ClassDeclaration") &&
@@ -645,7 +648,7 @@ function substitute(
   root: unknown,
   substitutions: ReadonlyMap<string, string>,
 ): string {
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   for (const [name, value] of substitutions) {
     const shorthand = new Set<number>();
     walkNodes(root, (node) => {
@@ -684,9 +687,9 @@ function isName(code: string): boolean {
 }
 
 /** The names an expression reads. */
-function namesIn(code: string): string[] {
+function namesIn(code: string): Array<string> {
   const { root } = parseCodeSource(code, "expression");
-  const names: string[] = [];
+  const names: Array<string> = [];
   walkNodes(root, (node) => {
     if (node.type === "Identifier") {
       names.push(node.name as string);

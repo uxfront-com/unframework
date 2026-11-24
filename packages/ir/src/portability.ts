@@ -39,9 +39,9 @@ export type TypedFramework = "React" | "Vue" | "Svelte";
  */
 export const UNDECLARED_ATTRIBUTES: ReadonlyMap<
   string,
-  ReadonlyMap<string, readonly TypedFramework[]>
+  ReadonlyMap<string, ReadonlyArray<TypedFramework>>
 > = new Map(
-  Object.entries<Readonly<Record<string, readonly TypedFramework[]>>>({
+  Object.entries<Readonly<Record<string, ReadonlyArray<TypedFramework>>>>({
     "*": {
       popover: ["Vue"],
       writingsuggestions: ["React", "Vue"],
@@ -86,7 +86,7 @@ export function undeclaredBy(
   tag: string,
   namespace: "html" | "svg",
   name: string,
-): readonly TypedFramework[] | undefined {
+): ReadonlyArray<TypedFramework> | undefined {
   if (DRAFT_ARIA_ATTRIBUTES.has(name)) {
     return ["Vue", "Svelte"];
   }

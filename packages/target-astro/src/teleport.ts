@@ -35,12 +35,12 @@ function element(node: ElementNode): ElementNode {
   };
 }
 
-function fills(list: readonly SlotFill[]): SlotFill[] {
+function fills(list: ReadonlyArray<SlotFill>): Array<SlotFill> {
   return list.map((fill) => ({ ...fill, children: nodes(fill.children) }));
 }
 
-function nodes(list: readonly RenderNode[]): RenderNode[] {
-  return list.flatMap((node): RenderNode[] => {
+function nodes(list: ReadonlyArray<RenderNode>): Array<RenderNode> {
+  return list.flatMap((node): Array<RenderNode> => {
     switch (node.kind) {
       case "Teleport":
         return [];

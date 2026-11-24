@@ -102,8 +102,8 @@ export function component(
 }
 
 /** The names of an object type's members, at its top level. */
-function memberNames(members: string): string[] {
-  const names: string[] = [];
+function memberNames(members: string): Array<string> {
+  const names: Array<string> = [];
   let depth = 0;
   let start = 0;
   for (let index = 0; index <= members.length; index++) {
@@ -142,16 +142,16 @@ export function root(module: UfModule | undefined): ElementNode {
   return render;
 }
 
-export function codes(diagnostics: readonly Diagnostic[]): string[] {
+export function codes(diagnostics: ReadonlyArray<Diagnostic>): Array<string> {
   return diagnostics.map((diagnostic) => diagnostic.code);
 }
 
-export function slices(source: string, diagnostics: readonly Diagnostic[]): string[] {
+export function slices(source: string, diagnostics: ReadonlyArray<Diagnostic>): Array<string> {
   return diagnostics.map((diagnostic) => source.slice(diagnostic.span.start, diagnostic.span.end));
 }
 
 /** Each diagnostic as `code text-under-its-span`. */
-export function problems(source: string, diagnostics: readonly Diagnostic[]): string[] {
+export function problems(source: string, diagnostics: ReadonlyArray<Diagnostic>): Array<string> {
   return diagnostics.map(
     (diagnostic) =>
       `${diagnostic.code} ${source.slice(diagnostic.span.start, diagnostic.span.end)}`,
@@ -162,7 +162,7 @@ export function problems(source: string, diagnostics: readonly Diagnostic[]): st
  * Applies every fix and analyses the result, as the harness's L1 does: the diagnostics that
  * had no fix must be exactly what remains. Returns the fixed source.
  */
-export function applyAndRecheck(source: string, diagnostics: readonly Diagnostic[]): string {
+export function applyAndRecheck(source: string, diagnostics: ReadonlyArray<Diagnostic>): string {
   const fixable = diagnostics.filter((diagnostic) => diagnostic.fixes?.length);
   const fixed = applyFixes(
     source,
@@ -235,8 +235,8 @@ export function functionOf(source: string, fn: FunctionCode): string {
  * Every narrowed path of a module's reads (ADR-0046), in source order, as `text (scope)`: the
  * text the path spans, and where the condition that narrows it is.
  */
-export function narrowedPaths(source: string, module: UfModule | undefined): string[] {
-  const found: { start: number; end: number; text: string }[] = [];
+export function narrowedPaths(source: string, module: UfModule | undefined): Array<string> {
+  const found: Array<{ start: number; end: number; text: string }> = [];
   const visit = (value: unknown): void => {
     if (!value || typeof value !== "object") {
       return;

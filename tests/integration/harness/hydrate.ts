@@ -34,7 +34,7 @@ const runners = new Map<DevEnvironment, ModuleRunner>();
  * The console messages of the render that logs them: renders run concurrently, one per page, and
  * each collects only what its own async work logs. Anything else reaches the console as before.
  */
-const renders = new AsyncLocalStorage<CapturedConsoleMessage[]>();
+const renders = new AsyncLocalStorage<Array<CapturedConsoleMessage>>();
 
 /**
  * `ufHydrationRender`: the server HTML of the calling case's main component with `props`, as the
@@ -84,7 +84,7 @@ async function render(
       `[uf] ${server} exports no renderForHydration: a toolchain with a hydrate adapter renders its server HTML through it (ADR-0095).`,
     );
   }
-  const messages: CapturedConsoleMessage[] = [];
+  const messages: Array<CapturedConsoleMessage> = [];
   installConsoleCapture();
   // The events the component declares, as the page listens to them: a renderer whose client
   // cannot take a function from the server (Qwik's QRLs) renders a listener for each by name.
@@ -157,7 +157,7 @@ function installConsoleCapture(): void {
 }
 
 function capturing(level: CapturedConsoleMessage["level"], original: Console["warn"]) {
-  return (...args: unknown[]): void => {
+  return (...args: Array<unknown>): void => {
     const sink = renders.getStore();
     if (sink) {
       sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });

@@ -13,7 +13,7 @@ export interface WorkspacePackage {
 }
 
 /** The packages under packages/, except the v1 reference compiler. */
-export function packages(): WorkspacePackage[] {
+export function packages(): Array<WorkspacePackage> {
   const base = join(root, "packages");
   return readdirSync(base)
     .filter(
@@ -33,11 +33,11 @@ export function packages(): WorkspacePackage[] {
  * dot directory, as Node's `glob` does, so the git-ignored scratch the tests leave (`.canary/`,
  * `.reports/`, `.vitest/`) is never read.
  */
-export function sourceFiles(directory: string): string[] {
+export function sourceFiles(directory: string): Array<string> {
   if (!existsSync(directory)) {
     return [];
   }
-  const files: string[] = [];
+  const files: Array<string> = [];
   for (const entry of readdirSync(directory)) {
     if (entry === "node_modules" || entry === "dist") {
       continue;
@@ -61,11 +61,11 @@ export interface ImportRecord {
 }
 
 /** The module specifiers a file imports or re-exports, statically or dynamically. */
-export function importsOf(file: string): ImportRecord[] {
+export function importsOf(file: string): Array<ImportRecord> {
   const source = readFileSync(file, "utf8");
   const result = parseSync(file, source);
   const { module } = result;
-  const records: ImportRecord[] = [];
+  const records: Array<ImportRecord> = [];
   const name = relative(root, file);
   for (const entry of module.staticImports) {
     const typeOnly = entry.entries.length > 0 && entry.entries.every((item) => item.isType);
@@ -125,7 +125,7 @@ export interface ExportRecord {
  * have no name: each is returned as `*` or `default`, so a caller that pins a module's names
  * sees it.
  */
-export function exportsOf(file: string): ExportRecord[] {
+export function exportsOf(file: string): Array<ExportRecord> {
   const { module } = parseSync(file, readFileSync(file, "utf8"));
   return module.staticExports.flatMap((entry) =>
     entry.entries.map((item) => ({

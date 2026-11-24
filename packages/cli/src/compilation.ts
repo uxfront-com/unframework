@@ -38,19 +38,19 @@ const SINGLE_FILE_COMPONENT = /\.(vue|svelte|astro)$/;
 export interface Compilation {
   /** The exit code. */
   status: number;
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
   /** The text of each diagnostic's file, which the renderers need. */
   sources: ReadonlyMap<string, string>;
   /** The resolved config, once it loaded and passed its checks. */
   config?: ResolvedConfig;
   /** Each target's files, at their paths in `outDir/<target>`. Empty unless `status` is 0. */
-  trees: ReadonlyMap<string, OutputFile[]>;
+  trees: ReadonlyMap<string, Array<OutputFile>>;
   /** The directory relative paths resolve against. */
   root: string;
   /** The config file as diagnostics name it. */
   configFile: string;
   /** The sources, and the files they read, relative to the root. Sorted. */
-  authored: string[];
+  authored: Array<string>;
 }
 
 /** One source's compile, and where it sits under srcDir. */
@@ -58,9 +58,9 @@ interface Compiled {
   file: string;
   directory: string;
   result: CompileResult;
-  copies: OutputFile[];
+  copies: Array<OutputFile>;
   /** What its compile read: files relative to the root, and packages as `pkg:<name>`. */
-  read: string[];
+  read: Array<string>;
 }
 
 /** A renderer's text as it goes to a terminal: nothing when there is nothing, else a whole line. */
@@ -84,7 +84,7 @@ function within(directory: string, path: string): boolean {
 export async function compileSources(
   io: Io,
   oracle: string | undefined,
-  alsoCleans: readonly string[] = [],
+  alsoCleans: ReadonlyArray<string> = [],
 ): Promise<Compilation> {
   if (oracle !== undefined && !TYPE_ORACLES.includes(oracle)) {
     throw new Error(`--type-oracle takes syntactic or tsgo, not "${oracle}".`);
@@ -93,10 +93,10 @@ export async function compileSources(
   const root = loaded.directory ?? io.cwd;
   const finish = async (
     status: number,
-    diagnostics: Diagnostic[],
+    diagnostics: Array<Diagnostic>,
     config?: ResolvedConfig,
-    trees: ReadonlyMap<string, OutputFile[]> = new Map(),
-    authored: string[] = [],
+    trees: ReadonlyMap<string, Array<OutputFile>> = new Map(),
+    authored: Array<string> = [],
   ): Promise<Compilation> => {
     const sources = new Map<string, string>();
     for (const { file } of diagnostics) {
@@ -159,7 +159,7 @@ export async function compileSources(
     (oracle ?? config.typeOracle) === "tsgo"
       ? (await import("@unframework.dev/type-oracle-tsgo")).createTsgoOracle({ root })
       : createSyntacticOracle({ root, readFile: read });
-  const compiled: Compiled[] = [];
+  const compiled: Array<Compiled> = [];
   try {
     const project = createProject({
       root,
@@ -220,7 +220,7 @@ export async function compileSources(
     }
   }
 
-  const trees = new Map<string, OutputFile[]>();
+  const trees = new Map<string, Array<OutputFile>>();
   for (const target of config.targets) {
     const tree = assembleTree(target, compiled, diagnostics);
     trees.set(target, tree);
@@ -233,10 +233,10 @@ export async function compileSources(
 
 /** What a package's `source/` needs for its sources to compile in a consumer's app (ADR-0077). */
 async function authoredFiles(
-  files: readonly string[],
-  compiled: readonly Compiled[],
+  files: ReadonlyArray<string>,
+  compiled: ReadonlyArray<Compiled>,
   root: string,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const authored = new Set(files);
   for (const each of compiled.flatMap(({ read: readFiles }) => readFiles)) {
     // A read list also holds packages, as `pkg:<name>`, and what a compile looked for and missed.
@@ -255,8 +255,8 @@ async function authoredFiles(
 async function findSources(
   config: ResolvedConfig,
   named: (path: string) => string,
-): Promise<string[]> {
-  const files: string[] = [];
+): Promise<Array<string>> {
+  const files: Array<string> = [];
   const entries = glob(SOURCES, {
     cwd: config.srcDir,
     withFileTypes: true,
@@ -286,9 +286,9 @@ function strictly(diagnostic: Diagnostic): Diagnostic {
  */
 function assembleTree(
   target: string,
-  compiled: readonly Compiled[],
-  diagnostics: Diagnostic[],
-): OutputFile[] {
+  compiled: ReadonlyArray<Compiled>,
+  diagnostics: Array<Diagnostic>,
+): Array<OutputFile> {
   const collision = (file: string, span: Span, message: string) =>
     diagnostics.push(createDiagnostic("UF1104", { file, span, message, target }));
 

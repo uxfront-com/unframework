@@ -23,7 +23,7 @@ const at = { start: 0, end: 0 };
 function element(
   tag: string,
   attributes: Record<string, string | true> = {},
-  children: RenderNode[] = [],
+  children: Array<RenderNode> = [],
 ): ElementNode {
   const list = Object.entries(attributes).map(([name, value]) =>
     createStaticAttribute(name, value, at),
@@ -33,11 +33,14 @@ function element(
 
 const greeting = element("p", { class: "greeting" }, [createText("Hello, world!", at)]);
 
-function emit(render: ElementNode, exports: UfExport[] = [createExport("default", "Hello", at)]) {
+function emit(
+  render: ElementNode,
+  exports: Array<UfExport> = [createExport("default", "Hello", at)],
+) {
   // Without fallthrough's `class` and `style` props (ADR-0054), which ./lower.ts explains.
   const component = { ...createComponent("Hello", render, at), inheritAttrs: false as const };
   const module = createModule("Hello.uf.tsx", [component], exports);
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   const context: EmitContext = {
     module,
     options: undefined,
@@ -49,7 +52,7 @@ function emit(render: ElementNode, exports: UfExport[] = [createExport("default"
 }
 
 /** The single file's contents, formatted as the compiler formats them. */
-async function emitted(render: ElementNode, exports?: UfExport[]): Promise<string> {
+async function emitted(render: ElementNode, exports?: Array<UfExport>): Promise<string> {
   const [file, ...rest] = emit(render, exports);
   expect(rest).toEqual([]);
   const outcome = await formatOutput(file!);

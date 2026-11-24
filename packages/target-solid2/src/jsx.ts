@@ -104,7 +104,7 @@ function isEnumerated(name: string): boolean {
 export interface SolidJsx {
   dialect: JsxDialect;
   /** The inline helpers to print after the component, as source code. */
-  helpers: () => string[];
+  helpers: () => Array<string>;
 }
 
 /** What a file's composition prints with: its code, its composition and its props object. */
@@ -131,7 +131,7 @@ export interface SolidCompose {
 export function solidJsx(
   imports: ImportSet,
   narrowings: Narrowings,
-  types: readonly string[],
+  types: ReadonlyArray<string>,
   listeners: SolidListeners,
   compose: SolidCompose,
 ): SolidJsx {
@@ -225,7 +225,7 @@ export function solidJsx(
       js.jsxExpressionContainer(context.placeholders.expression(merged)),
     );
   };
-  const rootClass = (element: ElementNode, context: JsxContext): AstExpression[] => {
+  const rootClass = (element: ElementNode, context: JsxContext): Array<AstExpression> => {
     if (!isRoot(element)) {
       return [];
     }
@@ -579,7 +579,7 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
   const last = branches.at(-1)!;
   // The analyser drops an empty else.
   const otherwise = last.condition ? undefined : last;
-  const element = (name: string, attributes: JsxAttribute[], children: JsxChild[]) =>
+  const element = (name: string, attributes: Array<JsxAttribute>, children: Array<JsxChild>) =>
     js.jsxElement(flow.imports.add("solid-js", name), attributes, children);
   if (tests.length === 1) {
     const [first] = branches;
@@ -677,8 +677,8 @@ function plain(node: IfNode, context: JsxContext, imports: ImportSet): AstExpres
 /** `<Show when={test} fallback={…}>…</Show>`. */
 function show(
   test: AstExpression,
-  children: readonly RenderNode[],
-  fallback: readonly RenderNode[] | undefined,
+  children: ReadonlyArray<RenderNode>,
+  fallback: ReadonlyArray<RenderNode> | undefined,
   context: JsxContext,
   imports: ImportSet,
 ): AstExpression {
@@ -706,10 +706,10 @@ function show(
  * whenever they change (src/narrowing.ts).
  */
 function narrowed(
-  tests: readonly Expression[],
+  tests: ReadonlyArray<Expression>,
   holds: boolean,
-  children: readonly RenderNode[],
-  paths: readonly ReferencePath[],
+  children: ReadonlyArray<RenderNode>,
+  paths: ReadonlyArray<ReferencePath>,
   context: JsxContext,
   flow: Flow,
 ): { when: AstExpression; callback: JsxChild; keyed: boolean } {
@@ -813,12 +813,12 @@ function narrowed(
 }
 
 /** A branch's `when`, keyed when its callback receives the values themselves. */
-function branchAttributes(shown: { when: AstExpression; keyed: boolean }): JsxAttribute[] {
+function branchAttributes(shown: { when: AstExpression; keyed: boolean }): Array<JsxAttribute> {
   return shown.keyed ? [js.jsxAttribute("keyed"), when(shown.when)] : [when(shown.when)];
 }
 
 /** Whether nodes hold a listener or a template ref: client code. */
-function holdsListeners(nodes: readonly RenderNode[]): boolean {
+function holdsListeners(nodes: ReadonlyArray<RenderNode>): boolean {
   let found = false;
   for (const node of nodes) {
     walk(node, {
@@ -843,7 +843,7 @@ function when(test: AstExpression): JsxAttribute {
  * `fallback="text"` for static text that a quoted value can hold, else `fallback={…}`: one node,
  * or a fragment of several.
  */
-function fallbackAttribute(children: readonly RenderNode[], context: JsxContext): JsxAttribute {
+function fallbackAttribute(children: ReadonlyArray<RenderNode>, context: JsxContext): JsxAttribute {
   const [only] = children;
   if (children.length === 1 && only?.kind === "Text") {
     return js.jsxAttribute("fallback", jsxAttributeValue(only.value));
@@ -935,7 +935,7 @@ function untypedJsxAttribute(
   element: ElementNode,
   name: string,
   value: AstExpression,
-): JsxAttributeItem[] {
+): Array<JsxAttributeItem> {
   const object = js.objectExpression([[name, value]]);
   const record = js.typeReference("Record", [js.keywordType("string"), js.keywordType("unknown")]);
   return [
@@ -993,8 +993,8 @@ function classAttribute(
   element: ElementNode,
   context: JsxContext,
   helper: () => string,
-  passed: readonly AstExpression[],
-): JsxAttribute[] {
+  passed: ReadonlyArray<AstExpression>,
+): Array<JsxAttribute> {
   const reads = [...spreadClassReads(element, context), ...passed];
   const [only] = attribute.items;
   if (
@@ -1037,7 +1037,7 @@ function classAttribute(
 }
 
 /** `class={cx(…parts)}`. */
-function classCall(helper: string, parts: AstExpression[]): JsxAttribute {
+function classCall(helper: string, parts: Array<AstExpression>): JsxAttribute {
   return js.jsxAttribute(
     "class",
     js.jsxExpressionContainer(js.callExpression(js.identifier(helper), parts)),

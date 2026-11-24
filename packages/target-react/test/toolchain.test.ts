@@ -38,7 +38,7 @@ const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts");
 
 /** Every committed React golden; the corpus has at least the two `basics` cases. */
-function reactGoldens(): ToolchainFile[] {
+function reactGoldens(): Array<ToolchainFile> {
   const files = goldens("react");
   expect(files.map((file) => file.path.split("/").at(-1))).toEqual(
     expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),
@@ -49,8 +49,8 @@ function reactGoldens(): ToolchainFile[] {
 const clean = { errors: [], warnings: [] };
 
 /** The names of the plugins in a Vite `plugins` option, however nested. */
-function pluginNames(options: readonly PluginOption[]): string[] {
-  return options.flatMap((option): string[] => {
+function pluginNames(options: ReadonlyArray<PluginOption>): Array<string> {
+  return options.flatMap((option): Array<string> => {
     if (Array.isArray(option)) {
       return pluginNames(option);
     }

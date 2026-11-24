@@ -138,7 +138,7 @@ export const svelte: Target = defineTarget({
     // option, which the host sets (ADR-0101).
     "async-setup": { support: "native" },
   },
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
+  emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
     // `setContext` after an await throws `set_context_after_init`, and a `provide` that reads what
     // the awaits or a later item set cannot move above them (ADR-0101).
     const late = lateProvides(component);
@@ -270,7 +270,7 @@ export const svelte: Target = defineTarget({
   },
   emitDirective,
   // A composable is a `.svelte.ts` module, whose runes vite-plugin-svelte compiles (ADR-0069).
-  emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+  emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
     return [
       {
         path: `${composable.name}.svelte.ts`,

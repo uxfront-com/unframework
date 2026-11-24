@@ -103,7 +103,7 @@ function privateCompilerSfc(require: NodeJS.Require, path: string): CompilerSfc 
  * TypeScript transform checks it (`compileScriptModules`).
  */
 export async function frameworkCompile(
-  files: readonly ToolchainFile[],
+  files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
   assertFilesToCompile(files);
   // Under NODE_ENV=production, compiler-dom loads its production build and warnOnce is a no-op:
@@ -131,8 +131,8 @@ export async function frameworkCompile(
  * stays as it is, for the bundler's TypeScript transform.
  */
 export async function frameworkEmit(
-  files: readonly ToolchainFile[],
-): Promise<Map<string, ToolchainFile[]>> {
+  files: ReadonlyArray<ToolchainFile>,
+): Promise<Map<string, Array<ToolchainFile>>> {
   assertFilesToCompile(files);
   const loaded = await loadCompilers();
   const tree = outputTree(files);
@@ -149,7 +149,7 @@ function emitSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): string {
   const { descriptor } = sfc.parse(file.contents, { filename: file.path, sourceMap: false });
   const id = createHash("sha256").update(file.path).digest("hex").slice(0, 8);
   const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
-  const expressionPlugins: "typescript"[] = lang && /tsx?$/.test(lang) ? ["typescript"] : [];
+  const expressionPlugins: Array<"typescript"> = lang && /tsx?$/.test(lang) ? ["typescript"] : [];
   const compilerOptions = { expressionPlugins };
   const sheets = descriptor.styles.flatMap((style) =>
     style.src ? [`import ${JSON.stringify(style.src)};`] : [],
@@ -185,7 +185,7 @@ type ScriptFs = NonNullable<CompilerSfcModule.SFCScriptCompileOptions["fs"]>;
  * @vitejs/plugin-vue gives it the project's (ADR-0067): the output tree it was given, a `.ts`
  * module or another `.vue` file. Without one it cannot resolve an imported type at all.
  */
-function outputTree(files: readonly ToolchainFile[]): ScriptFs {
+function outputTree(files: ReadonlyArray<ToolchainFile>): ScriptFs {
   const contents = new Map(files.map((file) => [file.path, file.contents]));
   return {
     fileExists: (path) => contents.has(path),
@@ -197,11 +197,11 @@ function outputTree(files: readonly ToolchainFile[]): ScriptFs {
 function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): FrameworkCompileResult {
   const sfc = vue.sfc();
   const source = file.contents;
-  const errors: ToolchainMessage[] = [];
-  const warnings: ToolchainMessage[] = [];
+  const errors: Array<ToolchainMessage> = [];
+  const warnings: Array<ToolchainMessage> = [];
   const message = (error: CompilerError | SyntaxError | string, base = 0): ToolchainMessage =>
     fromCompilerError(error, source, base, vue.codeNames);
-  const logged: string[] = [];
+  const logged: Array<string> = [];
 
   const { descriptor, errors: parseErrors } = sfc.parse(source, {
     filename: file.path,
@@ -238,7 +238,7 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): Frame
     // relative to the start of the content.
     const base = template.loc.start.offset;
     for (const ssr of [false, true]) {
-      const reported: CompilerError[] = [];
+      const reported: Array<CompilerError> = [];
       try {
         const result = capturingConsole(logged, () =>
           sfc.compileTemplate({
@@ -297,7 +297,10 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): Frame
  * compileTemplate replaces `onWarn` with its own and flattens warnings into `tips`, strings
  * without a location. Wrapping the compiler keeps the structured warnings.
  */
-function reportingWarnings(compiler: TemplateCompiler, sink: CompilerError[]): TemplateCompiler {
+function reportingWarnings(
+  compiler: TemplateCompiler,
+  sink: Array<CompilerError>,
+): TemplateCompiler {
   return {
     parse: (template, options) => compiler.parse(template, options),
     compile: (template, options) =>
@@ -315,9 +318,9 @@ function reportingWarnings(compiler: TemplateCompiler, sink: CompilerError[]): T
  * Runs synchronous compiler work while collecting what it prints: some Vue warnings only ever
  * reach `console.warn`. The swap is process-wide, so it must never span an `await`.
  */
-function capturingConsole<T>(sink: string[], run: () => T): T {
+function capturingConsole<T>(sink: Array<string>, run: () => T): T {
   const { warn, error } = console;
-  const capture = (...args: unknown[]) => {
+  const capture = (...args: Array<unknown>) => {
     sink.push(stripVTControlCharacters(format(...args)).trim());
   };
   console.warn = capture;
@@ -401,7 +404,7 @@ function positionAt(source: string, offset: number): { line: number; column: num
 }
 
 /** The DOM and SSR passes share a parser, so they report the same problems twice. */
-function unique(messages: ToolchainMessage[]): ToolchainMessage[] {
+function unique(messages: Array<ToolchainMessage>): Array<ToolchainMessage> {
   const seen = new Set<string>();
   return messages.filter((item) => {
     const key = JSON.stringify([item.code, item.line, item.column, item.message]);

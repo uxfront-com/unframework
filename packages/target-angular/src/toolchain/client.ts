@@ -85,8 +85,8 @@ export function setInputs(
  */
 export function outputBindings(
   on: Readonly<Record<string, MountListener>> = {},
-  events: readonly MountEvent[] = [],
-): Binding[] {
+  events: ReadonlyArray<MountEvent> = [],
+): Array<Binding> {
   return Object.entries(on).map(([name, listener]) => {
     const optional = events.find((event) => event.name === name)?.optional;
     if (!optional) {
@@ -100,7 +100,7 @@ export function outputBindings(
       } else if (optional.length === 1 && !optional[0]) {
         listener(value);
       } else {
-        listener(...(value as unknown[]));
+        listener(...(value as Array<unknown>));
       }
     });
   });

@@ -35,13 +35,16 @@ export const ACTION_TIMEOUT = 5_000;
  *   depends on the DOM, never on what was repainted before it (test/parity/cases/stub/raster).
  *   Every reference capture of the corpus is byte-identical with and without it.
  */
-const CHROMIUM_ARGS: readonly string[] = ["--font-render-hinting=none", "--disable-partial-raster"];
+const CHROMIUM_ARGS: ReadonlyArray<string> = [
+  "--font-render-hinting=none",
+  "--disable-partial-raster",
+];
 
 /**
  * A browser command of any signature. Vitest calls it with its command context and the payload
  * the browser sent, which only the command and its caller agree on.
  */
-export type AnyBrowserCommand = (context: never, ...payload: never[]) => unknown;
+export type AnyBrowserCommand = (context: never, ...payload: Array<never>) => unknown;
 
 /** Options for {@link parityBrowser}. */
 export interface ParityBrowserOptions {

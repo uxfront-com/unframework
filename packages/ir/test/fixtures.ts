@@ -86,9 +86,9 @@ import type {
 export function expression(
   code: string,
   start: number,
-  refs: readonly (readonly [text: string, binding?: BindingId, nth?: number])[] = [],
+  refs: ReadonlyArray<readonly [text: string, binding?: BindingId, nth?: number]> = [],
 ): Expression {
-  const references: Reference[] = refs.map(([text, binding, nth = 0]) => {
+  const references: Array<Reference> = refs.map(([text, binding, nth = 0]) => {
     let offset = -1;
     for (let found = 0; found <= nth; found++) {
       offset = code.indexOf(text, offset + 1);
@@ -348,7 +348,7 @@ export interface Piece {
   /** The span of the `index`th occurrence of `part` in the piece. */
   at(part: string, index?: number): Span;
   /** The piece as code, with its references. */
-  code(refs?: CodeReference[]): Code;
+  code(refs?: Array<CodeReference>): Code;
 }
 
 /** The `nth` occurrence of `text` in the counter's source, at or after `from`. */
@@ -367,7 +367,7 @@ export function piece(text: string, nth = 0, from: number = OFFSET): Piece {
   return {
     span: where,
     at: locate,
-    code: (refs: CodeReference[] = []): Code => createCode(text, where, refs),
+    code: (refs: Array<CodeReference> = []): Code => createCode(text, where, refs),
   };
 }
 

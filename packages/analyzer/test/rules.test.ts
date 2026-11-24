@@ -16,7 +16,7 @@ import {
 } from "./helpers.ts";
 
 /** The problems of a component with the API imported, the setup, the template and the props. */
-function problemsOf(setup: string, jsx = "<p />", props?: string): string[] {
+function problemsOf(setup: string, jsx = "<p />", props?: string): Array<string> {
   const { source, diagnostics } = setupOf(setup, jsx, props);
   return problems(source, diagnostics);
 }
@@ -1244,7 +1244,7 @@ describe("handlers that read a narrowed value (UF3029)", () => {
 
 describe("narrowed reads (ADR-0046)", () => {
   /** The narrowed paths of a clean component's reads. */
-  function narrowed(setup: string, jsx = "<p />", props?: string): string[] {
+  function narrowed(setup: string, jsx = "<p />", props?: string): Array<string> {
     const { source, diagnostics, module } = setupOf(setup, jsx, props);
     expect(problems(source, diagnostics)).toEqual([]);
     return narrowedPaths(source, module);
@@ -1372,7 +1372,7 @@ describe("narrowed reads (ADR-0046)", () => {
       '<div><button type="button" onClick={() => bump(2)}>Bump</button><button type="button" onClick={restart}>Restart</button><button type="button" onClick={reset}>Reset</button></div>',
     );
     expect(problems(source, diagnostics)).toEqual([]);
-    const written: string[] = [];
+    const written: Array<string> = [];
     const visit = (value: unknown): void => {
       if (!value || typeof value !== "object") {
         return;
@@ -1383,7 +1383,7 @@ describe("narrowed reads (ADR-0046)", () => {
         }
         return;
       }
-      const node = value as { kind?: string; operator?: string; narrowed?: NarrowedPath[] };
+      const node = value as { kind?: string; operator?: string; narrowed?: Array<NarrowedPath> };
       if (node.kind === "Write") {
         const paths = (node.narrowed ?? []).map(
           ({ span, scope }) => `${source.slice(span.start, span.end)} (${scope})`,

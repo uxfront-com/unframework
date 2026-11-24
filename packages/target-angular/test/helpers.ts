@@ -42,7 +42,7 @@ export const context: ToolchainContext = {
   ],
 };
 
-function filesUnder(directory: string): string[] {
+function filesUnder(directory: string): Array<string> {
   return readdirSync(directory, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => join(entry.parentPath, entry.name))
@@ -50,7 +50,7 @@ function filesUnder(directory: string): string[] {
 }
 
 /** The committed Angular golden outputs of the integration corpus. */
-export function goldenFiles(): string[] {
+export function goldenFiles(): Array<string> {
   return filesUnder(casesDir).filter((path) => /\/__output__\/angular\/[^/]+\.ts$/.test(path));
 }
 
@@ -58,7 +58,7 @@ export function goldenFiles(): string[] {
  * The corpus's feature cases (not `diagnostics/`, whose sources fail on purpose): each case's
  * name and its component source.
  */
-export function corpusSources(): { name: string; file: string; source: string }[] {
+export function corpusSources(): Array<{ name: string; file: string; source: string }> {
   // The checks read the path within the corpus: CI checks the repo out under `/__w/`.
   return filesUnder(casesDir)
     .map((path) => ({ path, file: path.slice(casesDir.length + 1) }))
@@ -168,7 +168,7 @@ const COMPOSITION =
   /^(?:components|slots|fallthrough|expose|models|context|dynamic)\/|^semantics\/models$/;
 
 /** What this target emits for a module, unformatted, failing on any diagnostic. */
-export function emitModule(module: UfModule): OutputFile[] {
+export function emitModule(module: UfModule): Array<OutputFile> {
   const emitContext: EmitContext = {
     module,
     options: undefined,
@@ -180,7 +180,7 @@ export function emitModule(module: UfModule): OutputFile[] {
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */
-export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
+export async function emitFormatted(module: UfModule): Promise<Array<OutputFile>> {
   return Promise.all(
     emitModule(module).map(async (file) => {
       const outcome = await formatOutput(file);
@@ -252,7 +252,7 @@ export async function formatted(source: string): Promise<OutputFile> {
   return file;
 }
 
-const scratch: string[] = [];
+const scratch: Array<string> = [];
 
 /** A fresh directory inside this package (gitignored `.uf-tmp/`); see {@link removeScratch}. */
 export function scratchDir(): string {
@@ -320,10 +320,10 @@ type TransformHandler = (
 /** The ngtsc plugin under test, with what it warned about and logged. */
 export interface NgtscHarness {
   plugin: Plugin;
-  warnings: string[];
-  logged: string[];
+  warnings: Array<string>;
+  logged: Array<string>;
   /** The ids the plugin asked Vite to load (`this.load`), in order. */
-  loaded: string[];
+  loaded: Array<string>;
   transform: (id: string, code?: string) => Promise<{ code: string; map: string | null }>;
 }
 
@@ -364,9 +364,9 @@ export async function ngtscPlugin(
   (plugin.configResolved as (config: ResolvedConfig) => void)({
     plugins: [unframework as Plugin, plugin],
   } as unknown as ResolvedConfig);
-  const warnings: string[] = [];
-  const logged: string[] = [];
-  const loaded: string[] = [];
+  const warnings: Array<string> = [];
+  const logged: Array<string> = [];
+  const loaded: Array<string> = [];
   const { handler } = plugin.transform as { handler: TransformHandler };
   const transform = (id: string, code = sources[id]!) => {
     served.add(id);

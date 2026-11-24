@@ -18,7 +18,7 @@
 
   let a = $state(1);
   let b = $state(2);
-  let items = $state.raw<number[]>([]);
+  let items = $state.raw<Array<number>>([]);
 
   let previousAB = untrack((): [typeof a, typeof b] => [a, b]);
   let aBWatched = false;
@@ -52,7 +52,7 @@
   });
 
   $effect(() => {
-    const cleanups: (() => void)[] = [];
+    const cleanups: Array<() => void> = [];
     const onCleanup = (cleanup: () => void) => {
       cleanups.push(cleanup);
     };

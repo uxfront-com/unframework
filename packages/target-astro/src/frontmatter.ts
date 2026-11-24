@@ -59,7 +59,7 @@ export interface FrontmatterParts {
  * compiler gives every component.
  */
 export function childTags(
-  children: readonly ChildImport[],
+  children: ReadonlyArray<ChildImport>,
   imports: ImportSet,
 ): Map<string, string> {
   const tags = new Map<string, string>();
@@ -161,7 +161,7 @@ export function frontmatterOf(
   const extras = propsExtras(component, render, own);
   const local = (name: string) => (ownProps && name === "Props" ? ownProps : name);
   addTypeImports(view, module, imports, (name) => `${name}.astro`, { live: SERVER, local });
-  const sections: string[][] = [];
+  const sections: Array<Array<string>> = [];
   const declared = types.map((declaration) => {
     let code =
       exported && parameter && declaration.name === "Props" && !declaration.exported
@@ -349,8 +349,8 @@ function propsExtras(
   component: UfComponent,
   render: AstroRender,
   own: (type: string) => string,
-): string[] {
-  const members: string[] = [];
+): Array<string> {
+  const members: Array<string> = [];
   for (const item of component.setup) {
     if (item.kind === "Model") {
       const type = item.type ? own(item.type.code) : "unknown";
@@ -406,10 +406,10 @@ function propsRead(
   live: ReadonlySet<BindingId>,
   spelling: Spelling,
   render: AstroRender,
-): string[] {
-  const statements: string[] = [];
+): Array<string> {
+  const statements: Array<string> = [];
   const parameter = component.propsParameter;
-  const names: string[] = [];
+  const names: Array<string> = [];
   const { fallthrough } = render;
   // What falls through is the rest of the props (ADR-0118), so every name `Props` declares is
   // taken out of it, as `_title` where nothing reads it. A `<component is>` takes no rest.
@@ -540,7 +540,7 @@ function injectedType(
  */
 function keyTypeImports(
   module: UfModule,
-  keys: readonly string[],
+  keys: ReadonlyArray<string>,
   imports: ImportSet,
   local: (name: string) => string,
 ): void {
@@ -576,11 +576,11 @@ function keyTypes(
   component: UfComponent,
   module: UfModule,
   declared: ReadonlySet<string>,
-): string[] {
+): Array<string> {
   if (!module.keys?.length || keyOwner(module.components, module.exports) !== component.name) {
     return [];
   }
-  const statements: string[] = [];
+  const statements: Array<string> = [];
   const named = new Set<string>();
   for (const key of module.keys) {
     const type = key.ref
@@ -664,7 +664,7 @@ function declarationNames(code: string): Set<string> {
  */
 function propsDeclaration(
   annotation: string | undefined,
-  extras: readonly string[],
+  extras: ReadonlyArray<string>,
   generics: string,
   heritage: string | undefined,
 ): string | undefined {
@@ -728,7 +728,7 @@ function renameTypeReferences(
 ): string {
   const prefix = kind === "type" ? "type T = " : "";
   const source = kind === "type" ? `${prefix}${code};` : code;
-  const starts: number[] = [];
+  const starts: Array<number> = [];
   forEachFreeTypeReference(parseStatementsSource(source).statements, ({ name, start }) => {
     if (name === from) {
       starts.push(start);
@@ -795,8 +795,10 @@ function forEachFreeTypeReference(
 }
 
 /** The type parameters a node declares: its own (`<T>`), or a mapped type's key (`[K in Keys]`). */
-function declaredTypeParameters(node: Record<string, unknown>): string[] {
-  const declaration = node.typeParameters as { params?: { name?: { name?: string } }[] } | null;
+function declaredTypeParameters(node: Record<string, unknown>): Array<string> {
+  const declaration = node.typeParameters as {
+    params?: Array<{ name?: { name?: string } }>;
+  } | null;
   const names = (declaration?.params ?? []).flatMap(({ name }) => (name?.name ? [name.name] : []));
   if (node.type === "TSMappedType") {
     const key = (node.key ?? (node.typeParameter as { name?: unknown } | undefined)?.name) as
@@ -810,7 +812,7 @@ function declaredTypeParameters(node: Record<string, unknown>): string[] {
 }
 
 /** The names a conditional type's extends clause infers (`infer Props`), but a nested one's. */
-function inferred(node: unknown): string[] {
+function inferred(node: unknown): Array<string> {
   if (Array.isArray(node)) {
     return node.flatMap(inferred);
   }
@@ -842,9 +844,9 @@ function inferred(node: unknown): string[] {
  */
 function typeParameterAliases(
   component: UfComponent,
-  code: readonly string[],
+  code: ReadonlyArray<string>,
   own: (type: string) => string,
-): string[] {
+): Array<string> {
   const parameters = component.typeParameters ?? [];
   if (!parameters.length) {
     return [];
@@ -866,7 +868,7 @@ function typeParameterAliases(
  * with `defaults` its default too (`U = T`), along the whole chain.
  */
 function reachBounds(
-  parameters: readonly TypeParameter[],
+  parameters: ReadonlyArray<TypeParameter>,
   named: Set<string>,
   { defaults }: { defaults: boolean },
 ): void {
@@ -902,7 +904,7 @@ function reachBounds(
 function propsTypeParameters(
   component: UfComponent,
   annotation: string | undefined,
-  extras: readonly string[],
+  extras: ReadonlyArray<string>,
 ): Set<string> {
   const named = new Set<string>();
   const parameters = component.typeParameters ?? [];
@@ -927,7 +929,7 @@ function propsTypeParameters(
  * its types (`own`).
  */
 function typeParametersCode(
-  parameters: readonly TypeParameter[] | undefined,
+  parameters: ReadonlyArray<TypeParameter> | undefined,
   own: (type: string) => string,
   used: ReadonlySet<string>,
 ): string {
@@ -947,7 +949,7 @@ function bindingStart(component: UfComponent, id: BindingId): number {
 }
 
 /** Sections a blank line apart, as oxfmt keeps them; none without. */
-function frontmatterCode(sections: readonly (readonly string[])[]): string | undefined {
+function frontmatterCode(sections: ReadonlyArray<ReadonlyArray<string>>): string | undefined {
   return sections.length ? sections.map(section).join("\n") : undefined;
 }
 
@@ -955,7 +957,7 @@ function frontmatterCode(sections: readonly (readonly string[])[]): string | und
  * A section's statements, each on lines of its own: one-line statements follow each other, and
  * a statement over several lines (a function) has a blank line on each side.
  */
-export function section(statements: readonly string[]): string {
+export function section(statements: ReadonlyArray<string>): string {
   return statements
     .map((statement, index) => {
       const previous = statements[index - 1];

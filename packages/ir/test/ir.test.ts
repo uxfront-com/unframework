@@ -372,7 +372,7 @@ function describeNode(node: VisitedNode): string {
 
 describe("walk", () => {
   it("visits nodes depth-first in document order, with their parents", () => {
-    const visited: string[] = [];
+    const visited: Array<string> = [];
     walk(sample().components[0]!.render, {
       enter(node, parent) {
         visited.push(`${describeNode(node)}<${parent ? describeNode(parent) : "root"}`);
@@ -382,7 +382,7 @@ describe("walk", () => {
   });
 
   it("descends into the root fragment, every branch, list bodies and SVG", () => {
-    const visited: string[] = [];
+    const visited: Array<string> = [];
     walk(everyKind().components[0]!.render, {
       enter(node, parent) {
         visited.push(`${describeNode(node)}<${parent ? describeNode(parent) : "root"}`);
@@ -408,7 +408,7 @@ describe("walk", () => {
   });
 
   it("skips the children of a node whose enter returns false", () => {
-    const visited: string[] = [];
+    const visited: Array<string> = [];
     walk(everyKind().components[0]!.render, {
       enter(node) {
         visited.push(describeNode(node));
@@ -419,7 +419,7 @@ describe("walk", () => {
   });
 
   it("calls leave after the children", () => {
-    const events: string[] = [];
+    const events: Array<string> = [];
     walk(sample().components[0]!.render, {
       enter: (node) => void events.push(`enter ${describeNode(node)}`),
       leave: (node) => void events.push(`leave ${describeNode(node)}`),
@@ -847,7 +847,7 @@ describe("spansOf", () => {
     }
     // Every span, found by a blind walk of the JSON, is among them: a `span`, and a write's
     // target and value and an emit's arguments.
-    const blind: string[] = [];
+    const blind: Array<string> = [];
     const isSpan = (value: object) =>
       Object.keys(value).join() === "start,end" &&
       Object.values(value).every((item) => typeof item === "number");

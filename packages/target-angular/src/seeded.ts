@@ -132,7 +132,7 @@ const GLOBAL_CALLS: ReadonlyMap<string, string> = new Map([
 export function valueType(
   code: Code,
   plan: Plan,
-  declarations: readonly TypeDeclaration[],
+  declarations: ReadonlyArray<TypeDeclaration>,
   seen: ReadonlySet<BindingId> = new Set(),
 ): string | undefined {
   const text = (node: Node) => code.code.slice(node.start, node.end);
@@ -230,7 +230,7 @@ export function valueType(
       }
       case "ArrayExpression": {
         // `[...items]`, `[a, b]`: an array of the one type its elements have.
-        const elements = (node.elements as (Node | null)[]).map((element) =>
+        const elements = (node.elements as Array<Node | null>).map((element) =>
           element === null
             ? undefined
             : element.type === "SpreadElement"
@@ -346,7 +346,7 @@ function grouped(type: string): string {
 function bindingType(
   id: BindingId,
   plan: Plan,
-  declarations: readonly TypeDeclaration[],
+  declarations: ReadonlyArray<TypeDeclaration>,
   seen: ReadonlySet<BindingId>,
 ): string | undefined {
   if (seen.has(id)) {

@@ -19,7 +19,11 @@ const at = { start: 0, end: 0 };
 
 let offset = 0;
 /** An element whose attributes each have a span of their own, to tell them apart. */
-function el(tag: string, attributes: Record<string, string | true>, ...children: RenderNode[]) {
+function el(
+  tag: string,
+  attributes: Record<string, string | true>,
+  ...children: Array<RenderNode>
+) {
   return createElement(
     tag,
     Object.entries(attributes).map(([name, value]) =>
@@ -73,9 +77,9 @@ describe("listBoxSize", () => {
 
 const label = () => expression("label", 0, [["label", ids.label]]);
 const bound = (name: string) => createBoundAttribute(name, label(), at);
-const select = (attributes: Attribute[], ...children: RenderNode[]) =>
+const select = (attributes: Array<Attribute>, ...children: Array<RenderNode>) =>
   createElement("select", attributes, children, at);
-const conditional = (...children: RenderNode[]) =>
+const conditional = (...children: Array<RenderNode>) =>
   createIf([createBranch(label(), children, at)], at);
 const list = (body: ElementNode) =>
   createFor(label(), ids.item, expression("item", 0, [["item", ids.item]]), body, at);

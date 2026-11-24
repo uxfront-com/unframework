@@ -106,11 +106,11 @@ export function referencedBindings(
  */
 function clientAttributes(
   node: RenderNode | FragmentNode,
-): (RefAttribute | EventAttribute | ListenerAttribute)[] {
+): Array<RefAttribute | EventAttribute | ListenerAttribute> {
   if (node.kind !== "Element" && node.kind !== "Component") {
     return [];
   }
-  const attributes: readonly (Attribute | ComponentAttribute)[] = node.attributes;
+  const attributes: ReadonlyArray<Attribute | ComponentAttribute> = node.attributes;
   return attributes.filter(
     (attribute): attribute is RefAttribute | EventAttribute | ListenerAttribute =>
       attribute.kind === "Ref" || attribute.kind === "Event" || attribute.kind === "Listener",
@@ -147,7 +147,7 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
     }
   }
   const live = new Set<BindingId>();
-  const pending: BindingId[] = [];
+  const pending: Array<BindingId> = [];
   const reach = (id: BindingId) => {
     if (live.has(id)) {
       return;
@@ -296,7 +296,7 @@ export function liveTypes(
   component: UfComponent,
   module: UfModule,
   options: LiveOptions,
-): TypeDeclaration[] {
+): Array<TypeDeclaration> {
   const { declared, reached } = reachTypes(component, module, options);
   return [...declared.values()].filter((declaration) => reached.has(declaration.name));
 }
@@ -326,7 +326,7 @@ function reachTypes(
   );
   const reached = new Set<string>();
   const names = new Set<string>();
-  const pending: string[] = [];
+  const pending: Array<string> = [];
   const reach = (found: Iterable<string>) => {
     for (const name of found) {
       names.add(name);
@@ -501,7 +501,7 @@ function readsOf(code: Expression | Code, found: Set<BindingId>): void {
  * included: initial values, a `const`'s value and a `computed`'s getter. Functions, watchers,
  * effects and hooks run in the browser.
  */
-function serverCode(item: SetupItem): Code[] {
+function serverCode(item: SetupItem): Array<Code> {
   switch (item.kind) {
     case "State":
     case "Variable":

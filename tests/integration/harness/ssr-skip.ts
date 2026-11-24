@@ -13,7 +13,7 @@ import { requiresSkip } from "@unframework.dev/testing/node";
  * (`requires context: …`). Nothing when the case has no tests, or no such capability.
  */
 export function ssrSkip(
-  tests: readonly { requires: readonly string[] }[],
+  tests: ReadonlyArray<{ requires: ReadonlyArray<string> }>,
   cells: Readonly<Partial<Record<string, CapabilityCell>>>,
 ): string | undefined {
   const [first, ...rest] = tests;

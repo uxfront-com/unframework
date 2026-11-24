@@ -63,7 +63,7 @@ function wrap(markup: string, { props, globals }: Suite): string {
 }
 
 /** The suite's component and each root case's, printed with `layout`. */
-function components(layout: MarkupOptions): { cases: Suite; source: string }[] {
+function components(layout: MarkupOptions): Array<{ cases: Suite; source: string }> {
   return [suite(MARKUP_CASES), ...ROOT_CASES.map((each) => suite([each], "self"))].map((cases) => ({
     cases,
     source: wrap(
@@ -96,8 +96,8 @@ async function render(source: string, props: Record<string, unknown>): Promise<s
     throw new Error(`${file} has no default export.`);
   }
   const component = loaded.default;
-  const logged: string[] = [];
-  const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+  const logged: Array<string> = [];
+  const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
   const spies = [
     vi.spyOn(console, "error").mockImplementation(capture),
     vi.spyOn(console, "warn").mockImplementation(capture),

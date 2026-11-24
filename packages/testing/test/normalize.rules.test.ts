@@ -27,7 +27,7 @@ import { forEachElement, parseHtml } from "../src/normalize/tree.ts";
 import type { TreeElement, TreeFragment } from "../src/normalize/tree.ts";
 
 /** Parses, applies only the given rules, and prints: each rule tested on its own. */
-function apply(html: string, ...rules: ((root: TreeFragment) => void)[]): string {
+function apply(html: string, ...rules: Array<(root: TreeFragment) => void>): string {
   const root = parseHtml(html);
   for (const rule of rules) {
     rule(root);
@@ -36,8 +36,8 @@ function apply(html: string, ...rules: ((root: TreeFragment) => void)[]): string
 }
 
 /** Every element of a fragment, in document order. */
-function elements(html: string): TreeElement[] {
-  const found: TreeElement[] = [];
+function elements(html: string): Array<TreeElement> {
+  const found: Array<TreeElement> = [];
   forEachElement(parseHtml(html), (element) => found.push(element));
   return found;
 }

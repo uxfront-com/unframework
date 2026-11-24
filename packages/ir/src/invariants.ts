@@ -215,8 +215,8 @@ const CANONICAL_CLASS = /^\S+(?: \S+)*$/u;
  * spread's `nullish` is the analyser's to set: a plugin that moves a spread keeps it true
  * wherever the object may be nullish (ADR-0039).
  */
-export function checkInvariants(module: UfModule): IrValidationError[] {
-  const errors: IrValidationError[] = [];
+export function checkInvariants(module: UfModule): Array<IrValidationError> {
+  const errors: Array<IrValidationError> = [];
   const types = checkTypeDeclarations(module, errors);
   const apis = componentApis(module, errors);
   // The keys `provide` and `inject` may name: the module's own, and the imported ones, each with
@@ -312,7 +312,7 @@ const PASS_THROUGH_SPECIFIER = /^(?![./\\]|[A-Za-z]:).+/;
  */
 function checkPassThroughImports(
   module: UfModule,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): ReadonlySet<string> {
   const locals = new Set<string>();
   const taken = new Set([...moduleNames(module), ...sharedNames(module)]);
@@ -359,7 +359,7 @@ function checkPassThroughImports(
  * any, since the sheet's selectors scope one component's elements, and a component has a scope
  * id exactly when it imports a sheet.
  */
-function checkStyleSheets(module: UfModule, errors: IrValidationError[]): void {
+function checkStyleSheets(module: UfModule, errors: Array<IrValidationError>): void {
   for (const [index, component] of module.components.entries()) {
     const path = `/components/${index}`;
     const { styles, scopeId } = component;
@@ -399,7 +399,7 @@ interface Declared {
  */
 function componentApis(
   module: UfModule,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): ReadonlyMap<string, Declared> {
   const apis = new Map<string, Declared>();
   for (const component of module.components) {
@@ -477,7 +477,7 @@ function componentApis(
  */
 function composableApis(
   module: UfModule,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): ReadonlyMap<string, ComposableApi> {
   const apis = new Map<string, ComposableApi>();
   for (const [index, entry] of (module.imports ?? []).entries()) {
@@ -500,7 +500,7 @@ function composableApis(
 }
 
 /** The names a module's components and its imports of `.uf.tsx` and `.uf.ts` modules bind. */
-function moduleNames(module: UfModule): string[] {
+function moduleNames(module: UfModule): Array<string> {
   return [
     ...module.components.map(({ name }) => name),
     ...(module.imports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
@@ -508,7 +508,7 @@ function moduleNames(module: UfModule): string[] {
 }
 
 /** The names a module's type imports, value imports and constants bind (ADR-0067, ADR-0070). */
-function sharedNames(module: UfModule): string[] {
+function sharedNames(module: UfModule): Array<string> {
   return [
     ...[...(module.typeImports ?? []), ...(module.moduleImports ?? [])].flatMap(({ names }) =>
       names.map(({ local }) => local),
@@ -538,7 +538,7 @@ interface Shared {
  * read, the other constants and the value imports, each reference its code's at its span, in
  * order, and writes, emits and calls nothing of a component's.
  */
-function checkSharedNames(module: UfModule, errors: IrValidationError[]): Shared {
+function checkSharedNames(module: UfModule, errors: Array<IrValidationError>): Shared {
   const imports = new Map<string, Span>();
   const locals = new Set<string>(moduleNames(module));
   const local = (name: string, path: string) => {
@@ -656,7 +656,7 @@ function checkDirectives(
   locals: Set<string>,
   imports: ReadonlyMap<string, Span>,
   constants: ReadonlySet<BindingId>,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): ReadonlySet<string> {
   const names = new Set<string>();
   for (const [index, directive] of (module.directives ?? []).entries()) {
@@ -782,7 +782,7 @@ function importsBinding(id: BindingId, imports: ReadonlyMap<string, Span>): bool
  * a declaration as written under an identifier that no `TypeDeclaration` takes, which exports it
  * already, and a re-export's names identifiers.
  */
-function checkTypeExports(module: UfModule, errors: IrValidationError[]): void {
+function checkTypeExports(module: UfModule, errors: Array<IrValidationError>): void {
   const names = new Set(module.types.flatMap((type) => (type.exported ? [type.name] : [])));
   const declared = new Set(module.types.map(({ name }) => name));
   const add = (name: string, path: string) => {
@@ -824,9 +824,9 @@ function checkTypeExports(module: UfModule, errors: IrValidationError[]): void {
  * their constraints and defaults as written, in source order.
  */
 function checkTypeParameters(
-  parameters: readonly TypeParameter[] | undefined,
+  parameters: ReadonlyArray<TypeParameter> | undefined,
   path: string,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): void {
   const names = new Set<string>();
   let end = -1;
@@ -860,9 +860,9 @@ function checkTypeParameters(
 
 /** Checks a list of referenced type names (ADR-0067): identifiers, each once. */
 function checkReferences(
-  references: readonly string[] | undefined,
+  references: ReadonlyArray<string> | undefined,
   path: string,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): void {
   const seen = new Set<string>();
   for (const [index, name] of (references ?? []).entries()) {
@@ -926,7 +926,7 @@ function checkComposable(
   module: UfModule,
   types: ReadonlyMap<string, number>,
   shared: Shared,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): void {
   const others = (module.composables ?? []).filter(({ name }) => name === composable.name);
   if (others.length > 1 && others[0] !== composable) {
@@ -1031,7 +1031,7 @@ function checkComposable(
  */
 function checkTypeDeclarations(
   module: UfModule,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): ReadonlyMap<string, number> {
   const indices = new Map<string, number>();
   let previous: Span | undefined;
@@ -1083,7 +1083,7 @@ type Context = "render" | "initial" | "getter" | "client" | "dev";
 
 /** What a component's walk shares: the component's bindings and what the walk finds. */
 interface Walk {
-  readonly errors: IrValidationError[];
+  readonly errors: Array<IrValidationError>;
   readonly component: UfComponent;
   readonly bindings: ReadonlyMap<BindingId, Binding>;
   /** The object form's parameter name, which a reference to a prop starts with. */
@@ -1195,7 +1195,7 @@ function setupWalk(
   passThrough: ReadonlySet<string>,
   composables: ReadonlyMap<string, ComposableApi>,
   shared: Shared,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): Walk {
   const bindings = checkBindings(component, path, errors);
   for (const [index, binding] of component.bindings.entries()) {
@@ -1260,7 +1260,7 @@ function checkComponent(
   passThrough: ReadonlySet<string>,
   composables: ReadonlyMap<string, ComposableApi>,
   shared: Shared,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): void {
   const walk = setupWalk(component, path, apis, keys, passThrough, composables, shared, errors);
   for (const [index, binding] of component.bindings.entries()) {
@@ -1337,7 +1337,7 @@ function checkNames(
   component: UfComponent,
   path: string,
   bindings: ReadonlyMap<BindingId, Binding>,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): ReadonlyMap<string, string> {
   const names = new Map<string, string>();
   for (const prop of component.props) {
@@ -1380,7 +1380,7 @@ function checkNames(
 function checkBindings(
   component: UfComponent,
   path: string,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): ReadonlyMap<BindingId, Binding> {
   const bindings = new Map<BindingId, Binding>();
   let previous: number | undefined;
@@ -1412,7 +1412,7 @@ function checkComponentTypes(
   component: UfComponent,
   path: string,
   types: ReadonlyMap<string, number>,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): void {
   let previous = -1;
   const named = new Set<string>();
@@ -1537,7 +1537,7 @@ function checkProps(component: UfComponent, path: string, walk: Walk): void {
 }
 
 /** Checks the nodes of a child list, and that no two texts are side by side. */
-function checkChildren(children: readonly RenderNode[], place: Place, walk: Walk): void {
+function checkChildren(children: ReadonlyArray<RenderNode>, place: Place, walk: Walk): void {
   for (const [index, child] of children.entries()) {
     const at = { ...place, path: `${place.path}/${index}` };
     if (child.kind === "Text" && children[index - 1]?.kind === "Text") {
@@ -1690,7 +1690,7 @@ function checkTransition(node: TransitionNode, place: Place, walk: Walk): void {
 }
 
 /** Whether a transition's children are one element, or one `If` of one element or nothing per branch. */
-function isTransitionChild(children: readonly RenderNode[]): boolean {
+function isTransitionChild(children: ReadonlyArray<RenderNode>): boolean {
   const [child] = children;
   if (children.length !== 1 || !child) {
     return false;
@@ -1730,8 +1730,8 @@ function checkComponentNode(node: ComponentNode, place: Place, walk: Walk): void
  * attribute among them is `checkDynamic`'s to report.
  */
 function checkComponentAttributes(
-  attributes: readonly (Attribute | ComponentAttribute)[],
-  declared: readonly Declared[],
+  attributes: ReadonlyArray<Attribute | ComponentAttribute>,
+  declared: ReadonlyArray<Declared>,
   place: Place,
   walk: Walk,
 ): void {
@@ -1950,8 +1950,8 @@ function checkModelValue(value: Expression, path: string, place: Place, walk: Wa
  * none around it, as a loop variable's (UF3024), and are in scope in its children alone.
  */
 function checkFills(
-  fills: readonly SlotFill[],
-  declared: readonly Declared[],
+  fills: ReadonlyArray<SlotFill>,
+  declared: ReadonlyArray<Declared>,
   path: string,
   place: Place,
   walk: Walk,
@@ -2030,7 +2030,7 @@ function checkSlotOutlet(node: SlotOutletNode, place: Place, walk: Walk): void {
  * checked apart and a problem reported once, and a template ref counts as one attachment.
  */
 function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
-  const attributes: Attribute[] = [];
+  const attributes: Array<Attribute> = [];
   for (const [index, attribute] of node.attributes.entries()) {
     // Vue writes `<component is>` as a component, which takes no `v-html` (ADR-0097).
     if (attribute.kind === "RawHtml") {
@@ -2064,7 +2064,7 @@ function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
       children: node.children,
       span: node.span,
     };
-    const errors: IrValidationError[] = [];
+    const errors: Array<IrValidationError> = [];
     const own: Walk = { ...walk, errors, attachments: new Map(walk.attachments) };
     checkAttributes(element, "html", place, own);
     if (isVoidElement(candidate.tag) && node.children.length) {
@@ -2190,7 +2190,7 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
     );
     return;
   }
-  const declared: Declared[] = [];
+  const declared: Array<Declared> = [];
   for (const [index, candidate] of node.candidates.entries()) {
     const api = candidate.kind === "Component" ? walk.apis.get(candidate.component) : undefined;
     if (api) {
@@ -2260,7 +2260,12 @@ function takenName(name: string, scope: ReadonlySet<BindingId>, walk: Walk): str
  * is the same for every item, which Vue's and Svelte's compilers reject, and no loop variable of
  * a list around it, which Angular's `track` cannot read (NG8009).
  */
-function checkKey(key: Expression, declared: readonly BindingId[], path: string, walk: Walk): void {
+function checkKey(
+  key: Expression,
+  declared: ReadonlyArray<BindingId>,
+  path: string,
+  walk: Walk,
+): void {
   const read = key.refs.flatMap((ref) => (ref.kind === "Binding" ? [ref.binding] : []));
   if (!read.some((id) => declared.includes(id))) {
     walk.errors.push({
@@ -2433,18 +2438,18 @@ function checkElement(element: ElementNode, place: Place, walk: Walk): void {
  * servers write nothing before it (the other targets write a comment, which keeps the line feed).
  */
 function leadingTexts(
-  children: readonly RenderNode[],
+  children: ReadonlyArray<RenderNode>,
   path: string,
-): { value: string; path: string }[] {
+): Array<{ value: string; path: string }> {
   return leading(children, path).texts;
 }
 
 /** The texts that can start a child list, and whether it can render nothing. */
 function leading(
-  children: readonly RenderNode[],
+  children: ReadonlyArray<RenderNode>,
   path: string,
-): { texts: { value: string; path: string }[]; empty: boolean } {
-  const texts: { value: string; path: string }[] = [];
+): { texts: Array<{ value: string; path: string }>; empty: boolean } {
+  const texts: Array<{ value: string; path: string }> = [];
   for (const [index, child] of children.entries()) {
     if (child.kind === "Text") {
       texts.push({ value: child.value, path: `${path}/${index}` });
@@ -2892,7 +2897,7 @@ function checkStaticValue(
   name: string,
   value: string | true,
   path: string,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): void {
   if (namespace === "svg") {
     if (value === true) {
@@ -2929,7 +2934,7 @@ function checkClass(attribute: ClassAttribute, path: string, place: Place, walk:
   const names = new Set<string>();
   for (const [index, item] of attribute.items.entries()) {
     const at = `${path}/items/${index}`;
-    let written: string[] = [];
+    let written: Array<string> = [];
     switch (item.kind) {
       case "Static":
         if (!CANONICAL_CLASS.test(item.value)) {
@@ -2989,7 +2994,7 @@ function checkStyle(attribute: StyleAttribute, path: string, place: Place, walk:
     }
     checkExpression(attribute.value, `${path}/value`, place.scope, walk);
   }
-  const properties: string[] = [];
+  const properties: Array<string> = [];
   for (const [index, declaration] of attribute.declarations.entries()) {
     const at = `${path}/declarations/${index}`;
     const { property } = declaration;
@@ -3594,7 +3599,7 @@ function checkCode(
     return;
   }
   /** The writes and emits around the current reference, with where theirs may lie. */
-  const open: { end: number; slots: readonly Span[] }[] = [];
+  const open: Array<{ end: number; slots: ReadonlyArray<Span> }> = [];
   let cursor = code.span.start;
   for (const [index, ref] of code.refs.entries()) {
     const at = `${path}/refs/${index}`;
@@ -4694,7 +4699,7 @@ function isMemberOf(text: string, object: string, member: string): boolean {
 function checkSourceText(
   text: { code: string; span: Span },
   path: string,
-  errors: IrValidationError[],
+  errors: Array<IrValidationError>,
 ): boolean {
   const length = text.span.end - text.span.start;
   if (text.code.length === length) {
@@ -4773,7 +4778,7 @@ function valueProblem(
 }
 
 /** Reports the first character of a string that HTML would not keep as written. */
-function checkCharacters(value: string, path: string, errors: IrValidationError[]): void {
+function checkCharacters(value: string, path: string, errors: Array<IrValidationError>): void {
   for (const character of value) {
     const codePoint = character.codePointAt(0)!;
     const problem = unkeptCharacter(codePoint);

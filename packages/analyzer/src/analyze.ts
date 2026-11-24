@@ -117,7 +117,7 @@ export interface AnalyzeResult {
    * component can be compiled. A component with errors is left out; its siblings stay.
    */
   module: UfModule | undefined;
-  diagnostics: Diagnostic[];
+  diagnostics: Array<Diagnostic>;
   /**
    * The module's public API, read from its declarations (ADR-0053): what a parent that imports
    * it reads, known whatever its templates hold. `undefined` when it does not parse. Its `file`
@@ -149,7 +149,7 @@ export interface AnalyzeOptions {
    * `["virtual:"]` when absent. An import the analyser classifies otherwise (the authoring API, a
    * framework, a `.uf.tsx` or relative module) never passes through.
    */
-  passThrough?: readonly string[];
+  passThrough?: ReadonlyArray<string>;
   /**
    * The shape of each type `shapeQueries` names, as the compiler's type oracle resolved it
    * (ADR-0067): `undefined` for one it was not asked for. Without it, the analyser reads the
@@ -175,7 +175,7 @@ export const COMPONENT_SPECIFIER: RegExp = /\.uf\.tsx$/;
  * `.uf.ts` modules whose composables a `.uf.tsx` module imports (ADR-0069), in source order, each
  * once: what `compile()` asks its resolver for before the module is analysed.
  */
-export function componentImports(parsed: ParsedModule): string[] {
+export function componentImports(parsed: ParsedModule): Array<string> {
   const found = new Set<string>();
   // A composable calls no other composable (UF2035), so a `.uf.ts` module resolves none.
   const component = !COMPOSABLE_FILE.test(parsed.file);
@@ -207,7 +207,7 @@ interface Candidate {
   /** The statement that declares it, including any `export` keywords. */
   span: { start: number; end: number };
   /** Empty for a local (non-exported) component. */
-  exports: ComponentExport[];
+  exports: Array<ComponentExport>;
   /** The `const` that holds a component written as a value. */
   value?: AST.VariableDeclaration;
 }
@@ -224,7 +224,7 @@ export function analyze(parsed: ParsedModule, options: AnalyzeOptions = {}): Ana
  * What a component's setup declares, as the analyser reads it: each binding's kinds, which never
  * reach the IR. The tests pin them against TypeScript's inference (ADR-0046).
  */
-export type SetupObserver = (component: string, bindings: readonly SetupBinding[]) => void;
+export type SetupObserver = (component: string, bindings: ReadonlyArray<SetupBinding>) => void;
 
 /** `analyze`, with an observer of each component's setup, for the tests. */
 export function analyzeModule(
@@ -250,7 +250,7 @@ export function analyzeModule(
 
   // A `.uf.ts` module holds composables and no component (ADR-0069).
   const composableModule = COMPOSABLE_FILE.test(parsed.file);
-  const candidates: Candidate[] = composableModule
+  const candidates: Array<Candidate> = composableModule
     ? []
     : [...findComponents(parsed.program), ...findValueComponents(parsed.program)].toSorted(
         (a, b) => a.span.start - b.span.start,
@@ -322,7 +322,7 @@ export function analyzeModule(
     }
   }
   const keyMark = reporter.diagnostics.length;
-  const keyDeclarations: InjectionKeyDeclaration[] = [];
+  const keyDeclarations: Array<InjectionKeyDeclaration> = [];
   const keys = new Map<object, InjectionKeyInfo>();
   for (const candidate of keyCandidates.values()) {
     if (composableModule) {
@@ -349,7 +349,7 @@ export function analyzeModule(
   }
   // A key is the module's, as an import is: an error in one drops every component.
   const keyErrors = reporter.hasErrorsSince(keyMark);
-  const imports: ModuleImport[] = [];
+  const imports: Array<ModuleImport> = [];
   const components = new Map<object, ComponentInfo | undefined>();
   for (const [candidate, api] of apis) {
     if (candidate.node.id) {
@@ -503,8 +503,8 @@ export function analyzeModule(
     ...(options.directiveValues ? { directiveValues: options.directiveValues } : {}),
     ...(observe ? { observe } : {}),
   };
-  const lowered: UfComponent[] = [];
-  const exports: UfExport[] = [];
+  const lowered: Array<UfComponent> = [];
+  const exports: Array<UfExport> = [];
   const names = new Map<string, Candidate>();
   for (const candidate of candidates) {
     if (!checkComponentExports(candidate, names, reporter)) {
@@ -655,8 +655,8 @@ function reportDirectiveShadows(component: UfComponent, reporter: Reporter): boo
 }
 
 /** The names of the directives a component's elements apply (ADR-0099). */
-function appliedDirectives(component: UfComponent): string[] {
-  const names: string[] = [];
+function appliedDirectives(component: UfComponent): Array<string> {
+  const names: Array<string> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element") {
@@ -677,17 +677,17 @@ function appliedDirectives(component: UfComponent): string[] {
  * its IR holds them and no component, and its API what a caller reads of each.
  */
 function composableResult(
-  candidates: readonly ComposableCandidate[],
-  directives: { lowered: readonly UfDirective[]; count: number },
+  candidates: ReadonlyArray<ComposableCandidate>,
+  directives: { lowered: ReadonlyArray<UfDirective>; count: number },
   moduleErrors: boolean,
-  constants: readonly ModuleConstant[],
+  constants: ReadonlyArray<ModuleConstant>,
   constantTypes: ReadonlyMap<string, AST.VariableDeclarator>,
   module: Parameters<typeof analyzeComposable>[2],
   context: ModuleContext,
 ): AnalyzeResult {
   const { parsed, reporter, types } = module;
   const mark = reporter.diagnostics.length;
-  const lowered: AnalyzedComposable[] = [];
+  const lowered: Array<AnalyzedComposable> = [];
   for (const candidate of candidates) {
     const result = analyzeComposable(
       candidate,
@@ -813,11 +813,11 @@ function composableResult(
  * queries a constant names it in the output, so the output declares it too.
  */
 function readConstants(
-  constants: readonly ModuleConstant[],
-  owners: readonly (UfComponent | UfComposable)[],
-  declarations: readonly TypeDeclarationStatement[],
+  constants: ReadonlyArray<ModuleConstant>,
+  owners: ReadonlyArray<UfComponent | UfComposable>,
+  declarations: ReadonlyArray<TypeDeclarationStatement>,
   source: string,
-): ModuleConstant[] {
+): Array<ModuleConstant> {
   const byId = new Map(constants.map((constant) => [constant.binding, constant]));
   const byName = new Map(constants.map((constant) => [constant.name, constant.binding]));
   const read = new Set<string>();
@@ -866,8 +866,8 @@ function readConstants(
 }
 
 /** The type texts an owner's IR writes beside its code. */
-function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
-  const found: string[] = [];
+function ownTypeTexts(owner: UfComponent | UfComposable): Array<string> {
+  const found: Array<string> = [];
   if ("props" in owner) {
     if (owner.propsParameter) {
       found.push(owner.propsParameter.type.code);
@@ -914,7 +914,7 @@ function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
  * list, an expression in parentheses, or a function's body, which may `return` and `await`, the
  * first it parses as. Every text the IR holds is one of them.
  */
-function typeQueryRoots(text: string): string[] {
+function typeQueryRoots(text: string): Array<string> {
   // A type query is spelt with the keyword, which no escape can write: a text without it holds
   // none, so it skips the parses, which every component's code would otherwise pay for.
   if (!text.includes("typeof")) {
@@ -926,7 +926,7 @@ function typeQueryRoots(text: string): string[] {
   if (!parsed) {
     return [];
   }
-  const found: string[] = [];
+  const found: Array<string> = [];
   visit(parsed.program, (node) => {
     if (node.type !== "TSTypeQuery") {
       return;
@@ -946,7 +946,7 @@ function typeQueryRoots(text: string): string[] {
  * The types the module exports that no component reaches (ADR-0068): every output exports them
  * as written, for its consumers' types.
  */
-function declaredTypeExports(types: ModuleTypes, source: string): TypeExport[] {
+function declaredTypeExports(types: ModuleTypes, source: string): Array<TypeExport> {
   return types.declarations
     .filter(
       (declaration) =>
@@ -965,7 +965,10 @@ function declaredTypeExports(types: ModuleTypes, source: string): TypeExport[] {
  * lower, until none does: its error is reported, and the IR names only components it holds
  * (ADR-0053).
  */
-function dropFailedRenders(lowered: UfComponent[], candidates: readonly Candidate[]): void {
+function dropFailedRenders(
+  lowered: Array<UfComponent>,
+  candidates: ReadonlyArray<Candidate>,
+): void {
   const local = new Set(candidates.map((candidate) => candidate.name));
   for (;;) {
     const kept = new Set(lowered.map((component) => component.name));
@@ -992,11 +995,11 @@ function dropFailedRenders(lowered: UfComponent[], candidates: readonly Candidat
  * component's props reach, in source order, as written from `interface` or `type` on.
  */
 function moduleTypes(
-  components: readonly UfComponent[],
+  components: ReadonlyArray<UfComponent>,
   types: ModuleTypes,
   source: string,
   constants: ReadonlySet<string>,
-): TypeDeclaration[] {
+): Array<TypeDeclaration> {
   const used = new Set([...components.flatMap((component) => component.types), ...constants]);
   return types.declarations
     .filter((declaration) => used.has(declaration.name))
@@ -1062,17 +1065,17 @@ interface ModuleContext {
   program: AST.Program;
   scopes: Scopes;
   source: string;
-  candidates: Candidate[];
+  candidates: Array<Candidate>;
   /** The local names the module exports as values (`export { name }`, `export default name`). */
   exported: ReadonlySet<string>;
   reporter: Reporter;
   types: ModuleTypes;
   /** The module's comments: lint directives must not reach an output. */
-  comments: readonly AST.Comment[];
+  comments: ReadonlyArray<AST.Comment>;
   /** The API of each imported `.uf.tsx` module, by specifier, as the resolver gave it. */
   resolved: ReadonlyMap<string, ModuleApi | undefined>;
   /** The module's imports of `.uf.tsx` modules, collected in source order. */
-  imports: ModuleImport[];
+  imports: Array<ModuleImport>;
   /**
    * The output files in the module's own directory and the ones its imports name, by the path
    * an output imports each by, in lower case: the component that writes each.
@@ -1088,25 +1091,25 @@ interface ModuleContext {
   /** Each stylesheet the module imports, by specifier, as the resolver read it (ADR-0063). */
   stylesheets: ReadonlyMap<string, StylesheetSource | undefined>;
   /** The module's sheets, collected in source order. */
-  sheets: LoweredSheet[];
+  sheets: Array<LoweredSheet>;
   /** The names the module's pass-through imports bind, and those its code reads (ADR-0064). */
   passThrough: PassThrough & { names: Map<object, string | undefined> };
   /** The specifier prefixes whose imports pass through (`AnalyzeOptions.passThrough`). */
-  passThroughPrefixes: readonly string[];
+  passThroughPrefixes: ReadonlyArray<string>;
   /** The module's imports that every output keeps as written, in source order (ADR-0064). */
-  passThroughImports: PassThroughImport[];
+  passThroughImports: Array<PassThroughImport>;
   /** The module's imports of types, which every output re-imports by name (ADR-0067). */
-  typeImports: TypeImport[];
+  typeImports: Array<TypeImport>;
   /** The module's type re-exports, in source order (ADR-0068). */
-  typeExports: TypeExport[];
+  typeExports: Array<TypeExport>;
   /** Each shared `.ts` module the module imports, by specifier, as the resolver read it. */
   modules: ReadonlyMap<string, SharedModule | undefined>;
   /** The module's value imports of shared modules, in source order (ADR-0070). */
-  moduleImports: SharedModuleImport[];
+  moduleImports: Array<SharedModuleImport>;
   /** The values the module's components may read: its value imports and constants. */
   shared: SharedValues;
   /** The module's top-level `const`s, in source order, lowered once every import is known. */
-  constants: ConstantCandidate[];
+  constants: Array<ConstantCandidate>;
   /** Whether the module is a `.uf.ts` module of composables (ADR-0069). */
   composableModule: boolean;
   /** In a `.uf.ts` module, the names it imports from other `.uf.ts` modules (UF2035). */
@@ -1119,7 +1122,7 @@ interface ModuleContext {
   /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
   authoring: ReadonlyMap<object, AuthoringApi | undefined>;
   /** The module's top-level directives, in source order, lowered once every import is known (ADR-0099). */
-  directives: DirectiveCandidate[];
+  directives: Array<DirectiveCandidate>;
   /** The directives a `.uf.tsx` module imports from `.uf.ts` modules, by local name (ADR-0099). */
   directiveImports: Map<string, DirectiveInfo>;
 }
@@ -1549,7 +1552,7 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     selfImport(statement, api, context);
     return;
   }
-  const names: ImportedName[] = [];
+  const names: Array<ImportedName> = [];
   const types = statement.specifiers.filter(
     (item): item is AST.ImportSpecifier =>
       item.type === "ImportSpecifier" && item.importKind === "type",
@@ -1692,7 +1695,7 @@ function composableImport(statement: AST.ImportDeclaration, context: ModuleConte
   if (types.length) {
     typeImport(statement, types, context);
   }
-  const names: ImportedName[] = [];
+  const names: Array<ImportedName> = [];
   for (const item of values) {
     if (item.type !== "ImportSpecifier") {
       context.composables.set(item.local, undefined);
@@ -1783,7 +1786,7 @@ function selfImport(
       names.set(item.local, component.name);
     }
   }
-  const edits: { span: { start: number; end: number }; text: string }[] = [];
+  const edits: Array<{ span: { start: number; end: number }; text: string }> = [];
   if (names.size === statement.specifiers.length) {
     // Every read of a name the import binds, a tag or a value (`is={Again}`), is renamed. The
     // fix is withheld where a name it writes would mean something else: a binding that shadows
@@ -2077,7 +2080,7 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
   if (!module) {
     return;
   }
-  const names: NamedImport[] = [];
+  const names: Array<NamedImport> = [];
   for (const item of values) {
     if (item.type === "ImportNamespaceSpecifier") {
       context.shared.failed.add(item.local);
@@ -2125,10 +2128,10 @@ function typeOnlyModule(statement: AST.ImportDeclaration, context: ModuleContext
  */
 function typeImport(
   statement: AST.ImportDeclaration,
-  specifiers: readonly AST.ImportDeclarationSpecifier[],
+  specifiers: ReadonlyArray<AST.ImportDeclarationSpecifier>,
   context: ModuleContext,
 ): void {
-  const names: NamedImport[] = [];
+  const names: Array<NamedImport> = [];
   for (const item of specifiers) {
     if (item.type === "ImportNamespaceSpecifier") {
       context.reporter.unsupported(item, "A namespace import of types is not supported.", {
@@ -2421,7 +2424,7 @@ function restWithoutOptions(
   parsed: ParsedModule,
   reporter: Reporter,
 ): void {
-  const edits: { span: Span; text: string }[] = [];
+  const edits: Array<{ span: Span; text: string }> = [];
   const block = fn.body?.type === "BlockStatement" ? fn.body : undefined;
   const first = block?.body[0];
   if (block && first) {
@@ -2476,7 +2479,7 @@ function restWithoutOptions(
  * A generic component's type parameters (ADR-0068), `List<T extends Item = Item>`: each target
  * writes its own generic form from them, and the consumer's props infer them.
  */
-function typeParametersOf(fn: ComponentFunction, source: string): TypeParameter[] {
+function typeParametersOf(fn: ComponentFunction, source: string): Array<TypeParameter> {
   const text = (type: AST.TSType | null) =>
     type ? createTypeText(source.slice(type.start, type.end), spanOf(type)) : undefined;
   return (fn.typeParameters?.params ?? []).map((parameter) =>
@@ -2564,8 +2567,8 @@ function returnsJsx(fn: AST.ArrowFunctionExpression | AST.Function): boolean {
  * The components written as values (`export const Card = (props: CardProps) => …`): an exported
  * PascalCase `const` holding a function that returns JSX, with how it is exported.
  */
-function findValueComponents(program: AST.Program): Candidate[] {
-  const exportsByLocal = new Map<string, ComponentExport[]>();
+function findValueComponents(program: AST.Program): Array<Candidate> {
+  const exportsByLocal = new Map<string, Array<ComponentExport>>();
   for (const statement of program.body) {
     if (
       statement.type === "ExportNamedDeclaration" &&
@@ -2600,7 +2603,7 @@ function findValueComponents(program: AST.Program): Candidate[] {
       exportsByLocal.set(local, [...(exportsByLocal.get(local) ?? []), entry]);
     }
   }
-  const found: Candidate[] = [];
+  const found: Array<Candidate> = [];
   for (const statement of program.body) {
     const value = valueFunctionOf(statement);
     if (!value || !isComponentName(value.id.name)) {
@@ -2608,7 +2611,7 @@ function findValueComponents(program: AST.Program): Candidate[] {
     }
     const span = { start: statement.start, end: statement.end };
     const { name } = value.id;
-    const exports: ComponentExport[] = [
+    const exports: Array<ComponentExport> = [
       ...(statement.type === "ExportNamedDeclaration"
         ? [{ kind: "named" as const, name, span }]
         : []),

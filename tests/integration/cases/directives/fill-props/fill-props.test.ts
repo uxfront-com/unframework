@@ -19,7 +19,7 @@ describeTargets("directives/fill-props", () => {
   });
 
   it("updates the renamed option's element", { requires: ["directive"] }, async () => {
-    const traces: Trace[] = [];
+    const traces: Array<Trace> = [];
     const listener = (event: Event) => void traces.push((event as CustomEvent<Trace>).detail);
     document.addEventListener("directive-trace", listener);
     try {

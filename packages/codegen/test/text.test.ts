@@ -166,7 +166,7 @@ describe("syntacticNullishness, as TypeScript reads it", { timeout: 60_000 }, ()
     "a as string",
     "a!",
   ];
-  const temporaries: string[] = [];
+  const temporaries: Array<string> = [];
   afterAll(() => {
     for (const directory of temporaries) {
       rmSync(directory, { recursive: true, force: true });
@@ -185,14 +185,16 @@ describe("syntacticNullishness, as TypeScript reads it", { timeout: 60_000 }, ()
   ].join("\n");
   const compilerOptions = { target: "es2024", lib: ["es2024"], strict: true, types: [] };
   /** Each form's reading, from the line TS2869 or TS2871 is reported on. */
-  const readings = (messages: readonly { line?: number; code?: string }[]): Nullishness[] =>
+  const readings = (
+    messages: ReadonlyArray<{ line?: number; code?: string }>,
+  ): Array<Nullishness> =>
     FORMS.map((_, index) => {
       const code = messages.find(({ line }) => line === index + 7)?.code;
       return code === "TS2869" ? "never" : code === "TS2871" ? "always" : "sometimes";
     });
 
   /** TypeScript 7's readings, the repo's tsgo. */
-  async function sevenReads(): Promise<Nullishness[]> {
+  async function sevenReads(): Promise<Array<Nullishness>> {
     const directory = mkdtempSync(join(tmpdir(), "uf-nullish-"));
     temporaries.push(directory);
     const typescript = dirname(createRequire(import.meta.url).resolve("typescript/package.json"));
@@ -209,7 +211,7 @@ describe("syntacticNullishness, as TypeScript reads it", { timeout: 60_000 }, ()
   }
 
   /** TypeScript 6's readings, the Vue toolchain's. */
-  function sixReads(): Nullishness[] {
+  function sixReads(): Array<Nullishness> {
     const directory = mkdtempSync(join(tmpdir(), "uf-nullish-"));
     temporaries.push(directory);
     writeFileSync(

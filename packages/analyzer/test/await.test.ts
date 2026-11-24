@@ -26,7 +26,7 @@ function source(setup: string, parameters = "props: { id: string }"): string {
 }
 
 /** The diagnostics a setup gets, as `code text-at-span`. */
-function reported(setup: string): string[] {
+function reported(setup: string): Array<string> {
   const text = source(setup);
   return problems(text, analysed(text).diagnostics);
 }
@@ -42,7 +42,7 @@ function lowered(setup: string): UfComponent {
 describe("async setup", () => {
   it("lowers a top-level awaited const to an Await item with an awaited binding", () => {
     const component = lowered("const user = await loadUser(props.id);");
-    const [item] = component.setup as AwaitItem[];
+    const [item] = component.setup as Array<AwaitItem>;
     expect(item!.kind).toBe("Await");
     expect(item!.value.code).toBe("loadUser(props.id)");
     expect(component.bindings.find((binding) => binding.id === item!.binding)?.kind).toBe(

@@ -6,7 +6,7 @@ import { afterEach } from "vitest";
 
 import { main } from "../src/index.ts";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -32,7 +32,7 @@ export function write(root: string, files: Readonly<Record<string, string>>): vo
 /** Runs a command line in `root`. */
 export async function run(
   root: string,
-  ...argv: string[]
+  ...argv: Array<string>
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   let stdout = "";
   let stderr = "";

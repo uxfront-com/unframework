@@ -117,8 +117,12 @@ class Evaluator {
   }
 
   /** The static nodes a list of children renders, with adjacent texts merged. */
-  children(nodes: readonly RenderNode[], scope: Scope, namespace: Namespace): RenderNode[] {
-    const rendered: RenderNode[] = [];
+  children(
+    nodes: ReadonlyArray<RenderNode>,
+    scope: Scope,
+    namespace: Namespace,
+  ): Array<RenderNode> {
+    const rendered: Array<RenderNode> = [];
     const text = (value: string) => {
       if (value === "") {
         return;
@@ -205,7 +209,7 @@ class Evaluator {
   }
 
   /** An element's attributes, each rendered by its kind, as static attributes. */
-  attributes(node: ElementNode, scope: Scope, namespace: Namespace): StaticAttribute[] {
+  attributes(node: ElementNode, scope: Scope, namespace: Namespace): Array<StaticAttribute> {
     const values = new Map<string, string | true>();
     const set = (name: string, value: string | true | undefined) => {
       if (values.has(name)) {
@@ -215,9 +219,9 @@ class Evaluator {
         values.set(name, value);
       }
     };
-    const classes: string[] = [];
-    let style: string[] | undefined;
-    for (const attribute of node.attributes as readonly Attribute[]) {
+    const classes: Array<string> = [];
+    let style: Array<string> | undefined;
+    for (const attribute of node.attributes as ReadonlyArray<Attribute>) {
       switch (attribute.kind) {
         case "Static":
           if (attribute.name === "class" && typeof attribute.value === "string") {
@@ -396,7 +400,7 @@ function attributeValue(
 }
 
 /** The class names a dynamic part (or a spread's `class`) holds. */
-function classTokens(expression: Expression, value: unknown): string[] {
+function classTokens(expression: Expression, value: unknown): Array<string> {
   if (value === null || value === undefined) {
     return [];
   }
@@ -407,7 +411,7 @@ function classTokens(expression: Expression, value: unknown): string[] {
 }
 
 /** The names a class value holds, separated by ASCII whitespace. */
-function tokens(value: string): string[] {
+function tokens(value: string): Array<string> {
   return value.split(/[\t\n\f\r ]+/).filter((token) => token !== "");
 }
 
@@ -443,7 +447,7 @@ function outside(expression: Expression, problem: string): Error {
   );
 }
 
-const compiled = new Map<string, (...values: unknown[]) => unknown>();
+const compiled = new Map<string, (...values: Array<unknown>) => unknown>();
 
 /**
  * Evaluates an expression's code as JavaScript, with every name in scope as a parameter: the
@@ -457,7 +461,7 @@ function evaluate(expression: Expression, scope: Scope, role: string): unknown {
   if (!run) {
     // A line break before the closing parenthesis ends a trailing line comment.
     run = new Function(...names, `"use strict";\nreturn (\n${expression.code}\n);`) as (
-      ...values: unknown[]
+      ...values: Array<unknown>
     ) => unknown;
     compiled.set(key, run);
   }

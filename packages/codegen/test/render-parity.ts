@@ -46,7 +46,7 @@ export type DomNode = string | DomElement;
 export interface DomElement {
   tag: string;
   attributes: Record<string, string>;
-  children: DomNode[];
+  children: Array<DomNode>;
   /**
    * A live form control's state (`value`, `checked`, `selected`), which renderers may set as
    * DOM properties rather than attributes. Only a live DOM has it (./render-parity-client.ts).
@@ -117,7 +117,7 @@ export interface LoweredCase {
  */
 export interface ParitySuite {
   title: string;
-  cases: readonly ParityCase[];
+  cases: ReadonlyArray<ParityCase>;
   root?: SuiteRoot;
   form?: "destructured" | "object";
 }
@@ -131,7 +131,7 @@ const at = { start: 0, end: 0 };
 export function el(
   tag: string,
   attributes: Record<string, string | true> = {},
-  ...children: (RenderNode | string)[]
+  ...children: Array<RenderNode | string>
 ): ElementNode {
   return createElement(
     tag,
@@ -180,7 +180,7 @@ const ZERO_WIDTH = ["\u200b", "\u200c", "\u200d", "\u2060", "\u00ad", "\u180e"];
  * zero-width characters and line separators, entity look-alikes, delimiters, carriage returns,
  * lines long enough for a formatter to wrap, and the attributes renderers set as properties.
  */
-export const TRICKY_CASES: readonly StaticCase[] = [
+export const TRICKY_CASES: ReadonlyArray<StaticCase> = [
   { name: "runs of spaces", render: el("p", {}, "a  b   c") },
   // A form feed, which HTML keeps; not a vertical tab, which it does not (the IR holds none).
   { name: "tabs and line breaks", render: el("p", {}, "a\tb\nc\n\nd\fe\t\tf") },
@@ -508,7 +508,7 @@ export const TRICKY_CASES: readonly StaticCase[] = [
  * attributes into JavaScript template literals, which do the same. JSX can only write one as
  * `&#13;`.
  */
-export const CARRIAGE_RETURN_CASES: readonly StaticCase[] = [
+export const CARRIAGE_RETURN_CASES: ReadonlyArray<StaticCase> = [
   { name: "carriage returns in text", render: el("p", {}, "a\rb\r\nc") },
   { name: "carriage returns in preformatted text", render: el("pre", {}, "a\rb\r\nc") },
   {
@@ -530,7 +530,7 @@ export function random(seed: number): () => number {
 }
 
 /** The pieces random text is made of: the characters and sequences printers must guard. */
-export const TEXT_PIECES: readonly string[] = [
+export const TEXT_PIECES: ReadonlyArray<string> = [
   "a",
   "b",
   "word",
@@ -585,7 +585,7 @@ const FIXED_VALUE_TYPES = [...FIXED_VALUE_INPUT_TYPES];
  * M0 (JSX trims a raw one, and `&#10;` is UF3009); M1's expressions can (`{"\nx"}`), and must
  * report it until every target renders it.
  */
-function withoutLeadingLineFeed(children: RenderNode[]): RenderNode[] {
+function withoutLeadingLineFeed(children: Array<RenderNode>): Array<RenderNode> {
   const [first, ...rest] = children;
   if (first?.kind !== "Text" || !first.value.startsWith("\n")) {
     return children;
@@ -611,7 +611,7 @@ interface Context {
  */
 export function fuzzCase(seed: number): StaticCase {
   const next = random(seed);
-  const pick = <T>(items: readonly T[]): T => items[Math.floor(next() * items.length)]!;
+  const pick = <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!;
   const chance = (probability: number) => next() < probability;
   const text = () =>
     Array.from({ length: 1 + Math.floor(next() * 4) }, () => pick(TEXT_PIECES)).join("");
@@ -727,8 +727,8 @@ export function fuzzCase(seed: number): StaticCase {
   }
 
   /** Text and elements in a random order, never two texts in a row. */
-  function mixed(allowed: readonly string[], context: Context, max: number): RenderNode[] {
-    const children: RenderNode[] = [];
+  function mixed(allowed: ReadonlyArray<string>, context: Context, max: number): Array<RenderNode> {
+    const children: Array<RenderNode> = [];
     const count = Math.floor(next() * (context.depth >= 3 ? 2 : max + 1));
     const candidates = allowed.filter((tag) => !(context.interactive && INTERACTIVE.has(tag)));
     for (let index = 0; index < count; index++) {
@@ -751,7 +751,7 @@ export function fuzzCase(seed: number): StaticCase {
   const repeat = (min: number, max: number, child: () => ElementNode) =>
     Array.from({ length: min + Math.floor(next() * (max - min + 1)) }, child);
 
-  function content(tag: string, context: Context): RenderNode[] {
+  function content(tag: string, context: Context): Array<RenderNode> {
     const deeper = { ...context, depth: context.depth + 1 };
     switch (tag) {
       case "div":
@@ -811,12 +811,12 @@ export function fuzzCase(seed: number): StaticCase {
 }
 
 /** The seeded random trees every target renders: the same seeds everywhere, so a failure reproduces. */
-export const FUZZ_CASES: readonly StaticCase[] = Array.from({ length: 80 }, (_, index) =>
+export const FUZZ_CASES: ReadonlyArray<StaticCase> = Array.from({ length: 80 }, (_, index) =>
   fuzzCase(index + 1),
 );
 
 /** The M0 suites every target's render-parity tests run, besides the attribute sweeps and M1's. */
-export const PARITY_SUITES: readonly ParitySuite[] = [
+export const PARITY_SUITES: ReadonlyArray<ParitySuite> = [
   { title: "the tricky cases", cases: TRICKY_CASES },
   { title: "seeded random trees", cases: FUZZ_CASES },
   { title: "carriage returns", cases: CARRIAGE_RETURN_CASES },
@@ -842,16 +842,16 @@ export function expectedTree(parityCase: ParityCase): ElementNode | FragmentNode
 const expectedTrees = new WeakMap<ParityCase, ElementNode | FragmentNode>();
 
 /** The DOM nodes a case renders: one element, or a root fragment's nodes. */
-export function expectedNodes(parityCase: ParityCase): DomNode[] {
+export function expectedNodes(parityCase: ParityCase): Array<DomNode> {
   return domNodesOf(expectedTree(parityCase));
 }
 
 /** The DOM nodes a static tree describes: an element, or a fragment's nodes. */
-export function domNodesOf(tree: ElementNode | FragmentNode): DomNode[] {
+export function domNodesOf(tree: ElementNode | FragmentNode): Array<DomNode> {
   if (tree.kind === "Element") {
     return [domOf(tree)];
   }
-  const nodes: DomNode[] = [];
+  const nodes: Array<DomNode> = [];
   for (const child of tree.children) {
     if (child.kind === "Element") {
       nodes.push(domOf(child));
@@ -883,7 +883,7 @@ export function domOf(node: ElementNode, parent: Namespace = "html"): DomElement
       attributes[name] = value;
     }
   }
-  const children: DomNode[] = [];
+  const children: Array<DomNode> = [];
   for (const child of node.children) {
     if (child.kind === "Element") {
       children.push(domOf(child, namespace));
@@ -958,8 +958,8 @@ interface Declaration {
  * target renders the source's values and only their spacing differs. A chunk without a colon is
  * kept whole as a property with no value, so a broken declaration still differs.
  */
-export function styleDeclarations(text: string): Declaration[] {
-  const declarations: Declaration[] = [];
+export function styleDeclarations(text: string): Array<Declaration> {
+  const declarations: Array<Declaration> = [];
   for (const chunk of splitTopLevel(text, ";")) {
     const colon = splitTopLevel(chunk, ":", 2);
     const property = collapseSpaces(colon[0]!);
@@ -978,8 +978,8 @@ export function styleDeclarations(text: string): Declaration[] {
 }
 
 /** Splits text at top-level separators (outside strings, parentheses and comments). */
-function splitTopLevel(text: string, separator: string, limit = Infinity): string[] {
-  const parts: string[] = [];
+function splitTopLevel(text: string, separator: string, limit = Infinity): Array<string> {
+  const parts: Array<string> = [];
   let current = "";
   let quote = "";
   let depth = 0;
@@ -1026,7 +1026,7 @@ function collapseSpaces(text: string): string {
  * never matters, and each target writes its own (an object's key order, the CSSOM's, Angular's
  * static declarations first).
  */
-function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
+function sortDeclarations(declarations: ReadonlyArray<Declaration>): Array<Declaration> {
   const ordered = declarations.some((declaration, index) =>
     declarations
       .slice(index + 1)
@@ -1038,7 +1038,7 @@ function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
 }
 
 /** Appends text to a node list, merging it into a text node before it. */
-export function pushText(nodes: DomNode[], data: string): void {
+export function pushText(nodes: Array<DomNode>, data: string): void {
   if (data === "") {
     return;
   }
@@ -1124,9 +1124,9 @@ export function parsedName(name: string, namespace: Namespace, table: "tag" | "a
  * `<pre>` or `<textarea>` is not content. A raw carriage return is kept: every serialiser writes
  * the one it holds as it is, so keeping it compares what each framework rendered.
  */
-export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
+export function parseHtml(html: string, options: ParseOptions = {}): Array<DomNode> {
   const root: DomElement = { tag: "#root", attributes: {}, children: [] };
-  const stack: { element: DomElement; namespace: Namespace }[] = [
+  const stack: Array<{ element: DomElement; namespace: Namespace }> = [
     { element: root, namespace: "html" },
   ];
   let index = 0;
@@ -1266,14 +1266,17 @@ export interface ParityResult {
 /** What one case must render, as DOM nodes: one element, or a root case's nodes. */
 export interface ExpectedCase {
   name: string;
-  nodes: DomNode[];
+  nodes: Array<DomNode>;
 }
 
 /**
  * Pairs each case of a suite with what the framework rendered for it, from the parsed output of
  * the suite's component (`compareRendered`), against what the case renders (`expectedNodes`).
  */
-export function compareCases(rendered: readonly DomNode[], suite: ParitySuite): ParityResult[] {
+export function compareCases(
+  rendered: ReadonlyArray<DomNode>,
+  suite: ParitySuite,
+): Array<ParityResult> {
   return compareRendered(
     rendered,
     suite.root ?? "div",
@@ -1289,10 +1292,10 @@ export function compareCases(rendered: readonly DomNode[], suite: ParitySuite): 
  * in a `"self"` suite, the one case is the whole output.
  */
 export function compareRendered(
-  rendered: readonly DomNode[],
+  rendered: ReadonlyArray<DomNode>,
   root: SuiteRoot,
-  cases: readonly ExpectedCase[],
-): ParityResult[] {
+  cases: ReadonlyArray<ExpectedCase>,
+): Array<ParityResult> {
   const outline = (node: DomNode) =>
     typeof node === "string" ? JSON.stringify(node) : `<${node.tag}>`;
   if (root === "self") {

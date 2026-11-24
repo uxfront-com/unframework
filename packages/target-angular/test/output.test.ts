@@ -254,9 +254,9 @@ beforeAll(async () => {
  * `styleUrl`s name, which ngtsc reads and which no tool checks (ADR-0063).
  */
 async function toolchainMessages(
-  files: readonly (OutputFile & { prefix?: string })[],
-  sheets: readonly OutputFile[] = [],
-): Promise<Record<string, string[]>> {
+  files: ReadonlyArray<OutputFile & { prefix?: string }>,
+  sheets: ReadonlyArray<OutputFile> = [],
+): Promise<Record<string, Array<string>>> {
   const directory = scratchDir();
   for (const sheet of sheets) {
     writeFileSync(join(directory, sheet.path), sheet.contents);
@@ -553,8 +553,8 @@ async function render(name: string, props: Record<string, unknown>): Promise<str
     component = loaded.default ?? loaded[name];
     rendered.set(name, component);
   }
-  const logged: string[] = [];
-  const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+  const logged: Array<string> = [];
+  const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
   const spies = [
     vi.spyOn(console, "error").mockImplementation(capture),
     vi.spyOn(console, "warn").mockImplementation(capture),

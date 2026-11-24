@@ -97,28 +97,29 @@ const INTERACTIVE_ATTRIBUTES: ReadonlySet<(Attribute | ComponentAttribute)["kind
  * of their own: only what changes them in the browser does, and that is a listener, a watcher, an
  * effect or a hook.
  */
-const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly CapabilityName[]>> = {
-  Await: ["async-setup"],
-  State: [],
-  Derived: [],
-  TemplateRef: [],
-  Id: ["use-id"],
-  Const: [],
-  Variable: [],
-  Function: [],
-  Watch: ["interactivity"],
-  WatchEffect: ["interactivity"],
-  Lifecycle: ["interactivity"],
-  // A child that declares a model renders its value (ADR-0055).
-  Model: ["model"],
-  Provide: ["context"],
-  Inject: ["context"],
-  // One whose composable runs code in the browser also needs `composable-effect-order`
-  // (ADR-0069), added at the same span.
-  Use: ["composables"],
-  // Every target checks its build natively (ADR-0117).
-  DevCheck: [],
-};
+const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], ReadonlyArray<CapabilityName>>> =
+  {
+    Await: ["async-setup"],
+    State: [],
+    Derived: [],
+    TemplateRef: [],
+    Id: ["use-id"],
+    Const: [],
+    Variable: [],
+    Function: [],
+    Watch: ["interactivity"],
+    WatchEffect: ["interactivity"],
+    Lifecycle: ["interactivity"],
+    // A child that declares a model renders its value (ADR-0055).
+    Model: ["model"],
+    Provide: ["context"],
+    Inject: ["context"],
+    // One whose composable runs code in the browser also needs `composable-effect-order`
+    // (ADR-0069), added at the same span.
+    Use: ["composables"],
+    // Every target checks its build natively (ADR-0117).
+    DevCheck: [],
+  };
 /**
  * What each kind of reference in code needs: `nextTick` its own capability, and the others
  * nothing of their own. A pass-through import needs none: every target keeps it as written, and
@@ -281,7 +282,11 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
       use("sheet-order", sheet.span);
     }
     const mixed = bothPhaseEvents(component);
-    const fills = (list: readonly SlotFill[], slotted: boolean, generic: ReadonlySet<string>) => {
+    const fills = (
+      list: ReadonlyArray<SlotFill>,
+      slotted: boolean,
+      generic: ReadonlySet<string>,
+    ) => {
       for (const fill of list) {
         if (slotted) {
           use("slotted-styles", fill.span);
@@ -396,7 +401,7 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
  * The slots of an imported generic child whose props' type names one of its type parameters
  * (ADR-0068), as its API says.
  */
-function genericSlots(module: UfModule, local: string): string[] {
+function genericSlots(module: UfModule, local: string): Array<string> {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
     if (!imported) {
@@ -459,7 +464,7 @@ export function compositionUse(
   module: UfModule,
   component: UfComponent,
 ): { what: string; span: Span } | undefined {
-  const uses: { what: string; span: Span }[] = [];
+  const uses: Array<{ what: string; span: Span }> = [];
   for (const [capability, span] of requiredCapabilities({ ...module, components: [component] })) {
     if (COMPOSITION_CAPABILITIES.has(capability)) {
       uses.push({ what: capability, span });
@@ -603,7 +608,7 @@ function bothPhases(element: ElementNode, event: string): boolean {
  * The code of a setup item whose reads a framework subscribes to as it runs, which runs again
  * when they change: a derived value's getter, a watch's getter sources, a `watchEffect`.
  */
-function trackedCode(item: SetupItem): Code[] {
+function trackedCode(item: SetupItem): Array<Code> {
   switch (item.kind) {
     case "Derived":
       return [item.getter.body];
@@ -656,7 +661,7 @@ function optionalRead(
 }
 
 /** The code of a setup item, in source order. */
-function itemCode(item: SetupItem): Code[] {
+function itemCode(item: SetupItem): Array<Code> {
   switch (item.kind) {
     case "State":
     case "Variable":
@@ -728,7 +733,7 @@ const MODULE_BINDING_KINDS: Readonly<Partial<Record<BindingKind, string>>> = {
  * nothing (P2).
  */
 export function composableUse(component: UfComponent): { what: string; span: Span } | undefined {
-  const uses: { what: string; span: Span }[] = [];
+  const uses: Array<{ what: string; span: Span }> = [];
   for (const item of component.setup) {
     if (item.kind === "Use") {
       uses.push({ what: "a composable's call", span: item.span });
@@ -747,7 +752,7 @@ export function composableUse(component: UfComponent): { what: string; span: Spa
 }
 
 /** A function's code: its body. Its event controls' conditions repeat a part of it. */
-function functionCode(fn: FunctionCode): Code[] {
+function functionCode(fn: FunctionCode): Array<Code> {
   return [fn.body];
 }
 

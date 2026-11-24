@@ -169,7 +169,7 @@ export function settleArtefactDirectory(
     return { pass: true, status: "written", message: "" };
   }
 
-  const problems: string[] = [];
+  const problems: Array<string> = [];
   for (const file of stale) {
     problems.push(
       `Stale artefact ${display(join(directory, file), context.root)}: this run no longer produces it.`,
@@ -241,8 +241,8 @@ function ledgerHas(path: string, context: ArtefactContext): boolean {
 }
 
 /** Every file under a directory, as relative paths with forward slashes, sorted. */
-function listFiles(directory: string): string[] {
-  return (readdirSync(directory, { recursive: true }) as string[])
+function listFiles(directory: string): Array<string> {
+  return (readdirSync(directory, { recursive: true }) as Array<string>)
     .filter((entry) => statSync(join(directory, entry)).isFile())
     .map((entry) => entry.split(sep).join("/"))
     .sort();

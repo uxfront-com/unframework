@@ -83,7 +83,7 @@ describe("the composition fixture", () => {
 
 describe("walk and the visitors over composition", () => {
   it("visits a component's fills, a slot outlet's fallback and a conditional's branches", () => {
-    const kinds: string[] = [];
+    const kinds: Array<string> = [];
     walk(composition().components[0]!.render, { enter: (node) => void kinds.push(node.kind) });
     expect(kinds).toEqual([
       "Element",
@@ -274,7 +274,7 @@ describe("checkInvariants on composition", () => {
       "/render/children/3/slot",
       'must name a slot the component declares, and "footer"',
     );
-    const condition = (root(module).children[0] as { branches: { condition: Expression }[] })
+    const condition = (root(module).children[0] as { branches: Array<{ condition: Expression }> })
       .branches[0]!.condition;
     (condition.refs[0] as { slot: string }).slot = "footer";
     reports(
@@ -286,7 +286,7 @@ describe("checkInvariants on composition", () => {
 
   it("reports a slot's presence in setup code", () => {
     const module = composition();
-    const provide = form(module).setup[3] as { value: { refs: unknown[] } };
+    const provide = form(module).setup[3] as { value: { refs: Array<unknown> } };
     provide.value.refs = [createSlotReference("title", find("label", 0, find("provide(").start))];
     reports(module, "/setup/3/value/refs/0", "must not test a slot's presence");
   });
@@ -323,10 +323,10 @@ describe("checkInvariants on composition", () => {
 
 /** The fixture with a `Dynamic` node after the `<div>`'s children: `/render/children/4`. */
 function withDynamic(
-  candidates: DynamicCandidate[],
-  attributes: (Attribute | ComponentAttribute)[] = [],
-  children: RenderNode[] = [],
-  fills?: SlotFill[],
+  candidates: Array<DynamicCandidate>,
+  attributes: Array<Attribute | ComponentAttribute> = [],
+  children: Array<RenderNode> = [],
+  fills?: Array<SlotFill>,
 ): UfModule {
   const module = composition();
   const is = expression(find("label", 0, find("<Field").end), [["label", ids.label]]);
@@ -403,7 +403,7 @@ describe("checkInvariants on `<component is>`", () => {
   });
 
   it("checks an attribute `only` gives to some tags on those tags alone (ADR-0119)", () => {
-    const tags: DynamicCandidate[] = [
+    const tags: Array<DynamicCandidate> = [
       { kind: "Tag", tag: "a" },
       { kind: "Tag", tag: "button" },
     ];
@@ -432,7 +432,7 @@ describe("checkInvariants on `<component is>`", () => {
       'must name "href" once',
     ],
   ])("reports a malformed `only`: %j", (only, path, message) => {
-    const tags: DynamicCandidate[] = [
+    const tags: Array<DynamicCandidate> = [
       { kind: "Tag", tag: "a" },
       { kind: "Tag", tag: "button" },
     ];
@@ -442,7 +442,7 @@ describe("checkInvariants on `<component is>`", () => {
   });
 
   it("reports an element's attribute and children for component candidates", () => {
-    const field: DynamicCandidate[] = [{ kind: "Component", component: "Field" }];
+    const field: Array<DynamicCandidate> = [{ kind: "Component", component: "Field" }];
     reports(
       withDynamic(field, [createStaticAttribute("title", "x", find("label={label}"))]),
       `${at}/attributes/0`,

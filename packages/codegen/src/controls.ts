@@ -48,7 +48,7 @@ export interface EventCall {
   /** Whether the call is at the top of the body (see the module comment). */
   dispatched: boolean;
   /** For a dispatched call, the tests it runs under, outermost first (absent when none). */
-  tests?: ControlTest[];
+  tests?: Array<ControlTest>;
 }
 
 /** A control a handler makes while its event is dispatched: its own, or a function's it calls. */
@@ -65,15 +65,15 @@ export interface LiftedControl {
    * each call it is reached through, then the guard clauses before it. Its `condition` is not
    * among them.
    */
-  tests: (ControlTest & { fn: FunctionCode })[];
+  tests: Array<ControlTest & { fn: FunctionCode }>;
 }
 
 /** What {@link handlerControls} finds. */
 export interface HandlerControls {
   /** The controls that run while the event is dispatched, in the order they run. */
-  controls: LiftedControl[];
+  controls: Array<LiftedControl>;
   /** The controls, and the calls of functions that make one, that cannot run then. */
-  unliftable: Span[];
+  unliftable: Array<Span>;
 }
 
 /** The members of an event that a control changes: a test that reads one is no test of the event. */
@@ -99,9 +99,9 @@ type TopItem =
       /** The statement to take out of the handler: the control's, or the `if`'s around it. */
       statement: AST.Node;
       condition?: AST.Expression;
-      tests: TopTest[];
+      tests: Array<TopTest>;
     }
-  | { kind: "call"; callee: AST.Node; tests: TopTest[] };
+  | { kind: "call"; callee: AST.Node; tests: Array<TopTest> };
 
 /** The name of a function's event parameter, as the IR marks it. */
 function eventName(fn: FunctionCode): string | undefined {
@@ -129,15 +129,18 @@ function topOf(
   fn: FunctionCode,
   event: string | undefined,
   topCall: (offset: number) => boolean,
-): TopItem[] {
-  const items: TopItem[] = [];
+): Array<TopItem> {
+  const items: Array<TopItem> = [];
   if (event === undefined) {
     return items;
   }
   const eventOnly = (test: AST.Node) => readsOnly(test, event) && !readsChanged(test, event);
   // A call form (`f(event)`, `void f(event)`, `test && f(event)`, `test ? f(event) : g()`): its
   // calls that `topCall` accepts, under their tests, and whether it does nothing else.
-  const form = (node: AST.Node, tests: TopTest[]): { calls: TopItem[]; only: boolean } => {
+  const form = (
+    node: AST.Node,
+    tests: Array<TopTest>,
+  ): { calls: Array<TopItem>; only: boolean } => {
     const inner = unwrapped(node);
     if (
       inner.type === "CallExpression" &&
@@ -180,8 +183,8 @@ function topOf(
     }
     return items;
   }
-  const [block] = parseCodeSource(fn.body.code, "statements").root as AST.Statement[];
-  const guards: TopTest[] = [];
+  const [block] = parseCodeSource(fn.body.code, "statements").root as Array<AST.Statement>;
+  const guards: Array<TopTest> = [];
   for (const statement of block?.type === "BlockStatement" ? block.body : []) {
     if (statement.type === "EmptyStatement") {
       continue;
@@ -270,7 +273,7 @@ function isInert(node: AST.Node): boolean {
 export function eventCalls(
   fn: FunctionCode,
   takesEvent: (binding: BindingId) => boolean,
-): EventCall[] {
+): Array<EventCall> {
   const base = fn.body.span.start;
   const references = new Map<number, { binding: BindingId; span: Span }>();
   for (const reference of fn.body.refs) {
@@ -281,7 +284,7 @@ export function eventCalls(
   if (!references.size) {
     return [];
   }
-  const top = new Map<number, TopTest[]>();
+  const top = new Map<number, Array<TopTest>>();
   for (const item of topOf(fn, eventName(fn), (offset) => references.has(offset))) {
     if (item.kind === "call") {
       top.set(item.callee.start, item.tests);
@@ -323,8 +326,8 @@ function localFunctions(component: UfComponent): Map<BindingId, FunctionCode> {
 export function handlerControls(fn: FunctionCode, component: UfComponent): HandlerControls {
   const functions = localFunctions(component);
   const makers = controlMakers(functions);
-  const controls: LiftedControl[] = [];
-  const unliftable: Span[] = [];
+  const controls: Array<LiftedControl> = [];
+  const unliftable: Array<Span> = [];
   // Whether code before the next control reads what a control changes: it then reads it after
   // the lifted control, where the handler read it before.
   let changed = false;
@@ -407,7 +410,7 @@ export function handlerControls(fn: FunctionCode, component: UfComponent): Handl
  * handler passes its event to (see {@link handlerControls}): the statements a target takes out of
  * its body. Every other control of a function a handler reaches is `unliftable` there.
  */
-export function ownControls(fn: FunctionCode, component: UfComponent): EventControl[] {
+export function ownControls(fn: FunctionCode, component: UfComponent): Array<EventControl> {
   return handlerControls(fn, component).controls.flatMap((lifted) =>
     lifted.fn === fn ? [lifted.control] : [],
   );
@@ -420,7 +423,7 @@ export function ownControls(fn: FunctionCode, component: UfComponent): EventCont
  */
 function controlMakers(functions: ReadonlyMap<BindingId, FunctionCode>): Set<BindingId> {
   const makers = new Set<BindingId>();
-  const passes = new Map<BindingId, BindingId[]>();
+  const passes = new Map<BindingId, Array<BindingId>>();
   for (const [id, fn] of functions) {
     const names = fn.parameters.flatMap((parameter) =>
       parameter.name === undefined ? [] : [parameter.name],
@@ -430,7 +433,7 @@ function controlMakers(functions: ReadonlyMap<BindingId, FunctionCode>): Set<Bin
     }
     const body = parsedBody(fn);
     let own = false;
-    const callees: BindingId[] = [];
+    const callees: Array<BindingId> = [];
     const base = fn.body.span.start;
     const references = new Map<number, BindingId>();
     for (const reference of fn.body.refs) {
@@ -482,7 +485,7 @@ function controlMakers(functions: ReadonlyMap<BindingId, FunctionCode>): Set<Bin
  * handed, at once (Qwik moves it to module scope, ADR-0045).
  */
 function isolatedFunctions(component: UfComponent): Set<BindingId> {
-  const candidates = new Map<BindingId, readonly CodeReference[]>();
+  const candidates = new Map<BindingId, ReadonlyArray<CodeReference>>();
   for (const item of component.setup) {
     if (item.kind === "Const") {
       candidates.set(item.binding, item.value.refs);
@@ -533,11 +536,11 @@ const NON_CALLING_GLOBALS: ReadonlySet<string> = new Set([
  * on its own parameter after a call of such a local function there, which such a target awaits.
  * In source order.
  */
-export function handedControls(component: UfComponent): Span[] {
+export function handedControls(component: UfComponent): Array<Span> {
   const functions = localFunctions(component);
   const isolated = isolatedFunctions(component);
   const makers = new Set([...controlMakers(functions)].filter((id) => !isolated.has(id)));
-  const found: Span[] = [];
+  const found: Array<Span> = [];
   for (const { function: fn, context } of functionsOf(component)) {
     if (context !== "client") {
       continue;
@@ -545,7 +548,7 @@ export function handedControls(component: UfComponent): Span[] {
     const listener = eventName(fn) !== undefined;
     const base = fn.body.span.start;
     const body = parsedBody(fn);
-    const nested: { start: number; end: number }[] = [];
+    const nested: Array<{ start: number; end: number }> = [];
     // The arguments of the calls that never run what they are given, by their offsets.
     const forgotten = new Set<number>();
     visitNodes(body, (node) => {
@@ -601,7 +604,7 @@ function lateCallbackControls(
   fn: FunctionCode,
   functions: ReadonlyMap<BindingId, FunctionCode>,
   isolated: ReadonlySet<BindingId>,
-): Span[] {
+): Array<Span> {
   const base = fn.body.span.start;
   const calls = fn.body.refs.flatMap((reference) =>
     reference.kind === "Binding" &&
@@ -614,12 +617,12 @@ function lateCallbackControls(
   if (!calls.length) {
     return [];
   }
-  const found: Span[] = [];
+  const found: Array<Span> = [];
   // Each callback's controls on its parameters, outside the callbacks inside it.
-  const scan = (callback: AST.Node, names: readonly string[]) => {
+  const scan = (callback: AST.Node, names: ReadonlyArray<string>) => {
     const first = (node: AST.Node) =>
       calls.some((offset) => offset > callback.start && offset < node.start && !inner(offset));
-    const nestedIn: { start: number; end: number }[] = [];
+    const nestedIn: Array<{ start: number; end: number }> = [];
     const inner = (offset: number) =>
       nestedIn.some((each) => offset > each.start && offset < each.end);
     const body = (callback as unknown as { body: AST.Node }).body;
@@ -641,7 +644,7 @@ function lateCallbackControls(
     if (!isFunction(node)) {
       return;
     }
-    const names = (node as unknown as { params: AST.Node[] }).params.flatMap((parameter) =>
+    const names = (node as unknown as { params: Array<AST.Node> }).params.flatMap((parameter) =>
       parameter.type === "Identifier" ? [parameter.name] : [],
     );
     if (names.length) {

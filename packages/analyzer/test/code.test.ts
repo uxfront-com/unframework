@@ -17,7 +17,7 @@ import {
 } from "./helpers.ts";
 
 /** The functions of a setup, compactly, with no diagnostic. */
-function functions(setup: string, jsx = "<p />", props?: string): string[] {
+function functions(setup: string, jsx = "<p />", props?: string): Array<string> {
   const { source, module, diagnostics } = setupOf(setup, jsx, props);
   expect(problems(source, diagnostics)).toEqual([]);
   return only(module)
@@ -28,7 +28,7 @@ function functions(setup: string, jsx = "<p />", props?: string): string[] {
 const STATE = "const count = ref(0); let timer = 0; ";
 
 /** The controls of each function a setup declares, compactly, with no diagnostic. */
-function controlsOf(setup: string, jsx: string): string[][] {
+function controlsOf(setup: string, jsx: string): Array<Array<string>> {
   const { source, module, diagnostics } = setupOf(setup, jsx);
   expect(problems(source, diagnostics)).toEqual([]);
   return only(module)
@@ -106,7 +106,7 @@ describe("writes", () => {
       "<button onClick={() => (count.value = 0)}>Reset</button>",
     );
     const root = only(module).render as {
-      attributes: { handler: { function: Parameters<typeof functionOf>[1] } }[];
+      attributes: Array<{ handler: { function: Parameters<typeof functionOf>[1] } }>;
     };
     expect(functionOf(source, root.attributes[0]!.handler.function)).toBe(
       "() => (count.value = 0) [write count = (count.value = 0) (body)]",

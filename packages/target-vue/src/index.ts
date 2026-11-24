@@ -104,12 +104,12 @@ export const vue: Target = defineTarget({
     // Top-level `await` in `<script setup>`, under a `<Suspense>` the parent prints (ADR-0101).
     "async-setup": { support: "native" },
   },
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
+  emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
     const { block, rewrite, listeners, components, keys, textCaret, mounted, instanceRefs, rest } =
       scriptSetup(component, context.module);
     const root = asyncRootChild(component, context.module);
     /** Each piece of an async child, inside a `<Suspense>` that takes the piece's directives. */
-    const suspended = (pieces: readonly MarkupPiece[]): MarkupPiece[] =>
+    const suspended = (pieces: ReadonlyArray<MarkupPiece>): Array<MarkupPiece> =>
       pieces.map((piece) => {
         if (
           piece.kind !== "component" ||
@@ -117,7 +117,7 @@ export const vue: Target = defineTarget({
         ) {
           return piece;
         }
-        const attrs: PrintedAttribute[] =
+        const attrs: Array<PrintedAttribute> =
           piece.component === root ? [{ name: "v-bind", text: 'v-bind="$attrs"' }] : [];
         return {
           kind: "tag",

@@ -56,11 +56,11 @@ const geometry = (width = 100): GeometrySnapshot => ({
   nodes: { "p[0]": { box: [8, 8, width, 24], style: { color: "rgb(0, 0, 0)" } } },
 });
 
-type Fonts = { familyName: string; isCustomFont: boolean; glyphCount: number }[];
+type Fonts = Array<{ familyName: string; isCustomFont: boolean; glyphCount: number }>;
 
 interface FakeBrowser {
   /** What each screenshot returns, in order; the last one repeats. */
-  shots: Buffer[];
+  shots: Array<Buffer>;
   /** The fonts CDP reports for every element under the container, or per node id. */
   fonts: Fonts | Record<number, Fonts>;
   /** Whether the capture container is in the document. */
@@ -288,7 +288,7 @@ describe("ufVisualCapture with live pixels", () => {
 
 describe("ufVisualCapture when the reference did not finish the case (ADR-0091)", () => {
   /** The run's projects: each target's browser project, and the SSR projects. */
-  const projects = (...targets: string[]) => [
+  const projects = (...targets: Array<string>) => [
     ...targets.map((target) => ({
       name: `browser:${target}`,
       config: { browser: { enabled: true } },
@@ -625,7 +625,7 @@ describe("ufVisualCapture's preconditions", () => {
     // each answer before its next request would wait here for ever, so the release below is
     // what lets it finish, once every request is in.
     const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
-    const asked: number[] = [];
+    const asked: Array<number> = [];
     let release = () => {};
     const released = new Promise<void>((resolve) => (release = resolve));
     const held: FakeCdp = {

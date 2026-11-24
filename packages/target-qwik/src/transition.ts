@@ -37,7 +37,7 @@ export function qwikTransitions(
   plan: SetupPlan,
   names: OutputNames,
 ): QwikTransitions | undefined {
-  const nodes: TransitionNode[] = [];
+  const nodes: Array<TransitionNode> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind === "Transition") {

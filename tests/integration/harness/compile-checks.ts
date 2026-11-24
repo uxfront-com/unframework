@@ -16,9 +16,9 @@ import { diffLines } from "@unframework.dev/testing/node";
 
 /** The diagnostics that concern a target: its own, and those of every target. */
 export const forTarget = <T extends { target?: string | undefined }>(
-  list: readonly T[],
+  list: ReadonlyArray<T>,
   target: string,
-): T[] =>
+): Array<T> =>
   list.filter((diagnostic) => diagnostic.target === undefined || diagnostic.target === target);
 
 /** The built-in targets by any name: a name that is no target has no capability matrix. */
@@ -42,11 +42,11 @@ export interface ExpectedDiagnosticText {
  * without output, and every later layer would skip the case for it.
  */
 export function expectationProblems(
-  expected: readonly ExpectedDiagnosticText[],
+  expected: ReadonlyArray<ExpectedDiagnosticText>,
   target: string,
   hasSpec: boolean,
   capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
-): string[] {
+): Array<string> {
   const own = forTarget(expected, target);
   const problems = own
     .filter((diagnostic) => /^UF9\d{3}$/.test(diagnostic.code))
@@ -80,11 +80,11 @@ export function expectationProblems(
  * no target would write its expectations.
  */
 export function referenceProblems(
-  expected: readonly ExpectedDiagnosticText[],
+  expected: ReadonlyArray<ExpectedDiagnosticText>,
   hasSpec: boolean,
   runReference: string,
   reference: string | undefined,
-): string[] {
+): Array<string> {
   if (!hasSpec) {
     return reference === undefined
       ? []
@@ -160,9 +160,9 @@ function cellKey(diagnostic: { code: string; severity: string; message: string }
  */
 export async function checkFixes(
   source: string,
-  diagnostics: readonly Diagnostic[],
+  diagnostics: ReadonlyArray<Diagnostic>,
   target: string,
-  recompile: (source: string) => Promise<readonly Diagnostic[]>,
+  recompile: (source: string) => Promise<ReadonlyArray<Diagnostic>>,
   capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
 ): Promise<void> {
   const own = forTarget(diagnostics, target);
@@ -219,7 +219,10 @@ export function nondeterminism(
  * at-rule it does not know: the check that stands in for L3 on sheets, which no framework
  * compiler reads (ADR-0063, closing ADR-0025's open item).
  */
-export function stylesheetProblems(target: string, files: readonly OutputFile[]): string[] {
+export function stylesheetProblems(
+  target: string,
+  files: ReadonlyArray<OutputFile>,
+): Array<string> {
   return files
     .filter((file) => file.path.endsWith(".css"))
     .flatMap((file) =>
@@ -238,8 +241,8 @@ export function stylesheetProblems(target: string, files: readonly OutputFile[])
 export function moduleCopyProblems(
   target: string,
   outputs: ReadonlyMap<string, string>,
-  modules: readonly OutputFile[],
-): string[] {
+  modules: ReadonlyArray<OutputFile>,
+): Array<string> {
   return modules.flatMap(({ path, contents }) => {
     const copy = outputs.get(path);
     if (copy === undefined || copy === contents) {
@@ -252,9 +255,9 @@ export function moduleCopyProblems(
 /** L2: every output file that formatting again would change, or that no longer parses. */
 export async function formattingProblems(
   target: string,
-  files: readonly OutputFile[],
-): Promise<string[]> {
-  const problems: string[] = [];
+  files: ReadonlyArray<OutputFile>,
+): Promise<Array<string>> {
+  const problems: Array<string> = [];
   for (const file of files) {
     const again = await formatOutput(file);
     if (again.error) {
@@ -302,10 +305,10 @@ export interface MapSource {
  */
 export function sourceMapProblems(
   target: string,
-  files: readonly OutputFile[],
+  files: ReadonlyArray<OutputFile>,
   source: MapSource,
   modules: ReadonlySet<string>,
-): string[] {
+): Array<string> {
   return files.flatMap((file) => fileMapProblems(`${target}/${file.path}`, file, source, modules));
 }
 
@@ -314,7 +317,7 @@ function fileMapProblems(
   file: OutputFile,
   source: MapSource,
   modules: ReadonlySet<string>,
-): string[] {
+): Array<string> {
   const { map } = file;
   if (!map) {
     return [`${where} has no source map.`];
@@ -342,7 +345,7 @@ function fileMapProblems(
   }
   const outputLines = file.contents.split("\n");
   const sourceLines = text.split("\n");
-  const wrong: string[] = [];
+  const wrong: Array<string> = [];
   for (const [line, row] of lines.entries()) {
     for (const segment of row) {
       if (segment.length === 1) {

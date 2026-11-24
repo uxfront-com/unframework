@@ -12,7 +12,7 @@ assertSolid2();
 
 /** What Solid's hydration script (`generateHydrationScript`) puts on the page. */
 interface HydrationGlobal {
-  events: unknown[];
+  events: Array<unknown>;
   completed: WeakSet<Node>;
   r: Record<string, unknown>;
   fe(): void;

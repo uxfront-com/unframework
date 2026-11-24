@@ -35,7 +35,7 @@ import { spellingOf } from "./spelling.ts";
  * on }; }`, preceded by what it reads of its module: the value imports, the type imports and
  * declarations its kept code names, and the module's constants.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
   const { module } = context;
   const owner = serverOwner(composable);
   const view = serverView(owner, module);
@@ -112,7 +112,7 @@ function serverOwner(composable: UfComposable): UfComponent {
     const { kind } = bindingOf(owner, binding);
     return kind !== "localFn" || functions.has(binding);
   });
-  const props = composable.parameters.flatMap((parameter): Prop[] =>
+  const props = composable.parameters.flatMap((parameter): Array<Prop> =>
     parameter.kind === "callback"
       ? []
       : [

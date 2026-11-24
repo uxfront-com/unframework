@@ -154,7 +154,7 @@ describe("ufArtefact", () => {
 
 describe("ufAriaSnapshot", () => {
   it("takes Playwright's snapshot of the locator's selector in the tester iframe", async () => {
-    const selectors: string[] = [];
+    const selectors: Array<string> = [];
     const context = {
       iframe: {
         locator(selector: string) {
@@ -174,7 +174,7 @@ describe("ufAriaSnapshot", () => {
 
 describe("ufFocus and ufResetInput", () => {
   it("focuses the locator's selector in the tester iframe", async () => {
-    const focused: string[] = [];
+    const focused: Array<string> = [];
     const context = {
       iframe: {
         locator: (selector: string) => ({
@@ -187,7 +187,7 @@ describe("ufFocus and ufResetInput", () => {
   });
 
   it("moves the mouse to the bottom right corner of the tester frame", async () => {
-    const moves: [number, number][] = [];
+    const moves: Array<[number, number]> = [];
     const context = (box: { x: number; y: number; width: number; height: number } | null) => ({
       page: { mouse: { move: async (x: number, y: number) => void moves.push([x, y]) } },
       frame: async () => ({ frameElement: async () => ({ boundingBox: async () => box }) }),
@@ -204,7 +204,7 @@ describe("ufFocus and ufResetInput", () => {
 
 describe("ufColorScheme", () => {
   it("emulates the case's colour scheme on the page, and refuses any other value", async () => {
-    const emulated: unknown[] = [];
+    const emulated: Array<unknown> = [];
     const context = {
       page: { emulateMedia: async (options: unknown) => void emulated.push(options) },
     };
@@ -219,8 +219,8 @@ describe("ufColorScheme", () => {
 
 describe("ufInput", () => {
   /** A command context that logs every Playwright call, and knows no key in `unknown`. */
-  const recording = (unknown: readonly string[] = []) => {
-    const calls: string[] = [];
+  const recording = (unknown: ReadonlyArray<string> = []) => {
+    const calls: Array<string> = [];
     const context = {
       page: {
         mouse: {
@@ -314,7 +314,10 @@ describe("ufInput", () => {
 
 describe("ufComponentEvents", () => {
   /** A module of one component that declares `events`, as the IR has them. */
-  const module = (file: string, ...events: { name: string; optional: boolean[] }[][]) =>
+  const module = (
+    file: string,
+    ...events: Array<Array<{ name: string; optional: Array<boolean> }>>
+  ) =>
     ({
       irVersion: 1,
       file,
@@ -465,7 +468,7 @@ describe("parityBrowser", () => {
 
   it("launches Chromium without font hinting and with whole-tile raster, for the captures", () => {
     const provider = parityBrowser({ name: "browser:vue" }).provider as unknown as {
-      options: { launchOptions?: { args?: string[] } };
+      options: { launchOptions?: { args?: Array<string> } };
     };
     // Partial raster made a capture depend on what was repainted before it (stub/raster).
     expect(provider.options.launchOptions?.args).toEqual([
@@ -478,7 +481,7 @@ describe("parityBrowser", () => {
     for (const browser of ["firefox", "webkit"] as const) {
       const config = parityBrowser({ name: "browser:vue", browser });
       const provider = config.provider as unknown as {
-        options: { launchOptions?: { args?: string[] }; contextOptions?: object };
+        options: { launchOptions?: { args?: Array<string> }; contextOptions?: object };
       };
       expect(config.instances).toEqual([{ browser, name: "browser:vue" }]);
       expect(provider.options.launchOptions?.args).toEqual([]);

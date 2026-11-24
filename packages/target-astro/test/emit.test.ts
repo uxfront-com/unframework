@@ -32,7 +32,11 @@ import { compiled, emitSource, emitted, emittedWithTypes } from "./source.ts";
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const at = { start: 0, end: 0 };
-const el = (tag: string, children: RenderNode[] = [], attributes: [string, string | true][] = []) =>
+const el = (
+  tag: string,
+  children: Array<RenderNode> = [],
+  attributes: Array<[string, string | true]> = [],
+) =>
   createElement(
     tag,
     attributes.map(([name, value]) => createStaticAttribute(name, value, at)),
@@ -44,7 +48,7 @@ const text = (value: string) => createText(value, at);
 function emit(name: string, render: ElementNode, kind: "default" | "named" = "default") {
   const component = createComponent(name, render, at);
   const module = createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, at)]);
-  const reported: unknown[] = [];
+  const reported: Array<unknown> = [];
   const context: EmitContext = {
     module,
     options: undefined,
@@ -199,7 +203,7 @@ describe("astro target", () => {
 // M1: real sources lowered by the analyser, then emitted by this target.
 
 /** Lines of a file, each ending in a line break. */
-const lines = (...rows: string[]) => rows.map((row) => `${row}\n`).join("");
+const lines = (...rows: Array<string>) => rows.map((row) => `${row}\n`).join("");
 
 /** The markup of an output: what follows its frontmatter. */
 const markupOf = (output: string) => output.slice(output.indexOf("---\n\n", 4) + 5);
@@ -761,7 +765,7 @@ describe("types and generics (ADR-0067, ADR-0068)", () => {
  * Sources whose types `types.ts` declares beside them (ADR-0067), each emitted through the type
  * oracle, and each checked through Astro's toolchain below.
  */
-const typed: Record<string, { source: string[]; types: string }> = {
+const typed: Record<string, { source: Array<string>; types: string }> = {
   // An imported `Props` inside the annotation, and inside a copied alias.
   importedProps: {
     types: "export interface Props { label: string }\n",
@@ -1255,7 +1259,7 @@ describe("imported types through the type oracle (ADR-0067)", () => {
     { timeout: 60_000 },
     async () => {
       const directory = join(scratch.path, "typed");
-      const outputs: string[] = [];
+      const outputs: Array<string> = [];
       for (const [name, { types }] of Object.entries(typed)) {
         mkdirSync(join(directory, name), { recursive: true });
         writeFileSync(join(directory, name, "types.ts"), types);
@@ -1508,7 +1512,7 @@ describe("the M1 output through the toolchain", { timeout: 60_000 }, () => {
     async (format) => {
       const directory = join(scratch.path, `toolchain-${format}`);
       mkdirSync(directory, { recursive: true });
-      const files: { path: string; contents: string }[] = [];
+      const files: Array<{ path: string; contents: string }> = [];
       for (const [name, source] of Object.entries(sources)) {
         // A directory per source, where its outputs import each other by their own names.
         mkdirSync(join(directory, name), { recursive: true });

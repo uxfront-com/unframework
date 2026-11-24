@@ -111,8 +111,8 @@ function rejected(tag: string): boolean {
  * Every binding of a primitive kind the analyser accepts, on every element it accepts, and of
  * the union of its tokens for an enumerated attribute (which takes only those, UF3018).
  */
-function bindings(): SweptBinding[] {
-  const found: SweptBinding[] = [];
+function bindings(): Array<SweptBinding> {
+  const found: Array<SweptBinding> = [];
   const add = (tag: string, namespace: "html" | "svg", name: string) => {
     // Attributes the analyser takes only statically, or by a kind of their own (class, style).
     if (["class", "style"].includes(name)) {
@@ -175,7 +175,7 @@ function binding(name: string, value: string, form: "spread" | "untyped" | undef
 }
 
 /** A file of one element per line, from line 4. */
-function sweepSource(lines: readonly string[]): string {
+function sweepSource(lines: ReadonlyArray<string>): string {
   return [
     "declare const v: { string: string; number: number; boolean: boolean };",
     "export const all = (",
@@ -240,8 +240,8 @@ describe("solid JSX types against every binding the analyser accepts (L4)", () =
     expect([...solid.keys()]).toEqual([solidFile]);
     const byAuthoring = new Set(authoring.get(authoringFile)!.map((message) => message.line! - 4));
     const bySolid = new Set(solid.get(solidFile)!.map((message) => message.line! - 4));
-    const rejectedAsWritten: string[] = [];
-    const unneeded: string[] = [];
+    const rejectedAsWritten: Array<string> = [];
+    const unneeded: Array<string> = [];
     found.forEach(([tag, name, value], index) => {
       if (byAuthoring.has(index)) {
         return;

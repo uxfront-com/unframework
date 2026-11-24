@@ -51,7 +51,7 @@ export interface AstroRender {
    * The props each fill the copy passes as a render prop is passed as (`renderPropName`): one,
    * or one per name the candidates of a `<component is>` give it.
    */
-  renderProps: Map<SlotFill, string[]>;
+  renderProps: Map<SlotFill, Array<string>>;
 }
 
 /**
@@ -67,7 +67,7 @@ export interface DynamicTag {
    * render prop apart: the tag then renders as each candidate in turn (`Tag === A ? <A … /> :
    * …`), so a candidate never takes another's name for a render prop, which can be its prop.
    */
-  candidates?: Map<string, ComponentAttribute[]>;
+  candidates?: Map<string, Array<ComponentAttribute>>;
 }
 
 /**
@@ -145,12 +145,15 @@ export function astroRender(
   // The node that takes the fallthrough: a root component or `<component is>` takes it before
   // it branches.
   const target = fallthrough?.target;
-  const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
-  const fills = (each: readonly SlotFill[]): SlotFill[] =>
+  const nodes = (children: ReadonlyArray<RenderNode>): Array<RenderNode> => children.map(node);
+  const fills = (each: ReadonlyArray<SlotFill>): Array<SlotFill> =>
     each.map((fill) => ({ ...fill, children: nested(() => nodes(fill.children)) }));
-  const renderPropNames = new Map<SlotFill, string[]>();
+  const renderPropNames = new Map<SlotFill, Array<string>>();
   // The render props of a component's fills, named as the child names them (`taken`: its props).
-  const renderProps = (each: readonly SlotFill[], taken: ReadonlySet<string>): PropAttribute[] =>
+  const renderProps = (
+    each: ReadonlyArray<SlotFill>,
+    taken: ReadonlySet<string>,
+  ): Array<PropAttribute> =>
     each
       .filter((fill) => isRenderProp(fill, component))
       .map((fill) => {
@@ -215,7 +218,7 @@ export function astroRender(
           tag.candidates = new Map(
             [...named].map(([candidate, props]) => [
               candidate,
-              [...(each.attributes as ComponentAttribute[]), ...props],
+              [...(each.attributes as Array<ComponentAttribute>), ...props],
             ]),
           );
         }
@@ -284,7 +287,10 @@ export function astroRender(
       return each;
     }
     const sets = forwarded
-      .reduce<SlotFill[][]>((all, fill) => all.flatMap((set) => [[...set, fill], set]), [[]])
+      .reduce<Array<Array<SlotFill>>>(
+        (all, fill) => all.flatMap((set) => [[...set, fill], set]),
+        [[]],
+      )
       .toSorted((a, b) => b.length - a.length);
     const presence = (fill: SlotFill) =>
       rules.slot!({ kind: "Slot", slot: fill.forward!, span: fill.span }, "render");
@@ -382,7 +388,7 @@ function withFallthrough<T extends ElementNode | ComponentNode | DynamicNode>(
   root: T,
   names: Fallthrough,
 ): T {
-  const attributes = [...root.attributes] as (Attribute | ComponentAttribute)[];
+  const attributes = [...root.attributes] as Array<Attribute | ComponentAttribute>;
   const className = {
     kind: "Dynamic" as const,
     value: written(names.className, root),

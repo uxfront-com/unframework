@@ -228,7 +228,7 @@ describe("random mixes of fixable pieces", () => {
     (seed) =>
       replayable(propertyRun(2000, seed), (run) => {
         const next = random(run.seed);
-        const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
+        const pick = <T>(items: ReadonlyArray<T>) => items[Math.floor(next() * items.length)]!;
         let checked = 0;
         for (let sample = 0; sample < run.size; sample++) {
           const attributes = Array.from({ length: Math.floor(next() * 4) }, () => pick(ATTRIBUTES));
@@ -281,7 +281,7 @@ describe("random mixes of fixable pieces in a setup's component", () => {
     (seed) =>
       replayable(propertyRun(1000, seed), (run) => {
         const next = random(run.seed);
-        const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
+        const pick = <T>(items: ReadonlyArray<T>) => items[Math.floor(next() * items.length)]!;
         let checked = 0;
         for (let sample = 0; sample < run.size; sample++) {
           const attributes = Array.from({ length: Math.floor(next() * 4) }, () =>

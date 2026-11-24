@@ -115,7 +115,7 @@ describe("a request whose compile is current", () => {
   });
 
   /** A Qwik server over the files, with `Other.uf.tsx`'s compile in flight and held. */
-  async function start(load: string[]) {
+  async function start(load: Array<string>) {
     project = createProject({
       "useLabel.uf.ts": USE_LABEL,
       "Picker.uf.tsx": PICKER,

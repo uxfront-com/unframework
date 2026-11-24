@@ -29,7 +29,7 @@ export interface TsgoOracleOptions {
    * The files the checker's project holds, as a tsconfig's `include` relative to the root:
    * `["**\/*"]`, every TypeScript file under it, when absent.
    */
-  include?: readonly string[];
+  include?: ReadonlyArray<string>;
   /**
    * Reads a file the syntactic layer asks for, by its absolute path, or gives `undefined` for
    * one it cannot read: the disk when absent. The checker itself reads the disk.
@@ -229,7 +229,7 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   const directiveValues = async (
     file: string,
     source: string,
-    queries: DirectiveValueQuery[],
+    queries: Array<DirectiveValueQuery>,
   ): Promise<DirectiveValueChecks> => {
     const none = { checks: queries.map(() => null), dependencies: [] };
     // A module that applies no directive needs no checker.
@@ -308,9 +308,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
         return stop();
       }
       const { id, program } = snapshot.getConfiguredProject(config)!;
-      const changed: string[] = [];
-      const created: string[] = [];
-      const deleted: string[] = [];
+      const changed: Array<string> = [];
+      const created: Array<string> = [];
+      const deleted: Array<string> = [];
       for (const file of changes.files) {
         const path = `${root}/${file}`;
         if (!existsSync(path)) {

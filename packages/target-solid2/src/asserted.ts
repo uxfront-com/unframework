@@ -80,7 +80,7 @@ export function assertedWhole(reference: BindingReference, binding: Binding): bo
  * The ends of the narrowed member paths that run past a reference (`draft.value.email`) and need
  * an assertion, in the code's offsets.
  */
-export function assertedPathEnds(reference: BindingReference, binding: Binding): number[] {
+export function assertedPathEnds(reference: BindingReference, binding: Binding): Array<number> {
   const length = reference.span.end - reference.span.start;
   return (reference.narrowed ?? [])
     .filter(({ span, scope }) => span.end - span.start > length && assertsIn(binding.kind, scope))

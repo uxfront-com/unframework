@@ -27,7 +27,7 @@ export type { SsrCase } from "../harness.ts";
  * `describeTargets` titles its own. It reads the project's provided `target`, `ufHarness` and
  * `ufServer`, and throws in a project that lacks them.
  */
-export function describeServerRender(cases: readonly SsrCase[]): void {
+export function describeServerRender(cases: ReadonlyArray<SsrCase>): void {
   const target = inject("target");
   // The normaliser removes only this target's framework noise, so it must know the target.
   if (!isNormalizeTarget(target)) {
@@ -51,11 +51,11 @@ export function describeServerRender(cases: readonly SsrCase[]): void {
   async function render(
     component: unknown,
     props: Record<string, unknown>,
-    messages: string[],
+    messages: Array<string>,
   ): Promise<string> {
     const originals = { warn: console.warn, error: console.error };
     for (const level of ["warn", "error"] as const) {
-      console[level] = (...args: unknown[]) => {
+      console[level] = (...args: Array<unknown>) => {
         messages.push(`console.${level}: ${formatConsoleArgs(args)}`);
         originals[level].apply(console, args);
       };
@@ -89,7 +89,7 @@ export function describeServerRender(cases: readonly SsrCase[]): void {
           if (info.failure !== undefined) {
             throw new Error(info.failure);
           }
-          const messages: string[] = [];
+          const messages: Array<string> = [];
           let rendered = false;
           await checkLayers(
             task,

@@ -29,7 +29,7 @@ interface Slot {
  * text of the output (a string, a copied declaration) can be mistaken for one.
  */
 export class Placeholders {
-  readonly #slots: Slot[] = [];
+  readonly #slots: Array<Slot> = [];
 
   /**
    * An expression slot holding `code`, which must be exactly one expression (it is parsed to
@@ -198,8 +198,8 @@ interface Occurrence {
  * appears anywhere but in exactly one placeholder each (the output's own text spells it), or
  * a message when a placeholder is missing.
  */
-function locate(output: string, prefix: string, count: number): Occurrence[] | string {
-  const found: Occurrence[] = [];
+function locate(output: string, prefix: string, count: number): Array<Occurrence> | string {
+  const found: Array<Occurrence> = [];
   const seen = new Set<number>();
   for (let start = output.indexOf(prefix); start >= 0; start = output.indexOf(prefix, start + 1)) {
     const match = /^(\d+)\$/.exec(output.slice(start + prefix.length));

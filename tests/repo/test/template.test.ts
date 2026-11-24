@@ -9,12 +9,12 @@ import { packages, root } from "./workspace.ts";
 interface PackageFiles {
   directory: string;
   read(path: string): string | undefined;
-  list(path: string): string[];
+  list(path: string): Array<string>;
 }
 
 /** The rules of the package template (plan §5.2); returns the problems found. */
-function checkPackage(pkg: PackageFiles): string[] {
-  const problems: string[] = [];
+function checkPackage(pkg: PackageFiles): Array<string> {
+  const problems: Array<string> = [];
   const raw = pkg.read("package.json");
   if (!raw) {
     return ["has no package.json"];

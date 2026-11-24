@@ -198,7 +198,7 @@ export function moduleIdCandidates(
   path: string,
   root: string,
   importer: string | undefined,
-): string[] {
+): Array<string> {
   if (path.startsWith("./") || path.startsWith("../")) {
     if (importer === undefined) {
       return [];

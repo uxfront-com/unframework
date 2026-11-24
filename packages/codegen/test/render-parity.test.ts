@@ -304,8 +304,8 @@ describe("compareCases", () => {
 /** Every element of a tree, with its parent and its ancestors, outermost first. */
 function* elements(
   node: ElementNode,
-  ancestors: readonly ElementNode[] = [],
-): Generator<{ node: ElementNode; ancestors: readonly ElementNode[] }> {
+  ancestors: ReadonlyArray<ElementNode> = [],
+): Generator<{ node: ElementNode; ancestors: ReadonlyArray<ElementNode> }> {
   yield { node, ancestors };
   for (const child of node.children) {
     if (child.kind === "Element") {
@@ -336,7 +336,7 @@ describe("the cases", () => {
   });
 
   it("keep to the nesting the HTML parser leaves in place", () => {
-    const problems: string[] = [];
+    const problems: Array<string> = [];
     for (const { name, render } of [...TRICKY_CASES, ...FUZZ_CASES]) {
       for (const { node, ancestors } of elements(render)) {
         const parent = ancestors.at(-1);
@@ -696,7 +696,7 @@ describe("the bound attribute sweep", () => {
  * pair the vocabulary lists is rendered unless a rule below names it, so no attribute drops out
  * of the sweeps silently (when the analyzer's values or rules change, this list must too).
  */
-const LEFT_OUT: readonly { reason: string; code: string; pairs: readonly string[] }[] = [
+const LEFT_OUT: ReadonlyArray<{ reason: string; code: string; pairs: ReadonlyArray<string> }> = [
   {
     reason: "the element belongs to the document or to template syntax (UNRENDERABLE_ELEMENTS)",
     code: "UF3002",
@@ -748,7 +748,11 @@ const LEFT_OUT: readonly { reason: string; code: string; pairs: readonly string[
 ];
 
 /** What only the bound sweep leaves out, with LEFT_OUT's. */
-const LEFT_OUT_BOUND: readonly { reason: string; code: string; pairs: readonly string[] }[] = [
+const LEFT_OUT_BOUND: ReadonlyArray<{
+  reason: string;
+  code: string;
+  pairs: ReadonlyArray<string>;
+}> = [
   {
     reason: 'boolean attributes Vue\'s server or Svelte render as "false" (ADR-0037)',
     code: "UF1002",
@@ -774,7 +778,7 @@ function expectedLeftOut(rules: typeof LEFT_OUT): Map<string, string> {
 }
 
 /** Each pair a sweep left out, with the codes the analyzer gave its last value. */
-function actualLeftOut(dropped: ReadonlyMap<string, readonly string[]>): Map<string, string> {
+function actualLeftOut(dropped: ReadonlyMap<string, ReadonlyArray<string>>): Map<string, string> {
   return new Map(
     [...dropped].map(([key, codes]) => [
       key.replace(/ = .*$/, ""),

@@ -33,7 +33,7 @@ const next = () => ({ start: offset, end: ++offset });
 export function el(
   tag: string,
   attributes: Record<string, string | true> = {},
-  ...children: (RenderNode | string)[]
+  ...children: Array<RenderNode | string>
 ): ElementNode {
   return createElement(
     tag,
@@ -73,8 +73,8 @@ export const AVATAR =
 
 /** What the React target emitted for one component, and what it reported (never anything). */
 export interface Emitted {
-  files: OutputFile[];
-  reported: Omit<Diagnostic, "file" | "target">[];
+  files: Array<OutputFile>;
+  reported: Array<Omit<Diagnostic, "file" | "target">>;
 }
 
 /** Emits one component of a module through the React target and collects what it reports. */
@@ -121,7 +121,7 @@ export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
  * sheets (`<source>.css`), which no framework compiler or checker reads: the compile project
  * parses them instead (ADR-0063).
  */
-export function goldens(targetName: string): ToolchainFile[] {
+export function goldens(targetName: string): Array<ToolchainFile> {
   const pattern = new RegExp(`(?:^|/)__output__/${targetName}/[^/]+$`);
   return readdirSync(cases, { recursive: true })
     .map((entry) => String(entry).split("\\").join("/"))

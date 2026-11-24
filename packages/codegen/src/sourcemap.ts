@@ -72,8 +72,8 @@ interface Run extends Piece {
 
 /** A piece of IR code with text of its own. */
 interface Owner {
-  runs: Run[];
-  refs: readonly CodeReference[];
+  runs: Array<Run>;
+  refs: ReadonlyArray<CodeReference>;
 }
 
 /** A map position, with the name of the reference it starts. */
@@ -105,7 +105,7 @@ export function anchorOutput(file: OutputFile, module: UfModule, source: string)
 
 /** A file copied unchanged, a shared module's (ADR-0070), mapped token by token onto itself. */
 export function identityMapped(file: OutputFile): OutputFile {
-  const anchors: Anchor[] = [];
+  const anchors: Array<Anchor> = [];
   for (const match of file.contents.matchAll(TOKENS)) {
     anchors.push({ generated: match.index, original: match.index });
   }
@@ -196,8 +196,8 @@ function moveOffsets(
     }
     return whole ? moved : tooFew;
   }
-  let beforeBlocks: Span[];
-  let afterBlocks: Span[];
+  let beforeBlocks: Array<Span>;
+  let afterBlocks: Array<Span>;
   try {
     beforeBlocks = codeBlocks(path, before);
     afterBlocks = codeBlocks(path, after);
@@ -394,7 +394,7 @@ function myers(
   const offset = limit + 1;
   const furthest = new Int32Array(2 * limit + 3).fill(-1);
   furthest[offset + 1] = 0;
-  const trace: Int32Array[] = [];
+  const trace: Array<Int32Array> = [];
   let traced = 0;
   for (let edits = 0; edits <= limit; edits++) {
     traced += (2 * edits + 3) * Int32Array.BYTES_PER_ELEMENT;
@@ -434,7 +434,7 @@ function myers(
 /** Follows the trace back from the end of the diff, recording every match. */
 function walkBack(
   pairs: Int32Array,
-  trace: readonly Int32Array[],
+  trace: ReadonlyArray<Int32Array>,
   prefix: number,
   n: number,
   m: number,
@@ -464,11 +464,11 @@ function walkBack(
 }
 
 /** Every position an output's text shows, from each `Code` of the module. */
-function findAnchors(output: string, module: UfModule, source: string): Anchor[] {
+function findAnchors(output: string, module: UfModule, source: string): Array<Anchor> {
   const owners = collectOwners(module, source);
   const taken = new Uint8Array(output.length);
   const read = new Uint8Array(source.length);
-  const place = (unplaced: readonly Run[]): void => {
+  const place = (unplaced: ReadonlyArray<Run>): void => {
     const runs = unplaced.toSorted((a, b) => b.text.length - a.text.length || a.start - b.start);
     const remaining = new Map<string, number>();
     for (const { text } of runs) {
@@ -522,7 +522,7 @@ function findAnchors(output: string, module: UfModule, source: string): Anchor[]
   // the output doesn't hold is tried again between its braces: a target may print a block's
   // statements without them, as Angular's methods do.
   place(owners.flatMap((owner) => splitAtBraces(owner, source)));
-  const anchors: Anchor[] = [];
+  const anchors: Array<Anchor> = [];
   for (const owner of owners) {
     for (const run of owner.runs) {
       if (run.at === undefined) {
@@ -550,7 +550,7 @@ function findAnchors(output: string, module: UfModule, source: string): Anchor[]
  */
 function referenceStart(
   ref: CodeReference,
-  runs: readonly Run[],
+  runs: ReadonlyArray<Run>,
   output: string,
   source: string,
 ): number | undefined {
@@ -590,7 +590,7 @@ function referenceStart(
 }
 
 /** Each `Code` of the IR once with its literal runs, however the IR holds it. */
-function collectOwners(module: UfModule, source: string): Owner[] {
+function collectOwners(module: UfModule, source: string): Array<Owner> {
   const owners = new Map<string, Owner>();
   const visit = (value: unknown): void => {
     if (typeof value !== "object" || value === null) {
@@ -602,7 +602,11 @@ function collectOwners(module: UfModule, source: string): Owner[] {
       }
       return;
     }
-    const { code, span, refs } = value as { code?: unknown; span?: Span; refs?: CodeReference[] };
+    const { code, span, refs } = value as {
+      code?: unknown;
+      span?: Span;
+      refs?: Array<CodeReference>;
+    };
     // An imported module's API holds spans of its own file: only this source's text counts.
     if (
       typeof code === "string" &&
@@ -667,8 +671,8 @@ function inSubstitution(source: string, offset: number): boolean {
  * piece or a lone word stays out, reference beside it or not: `.login`, `-$` or `groupTotal` could be
  * any line's, where `title: string` or a statement hardly could.
  */
-function splitAtBraces(owner: Owner, source: string): Run[] {
-  const pieces: Run[] = [];
+function splitAtBraces(owner: Owner, source: string): Array<Run> {
+  const pieces: Array<Run> = [];
   owner.runs = owner.runs.flatMap((run) => {
     if (run.at !== undefined) {
       return [run];
@@ -684,8 +688,8 @@ function splitAtBraces(owner: Owner, source: string): Run[] {
 }
 
 /** The trimmed parts of a text between separators, each with a word, and where each starts. */
-function piecesOf(text: string, start: number, separator: RegExp | string): Piece[] {
-  const pieces: Piece[] = [];
+function piecesOf(text: string, start: number, separator: RegExp | string): Array<Piece> {
+  const pieces: Array<Piece> = [];
   let at = start;
   for (const part of text.split(separator)) {
     const trimmed = part.trim();
@@ -702,8 +706,8 @@ function piecesOf(text: string, start: number, separator: RegExp | string): Piec
  * operator, and an emit's call, go when a target replaces them whole; what they hold of the author's
  * text is a value's or an argument's, which stays literal.
  */
-function literalRuns(span: Span, refs: readonly CodeReference[], source: string): Piece[] {
-  const cuts: Span[] = [];
+function literalRuns(span: Span, refs: ReadonlyArray<CodeReference>, source: string): Array<Piece> {
+  const cuts: Array<Span> = [];
   for (const ref of refs) {
     if (ref.kind === "Write" || ref.kind === "Emit") {
       const kept = ref.kind === "Emit" ? ref.arguments : ref.value ? [ref.value] : [];
@@ -718,7 +722,7 @@ function literalRuns(span: Span, refs: readonly CodeReference[], source: string)
     }
   }
   cuts.sort((a, b) => a.start - b.start);
-  const runs: Piece[] = [];
+  const runs: Array<Piece> = [];
   const add = (start: number, end: number) => {
     runs.push(...piecesOf(source.slice(start, end), start, "\n"));
   };
@@ -880,7 +884,7 @@ function identifierAt(text: string, offset: number): string | undefined {
  * then drops the whole chain (ADR-0074).
  */
 export function withLineStarts(map: SourceMapV3): SourceMapV3 {
-  const lines = decodedMappings(new TraceMap(map)).map((line): SourceMapSegment[] => {
+  const lines = decodedMappings(new TraceMap(map)).map((line): Array<SourceMapSegment> => {
     const first = line[0];
     if (!first || first[0] === 0 || first.length === 1) {
       return [...line];
@@ -904,8 +908,8 @@ export function chainMap(map: string | { mappings: string }, next: SourceMapV3):
     file: chained.file ?? next.file,
     // As in composeJoinedMap: remapping's types allow nulls and decoded mappings it doesn't return
     // for these inputs.
-    sources: chained.sources as string[],
-    sourcesContent: (chained.sourcesContent ?? []) as string[],
+    sources: chained.sources as Array<string>,
+    sourcesContent: (chained.sourcesContent ?? []) as Array<string>,
     names: chained.names,
     mappings: chained.mappings as string,
   };
@@ -919,7 +923,7 @@ export function chainMap(map: string | { mappings: string }, next: SourceMapV3):
  */
 export function composeJoinedMap(
   joined: Pick<SourceMapV3, "sources" | "names" | "mappings">,
-  files: readonly OutputFile[],
+  files: ReadonlyArray<OutputFile>,
 ): SourceMapV3 {
   const maps = new Map(files.map(({ path, map }) => [path, map]));
   const composed = remapping({ version: 3, ...joined }, (path, { depth }) =>
@@ -929,8 +933,8 @@ export function composeJoinedMap(
   return {
     version: 3,
     file: files.find(({ map }) => map)?.map?.file ?? "",
-    sources: composed.sources as string[],
-    sourcesContent: (composed.sourcesContent ?? []) as string[],
+    sources: composed.sources as Array<string>,
+    sourcesContent: (composed.sourcesContent ?? []) as Array<string>,
     names: composed.names,
     mappings: composed.mappings as string,
   };
@@ -949,7 +953,7 @@ function buildMap(
   name: string,
   source: string,
   output: string,
-  anchors: readonly Anchor[],
+  anchors: ReadonlyArray<Anchor>,
 ): SourceMapV3 {
   const file = path.slice(path.lastIndexOf("/") + 1);
   const map = new GenMapping({ file });
@@ -973,14 +977,14 @@ function encode(map: GenMapping, file: string): SourceMapV3 {
   return {
     version: 3,
     file,
-    sources: sources as string[],
-    sourcesContent: sourcesContent as string[],
+    sources: sources as Array<string>,
+    sourcesContent: sourcesContent as Array<string>,
     names: [...names],
     mappings,
   };
 }
 
-function lineStarts(text: string): number[] {
+function lineStarts(text: string): Array<number> {
   const starts = [0];
   for (let at = text.indexOf("\n"); at >= 0; at = text.indexOf("\n", at + 1)) {
     starts.push(at + 1);
@@ -988,7 +992,10 @@ function lineStarts(text: string): number[] {
   return starts;
 }
 
-function positionOf(starts: readonly number[], offset: number): { line: number; column: number } {
+function positionOf(
+  starts: ReadonlyArray<number>,
+  offset: number,
+): { line: number; column: number } {
   let low = 0;
   let high = starts.length - 1;
   while (low < high) {

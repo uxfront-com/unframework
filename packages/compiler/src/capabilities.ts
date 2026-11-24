@@ -13,8 +13,8 @@ import type { UfModule } from "@unframework.dev/ir";
  * `nextTick`, refine `interactivity`: `CAPABILITY_PREREQUISITES`) is not reported again: the
  * one report says the listener is inert, where three would say it at the same span.
  */
-export function checkCapabilities(module: UfModule, target: Target): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
+export function checkCapabilities(module: UfModule, target: Target): Array<Diagnostic> {
+  const diagnostics: Array<Diagnostic> = [];
   const required = requiredCapabilities(module);
   const cellOf = (capability: CapabilityName) =>
     (target.capabilities as Partial<Target["capabilities"]> | undefined)?.[capability];

@@ -24,7 +24,7 @@ export interface PreviewIo {
 export interface PreviewArguments {
   /** Set when writing the static site (`preview build`) rather than serving the preview. */
   build?: true;
-  targets: TargetName[];
+  targets: Array<TargetName>;
   /** The shell's port, when serving. */
   port?: number;
   /** The site's directory, when building, relative to the project's root. */
@@ -39,7 +39,7 @@ const EXAMPLE_VALUES: Readonly<Record<string, string>> = {
 };
 
 /** Reads the arguments, throwing on a usage error: the CLI exits 2 with the message. */
-export function parsePreviewArguments(args: readonly string[]): PreviewArguments {
+export function parsePreviewArguments(args: ReadonlyArray<string>): PreviewArguments {
   const build = args[0] === "build";
   const parsed: PreviewArguments = { ...(build ? { build } : {}), targets: [] };
   for (let index = build ? 1 : 0; index < args.length; index += 1) {
@@ -137,7 +137,7 @@ export function untilInterrupted(): { interrupted: Promise<void>; dispose(): voi
  * CLI reports with exit 2.
  */
 export async function preview(
-  args: string[],
+  args: Array<string>,
   io: PreviewIo,
   stop?: Promise<void>,
 ): Promise<number> {

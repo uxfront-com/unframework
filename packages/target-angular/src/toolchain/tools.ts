@@ -52,18 +52,18 @@ export interface CompilerHost {
     shouldCreateNewSourceFile?: boolean,
   ): SourceFile | undefined;
   resolveModuleNameLiterals?(
-    literals: readonly { readonly text: string }[],
+    literals: ReadonlyArray<{ readonly text: string }>,
     containingFile: string,
     redirectedReference: unknown,
     options: CompilerOptions,
-  ): readonly ResolvedModule[];
+  ): ReadonlyArray<ResolvedModule>;
   resolveModuleNames?(
-    moduleNames: string[],
+    moduleNames: Array<string>,
     containingFile: string,
     reusedNames: unknown,
     redirectedReference: unknown,
     options: CompilerOptions,
-  ): ResolvedModule["resolvedModule"][];
+  ): Array<ResolvedModule["resolvedModule"]>;
 }
 
 /** A TypeScript program, for emit. */
@@ -71,7 +71,7 @@ export interface Program {
   getSourceFile(fileName: string): SourceFile | undefined;
   getTypeChecker(): {
     getSymbolAtLocation(node: SourceFile): object | undefined;
-    getExportsOfModule(moduleSymbol: object): readonly { readonly name: string }[];
+    getExportsOfModule(moduleSymbol: object): ReadonlyArray<{ readonly name: string }>;
   };
   emit(
     targetSourceFile: SourceFile | undefined,
@@ -79,7 +79,7 @@ export interface Program {
     cancellationToken: undefined,
     emitOnlyDts: boolean,
     customTransformers: unknown,
-  ): { diagnostics: readonly Diagnostic[]; emitSkipped: boolean };
+  ): { diagnostics: ReadonlyArray<Diagnostic>; emitSkipped: boolean };
 }
 
 /** The subset of TypeScript 6's API the Angular toolchain uses. */
@@ -117,26 +117,26 @@ export interface NgtscProgram {
     prepareEmit(): { transformers: unknown };
   };
   getTsProgram(): Program;
-  getTsOptionDiagnostics(): readonly Diagnostic[];
-  getNgOptionDiagnostics(): readonly Diagnostic[];
-  getTsSyntacticDiagnostics(sourceFile?: SourceFile): readonly Diagnostic[];
-  getTsSemanticDiagnostics(sourceFile?: SourceFile): readonly Diagnostic[];
-  getNgStructuralDiagnostics(): readonly Diagnostic[];
-  getNgSemanticDiagnostics(fileName?: string): readonly Diagnostic[];
+  getTsOptionDiagnostics(): ReadonlyArray<Diagnostic>;
+  getNgOptionDiagnostics(): ReadonlyArray<Diagnostic>;
+  getTsSyntacticDiagnostics(sourceFile?: SourceFile): ReadonlyArray<Diagnostic>;
+  getTsSemanticDiagnostics(sourceFile?: SourceFile): ReadonlyArray<Diagnostic>;
+  getNgStructuralDiagnostics(): ReadonlyArray<Diagnostic>;
+  getNgSemanticDiagnostics(fileName?: string): ReadonlyArray<Diagnostic>;
 }
 
 /** What `readConfiguration` returns for a tsconfig. */
 export interface ParsedConfiguration {
   options: CompilerOptions;
-  rootNames: string[];
-  errors: readonly Diagnostic[];
+  rootNames: Array<string>;
+  errors: ReadonlyArray<Diagnostic>;
 }
 
 /** The subset of @angular/compiler-cli this toolchain uses. */
 export interface CompilerCli {
   readonly VERSION: { readonly full: string };
   readonly NgtscProgram: new (
-    rootNames: readonly string[],
+    rootNames: ReadonlyArray<string>,
     options: CompilerOptions,
     host: CompilerHost,
     oldProgram?: NgtscProgram,
@@ -169,7 +169,7 @@ export interface JavaScriptTransformer {
 
 /** The tools of the Vite projects: Analog and the Angular CLI's linker. */
 export interface AngularViteTools {
-  analog(options: AnalogOptions): Plugin[];
+  analog(options: AnalogOptions): Array<Plugin>;
   createTransformer(): JavaScriptTransformer;
 }
 
@@ -247,7 +247,7 @@ async function importCompiler(toolchainDir: string): Promise<AngularCompiler> {
 async function importViteTools(toolchainDir: string): Promise<AngularViteTools> {
   const analogEntry = resolveTool(toolchainDir, "@analogjs/vite-plugin-angular");
   const analog = (await import(pathToFileURL(analogEntry).href)) as {
-    default: (options: AnalogOptions) => Plugin[];
+    default: (options: AnalogOptions) => Array<Plugin>;
   };
   const buildEntry = resolveTool(toolchainDir, "@angular/build/private");
   const build = (await import(pathToFileURL(buildEntry).href)) as {

@@ -72,7 +72,7 @@ function effectsOf(node: Node, code: string, members: ReadonlySet<string>): stri
   }
   const text = (part: unknown) => code.slice((part as Node).start, (part as Node).end);
   const of = (part: unknown) => effectsOf(part as Node, code, members);
-  const all = (parts: readonly unknown[]) => parts.map(of).filter(Boolean).join("\n");
+  const all = (parts: ReadonlyArray<unknown>) => parts.map(of).filter(Boolean).join("\n");
   switch (node.type) {
     case "LogicalExpression": {
       const right = of(node.right);
@@ -101,7 +101,7 @@ function effectsOf(node: Node, code: string, members: ReadonlySet<string>): stri
       return `if (${test}) ${branch(consequent, true)} else ${branch(alternate)}`;
     }
     case "SequenceExpression":
-      return all(node.expressions as Node[]);
+      return all(node.expressions as Array<Node>);
     case "BinaryExpression":
       return all([node.left, node.right]);
     case "UnaryExpression":
@@ -109,14 +109,14 @@ function effectsOf(node: Node, code: string, members: ReadonlySet<string>): stri
     case "MemberExpression":
       return all(node.computed ? [node.object, node.property] : [node.object]);
     case "TemplateLiteral":
-      return all(node.expressions as Node[]);
+      return all(node.expressions as Array<Node>);
     case "ArrayExpression":
-      return all((node.elements as (Node | null)[]).filter((element) => element !== null));
+      return all((node.elements as Array<Node | null>).filter((element) => element !== null));
     case "SpreadElement":
       return of(node.argument);
     case "ObjectExpression":
       return all(
-        (node.properties as Node[]).flatMap((property) =>
+        (node.properties as Array<Node>).flatMap((property) =>
           property.type === "SpreadElement"
             ? [property]
             : property.computed
@@ -225,7 +225,7 @@ function withoutValues(code: string, plan: Plan): string {
   const members = reads(plan);
   const { statements } = parseStatementsSource(code);
   const last = statements.at(-1) as unknown as Node | undefined;
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   /** Visits a statement; `listed` when it stands in a list of statements, not alone. */
   const visit = (value: unknown, listed: boolean): void => {
     if (Array.isArray(value)) {
@@ -308,7 +308,7 @@ function hasEffects(node: Node, members: ReadonlySet<string>): boolean {
  * composable's returned ref through its holder, `this.toggle_1.on()`.
  */
 function isRead(node: Node, members: ReadonlySet<string>): boolean {
-  if (node.type !== "CallExpression" || (node.arguments as unknown[]).length > 0) {
+  if (node.type !== "CallExpression" || (node.arguments as Array<unknown>).length > 0) {
     return false;
   }
   const path = memberPath(node.callee as Node);

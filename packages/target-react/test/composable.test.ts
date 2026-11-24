@@ -39,7 +39,7 @@ const hook = (id: string) =>
  * Writes outputs under `directory` in the scratch tree, and runs React Compiler (L3), tsgo (L4)
  * and oxlint (L5) on them: each must report nothing, about them or any other file.
  */
-async function expectClean(directory: string, outputs: readonly OutputFile[]): Promise<void> {
+async function expectClean(directory: string, outputs: ReadonlyArray<OutputFile>): Promise<void> {
   const at = join(scratch, directory);
   mkdirSync(at, { recursive: true });
   const files = outputs.map((output) => {

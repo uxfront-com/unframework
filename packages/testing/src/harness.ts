@@ -15,7 +15,7 @@ export interface SsrScenario {
 export type ColorScheme = "light" | "dark";
 
 /** Every {@link ColorScheme}, the first the default. */
-export const COLOR_SCHEMES: readonly ColorScheme[] = ["light", "dark"];
+export const COLOR_SCHEMES: ReadonlyArray<ColorScheme> = ["light", "dark"];
 
 /**
  * The engines a browser project can run in (`UF_BROWSER`, ADR-0066). Chromium is the default
@@ -46,7 +46,7 @@ export interface CaseConfig {
    */
   ssrThrows?: SsrScenario;
   /** The axe rule ids L11 expects to fail on this case, exactly; none by default. */
-  axe?: string[];
+  axe?: Array<string>;
   /**
    * Why every test of the case requires a capability (ADR-0050): its client code changes the
    * mounted DOM (an `onMounted` that writes state, say), so no test of it can pass on a target
@@ -95,7 +95,7 @@ export interface HarnessContext {
    * The font families that may draw text in a live capture besides the bundled Inter: the
    * project's `liveFonts` (ADR-0105). A comparison with committed baselines ignores them.
    */
-  liveFonts?: readonly string[];
+  liveFonts?: ReadonlyArray<string>;
   /** The canary installed in this run (`UF_CANARY`), or `null`. */
   canary: string | null;
   /**
@@ -111,7 +111,7 @@ export interface HarnessContext {
   liveDir: string;
   /** Where this run's failed visual comparisons leave their reference, actual and diff images. */
   diffsDir: string;
-  quarantine: QuarantineEntry[];
+  quarantine: Array<QuarantineEntry>;
   /** Every case's `case.json`, by case id (`{}` when a case has none). */
   cases: Record<string, CaseConfig>;
 }
@@ -146,7 +146,7 @@ declare module "vitest" {
      * SSR projects of a target the run adds only as some case's reference (ADR-0057): the ids
      * of those cases, which it renders alone. Absent everywhere else.
      */
-    ufOnly?: string[];
+    ufOnly?: Array<string>;
     /**
      * SSR and hydrate projects: the module specifier of the target's renderer
      * (`toolchain.server`).
@@ -162,7 +162,7 @@ declare module "vitest" {
      * ADR-0086), in order, each with its main source by absolute path. The spec imports each
      * from there, so it runs the same from the workspace and from `node_modules`.
      */
-    ufSsrCases?: SsrCase[];
+    ufSsrCases?: Array<SsrCase>;
   }
 }
 
@@ -239,7 +239,9 @@ export function isReference(
  * The targets that write some case's shared artefacts in place of the run's reference
  * (ADR-0057): they run after the reference and before every other target (`groupOrder`).
  */
-export function caseReferences(harness: Pick<HarnessContext, "reference" | "cases">): string[] {
+export function caseReferences(
+  harness: Pick<HarnessContext, "reference" | "cases">,
+): Array<string> {
   return [
     ...new Set(
       Object.values(harness.cases).flatMap((config) =>

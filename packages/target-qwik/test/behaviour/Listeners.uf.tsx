@@ -6,7 +6,7 @@ import { defineEmits, ref } from "@uxfront/unframework";
 export default function Listeners() {
   const emit = defineEmits<{ submitted: [value: string] }>();
 
-  const log = ref<string[]>([]);
+  const log = ref<Array<string>>([]);
   const draft = ref("");
 
   function record(line: string) {

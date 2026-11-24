@@ -76,7 +76,7 @@ function parseNonNegativeInteger(value: string): number | undefined {
  * not disabled, by its own `disabled` or by its parent `<optgroup>`'s, as HTML decides. The
  * branches of a conditional and the body of a list count as the parent's children.
  */
-function hasSelectableOption(parent: ElementNode, children: readonly RenderNode[]): boolean {
+function hasSelectableOption(parent: ElementNode, children: ReadonlyArray<RenderNode>): boolean {
   return children.some((child) => {
     switch (child.kind) {
       case "Element":

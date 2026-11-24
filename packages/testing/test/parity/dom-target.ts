@@ -10,14 +10,14 @@ import type { MountEvent } from "../../src/internal.ts";
 import { registerHydrateAdapter, registerTarget } from "../../src/internal.ts";
 
 type Props = Readonly<Record<string, unknown>>;
-type Messages = { level: "warn" | "error"; message: string }[];
+type Messages = Array<{ level: "warn" | "error"; message: string }>;
 
 /** Text split over several nodes, which a rerender updates in place. */
 export interface SplitText {
   /** The element holding the text, such as `"p"`. */
   tag: string;
   /** One text node per piece, from the props; a rerender sets each node's data. */
-  pieces: (props: Props) => string[];
+  pieces: (props: Props) => Array<string>;
   /** A comment between each two pieces, as Solid's and Qwik's anchors. */
   anchors?: boolean;
 }
@@ -44,7 +44,7 @@ export interface StubComponent {
   /** A warning the unmount leaves for later, as a framework's scheduler can. */
   lateWarning?: string;
   /** The events it declares, as `defineEmits` would: the view listens to these. */
-  emits?: readonly MountEvent[];
+  emits?: ReadonlyArray<MountEvent>;
   /**
    * Its behaviour, wired after every render: listeners on its elements (on `signal`, which aborts
    * at the next render and at the unmount) that may change the DOM and call `emit`, which reaches
@@ -59,7 +59,7 @@ export interface StubComponent {
 }
 
 /** How a stub's behaviour emits one of its events. */
-export type Emit = (name: string, ...args: unknown[]) => void;
+export type Emit = (name: string, ...args: Array<unknown>) => void;
 
 registerTarget(
   "dom",
@@ -68,7 +68,7 @@ registerTarget(
     if (stub.fail) {
       throw new Error(stub.fail);
     }
-    const nodes: Text[] = [];
+    const nodes: Array<Text> = [];
     const emit: Emit = (name, ...args) => options.on?.[name]?.(...args);
     let wiring = new AbortController();
     const render = (props: Props) => {
@@ -113,7 +113,12 @@ registerTarget(
  * Renders split text the first time, then, as a framework does, writes each piece into the text
  * node it created for it, which must still be where it put it.
  */
-function renderText(container: HTMLElement, text: SplitText, props: Props, nodes: Text[]): void {
+function renderText(
+  container: HTMLElement,
+  text: SplitText,
+  props: Props,
+  nodes: Array<Text>,
+): void {
   const pieces = text.pieces(props);
   if (nodes.length) {
     for (const [index, piece] of pieces.entries()) {

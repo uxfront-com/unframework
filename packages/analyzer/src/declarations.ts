@@ -21,7 +21,7 @@ import { memberName, TypeTable } from "./types/from-type.ts";
 /** The module's type declarations, and which the components' props and setup code reach. */
 export interface ModuleTypes {
   readonly table: TypeTable;
-  readonly declarations: readonly TypeDeclarationStatement[];
+  readonly declarations: ReadonlyArray<TypeDeclarationStatement>;
   /** The names some component's props type reaches, through local references. */
   readonly reached: ReadonlySet<string>;
   /**
@@ -36,7 +36,7 @@ export interface ModuleTypes {
    * `interface BadgeProps { inner: Props }`): Astro's output declares a `Props` of its own for
    * each of their components, beside the copied one.
    */
-  readonly foreignProps: readonly AST.TSType[];
+  readonly foreignProps: ReadonlyArray<AST.TSType>;
   /**
    * The diagnostics already reported at a span of a type declaration: components that share a
    * declaration report its props' problems once.
@@ -54,9 +54,9 @@ export interface ModuleTypes {
  * code, and the module's injection keys and top-level `const`s, reach.
  */
 export function collectTypes(
-  declarations: readonly TypeDeclarationStatement[],
-  candidates: readonly { node: ComponentFunction }[],
-  keys: readonly unknown[] = [],
+  declarations: ReadonlyArray<TypeDeclarationStatement>,
+  candidates: ReadonlyArray<{ node: ComponentFunction }>,
+  keys: ReadonlyArray<unknown> = [],
 ): ModuleTypes {
   const table = new TypeTable(declarations);
   const reached = new Set<string>();
@@ -64,7 +64,7 @@ export function collectTypes(
   // setup's types are, into the output that declares them (ADR-0054, ADR-0070).
   const setupReached = new Set<string>(closure(keys, table));
   let ownProps = false;
-  const foreignProps: AST.TSType[] = [];
+  const foreignProps: Array<AST.TSType> = [];
   for (const candidate of candidates) {
     for (const name of setupTypes(candidate.node, table)) {
       setupReached.add(name);
@@ -109,7 +109,7 @@ export function collectTypes(
  * annotation (ADR-0045): every type its type parameters' constraints and defaults (ADR-0068) and
  * its body write, in source order. The outputs copy them as written.
  */
-export function setupTypes(fn: ComponentFunction, table: TypeTable): string[] {
+export function setupTypes(fn: ComponentFunction, table: TypeTable): Array<string> {
   return closure([fn.typeParameters, fn.params.slice(1), fn.body], table);
 }
 
@@ -118,7 +118,7 @@ export function setupTypes(fn: ComponentFunction, table: TypeTable): string[] {
  * every reference in it, the interfaces it extends, and the declarations it reaches, in source
  * order.
  */
-export function closure(type: unknown, table: TypeTable): string[] {
+export function closure(type: unknown, table: TypeTable): Array<string> {
   const found = new Set<string>();
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") {
@@ -169,7 +169,7 @@ export function checkTypeDeclaration(
   declaration: TypeDeclarationStatement,
   types: ModuleTypes,
   source: string,
-  comments: readonly AST.Comment[],
+  comments: ReadonlyArray<AST.Comment>,
   reporter: Reporter,
 ): void {
   const { node, name } = declaration;
@@ -276,7 +276,7 @@ interface Span {
  * names a props type imports, it checks a type the props read from their shape (ADR-0067).
  */
 export function checkMembers(
-  members: readonly AST.TSSignature[],
+  members: ReadonlyArray<AST.TSSignature>,
   types: ModuleTypes,
   reporter: Reporter,
   shaped?: ReadonlySet<string>,

@@ -20,7 +20,7 @@ import { SOURCES } from "./sources.ts";
 const context: ToolchainContext = { toolchainDir, root: packageDir };
 const require = createRequire(import.meta.url);
 let scratch: string;
-const files: { path: string; contents: string }[] = [];
+const files: Array<{ path: string; contents: string }> = [];
 
 beforeAll(async () => {
   mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });

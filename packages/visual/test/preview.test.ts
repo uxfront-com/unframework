@@ -572,7 +572,7 @@ describe("an example's controls", () => {
         const page = await browser.newPage();
         // One target at a time, and one server at a time: the two share the target's cache.
         for (const target of config.targets) {
-          const roots: string[] = [];
+          const roots: Array<string> = [];
           for (const transform of [transformSource, undefined]) {
             const server = await startTargetServer(
               targetServerOptions(root, config, target, entries, undefined, undefined, transform),

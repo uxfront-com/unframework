@@ -94,7 +94,7 @@ export interface ComposedMarkup {
    * `Astro.props`, the scope attributes of the styled parents that render the component
    * (`scopeRoots`, ADR-0063).
    */
-  scope?: { helper: string; roots: readonly Span[] };
+  scope?: { helper: string; roots: ReadonlyArray<Span> };
   /** The `styleObject` helper, where a style bound to a value is merged (ADR-0065). */
   styleObject?: string;
   /** What the component takes from its consumer beside its props, and where (ADR-0118). */
@@ -272,7 +272,7 @@ function composition(
      * checkbox's or a radio's `checked`. A `<textarea>`'s text and a `<select>`'s options are
      * written into the tree (`./composition.ts`).
      */
-    modelAttribute({ attribute, value }, { element }): PrintedAttribute[] {
+    modelAttribute({ attribute, value }, { element }): Array<PrintedAttribute> {
       switch (attribute.control) {
         case "text":
         case "number":
@@ -303,7 +303,7 @@ function composition(
      */
     dynamic({ node, is }) {
       const { name, hoisted, candidates } = render.dynamics.get(node)!;
-      const component = (tag: string, attributes: ComponentAttribute[]): MarkupPiece => ({
+      const component = (tag: string, attributes: Array<ComponentAttribute>): MarkupPiece => ({
         kind: "component",
         component: {
           kind: "Component",
@@ -332,7 +332,7 @@ function composition(
             element: {
               kind: "Element",
               tag: name,
-              attributes: node.attributes as Attribute[],
+              attributes: node.attributes as Array<Attribute>,
               children: node.children,
               span: node.span,
             },
@@ -340,7 +340,7 @@ function composition(
             // An attribute only some tags take renders on those (ADR-0119).
             ...guardsOf(onlyGuards(node, name)),
           }
-        : component(name, node.attributes as ComponentAttribute[]);
+        : component(name, node.attributes as Array<ComponentAttribute>);
       if (hoisted) {
         return [piece];
       }
@@ -397,7 +397,7 @@ function composition(
    * content as Astro markup: one element, a string, or a fragment, which carries the child's
    * `-s` attributes (`slotted`, ADR-0063).
    */
-  function renderFunction(fill: SlotFill, slotted: readonly string[]): string {
+  function renderFunction(fill: SlotFill, slotted: ReadonlyArray<string>): string {
     const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code ?? "";
     const [only, ...more] = fill.children;
     if (more.length === 0 && only?.kind === "Text") {

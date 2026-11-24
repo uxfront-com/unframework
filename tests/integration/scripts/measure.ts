@@ -34,7 +34,7 @@ export interface ProcessInfo {
 /** What `.reports/measure/<label>.json` holds. */
 export interface MeasureReport {
   label: string;
-  command: string[];
+  command: Array<string>;
   /** `did-not-complete`: it could not start, or the tool stopped it. */
   outcome: "completed" | "did-not-complete";
   /** The command's exit status, or 128 plus the signal that ended it. */
@@ -51,8 +51,8 @@ export interface MeasureReport {
 }
 
 /** Reads `ps -o pid= -o ppid= -o pgid= -o rss= -o stat= -o lstart=`. A zombie holds nothing. */
-export function parseProcesses(output: string): ProcessInfo[] {
-  const processes: ProcessInfo[] = [];
+export function parseProcesses(output: string): Array<ProcessInfo> {
+  const processes: Array<ProcessInfo> = [];
   for (const line of output.split("\n")) {
     if (!line.trim()) {
       continue;
@@ -86,10 +86,10 @@ export function identityOf(process: Pick<ProcessInfo, "pid" | "started">): strin
  * the group alone misses a browser, which Playwright starts in a group of its own.
  */
 export function membersOf(
-  processes: readonly ProcessInfo[],
+  processes: ReadonlyArray<ProcessInfo>,
   root: number,
   seen: ReadonlySet<string>,
-): ProcessInfo[] {
+): Array<ProcessInfo> {
   const members = new Set(
     processes
       .filter((entry) => entry.pid === root || entry.pgid === root || seen.has(identityOf(entry)))
@@ -108,10 +108,10 @@ export function membersOf(
 }
 
 /** Parses the arguments, and throws the usage on any it cannot read. */
-export function parseArgs(argv: readonly string[]): {
+export function parseArgs(argv: ReadonlyArray<string>): {
   label: string;
   maxRssGib: number;
-  command: string[];
+  command: Array<string>;
 } {
   const separator = argv.indexOf("--");
   const command = argv.slice(separator + 1);
@@ -133,7 +133,7 @@ export function parseArgs(argv: readonly string[]): {
   return { label, maxRssGib, command };
 }
 
-function listProcesses(): ProcessInfo[] {
+function listProcesses(): Array<ProcessInfo> {
   const fields = ["pid", "ppid", "pgid", "rss", "stat", "lstart"];
   // One -o per field: POSIX reads everything after `=` in one as that field's header.
   const args = ["-A", ...fields.flatMap((field) => ["-o", `${field}=`])];
@@ -182,7 +182,7 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
   const root = child.pid;
   const seen = new Set<string>();
   /** The tree now. What it finds stays known, so an orphan is still found once it reparents. */
-  const observe = (pid: number): ProcessInfo[] => {
+  const observe = (pid: number): Array<ProcessInfo> => {
     const members = membersOf(listProcesses(), pid, seen);
     for (const member of members) {
       seen.add(identityOf(member));
@@ -203,7 +203,7 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
     stopping = stopTree(pid, observe);
   };
   const sample = (pid: number) => {
-    let members: ProcessInfo[];
+    let members: Array<ProcessInfo>;
     try {
       members = observe(pid);
     } catch (error) {
@@ -273,9 +273,9 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
  * of the tree are signalled, each by its identity at that moment. If `ps` cannot run, only the
  * group can be stopped.
  */
-async function stopTree(root: number, observe: (pid: number) => ProcessInfo[]): Promise<void> {
+async function stopTree(root: number, observe: (pid: number) => Array<ProcessInfo>): Promise<void> {
   const signalTree = (signal: NodeJS.Signals): number => {
-    let members: ProcessInfo[] | undefined;
+    let members: Array<ProcessInfo> | undefined;
     try {
       members = observe(root);
     } catch {
@@ -308,7 +308,7 @@ async function stopTree(root: number, observe: (pid: number) => ProcessInfo[]): 
   await delay(POLL_MS);
 }
 
-async function main(argv: readonly string[]): Promise<number> {
+async function main(argv: ReadonlyArray<string>): Promise<number> {
   let options: ReturnType<typeof parseArgs>;
   try {
     options = parseArgs(argv);

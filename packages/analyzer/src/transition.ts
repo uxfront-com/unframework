@@ -46,7 +46,7 @@ export function transitionNotTag(node: AST.IdentifierReference, reporter: Report
 }
 
 /** What a transition's child is, as written: its children that render something. */
-function contentOf(items: readonly AST.JSXChild[]): AST.JSXChild[] {
+function contentOf(items: ReadonlyArray<AST.JSXChild>): Array<AST.JSXChild> {
   return items.filter((item) => {
     if (item.type === "JSXText") {
       return readJsxText(item.value).value !== "";
@@ -89,8 +89,8 @@ function unwrap(node: AST.Expression): AST.Expression {
  * of `c && X`, each `?:`'s consequent, and the last alternate. `undefined` when the expression is
  * no conditional that holds JSX.
  */
-function branchesOf(expression: AST.Expression): AST.Expression[] | undefined {
-  const branches: AST.Expression[] = [];
+function branchesOf(expression: AST.Expression): Array<AST.Expression> | undefined {
+  const branches: Array<AST.Expression> = [];
   let current = unwrap(expression);
   if (
     !(
@@ -197,7 +197,7 @@ export function lowerTransition(
     report(second, "is a second node");
     return undefined;
   }
-  let children: RenderNode[];
+  let children: Array<RenderNode>;
   const element =
     first.type === "JSXExpressionContainer" && first.expression.type !== "JSXEmptyExpression"
       ? unwrap(first.expression)

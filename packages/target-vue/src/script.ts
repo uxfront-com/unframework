@@ -215,7 +215,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   const self = children.find((child) => child.self);
   const recursive = self && (components.get(self.local) ?? self.local);
-  const statements: Statement[] = [];
+  const statements: Array<Statement> = [];
   const parameter = component.propsParameter;
   if (parameter) {
     const read = referencedBindings(component);
@@ -485,7 +485,7 @@ function moduleTypes(
   module: UfModule,
   reads: ModuleReads,
   names: VueNames,
-): string[] {
+): Array<string> {
   // An exported type a sibling's output declares is re-exported from it (`typeExportsCode`), so
   // a constant that names it declares it here unexported: the export is the sibling's.
   const sibling = (name: string) =>
@@ -493,7 +493,7 @@ function moduleTypes(
   // The main output re-exports an exported type only a sibling's constants reach, from that
   // sibling's output, which declares it (ADR-0068): `typeExportsCode` knows only components'
   // own types.
-  const reExports: { code: string; span: TypeDeclaration["span"] }[] = [];
+  const reExports: Array<{ code: string; span: TypeDeclaration["span"] }> = [];
   if (keyOwner(module.components, module.exports) === component.name) {
     const written = new Set([...component.types, ...reads.types.map(({ name }) => name)]);
     for (const other of module.components) {
@@ -552,7 +552,7 @@ function withoutSingleQuotes(text: string): string {
   let written = "";
   // The template literals and holes the text is inside, innermost last: "`" for a literal's
   // text, a number for a hole's code, counting the braces open inside it.
-  const nested: ("`" | number)[] = [];
+  const nested: Array<"`" | number> = [];
   for (let index = 0; index < text.length; index++) {
     const char = text[index]!;
     const inside = nested.at(-1);
@@ -607,7 +607,7 @@ function withoutSingleQuotes(text: string): string {
 }
 
 /** Type parameters as written, `T extends Item = Item, K`. */
-function typeParametersList(parameters: readonly TypeParameter[]): string {
+function typeParametersList(parameters: ReadonlyArray<TypeParameter>): string {
   return parameters
     .map(
       (parameter) =>
@@ -619,7 +619,7 @@ function typeParametersList(parameters: readonly TypeParameter[]): string {
 }
 
 /** A generic function's type parameters, `<T extends Item>`, or nothing (ADR-0068). */
-export function typeParametersText(parameters: readonly TypeParameter[] | undefined): string {
+export function typeParametersText(parameters: ReadonlyArray<TypeParameter> | undefined): string {
   return parameters?.length ? `<${typeParametersList(parameters)}>` : "";
 }
 
@@ -717,7 +717,7 @@ function readsSlots(component: UfComponent): boolean {
 }
 
 /** The statements, a blank line between two unless both are macros, or both one-line declarations. */
-export function laidOut(statements: readonly Statement[]): string {
+export function laidOut(statements: ReadonlyArray<Statement>): string {
   return statements
     .map((statement, index) => {
       const previous = statements[index - 1];

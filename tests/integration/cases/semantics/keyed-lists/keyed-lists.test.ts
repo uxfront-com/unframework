@@ -14,7 +14,7 @@ const bread: Entry = { id: "bread", label: "Bread" };
 const eggs: Entry = { id: "eggs", label: "Eggs" };
 
 /** Copies, as a parent that fetched the list again would pass. */
-function copies(...entries: Entry[]): Entry[] {
+function copies(...entries: Array<Entry>): Array<Entry> {
   return entries.map((entry) => ({ ...entry }));
 }
 

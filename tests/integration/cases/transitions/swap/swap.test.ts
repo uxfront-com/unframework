@@ -20,8 +20,12 @@ import Steps from "./Steps.uf.tsx";
  * Reads, once a frame until `stop`, the transition's classes of each element `selector` matches
  * in `root`, as `text: classes`, and returns each reading that differs from the one before.
  */
-function everyFrame(root: Element, selector: string, prefix: string): { stop: () => string[] } {
-  const frames: string[] = [];
+function everyFrame(
+  root: Element,
+  selector: string,
+  prefix: string,
+): { stop: () => Array<string> } {
+  const frames: Array<string> = [];
   let running = true;
   const read = () => {
     if (!running) {
@@ -54,8 +58,8 @@ function everyFrame(root: Element, selector: string, prefix: string): { stop: ()
  * between two that hold it, fails the test: a swap keeps both elements in the DOM until the
  * leave ends (ADR-0100).
  */
-function byElement(frames: string[]): Record<string, string[]> {
-  const sequences: Record<string, string[]> = {};
+function byElement(frames: Array<string>): Record<string, Array<string>> {
+  const sequences: Record<string, Array<string>> = {};
   const lastRead = new Map<string, number>();
   frames.forEach((frame, index) => {
     for (const entry of frame.split(" | ")) {
@@ -92,7 +96,12 @@ function byElement(frames: string[]): Record<string, string[]> {
  * same frame. Their ends come after the `-to` pair, so a frame between the two ends can't reach
  * this check.
  */
-function expectStartInStep(readings: string[], settled: string, from: string, to: string): void {
+function expectStartInStep(
+  readings: Array<string>,
+  settled: string,
+  from: string,
+  to: string,
+): void {
   const index = readings.indexOf(from);
   expect(readings, "the -from pair is one reading").toContain(from);
   expect(readings.slice(index - 1, index + 2)).toEqual([settled, from, to]);

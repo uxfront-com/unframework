@@ -13,7 +13,7 @@ const page = readFileSync(join(root, "apps/web/content/docs/3.reference/2.diagno
 
 /** The page's sections in order: the band (`## …`) and each code's section (`### …`) in it. */
 function sections() {
-  const found: { band: string; code: string; text: string }[] = [];
+  const found: Array<{ band: string; code: string; text: string }> = [];
   let band = "";
   for (const part of page.split(/^(?=##+ )/m)) {
     const heading = /^(##+) (.*)\n/.exec(part);

@@ -42,8 +42,8 @@ export function pluginIrProblems(
   result: UfModule,
   analysed: UfModule,
   source: string,
-): IrValidationError[] {
-  const problems: IrValidationError[] = [];
+): Array<IrValidationError> {
+  const problems: Array<IrValidationError> = [];
   if (result.file !== analysed.file) {
     problems.push({ path: "/file", message: `must stay "${analysed.file}", the file analysed` });
   }
@@ -196,9 +196,9 @@ function expressionKey(expression: Expression): string {
  */
 function codeKeys(
   component: UfComponent,
-  functions: readonly LocatedFunction[],
+  functions: ReadonlyArray<LocatedFunction>,
   base = "",
-): { key: string; path: string }[] {
+): Array<{ key: string; path: string }> {
   const bodies = new Map(functions.map(({ function: fn, path }) => [`${path}/body`, fn]));
   return codeOf(component, base).map(({ code, path, context }) => {
     const fn = bodies.get(path);
@@ -248,16 +248,16 @@ function declarationKey({ name, exported, code, span }: TypeDeclaration): string
   return JSON.stringify(["TypeDeclaration", name, exported, code, span.start, span.end]);
 }
 
-function expressionValue({ code, span, refs }: Expression): unknown[] {
+function expressionValue({ code, span, refs }: Expression): Array<unknown> {
   return ["Expression", code, span.start, span.end, refs.map(referenceValue)];
 }
 
-function codeValue({ code, span, refs }: Code): unknown[] {
+function codeValue({ code, span, refs }: Code): Array<unknown> {
   return ["Code", code, span.start, span.end, refs.map(referenceValue)];
 }
 
 /** A reference with every field its kind has, each kind read exhaustively. */
-function referenceValue(reference: CodeReference): unknown[] {
+function referenceValue(reference: CodeReference): Array<unknown> {
   switch (reference.kind) {
     case "Binding":
       return [
@@ -302,7 +302,7 @@ function referenceValue(reference: CodeReference): unknown[] {
   }
 }
 
-function functionValue(fn: FunctionCode): unknown[] {
+function functionValue(fn: FunctionCode): Array<unknown> {
   return [
     "Function",
     fn.async === true,
@@ -315,7 +315,7 @@ function functionValue(fn: FunctionCode): unknown[] {
   ];
 }
 
-function parameterValue(parameter: Parameter): unknown[] {
+function parameterValue(parameter: Parameter): Array<unknown> {
   const { pattern } = parameter;
   return [
     parameter.name ?? null,
@@ -329,7 +329,7 @@ function parameterValue(parameter: Parameter): unknown[] {
   ];
 }
 
-function controlValue(control: EventControl): unknown[] {
+function controlValue(control: EventControl): Array<unknown> {
   return [
     control.method,
     control.condition ? codeValue(control.condition) : null,
@@ -337,11 +337,11 @@ function controlValue(control: EventControl): unknown[] {
   ];
 }
 
-function typeTextValue({ code, span }: TypeText): unknown[] {
+function typeTextValue({ code, span }: TypeText): Array<unknown> {
   return ["TypeText", code, span.start, span.end];
 }
 
-const spanValue = ({ start, end }: Span): number[] => [start, end];
+const spanValue = ({ start, end }: Span): Array<number> => [start, end];
 
 /** Whether a span is a well-formed range of UTF-16 offsets in a source of `length` characters. */
 export function isSpanIn(span: unknown, length: number): boolean {

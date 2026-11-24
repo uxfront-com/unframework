@@ -127,10 +127,11 @@ type Dispatch = Record<string, unknown>;
  * resolves a handler itself, which would hide a handler that fails to load.
  */
 function trackHandlers(container: HTMLElement, started: Set<Promise<unknown>>): () => void {
-  const wrapped: { dispatch: Dispatch; name: string; original: unknown; wrapper: unknown }[] = [];
+  const wrapped: Array<{ dispatch: Dispatch; name: string; original: unknown; wrapper: unknown }> =
+    [];
   const wrap = (handler: unknown): unknown =>
     typeof handler === "function"
-      ? function (this: unknown, ...args: unknown[]): unknown {
+      ? function (this: unknown, ...args: Array<unknown>): unknown {
           const value: unknown = handler.apply(this, args);
           if (isThenable(value)) {
             started.add(Promise.resolve(value));

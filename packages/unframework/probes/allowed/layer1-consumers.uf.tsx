@@ -10,7 +10,7 @@ import List, { type Item } from "../fixtures/List.uf.tsx";
 export function Consumers() {
   const open = ref(false);
   const value = ref("");
-  const items = ref<Item[]>([]);
+  const items = ref<Array<Item>>([]);
   const dialog = useTemplateRef<{ focus(): void }>();
   const last = ref(0);
 

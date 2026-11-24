@@ -14,7 +14,7 @@ import { root } from "./workspace.ts";
  * than links, like esbuild, which every restore then downloads again. Comment lines are skipped,
  * so prose that names a command isn't read as a step that runs it.
  */
-function ownSetup(workflow: string): string[] {
+function ownSetup(workflow: string): Array<string> {
   const own = [
     /\bpnpm install\b/,
     /\bpnpm store prune\b/,

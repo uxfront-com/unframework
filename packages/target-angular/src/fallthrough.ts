@@ -37,7 +37,7 @@ export const FALLTHROUGH_ATTRIBUTE = "ufFallthrough";
  * a prop, an event or an exposed function of one of them is UF2003, and a setup binding of one
  * is renamed.
  */
-export const FALLTHROUGH_MEMBERS: readonly string[] = [
+export const FALLTHROUGH_MEMBERS: ReadonlyArray<string> = [
   "class",
   "style",
   ATTRIBUTES_INPUT,
@@ -190,7 +190,7 @@ export function childApi(
 }
 
 /** Each tag of a `<component is>` over tags as the element its `@case` writes. */
-function tagElements(root: DynamicNode): ElementNode[] {
+function tagElements(root: DynamicNode): Array<ElementNode> {
   return root.candidates.flatMap((candidate) =>
     candidate.kind === "Tag"
       ? [
@@ -207,7 +207,7 @@ function tagElements(root: DynamicNode): ElementNode[] {
 }
 
 /** The static attribute holding `{{` that puts one of `elements` in a literal region (ADR-0037). */
-function literalAttribute(elements: readonly ElementNode[]): string | undefined {
+function literalAttribute(elements: ReadonlyArray<ElementNode>): string | undefined {
   for (const element of elements) {
     if (angularDialect.literalRegion?.(element) === undefined) {
       continue;
@@ -342,7 +342,7 @@ function restElement(
   render: UfComponent["render"],
 ): { element: ElementNode; svg: boolean } | undefined {
   let found: { element: ElementNode; svg: boolean } | undefined;
-  const svg: boolean[] = [];
+  const svg: Array<boolean> = [];
   walk(render, {
     enter(node) {
       if (found || node.kind !== "Element") {

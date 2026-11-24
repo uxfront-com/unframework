@@ -88,8 +88,8 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
       '---\nconst { entered, gate } = (globalThis as any).__ufTestGate;\nentered();\nawait gate;\nconsole.warn("inside");\n---\n\n<p>gated</p>\n',
     );
     const original = console.warn;
-    const elsewhere: unknown[][] = [];
-    console.warn = (...args: unknown[]) => void elsewhere.push(args);
+    const elsewhere: Array<Array<unknown>> = [];
+    console.warn = (...args: Array<unknown>) => void elsewhere.push(args);
     try {
       const rendering = renderAstroComponent(root, { id: idOf("Gated"), props: {} });
       await started;
@@ -130,7 +130,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
 
     it("renders the child the browser project resolves and compiles on request", async () => {
       compileInBrowserProject("Form", parent("Form"));
-      const asked: string[] = [];
+      const asked: Array<string> = [];
       const children = {
         resolve: (specifier: string, importer: string) => {
           asked.push(`resolve ${specifier} from ${importer}`);
@@ -220,7 +220,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
         "Disclosure",
         '---\nimport { useToggle } from "./useToggle";\n\nconst { on } = useToggle(false);\n---\n\n<p>{on ? "open" : "closed"}</p>\n',
       );
-      const asked: string[] = [];
+      const asked: Array<string> = [];
       const children = {
         resolve: (specifier: string) =>
           Promise.resolve(specifier === "./useToggle" ? composableId : undefined),

@@ -90,8 +90,8 @@ export class ModelHelpers {
   }
 
   /** The helpers' code, in the order they print. */
-  helpers(): string[] {
-    const helpers: string[] = [];
+  helpers(): Array<string> {
+    const helpers: Array<string> = [];
     if (this.#modelText) {
       helpers.push(modelTextHelperCode(this.#modelText, this.solid("createRenderEffect")));
     }
@@ -124,7 +124,7 @@ export function modelAttribute(
   code: SolidCode,
   helpers: ModelHelpers,
   carried: boolean,
-): JsxAttributeItem[] {
+): Array<JsxAttributeItem> {
   const [ref] = attribute.value.refs;
   if (ref?.kind !== "Binding") {
     throw new Error("A v-model binds a binding's value: invalid IR.");

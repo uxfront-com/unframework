@@ -40,7 +40,7 @@ import { writeIfChanged } from "./policy.ts";
 export type { GeometryDelta } from "../visual-types.ts";
 
 /** The font file's internal family name that CDP reports for the bundled "UF Test Sans". */
-export const ALLOWED_FONTS: readonly string[] = ["Inter"];
+export const ALLOWED_FONTS: ReadonlyArray<string> = ["Inter"];
 
 /** Baseline PNGs are named after the browser and the platform that produced them. */
 const BROWSER = "chromium";
@@ -57,7 +57,7 @@ interface RunProject {
 export interface VisualCommandContext extends CommandProject {
   project: CommandProject["project"] & {
     /** The run's projects, after `--project`: whether the reference's browser project is in it. */
-    vitest?: { projects: readonly RunProject[] };
+    vitest?: { projects: ReadonlyArray<RunProject> };
   };
   page: Page;
   iframe: { locator(selector: string): PlaywrightLocatorLike };
@@ -324,9 +324,9 @@ export async function captureAt(
   const expectedBuffer = readFileSync(expectedPng);
   const expected = PNG.sync.read(expectedBuffer);
   const against = rel(expectedPng);
-  const attachments: CaptureAttachment[] = [];
+  const attachments: Array<CaptureAttachment> = [];
   const recordFailure = (diff?: PNG) => {
-    const images: [CaptureAttachment["name"], Uint8Array, PNG][] = [
+    const images: Array<[CaptureAttachment["name"], Uint8Array, PNG]> = [
       ["reference", expectedBuffer, expected],
       ["actual", png, actual],
     ];
@@ -442,11 +442,11 @@ interface CdpNode {
   nodeType: number;
   localName?: string;
   /** Name, value, name, value… */
-  attributes?: string[];
+  attributes?: Array<string>;
   pseudoType?: string;
-  children?: CdpNode[];
-  shadowRoots?: CdpNode[];
-  pseudoElements?: CdpNode[];
+  children?: Array<CdpNode>;
+  shadowRoots?: Array<CdpNode>;
+  pseudoElements?: Array<CdpNode>;
   contentDocument?: CdpNode;
 }
 
@@ -464,8 +464,8 @@ interface CdpNode {
 async function fontAudit(
   page: Page,
   marker: string,
-  families: readonly string[],
-): Promise<string[]> {
+  families: ReadonlyArray<string>,
+): Promise<Array<string>> {
   let session = cdpSessions.get(page);
   if (!session) {
     session = (async () => {
@@ -481,7 +481,7 @@ async function fontAudit(
   const { root } = (await cdp.send("DOM.getDocument", { depth: -1, pierce: true })) as {
     root: CdpNode;
   };
-  const containers: CdpNode[] = [];
+  const containers: Array<CdpNode> = [];
   const find = (node: CdpNode) => {
     const attributes = node.attributes ?? [];
     for (let index = 0; index < attributes.length; index += 2) {
@@ -505,7 +505,7 @@ async function fontAudit(
 
   // Every element under the container, with the element a reader would name for it: a node in
   // a user-agent shadow root is its host's rendering, a pseudo-element its owner's.
-  const elements: { nodeId: number; label: string }[] = [];
+  const elements: Array<{ nodeId: number; label: string }> = [];
   const collect = (node: CdpNode, host: string | undefined) => {
     let label = host;
     if (node.nodeType === 1) {
@@ -582,8 +582,8 @@ function countDifferentPixels(a: Uint8Array, b: Uint8Array): number {
 export function diffGeometry(
   expected: GeometrySnapshot,
   actual: GeometrySnapshot,
-): GeometryDelta[] {
-  const deltas: GeometryDelta[] = [];
+): Array<GeometryDelta> {
+  const deltas: Array<GeometryDelta> = [];
   const paths = new Set([...Object.keys(expected.nodes), ...Object.keys(actual.nodes)]);
   for (const path of [...paths].sort()) {
     const e = expected.nodes[path];
@@ -612,10 +612,10 @@ export function diffGeometry(
 
 /** Geometry deltas as message lines, the first `limit` of them. */
 export function formatGeometryDiff(
-  deltas: readonly GeometryDelta[],
+  deltas: ReadonlyArray<GeometryDelta>,
   against = "the reference",
   limit = 12,
-): string[] {
+): Array<string> {
   if (!deltas.length) {
     return [];
   }

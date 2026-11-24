@@ -39,7 +39,7 @@ export interface Listeners {
   /** Each listener's attribute (`@click.stop="record('stopped')"`), by its IR attribute. */
   attributes: ReadonlyMap<EventAttribute, string>;
   /** The script functions the template calls for the handlers it cannot hold, in its order. */
-  functions: string[];
+  functions: Array<string>;
 }
 
 /**
@@ -52,7 +52,7 @@ export function planListeners(
   rules: { script: RewriteRules; template: RewriteRules },
 ): Listeners {
   const attributes = new Map<EventAttribute, string>();
-  const functions: string[] = [];
+  const functions: Array<string> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element") {
@@ -108,7 +108,7 @@ function listener(
   ].filter((option) => option !== undefined);
   const write = (
     value: string | undefined,
-    guards: readonly string[] = [],
+    guards: ReadonlyArray<string> = [],
     takesEvent?: boolean,
   ) => {
     const called =
@@ -392,7 +392,7 @@ function modifierOf(control: EventControl): string {
  * the calls are all it does). `undefined` for any other handler, or one with comments, which a
  * modifier would drop.
  */
-function leadingControls(fn: FunctionCode): { modifiers: string[]; rest?: Code } | undefined {
+function leadingControls(fn: FunctionCode): { modifiers: Array<string>; rest?: Code } | undefined {
   const controls = fn.eventControls ?? [];
   if (controls.length === 0 || controls.some((control) => control.condition !== undefined)) {
     return undefined;

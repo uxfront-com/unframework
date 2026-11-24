@@ -34,9 +34,9 @@ const COMPLETED = /^COMPLETED (\d+) FILES (\d+) ERRORS (\d+) WARNINGS (\d+) FILE
  * fully read cannot pass a file.
  */
 export async function typecheck(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
   assertFilesToCheck(files);
   const skipped = files.filter(isSkippedBySvelteCheck);
   if (skipped.length > 0) {
@@ -57,8 +57,8 @@ export async function typecheck(
   ]);
 
   const diagnostics = diagnosticsByFile(files, run.tsconfig);
-  const failures: string[] = [];
-  const unknown: string[] = [];
+  const failures: Array<string> = [];
+  const unknown: Array<string> = [];
   let workspace: string | undefined;
   let totals: { errors: number; warnings: number } | undefined;
   const counted = { errors: 0, warnings: 0 };

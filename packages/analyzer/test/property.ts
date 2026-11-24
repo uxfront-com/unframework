@@ -57,7 +57,7 @@ export function propertyRun(full: number, seed: number, env: Env = process.env):
  * The items a run takes from an exhaustive list: all of them, in order, at full size, and
  * otherwise a seeded sample from all of it, not a prefix, still in the list's order.
  */
-export function sampleOf<T>(items: readonly T[], run: PropertyRun): T[] {
+export function sampleOf<T>(items: ReadonlyArray<T>, run: PropertyRun): Array<T> {
   if (items.length !== run.full) {
     throw new Error(`The run is for ${run.full} items, not ${items.length}.`);
   }

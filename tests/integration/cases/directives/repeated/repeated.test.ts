@@ -21,10 +21,10 @@ interface Trace {
  */
 function record(): {
   mark: () => number;
-  since: (view: View, mark: number) => { name: string | null; calls: string[] }[];
+  since: (view: View, mark: number) => Array<{ name: string | null; calls: Array<string> }>;
   stop: () => void;
 } {
-  const traces: Trace[] = [];
+  const traces: Array<Trace> = [];
   const own = new Set<Element>();
   const listener = (event: Event) => void traces.push((event as CustomEvent<Trace>).detail);
   document.addEventListener("directive-trace", listener);
@@ -36,7 +36,7 @@ function record(): {
           own.add(el);
         }
       }
-      const found = new Map<Element, string[]>();
+      const found = new Map<Element, Array<string>>();
       for (const { call, el } of traces.slice(mark)) {
         if (!own.has(el)) {
           continue;
@@ -50,7 +50,7 @@ function record(): {
 }
 
 /** The elements' names and calls, sorted, so a count doesn't depend on which target runs first. */
-function sorted(found: { name: string | null; calls: string[] }[]): string[] {
+function sorted(found: Array<{ name: string | null; calls: Array<string> }>): Array<string> {
   return found.map(({ name, calls }) => `${name}: ${calls.join(", ")}`).toSorted();
 }
 

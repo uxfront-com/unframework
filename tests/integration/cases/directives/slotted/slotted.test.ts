@@ -23,11 +23,11 @@ interface Trace {
  * the `mounted` calls that ran on an element out of the document, any view's.
  */
 function record(): {
-  calls: (view: View) => string[];
-  detached: () => string[];
+  calls: (view: View) => Array<string>;
+  detached: () => Array<string>;
   stop: () => void;
 } {
-  const traces: Trace[] = [];
+  const traces: Array<Trace> = [];
   const own = new Set<Element>();
   const listener = (event: Event) => {
     const { call, el } = (event as CustomEvent<Omit<Trace, "connected">>).detail;

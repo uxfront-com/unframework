@@ -84,7 +84,7 @@ describe("diffMatrices", () => {
   });
 
   it("names differing scenarios", () => {
-    const scenarios = (...names: string[]) => ({ "basics/hello": { vue: names } });
+    const scenarios = (...names: Array<string>) => ({ "basics/hello": { vue: names } });
     const diff = diffMatrices(
       matrix(cell("pass"), { scenarios: scenarios("one", "two") }),
       matrix(cell("pass"), { scenarios: scenarios("two", "three") }),
@@ -275,7 +275,7 @@ describe("parseDiffArgs", () => {
 });
 
 describe("the script", () => {
-  const dirs: string[] = [];
+  const dirs: Array<string> = [];
   afterEach(() => {
     for (const dir of dirs.splice(0)) {
       rmSync(dir, { recursive: true, force: true });
@@ -289,7 +289,7 @@ describe("the script", () => {
     writeFileSync(path, typeof contents === "string" ? contents : JSON.stringify(contents));
     return path;
   }
-  const run = (...args: string[]) => {
+  const run = (...args: Array<string>) => {
     const result = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" });
     return { status: result.status, out: result.stdout, err: result.stderr };
   };

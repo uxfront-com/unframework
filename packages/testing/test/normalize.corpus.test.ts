@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { normalizeHtml } from "../src/normalize/index.ts";
 import type { NormalizeTarget } from "../src/normalize/index.ts";
 
-type Outputs = readonly (readonly [NormalizeTarget, string])[];
+type Outputs = ReadonlyArray<readonly [NormalizeTarget, string]>;
 
 const hello = (name: string): Outputs => [
   ["react", `<p class="greeting">Hello, <!-- -->${name}<!-- -->!</p>`],

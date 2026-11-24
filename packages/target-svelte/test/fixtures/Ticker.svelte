@@ -30,7 +30,7 @@
   });
 
   $effect(() => {
-    const cleanups: (() => void)[] = [];
+    const cleanups: Array<() => void> = [];
     const onCleanup = (cleanup: () => void) => {
       cleanups.push(cleanup);
     };

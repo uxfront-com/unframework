@@ -4,7 +4,7 @@
   import type { ClassValue, HTMLFormAttributes } from "svelte/elements";
 
   type Props = Omit<HTMLFormAttributes, "steps" | "score" | "label" | "mode" | "children" | "class" | "style" | "ref"> & {
-    steps: string[];
+    steps: Array<string>;
     score: number;
     label: string;
     mode: string;

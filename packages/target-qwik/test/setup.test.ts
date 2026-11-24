@@ -359,7 +359,7 @@ describe("qwik target: watchers, effects and lifecycle", () => {
     );
     // Compared without the indentation, which the component's width decides.
     const trimmed = contents.split("\n").map((line) => line.trim());
-    const at = (...expected: string[]) => {
+    const at = (...expected: Array<string>) => {
       const start = trimmed.indexOf(expected[0]!);
       expect(trimmed.slice(start, start + expected.length)).toEqual(expected);
     };

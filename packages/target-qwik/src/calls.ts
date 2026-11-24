@@ -44,10 +44,10 @@ export function awaitQrlCalls(
     return { code, async: false };
   }
   const { root } = parseCodeSource(code, kind);
-  const edits: { at: number; text: string }[] = [];
+  const edits: Array<{ at: number; text: string }> = [];
   let ownAsync = false;
   const asyncArrows = new Set<Node>();
-  const visit = (node: unknown, ancestors: readonly Node[]): void => {
+  const visit = (node: unknown, ancestors: ReadonlyArray<Node>): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
         visit(item, ancestors);
@@ -132,7 +132,7 @@ function isQrlCall(node: Node, qrls: ReadonlySet<string>): boolean {
 }
 
 /** Whether the nearest enclosing expression already awaits the call. */
-function awaited(ancestors: readonly Node[]): boolean {
+function awaited(ancestors: ReadonlyArray<Node>): boolean {
   const parent = ancestors.at(-1);
   return parent?.type === "AwaitExpression";
 }
@@ -142,14 +142,15 @@ function awaited(ancestors: readonly Node[]): boolean {
  * call is the body's value through `a && call`, `a ? call : b` or `a, call` (parentheses are not
  * in oxc's tree). The arrow's caller awaits what it returns, so the call stays as written.
  */
-function returned(node: Node, ancestors: readonly Node[], root: unknown): boolean {
+function returned(node: Node, ancestors: ReadonlyArray<Node>, root: unknown): boolean {
   let child: Node = node;
   for (let index = ancestors.length - 1; index >= 0; index--) {
     const parent = ancestors[index]!;
     const tail =
       (parent.type === "LogicalExpression" && parent.right === child) ||
       (parent.type === "ConditionalExpression" && parent.test !== child) ||
-      (parent.type === "SequenceExpression" && (parent.expressions as Node[]).at(-1) === child);
+      (parent.type === "SequenceExpression" &&
+        (parent.expressions as Array<Node>).at(-1) === child);
     if (!tail) {
       return false;
     }
@@ -198,7 +199,7 @@ export function passElement(
     return code;
   }
   const { root } = parseCodeSource(code, kind);
-  const at: number[] = [];
+  const at: Array<number> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
@@ -210,7 +211,7 @@ export function passElement(
       return;
     }
     if (isQrlCall(node, callees)) {
-      const argument = (node.arguments as Node[]).find(
+      const argument = (node.arguments as Array<Node>).find(
         (candidate) => candidate.type === "Identifier" && candidate.name === event,
       );
       if (argument) {

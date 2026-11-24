@@ -27,7 +27,7 @@ import { printSetup } from "./setup.ts";
  * toggle, close }; }`, its setup in source order as a component's body prints it, and its
  * parameters as written.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
   const { module } = context;
   // A setup constant evaluates once, as `useState`'s initial value (ADR-0046), which React calls
   // when it is a function: a getter or a callback argument held in one would become what it
@@ -227,7 +227,7 @@ function addParameterTypeImports(
   { module }: EmitContext,
   imports: ImportSet,
 ): void {
-  const texts: TypeText[] = [
+  const texts: Array<TypeText> = [
     ...composable.parameters.map(({ type }) => type),
     ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
       [constraint, fallback].filter((type): type is TypeText => type !== undefined),

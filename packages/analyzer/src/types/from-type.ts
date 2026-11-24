@@ -40,7 +40,7 @@ export class TypeTable {
   readonly #memo = new Map<object, Kinds>();
   readonly #resolving = new Set<object>();
 
-  constructor(declarations: readonly TypeDeclarationStatement[]) {
+  constructor(declarations: ReadonlyArray<TypeDeclarationStatement>) {
     // The first declaration of a name is the one checks read: a second is reported (UF1002).
     for (const declaration of declarations) {
       if (!this.#declarations.has(declaration.name)) {
@@ -71,13 +71,13 @@ export class TypeTable {
   }
 
   /** The shape of an interface's or an object type literal's members. */
-  shapeOf(members: readonly AST.TSSignature[]): ObjectShape {
+  shapeOf(members: ReadonlyArray<AST.TSSignature>): ObjectShape {
     let read: ReadonlyMap<string, Member> | undefined;
     return {
       declared: true,
       members: () => {
         read ??= new Map(
-          members.flatMap((member): [string, Member][] => {
+          members.flatMap((member): Array<[string, Member]> => {
             if (member.type !== "TSPropertySignature" || member.computed) {
               return [];
             }

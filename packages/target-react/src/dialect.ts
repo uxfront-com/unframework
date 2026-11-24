@@ -231,7 +231,7 @@ export function reactDialect(
     scopeRootAttributes: (element, context) => composer.scopeRootAttributes(element, context),
   };
   /** A root's own `ref` joined with its consumer's, which holds the root too (ADR-0118). */
-  const rooted = <T extends JsxAttributeItem>(items: T[], element: ElementNode) =>
+  const rooted = <T extends JsxAttributeItem>(items: Array<T>, element: ElementNode) =>
     items.map((item) => composer.rootRef(item, element));
   return dialect;
 }
@@ -264,8 +264,8 @@ function prop(
  * adjacent toggles as one object, `{ active, "is-busy": busy }`, in shorthand where the
  * condition is a variable of the toggle's own name.
  */
-function classParts(attribute: ClassAttribute, context: JsxContext): Expression[] {
-  const parts: Expression[] = [];
+function classParts(attribute: ClassAttribute, context: JsxContext): Array<Expression> {
+  const parts: Array<Expression> = [];
   let toggles: ObjectExpression | undefined;
   for (const item of attribute.items) {
     if (item.kind !== "Toggle") {
@@ -294,7 +294,7 @@ function classParts(attribute: ClassAttribute, context: JsxContext): Expression[
  * the static names, the dynamic parts, the toggles' objects and the spreads' classes (the
  * `class-binding` capability, emulated: ADR-0038).
  */
-function className(parts: Expression[], names: ReactNames): JsxAttribute {
+function className(parts: Array<Expression>, names: ReactNames): JsxAttribute {
   names.cx ??= names.imports.claim("cx");
   return js.jsxAttribute(
     "className",

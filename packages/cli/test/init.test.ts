@@ -74,7 +74,7 @@ describe("init", () => {
     rmSync(join(root, "unframework.config.ts"));
     const { code, stdout } = await run(root, "check", "--format", "json");
     expect(code).toBe(0);
-    const notes = JSON.parse(stdout) as { code: string; severity: string; target: string }[];
+    const notes = JSON.parse(stdout) as Array<{ code: string; severity: string; target: string }>;
     expect(notes.map(({ code: id, severity, target }) => [id, severity, target])).toEqual([
       ["UF4002", "info", "angular"],
       ["UF4002", "info", "qwik"],

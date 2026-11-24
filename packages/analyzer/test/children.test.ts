@@ -6,7 +6,7 @@ import { applyAndRecheck, codes, component, only, problems, root, run } from "./
 const PROPS = "label: string; count: number; on: boolean; items: string[]; maybe?: string";
 
 /** A render tree as a compact string: elements, texts, interpolations, ifs and lists. */
-function shape(nodes: readonly RenderNode[]): string {
+function shape(nodes: ReadonlyArray<RenderNode>): string {
   return nodes
     .map((node) => {
       switch (node.kind) {

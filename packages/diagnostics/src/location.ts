@@ -7,7 +7,7 @@ export interface Position {
 
 /** Maps offsets to lines and columns for one source text. */
 export class LineIndex {
-  readonly #starts: number[] = [0];
+  readonly #starts: Array<number> = [0];
   readonly source: string;
 
   constructor(source: string) {

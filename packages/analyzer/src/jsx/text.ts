@@ -61,9 +61,9 @@ export interface JsxReading {
    * then holds, for UF3010); otherwise it must not be lowered.
    */
   value: string;
-  divergences: Divergence[];
+  divergences: Array<Divergence>;
   /** The pieces whose characters make up `value`, in order (what HTML must keep). */
-  kept: Piece[];
+  kept: Array<Piece>;
 }
 
 /**
@@ -88,21 +88,21 @@ export interface HtmlOnlyReference {
   /** What HTML decodes it to. */
   value: string;
   /** Its code points (two for a few, such as `&NotEqualTilde;`). */
-  codePoints: number[];
+  codePoints: Array<number>;
   /** The numeric reference every JSX implementation decodes to `value` (`&#x2713;`). */
   numeric: string;
 }
 
 /** The named references in raw JSX text or an attribute string that only HTML decodes. */
-export function htmlOnlyReferences(raw: string): HtmlOnlyReference[] {
-  const found: HtmlOnlyReference[] = [];
+export function htmlOnlyReferences(raw: string): Array<HtmlOnlyReference> {
+  const found: Array<HtmlOnlyReference> = [];
   for (const match of raw.matchAll(/&([A-Za-z][A-Za-z0-9]*);/g)) {
     const name = match[1]!;
     const value = HTML_ONLY_ENTITIES.get(name);
     if (value === undefined) {
       continue;
     }
-    const codePoints: number[] = [];
+    const codePoints: Array<number> = [];
     for (const char of value) {
       codePoints.push(char.codePointAt(0)!);
     }
@@ -203,8 +203,8 @@ function offerRewrites(
   }
 }
 
-function decodePieces(raw: string, kind: "text" | "attribute"): Piece[] {
-  const pieces: Piece[] = [];
+function decodePieces(raw: string, kind: "text" | "attribute"): Array<Piece> {
+  const pieces: Array<Piece> = [];
   let index = 0;
   while (index < raw.length) {
     const char = raw[index]!;
@@ -260,8 +260,8 @@ const REFERENCE_SYNTAX = /&#x?[+-][0-9a-fA-F]*;?|&#x([0-9a-fA-F]+);|&#([0-9]+);/
  * (Babel and TypeScript fail, oxc leaves it as text, esbuild wraps it into another character)
  * and a UTF-16 surrogate (oxc leaves it as text, the others decode it).
  */
-function referenceDivergences(raw: string): Divergence[] {
-  const divergences: Divergence[] = [];
+function referenceDivergences(raw: string): Array<Divergence> {
+  const divergences: Array<Divergence> = [];
   const matches = [...raw.matchAll(REFERENCE_SYNTAX)];
   for (let index = 0; index < matches.length; index++) {
     const match = matches[index]!;
@@ -320,13 +320,13 @@ function referenceDivergences(raw: string): Divergence[] {
 }
 
 /** Babel's reading of decoded pieces, with the pieces it keeps and the ones it trims. */
-function babelReading(pieces: readonly Piece[]): {
+function babelReading(pieces: ReadonlyArray<Piece>): {
   value: string;
-  kept: Piece[];
+  kept: Array<Piece>;
   trimmed: Set<Piece>;
 } {
   // Lines end at LF, CR or CRLF, decoded or raw (`/\r\n|\n|\r/` over the decoded text).
-  const lines: Piece[][] = [[]];
+  const lines: Array<Array<Piece>> = [[]];
   for (let index = 0; index < pieces.length; index++) {
     const piece = pieces[index]!;
     if (piece.value === "\n" || piece.value === "\r") {
@@ -345,7 +345,7 @@ function babelReading(pieces: readonly Piece[]): {
       lastNonEmptyLine = index;
     }
   });
-  const kept: Piece[] = [];
+  const kept: Array<Piece> = [];
   const trimmed = new Set<Piece>();
   let value = "";
   lines.forEach((line, index) => {
@@ -420,7 +420,7 @@ function typescriptReading(
   raw: string,
   isWhitespace: (code: number) => boolean,
 ): { value: string; trimmed: Set<number> } {
-  const lines: { start: number; end: number }[] = [];
+  const lines: Array<{ start: number; end: number }> = [];
   let start = 0;
   for (let index = 0; index < raw.length; index++) {
     if (!isLineTerminator(raw.charCodeAt(index))) {
@@ -431,7 +431,7 @@ function typescriptReading(
   }
   lines.push({ start, end: raw.length });
   const trimmed = new Set<number>();
-  const kept: string[] = [];
+  const kept: Array<string> = [];
   lines.forEach((line, index) => {
     let from = line.start;
     let to = line.end;
@@ -500,12 +500,12 @@ function referenceFor(char: string): string {
  */
 function whitespaceDivergences(
   raw: string,
-  pieces: readonly Piece[],
+  pieces: ReadonlyArray<Piece>,
   babelTrimmed: ReadonlySet<Piece>,
   typescriptTrimmed: ReadonlySet<number>,
   esbuildTrimmed: ReadonlySet<number>,
-): { divergences: Divergence[]; rewrites: Map<Divergence, string> } {
-  const divergences: Divergence[] = [];
+): { divergences: Array<Divergence>; rewrites: Map<Divergence, string> } {
+  const divergences: Array<Divergence> = [];
   const rewrites = new Map<Divergence, string>();
   const rewrite = (divergence: Divergence, replacement: string) => {
     divergences.push(divergence);

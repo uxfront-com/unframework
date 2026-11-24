@@ -22,7 +22,7 @@ export const STYLEFRAME_DECLARATIONS: string = join(ROOT, "styleframe.d.ts");
  * The utility classes a `.uf.tsx` source writes in a `class`, for Styleframe's scanner, whose JSX
  * extractor reads only `className`: `_padding:lg`, `_border-radius:[4px]`.
  */
-export function sourceUtilities(content: string, file: string): string[] {
+export function sourceUtilities(content: string, file: string): Array<string> {
   if (!file.endsWith(".uf.tsx")) {
     return [];
   }
@@ -39,7 +39,7 @@ export function sourceUtilities(content: string, file: string): string[] {
  * the corpus's sources for utility classes, and it neither minifies class names nor writes
  * declarations into the working directory (`styleframe.d.ts` holds them).
  */
-export async function styleframePlugin(config: string = STYLEFRAME_CONFIG): Promise<Plugin[]> {
+export async function styleframePlugin(config: string = STYLEFRAME_CONFIG): Promise<Array<Plugin>> {
   const { default: styleframe } = await import("styleframe/plugin/vite");
   return [
     styleframe({

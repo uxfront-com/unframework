@@ -12,7 +12,7 @@ import { DOM_EVENTS } from "@unframework.dev/ir";
  * takes a capital first letter only (`onScrollend$`, `onBeforeinput$`), as Qwik's
  * `Capitalize<T>` does.
  */
-const QWIK_PASCAL_CASE_NAMES: readonly string[] = [
+const QWIK_PASCAL_CASE_NAMES: ReadonlyArray<string> = [
   "AnimationEnd",
   "AnimationIteration",
   "AnimationStart",

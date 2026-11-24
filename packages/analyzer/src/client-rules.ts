@@ -149,7 +149,7 @@ function awaitFix(call: AST.CallExpression, context: ClientRulesContext): Fix | 
   const text = [`await ${name}();`, ...tail]
     .map((line, index) => (index && ownLine && line ? `${indent}${line}` : line))
     .join(ownLine ? "\n" : " ");
-  const edits: TextEdit[] = [];
+  const edits: Array<TextEdit> = [];
   if (!fn.async) {
     edits.push({ span: { start: fn.start, end: fn.start }, text: "async " });
   }
@@ -164,7 +164,7 @@ function awaitFix(call: AST.CallExpression, context: ClientRulesContext): Fix | 
  */
 function canBecomeAsync(
   fn: AST.ArrowFunctionExpression | AST.Function,
-  path: readonly AST.Node[],
+  path: ReadonlyArray<AST.Node>,
   callback: AST.ArrowFunctionExpression,
   context: ClientRulesContext,
 ): boolean {
@@ -223,7 +223,7 @@ function canBecomeAsync(
 }
 
 /** A block's inner text as lines without their common indentation, blank lines at its ends gone. */
-function dedented(inner: string): string[] {
+function dedented(inner: string): Array<string> {
   const lines = inner.split("\n").map((line) => line.trimEnd());
   if (lines.length === 1) {
     return lines[0]!.trim() ? [lines[0]!.trim()] : [];
@@ -261,7 +261,7 @@ function localFunctions(
   component: UfComponent,
   render: RenderContext,
 ): {
-  code: ReadonlyMap<BindingId, { body: { refs: readonly CodeReference[] } }>;
+  code: ReadonlyMap<BindingId, { body: { refs: ReadonlyArray<CodeReference> } }>;
   nodes: ReadonlyMap<BindingId, FunctionNode>;
 } {
   const code = new Map(
@@ -320,7 +320,12 @@ function teardown(context: ClientRulesContext, bindings: ReadonlyMap<BindingId, 
     "Vue drops an emit once the component is unmounted, and the other targets deliver it.";
   const asyncHelp = "Do the async work before the component unmounts: the teardown runs at once.";
   /** Judges the references of code that runs at teardown, from `from` to `to`. */
-  const judge = (refs: readonly CodeReference[], what: string, unmount: boolean, within?: Span) => {
+  const judge = (
+    refs: ReadonlyArray<CodeReference>,
+    what: string,
+    unmount: boolean,
+    within?: Span,
+  ) => {
     for (const ref of refs) {
       if (ref.kind !== "Binding" || reported.has(ref.span.start)) {
         continue;
@@ -439,9 +444,9 @@ function cleanupCallbacks(
   parameter: AST.BindingIdentifier,
   render: RenderContext,
   seen: Set<object>,
-): (AST.ArrowFunctionExpression | AST.IdentifierReference)[] {
+): Array<AST.ArrowFunctionExpression | AST.IdentifierReference> {
   seen.add(fn);
-  const found: (AST.ArrowFunctionExpression | AST.IdentifierReference)[] = [];
+  const found: Array<AST.ArrowFunctionExpression | AST.IdentifierReference> = [];
   const isParameter = (node: AST.Node) => {
     if (node.type !== "Identifier") {
       return false;
@@ -484,7 +489,7 @@ function cleanupCallbacks(
 function localFunctionHolding(
   at: Span,
   component: UfComponent,
-): { body: { refs: readonly CodeReference[] } } | undefined {
+): { body: { refs: ReadonlyArray<CodeReference> } } | undefined {
   for (const item of component.setup) {
     if (item.kind !== "Function") {
       continue;
@@ -533,7 +538,7 @@ function selfTriggeringEffects(
     bindings.get(ref.binding)?.kind === "localFn" &&
     (ref.call === true || !render.facts.passed.has(ref.span.start));
   /** The references of a function that run while a call of it runs, before it gives control back. */
-  const synchronous = (refs: readonly CodeReference[], node: FunctionNode | undefined) => {
+  const synchronous = (refs: ReadonlyArray<CodeReference>, node: FunctionNode | undefined) => {
     if (!node) {
       return refs;
     }
@@ -545,7 +550,7 @@ function selfTriggeringEffects(
   };
   /** What references read and write as they run, through the local functions they run at once. */
   const runFacts = (
-    refs: readonly CodeReference[],
+    refs: ReadonlyArray<CodeReference>,
     seen: Set<BindingId>,
   ): { reads: Set<BindingId>; writes: Set<BindingId> } => {
     const reads = new Set<BindingId>();
@@ -656,8 +661,8 @@ function passivePrevention(
     fn: FunctionCode,
     event: string | undefined,
     seen: Set<BindingId>,
-  ): Extract<CodeReference, { kind: "Event" }>[] => {
-    const found: Extract<CodeReference, { kind: "Event" }>[] = [];
+  ): Array<Extract<CodeReference, { kind: "Event" }>> => {
+    const found: Array<Extract<CodeReference, { kind: "Event" }>> = [];
     if (event === undefined) {
       return found;
     }
@@ -683,7 +688,7 @@ function passivePrevention(
     }
     return found;
   };
-  const listeners: EventAttribute[] = [];
+  const listeners: Array<EventAttribute> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element") {
@@ -740,7 +745,7 @@ function removalFix(
   listener: EventAttribute,
   fn: FunctionCode,
   call: Extract<CodeReference, { kind: "Event" }>,
-  path: readonly AST.Node[],
+  path: ReadonlyArray<AST.Node>,
   source: string,
 ): Fix | undefined {
   const arrow = path.findLast(
@@ -779,7 +784,7 @@ function removalFix(
   const start = ownLine
     ? lineStart - 1
     : statement.start - /\s*$/.exec(source.slice(0, statement.start))![0].length;
-  const edits: TextEdit[] = [{ span: { start, end: statement.end }, text: "" }];
+  const edits: Array<TextEdit> = [{ span: { start, end: statement.end }, text: "" }];
   // The event parameter nothing else reads goes too, or it would be reported unread (UF3024).
   const others = fn.body.refs.some((ref) => ref.kind === "Event" && ref !== call);
   const parameter = arrow.params[0];
@@ -809,9 +814,9 @@ function passesEvent(callee: Span, index: number, event: string, render: RenderC
 }
 
 /** The nodes from `root` down to the innermost node that spans exactly `at`, or nothing. */
-function pathTo(at: Span, root: AST.Node): AST.Node[] {
-  const path: AST.Node[] = [];
-  let found: AST.Node[] = [];
+function pathTo(at: Span, root: AST.Node): Array<AST.Node> {
+  const path: Array<AST.Node> = [];
+  let found: Array<AST.Node> = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
       for (const item of value) {
@@ -897,8 +902,8 @@ function visit(node: unknown, enter: (node: AST.Node) => void): void {
 }
 
 /** The nodes from `root` down to `target`, both included. */
-function ancestors(target: AST.Node, root: AST.Node): AST.Node[] {
-  const path: AST.Node[] = [];
+function ancestors(target: AST.Node, root: AST.Node): Array<AST.Node> {
+  const path: Array<AST.Node> = [];
   const walk = (value: unknown): boolean => {
     if (Array.isArray(value)) {
       return value.some(walk);

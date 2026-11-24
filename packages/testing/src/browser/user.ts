@@ -51,7 +51,7 @@ export interface ViewUser {
   /** Moves the focus to the element, as a script's `element.focus()` would. */
   focus(target: Locator): Promise<void>;
   /** Selects the options of a `<select>` with these values or labels. */
-  selectOptions(target: Locator, values: string | readonly string[]): Promise<void>;
+  selectOptions(target: Locator, values: string | ReadonlyArray<string>): Promise<void>;
   /** Moves the mouse onto the element, then turns the wheel, a step at a time. */
   wheel(target: Locator, options: UserEventWheelOptions): Promise<void>;
 }
@@ -82,7 +82,7 @@ export function createUser(host: UserHost): ViewUser {
   const act = async (
     kind: keyof ViewUser,
     target: Locator | undefined,
-    args: readonly unknown[],
+    args: ReadonlyArray<unknown>,
     // Called once the action is accepted, so a refused one dispatches nothing.
     inputs: () => Iterable<Input>,
   ): Promise<void> => {
@@ -179,7 +179,7 @@ function focus(target: Locator): Input {
 }
 
 /** The mouse moved onto the element, then its main button pressed and released `count` times. */
-function clicks(target: Locator, count: number, position?: { x: number; y: number }): Input[] {
+function clicks(target: Locator, count: number, position?: { x: number; y: number }): Array<Input> {
   const inputs = [
     send({
       kind: "move",
@@ -199,7 +199,7 @@ function clicks(target: Locator, count: number, position?: { x: number; y: numbe
  * lacks is inserted as text, and has no release. Read lazily: whether a key is held is known
  * once its press has run.
  */
-function* press(keys: readonly KeyInput[]): Generator<Input> {
+function* press(keys: ReadonlyArray<KeyInput>): Generator<Input> {
   for (const { key, text, press: down, release: up } of keys) {
     if (down) {
       yield async () => {

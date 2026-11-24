@@ -80,7 +80,7 @@ export function readGetters(code: string, kind: CodeKind, getters: ReadonlySet<s
     return code;
   }
   const { root } = parseCodeSource(code, kind);
-  const edits: { start: number; end: number; text: string }[] = [];
+  const edits: Array<{ start: number; end: number; text: string }> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
@@ -98,7 +98,7 @@ export function readGetters(code: string, kind: CodeKind, getters: ReadonlySet<s
       node.type === "CallExpression" &&
       named?.type === "Identifier" &&
       getters.has(named.name as string) &&
-      (node.arguments as unknown[]).length === 0
+      (node.arguments as Array<unknown>).length === 0
     ) {
       const read = node.optional === true ? "?.value" : asserted ? "!.value" : ".value";
       edits.push({ start: node.start, end: node.end, text: `${named.name as string}${read}` });
@@ -158,8 +158,11 @@ export interface ComposableProblem {
  * test, `!`, a comparison, or an operand of `&&`, `||` or `??` that is itself in a test, or on
  * the left of `&&`.
  */
-export function composableProblems(composable: UfComposable, plan: SetupPlan): ComposableProblem[] {
-  const problems: ComposableProblem[] = [];
+export function composableProblems(
+  composable: UfComposable,
+  plan: SetupPlan,
+): Array<ComposableProblem> {
+  const problems: Array<ComposableProblem> = [];
   const functions = new Map(
     composable.parameters.map((parameter) => [parameter.binding, parameter]),
   );
@@ -295,8 +298,8 @@ interface ComposableCode {
 }
 
 /** Every piece of a composable's setup code, in source order (see {@link ComposableCode}). */
-function composableCode(composable: UfComposable, plan: SetupPlan): ComposableCode[] {
-  const found: ComposableCode[] = [];
+function composableCode(composable: UfComposable, plan: SetupPlan): Array<ComposableCode> {
+  const found: Array<ComposableCode> = [];
   const value = (code: Code | undefined) => {
     if (code) {
       found.push({ code, kind: "expression", captured: false });
@@ -374,7 +377,7 @@ interface IdentifierUse {
 function identifierUses(code: string, kind: CodeKind): Map<number, IdentifierUse> {
   const { root } = parseCodeSource(code, kind);
   const found = new Map<number, IdentifierUse>();
-  const visit = (node: unknown, ancestors: readonly Node[]): void => {
+  const visit = (node: unknown, ancestors: ReadonlyArray<Node>): void => {
     if (Array.isArray(node)) {
       for (const item of node) {
         visit(item, ancestors);
@@ -407,7 +410,7 @@ function identifierUses(code: string, kind: CodeKind): Map<number, IdentifierUse
 }
 
 /** Whether a node is read only as a test (see `composableProblems`), by its ancestors. */
-function isTested(node: Node, ancestors: readonly Node[]): boolean {
+function isTested(node: Node, ancestors: ReadonlyArray<Node>): boolean {
   const parent = ancestors.at(-1);
   if (!parent) {
     return false;
@@ -528,8 +531,8 @@ const FREE: WrittenType = { free: true };
 
 /** A type as written, `{ format: (value: number) => string }`, as a node. */
 function typeNode(type: string): Node {
-  const [statement] = parseCodeSource(`let value: ${type};`, "statements").root as Node[];
-  const [declarator] = statement!.declarations as Node[];
+  const [statement] = parseCodeSource(`let value: ${type};`, "statements").root as Array<Node>;
+  const [declarator] = statement!.declarations as Array<Node>;
   return ((declarator!.id as Node).typeAnnotation as Node).typeAnnotation as Node;
 }
 
@@ -686,17 +689,17 @@ class WrittenTypes {
       case "LogicalExpression":
         return this.#join([of(node.left as Node), of(node.right as Node)]);
       case "SequenceExpression":
-        return of((node.expressions as Node[]).at(-1)!);
+        return of((node.expressions as Array<Node>).at(-1)!);
       case "ArrayExpression":
         return this.#join(
-          (node.elements as (Node | null)[])
+          (node.elements as Array<Node | null>)
             .filter((each): each is Node => each !== null)
             .map((each) => of(each.type === "SpreadElement" ? (each.argument as Node) : each)),
           false,
         );
       case "ObjectExpression":
         return this.#join(
-          (node.properties as Node[]).map((each) =>
+          (node.properties as Array<Node>).map((each) =>
             of((each.type === "SpreadElement" ? each.argument : each.value) as Node),
           ),
           false,
@@ -709,7 +712,8 @@ class WrittenTypes {
         const awaited = of(node.argument as Node);
         const type = awaited.type && this.#resolve(awaited.type);
         const name = type?.type === "TSTypeReference" ? (type.typeName as Node).name : undefined;
-        const [value] = ((type?.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+        const [value] =
+          ((type?.typeArguments as Node | null)?.params as Array<Node> | undefined) ?? [];
         return (name === "Promise" || name === "PromiseLike") && value
           ? { type: value, free: false }
           : { free: !this.holds(awaited) };
@@ -753,7 +757,7 @@ class WrittenTypes {
 
   #call(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
     const callee = unwrapped(node.callee as Node);
-    const args = (node.arguments as Node[]).map((each) =>
+    const args = (node.arguments as Array<Node>).map((each) =>
       each.type === "SpreadElement" ? (each.argument as Node) : each,
     );
     // Where no written type gives its result, a call holds what its receiver or its arguments
@@ -811,7 +815,7 @@ class WrittenTypes {
    */
   #callOf(type: Node, node: Node, ids: ReadonlyMap<number, string>): WrittenType {
     const resolved = this.#resolve(type);
-    const parts = resolved.type === "TSUnionType" ? (resolved.types as Node[]) : [resolved];
+    const parts = resolved.type === "TSUnionType" ? (resolved.types as Array<Node>) : [resolved];
     const functions = parts.map((each) => this.#resolve(each)).filter((each) => !isNullish(each));
     if (functions.length && functions.every(isFunctionType)) {
       return this.#join(functions.map((each) => this.#returned(each, node, ids)));
@@ -825,7 +829,7 @@ class WrittenTypes {
    */
   #returned(type: Node, node: Node, ids: ReadonlyMap<number, string>): WrittenType {
     const parameters = (type.typeParameters as Node | null | undefined)?.params as
-      | Node[]
+      | Array<Node>
       | undefined;
     if (parameters?.length) {
       return this.#reads(node, ids);
@@ -844,7 +848,7 @@ class WrittenTypes {
     name: string,
     element: Node,
     array: Node,
-    args: readonly Node[],
+    args: ReadonlyArray<Node>,
     node: Node,
     ids: ReadonlyMap<number, string>,
   ): WrittenType {
@@ -855,18 +859,18 @@ class WrittenTypes {
     const inPlace =
       (callback.type === "ArrowFunctionExpression" || callback.type === "FunctionExpression") &&
       (callback.body as Node).type !== "BlockStatement" &&
-      (callback.params as Node[]).every((each) => each.type === "Identifier");
+      (callback.params as Array<Node>).every((each) => each.type === "Identifier");
     if (!inPlace) {
       return this.#reads(node, ids);
     }
     const reduces = name === "reduce" || name === "reduceRight";
     const item: WrittenType = { type: element, free: false };
     const start = initial ? this.#join([this.#of(initial, ids), item], false) : item;
-    const values: WrittenType[] = reduces
+    const values: Array<WrittenType> = reduces
       ? [start, item, FREE, { type: array, free: false }]
       : [item, FREE, { type: array, free: false }];
     const saved = new Map<string, WrittenType | undefined>();
-    for (const [index, parameter] of (callback.params as Node[]).entries()) {
+    for (const [index, parameter] of (callback.params as Array<Node>).entries()) {
       const local = parameter.name as string;
       saved.set(local, this.#locals.get(local));
       this.#locals.set(local, values[index] ?? FREE);
@@ -886,7 +890,7 @@ class WrittenTypes {
   }
 
   /** Several values, any of which a value may be: a type where each has one. */
-  #join(values: readonly WrittenType[], typed = true): WrittenType {
+  #join(values: ReadonlyArray<WrittenType>, typed = true): WrittenType {
     if (typed && values.length && values.every((each) => each.type)) {
       return {
         type: { type: "TSUnionType", types: values.map((each) => each.type), start: 0, end: 0 },
@@ -910,7 +914,7 @@ class WrittenTypes {
           ? this.#resolve(type.typeAnnotation as Node, seen)
           : type;
       case "TSUnionType": {
-        const present = (type.types as Node[]).filter(
+        const present = (type.types as Array<Node>).filter(
           (each) => !isNullish(this.#resolve(each, seen)),
         );
         return present.length === 1 ? this.#resolve(present[0]!, seen) : type;
@@ -918,7 +922,7 @@ class WrittenTypes {
       case "TSTypeReference": {
         const name = (type.typeName as Node).name as string | undefined;
         const typeArguments =
-          ((type.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+          ((type.typeArguments as Node | null)?.params as Array<Node> | undefined) ?? [];
         if (name !== undefined && WRAPPERS.has(name) && typeArguments.length === 1) {
           return this.#resolve(typeArguments[0]!, seen);
         }
@@ -929,13 +933,13 @@ class WrittenTypes {
         if (!declaration) {
           return type;
         }
-        const [statement] = parseCodeSource(declaration.code, "statements").root as Node[];
+        const [statement] = parseCodeSource(declaration.code, "statements").root as Array<Node>;
         let declared = (
           statement!.type === "ExportNamedDeclaration" ? statement!.declaration : statement
         ) as Node;
         // A generic declaration with its type arguments in place of its parameters.
         const parameters =
-          ((declared.typeParameters as Node | null)?.params as Node[] | undefined) ?? [];
+          ((declared.typeParameters as Node | null)?.params as Array<Node> | undefined) ?? [];
         if (parameters.length) {
           const substitutes = new Map<string, Node>();
           for (const [index, parameter] of parameters.entries()) {
@@ -955,8 +959,8 @@ class WrittenTypes {
           return type;
         }
         // An interface as an object type of its members and those it inherits.
-        const members = [...((declared.body as Node).body as Node[])];
-        for (const heritage of (declared.extends as Node[] | undefined) ?? []) {
+        const members = [...((declared.body as Node).body as Array<Node>)];
+        for (const heritage of (declared.extends as Array<Node> | undefined) ?? []) {
           const inherited = this.#resolve(
             {
               type: "TSTypeReference",
@@ -968,7 +972,7 @@ class WrittenTypes {
             next,
           );
           if (inherited.type === "TSTypeLiteral") {
-            members.push(...(inherited.members as Node[]));
+            members.push(...(inherited.members as Array<Node>));
           }
         }
         return { type: "TSTypeLiteral", members, start: 0, end: 0 };
@@ -982,7 +986,7 @@ class WrittenTypes {
   #memberType(type: Node, key: string): Node | undefined {
     switch (type.type) {
       case "TSTypeLiteral": {
-        const member = (type.members as Node[]).find(
+        const member = (type.members as Array<Node>).find(
           (each) => propertyName(each.key as Node | undefined) === key,
         );
         if (!member) {
@@ -997,7 +1001,7 @@ class WrittenTypes {
       }
       case "TSUnionType":
       case "TSIntersectionType": {
-        const found = (type.types as Node[])
+        const found = (type.types as Array<Node>)
           .map((each) => this.#memberType(this.#resolve(each), key))
           .filter((each): each is Node => each !== undefined);
         if (!found.length) {
@@ -1058,8 +1062,8 @@ function identifierNames(node: Node): Set<string> {
 }
 
 /** The expressions directly in an expression: its operands, its callee, its arguments. */
-function childExpressions(node: Node): Node[] {
-  const found: Node[] = [];
+function childExpressions(node: Node): Array<Node> {
+  const found: Array<Node> = [];
   for (const [key, value] of Object.entries(node)) {
     if (key === "type" || key === "parent" || key === "typeArguments") {
       continue;
@@ -1117,7 +1121,7 @@ function elementType(type: Node): Node | undefined {
     case "TSArrayType":
       return type.elementType as Node;
     case "TSTupleType": {
-      const elements = (type.elementTypes as Node[]).map((each) =>
+      const elements = (type.elementTypes as Array<Node>).map((each) =>
         each.type === "TSNamedTupleMember" ? (each.elementType as Node) : each,
       );
       return { type: "TSUnionType", types: elements, start: 0, end: 0 };
@@ -1127,7 +1131,8 @@ function elementType(type: Node): Node | undefined {
       if (name !== "Array" && name !== "ReadonlyArray") {
         return undefined;
       }
-      const [element] = ((type.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+      const [element] =
+        ((type.typeArguments as Node | null)?.params as Array<Node> | undefined) ?? [];
       return element ?? { type: "TSUnknownKeyword", start: 0, end: 0 };
     }
     default:

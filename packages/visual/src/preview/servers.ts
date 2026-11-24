@@ -68,7 +68,7 @@ export interface TargetServerOptions {
   /** The layout of each entry that sets one, by key (ADR-0114): the frame centres the others. */
   layouts?: Readonly<Record<string, PreviewLayout>>;
   /** The control groups of each example that has any, by key, for an embed's controls (ADR-0116). */
-  controls?: Readonly<Record<string, ExampleControlGroup[]>>;
+  controls?: Readonly<Record<string, Array<ExampleControlGroup>>>;
 }
 
 /** The frame runtime's file, wherever the package is installed. */
@@ -97,7 +97,7 @@ export function frameModule(
   staticRenders?: StaticRenders,
   staticPreview = false,
   layouts: Readonly<Record<string, PreviewLayout>> = {},
-  controls: Readonly<Record<string, ExampleControlGroup[]>> = {},
+  controls: Readonly<Record<string, Array<ExampleControlGroup>>> = {},
 ): string {
   const loaders = Object.entries(entries)
     .map(([id, file]) => {

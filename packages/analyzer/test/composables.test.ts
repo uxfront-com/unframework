@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { problems, run } from "./helpers.ts";
 
 /** Analyses a module of composables. */
-function composables(lines: readonly string[]) {
+function composables(lines: ReadonlyArray<string>) {
   const source = lines.join("\n");
   return { source, ...run(source, "useToggle.uf.ts") };
 }
@@ -373,7 +373,7 @@ describe("a composable", () => {
 });
 
 /** A composable `useA` whose setup is `setup`, returning `returned`. */
-function useA(setup: readonly string[], returned = "return { n };", imports = "ref") {
+function useA(setup: ReadonlyArray<string>, returned = "return { n };", imports = "ref") {
   return composables([
     `import { ${imports} } from "@uxfront/unframework";`,
     "export function useA() {",

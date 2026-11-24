@@ -31,22 +31,22 @@ export interface Suspensions {
  * `try` block, which may run without it), and the functions `deferred` selects, whole. A function
  * in the body that may run at once (an array method's callback) has its own regions.
  */
-export function laterRegions(fn: FunctionNode, suspensions: Suspensions): Span[] {
-  const regions: Span[] = [];
+export function laterRegions(fn: FunctionNode, suspensions: Suspensions): Array<Span> {
+  const regions: Array<Span> = [];
   walkFunction(fn, suspensions, regions);
   return regions;
 }
 
 /** Whether a position lies in one of the regions. */
-export function isLater(position: number, regions: readonly Span[]): boolean {
+export function isLater(position: number, regions: ReadonlyArray<Span>): boolean {
   return regions.some((region) => position >= region.start && position < region.end);
 }
 
-function walkFunction(fn: FunctionNode, suspensions: Suspensions, regions: Span[]): void {
+function walkFunction(fn: FunctionNode, suspensions: Suspensions, regions: Array<Span>): void {
   if (!fn.body) {
     return;
   }
-  const path: AST.Node[] = [];
+  const path: Array<AST.Node> = [];
   const visit = (value: unknown): void => {
     if (!value || typeof value !== "object") {
       return;
@@ -89,7 +89,7 @@ function walkFunction(fn: FunctionNode, suspensions: Suspensions, regions: Span[
  * Where what follows a node on every path from it ends: the end of the outermost construct
  * around it, inside the function, that runs it unconditionally once it starts.
  */
-function dominatedEnd(node: AST.Node, path: readonly AST.Node[]): number {
+function dominatedEnd(node: AST.Node, path: ReadonlyArray<AST.Node>): number {
   let end = node.end;
   let child = node;
   for (let index = path.length - 1; index >= 0; index--) {
@@ -146,8 +146,8 @@ function runsUnderCondition(parent: AST.Node, child: AST.Node): boolean {
 export function deferredFunctions(render: RenderContext): ReadonlySet<FunctionNode> {
   const { passed } = render.facts;
   const found = new Set<FunctionNode>();
-  const held: { name: AST.BindingIdentifier; value: FunctionNode }[] = [];
-  const references = new Map<object, AST.IdentifierReference[]>();
+  const held: Array<{ name: AST.BindingIdentifier; value: FunctionNode }> = [];
+  const references = new Map<object, Array<AST.IdentifierReference>>();
   const visit = (value: unknown, depth: number): void => {
     if (!value || typeof value !== "object") {
       return;

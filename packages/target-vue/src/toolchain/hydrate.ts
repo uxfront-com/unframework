@@ -19,7 +19,7 @@ const SUMMARY = /^Hydration completed but contains mismatches/;
 export const hydrate: HydrateAdapter = async (component, container, html, { props, on }) => {
   const current: Record<string, unknown> = shallowReactive({ ...props });
   const listeners = listenerProps(on);
-  const mismatches: string[] = [];
+  const mismatches: Array<string> = [];
   const app = createSSRApp({
     render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
   });
@@ -32,7 +32,7 @@ export const hydrate: HydrateAdapter = async (component, container, html, { prop
   };
   container.innerHTML = html;
   const { error } = console;
-  console.error = (...args: unknown[]) => {
+  console.error = (...args: Array<unknown>) => {
     if (typeof args[0] === "string" && SUMMARY.test(args[0])) {
       mismatches.push(args[0]);
     } else {

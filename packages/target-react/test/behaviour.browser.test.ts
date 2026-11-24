@@ -21,10 +21,10 @@ async function component(name: string): Promise<ComponentType<Record<string, unk
   return module.default;
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
-let events: [string, ...unknown[]][];
+let events: Array<[string, ...Array<unknown>]>;
 
 beforeEach(() => {
   logged.length = 0;
@@ -43,14 +43,14 @@ afterEach(async () => {
 });
 
 /** Listeners that record every emit of `names`, in order, as `[name, ...args]`. */
-function recording(...names: string[]): Record<string, MountListener> {
+function recording(...names: Array<string>): Record<string, MountListener> {
   return Object.fromEntries(
-    names.map((name) => [name, (...args: unknown[]) => void events.push([name, ...args])]),
+    names.map((name) => [name, (...args: Array<unknown>) => void events.push([name, ...args])]),
   );
 }
 
 /** The props a parent passes to record emits of `names` without the adapter: `onChange`. */
-function props(...names: string[]): Record<string, MountListener> {
+function props(...names: Array<string>): Record<string, MountListener> {
   return Object.fromEntries(
     Object.entries(recording(...names)).map(([name, listener]) => [
       `on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
@@ -61,7 +61,7 @@ function props(...names: string[]): Record<string, MountListener> {
 
 async function start(
   type: ComponentType<Record<string, unknown>>,
-  names: string[],
+  names: Array<string>,
   props: Record<string, unknown> = {},
 ): Promise<MountedComponent> {
   mounted = await mount(type, container, { props, on: recording(...names) });
@@ -78,7 +78,7 @@ const button = (name: string) =>
  */
 async function startStrict(
   type: ComponentType<Record<string, unknown>>,
-  names: string[],
+  names: Array<string>,
 ): Promise<MountedComponent> {
   const root = createRoot(container);
   const inAct = async <T>(callback: () => T | Promise<T>): Promise<T> => {
@@ -160,7 +160,7 @@ describe("react output in the browser", () => {
   });
 
   it("asks a parent that holds a model's value for the same value on every write", async () => {
-    const changes: unknown[] = [];
+    const changes: Array<unknown> = [];
     await start(await component("HeldStepper"), [], {
       value: 5,
       onValueChange: (value: unknown) => void changes.push(value),
@@ -433,7 +433,7 @@ describe("react output in the browser", () => {
 
   describe("a directive", () => {
     /** The calls `Marked`'s directive reports, in order. */
-    const calls: string[] = [];
+    const calls: Array<string> = [];
     const record = (event: Event) => void calls.push(String((event as CustomEvent).detail));
     beforeEach(() => {
       calls.length = 0;
@@ -474,7 +474,7 @@ describe("react output in the browser", () => {
 
   describe("a directive on every element one use renders", () => {
     /** The calls each element got, by element, in the order of their first call. */
-    const calls = new Map<Element, string[]>();
+    const calls = new Map<Element, Array<string>>();
     const record = (event: Event) => {
       const { call, el } = (event as CustomEvent<{ call: string; el: Element }>).detail;
       calls.set(el, [...(calls.get(el) ?? []), call]);

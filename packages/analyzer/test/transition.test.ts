@@ -17,7 +17,7 @@ export function A() { const open = ref(false); const label = "x"; ${setup}return
 }
 
 /** The diagnostics `jsx` gets, as `code text-at-span`. */
-function reported(jsx: string, setup = ""): string[] {
+function reported(jsx: string, setup = ""): Array<string> {
   const text = source(jsx, setup);
   return problems(text, run(text).diagnostics);
 }
@@ -29,7 +29,7 @@ function lowered(jsx: string): TransitionNode {
   expect(diagnostics).toEqual([]);
   expect(checkInvariants(module!)).toEqual([]);
   const component = module!.components.find((each) => each.name === "A")!;
-  const [transition] = (component.render as { children: TransitionNode[] }).children;
+  const [transition] = (component.render as { children: Array<TransitionNode> }).children;
   expect(transition!.kind).toBe("Transition");
   return transition!;
 }
@@ -60,7 +60,7 @@ describe("<Transition>", () => {
     ["a parenthesised branch", "{open.value && (\n  <p>a</p>\n)}", 1],
   ])("lowers %s to an If inside it", (_, child, branches) => {
     const transition = lowered(`<div><Transition>${child}</Transition></div>`);
-    const [condition] = transition.children as IfNode[];
+    const [condition] = transition.children as Array<IfNode>;
     expect(condition!.kind).toBe("If");
     expect(condition!.branches).toHaveLength(branches);
   });
@@ -230,7 +230,7 @@ export function A() { return <div><Transition /></div>; }`;
     expect(diagnostics).toEqual([]);
     const [child] = (
       module!.components.find((each) => each.name === "A")!.render as {
-        children: { kind: string }[];
+        children: Array<{ kind: string }>;
       }
     ).children;
     expect(child!.kind).toBe("Component");

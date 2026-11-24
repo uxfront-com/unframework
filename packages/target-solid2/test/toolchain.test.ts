@@ -24,7 +24,7 @@ beforeAll(() => mkdirSync(scratch, { recursive: true }));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Every Solid 2 golden; the corpus has at least the two `basics` cases. */
-function solidGoldens(): ToolchainFile[] {
+function solidGoldens(): Array<ToolchainFile> {
   const files = goldens("solid2");
   expect(files.map((file) => file.path.split("/").at(-1))).toEqual(
     expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),

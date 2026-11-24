@@ -14,7 +14,7 @@ export function recordPort(work: string, port: number): void {
   writeFileSync(join(ledger(work), String(port)), "");
 }
 
-export function recordedPorts(work: string): number[] {
+export function recordedPorts(work: string): Array<number> {
   return existsSync(ledger(work)) ? readdirSync(ledger(work)).map(Number) : [];
 }
 
@@ -34,7 +34,7 @@ function isListening(port: number): Promise<boolean> {
 }
 
 /** The ports in the list that something still listens on. */
-export async function stillListening(ports: number[]): Promise<number[]> {
+export async function stillListening(ports: Array<number>): Promise<Array<number>> {
   const open = await Promise.all(ports.map(isListening));
   return ports.filter((_, index) => open[index]);
 }

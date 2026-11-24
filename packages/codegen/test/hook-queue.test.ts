@@ -8,7 +8,7 @@ import { hookQueueCode } from "../src/index.ts";
 
 /** An element of a tree, with what the queue reads of one. */
 class FakeElement {
-  readonly children: FakeElement[] = [];
+  readonly children: Array<FakeElement> = [];
   readonly name: string;
   readonly parent: FakeElement | undefined;
 
@@ -29,8 +29,8 @@ class FakeElement {
 
   /** `DOCUMENT_POSITION_FOLLOWING` (4) where `other` comes after this one in document order. */
   compareDocumentPosition(other: FakeElement): number {
-    const order = (element: FakeElement): number[] => {
-      const path: number[] = [];
+    const order = (element: FakeElement): Array<number> => {
+      const path: Array<number> = [];
       for (let at = element; at.parent; at = at.parent) {
         path.unshift(at.parent.children.indexOf(at));
       }
@@ -62,8 +62,8 @@ function queue(): Queue {
 }
 
 /** Queues the hooks in order, and gives the order they ran in once the turn ends. */
-async function run(hooks: [FakeElement, Hook][]): Promise<string[]> {
-  const ran: string[] = [];
+async function run(hooks: Array<[FakeElement, Hook]>): Promise<Array<string>> {
+  const ran: Array<string> = [];
   const queueHook = queue();
   for (const [element, hook] of hooks) {
     queueHook(element, () => ran.push(`${hook} ${element.name}`), hook);

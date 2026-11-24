@@ -53,11 +53,11 @@ export interface CompileRequest {
    * not, by id, and the scoped sheet each of them names as its `styleUrl`, by its path: the
    * worker cannot ask the unframework plugin.
    */
-  sources: [id: string, source: string][];
+  sources: Array<[id: string, source: string]>;
   /** The virtual module each relative import among them resolved to, by `childKey`. */
-  children: [key: string, id: string][];
+  children: Array<[key: string, id: string]>;
   /** The ambient declarations the program reads beside the module, from the disk (ADR-0064). */
-  declarations: string[];
+  declarations: Array<string>;
 }
 
 /** What a worker receives: a compile, or a plugin whose program it can drop. */
@@ -69,10 +69,10 @@ export interface Compiled {
   map?: string;
   /** The errors as ngc prints them, and their codes: none when it compiled. */
   errors: string;
-  codes: string[];
+  codes: Array<string>;
   warnings: string;
   /** The module's export names, for a module that has to stand in for a rejected one. */
-  exports: string[];
+  exports: Array<string>;
 }
 
 /** What a worker replies to a compile: its outcome, or what it threw. */
@@ -88,7 +88,7 @@ export type WorkerReply = { request: number } & ({ compiled: Compiled } | { fail
  */
 export function ngtscVirtual(
   compiler: AngularCompiler,
-  declarations: readonly string[] = [],
+  declarations: ReadonlyArray<string> = [],
 ): Plugin {
   const pluginId = nextPlugin++;
   let api: UnframeworkApi | undefined;
@@ -276,7 +276,7 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
     thread: CompileThread;
     pending: Map<number, { resolve(compiled: Compiled): void; reject(e: unknown): void }>;
   }
-  const slots: Slot[] = [];
+  const slots: Array<Slot> = [];
   let nextRequest = 0;
 
   function open(): Slot {
@@ -373,7 +373,7 @@ function compilePoolOf(compiler: AngularCompiler): CompilePool {
 }
 
 /** The values a module's code exports by name, for a module that stands in for it. */
-function exportedNames(code: string): string[] {
+function exportedNames(code: string): Array<string> {
   return [...code.matchAll(/^export\s+(?:default\s+)?(?:class|const|function)\s+(\w+)/gm)]
     .filter(([whole]) => !/^export\s+default\b/.test(whole))
     .map(([, name]) => name!);
@@ -388,7 +388,7 @@ export function childKey(importer: string, specifier: string): string {
  * A module that throws `message` when it runs and still provides every export of the module it
  * stands in for, so its importers link and the message is what they see.
  */
-function failingModule(message: string, exports: readonly string[]): string {
+function failingModule(message: string, exports: ReadonlyArray<string>): string {
   const lines = [`throw new Error(${JSON.stringify(message)});`, "export default undefined;"];
   const named = exports.filter((name) => name !== "default");
   if (named.length) {

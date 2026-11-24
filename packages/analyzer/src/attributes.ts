@@ -96,7 +96,7 @@ export interface ElementContext {
 
 /** An element's attributes, lowered. */
 export interface LoweredAttributes {
-  attributes: Attribute[];
+  attributes: Array<Attribute>;
   /** A list body's `key`, which its list lifts off the element. */
   key: AST.JSXAttribute | undefined;
   /** Whether an attribute binds anything: a binding, a spread, a dynamic class or style. */
@@ -125,7 +125,7 @@ type Form =
       /** Whether its value has a problem already reported (UF3009, UF3010). */
       reported: boolean;
       /** The references in it that only HTML decodes, to report once its checks are known. */
-      references: HtmlOnlyReference[];
+      references: Array<HtmlOnlyReference>;
       literal?: Literal;
     }
   /** A literal that renders no attribute: `{null}`, `{undefined}`, a boolean's `{false}`. */
@@ -173,7 +173,7 @@ interface SpreadRead {
   /** The spread, when its keys are known and fit the element. */
   attribute: Attribute | undefined;
   /** The keys it sets, with where its type declares each. */
-  keys: { name: string; key: Span }[];
+  keys: Array<{ name: string; key: Span }>;
 }
 
 /**
@@ -186,7 +186,7 @@ export function lowerAttributes(
   element: ElementContext,
 ): LoweredAttributes {
   const { reporter } = element.render;
-  const entries: (Read | SpreadRead | OwnRead)[] = [];
+  const entries: Array<Read | SpreadRead | OwnRead> = [];
   let key: AST.JSXAttribute | undefined;
   let after = opening.name.end;
   for (const item of opening.attributes) {
@@ -385,7 +385,7 @@ function restSpread(item: AST.JSXSpreadAttribute, element: ElementContext): Attr
  */
 function checkHandlers(
   opening: AST.JSXOpeningElement,
-  entries: readonly (Read | SpreadRead | OwnRead)[],
+  entries: ReadonlyArray<Read | SpreadRead | OwnRead>,
   element: ElementContext,
   own?: ApiFallthroughOwn,
 ): void {
@@ -641,7 +641,7 @@ function rewritable(node: StaticString, source: string): boolean {
 
 /** The ARIA attributes whose value is text or ids (`aria-label`, `aria-controls`), with what they take. */
 const ARIA_TEXT: ReadonlyMap<string, string> = new Map(
-  [...ARIA_TYPES].flatMap(([name, { type }]): [string, string][] =>
+  [...ARIA_TYPES].flatMap(([name, { type }]): Array<[string, string]> =>
     type === "string"
       ? [[name, "text"]]
       : type === "id"
@@ -671,7 +671,7 @@ function readValue(
   name: string,
   literal: AST.StringLiteral,
   reporter: Reporter,
-): { value: string; reported: boolean; pieces: Piece[] } {
+): { value: string; reported: boolean; pieces: Array<Piece> } {
   const raw = literal.value;
   const reading = readJsxAttribute(raw);
   // The raw text starts after the opening quote.
@@ -787,7 +787,7 @@ function readSpread(
     }
     return { node: item, binds: true, attribute: undefined, keys: [] };
   }
-  const removal = (): Fix[] =>
+  const removal = (): Array<Fix> =>
     checked.clean && !reporter.hasErrorsSince(mark)
       ? [
           {
@@ -829,8 +829,8 @@ function readSpread(
   }
   // An unfollowed source checks its keys as though it may be nullish, as its type says.
   const nullish = source.kind !== "read" || source.nullish;
-  const keys: SpreadKey[] = [];
-  const read: { name: string; key: Span }[] = [];
+  const keys: Array<SpreadKey> = [];
+  const read: Array<{ name: string; key: Span }> = [];
   for (const [authored, member] of shape.members()) {
     const related = [{ span: member.key, message: "The spread's type declares the key here" }];
     const name = canonicalName(tag, namespace, authored);
@@ -916,7 +916,7 @@ function objectSpread(
         : [],
     ),
   );
-  const attributes: string[] = [];
+  const attributes: Array<string> = [];
   // Another spread's keys are not known here: the attributes written out could clash with them.
   let fixable = opening.attributes.every(
     (attribute) => attribute === item || attribute.type === "JSXAttribute",
@@ -981,7 +981,7 @@ function objectSpread(
     }
     attributes.push(`${name}={${source.slice(value.start, value.end)}}`);
   }
-  const fixes: Fix[] =
+  const fixes: Array<Fix> =
     fixable && !reporter.hasErrorsSince(mark)
       ? [
           {
@@ -1004,9 +1004,9 @@ function objectSpread(
  * lowers what is accepted.
  */
 function checkAgainstElement(
-  entries: readonly (Read | SpreadRead | OwnRead)[],
+  entries: ReadonlyArray<Read | SpreadRead | OwnRead>,
   element: ElementContext,
-): Attribute[] {
+): Array<Attribute> {
   const { tag, namespace, hasChildren } = element;
   const { reporter } = element.render;
   const reads = entries.filter((entry): entry is Read => "form" in entry);
@@ -1032,7 +1032,7 @@ function checkAgainstElement(
     typeRead?.form.kind === "static" ? (typeRead.form.value?.toLowerCase() ?? "") : undefined;
   const staticType = typeRead === undefined || typeRead.form.kind === "static";
 
-  const attributes: Attribute[] = [];
+  const attributes: Array<Attribute> = [];
   const firsts = new Map<string, Span>();
   let ownClass: Span | undefined;
   let spreadClass: Span | undefined;
@@ -1516,7 +1516,7 @@ export function boundProblem(
       );
     }
   }
-  let allowed: Primitive[];
+  let allowed: Array<Primitive>;
   let message: (kinds: string) => string;
   let help: string;
   if (namespace === "html" && isBooleanAttribute(name)) {
@@ -1584,7 +1584,7 @@ function ariaBindingProblem(name: string, kinds: Kinds): Problem | undefined {
   if (!name.startsWith("aria-") && name !== "role") {
     return undefined;
   }
-  const values: string[] = [];
+  const values: Array<string> = [];
   for (const primitive of kinds.primitives) {
     if (primitive === "string" && kinds.strings) {
       values.push(...kinds.strings);
@@ -1908,7 +1908,7 @@ function report(
   reporter: Reporter,
   node: { start: number; end: number },
   problem: Problem,
-  related?: { span: Span; message: string }[],
+  related?: Array<{ span: Span; message: string }>,
   at?: Span,
 ): void {
   const where = at ?? node;

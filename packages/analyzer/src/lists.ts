@@ -75,7 +75,7 @@ export function lowerList(
     const nullable = outsideKinds.every((kind) => kind === "null" || kind === "undefined");
     // `source?.map(…)`, and a chain a `?.` in the source ends, render nothing for a nullish
     // source, as `(source ?? []).map(…)` does.
-    const fixes: Fix[] =
+    const fixes: Array<Fix> =
       (optional || checked.shortCircuits) && nullable && token
         ? [
             {
@@ -193,7 +193,7 @@ export function lowerList(
     return undefined;
   }
   // The loop variables: in scope in the key and the body.
-  const variables: LoopVariable[] = [];
+  const variables: Array<LoopVariable> = [];
   if (valid) {
     for (const [position, parameter] of parameters.entries()) {
       const identifier = parameter as AST.BindingIdentifier;
@@ -318,7 +318,7 @@ function lowerKey(
   attribute: AST.JSXAttribute | undefined,
   body: AST.JSXElement,
   callback: AST.ArrowFunctionExpression,
-  variables: readonly LoopVariable[],
+  variables: ReadonlyArray<LoopVariable>,
   render: RenderContext,
 ) {
   const { reporter } = render;
@@ -407,7 +407,7 @@ function indexKeyFix(
   render: RenderContext,
 ): Fix {
   const { source } = render;
-  const [item, existing] = callback.params as AST.BindingIdentifier[];
+  const [item, existing] = callback.params as Array<AST.BindingIdentifier>;
   const component = source.slice(render.component.start, render.component.end);
   let name = existing?.name;
   const edits: Fix["edits"] = [];

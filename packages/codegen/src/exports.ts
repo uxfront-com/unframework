@@ -20,8 +20,8 @@ import { collectNames } from "./rewrite.ts";
 export function exportDeclaration(
   local: string,
   declaration: AST.Function | AST.Class | AST.Expression,
-  exports: readonly UfExport[],
-): AST.Statement[] {
+  exports: ReadonlyArray<UfExport>,
+): Array<AST.Statement> {
   const [only] = exports;
   if (exports.length === 1 && only!.kind === "default") {
     return [exportDefault(declaration)];
@@ -47,7 +47,7 @@ function isDeclaration(
  * exported by its name all the same: it is a sibling file of the module's (ADR-0053), which its
  * siblings import, and which the module's public exports leave out.
  */
-export function exportsOf(component: string, exports: readonly UfExport[]): UfExport[] {
+export function exportsOf(component: string, exports: ReadonlyArray<UfExport>): Array<UfExport> {
   const own = exports.filter((entry) => entry.local === component);
   return own.length
     ? own
@@ -58,7 +58,7 @@ export function exportsOf(component: string, exports: readonly UfExport[]): UfEx
  * The type declarations a component's output declares beside it: those its props' types
  * reach (`component.types`), in source order (ADR-0034).
  */
-export function componentTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
+export function componentTypes(component: UfComponent, module: UfModule): Array<TypeDeclaration> {
   const used = new Set(component.types);
   return module.types.filter((declaration) => used.has(declaration.name));
 }
@@ -157,7 +157,7 @@ export function typeExportsCode(
   component: UfComponent,
   module: UfModule,
   file: (name: string) => string,
-): { code: string; span: Span }[] {
+): Array<{ code: string; span: Span }> {
   if (keyOwner(module.components, module.exports) !== component.name) {
     return [];
   }

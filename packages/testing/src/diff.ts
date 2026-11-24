@@ -27,7 +27,7 @@ export function diffLines(expected: string, actual: string, options: DiffOptions
   const b = actual.split("\n");
   const ops = a.length * b.length > MAX_CELLS ? firstChange(a, b) : lcsOps(a, b);
 
-  const lines: string[] = [];
+  const lines: Array<string> = [];
   let lastPrinted = -1;
   const changed = ops.map((op) => op.kind !== " ");
   for (let index = 0; index < ops.length; index += 1) {
@@ -56,7 +56,7 @@ interface Op {
   text: string;
 }
 
-function lcsOps(a: readonly string[], b: readonly string[]): Op[] {
+function lcsOps(a: ReadonlyArray<string>, b: ReadonlyArray<string>): Array<Op> {
   const width = b.length + 1;
   const table = new Uint32Array((a.length + 1) * width);
   for (let i = a.length - 1; i >= 0; i -= 1) {
@@ -67,7 +67,7 @@ function lcsOps(a: readonly string[], b: readonly string[]): Op[] {
           : Math.max(table[(i + 1) * width + j]!, table[i * width + j + 1]!);
     }
   }
-  const ops: Op[] = [];
+  const ops: Array<Op> = [];
   let i = 0;
   let j = 0;
   while (i < a.length && j < b.length) {
@@ -93,7 +93,7 @@ function lcsOps(a: readonly string[], b: readonly string[]): Op[] {
 }
 
 /** For very large inputs: everything up to the first differing line is shared, the rest differs. */
-function firstChange(a: readonly string[], b: readonly string[]): Op[] {
+function firstChange(a: ReadonlyArray<string>, b: ReadonlyArray<string>): Array<Op> {
   let start = 0;
   while (start < a.length && start < b.length && a[start] === b[start]) {
     start += 1;

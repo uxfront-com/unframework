@@ -55,7 +55,11 @@ import { suite } from "./markup-cases.ts";
 import type { Builder, PropSpec } from "./markup-cases.ts";
 
 const at = { start: 0, end: 0 };
-const el = (tag: string, children: RenderNode[] = [], attributes: [string, string | true][] = []) =>
+const el = (
+  tag: string,
+  children: Array<RenderNode> = [],
+  attributes: Array<[string, string | true]> = [],
+) =>
   createElement(
     tag,
     attributes.map(([name, value]) => createStaticAttribute(name, value, at)),
@@ -63,7 +67,7 @@ const el = (tag: string, children: RenderNode[] = [], attributes: [string, strin
     at,
   );
 const text = (value: string) => createText(value, at);
-const p = (...children: RenderNode[]) => el("p", children);
+const p = (...children: Array<RenderNode>) => el("p", children);
 
 describe("escaping", () => {
   /** Printed on one line, so the snapshots show the escapes alone. */
@@ -535,7 +539,7 @@ function printed(
   };
 }
 
-const lines = (...each: string[]) => each.join("\n");
+const lines = (...each: Array<string>) => each.join("\n");
 const on = { type: "boolean", value: true } as const;
 
 describe("control flow", () => {
@@ -1245,14 +1249,14 @@ describe("listeners and template refs", () => {
   const index = createBinding("index", "loopVar", span(56, 61));
   const bindings = [save, count, input, onclick, item, index];
   let offset = 1000;
-  const code = (text: string, ...targets: CodeTarget[]) => {
+  const code = (text: string, ...targets: Array<CodeTarget>) => {
     const found = codeAt(offset, text, ...targets);
     offset += text.length + 10;
     return found;
   };
   const named = (binding = save) => createFunctionHandler(binding.id, at);
   /** `() => body`, or `(event) => body` with an event parameter. */
-  const inline = (body: string, targets: CodeTarget[], event = false) =>
+  const inline = (body: string, targets: Array<CodeTarget>, event = false) =>
     createInlineHandler(
       createFunctionCode(
         event ? [createParameter("event", at, { event: "MouseEvent" })] : [],
@@ -1277,7 +1281,7 @@ describe("listeners and template refs", () => {
     handler: Handler,
     options: Parameters<typeof createEventAttribute>[3] = {},
   ) => createEventAttribute(event, handler, at, options);
-  const button = (...attributes: Attribute[]) => createElement("button", attributes, [], at);
+  const button = (...attributes: Array<Attribute>) => createElement("button", attributes, [], at);
   const component = (render: ElementNode) =>
     createComponent("Counter", render, at, [], undefined, [], bindings);
   /** Vue's and Svelte's spelling: a ref's value is its variable in the template. */
@@ -1537,7 +1541,7 @@ describe("scope attributes (ADR-0063)", () => {
   });
 
   it("adds what a target spreads on the root nodes it names, after the scope attributes", () => {
-    const named: string[] = [];
+    const named: Array<string> = [];
     const markup = printMarkup(tree, svelteDialect, {
       ...options(true),
       scopeRootAttributes(element) {

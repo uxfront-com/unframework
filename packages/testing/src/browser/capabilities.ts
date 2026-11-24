@@ -39,7 +39,7 @@ export function capabilityCell(
  * reason of the first one whose cell is unsupported (`requires interactivity: …`), or nothing.
  */
 export function requiredSkip(
-  requires: readonly string[],
+  requires: ReadonlyArray<string>,
   cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
 ): string | undefined {
   for (const name of requires) {

@@ -61,7 +61,7 @@ function rendered(source: string): string {
 function inert(dir: string): boolean {
   const expected = JSON.parse(
     readFileSync(join(dir, "__expected__", "diagnostics.json"), "utf8"),
-  ) as { code: string; target?: string }[];
+  ) as Array<{ code: string; target?: string }>;
   return expected.some((each) => each.code === "UF4001" && each.target === target);
 }
 
@@ -92,7 +92,7 @@ const DEVELOPMENT: Build = {
 const moduleKey = (path: string) => path.replace(/\.[cm]?[jt]sx?$/, "");
 
 /** The code of one build of a case's compiled modules. */
-async function bundled(modules: readonly ToolchainFile[], build: Build): Promise<string> {
+async function bundled(modules: ReadonlyArray<ToolchainFile>, build: Build): Promise<string> {
   const byKey = new Map(modules.map((module) => [moduleKey(module.path), module] as const));
   // `@solidjs/web` is installed only beside the Solid 2 toolchain (ADR-0102).
   const base = join(target === "solid2" ? toolchainDir(target) : ROOT, "index.js");
@@ -142,11 +142,11 @@ async function bundled(modules: readonly ToolchainFile[], build: Build): Promise
 
 describe(`dev-only production build › ${target}`, () => {
   /** Each case's compiled modules, by build: a compiler may decide the build itself (Qwik's). */
-  const compiled = new Map<string, Record<Build["condition"], ToolchainFile[]>>();
+  const compiled = new Map<string, Record<Build["condition"], Array<ToolchainFile>>>();
 
   beforeAll(async () => {
     const toolchain = await loadToolchain(target);
-    const emit = async (paths: readonly string[], mode: Build["condition"]) => {
+    const emit = async (paths: ReadonlyArray<string>, mode: Build["condition"]) => {
       const contents = paths.map((path) => ({ path, contents: readFileSync(path, "utf8") }));
       const emitted = await toolchain.frameworkEmit(contents, {
         toolchainDir: toolchainDir(target),

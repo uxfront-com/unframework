@@ -9,7 +9,7 @@ export type PropControl =
   | { name: string; optional: boolean; kind: "boolean"; initial: boolean }
   | { name: string; optional: boolean; kind: "string"; initial: string }
   | { name: string; optional: boolean; kind: "number"; initial: number }
-  | { name: string; optional: boolean; kind: "select"; options: string[]; initial: string };
+  | { name: string; optional: boolean; kind: "select"; options: Array<string>; initial: string };
 
 /** A prop the shell cannot set: its name, its type as written, and why. */
 export interface UncontrolledProp {
@@ -20,8 +20,8 @@ export interface UncontrolledProp {
 
 /** What the shell shows for a component's props. */
 export interface PropControls {
-  controls: PropControl[];
-  uncontrolled: UncontrolledProp[];
+  controls: Array<PropControl>;
+  uncontrolled: Array<UncontrolledProp>;
 }
 
 /**
@@ -29,9 +29,9 @@ export interface PropControls {
  * component's own default applies until the control changes; `initial` is the value the control
  * shows then. A required prop starts at `initial`, which every target is given.
  */
-export function propControls(props: readonly ApiMember[]): PropControls {
-  const controls: PropControl[] = [];
-  const uncontrolled: UncontrolledProp[] = [];
+export function propControls(props: ReadonlyArray<ApiMember>): PropControls {
+  const controls: Array<PropControl> = [];
+  const uncontrolled: Array<UncontrolledProp> = [];
   for (const member of props) {
     const control = controlOf(member);
     if (typeof control === "string") {
@@ -87,9 +87,9 @@ export function controlOf(member: ApiMember): PropControl | string {
  * The members of a union type as written, split at its top-level `|`, or `undefined` when the
  * text holds brackets, generics or a template literal the split could misread.
  */
-export function unionMembers(type: string): string[] | undefined {
+export function unionMembers(type: string): Array<string> | undefined {
   const text = type.trim().replace(/^\|/, "");
-  const members: string[] = [];
+  const members: Array<string> = [];
   let current = "";
   let quote: string | undefined;
   for (let index = 0; index < text.length; index += 1) {

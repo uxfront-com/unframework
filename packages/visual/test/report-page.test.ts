@@ -21,7 +21,7 @@ function cell(overrides: Partial<VisualCell> = {}): VisualCell {
   };
 }
 
-function report(cells: VisualCell[], overrides: Partial<VisualReport> = {}): VisualReport {
+function report(cells: Array<VisualCell>, overrides: Partial<VisualReport> = {}): VisualReport {
   return {
     version: 1,
     pixels: "live",

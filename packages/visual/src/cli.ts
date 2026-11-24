@@ -22,14 +22,14 @@ export interface VisualIo {
 
 /** The command's arguments, read. */
 export interface VisualArguments {
-  targets: TargetName[];
+  targets: Array<TargetName>;
   pixels?: "live" | "baseline";
   update: boolean;
   out?: string;
 }
 
 /** Reads the arguments, throwing on a usage error: the CLI exits 2 with the message. */
-export function parseVisualArguments(args: readonly string[]): VisualArguments {
+export function parseVisualArguments(args: ReadonlyArray<string>): VisualArguments {
   const parsed: VisualArguments = { targets: [], update: false };
   const value = (name: string, inline: string | undefined, index: number): string => {
     const next = inline ?? args[index];
@@ -89,7 +89,7 @@ export function parseVisualArguments(args: readonly string[]): VisualArguments {
  * one differs or declares props (UF7011), and 2 on a usage or configuration error, which it
  * reports, as the CLI's other commands do.
  */
-export async function run(args: string[], io: VisualIo): Promise<number> {
+export async function run(args: Array<string>, io: VisualIo): Promise<number> {
   const parsed = parseVisualArguments(args);
   const result = await runVisual({
     root: io.cwd,

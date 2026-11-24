@@ -73,7 +73,7 @@ export interface DirectiveInfo {
    * which each component that applies it declares as it does what it reads itself. An imported
    * directive's module declares its own, so it has none.
    */
-  bindings: readonly Binding[];
+  bindings: ReadonlyArray<Binding>;
 }
 
 /** What lowering a module's directives needs to know. */
@@ -152,10 +152,10 @@ export function directiveCandidate(
  * element reads of each, by its name: a reported one too, so that its uses report nothing more.
  */
 export function lowerDirectives(
-  candidates: readonly DirectiveCandidate[],
+  candidates: ReadonlyArray<DirectiveCandidate>,
   context: DirectiveContext,
-): { directives: UfDirective[]; infos: Map<string, DirectiveInfo> } {
-  const directives: UfDirective[] = [];
+): { directives: Array<UfDirective>; infos: Map<string, DirectiveInfo> } {
+  const directives: Array<UfDirective> = [];
   const infos = new Map<string, DirectiveInfo>();
   for (const candidate of candidates) {
     const lowered = lowerDirective(candidate, context);
@@ -251,10 +251,10 @@ function lowerDirective(
     return undefined;
   }
   const object = unwrapped(hooksArgument) as AST.ObjectExpression;
-  const hooks: DirectiveHook[] = [];
+  const hooks: Array<DirectiveHook> = [];
   const seen = new Map<string, AST.Node>();
-  const bindings: Binding[] = [];
-  const typeNodes: unknown[] = [value, element];
+  const bindings: Array<Binding> = [];
+  const typeNodes: Array<unknown> = [value, element];
   for (const property of object.properties) {
     const hook = hookOf(property, seen, reporter);
     if (!hook) {
@@ -309,7 +309,7 @@ function hookOf(
   property: AST.ObjectPropertyKind,
   seen: Map<string, AST.Node>,
   reporter: Reporter,
-): { name: DirectiveHook["name"]; parameters: string[]; fn: AST.Function } | undefined {
+): { name: DirectiveHook["name"]; parameters: Array<string>; fn: AST.Function } | undefined {
   if (property.type === "SpreadElement") {
     reporter.report("UF2037", property, "A directive's hooks are written out, never spread.", {
       help: DECLARATION_HELP,
@@ -370,7 +370,7 @@ function hookOf(
     );
     return undefined;
   }
-  const parameters: string[] = [];
+  const parameters: Array<string> = [];
   let ok = true;
   for (const parameter of fn.params) {
     if (parameter.type !== "Identifier" || parameter.typeAnnotation || parameter.optional) {
@@ -405,12 +405,12 @@ function hookOf(
  */
 function hookReferences(
   fn: AST.Function,
-  bindings: Binding[],
+  bindings: Array<Binding>,
   context: DirectiveContext,
   directive: string,
-): CodeReference[] {
+): Array<CodeReference> {
   const { scopes, reporter, shared, authoring } = context;
-  const refs: CodeReference[] = [];
+  const refs: Array<CodeReference> = [];
   const reject = (node: AST.Node, message: string, help?: string) =>
     reporter.report("UF2037", node, message, {
       help:
@@ -573,7 +573,7 @@ export type DirectiveValues = (value: {
  * value, a non-empty container or a string, whose directive is a top-level `const` of the module
  * or a name it imports. What `compile()` asks the oracle for before the module is analysed.
  */
-export function directiveValueQueries(parsed: ParsedModule): DirectiveValueQuery[] {
+export function directiveValueQueries(parsed: ParsedModule): Array<DirectiveValueQuery> {
   const names = new Map<string, { start: number; end: number }>();
   for (const statement of parsed.program.body) {
     if (statement.type === "ImportDeclaration") {
@@ -598,7 +598,7 @@ export function directiveValueQueries(parsed: ParsedModule): DirectiveValueQuery
       }
     }
   }
-  const queries: DirectiveValueQuery[] = [];
+  const queries: Array<DirectiveValueQuery> = [];
   if (!names.size) {
     return queries;
   }

@@ -67,13 +67,13 @@ export function templateLiteral(text: string): AST.TemplateLiteral {
 
 // --- Programs and modules -------------------------------------------------------------------
 
-export function program(body: AST.Statement[]): AST.Program {
+export function program(body: Array<AST.Statement>): AST.Program {
   return { type: "Program", sourceType: "module", hashbang: null, body, ...at } as AST.Program;
 }
 
 export function importDeclaration(
   source: string,
-  specifiers: AST.ImportDeclarationSpecifier[],
+  specifiers: Array<AST.ImportDeclarationSpecifier>,
   importKind: "value" | "type" = "value",
 ): AST.ImportDeclaration {
   return {
@@ -133,7 +133,10 @@ export function exportNamed(declaration: AST.Declaration): AST.ExportNamedDeclar
 }
 
 /** `export { local, local as alias, local as default };` */
-export function exportList(local: string, names: readonly string[]): AST.ExportNamedDeclaration {
+export function exportList(
+  local: string,
+  names: ReadonlyArray<string>,
+): AST.ExportNamedDeclaration {
   return {
     type: "ExportNamedDeclaration",
     declaration: null,
@@ -156,7 +159,7 @@ export function exportList(local: string, names: readonly string[]): AST.ExportN
 
 // --- Statements -----------------------------------------------------------------------------
 
-export function blockStatement(body: AST.Statement[]): AST.BlockStatement {
+export function blockStatement(body: Array<AST.Statement>): AST.BlockStatement {
   return { type: "BlockStatement", body, ...at } as AST.BlockStatement;
 }
 
@@ -174,10 +177,10 @@ export function expressionStatement(expression: AST.Expression): AST.ExpressionS
  */
 export function ifStatement(
   test: AST.Expression,
-  consequent: AST.Statement | AST.Statement[],
-  alternate?: AST.Statement | AST.Statement[],
+  consequent: AST.Statement | Array<AST.Statement>,
+  alternate?: AST.Statement | Array<AST.Statement>,
 ): AST.IfStatement {
-  const statement = (body: AST.Statement | AST.Statement[]) =>
+  const statement = (body: AST.Statement | Array<AST.Statement>) =>
     Array.isArray(body) ? blockStatement(body) : body;
   return {
     type: "IfStatement",
@@ -213,8 +216,8 @@ export function variableDeclaration(
 
 export function functionDeclaration(
   name: string,
-  params: AST.ParamPattern[],
-  body: AST.Statement[],
+  params: Array<AST.ParamPattern>,
+  body: Array<AST.Statement>,
   options: { returnType?: AST.TSType; async?: boolean } = {},
 ): AST.Function {
   return {
@@ -234,8 +237,8 @@ export function functionDeclaration(
 
 /** `(params) => body`, or `async (params): T => body` with the options. */
 export function arrowFunction(
-  params: AST.ParamPattern[],
-  body: AST.Statement[] | AST.Expression,
+  params: Array<AST.ParamPattern>,
+  body: Array<AST.Statement> | AST.Expression,
   options: { async?: boolean; returnType?: AST.TSType } = {},
 ): AST.ArrowFunctionExpression {
   const expression = !Array.isArray(body);
@@ -256,8 +259,8 @@ export function arrowFunction(
 /** A call, with type arguments when given (`component$<Props>(…)`, `input<string>()`). */
 export function callExpression(
   callee: AST.Expression,
-  args: AST.Argument[],
-  typeArguments: readonly AST.TSType[] = [],
+  args: Array<AST.Argument>,
+  typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.CallExpression {
   return {
     type: "CallExpression",
@@ -272,8 +275,8 @@ export function callExpression(
 /** `new callee(args)`, with type arguments when given (`new Map<string, number>()`). */
 export function newExpression(
   callee: AST.Expression,
-  args: AST.Argument[],
-  typeArguments: readonly AST.TSType[] = [],
+  args: Array<AST.Argument>,
+  typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.NewExpression {
   return {
     type: "NewExpression",
@@ -309,7 +312,7 @@ export function restElement(name: string, typeAnnotation?: AST.TSType): AST.Form
  * with its default when given (see {@link bindingProperty}).
  */
 export function objectPattern(
-  properties: (AST.BindingProperty | AST.BindingRestElement)[],
+  properties: Array<AST.BindingProperty | AST.BindingRestElement>,
   typeAnnotation?: AST.TSType,
 ): AST.ObjectPattern {
   return {
@@ -327,7 +330,7 @@ export function objectPattern(
  * (`null`).
  */
 export function arrayPattern(
-  elements: (string | AST.BindingPattern | null)[],
+  elements: Array<string | AST.BindingPattern | null>,
   typeAnnotation?: AST.TSType,
 ): AST.ArrayPattern {
   return {
@@ -470,7 +473,7 @@ export function updateExpression(
   return { type: "UpdateExpression", operator, prefix, argument, ...at };
 }
 
-export function arrayExpression(elements: AST.ArrayExpressionElement[]): AST.ArrayExpression {
+export function arrayExpression(elements: Array<AST.ArrayExpressionElement>): AST.ArrayExpression {
   return { type: "ArrayExpression", elements, ...at } as AST.ArrayExpression;
 }
 
@@ -504,7 +507,7 @@ export function property(
  * spreads.
  */
 export function objectExpression(
-  properties: ([key: string, value: AST.Expression] | AST.ObjectPropertyKind)[],
+  properties: Array<[key: string, value: AST.Expression] | AST.ObjectPropertyKind>,
 ): AST.ObjectExpression {
   return {
     type: "ObjectExpression",
@@ -537,7 +540,7 @@ export function tsTypeAnnotation(type: AST.TSType): AST.TSTypeAnnotation {
 /** A reference to a named type, with type arguments when given (`Partial<Props>`). */
 export function typeReference(
   name: string,
-  typeArguments: readonly AST.TSType[] = [],
+  typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.TSTypeReference {
   return {
     type: "TSTypeReference",
@@ -548,7 +551,7 @@ export function typeReference(
 }
 
 function typeParameterInstantiation(
-  params: readonly AST.TSType[],
+  params: ReadonlyArray<AST.TSType>,
 ): AST.TSTypeParameterInstantiation {
   return { type: "TSTypeParameterInstantiation", params: [...params], ...at };
 }
@@ -585,7 +588,7 @@ export function arrayType(element: AST.TSType): AST.TSArrayType {
 }
 
 /** `a | b`. */
-export function unionType(types: readonly AST.TSType[]): AST.TSUnionType {
+export function unionType(types: ReadonlyArray<AST.TSType>): AST.TSUnionType {
   return { type: "TSUnionType", types: [...types], ...at };
 }
 
@@ -598,9 +601,9 @@ export function decorator(expression: AST.Expression): AST.Decorator {
 /** A class, with the interfaces it implements by name (`implements OnInit`). */
 export function classDeclaration(
   name: string,
-  decorators: AST.Decorator[],
-  body: AST.ClassElement[] = [],
-  options: { implements?: readonly string[] } = {},
+  decorators: Array<AST.Decorator>,
+  body: Array<AST.ClassElement> = [],
+  options: { implements?: ReadonlyArray<string> } = {},
 ): AST.Class {
   return {
     type: "ClassDeclaration",
@@ -661,8 +664,8 @@ export function propertyDefinition(
  */
 export function methodDefinition(
   name: string,
-  params: AST.ParamPattern[],
-  body: AST.Statement[],
+  params: Array<AST.ParamPattern>,
+  body: Array<AST.Statement>,
   options: {
     kind?: "method" | "constructor";
     async?: boolean;
@@ -761,8 +764,8 @@ export function jsxExpressionContainer(expression: AST.Expression): AST.JSXExpre
 /** An element, self-closing when it has no children. */
 export function jsxElement(
   name: string,
-  attributes: AST.JSXAttributeItem[] = [],
-  children: AST.JSXChild[] = [],
+  attributes: Array<AST.JSXAttributeItem> = [],
+  children: Array<AST.JSXChild> = [],
 ): AST.JSXElement {
   const elementName = jsxName(name);
   const selfClosing = children.length === 0;
@@ -783,7 +786,7 @@ export function jsxElement(
 }
 
 /** `<>…</>`. */
-export function jsxFragment(children: AST.JSXChild[]): AST.JSXFragment {
+export function jsxFragment(children: Array<AST.JSXChild>): AST.JSXFragment {
   return {
     type: "JSXFragment",
     openingFragment: { type: "JSXOpeningFragment", ...at },

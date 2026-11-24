@@ -40,7 +40,7 @@ function fixtureCases(): Record<string, CaseConfig> {
 /** The harness context of the fixture run. */
 export function fixtureHarness(
   env: Readonly<Record<string, string | undefined>>,
-  argv: readonly string[] = process.argv,
+  argv: ReadonlyArray<string> = process.argv,
 ): HarnessContext {
   return createHarnessRun({
     root: scratch,
@@ -100,7 +100,7 @@ export const STUB_CAPABILITIES: Capabilities = Object.fromEntries(
  */
 export function parityProject(
   env: Readonly<Record<string, string | undefined>> = process.env,
-  include: readonly string[] = ["test/parity/cases/**/*.parity.spec.ts"],
+  include: ReadonlyArray<string> = ["test/parity/cases/**/*.parity.spec.ts"],
 ): TestProjectInlineConfiguration {
   return {
     extends: false,

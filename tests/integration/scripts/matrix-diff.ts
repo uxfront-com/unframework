@@ -28,9 +28,9 @@ export type MatrixContents = Pick<ParityMatrix, "cases" | "scenarios" | "tests">
 /** What two matrices differ in. */
 export interface MatrixDiff {
   compared: number;
-  cells: string[];
-  records: string[];
-  messages: string[];
+  cells: Array<string>;
+  records: Array<string>;
+  messages: Array<string>;
 }
 
 /** What two runs of each of two runners differ in. */
@@ -39,8 +39,8 @@ export interface StableDiff {
   stable: number;
   /** The cells absent from at least one run, which a crash partway through a run leaves. */
   absent: number;
-  differing: string[];
-  unstable: string[];
+  differing: Array<string>;
+  unstable: Array<string>;
 }
 
 /** Reads a matrix, without its run metadata and with its run ids normalised. */
@@ -69,14 +69,17 @@ export function readMatrix(path: string): MatrixContents {
 }
 
 /** The sorted keys of several records, L7 before L10. */
-function keysOf(...records: readonly (object | undefined)[]): string[] {
+function keysOf(...records: ReadonlyArray<object | undefined>): Array<string> {
   return [...new Set(records.flatMap((record) => Object.keys(record ?? {})))].toSorted(
     (one, other) => one.localeCompare(other, "en", { numeric: true }),
   );
 }
 
 /** The cases to compare. A named case no matrix holds would otherwise compare nothing and pass. */
-function casesOf(matrices: readonly MatrixContents[], only: readonly string[]): string[] {
+function casesOf(
+  matrices: ReadonlyArray<MatrixContents>,
+  only: ReadonlyArray<string>,
+): Array<string> {
   const all = keysOf(
     ...matrices.flatMap(({ cases, scenarios, tests }) => [cases, scenarios, tests]),
   );
@@ -108,13 +111,13 @@ function firstDifference(a: string, b: string): string {
 export function diffMatrices(
   a: MatrixContents,
   b: MatrixContents,
-  only: readonly string[] = [],
+  only: ReadonlyArray<string> = [],
 ): MatrixDiff {
   const diff: MatrixDiff = { compared: 0, cells: [], records: [], messages: [] };
   for (const id of casesOf([a, b], only)) {
     for (const target of keysOf(a.cases[id], b.cases[id])) {
       const [layersA, layersB] = [a.cases[id]?.[target] ?? {}, b.cases[id]?.[target] ?? {}];
-      for (const layer of keysOf(layersA, layersB) as (keyof typeof layersA)[]) {
+      for (const layer of keysOf(layersA, layersB) as Array<keyof typeof layersA>) {
         diff.compared += 1;
         const [cellA, cellB] = [layersA[layer], layersB[layer]];
         const statusA = cellA === undefined ? "absent" : statusOf(cellA);
@@ -153,13 +156,13 @@ const shown = (value: unknown) => (value === undefined ? "absent" : JSON.stringi
 /** Compares two runs of each runner, on the named cases if any. */
 export function diffStable(
   runs: readonly [MatrixContents, MatrixContents, MatrixContents, MatrixContents],
-  only: readonly string[] = [],
+  only: ReadonlyArray<string> = [],
 ): StableDiff {
   const diff: StableDiff = { stable: 0, absent: 0, differing: [], unstable: [] };
   for (const id of casesOf(runs, only)) {
     for (const target of keysOf(...runs.map((run) => run.cases[id]))) {
       const layers = runs.map((run) => run.cases[id]?.[target] ?? {});
-      for (const layer of keysOf(...layers) as (keyof (typeof layers)[number])[]) {
+      for (const layer of keysOf(...layers) as Array<keyof (typeof layers)[number]>) {
         const statuses = layers.map((cells) => {
           const cell = cells[layer];
           return cell === undefined ? undefined : statusOf(cell);
@@ -194,13 +197,13 @@ export function diffStable(
 }
 
 /** Parses the arguments, and throws the usage on any it cannot read. */
-export function parseDiffArgs(argv: readonly string[]): {
-  files: string[];
+export function parseDiffArgs(argv: ReadonlyArray<string>): {
+  files: Array<string>;
   stable: boolean;
-  cases: string[];
+  cases: Array<string>;
 } {
-  const files: string[] = [];
-  const cases: string[] = [];
+  const files: Array<string> = [];
+  const cases: Array<string> = [];
   let stable = false;
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]!;
@@ -226,14 +229,14 @@ export function parseDiffArgs(argv: readonly string[]): {
 
 // `console.log`, not `process.stdout.write`: it ignores a reader that closes early (`| head`),
 // which would otherwise end the run on an unhandled EPIPE, with the wrong exit status.
-function list(heading: string, lines: readonly string[]): void {
+function list(heading: string, lines: ReadonlyArray<string>): void {
   console.log(`${heading}: ${lines.length}`);
   for (const line of lines) {
     console.log(`  ${line}`);
   }
 }
 
-function main(argv: readonly string[]): number {
+function main(argv: ReadonlyArray<string>): number {
   try {
     const { files, stable, cases } = parseDiffArgs(argv);
     const matrices = files.map(readMatrix);

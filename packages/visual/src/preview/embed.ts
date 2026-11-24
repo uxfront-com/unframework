@@ -24,14 +24,14 @@ import { scriptJson } from "./shell.ts";
  * development, relative in a static preview), and the examples' ids, in the catalogue's order.
  */
 export interface EmbedData {
-  frames: { target: string; src: string }[];
-  examples: string[];
+  frames: Array<{ target: string; src: string }>;
+  examples: Array<string>;
 }
 
 /** The embed page's data, from the catalogue and the frame pages' URLs. */
 export function embedData(
   catalogue: Pick<PreviewCatalogue, "examples">,
-  frames: readonly { target: string; src: string }[],
+  frames: ReadonlyArray<{ target: string; src: string }>,
 ): EmbedData {
   return {
     frames: frames.map(({ target, src }) => ({ target, src })),

@@ -18,7 +18,7 @@ export interface ComponentDeclaration {
   /** The statement that declares it, including any `export` keywords. */
   span: Span;
   /** Empty for a local (non-exported) component. */
-  exports: ComponentExport[];
+  exports: Array<ComponentExport>;
 }
 
 const PASCAL_CASE = /^[A-Z][A-Za-z0-9]*$/;
@@ -35,9 +35,9 @@ export function isComponentName(name: string): boolean {
  * A type-only export (`export type { Name }`, `export { type Name }`) exports no value, so it
  * does not make a component exported.
  */
-export function findComponents(program: Program): ComponentDeclaration[] {
+export function findComponents(program: Program): Array<ComponentDeclaration> {
   const components = new Map<string, ComponentDeclaration>();
-  const exportsByLocal = new Map<string, ComponentExport[]>();
+  const exportsByLocal = new Map<string, Array<ComponentExport>>();
   const addExport = (local: string, entry: ComponentExport) => {
     const list = exportsByLocal.get(local) ?? [];
     list.push(entry);

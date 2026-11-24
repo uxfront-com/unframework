@@ -7,7 +7,7 @@ import Groups from "./Groups.uf.tsx";
 // a name it does not declare (src/listeners.ts, `Listeners.explicit`).
 export default function FillLists() {
   const chosen = ref("none");
-  const picked = ref<string[]>([]);
+  const picked = ref<Array<string>>([]);
   function choose(name: string) {
     chosen.value = name;
   }

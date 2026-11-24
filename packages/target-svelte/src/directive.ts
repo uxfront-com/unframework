@@ -52,7 +52,7 @@ export function attachmentCode(
   const mounted = directiveHook(directive, "mounted");
   const updated = directiveHook(directive, "updated");
   const unmounted = directiveHook(directive, "unmounted");
-  const body: string[] = [];
+  const body: Array<string> = [];
   if (updated) {
     body.push(`let ${own.current} = ${untrack}(${own.getValue});`);
   }
@@ -90,7 +90,7 @@ export function attachmentCode(
 }
 
 /** `vFocusTrap.svelte.ts`: a `.uf.ts` module's directive, as an attachment factory. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
   const dependencies = directiveDependencies(directive, context.module);
   // Svelte's names, apart from everything the copied code declares or reads.
   const scope = new NameScope(directiveModuleNames(directive, dependencies));
@@ -123,8 +123,8 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
 export function narrowedDirectiveValues(
   render: ElementNode | FragmentNode,
   claim: (base: string) => string,
-): Map<Container, { attribute: DirectiveAttribute; name: string }[]> {
-  const found = new Map<Container, { attribute: DirectiveAttribute; name: string }[]>();
+): Map<Container, Array<{ attribute: DirectiveAttribute; name: string }>> {
+  const found = new Map<Container, Array<{ attribute: DirectiveAttribute; name: string }>>();
   const visit = (node: RenderNode | FragmentNode, branch: IfBranch | undefined): void => {
     if (node.kind === "If") {
       for (const each of node.branches) {

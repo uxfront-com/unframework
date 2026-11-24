@@ -291,7 +291,7 @@ export const angular: Target = defineTarget({
       note: "A `<Teleport>` is an `<ng-template>` whose inline directive, once the application has rendered, creates its view in its own view container and moves the view's nodes into `to`, as the CDK's `DomPortalOutlet` does, and removes them with the component (ADR-0098).",
     },
   },
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
+  emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
     if (reportsLiteralFallthrough(component, context)) {
       return [];
     }
@@ -862,7 +862,7 @@ function reportApiClashes(
 ): void {
   const taken = new Map<string, string>();
   const key = ({ space, name }: ApiName) => `${space} ${name}`;
-  const declare = (names: ApiName[]) => {
+  const declare = (names: Array<ApiName>) => {
     for (const name of names) {
       if (!taken.has(key(name))) {
         taken.set(key(name), name.what);
@@ -902,7 +902,7 @@ function reportApiClashes(
     const what = "the member that holds the root element a ref on the component holds";
     declare([{ space: "member", name: ELEMENT_MEMBER, what }]);
   }
-  const source: { kind: string; label: string; span: Span; names: ApiName[] }[] = [
+  const source: Array<{ kind: string; label: string; span: Span; names: Array<ApiName> }> = [
     ...component.props.map(({ name, span }) => {
       const what = `the prop \`${name}\``;
       return {
@@ -988,9 +988,9 @@ function providers(
   composition: Composition,
   className: string,
   refObject: string | undefined,
-): { code: string[]; external: Set<string> } {
+): { code: Array<string>; external: Set<string> } {
   const external = new Set<string>();
-  const code: string[] = [];
+  const code: Array<string> = [];
   const instance = plan.locals.claim(`${className.charAt(0).toLowerCase()}${className.slice(1)}`);
   for (const item of plan.component.setup) {
     if (item.kind !== "Provide") {

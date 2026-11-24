@@ -18,7 +18,7 @@ import type { AST } from "@unframework.dev/parser";
 import type { Reporter } from "./context.ts";
 
 /** The prefixes whose imports pass through when the options name none: Vite's virtual modules. */
-export const DEFAULT_PASS_THROUGH: readonly string[] = ["virtual:"];
+export const DEFAULT_PASS_THROUGH: ReadonlyArray<string> = ["virtual:"];
 
 /** The module's pass-through imports, as its components' walks read them. */
 export interface PassThrough {
@@ -40,7 +40,10 @@ export interface PassThrough {
 }
 
 /** Whether a specifier starts with one of the prefixes whose imports pass through. */
-export function isPassThroughSpecifier(specifier: string, prefixes: readonly string[]): boolean {
+export function isPassThroughSpecifier(
+  specifier: string,
+  prefixes: ReadonlyArray<string>,
+): boolean {
   return prefixes.some((prefix) => specifier.startsWith(prefix));
 }
 
@@ -53,7 +56,7 @@ export function passThroughImport(
   statement: AST.ImportDeclaration,
   reporter: Reporter,
   names: Map<object, string | undefined>,
-  imports: PassThroughImport[],
+  imports: Array<PassThroughImport>,
 ): void {
   const specifier = statement.source.value;
   const at = { start: statement.start, end: statement.end };
@@ -70,7 +73,7 @@ export function passThroughImport(
     );
     return;
   }
-  const lowered: PassThroughName[] = [];
+  const lowered: Array<PassThroughName> = [];
   const local = new Map<object, string>();
   for (const item of statement.specifiers) {
     if (item.type !== "ImportSpecifier" || item.importKind === "type") {
@@ -131,7 +134,7 @@ export function passThroughImport(
  * would reach every output unused. Returns whether it reported any.
  */
 export function reportUnread(
-  statements: readonly (AST.Directive | AST.Statement)[],
+  statements: ReadonlyArray<AST.Directive | AST.Statement>,
   passThrough: PassThrough,
   reporter: Reporter,
 ): boolean {

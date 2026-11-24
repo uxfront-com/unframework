@@ -46,7 +46,7 @@ describe("the console capture", () => {
 
   it("hands each logged argument to the watcher until it is removed", () => {
     beginTestConsole();
-    const seen: unknown[] = [];
+    const seen: Array<unknown> = [];
     const unwatch = watchConsoleErrors((value) => seen.push(value));
     const error = new Error("[unit] logged");
     console.error("[unit] prefix", error);

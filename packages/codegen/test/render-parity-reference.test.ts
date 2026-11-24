@@ -13,7 +13,11 @@ import { domNodesOf, expectedNodes, parseHtml } from "./render-parity.ts";
 import type { DomElement, DomNode } from "./render-parity.ts";
 
 /** What a component renders for its props, by the reference. */
-function rendered(params: string, jsx: string, props: Record<string, unknown> = {}): DomNode[] {
+function rendered(
+  params: string,
+  jsx: string,
+  props: Record<string, unknown> = {},
+): Array<DomNode> {
   const [parityCase] = sourceCases([{ name: "a case", params, jsx, props }]);
   return expectedNodes(parityCase!);
 }
@@ -22,8 +26,8 @@ function rendered(params: string, jsx: string, props: Record<string, unknown> = 
 const html = (source: string) => parseHtml(source);
 
 /** A list with a hole. */
-function sparse(): string[] {
-  const list: string[] = [];
+function sparse(): Array<string> {
+  const list: Array<string> = [];
   list[1] = "a";
   return list;
 }
@@ -274,7 +278,7 @@ describe("instantiate, on the markup cases", () => {
     const built = markupSuite([each]);
     const tree = instantiate(built.component, passedProps(built.props));
     expect(tree.kind === "Element" && tree.tag).toBe("div");
-    const [root] = domNodesOf(tree) as DomElement[];
+    const [root] = domNodesOf(tree) as Array<DomElement>;
     expect(root!.children).toEqual(parseHtml(each.expected));
   });
 

@@ -22,13 +22,13 @@ import { root } from "./workspace.ts";
  * key and a comment after it, so the pattern takes all of them (a narrower one let `qa_job:` and
  * `qa-job: # …` through).
  */
-function workflowJobIds(workflow: string): string[] {
+function workflowJobIds(workflow: string): Array<string> {
   const lines = workflow.split(/\r?\n/);
   const start = lines.findIndex((line) => /^jobs:[ \t]*(?:#.*)?$/.test(line));
   if (start === -1) {
     return [];
   }
-  const ids: string[] = [];
+  const ids: Array<string> = [];
   let indent: string | undefined;
   for (const line of lines.slice(start + 1)) {
     if (/^[ \t]*(?:#.*)?$/.test(line)) {
@@ -50,12 +50,12 @@ function workflowJobIds(workflow: string): string[] {
 }
 
 /** The job ids of CI's workflow. */
-function ciJobs(): string[] {
+function ciJobs(): Array<string> {
   return workflowJobIds(readFileSync(join(root, ".github", "workflows", "ci.yml"), "utf8"));
 }
 
 /** The job ids the left-out list in `.github/CONTRIBUTING.md` names, from lines like ``- `check`: …``. */
-function contributingExcludedJobs(contributing: string): string[] {
+function contributingExcludedJobs(contributing: string): Array<string> {
   const section = contributing.slice(contributing.indexOf("## Verifying a change"));
   return [...section.matchAll(/^[ \t]*- ((?:`[\w-]+`(?:, | and )?)+):/gm)].flatMap((match) =>
     [...(match[1] ?? "").matchAll(/`([\w-]+)`/g)].map((id) => id[1] ?? ""),

@@ -27,7 +27,7 @@ afterEach(() => {
 interface ModuleResult {
   project: string;
   state: string;
-  errors: string[];
+  errors: Array<string>;
 }
 
 /**
@@ -35,7 +35,7 @@ interface ModuleResult {
  * and what Vite logged as an error: a browser page sees only that an import failed, and the
  * server logs why.
  */
-async function runProject(root: string): Promise<{ modules: ModuleResult[]; logged: string }> {
+async function runProject(root: string): Promise<{ modules: Array<ModuleResult>; logged: string }> {
   for (const name of SAVED) {
     delete process.env[name];
   }

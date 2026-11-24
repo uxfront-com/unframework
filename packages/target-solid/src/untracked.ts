@@ -27,7 +27,7 @@ export interface Edit {
 /** What placing one function's `untrack` needs. */
 export interface UntrackOptions {
   /** Where the body reads a prop, state or a derived value, itself or through a call. */
-  reactive: readonly Span[];
+  reactive: ReadonlyArray<Span>;
   /**
    * Whether `solid/reactivity` reads the function as a tracked scope or a handler: a watcher's
    * callback, a hook, a template listener; not a setup function.
@@ -127,20 +127,20 @@ interface Fn {
   /** Printed in `untrack`: reported where it is, and it reads a reactive value. */
   untracked: boolean;
   /** The functions around it, innermost first. */
-  outer: Fn[];
+  outer: Array<Fn>;
 }
 
 /**
  * The edits that wrap in `untrack` the arrows `solid/reactivity` would report (see the module
  * comment). Offsets are the source's, as the body's references are.
  */
-export function untrackEdits(fn: FunctionCode, options: UntrackOptions): Edit[] {
+export function untrackEdits(fn: FunctionCode, options: UntrackOptions): Array<Edit> {
   const { body } = fn;
   const offset = body.span.start;
   const relative = (span: Span): Span => ({ start: span.start - offset, end: span.end - offset });
   const reactive = options.reactive.map(relative);
   const { root } = parseCodeSource(body.code, fn.expression ? "expression" : "statements");
-  const parsed: unknown[] = Array.isArray(root) ? root : [root];
+  const parsed: Array<unknown> = Array.isArray(root) ? root : [root];
   const nodes = parsed.filter(isNode);
   const top: Node = fn.expression
     ? nodes[0]!
@@ -155,7 +155,7 @@ export function untrackEdits(fn: FunctionCode, options: UntrackOptions): Edit[] 
     outer: [],
   };
   const functions = collect(top, self, body.code, reactive);
-  const edits: Edit[] = [];
+  const edits: Array<Edit> = [];
   for (const each of functions) {
     if (!each.untracked || !each.node) {
       continue;
@@ -197,8 +197,8 @@ export function untrackEdits(fn: FunctionCode, options: UntrackOptions): Edit[] 
  * reactive read: its own, or one in a callback it runs at once (`list.filter((value) => value <
  * limit.value)`), as the rule counts them.
  */
-function collect(root: Node, self: Fn, code: string, reactive: readonly Span[]): Fn[] {
-  const functions: Fn[] = [];
+function collect(root: Node, self: Fn, code: string, reactive: ReadonlyArray<Span>): Array<Fn> {
+  const functions: Array<Fn> = [];
   const parents = new Map<Fn, Node | undefined>();
   const visit = (node: unknown, parent: Node | undefined, around: Fn): void => {
     if (Array.isArray(node)) {
@@ -244,7 +244,11 @@ function collect(root: Node, self: Fn, code: string, reactive: readonly Span[]):
 }
 
 /** Whether a function reads a reactive value in its own scope or a callback it runs at once. */
-function readsReactive(fn: Fn, functions: readonly Fn[], reactive: readonly Span[]): boolean {
+function readsReactive(
+  fn: Fn,
+  functions: ReadonlyArray<Fn>,
+  reactive: ReadonlyArray<Span>,
+): boolean {
   const node = fn.node!;
   return reactive.some((site) => {
     if (site.start < node.start || site.end > node.end) {
@@ -370,7 +374,7 @@ function syncCallback(node: Node, parent: Node): boolean {
   if (parent.type !== "CallExpression" || node.async) {
     return false;
   }
-  const args = parent.arguments as unknown[];
+  const args = parent.arguments as Array<unknown>;
   if (args.length !== 1 || args[0] !== node) {
     return false;
   }
@@ -416,7 +420,7 @@ function bodyRegion(node: Node, code: string): Span {
  * Code with edits applied at offsets in the source (statement and function boundaries, which no
  * reference straddles), its references moved past what was put in before them.
  */
-export function edited(code: Code, edits: readonly Edit[]): Code {
+export function edited(code: Code, edits: ReadonlyArray<Edit>): Code {
   const sorted = edits.toSorted(
     (a, b) =>
       a.at - b.at ||

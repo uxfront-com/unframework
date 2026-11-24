@@ -16,7 +16,7 @@ const SUPPORTED_SUBSET =
 /** Collects the diagnostics of one file. */
 export class Reporter {
   readonly file: string;
-  readonly diagnostics: Diagnostic[] = [];
+  readonly diagnostics: Array<Diagnostic> = [];
 
   constructor(file: string) {
     this.file = file;
@@ -42,7 +42,11 @@ export class Reporter {
    * Reports a construct of the source language that this compiler cannot lower yet (UF1002).
    * The message is a full sentence such as "Props are not supported yet."
    */
-  unsupported(node: Located, message: string, init: { help?: string; fixes?: Fix[] } = {}): void {
+  unsupported(
+    node: Located,
+    message: string,
+    init: { help?: string; fixes?: Array<Fix> } = {},
+  ): void {
     this.report("UF1002", node, message, { ...init, help: init.help ?? SUPPORTED_SUBSET });
   }
 

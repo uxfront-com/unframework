@@ -132,7 +132,7 @@ async function compile(
   }
   const errors = diagnostics.filter(isError);
   const warnings = diagnostics.filter((diagnostic) => !isError(diagnostic));
-  let exports: string[] = [];
+  let exports: Array<string> = [];
   if (errors.length && sourceFile) {
     const checker = tsProgram.getTypeChecker();
     const symbol = checker.getSymbolAtLocation(sourceFile);

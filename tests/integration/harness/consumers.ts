@@ -80,7 +80,7 @@ export function consumersDir(target: string): string {
 }
 
 /** The cases a target has consumer fixtures for, as `area/name`, sorted. */
-export function consumerCases(target: string): string[] {
+export function consumerCases(target: string): Array<string> {
   const root = consumersDir(target);
   if (!existsSync(root)) {
     return [];
@@ -91,7 +91,7 @@ export function consumerCases(target: string): string[] {
 }
 
 /** A case's consumer fixtures for a target (absolute paths, sorted): none without a tree. */
-export function consumerFixtures(target: string, caseId: string): string[] {
+export function consumerFixtures(target: string, caseId: string): Array<string> {
   const directory = join(consumersDir(target), ...caseId.split("/"));
   if (!existsSync(directory)) {
     return [];
@@ -107,7 +107,11 @@ export function consumerFixtures(target: string, caseId: string): string[] {
  * canary's fresh compile, `<root>/cases/<case>/__output__/`, instead of the golden outputs: the
  * relative path to the cases directory is the one thing a copy changes, so its lines stay put.
  */
-export function copyFixtures(fixtures: readonly string[], root: string, caseId: string): Fixture[] {
+export function copyFixtures(
+  fixtures: ReadonlyArray<string>,
+  root: string,
+  caseId: string,
+): Array<Fixture> {
   return fixtures.map((path) => {
     const checked = join(root, "consumers", ...caseId.split("/"), basename(path));
     const from = posix(relative(dirname(path), CASES_DIR));
@@ -120,11 +124,11 @@ export function copyFixtures(fixtures: readonly string[], root: string, caseId: 
 
 /** A fixture's directives, and the lines of every `@uf-expect` that does not read as one. */
 export function readExpectations(contents: string): {
-  expectations: Expectation[];
-  malformed: number[];
+  expectations: Array<Expectation>;
+  malformed: Array<number>;
 } {
-  const expectations: Expectation[] = [];
-  const malformed: number[] = [];
+  const expectations: Array<Expectation> = [];
+  const malformed: Array<number> = [];
   contents.split(/\r?\n/).forEach((text, index) => {
     if (!text.includes("@uf-expect")) {
       return;
@@ -154,10 +158,10 @@ export function readExpectations(contents: string): {
 export function consumerProblems(
   target: string,
   info: Pick<CaseInfo, "id" | "dir">,
-  fixtures: readonly Fixture[],
-  results: ReadonlyMap<string, readonly ToolchainMessage[]>,
+  fixtures: ReadonlyArray<Fixture>,
+  results: ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>,
   gaps: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = CONSUMER_GAPS,
-): string[] {
+): Array<string> {
   if (!fixtures.length) {
     return [];
   }
@@ -300,7 +304,7 @@ function exportedTypes(
   return types;
 }
 
-function directories(path: string): string[] {
+function directories(path: string): Array<string> {
   return readdirSync(path)
     .filter((entry) => statSync(join(path, entry)).isDirectory())
     .toSorted();

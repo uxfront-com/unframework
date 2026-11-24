@@ -78,7 +78,7 @@ const HEADER = [
 ];
 
 /** Runs `tsc` over probe lines, each of which must type-check: the messages of those that fail. */
-function failures(lines: readonly string[]): Map<number, string> {
+function failures(lines: ReadonlyArray<string>): Map<number, string> {
   const require = createRequire(new URL("packages/target-react/package.json", ROOT));
   const react = dirname(require.resolve("@types/react/package.json"));
   writeFileSync(
@@ -155,7 +155,7 @@ describe("the event vocabulary", () => {
     "names the interfaces lib.dom dispatches with, and members both the DOM's and React's events carry",
     { timeout: 60_000 },
     () => {
-      const checks: { what: string; line: string }[] = [];
+      const checks: Array<{ what: string; line: string }> = [];
       for (const [event, name] of DOM_EVENTS) {
         checks.push({
           what: `${event} is a ${name}`,

@@ -44,9 +44,9 @@ export const SERVER: LiveOptions = { client: false, includeKeys: false };
 /** The frontmatter's setup: statements in source order, after the helpers they call. */
 export interface SetupCode {
   /** The helpers the statements call, each a statement of its own. */
-  helpers: string[];
+  helpers: Array<string>;
   /** The setup's statements, in source order. */
-  statements: string[];
+  statements: Array<string>;
   /** Whether a helper reads `Astro` (`Astro.locals`). */
   readsAstro: boolean;
 }
@@ -58,8 +58,8 @@ export function setupCode(
   spelling: Spelling,
   injectedType: (item: InjectItem) => string,
 ): SetupCode {
-  const helpers: string[] = [];
-  const statements: string[] = [];
+  const helpers: Array<string> = [];
+  const statements: Array<string> = [];
   let uniqueId: string | undefined;
   for (const item of component.setup) {
     switch (item.kind) {
@@ -191,7 +191,7 @@ export function serverView(component: UfComponent, module: UfModule): UfComponen
     value: constant.value,
     span: constant.span,
   }));
-  const setup = component.setup.flatMap((item): SetupItem[] => {
+  const setup = component.setup.flatMap((item): Array<SetupItem> => {
     if (item.kind !== "Use") {
       return [item];
     }
@@ -206,8 +206,8 @@ export function serverView(component: UfComponent, module: UfModule): UfComponen
  * arguments, with their references, for the walks of {@link serverView} alone.
  */
 function serverArguments(item: UseItem): Code {
-  const parts: string[] = [];
-  const refs: CodeReference[] = [];
+  const parts: Array<string> = [];
+  const refs: Array<CodeReference> = [];
   for (const argument of item.arguments) {
     if (argument.kind === "Value") {
       parts.push(argument.value.code);
@@ -282,7 +282,7 @@ function state(item: StateItem, component: UfComponent, spelling: Spelling): str
  * function, called once: `function getTier() {…}` and `const tier = getTier();`. A block getter's
  * return type is the one TypeScript infers for the getter, as `computed`'s type is.
  */
-function derived(item: DerivedItem, component: UfComponent, spelling: Spelling): string[] {
+function derived(item: DerivedItem, component: UfComponent, spelling: Spelling): Array<string> {
   const name = spelling.name(item.binding);
   const { getter } = item;
   if (getter.expression) {

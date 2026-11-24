@@ -21,7 +21,7 @@ function renderLabel() {
 
 export function BlindSpots() {
   const open = ref(false);
-  const list = ref<number[]>([]);
+  const list = ref<Array<number>>([]);
   const form = ref({ name: "" });
   const label = <b>JSX in a variable</b>;
 
@@ -70,7 +70,7 @@ export function M1BlindSpots({
   active,
 }: {
   label: string;
-  items: string[];
+  items: Array<string>;
   active: boolean;
 }) {
   return (

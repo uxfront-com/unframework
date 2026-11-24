@@ -19,7 +19,7 @@ export function noErrorBroadcast(): Plugin {
     configureServer(server) {
       const hot = server.environments.client.hot;
       const send = hot.send.bind(hot);
-      hot.send = (...args: unknown[]) => {
+      hot.send = (...args: Array<unknown>) => {
         const [payload] = args;
         if (typeof payload === "object" && payload !== null && "type" in payload) {
           if (payload.type === "error") {

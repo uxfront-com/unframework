@@ -46,7 +46,7 @@ const RULES = new Set([
 /** A schema as text: `input[list,type=email]`. */
 function schemaText(schema: {
   name: string;
-  attributes?: readonly { name: string; value?: string }[];
+  attributes?: ReadonlyArray<{ name: string; value?: string }>;
 }): string {
   return schema.attributes
     ? `${schema.name}[${schema.attributes.map((item) => (item.value === undefined ? item.name : `${item.name}=${item.value}`)).join(",")}]`
@@ -54,9 +54,9 @@ function schemaText(schema: {
 }
 
 /** The warnings of the five rules Svelte gives each line of a markup, by line. */
-function svelteWarnings(markup: string): Map<number, string[]> {
+function svelteWarnings(markup: string): Map<number, Array<string>> {
   const { warnings } = compile(markup, { generate: false, filename: "Probe.svelte" });
-  const found = new Map<number, string[]>();
+  const found = new Map<number, Array<string>>();
   for (const warning of warnings) {
     if (!RULES.has(warning.code)) {
       continue;
@@ -71,8 +71,8 @@ function svelteWarnings(markup: string): Map<number, string[]> {
 function ours(
   tag: string,
   attributes: Readonly<Record<string, A11yValue>>,
-  handlers: readonly string[],
-): string[] {
+  handlers: ReadonlyArray<string>,
+): Array<string> {
   return handlerProblems(tag, new Map(Object.entries(attributes)), new Set(handlers))
     .map((problem) => problem.rule)
     .toSorted();
@@ -82,7 +82,7 @@ function ours(
 function markupOf(
   tag: string,
   attributes: Readonly<Record<string, A11yValue>>,
-  handlers: readonly string[],
+  handlers: ReadonlyArray<string>,
 ): string {
   const parts = [
     ...Object.entries(attributes).map(([name, value]) =>
@@ -98,9 +98,12 @@ function markupOf(
 describe("UF3030's tables", () => {
   it("are Svelte's", () => {
     const schemas = (name: string) =>
-      (constants[name] as { name: string; attributes?: { name: string; value?: string }[] }[]).map(
-        schemaText,
-      );
+      (
+        constants[name] as Array<{
+          name: string;
+          attributes?: Array<{ name: string; value?: string }>;
+        }>
+      ).map(schemaText);
     expect(INTERACTIVE_ROLE_SCHEMAS.map(schemaText)).toEqual(
       schemas("interactive_element_role_schemas"),
     );
@@ -148,7 +151,7 @@ describe("UF3030's rules", () => {
       ["wheel"],
       ["pointerdown"],
     ];
-    const attributeSets: Record<string, A11yValue>[] = [
+    const attributeSets: Array<Record<string, A11yValue>> = [
       {},
       { role: "button" },
       { role: "button", tabindex: "0" },
@@ -176,7 +179,7 @@ describe("UF3030's rules", () => {
     let compared = 0;
     let flagged = 0;
     for (const tag of [...HTML_ELEMENTS].filter((name) => !skipped.has(name))) {
-      const cases: { attributes: Record<string, A11yValue>; handlers: string[] }[] = [];
+      const cases: Array<{ attributes: Record<string, A11yValue>; handlers: Array<string> }> = [];
       for (const attributes of attributeSets) {
         for (const handlers of handlerSets) {
           cases.push({ attributes, handlers });
@@ -186,7 +189,7 @@ describe("UF3030's rules", () => {
         "<script>let { handle, dynamic } = $props();</script>",
         ...cases.map(({ attributes, handlers }) => markupOf(tag, attributes, handlers)),
       ].join("\n");
-      let svelte: Map<number, string[]>;
+      let svelte: Map<number, Array<string>>;
       try {
         svelte = svelteWarnings(markup);
       } catch {

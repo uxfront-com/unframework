@@ -40,10 +40,15 @@ export function canonicalizeStyles(root: TreeParent): void {
 }
 
 /** Boolean attributes every HTML element can have. */
-const GLOBAL_BOOLEAN_ATTRIBUTES: readonly string[] = ["autofocus", "hidden", "inert", "itemscope"];
+const GLOBAL_BOOLEAN_ATTRIBUTES: ReadonlyArray<string> = [
+  "autofocus",
+  "hidden",
+  "inert",
+  "itemscope",
+];
 
 /** Boolean attributes per HTML element, from the HTML standard's attribute index. */
-const BOOLEAN_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
+const BOOLEAN_ATTRIBUTES: Readonly<Record<string, ReadonlyArray<string>>> = {
   audio: ["autoplay", "controls", "loop", "muted"],
   button: ["disabled", "formnovalidate"],
   details: ["open"],

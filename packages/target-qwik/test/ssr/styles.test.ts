@@ -22,7 +22,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
  * Writes each source's output beside the others, with the sheet `compile()` scopes and emits
  * beside it, and loads the last one's component.
  */
-async function load(...sources: [file: string, source: string, sheet?: string][]) {
+async function load(...sources: Array<[file: string, source: string, sheet?: string]>) {
   const apis: Record<string, ModuleApi> = {};
   let path = "";
   for (const [file, source, sheet] of sources) {

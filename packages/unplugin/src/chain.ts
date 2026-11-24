@@ -15,7 +15,10 @@ const SVELTE_COMPILE = "vite-plugin-svelte:compile";
  * `isOwn` limits this to the modules this plugin loaded. A later release of the Svelte plugin
  * that renames the step leaves the double chain, which L14's stack checks then fail on.
  */
-export function chainSvelteOnce(plugins: readonly Plugin[], isOwn: (id: string) => boolean): void {
+export function chainSvelteOnce(
+  plugins: ReadonlyArray<Plugin>,
+  isOwn: (id: string) => boolean,
+): void {
   const compile = plugins.find((plugin) => plugin.name === SVELTE_COMPILE);
   const hook = compile?.transform;
   if (!hook || typeof hook === "function") {
@@ -41,7 +44,7 @@ const QWIK_PLUGIN = "vite-plugin-qwik";
  * segment's module, by the segment's id.
  */
 export function chainQwikSegments(
-  plugins: readonly Plugin[],
+  plugins: ReadonlyArray<Plugin>,
   mapOf: (id: string) => SourceMapV3 | undefined,
 ): void {
   const qwik = plugins.find((plugin) => plugin.name === QWIK_PLUGIN);

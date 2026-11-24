@@ -22,7 +22,7 @@ export default function Tasks() {
   }>();
 
   const query = ref("");
-  const results = ref<string[]>([]);
+  const results = ref<Array<string>>([]);
   const answer = ref("");
   let reply: ((text: string) => void) | undefined;
 

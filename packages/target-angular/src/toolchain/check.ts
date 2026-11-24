@@ -25,7 +25,7 @@ import type { ParsedConfiguration } from "./tools.ts";
  * reports every file's errors and warnings (extended template diagnostics are the warnings).
  */
 export async function frameworkCompile(
-  files: readonly ToolchainFile[],
+  files: ReadonlyArray<ToolchainFile>,
   context: ToolchainContext,
 ): Promise<Map<string, FrameworkCompileResult>> {
   assertFilesToCompile(files);
@@ -50,9 +50,9 @@ export async function frameworkCompile(
  * (`ngtsc-worker.ts`), since no TestBed or JIT metadata reaches a production build.
  */
 export async function frameworkEmit(
-  files: readonly ToolchainFile[],
+  files: ReadonlyArray<ToolchainFile>,
   context: ToolchainContext,
-): Promise<Map<string, ToolchainFile[]>> {
+): Promise<Map<string, Array<ToolchainFile>>> {
   assertFilesToCompile(files);
   const compiler = await loadCompiler(context.toolchainDir);
   const options = {
@@ -73,7 +73,7 @@ export async function frameworkEmit(
   await program.compiler.analyzeAsync();
   const { transformers } = program.compiler.prepareEmit();
   const tsProgram = program.getTsProgram();
-  const emitted = new Map<string, ToolchainFile[]>();
+  const emitted = new Map<string, Array<ToolchainFile>>();
   for (const file of files) {
     let code: string | undefined;
     tsProgram.emit(
@@ -106,9 +106,9 @@ let configs = 0;
  * toolchain has no tsconfig.
  */
 export async function typecheck(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
   assertFilesToCheck(files);
   const compiler = await loadCompiler(context.toolchainDir);
   const base = join(context.toolchainDir, "tsconfig.json");

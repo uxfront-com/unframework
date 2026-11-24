@@ -179,7 +179,7 @@ const scratch = scratchDirectory("composition-probes");
 afterAll(() => scratch.remove());
 
 /** A source's outputs, formatted, by file name. */
-async function outputs(name: string): Promise<{ path: string; contents: string }[]> {
+async function outputs(name: string): Promise<Array<{ path: string; contents: string }>> {
   return Promise.all(
     emitSource(SOURCES[name]!, `${name}.uf.tsx`).map(
       async (file) => (await formatOutput(file)).file,
@@ -205,7 +205,7 @@ async function render(name: string, props: Record<string, unknown>): Promise<str
 
 describe("composition shapes the corpus has no case for", { timeout: 60_000 }, () => {
   it("pass Astro's compiler, astro check and the linters with no finding", async () => {
-    const files: { path: string; contents: string }[] = [];
+    const files: Array<{ path: string; contents: string }> = [];
     for (const name of Object.keys(SOURCES)) {
       const directory = join(scratch.path, "toolchain", name);
       mkdirSync(directory, { recursive: true });

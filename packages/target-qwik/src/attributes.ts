@@ -98,7 +98,7 @@ export const QWIK_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
 ]);
 
 /** Some elements by name, or every element but some. */
-type Elements = { readonly on: readonly string[] } | { readonly except: readonly string[] };
+type Elements = { readonly on: ReadonlyArray<string> } | { readonly except: ReadonlyArray<string> };
 
 /**
  * HTML attributes the analyser accepts that Qwik 2.0.0-rc.5's JSX types declare under no

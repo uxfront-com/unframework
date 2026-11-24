@@ -217,7 +217,7 @@ describe("Qwik's attribute spellings", () => {
   // the table for its value (Qwik types its HTML name as the DOM's boolean property).
   const values: Record<string, string> = { autocorrect: '"on"' };
   const entries = Object.entries(QWIK_ATTRIBUTE_NAMES);
-  const usage = (names: readonly string[]) =>
+  const usage = (names: ReadonlyArray<string>) =>
     component(
       `  return (\n    <>\n${entries.map(([html], index) => `      <${elements[html] ?? "div"} ${names[index]}=${values[html] ?? "{undefined}"} />`).join("\n")}\n    </>\n  );`,
     );

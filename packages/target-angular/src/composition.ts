@@ -46,13 +46,13 @@ export interface Composition {
   /** The selector each component the template renders is written with, by its local name. */
   tags: ReadonlyMap<string, string>;
   /** The classes `imports` lists: the children and the slot directives their fills use. */
-  imports: string[];
+  imports: Array<string>;
   /** The component's own slot directives, each declared in its file. */
-  slots: SlotDirective[];
+  slots: Array<SlotDirective>;
   /** Whether the template renders a template with `ngTemplateOutlet`. */
   outlet: boolean;
   /** The injection keys the file declares. */
-  keys: InjectionKeyDeclaration[];
+  keys: Array<InjectionKeyDeclaration>;
   /** The local name of each key the setup names, by that name. */
   keyNames: ReadonlyMap<string, string>;
   /**
@@ -66,7 +66,7 @@ export interface Composition {
    * components' slots can share one (`Card`'s `titleBar` and `CardTitle`'s `bar`,
    * `ufCardTitleBar`), and each `<ng-template>` of either would match both directives.
    */
-  slotClashes: { fill: SlotFill; child: string; attribute: string; other: string }[];
+  slotClashes: Array<{ fill: SlotFill; child: string; attribute: string; other: string }>;
 }
 
 /** The output file a component's output is named by, without `./` (ADR-0053). */
@@ -124,7 +124,7 @@ export function planComposition(plan: Plan): Composition {
       : [];
   imports.reserve(...keys.map(({ name }) => name));
   const tags = new Map<string, string>();
-  const classes: string[] = [];
+  const classes: Array<string> = [];
   const specifiers = new Map<string, { specifier: string; name: string; self: boolean }>();
   const clashes = new Map<string, string>();
   const selectors = new Set([selectorOf(component.name)]);
@@ -161,7 +161,7 @@ export function planComposition(plan: Plan): Composition {
   // Every directive's class before any context type: consumers import a directive under the
   // name they compute (`CardTitleContext` for a `titleContext` slot), and nothing imports a
   // context type, so a context takes the name a directive leaves it.
-  const slots: SlotDirective[] = (component.slots?.slots ?? [])
+  const slots: Array<SlotDirective> = (component.slots?.slots ?? [])
     .filter((slot) => usesDirective(slot.name, slot.props !== undefined))
     .map((slot) => {
       const exported = `${component.name}${pascalCase(slot.name)}`;
@@ -180,7 +180,7 @@ export function planComposition(plan: Plan): Composition {
   const attributes = new Map<string, string>();
   const slotClashes: Composition["slotClashes"] = [];
   let outlet = false;
-  const fillDirectives = (local: string, fills: readonly SlotFill[]) => {
+  const fillDirectives = (local: string, fills: ReadonlyArray<SlotFill>) => {
     const child = specifiers.get(local)!;
     for (const fill of fills) {
       // The default slot forwarded re-projects `<ng-content />` (unsupported: `default-slot-presence`).
@@ -308,7 +308,7 @@ export function slotDirectiveCode(
   component: string,
   directive: SlotDirective,
   decorator: string,
-  typeParameters: readonly TypeParameter[] = [],
+  typeParameters: ReadonlyArray<TypeParameter> = [],
 ): string {
   const { slot, className, exported, attribute, context } = directive;
   const selector = `@${decorator}({ selector: "ng-template[${attribute}]" })`;

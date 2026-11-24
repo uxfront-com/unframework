@@ -47,9 +47,9 @@ type JsxAttributeItem = ReturnType<typeof js.jsxAttribute>;
 /** How one element's listeners and template ref are printed. */
 interface ElementListeners {
   /** The synthetic listeners by prop, each group in attribute order. */
-  props: Map<string, EventAttribute[]>;
+  props: Map<string, Array<EventAttribute>>;
   /** The native listeners, those of one event and phase together, in attribute order. */
-  native: EventAttribute[][];
+  native: Array<Array<EventAttribute>>;
   ref?: RefAttribute;
   /** The attribute the element's `ref` is printed at: its first native listener or ref. */
   refAt?: Attribute;
@@ -58,7 +58,7 @@ interface ElementListeners {
   /** Whether the callback puts a `<textarea>`'s caret after its text (`Caret`, ADR-0060). */
   caret?: boolean;
   /** The directives it applies, in attribute order (ADR-0099), each by its ref callback. */
-  directives: { attribute: DirectiveAttribute; ref: string }[];
+  directives: Array<{ attribute: DirectiveAttribute; ref: string }>;
 }
 
 /** Prints the listeners and template refs of a planned component's elements. */
@@ -66,7 +66,7 @@ export class ReactListeners {
   readonly #plan: ReactPlan;
   readonly #code: ReactCode;
   readonly #elements = new WeakMap<ElementNode, ElementListeners>();
-  readonly #heads = new WeakMap<ElementNode, Map<string, (event: string) => string[]>>();
+  readonly #heads = new WeakMap<ElementNode, Map<string, (event: string) => Array<string>>>();
   #composer: ReactComposer | undefined;
 
   constructor(plan: ReactPlan, code: ReactCode) {
@@ -84,7 +84,10 @@ export class ReactListeners {
    * React prop: that listener's handler runs them first, as Vue adds the model's listener before
    * the element's own (ADR-0054). Two `onChange` props would leave only the last.
    */
-  modelHeads(element: ElementNode, context: JsxContext): Map<string, (event: string) => string[]> {
+  modelHeads(
+    element: ElementNode,
+    context: JsxContext,
+  ): Map<string, (event: string) => Array<string>> {
     let heads = this.#heads.get(element);
     if (heads) {
       return heads;
@@ -173,7 +176,7 @@ export class ReactListeners {
     attribute: DirectiveAttribute,
     element: ElementNode,
     context: JsxContext,
-  ): JsxAttributeItem[] {
+  ): Array<JsxAttributeItem> {
     const listeners = this.#of(element);
     if (listeners.refAt !== attribute) {
       return [];
@@ -196,8 +199,8 @@ export class ReactListeners {
    * `const [nameListeners] = useState(() => (element: Element | null) => listen(…));`, then the
    * callbacks of `<textarea>` models alone (`textCaret`).
    */
-  declarations(): string[] {
-    const statements: string[] = [];
+  declarations(): Array<string> {
+    const statements: Array<string> = [];
     const elements = [
       ...this.#plan.nativeElements,
       ...[...this.#plan.carets.values()].map(
@@ -227,7 +230,7 @@ export class ReactListeners {
    */
   fallthroughElement(
     node: ComponentNode,
-    attributes: readonly (StaticAttribute | BoundAttribute | EventAttribute)[],
+    attributes: ReadonlyArray<StaticAttribute | BoundAttribute | EventAttribute>,
   ): ElementNode {
     const listened = attributes.find((attribute) => attribute.kind === "Event");
     if (listened) {
@@ -243,7 +246,11 @@ export class ReactListeners {
   }
 
   /** A listener's attributes: its prop, or the element's ref, or nothing (merged). */
-  event(attribute: EventAttribute, element: ElementNode, context: JsxContext): JsxAttributeItem[] {
+  event(
+    attribute: EventAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): Array<JsxAttributeItem> {
     const listeners = this.#of(element);
     if (this.#plan.listeners.get(attribute)!.mode === "native") {
       return listeners.refAt === attribute ? [this.#refAttribute(listeners, context)] : [];
@@ -272,7 +279,7 @@ export class ReactListeners {
    * `<div>`, or on elements of several interfaces) is set by a callback, which takes the element
    * whatever the ref's type.
    */
-  ref(attribute: RefAttribute, element: ElementNode, context: JsxContext): JsxAttributeItem[] {
+  ref(attribute: RefAttribute, element: ElementNode, context: JsxContext): Array<JsxAttributeItem> {
     const listeners = this.#of(element);
     if (listeners.refAt !== attribute) {
       return [];
@@ -300,7 +307,7 @@ export class ReactListeners {
     attribute: ModelAttribute,
     element: ElementNode,
     context: JsxContext,
-  ): JsxAttributeItem[] {
+  ): Array<JsxAttributeItem> {
     const listeners = this.#of(element);
     return listeners.refAt === attribute ? [this.#refAttribute(listeners, context)] : [];
   }
@@ -350,9 +357,9 @@ export class ReactListeners {
    * prop, its local `consumer`, where the element is the fallthrough node (ADR-0118).
    */
   #synthetic(
-    group: EventAttribute[],
+    group: Array<EventAttribute>,
     element: ElementNode,
-    model?: (event: string) => string[],
+    model?: (event: string) => Array<string>,
     consumer?: string,
   ): string {
     const [first] = group;
@@ -384,7 +391,7 @@ export class ReactListeners {
    * consumer's listener it calls last (ADR-0118).
    */
   #wrapped(
-    group: EventAttribute[],
+    group: Array<EventAttribute>,
     mode: ListenerMode,
     head: (event: string) => string | undefined,
     consumer?: string,
@@ -459,8 +466,8 @@ export class ReactListeners {
     typed: FunctionCode | undefined,
     handler: string,
     event: string,
-    later: readonly string[],
-    taken: string[],
+    later: ReadonlyArray<string>,
+    taken: Array<string>,
   ): string {
     if (!typed) {
       const fn = this.#function(listener);
@@ -555,7 +562,7 @@ export class ReactListeners {
   }
 
   /** The handler of one native event and phase: its listeners in attribute order, guarded. */
-  #nativeHandler(group: EventAttribute[]): string {
+  #nativeHandler(group: Array<EventAttribute>): string {
     const [first] = group;
     if (group.length === 1 && !first!.once) {
       return this.#handler(first!, "native");
@@ -632,8 +639,8 @@ function untyped(parameter: string): string {
 }
 
 /** The helpers the listeners of a planned component need, after it is printed. */
-export function listenerHelpers(plan: ReactPlan): string[] {
-  const helpers: string[] = [];
+export function listenerHelpers(plan: ReactPlan): Array<string> {
+  const helpers: Array<string> = [];
   if (plan.helpers.listen) {
     helpers.push(listenHelper(plan.helpers.listen));
   }
@@ -687,7 +694,7 @@ function isGuard(statement: unknown): statement is Node {
   }
   const inner =
     consequent.type === "BlockStatement"
-      ? (consequent as unknown as { body: Node[] }).body
+      ? (consequent as unknown as { body: Array<Node> }).body
       : [consequent];
   const [only] = inner;
   if (inner.length !== 1 || only?.type !== "ReturnStatement") {
@@ -751,12 +758,12 @@ const SIMPLE = new Set([
  * code reads, or the handler's event: the later code would read the declaration, not the name the
  * source means.
  */
-function declaresRead(statements: string, later: readonly string[]): boolean {
+function declaresRead(statements: string, later: ReadonlyArray<string>): boolean {
   if (!later.length) {
     return false;
   }
   const { statements: parsed } = parseStatementsSource(statements);
-  const declared: string[] = [];
+  const declared: Array<string> = [];
   for (const statement of parsed) {
     if (statement.type === "VariableDeclaration") {
       for (const declarator of statement.declarations) {

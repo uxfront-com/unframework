@@ -181,7 +181,7 @@ export const DELEGATED_EVENTS: ReadonlySet<string> = new Set([
 /** How one element's listeners and template ref print. */
 interface ElementPlan {
   /** The listeners its `ref` callback adds, in attribute order: all of an event's but its prop. */
-  added: readonly EventAttribute[];
+  added: ReadonlyArray<EventAttribute>;
   /**
    * The attribute the `ref` callback prints at: the template ref, the first added listener, or
    * its first directive, whose callback calls each directive and a `v-model`'s helper (ADR-0099).
@@ -189,7 +189,7 @@ interface ElementPlan {
    */
   carrier: RefAttribute | EventAttribute | DirectiveAttribute | undefined;
   /** The directives it applies, in attribute order (ADR-0099). */
-  directives: readonly DirectiveAttribute[];
+  directives: ReadonlyArray<DirectiveAttribute>;
 }
 
 /** The dialect hooks that print listeners and template refs, for one output file. */
@@ -198,31 +198,35 @@ export interface SolidListeners {
     attribute: EventAttribute,
     element: ElementNode,
     context: JsxContext,
-  ): JsxAttributeItem[];
+  ): Array<JsxAttributeItem>;
   refAttribute(
     attribute: RefAttribute,
     element: ElementNode,
     context: JsxContext,
-  ): JsxAttributeItem[];
+  ): Array<JsxAttributeItem>;
   /** A directive (ADR-0099): `ref={vFocusTrap(() => open())}`, or a call in the `ref` callback. */
   directiveAttribute(
     attribute: DirectiveAttribute,
     element: ElementNode,
     context: JsxContext,
-  ): JsxAttributeItem[];
+  ): Array<JsxAttributeItem>;
   /**
    * Whether an element prints a `ref` callback of its own (a template ref, an added listener),
    * which a `v-model`'s helper then joins.
    */
   carries(element: ElementNode): boolean;
   /** A listener of a child's event, `onClear={clear}`: the handler takes its payload. */
-  componentEvent(attribute: ListenerAttribute): JsxAttributeItem[];
+  componentEvent(attribute: ListenerAttribute): Array<JsxAttributeItem>;
   /**
    * A component ref (ADR-0054): a `let` the `ref` callback sets to what the child exposes, or to
    * its root element where it exposes nothing (`element`, ADR-0118), and clears when the child
    * is disposed, as an element's (ADR-0049).
    */
-  componentRef(attribute: RefAttribute, element: boolean, forwarded?: string): JsxAttributeItem[];
+  componentRef(
+    attribute: RefAttribute,
+    element: boolean,
+    forwarded?: string,
+  ): Array<JsxAttributeItem>;
   /**
    * A listener of the element that takes what falls through, which calls the consumer's of the
    * same event after its own (ADR-0118): `onClick={(event) => { save(); props.onClick?.(event);
@@ -235,7 +239,7 @@ export interface SolidListeners {
     prop: string,
     passed: string,
     typed?: boolean,
-  ): JsxAttributeItem[];
+  ): Array<JsxAttributeItem>;
 }
 
 /** What a `ref` callback does besides the element's own: hand the element to the consumer's. */
@@ -285,7 +289,7 @@ export function solidListeners(
   /** The `ref` callback of an element: its template ref set and cleared, its added listeners. */
   const refCallback = (element: ElementNode, context: JsxContext): JsxAttributeItem => {
     parameter ??= imports.claim("element");
-    const statements: string[] = [];
+    const statements: Array<string> = [];
     const ref = element.attributes.find((attribute) => attribute.kind === "Ref");
     if (ref) {
       const { name } = code.component.bindings.find((binding) => binding.id === ref.binding)!;
@@ -451,7 +455,7 @@ export function solidListeners(
   }
 
   /** The composed handler's parameter: `event`, unless the code it holds reads that name. */
-  function eventName(texts: readonly string[]): string {
+  function eventName(texts: ReadonlyArray<string>): string {
     return texts.some((text) => /(?<![\w$.])event(?![\w$])/.test(text))
       ? imports.claim("event")
       : "event";
@@ -502,7 +506,7 @@ function isComponentTag(tag: string): boolean {
  * callback adds, one with an option, or one of an event its listeners take natively
  * (`on:click`).
  */
-export function eventProps(element: ElementNode, component: UfComponent): EventAttribute[] {
+export function eventProps(element: ElementNode, component: UfComponent): Array<EventAttribute> {
   const native = nativeEvents(component);
   const { added } = elementPlan(element, component);
   return element.attributes.filter(

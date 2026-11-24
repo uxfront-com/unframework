@@ -24,7 +24,10 @@ type JsExpression = Exclude<TextPart, string>;
  * ADR-0032); the target throws on one rather than drop it (a target that throws is reported by
  * the compiler).
  */
-export function titleChildren(children: readonly RenderNode[], context: JsxContext): RenderNode[] {
+export function titleChildren(
+  children: ReadonlyArray<RenderNode>,
+  context: JsxContext,
+): Array<RenderNode> {
   const [only] = children;
   if (!only || children.length > 1 || only.kind === "Element" || only.kind === "For") {
     return joined(children, context);
@@ -44,7 +47,7 @@ export function titleChildren(children: readonly RenderNode[], context: JsxConte
  * interpolation of one string expression. Its code is printed here, each part's spelled by the
  * context, so the expression holds no reference for a rewrite to spell again.
  */
-function joined(children: readonly RenderNode[], context: JsxContext): RenderNode[] {
+function joined(children: ReadonlyArray<RenderNode>, context: JsxContext): Array<RenderNode> {
   if (children.length === 0) {
     return [];
   }
@@ -63,11 +66,11 @@ function joined(children: readonly RenderNode[], context: JsxContext): RenderNod
  * alone; or, when nothing in them renders a value, their text.
  */
 function template(
-  nodes: readonly RenderNode[],
+  nodes: ReadonlyArray<RenderNode>,
   context: JsxContext,
   placeholders: Placeholders,
 ): JsExpression | string {
-  const parts: TextPart[] = [];
+  const parts: Array<TextPart> = [];
   for (const node of nodes) {
     const value = node.kind === "Text" ? node.value : part(node, context, placeholders);
     if (value !== undefined) {
@@ -150,7 +153,7 @@ function conditional(node: IfNode, context: JsxContext, placeholders: Placeholde
 
 /** What a branch renders, as one string expression. */
 function branchText(
-  children: readonly RenderNode[],
+  children: ReadonlyArray<RenderNode>,
   context: JsxContext,
   placeholders: Placeholders,
 ): JsExpression {

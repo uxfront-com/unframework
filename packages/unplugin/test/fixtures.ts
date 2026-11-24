@@ -40,12 +40,12 @@ export function createProject(files: Record<string, string> = {}): Project {
 export interface TestServer {
   server: ViteDevServer;
   client: DevEnvironment;
-  warnings: string[];
+  warnings: Array<string>;
   close(): Promise<void>;
 }
 
-export async function startServer(root: string, plugins: PluginOption[]): Promise<TestServer> {
-  const warnings: string[] = [];
+export async function startServer(root: string, plugins: Array<PluginOption>): Promise<TestServer> {
+  const warnings: Array<string> = [];
   const logger = createLogger("warn", { allowClearScreen: false });
   const warn = (message: string) => void warnings.push(message);
   logger.warn = warn;

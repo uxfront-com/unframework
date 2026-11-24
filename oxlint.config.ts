@@ -46,7 +46,6 @@ export default defineConfig({
     "quality/no-reflect-get": "off",
     "quality/no-unknown-returns": "off",
     "quality/no-unsafe-dictionary-type": "off",
-    "typescript/array-type": "off",
     "typescript/no-empty-object-type": "off",
     "typescript/no-explicit-any": "off",
     "typescript/no-implied-eval": "off",
@@ -151,6 +150,8 @@ export default defineConfig({
       rules: {
         // The compiler must keep lowering the braceless `if` that authors write.
         curly: "off",
+        // A case's prop types reach every output as written: `T[]` is the form most authors use.
+        "typescript/array-type": "off",
       },
     },
   ],

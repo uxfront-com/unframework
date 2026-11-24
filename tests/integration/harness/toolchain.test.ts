@@ -41,17 +41,17 @@ const cases = listCases(harness.casesDir);
 
 interface Checked {
   /** Each case's output files (absolute paths). */
-  files: Map<string, string[]>;
+  files: Map<string, Array<string>>;
   /** Every output file of the run: a message on any other path fails every case. */
   outputs: Set<string>;
   /** Each case's consumer fixtures, which only the checker reads (L4). */
-  fixtures: Map<string, Fixture[]>;
+  fixtures: Map<string, Array<Fixture>>;
   /** Every file the checker read: the outputs and the fixtures. */
   typechecked: Set<string>;
   /** What each tool returned, or why it did not run, by the layer it decides. */
   L3: PromiseSettledResult<Map<string, FrameworkCompileResult>>;
-  L4: PromiseSettledResult<Map<string, ToolchainMessage[]>>;
-  L5: PromiseSettledResult<Map<string, ToolchainMessage[]>>;
+  L4: PromiseSettledResult<Map<string, Array<ToolchainMessage>>>;
+  L5: PromiseSettledResult<Map<string, Array<ToolchainMessage>>>;
 }
 
 /**
@@ -60,7 +60,7 @@ interface Checked {
  * `declare module "*.css"` (ADR-0023, ADR-0063). Each target's M4 lane lists its own. React,
  * Vue and Svelte read `process.env.NODE_ENV` for `isDev`, which an app declares (ADR-0117).
  */
-const DECLARATIONS: Readonly<Record<string, readonly string[]>> = {
+const DECLARATIONS: Readonly<Record<string, ReadonlyArray<string>>> = {
   react: ["sheets.d.ts", "environment.d.ts"],
   vue: ["environment.d.ts"],
   solid: ["sheets.d.ts"],
@@ -95,7 +95,7 @@ beforeAll(async () => {
       root: ROOT,
       declarations: ENGINE_DECLARATIONS,
     };
-    const contents: ToolchainFile[] = all.map((path) => ({
+    const contents: Array<ToolchainFile> = all.map((path) => ({
       path,
       contents: readFileSync(path, "utf8"),
     }));
@@ -179,7 +179,7 @@ function describeError(error: unknown): string {
   return `${formatError(error)}${cause}`;
 }
 
-function casesFiles(files: Map<string, string[]>, info: CaseInfo): string[] {
+function casesFiles(files: Map<string, Array<string>>, info: CaseInfo): Array<string> {
   const list = files.get(info.id);
   if (list?.length) {
     return list;
@@ -196,8 +196,8 @@ function casesFiles(files: Map<string, string[]>, info: CaseInfo): string[] {
  * Each case's consumer fixtures, for the cases with output: the committed files, or, with a
  * canary, copies beside its compile under `.canary/<id>/<target>/consumers/`.
  */
-function caseFixtures(files: Map<string, string[]>): Map<string, Fixture[]> {
-  const fixtures = new Map<string, Fixture[]>();
+function caseFixtures(files: Map<string, Array<string>>): Map<string, Array<Fixture>> {
+  const fixtures = new Map<string, Array<Fixture>>();
   for (const id of files.keys()) {
     const paths = consumerFixtures(target, id);
     if (!paths.length) {

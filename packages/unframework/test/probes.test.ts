@@ -14,7 +14,7 @@ import { PROBES_DIRECTORY, runProbes } from "../scripts/run-probes.ts";
 const PINNED_PROBES = 97;
 
 const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
-const copies: string[] = [];
+const copies: Array<string> = [];
 
 /**
  * A copy of the probe tree beside the original, so `@uxfront/unframework` and the base tsconfig resolve

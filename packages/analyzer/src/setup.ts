@@ -121,7 +121,7 @@ export interface SetupContext {
    * argument, read from its shape (ADR-0067): its kinds, and whether it resolves in full.
    */
   writtenType(type: AST.TSType): { kinds: Kinds; complete: boolean };
-  readonly comments: readonly AST.Comment[];
+  readonly comments: ReadonlyArray<AST.Comment>;
   /** The module's authoring imports, by the identifier that declares each. */
   readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;
   readonly component: ComponentFunction;
@@ -132,7 +132,7 @@ export interface SetupContext {
   readonly components?: ReadonlyMap<object, ComponentInfo | undefined>;
   readonly props: PropsAnalysis;
   /** The statements of the body before its return. */
-  readonly statements: readonly (AST.Directive | AST.Statement)[];
+  readonly statements: ReadonlyArray<AST.Directive | AST.Statement>;
   /** The JSX the component returns, whose handlers decide which parameters take an event. */
   readonly returned: AST.Expression | undefined;
   /** The injection keys the module declares or imports, by the identifier that declares each. */
@@ -153,9 +153,9 @@ export interface SetupContext {
 export interface Setup {
   readonly scope: SetupScope;
   /** The setup's bindings, `emit`'s included, in source order. */
-  readonly bindings: Binding[];
+  readonly bindings: Array<Binding>;
   /** The items, once `lower` has walked them, in source order. */
-  readonly items: SetupItem[];
+  readonly items: Array<SetupItem>;
   /** The events `defineEmits` declares. */
   readonly emits: Emits | undefined;
   /** The slots `defineSlots` declares (ADR-0054). */
@@ -224,7 +224,7 @@ type Declared =
       /** The composable's local name. */
       name: string;
       api: ComposableApi;
-      members: { member: string; binding: SetupBinding; span: Span }[];
+      members: Array<{ member: string; binding: SetupBinding; span: Span }>;
     };
 
 /** The binding kind of each kind of member a composable returns (ADR-0069). */
@@ -287,8 +287,8 @@ export function declareSetup(context: SetupContext): Setup {
   const { source, reporter, comments, statements } = context;
   const mark = reporter.diagnostics.length;
   const bindings = new Map<object, SetupBinding>();
-  const declared: Declared[] = [];
-  const items: SetupItem[] = [];
+  const declared: Array<Declared> = [];
+  const items: Array<SetupItem> = [];
   let emits: Emits | undefined;
   let events: Map<string, EventPayload> | undefined;
   let slots: Slots | undefined;
@@ -305,13 +305,13 @@ export function declareSetup(context: SetupContext): Setup {
   const injected = new Map<string, AST.CallExpression>();
   const provided = new Map<string, AST.CallExpression>();
   /** The slots' names, with the key that declares each, checked against the events at the end. */
-  const slotKeys: { name: string; key: AST.PropertyKey }[] = [];
+  const slotKeys: Array<{ name: string; key: AST.PropertyKey }> = [];
   /** The identifier the `slots` binding is declared by, whose reads a slot's rename follows. */
   let slotsBinding: AST.BindingIdentifier | undefined;
   /** The identifier the `emit` binding is declared by, once its events are read. */
   let emitBinding: AST.BindingIdentifier | undefined;
   /** The events' names, with the key that declares each (UF2008). */
-  const named: { name: string; key: AST.PropertyKey }[] = [];
+  const named: Array<{ name: string; key: AST.PropertyKey }> = [];
   /** Whether each payload member admits `null` or `undefined`, by its IR (UF3031). */
   const nullable = new Map<object, boolean>();
   const eventParameters = new Map<SetupFunction, EventParameter>();
@@ -478,7 +478,7 @@ export function declareSetup(context: SetupContext): Setup {
    */
   function awaitStatement(
     statement: AST.Statement,
-    awaits: readonly (AST.AwaitExpression | AST.ForOfStatement)[],
+    awaits: ReadonlyArray<AST.AwaitExpression | AST.ForOfStatement>,
   ): void {
     const declarator =
       statement.type === "VariableDeclaration" &&
@@ -731,7 +731,7 @@ export function declareSetup(context: SetupContext): Setup {
       );
       valid = false;
     }
-    const members: { member: string; binding: SetupBinding; span: Span }[] = [];
+    const members: Array<{ member: string; binding: SetupBinding; span: Span }> = [];
     for (const property of id.properties) {
       if (
         property.type !== "Property" ||
@@ -969,7 +969,7 @@ export function declareSetup(context: SetupContext): Setup {
     how: "statement" | "let" | "pattern",
   ) {
     const name = (call.callee as AST.IdentifierReference).name;
-    const fixes: Fix[] = [];
+    const fixes: Array<Fix> = [];
     if (api === "defineEmits" && how === "statement" && free("emit")) {
       fixes.push({
         title: "Bind it as `const emit`",
@@ -1058,7 +1058,7 @@ export function declareSetup(context: SetupContext): Setup {
       );
       return;
     }
-    const declarations: EventDeclaration[] = [];
+    const declarations: Array<EventDeclaration> = [];
     let valid = true;
     for (const member of members) {
       if (member.type === "TSCallSignatureDeclaration") {
@@ -1201,7 +1201,7 @@ export function declareSetup(context: SetupContext): Setup {
       );
       return;
     }
-    const declarations: SlotDeclaration[] = [];
+    const declarations: Array<SlotDeclaration> = [];
     const seen = new Set<string>();
     for (const member of members) {
       const shape = slotShape(member);
@@ -1274,7 +1274,7 @@ export function declareSetup(context: SetupContext): Setup {
         name: string;
         key: AST.PropertyKey;
         optional: boolean;
-        parameters: readonly AST.ParamPattern[];
+        parameters: ReadonlyArray<AST.ParamPattern>;
       }
     | undefined {
     if (
@@ -1359,7 +1359,7 @@ export function declareSetup(context: SetupContext): Setup {
       );
       return;
     }
-    const functions: string[] = [];
+    const functions: Array<string> = [];
     let valid = true;
     for (const property of object.properties) {
       const value =
@@ -1447,7 +1447,7 @@ export function declareSetup(context: SetupContext): Setup {
     id: AST.BindingIdentifier,
     call: AST.CallExpression,
   ): void {
-    const invalid = (at: { start: number; end: number }, message: string, fixes?: Fix[]) => {
+    const invalid = (at: { start: number; end: number }, message: string, fixes?: Array<Fix>) => {
       reporter.report("UF2028", at, message, {
         help: 'Name the model and give it static options: `defineModel<string>("value", { default: "" })`.',
         ...(fixes ? { fixes } : {}),
@@ -1863,7 +1863,7 @@ export function declareSetup(context: SetupContext): Setup {
   }
 
   /** The members of `defineEmits`'s type argument: a type literal's, or a local type's. */
-  function eventMembers(type: AST.TSType): readonly AST.TSSignature[] | undefined {
+  function eventMembers(type: AST.TSType): ReadonlyArray<AST.TSSignature> | undefined {
     if (type.type === "TSTypeLiteral") {
       return type.members;
     }
@@ -2148,7 +2148,7 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
   switch (item.kind) {
     case "state": {
       const [type] = item.call.typeArguments?.params ?? [];
-      const [initial] = item.call.arguments as AST.Expression[];
+      const [initial] = item.call.arguments as Array<AST.Expression>;
       const checked = initial ? checkCode(initial, render) : undefined;
       if (!type && checked) {
         item.binding.kinds = checked.widened;
@@ -2270,7 +2270,7 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
     case "use": {
       // Each argument as its parameter's kind reads it (ADR-0069): a value once, as an initial
       // value is; a getter as a `computed`'s; a callback as client code.
-      const args: UseArgument[] = [];
+      const args: Array<UseArgument> = [];
       let valid = true;
       for (const [index, node] of item.call.arguments.entries()) {
         const parameter = item.api.parameters[index]!;
@@ -2386,8 +2386,8 @@ const WHAT_IT_IS: Readonly<Partial<Record<SetupBinding["kind"], string>>> = {
  */
 function awaitsIn(
   statement: AST.Directive | AST.Statement,
-): (AST.AwaitExpression | AST.ForOfStatement)[] {
-  const found: (AST.AwaitExpression | AST.ForOfStatement)[] = [];
+): Array<AST.AwaitExpression | AST.ForOfStatement> {
+  const found: Array<AST.AwaitExpression | AST.ForOfStatement> = [];
   const walk = (value: unknown): void => {
     if (!value || typeof value !== "object") {
       return;
@@ -2439,7 +2439,7 @@ function contextValue(
   // each target's `Ref` accepts.
   const accepted = REF_BINDINGS[key.ref];
   const binding = node.type === "Identifier" ? setupBindingOf(node, render) : undefined;
-  if (binding && (accepted as readonly string[]).includes(binding.kind)) {
+  if (binding && (accepted as ReadonlyArray<string>).includes(binding.kind)) {
     return createCode(binding.name, span(node), [createBindingReference(binding.id, span(node))]);
   }
   const what = { state: "a `ref`", derived: "a `computed`", model: "a model" };
@@ -2456,7 +2456,7 @@ function contextValue(
 }
 
 /** The bindings a key of each kind of ref takes whole. */
-const REF_BINDINGS: Readonly<Record<RefType, readonly ("state" | "derived" | "model")[]>> = {
+const REF_BINDINGS: Readonly<Record<RefType, ReadonlyArray<"state" | "derived" | "model">>> = {
   Ref: ["state", "derived", "model"],
   ComputedRef: ["derived"],
   ModelRef: ["model"],
@@ -2491,7 +2491,7 @@ function valueType(key: InjectionKeyInfo): AST.TSType | undefined {
 }
 
 /** The parameters each API passes its callback, as the wrapper of UF2022's fix names them. */
-const CALLBACK_PARAMETERS: Readonly<Record<string, readonly string[]>> = {
+const CALLBACK_PARAMETERS: Readonly<Record<string, ReadonlyArray<string>>> = {
   watch: ["value", "previous", "onCleanup"],
   watchEffect: ["onCleanup"],
 };
@@ -2722,7 +2722,7 @@ function lowerWatch(
     return undefined;
   }
   let array = false;
-  const sources: WatchSource[] = [];
+  const sources: Array<WatchSource> = [];
   let valid = true;
   const one = (node: AST.Expression | AST.SpreadElement | null): void => {
     if (node?.type === "Identifier") {
@@ -2947,7 +2947,7 @@ function watchOptions(
   }
   const flags: { immediate?: boolean; post?: boolean } = {};
   let valid = true;
-  const defaults: AST.ObjectPropertyKind[] = [];
+  const defaults: Array<AST.ObjectPropertyKind> = [];
   let post: AST.ObjectPropertyKind | undefined;
   for (const property of node.properties) {
     const key =
@@ -3070,7 +3070,10 @@ function findEventParameters(
   bindings: ReadonlyMap<object, SetupBinding>,
   found: Map<SetupFunction, EventParameter>,
 ): void {
-  const uses = new Map<SetupFunction, { index: number; interfaces: string[]; events: string[] }>();
+  const uses = new Map<
+    SetupFunction,
+    { index: number; interfaces: Array<string>; events: Array<string> }
+  >();
   const functionOf = (identifier: AST.Node): SetupFunction | undefined => {
     if (identifier.type !== "Identifier") {
       return undefined;
@@ -3081,7 +3084,7 @@ function findEventParameters(
     }
     return bindings.get(resolution.declaration)?.function;
   };
-  const use = (fn: SetupFunction, index: number, dom: string, events: readonly string[]) => {
+  const use = (fn: SetupFunction, index: number, dom: string, events: ReadonlyArray<string>) => {
     const known = uses.get(fn);
     if (known && known.index !== index) {
       return;
@@ -3098,7 +3101,7 @@ function findEventParameters(
     }
   };
   /** The calls in `node` that pass the identifier `parameter` declares to a local function. */
-  const passes = (node: unknown, parameter: object, dom: string, events: readonly string[]) => {
+  const passes = (node: unknown, parameter: object, dom: string, events: ReadonlyArray<string>) => {
     visit(node, (child) => {
       if (child.type !== "CallExpression") {
         return;
@@ -3216,7 +3219,7 @@ function canonicalEventName(name: string): string | undefined {
 }
 
 /** The nearest event interface every one of `interfaces` is or extends. */
-function common(interfaces: readonly string[]): string {
+function common(interfaces: ReadonlyArray<string>): string {
   for (let current: string | null | undefined = interfaces[0]; current;) {
     if (interfaces.every((name) => extendsEventInterface(name, current!))) {
       return current;
@@ -3259,8 +3262,8 @@ function holdsJsx(node: unknown): boolean {
 }
 
 /** The `return` statements in a statement, outside the functions in it. */
-function returnsIn(statement: AST.Statement): AST.ReturnStatement[] {
-  const found: AST.ReturnStatement[] = [];
+function returnsIn(statement: AST.Statement): Array<AST.ReturnStatement> {
+  const found: Array<AST.ReturnStatement> = [];
   const walk = (node: unknown): void => {
     if (!node || typeof node !== "object") {
       return;
@@ -3296,8 +3299,8 @@ function returnsIn(statement: AST.Statement): AST.ReturnStatement[] {
 function apisIn(
   statement: AST.Statement,
   context: SetupContext,
-): { identifier: AST.IdentifierReference; called: boolean }[] {
-  const found: { identifier: AST.IdentifierReference; called: boolean }[] = [];
+): Array<{ identifier: AST.IdentifierReference; called: boolean }> {
+  const found: Array<{ identifier: AST.IdentifierReference; called: boolean }> = [];
   const callees = new Set<object>();
   visit(statement, (node) => {
     if (node.type === "CallExpression") {

@@ -272,7 +272,7 @@ class Rules {
    * nothing but static constants, which Qwik hoists with them out of the component.
    */
   calls(): void {
-    const sites: { refs: readonly CodeReference[]; where: string; getter: boolean }[] = [
+    const sites: Array<{ refs: ReadonlyArray<CodeReference>; where: string; getter: boolean }> = [
       ...expressionsOf(this.#component).map(({ expression }) => ({
         refs: expression.refs,
         where: "a template expression",
@@ -671,7 +671,7 @@ class Rules {
     }
     for (const item of this.#component.setup) {
       const start = item.span.start;
-      const codes: Code[] = [];
+      const codes: Array<Code> = [];
       switch (item.kind) {
         case "State":
         case "Variable":
@@ -1131,7 +1131,7 @@ class Rules {
       return;
     }
     const slots = render.slots?.type.span;
-    const found: { reference: AST.TSTypeReference; annotation: AST.Node | undefined }[] = [];
+    const found: Array<{ reference: AST.TSTypeReference; annotation: AST.Node | undefined }> = [];
     const visit = (node: unknown, annotation: AST.Node | undefined): void => {
       if (!node || typeof node !== "object") {
         return;
@@ -1294,11 +1294,11 @@ class ConditionalReads {
 
   /** The reads of a function's references that are not unconditional, and why. */
   #problems(
-    refs: readonly CodeReference[],
+    refs: ReadonlyArray<CodeReference>,
     node: AST.ArrowFunctionExpression | AST.Function,
-  ): { span: Span; what: string; why: string }[] {
+  ): Array<{ span: Span; what: string; why: string }> {
     const regions = conditionalRegions(node);
-    const problems: { span: Span; what: string; why: string }[] = [];
+    const problems: Array<{ span: Span; what: string; why: string }> = [];
     for (const ref of refs) {
       // What a function the code hands on reads, it reads later, which no target tracks.
       if (ref.kind !== "Binding" || ref.later) {
@@ -1407,8 +1407,8 @@ function objectish(kinds: Kinds | undefined): boolean {
 /** The parts of a function's body that run only under a condition, with why. */
 function conditionalRegions(
   fn: AST.ArrowFunctionExpression | AST.Function,
-): { span: Span; why: string }[] {
-  const regions: { span: Span; why: string }[] = [];
+): Array<{ span: Span; why: string }> {
+  const regions: Array<{ span: Span; why: string }> = [];
   const body = fn.body;
   if (!body) {
     return regions;
@@ -1511,7 +1511,7 @@ function conditionalRegions(
    * throw into the `catch`: what that call reads runs on every run, what follows it only where
    * it returns.
    */
-  const straight = (statements: readonly AST.Statement[], guarded: boolean): boolean => {
+  const straight = (statements: ReadonlyArray<AST.Statement>, guarded: boolean): boolean => {
     for (const statement of statements) {
       switch (statement.type) {
         case "ExpressionStatement":
@@ -1701,8 +1701,8 @@ function functionNode(
 }
 
 /** The functions written in a component's body, outermost first. */
-function functionNodes(root: FunctionNode): FunctionNode[] {
-  const found: FunctionNode[] = [];
+function functionNodes(root: FunctionNode): Array<FunctionNode> {
+  const found: Array<FunctionNode> = [];
   const visit = (value: unknown): void => {
     if (!value || typeof value !== "object") {
       return;
@@ -1733,7 +1733,7 @@ function functionNodes(root: FunctionNode): FunctionNode[] {
 }
 
 /** The innermost of the functions that holds a span, if any. */
-function innermost(functions: readonly FunctionNode[], at: Span): FunctionNode | undefined {
+function innermost(functions: ReadonlyArray<FunctionNode>, at: Span): FunctionNode | undefined {
   let found: FunctionNode | undefined;
   for (const fn of functions) {
     if (fn.start <= at.start && at.end <= fn.end) {
@@ -1744,8 +1744,8 @@ function innermost(functions: readonly FunctionNode[], at: Span): FunctionNode |
 }
 
 /** The nodes from `root` down to `target`, both included. */
-function ancestors(target: AST.Node, root: AST.Node): AST.Node[] {
-  const path: AST.Node[] = [];
+function ancestors(target: AST.Node, root: AST.Node): Array<AST.Node> {
+  const path: Array<AST.Node> = [];
   const visit = (value: unknown): boolean => {
     if (Array.isArray(value)) {
       return value.some(visit);

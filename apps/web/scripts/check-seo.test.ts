@@ -36,7 +36,7 @@ function page({
   path: string;
   title: string;
   description: string;
-  jsonLd: unknown[];
+  jsonLd: Array<unknown>;
 }) {
   const url = `${SITE}${path}`;
   const image = `${SITE}/og${path === "/" ? "/home" : path}.png`;

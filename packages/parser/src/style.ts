@@ -19,9 +19,9 @@ export interface CssDeclaration {
 export interface ParsedDeclarations {
   source: string;
   /** The declarations, in source order; empty ones (`;;`) are not listed. */
-  declarations: CssDeclaration[];
+  declarations: Array<CssDeclaration>;
   /** Syntax errors: lightningcss's, and declarations without a property or a colon. */
-  errors: { message: string; span: Span }[];
+  errors: Array<{ message: string; span: Span }>;
 }
 
 const encoder = new TextEncoder();
@@ -33,8 +33,8 @@ const encoder = new TextEncoder();
  * lightningcss checks the syntax. Spans are UTF-16 offsets into `source`. Never throws.
  */
 export function parseDeclarations(source: string): ParsedDeclarations {
-  const declarations: CssDeclaration[] = [];
-  const errors: { message: string; span: Span }[] = [];
+  const declarations: Array<CssDeclaration> = [];
+  const errors: Array<{ message: string; span: Span }> = [];
   for (const chunk of split(source, ";")) {
     const colon = split(source.slice(chunk.start, chunk.end), ":")[0]!;
     const before = trim(source, { start: chunk.start, end: chunk.start + colon.end });
@@ -74,9 +74,9 @@ export function parseDeclarations(source: string): ParsedDeclarations {
  * The ranges of `text` between the `separator`s that are outside strings, comments and
  * brackets: CSS's own nesting, so a `;` in `url("a;b")` does not end a declaration.
  */
-function split(text: string, separator: string): Span[] {
-  const ranges: Span[] = [];
-  const closing: string[] = [];
+function split(text: string, separator: string): Array<Span> {
+  const ranges: Array<Span> = [];
+  const closing: Array<string> = [];
   let quote: string | undefined;
   let start = 0;
   for (let index = 0; index < text.length; index++) {

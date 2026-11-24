@@ -6,7 +6,7 @@ import type { Fix, TextEdit } from "./types.ts";
  * that each add the same import add it once. Other overlapping edits are a bug in the fix, so
  * they throw.
  */
-export function applyEdits(source: string, edits: readonly TextEdit[]): string {
+export function applyEdits(source: string, edits: ReadonlyArray<TextEdit>): string {
   const unique = edits.filter(
     (edit, index) =>
       edits.findIndex(
@@ -33,7 +33,7 @@ export function applyEdits(source: string, edits: readonly TextEdit[]): string {
 }
 
 /** Applies every edit of several fixes at once. */
-export function applyFixes(source: string, fixes: readonly Fix[]): string {
+export function applyFixes(source: string, fixes: ReadonlyArray<Fix>): string {
   return applyEdits(
     source,
     fixes.flatMap((fix) => fix.edits),

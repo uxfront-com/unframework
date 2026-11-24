@@ -47,7 +47,7 @@ function sfc(markup: string, { props }: Suite): string {
 }
 
 /** The suite's component and each root case's, printed with `layout`. */
-function components(layout: MarkupOptions): { cases: Suite; source: string }[] {
+function components(layout: MarkupOptions): Array<{ cases: Suite; source: string }> {
   return [suite(MARKUP_CASES), ...ROOT_CASES.map((each) => suite([each], "self"))].map((cases) => ({
     cases,
     source: sfc(
@@ -69,9 +69,9 @@ async function render(source: string, props: Record<string, unknown>): Promise<s
   const id = `markup-${compiled++}`;
   const { descriptor, errors } = parse(source, { filename: `${id}.vue` });
   expect(errors).toEqual([]);
-  const warnings: string[] = [];
+  const warnings: Array<string> = [];
   const warn = console.warn;
-  console.warn = (...args: unknown[]) => void warnings.push(args.join(" "));
+  console.warn = (...args: Array<unknown>) => void warnings.push(args.join(" "));
   let code: string;
   try {
     ({ content: code } = compileScript(descriptor, {

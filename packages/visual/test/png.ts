@@ -31,11 +31,11 @@ export function png(width: number, height: number, red = 255): Buffer {
 }
 
 /** The colour of one pixel of an 8-bit RGB or RGBA PNG, such as a capture: `[r, g, b, a]`. */
-export function pixelAt(file: Buffer, x: number, y: number): number[] {
+export function pixelAt(file: Buffer, x: number, y: number): Array<number> {
   let offset = 8;
   let width = 0;
   let channels = 0;
-  const data: Buffer[] = [];
+  const data: Array<Buffer> = [];
   while (offset < file.length) {
     const length = file.readUInt32BE(offset);
     const type = file.toString("ascii", offset + 4, offset + 8);

@@ -10,7 +10,7 @@
 interface MergedRun {
   first: Text;
   data: string;
-  detached: ChildNode[];
+  detached: Array<ChildNode>;
 }
 
 /** Elements whose text is not laid out as text: raw text, and a form control's value. */
@@ -26,7 +26,7 @@ const SKIPPED = new Set(["script", "style", "textarea"]);
  * its nodes stay valid.
  */
 export function mergeTextRuns(root: Element): () => void {
-  const runs: MergedRun[] = [];
+  const runs: Array<MergedRun> = [];
   const visit = (parent: Node): void => {
     let child = parent.firstChild;
     while (child) {
@@ -56,7 +56,7 @@ export function mergeTextRuns(root: Element): () => void {
 
 /** Runs `capture` with the text runs under `root` merged, and restores them afterwards. */
 export async function withMergedTextRuns<T>(
-  roots: Element | readonly Element[],
+  roots: Element | ReadonlyArray<Element>,
   capture: () => Promise<T>,
 ): Promise<T> {
   // A view's container, and what it teleported (ADR-0098).
@@ -72,8 +72,8 @@ export async function withMergedTextRuns<T>(
 
 /** The run starting at `first`: the nodes after it up to its last adjacent text node. */
 function runFrom(first: Text): MergedRun {
-  const detached: ChildNode[] = [];
-  const pending: ChildNode[] = [];
+  const detached: Array<ChildNode> = [];
+  const pending: Array<ChildNode> = [];
   for (let node = first.nextSibling; node; node = node.nextSibling) {
     if (node instanceof Comment) {
       pending.push(node);

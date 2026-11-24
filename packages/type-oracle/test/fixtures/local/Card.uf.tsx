@@ -5,9 +5,9 @@ interface CardProps {
   count: number;
 }
 
-type Tree = { label: string; children: Tree[] };
+type Tree = { label: string; children: Array<Tree> };
 
-export function Literal(props: { label: string; count?: number; tags: readonly string[] }) {
+export function Literal(props: { label: string; count?: number; tags: ReadonlyArray<string> }) {
   return props;
 }
 
@@ -26,7 +26,7 @@ export function Emits(events: { change: [value: string]; close: [] }) {
   return events;
 }
 
-export function List<T>(props: { items: T[]; selected?: T }) {
+export function List<T>(props: { items: Array<T>; selected?: T }) {
   return props;
 }
 

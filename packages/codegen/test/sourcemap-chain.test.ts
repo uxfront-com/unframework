@@ -17,7 +17,7 @@ const base: Pick<SourceMapV3, "version" | "file" | "names"> = {
   names: [],
 };
 
-function mapOf(lines: SourceMapSegment[][], source = "in.uf.tsx"): SourceMapV3 {
+function mapOf(lines: Array<Array<SourceMapSegment>>, source = "in.uf.tsx"): SourceMapV3 {
   const shape = { ...base, sources: [source], sourcesContent: [""] };
   return { ...shape, mappings: encodedMappings(new TraceMap({ ...shape, mappings: lines })) };
 }

@@ -413,7 +413,7 @@ describe("angular target", () => {
  * The component class's body of an emitted file, one member per line, as the compiler formats
  * it: the class after `@Component(`, past a directive the file declares before it.
  */
-function classBody(contents: string): string[] {
+function classBody(contents: string): Array<string> {
   const component = contents.slice(Math.max(contents.indexOf("@Component("), 0));
   const body =
     /\n(?:export (?:default )?)?class \w+(?: implements [\w, ]+)? \{\n([\s\S]*?)\n\}\n/.exec(
@@ -423,7 +423,7 @@ function classBody(contents: string): string[] {
 }
 
 /** The messages of Angular's L3 check (ngtsc) on an emitted file, alone in a scratch directory. */
-async function l3Errors(file: { path: string; contents: string }): Promise<string[]> {
+async function l3Errors(file: { path: string; contents: string }): Promise<Array<string>> {
   const path = join(scratchDir(), file.path);
   const results = await toolchain.frameworkCompile([{ path, contents: file.contents }], context);
   const { errors, warnings } = results.get(path)!;
@@ -431,7 +431,7 @@ async function l3Errors(file: { path: string; contents: string }): Promise<strin
 }
 
 /** The lines of an emitted file's template, without their indentation, formatted or not. */
-function templateLines(contents: string): string[] {
+function templateLines(contents: string): Array<string> {
   return /template: `([\s\S]*)`,?\n/
     .exec(contents)![1]!
     .split("\n")

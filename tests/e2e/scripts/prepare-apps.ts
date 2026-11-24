@@ -38,7 +38,7 @@ import {
   writePacked,
 } from "../harness/apps.ts";
 
-const run = (cwd: string, ...args: string[]): void => {
+const run = (cwd: string, ...args: Array<string>): void => {
   execFileSync("pnpm", args, { cwd, stdio: "inherit" });
 };
 

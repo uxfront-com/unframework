@@ -12,8 +12,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { project, run, tree } from "./helpers.ts";
 
-const compiles = vi.hoisted((): string[] => []);
-const projects = vi.hoisted((): unknown[] => []);
+const compiles = vi.hoisted((): Array<string> => []);
+const projects = vi.hoisted((): Array<unknown> => []);
 const disposals = vi.hoisted(() => ({ count: 0 }));
 const lent = vi.hoisted((): { targetOptions: Record<string, unknown> | undefined } => ({
   targetOptions: undefined,

@@ -34,13 +34,13 @@ export interface SplitHandler {
   /** Whether nothing is left of the body. */
   empty: boolean;
   /** The controls taken out of it. */
-  controls: EventControl[];
+  controls: Array<EventControl>;
   /** Whether what is left reads `event.currentTarget`, which the element argument replaces. */
   currentTarget: boolean;
   /** Whether what is left uses the event parameter at all. */
   usesEvent: boolean;
   /** The calls of empty functions taken out of it, by their callee's offset in the source. */
-  removedCalls: readonly number[];
+  removedCalls: ReadonlyArray<number>;
 }
 
 /**
@@ -91,8 +91,8 @@ interface CallNode {
   argument?: CallNode;
   operator?: string;
   callee?: CallNode;
-  arguments?: CallNode[];
-  body?: CallNode[];
+  arguments?: Array<CallNode>;
+  body?: Array<CallNode>;
   test?: CallNode;
   consequent?: CallNode;
   alternate?: CallNode | null;
@@ -109,7 +109,7 @@ interface CallNode {
 function emptyCalls(
   fn: FunctionCode,
   empty: ReadonlySet<BindingId>,
-): { statement: Span; callee: number }[] {
+): Array<{ statement: Span; callee: number }> {
   if (!empty.size) {
     return [];
   }
@@ -209,7 +209,7 @@ function emptyCalls(
     const callee = called(root);
     return callee === undefined ? [] : [{ statement: span(root), callee: base + callee }];
   }
-  const [block] = parseCodeSource(fn.body.code, "statements").root as unknown as CallNode[];
+  const [block] = parseCodeSource(fn.body.code, "statements").root as unknown as Array<CallNode>;
   return (block?.type === "BlockStatement" ? (block.body ?? []) : []).flatMap((statement) => {
     const callee =
       statement.type === "ExpressionStatement"
@@ -229,7 +229,7 @@ export function readsName(code: string, name: string): boolean {
  * the code's own (`codeKind` finds a function's body by it); the text and every reference after a
  * removed span move back by what was removed, and a reference inside one goes with it.
  */
-export function removeSpans(code: Code, spans: readonly Span[]): Code {
+export function removeSpans(code: Code, spans: ReadonlyArray<Span>): Code {
   if (!spans.length) {
     return code;
   }
@@ -337,7 +337,7 @@ function listenerFunctions(component: UfComponent): Set<string> {
  */
 export function usedFunctions(component: UfComponent, removed: ReadonlySet<number>): Set<string> {
   const used = new Set<string>();
-  const visit = (refs: readonly CodeReference[]) => {
+  const visit = (refs: ReadonlyArray<CodeReference>) => {
     for (const reference of refs) {
       if (reference.kind === "Binding" && !removed.has(reference.span.start)) {
         used.add(reference.binding);

@@ -36,8 +36,8 @@ function fixture(name: string, contents: string): Fixture {
 
 /** The results of a checker run over some fixtures. */
 function results(
-  entries: [Fixture, ToolchainMessage[]][],
-): Map<string, readonly ToolchainMessage[]> {
+  entries: Array<[Fixture, Array<ToolchainMessage>]>,
+): Map<string, ReadonlyArray<ToolchainMessage>> {
   return new Map(entries.map(([{ checked }, messages]) => [checked, messages]));
 }
 

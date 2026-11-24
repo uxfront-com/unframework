@@ -52,9 +52,9 @@ export type ProjectOptions = FileResolverOptions &
 /** What {@link Project.update} did. */
 export interface ProjectUpdate {
   /** The modules compiled again, sorted, each once. */
-  compiled: string[];
+  compiled: Array<string>;
   /** The shared `.ts` modules whose copy was added, changed or went, sorted. */
-  copied: string[];
+  copied: Array<string>;
 }
 
 /** A project's module graph (ADR-0071). Every file is named relative to its root. */
@@ -80,28 +80,28 @@ export interface Project {
    * relative to it, each with its module's current text: what `compile()` adds to every output
    * tree beside the module's own files (ADR-0070). Empty for a module the project has not compiled.
    */
-  copies(file: string): OutputFile[];
+  copies(file: string): Array<OutputFile>;
   /** What a module read, sorted: files, and packages as `pkg:<name>` (ADR-0071). */
-  dependencies(file: string): string[];
+  dependencies(file: string): Array<string>;
   /**
    * Routes changed, created or deleted files through the project: it tells the type oracle, reads
    * again the copies among them, then checks each compiled module that depends on a file,
    * directly or not, and compiles it again only where what it read changed.
    */
-  update(files: readonly string[]): Promise<ProjectUpdate>;
+  update(files: ReadonlyArray<string>): Promise<ProjectUpdate>;
 }
 
 /** One question a compile asked the project, kept so an update asks it again. */
 type Call =
   | { kind: "api" | "stylesheet" | "module" | "cycle"; request: ResolveRequest }
   | { kind: "shape"; query: ShapeQuery }
-  | { kind: "directive-values"; file: string; source: string; queries: DirectiveValueQuery[] };
+  | { kind: "directive-values"; file: string; source: string; queries: Array<DirectiveValueQuery> };
 
 /** A compiled module's node: its result, the key it was compiled under, and its edges. */
 interface Compiled {
   result: CompileResult;
   key: string;
-  calls: Call[];
+  calls: Array<Call>;
   edges: Set<string>;
   /** The shared modules its compile reached, whose copies are their own nodes. */
   copies: Set<string>;
@@ -110,7 +110,7 @@ interface Compiled {
 /** A child's API, and the shapes it was analysed with: a parent's key holds both. */
 interface Child {
   api: ModuleApi | undefined;
-  shapes: [string, TypeShape][];
+  shapes: Array<[string, TypeShape]>;
 }
 
 /** A child's analysis. */
@@ -133,7 +133,7 @@ interface Analysis {
 /** A project's session: the children analysed in it, each file's component imports and its text. */
 interface Session {
   analyses: Map<string, Analysis>;
-  imports: Map<string, Promise<string[]>>;
+  imports: Map<string, Promise<Array<string>>>;
   texts: Map<string, Promise<string | undefined>>;
 }
 
@@ -218,7 +218,7 @@ export function createProject(options: ProjectOptions): Project {
   };
 
   /** The files a child imports components from, read once in the session. */
-  const importsOf = (path: string, memo: Session): Promise<string[]> => {
+  const importsOf = (path: string, memo: Session): Promise<Array<string>> => {
     let found = memo.imports.get(path);
     if (!found) {
       found = readText(path, memo).then((source) =>
@@ -375,7 +375,7 @@ export function createProject(options: ProjectOptions): Project {
     }
     const files = [first];
     const seen = new Set([first.file]);
-    const missing: string[] = [];
+    const missing: Array<string> = [];
     const resolved: ResolvedModule = { files };
     for (let index = 0; index < files.length; index++) {
       const { file, source } = files[index]!;
@@ -419,7 +419,7 @@ export function createProject(options: ProjectOptions): Project {
    * The components a module imports to render, by file: its component edges (ADR-0071), each
    * read by the API of the module it imports, which the project's analysis caches by content.
    */
-  const componentEdgesOf = async (file: string, read: Set<string>): Promise<string[]> => {
+  const componentEdgesOf = async (file: string, read: Set<string>): Promise<Array<string>> => {
     const source = await readText(file);
     if (source === undefined) {
       return [];
@@ -429,7 +429,7 @@ export function createProject(options: ProjectOptions): Project {
       cached = { source, imports: componentImportNames(parseModule(file, source)) };
       imported.set(file, cached);
     }
-    const files: string[] = [];
+    const files: Array<string> = [];
     for (const { specifier, names } of cached.imports) {
       const request = { specifier, importer: file };
       const path = joinPath(directoryOf(file), specifier);
@@ -491,7 +491,9 @@ export function createProject(options: ProjectOptions): Project {
    * Asks one question again: its answer, what of it a dependent's key holds, and the files it
    * read, which become the asking module's edges.
    */
-  const ask = async (call: Call): Promise<{ value: unknown; held: unknown; edges: string[] }> => {
+  const ask = async (
+    call: Call,
+  ): Promise<{ value: unknown; held: unknown; edges: Array<string> }> => {
     if (call.kind === "shape") {
       const shape = await typeOracle!.resolveShape(call.query);
       return { value: shape, held: shape, edges: shape.dependencies };
@@ -532,8 +534,8 @@ export function createProject(options: ProjectOptions): Project {
    * also gives the files the answers read now, which become the module's edges when the key is
    * unchanged: an import chain the answers no longer follow stops being watched.
    */
-  const keyOf = async (source: string, calls: readonly Call[]) => {
-    const held: unknown[] = [];
+  const keyOf = async (source: string, calls: ReadonlyArray<Call>) => {
+    const held: Array<unknown> = [];
     const edges = new Set<string>();
     for (const call of calls) {
       try {
@@ -554,8 +556,8 @@ export function createProject(options: ProjectOptions): Project {
   };
 
   const build = async (file: string, source: string): Promise<CompileResult> => {
-    const calls: Call[] = [];
-    const held: unknown[] = [];
+    const calls: Array<Call> = [];
+    const held: Array<unknown> = [];
     const edges = new Set<string>();
     const copied = new Set<string>();
     const reached = new Set<string>();
@@ -593,7 +595,7 @@ export function createProject(options: ProjectOptions): Project {
         module: (request: ResolveRequest) =>
           record({ kind: "module", request }) as Promise<ResolvedModule | undefined>,
         cycle: (request: ResolveRequest) =>
-          record({ kind: "cycle", request }) as Promise<string[] | undefined>,
+          record({ kind: "cycle", request }) as Promise<Array<string> | undefined>,
       },
     );
     const oracle: TypeOracle | undefined = typeOracle && {
@@ -601,7 +603,11 @@ export function createProject(options: ProjectOptions): Project {
       // Only an oracle that checks values is asked to: a project on the syntactic one asks nothing.
       ...(typeOracle.checkDirectiveValues
         ? {
-            checkDirectiveValues: (file: string, source: string, queries: DirectiveValueQuery[]) =>
+            checkDirectiveValues: (
+              file: string,
+              source: string,
+              queries: Array<DirectiveValueQuery>,
+            ) =>
               record({
                 kind: "directive-values",
                 file,
@@ -676,7 +682,7 @@ export function createProject(options: ProjectOptions): Project {
    * Routes changed files through the project (`Project.update`), in a fresh session: what it
    * reads of a child is the child as it is now.
    */
-  async function updateFiles(files: readonly string[]): Promise<ProjectUpdate> {
+  async function updateFiles(files: ReadonlyArray<string>): Promise<ProjectUpdate> {
     await typeOracle?.update({ files: [...files] });
     const before = new Map(copies);
     for (const file of files) {
@@ -706,7 +712,7 @@ export function createProject(options: ProjectOptions): Project {
         affected.add(dependent);
       }
     }
-    const recompiled: string[] = [];
+    const recompiled: Array<string> = [];
     for (const file of [...affected].toSorted()) {
       const node = compiled.get(file);
       if (!node) {

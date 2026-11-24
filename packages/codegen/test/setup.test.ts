@@ -70,8 +70,8 @@ const names = (ids: Iterable<string>) =>
   [...ids].map((id) => id.slice(0, id.lastIndexOf("@"))).toSorted();
 
 /** Every element of a render tree, in document order. */
-function elements(component: UfComponent): ElementNode[] {
-  const found: ElementNode[] = [];
+function elements(component: UfComponent): Array<ElementNode> {
+  const found: Array<ElementNode> = [];
   walk(component.render, {
     enter(node) {
       if (node.kind === "Element") {
@@ -570,7 +570,7 @@ describe("liveTypes", () => {
     ),
   );
   const module = createModule("List.uf.tsx", [component], [], declarations);
-  const names = (found: { name: string }[]) => found.map(({ name }) => name);
+  const names = (found: Array<{ name: string }>) => found.map(({ name }) => name);
 
   it("keeps what the template, the live setup and the exports reach, without client code", () => {
     expect(names(liveTypes(component, module, { client: false }))).toEqual([

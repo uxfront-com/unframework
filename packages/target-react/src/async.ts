@@ -19,7 +19,7 @@ type FunctionNode = ReturnType<typeof js.functionDeclaration>;
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
 
 /** The awaits of a component's setup, in order: they open it (S1). */
-export function awaitsOf(component: UfComponent): AwaitItem[] {
+export function awaitsOf(component: UfComponent): Array<AwaitItem> {
   return component.setup.filter((item): item is AwaitItem => item.kind === "Await");
 }
 
@@ -29,7 +29,7 @@ export function withoutAwaits(component: UfComponent): UfComponent {
 }
 
 /** The awaited bindings the resolved component reads, in the setup's order. */
-function readAwaits(component: UfComponent, context: JsxContext): AwaitItem[] {
+function readAwaits(component: UfComponent, context: JsxContext): Array<AwaitItem> {
   return awaitsOf(component).filter((item) => context.referenced.has(item.binding));
 }
 
@@ -100,14 +100,14 @@ function setupParameter(component: UfComponent, read: ReadonlySet<BindingId>): s
  * constraints and defaults name in turn (ADR-0068): the setup function declares them where it
  * takes the props, and the resolved component's `setup` prop passes them.
  */
-function setupTypeParameters(component: UfComponent, takesProps: boolean): TypeParameter[] {
+function setupTypeParameters(component: UfComponent, takesProps: boolean): Array<TypeParameter> {
   const parameters = component.typeParameters ?? [];
   const type = component.propsParameter?.type;
   if (!takesProps || !parameters.length || !type) {
     return [];
   }
   const named = new Set(typeNames(type));
-  let kept: TypeParameter[] = [];
+  let kept: Array<TypeParameter> = [];
   while (true) {
     const next = parameters.filter(({ name }) => named.has(name));
     if (next.length === kept.length) {
@@ -200,7 +200,7 @@ export function outerComponent(
     `</${suspense}>`,
     ");",
   ].join("\n");
-  const parameters: Parameter[] = passes
+  const parameters: Array<Parameter> = passes
     ? [js.bindingIdentifier(names.props, context.placeholders.type(propsType))]
     : [];
   return js.functionDeclaration(component.name, parameters, [

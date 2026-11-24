@@ -330,7 +330,7 @@ describe("solid narrowed reads (src/asserted.ts, ADR-0046)", () => {
 });
 
 /** The lines of `source`, joined: a function's expected output. */
-const lines = (...source: string[]) => source.join("\n");
+const lines = (...source: Array<string>) => source.join("\n");
 
 describe("solid untrack (src/untracked.ts)", () => {
   it("says untracked an arrow a setup function hands to a function, never one a handler or a callback does", async () => {
