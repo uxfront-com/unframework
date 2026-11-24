@@ -1,3 +1,4 @@
+import { ScopeAttributes } from "./_unframework/ScopeAttributes";
 import Card, { CardTitle } from "./card";
 import Panel, { PanelTitle } from "./panel";
 import { NgTemplateOutlet, isPlatformBrowser } from "@angular/common";
@@ -7,7 +8,6 @@ import {
   ElementRef,
   type OnChanges,
   type OnDestroy,
-  type OnInit,
   PLATFORM_ID,
   Renderer2,
   TemplateRef,
@@ -25,31 +25,6 @@ export class FrameTitle {
     _context: unknown,
   ): _context is Record<never, never> {
     return true;
-  }
-}
-
-/** The scope attributes taken off each host, for the roots its component renders later. */
-const scopes = new WeakMap<Element, string[]>();
-
-/**
- * Gives a root node of its component the scope attributes the component's styled parents put on
- * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
- */
-@Directive({ selector: "[ufScope]" })
-export class ScopeAttributes implements OnInit {
-  readonly ufScope = input.required<HTMLElement>();
-  private readonly element = inject<ElementRef<Element>>(ElementRef);
-  private readonly renderer = inject(Renderer2);
-
-  ngOnInit(): void {
-    const host = this.ufScope();
-    let names = scopes.get(host);
-    if (!names) {
-      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
-      for (const name of names) this.renderer.removeAttribute(host, name);
-      scopes.set(host, names);
-    }
-    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
   }
 }
 

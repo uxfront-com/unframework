@@ -1,45 +1,21 @@
+import { ClickCapture } from "./_unframework/ClickCapture";
+import { ClickOnce } from "./_unframework/ClickOnce";
+import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { WheelPassive } from "./_unframework/WheelPassive";
 import { isPlatformBrowser } from "@angular/common";
 import {
   Component,
-  DestroyRef,
   Directive,
   ElementRef,
   type OnChanges,
   type OnDestroy,
-  type OnInit,
   PLATFORM_ID,
   Renderer2,
   inject,
   input,
-  output,
   signal,
   viewChild,
 } from "@angular/core";
-
-/** The scope attributes taken off each host, for the roots its component renders later. */
-const scopes = new WeakMap<Element, string[]>();
-
-/**
- * Gives a root node of its component the scope attributes the component's styled parents put on
- * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
- */
-@Directive({ selector: "[ufScope]" })
-export class ScopeAttributes implements OnInit {
-  readonly ufScope = input.required<HTMLElement>();
-  private readonly element = inject<ElementRef<Element>>(ElementRef);
-  private readonly renderer = inject(Renderer2);
-
-  ngOnInit(): void {
-    const host = this.ufScope();
-    let names = scopes.get(host);
-    if (!names) {
-      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
-      for (const name of names) this.renderer.removeAttribute(host, name);
-      scopes.set(host, names);
-    }
-    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
-  }
-}
 
 /** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
 type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
@@ -87,54 +63,6 @@ export class Fallthrough implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     for (const { stop } of this.listening.values()) stop();
-  }
-}
-
-@Directive({ selector: "[ufClickCapture]" })
-export class ClickCapture {
-  readonly ufClickCapture = output<PointerEvent>();
-
-  constructor() {
-    const element: HTMLElement = inject(ElementRef).nativeElement;
-    const stop = inject(Renderer2).listen(
-      element,
-      "click",
-      (event: PointerEvent) => this.ufClickCapture.emit(event),
-      { capture: true },
-    );
-    inject(DestroyRef).onDestroy(stop);
-  }
-}
-
-@Directive({ selector: "[ufClickOnce]" })
-export class ClickOnce {
-  readonly ufClickOnce = output<PointerEvent>();
-
-  constructor() {
-    const element: HTMLElement = inject(ElementRef).nativeElement;
-    const stop = inject(Renderer2).listen(
-      element,
-      "click",
-      (event: PointerEvent) => this.ufClickOnce.emit(event),
-      { once: true },
-    );
-    inject(DestroyRef).onDestroy(stop);
-  }
-}
-
-@Directive({ selector: "[ufWheelPassive]" })
-export class WheelPassive {
-  readonly ufWheelPassive = output<WheelEvent>();
-
-  constructor() {
-    const element: HTMLElement = inject(ElementRef).nativeElement;
-    const stop = inject(Renderer2).listen(
-      element,
-      "wheel",
-      (event: WheelEvent) => this.ufWheelPassive.emit(event),
-      { passive: true },
-    );
-    inject(DestroyRef).onDestroy(stop);
   }
 }
 

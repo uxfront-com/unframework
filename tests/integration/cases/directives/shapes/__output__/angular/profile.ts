@@ -1,3 +1,6 @@
+import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { TextCaret } from "./_unframework/TextCaret";
+import { queueHook } from "./_unframework/queueHook";
 import { VSelectable } from "./v-selectable";
 import { isPlatformBrowser } from "@angular/common";
 import {
@@ -7,7 +10,6 @@ import {
   ElementRef,
   type OnChanges,
   type OnDestroy,
-  type OnInit,
   PLATFORM_ID,
   Renderer2,
   afterRenderEffect,
@@ -23,31 +25,6 @@ interface User {
 
 const hooks = "data-hooks";
 const element = "data-element";
-
-/** The scope attributes taken off each host, for the roots its component renders later. */
-const scopes = new WeakMap<Element, string[]>();
-
-/**
- * Gives a root node of its component the scope attributes the component's styled parents put on
- * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
- */
-@Directive({ selector: "[ufScope]" })
-export class ScopeAttributes implements OnInit {
-  readonly ufScope = input.required<HTMLElement>();
-  private readonly element = inject<ElementRef<Element>>(ElementRef);
-  private readonly renderer = inject(Renderer2);
-
-  ngOnInit(): void {
-    const host = this.ufScope();
-    let names = scopes.get(host);
-    if (!names) {
-      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
-      for (const name of names) this.renderer.removeAttribute(host, name);
-      scopes.set(host, names);
-    }
-    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
-  }
-}
 
 /** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
 type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
@@ -95,19 +72,6 @@ export class Fallthrough implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     for (const { stop } of this.listening.values()) stop();
-  }
-}
-
-/** Puts a field's caret after its text, as setting the text of an empty field leaves it. */
-@Directive({ selector: "textarea[value]" })
-export class TextCaret implements OnInit {
-  private readonly element = inject<ElementRef<HTMLTextAreaElement>>(ElementRef);
-
-  ngOnInit(): void {
-    const field = this.element.nativeElement;
-    const text = field.value;
-    field.value = "";
-    field.value = text;
   }
 }
 
@@ -271,61 +235,6 @@ function runDirective<E extends Element, T>(
       if (taken.mounted) queueHook(element, () => directive.unmounted?.(element), "unmounted");
     });
   };
-}
-
-/**
- * Runs a directive's hook once the turn ends, as Vue runs them: every `unmounted` first, then
- * a descendant's before its ancestor's and siblings' in document order, one element's in the
- * order they came, with the hooks every other output queued.
- */
-function queueHook(
-  element: Element,
-  run: () => void,
-  hook: "mounted" | "updated" | "unmounted",
-): void {
-  const key: unique symbol = Symbol.for("unframework.directive-hooks@2");
-  const scope = globalThis as typeof globalThis & {
-    [key]?: { element: Element; run: () => void; hook: "mounted" | "updated" | "unmounted" }[];
-  };
-  const queued = scope[key];
-  if (queued) {
-    queued.push({ element, run, hook });
-    return;
-  }
-  scope[key] = [{ element, run, hook }];
-  queueMicrotask(() => {
-    const hooks = scope[key] ?? [];
-    scope[key] = undefined;
-    // Every `unmounted` runs first, but one after its own element's `mounted` this turn, as
-    // StrictMode's, which keeps its place among the rest. A leaving one moves up together
-    // with the element's hooks before it, which keep their order.
-    const first = new Set<(typeof hooks)[number]>();
-    const entered = new Set<Element>();
-    for (const each of hooks) {
-      if (each.hook === "mounted") entered.add(each.element);
-      if (each.hook !== "unmounted" || entered.has(each.element)) continue;
-      for (const earlier of hooks) {
-        if (earlier.element === each.element) first.add(earlier);
-        if (earlier === each) break;
-      }
-    }
-    hooks.sort((a, b) => {
-      if (first.has(a) !== first.has(b)) return first.has(a) ? -1 : 1;
-      if (a.element === b.element) return 0;
-      if (a.element.contains(b.element)) return 1;
-      if (b.element.contains(a.element)) return -1;
-      return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
-        ? -1
-        : 1;
-    });
-    for (const each of hooks) {
-      try {
-        each.run();
-      } catch (error) {
-        reportError(error);
-      }
-    }
-  });
 }
 
 @Directive({ selector: "[vMark]" })
