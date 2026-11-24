@@ -65,7 +65,6 @@ export default defineConfig({
     "typescript/use-unknown-in-catch-callback-variable": "off",
     "unicorn/consistent-function-scoping": "off",
     "unicorn/no-array-fill-with-reference-type": "off",
-    "unicorn/no-hex-escape": "off",
     "unicorn/no-magic-array-flat-depth": "off",
     "unicorn/numeric-separators-style": "off",
     "unicorn/prefer-array-flat-map": "off",

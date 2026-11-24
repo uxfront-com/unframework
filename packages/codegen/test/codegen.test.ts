@@ -59,7 +59,10 @@ const printElement = (node: ElementNode, dialect: JsxDialect = {}) =>
 
 /** Text with every character outside printable ASCII as a `\uXXXX` escape, for messages. */
 const escape = (text: string) =>
-  text.replace(/[^\x21-\x7e]/g, (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  text.replace(
+    /[^\u0021-\u007e]/g,
+    (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
 
 /** A classic JSX pragma that makes each element its text. */
 const textOf = (_tag: string, _props: unknown, ...children: Array<string>) => children.join("");

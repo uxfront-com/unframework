@@ -963,7 +963,7 @@ function unreachableControl(control: never): never {
 function angularText(text: string, position: TextPosition): string {
   const afterBlock = position.previous === "If" || position.previous === "For";
   if (afterBlock && text.trim() === "") {
-    return angularInterpolation(text).replace(/[^\x20-\x7e]/g, unicodeEscape);
+    return angularInterpolation(text).replace(/[^\u0020-\u007e]/g, unicodeEscape);
   }
   // Only an escape in a literal keeps U+E500 from becoming a space, in a `<pre>` too.
   if (text.includes(NGSP)) {
