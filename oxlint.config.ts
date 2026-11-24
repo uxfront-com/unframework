@@ -69,6 +69,11 @@ export default defineConfig({
     // A `filter` with a type guard narrows what its `map` reads, which a single `flatMap` loses,
     // and the lists are a component's nodes or a file's names, tens of items.
     "quality/no-array-filter-map": "off",
+    // A nested function here often can't move: the preview writes `controlKit` and its own scripts
+    // into a page with `toString()`, so their helpers must sit inside them, and a component's
+    // functions belong to its setup, as its outputs' do. Elsewhere a helper sits beside the one
+    // test or step that uses it.
+    "unicorn/consistent-function-scoping": "off",
     // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
@@ -79,7 +84,6 @@ export default defineConfig({
     "typescript/no-unsafe-member-access": "off",
     "typescript/no-unsafe-return": "off",
     "typescript/no-unsafe-type-assertion": "off",
-    "unicorn/consistent-function-scoping": "off",
   },
   overrides: [
     {
