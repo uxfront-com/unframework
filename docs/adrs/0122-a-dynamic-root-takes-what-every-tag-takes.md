@@ -89,6 +89,15 @@ through on that element (ADR-0118).
 **D7. Diagnostics.** The UF1002 that said only `class` and `style` reach such a root is replaced by
 D1's. UF3035, UF3045 and UF3046 describe it.
 
+**D8. Where Angular binds nothing.** A static attribute holding `{{` puts its element in Angular's
+literal region (ADR-0037), where Angular binds nothing, so a child whose fallthrough element is
+one, a tag of a `<component is>` root, a root element or the props' rest's element, declares no
+input to take what falls through. Angular's parent reports each attribute, listener, `class` and
+`style` it passes such a child as UF1002 on Angular alone, and emits nothing, where it used to
+bind records the child has no input for. It reads the child's attribute from
+`ComponentApi.fallthroughOwn`, through a chain of root components, and a root component passes
+such a child nothing.
+
 For example, this child and parent, from the corpus case `fallthrough/dynamic-root-passthrough`:
 
 ```tsx
@@ -133,8 +142,8 @@ and whose ref is the link, on every target.
 
 - Letting a name that only some tags take fall through, rendered only on those tags, needs a filter
   of the spread by the tag that renders on each target. Nothing needs it yet.
-- A `<component is>` candidate Angular binds nothing on (`{{` in an attribute, ADR-0037) still takes
-  nothing that falls through, as an element root of that kind doesn't, and nothing reports it.
+- Angular could take what falls through on an element in its literal region, by binding the `{{`
+  attribute instead of printing the region. D8 reports it until then.
 
 ## Alternatives considered
 

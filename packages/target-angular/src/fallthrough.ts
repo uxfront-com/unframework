@@ -89,6 +89,12 @@ export interface ChildApi {
   refTag?: string;
   /** The tag of the element what a consumer passes lands on. */
   fallthroughTag?: string;
+  /**
+   * The attribute that puts the element what a consumer passes would land on in a literal region
+   * (`title="a {{ b }}"`, ADR-0037): Angular binds nothing there, so the child takes nothing,
+   * and a parent reports what it passes (UF1002, ADR-0122). Absent otherwise.
+   */
+  literal?: string;
 }
 
 /**
@@ -112,11 +118,25 @@ export function childApi(
     // A `<component is>` root's first tag stands for them all: every tag takes what falls
     // through, and a ref holds whichever renders (ADR-0122).
     const refTag = api.refTag ?? api.refTags?.[0];
-    const fallthroughTag = api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+    const takes = api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+    // The element's own static attributes are in its API: one holding `{{` puts it in a literal
+    // region (`literalRegion`), where `class` and `style` are bound apart.
+    const literal =
+      takes === undefined
+        ? undefined
+        : api.fallthroughOwn?.attributes.find(
+            ({ name, value }) =>
+              name !== "class" &&
+              name !== "style" &&
+              typeof value === "string" &&
+              value.includes("{{"),
+          )?.name;
+    const fallthroughTag = literal === undefined ? takes : undefined;
     return {
       exposes: api.exposes.length > 0,
       ...(refTag === undefined ? {} : { refTag }),
       ...(fallthroughTag === undefined ? {} : { fallthroughTag }),
+      ...(literal === undefined ? {} : { literal }),
     };
   }
   const own = module.components.find((each) => each.name === local);
@@ -134,15 +154,57 @@ export function childApi(
   const refTag = exposes
     ? undefined
     : (rootTag ?? (rootChild && !rootChild.exposes ? rootChild.refTag : undefined));
-  const fallthroughTag =
-    own.inheritAttrs === false
-      ? restElement(own.render)?.element.tag
-      : (rootTag ?? rootChild?.fallthroughTag);
+  const rest = own.inheritAttrs === false ? restElement(own.render)?.element : undefined;
+  const takes = own.inheritAttrs === false ? rest?.tag : (rootTag ?? rootChild?.fallthroughTag);
+  const literal =
+    takes === undefined
+      ? rootChild?.literal
+      : literalAttribute(
+          rest
+            ? [rest]
+            : root?.kind === "Dynamic"
+              ? tagElements(root)
+              : root?.kind === "Element"
+                ? [root]
+                : [],
+        );
+  const fallthroughTag = literal === undefined ? takes : undefined;
   return {
     exposes,
     ...(refTag === undefined ? {} : { refTag }),
     ...(fallthroughTag === undefined ? {} : { fallthroughTag }),
+    ...(literal === undefined ? {} : { literal }),
   };
+}
+
+/** Each tag of a `<component is>` over tags as the element its `@case` writes. */
+function tagElements(root: DynamicNode): ElementNode[] {
+  return root.candidates.flatMap((candidate) =>
+    candidate.kind === "Tag"
+      ? [
+          {
+            kind: "Element" as const,
+            tag: candidate.tag,
+            attributes: candidateAttributes(root, candidate.tag),
+            children: root.children,
+            span: root.span,
+          },
+        ]
+      : [],
+  );
+}
+
+/** The static attribute holding `{{` that puts one of `elements` in a literal region (ADR-0037). */
+function literalAttribute(elements: readonly ElementNode[]): string | undefined {
+  for (const element of elements) {
+    if (angularDialect.literalRegion?.(element) === undefined) continue;
+    const found = element.attributes.find(
+      (attribute) =>
+        attribute.kind === "Static" && attribute.value !== true && attribute.value.includes("{{"),
+    );
+    if (found?.kind === "Static") return found.name;
+  }
+  return undefined;
 }
 
 /**

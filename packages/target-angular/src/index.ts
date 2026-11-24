@@ -64,6 +64,7 @@ import {
 import type { ScopeDirectiveNames } from "./directives.ts";
 import {
   ATTRIBUTES_INPUT,
+  childApi,
   ELEMENT_MEMBER,
   fallthroughDirectiveCode,
   LISTENERS_INPUT,
@@ -291,6 +292,7 @@ export const angular: Target = defineTarget({
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    if (reportsLiteralFallthrough(component, context)) return [];
     return [emitComponent(component, context)];
   },
   emitComposable,
@@ -298,6 +300,33 @@ export const angular: Target = defineTarget({
 });
 
 export default angular;
+
+/**
+ * Reports what the component passes a child whose element it would land on Angular prints in a
+ * literal region (ADR-0037): Angular binds nothing there, so the child declares no input to take
+ * it, and it is not supported yet (UF1002, ADR-0122). Returns whether it reported.
+ */
+function reportsLiteralFallthrough(component: UfComponent, context: EmitContext): boolean {
+  let reported = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component") return;
+      const literal = childApi(context.module, node.component)?.literal;
+      if (literal === undefined) return;
+      for (const attribute of node.attributes) {
+        if (!["Static", "Bound", "Event", "Class", "Style"].includes(attribute.kind)) continue;
+        reported = true;
+        context.report({
+          code: "UF1002",
+          severity: "error",
+          message: `The angular target does not pass what falls through to ${node.component}'s root yet: its \`${literal}\` attribute holds \`{{\`, so Angular prints the root where it binds nothing (ADR-0037).`,
+          span: attribute.span,
+        });
+      }
+    },
+  });
+  return reported;
+}
 
 /** A component's output file. */
 function emitComponent(component: UfComponent, context: EmitContext): OutputFile {
