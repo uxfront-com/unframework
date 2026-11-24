@@ -75,14 +75,14 @@ export const solid2: Target = defineTarget({
     "static-attribute": { support: "native" },
     listbox: { support: "native" },
     // Solid 2 lets a read see a write only once it flushes, which an effect's callback or
-    // `onSettled` cannot ask for: state goes through an inline helper, `createState`, whose read
+    // `onSettled` cannot ask for: state goes through a shared helper, `createState`, whose read
     // returns the last write. A watcher and a `watchEffect` go through inline helpers whose
     // scheduler calls each back once per synchronous run of client code, with Vue's previous
     // value, change test and cleanup timing (ADR-0048, ADR-0102).
     interactivity: {
       support: "emulated",
       helper: WATCHER_HELPER,
-      note: "Solid 2 lets a read see a write only once it flushes, so state goes through an inline helper, createState, a signal whose read returns the last value written; derived values are functions, listeners event props and hooks onSettled, and a template ref is emptied with its element through clearedRef, as Solid 2 refuses onCleanup in a ref callback. A watcher and a watchEffect go through inline helpers over createReaction, whose scheduler is queued at the write and calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
+      note: "Solid 2 lets a read see a write only once it flushes, so state goes through a shared helper, createState, a signal whose read returns the last value written, inline where the component has watchers, since its write requests their flush; derived values are functions, listeners event props and hooks onSettled, and a template ref is emptied with its element through a shared clearedRef, as Solid 2 refuses onCleanup in a ref callback. A watcher and a watchEffect go through inline helpers over createReaction, whose scheduler is queued at the write and calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
     },
     // A listener with an option is a native listener with its options (`on:click={{ … }}`).
     "event-capture": { support: "native" },
@@ -102,7 +102,7 @@ export const solid2: Target = defineTarget({
     "next-tick": {
       support: "emulated",
       helper: NEXT_TICK_HELPER,
-      note: "Solid has no nextTick: it applies writes on a microtask queued at the first write, which queues the watchers' run, so an inline helper resolves a promise two microtasks on.",
+      note: "Solid has no nextTick: it applies writes on a microtask queued at the first write, which queues the watchers' run, so a shared helper resolves a promise two microtasks on.",
     },
     // The props proxy reads each key live, whatever keys a parent passes.
     "late-prop": { support: "native" },
@@ -116,19 +116,19 @@ export const solid2: Target = defineTarget({
     "bound-attribute": {
       support: "emulated",
       helper: ENUMERATED_HELPER,
-      note: 'Solid 2 writes a boolean as an attribute\'s presence, where Vue writes the boolean of an ARIA attribute and of contenteditable, draggable and spellcheck as its name. So such a value goes through an inline helper, enumeratedValue, that writes "true" or "false" and passes any other value as it is.',
+      note: 'Solid 2 writes a boolean as an attribute\'s presence, where Vue writes the boolean of an ARIA attribute and of contenteditable, draggable and spellcheck as its name. So such a value goes through a shared helper, enumeratedValue, that writes "true" or "false" and passes any other value as it is.',
     },
-    // Static names and toggles print as Solid 2's own `class` array, and an inline helper joins
+    // Static names and toggles print as Solid 2's own `class` array, and a shared helper joins
     // dynamic parts into one string, as a component's `class` prop takes it (ADR-0038).
     "class-binding": {
       support: "emulated",
       helper: CLASS_HELPER,
-      note: "Static names and toggles print as Solid 2's own class array, class={[\"a b\", { on: active() }]}; a dynamic part goes through an inline helper that joins them into one string, as a component's class prop takes it.",
+      note: "Static names and toggles print as Solid 2's own class array, class={[\"a b\", { on: active() }]}; a dynamic part goes through a helper shared in the tree's _unframework/ that joins them into one string, as a component's class prop takes it.",
     },
     "style-binding": {
       support: "emulated",
       helper: STYLE_HELPER,
-      note: "Solid's style takes kebab-case keys, so a style bound to a value goes through an inline helper that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+      note: "Solid's style takes kebab-case keys, so a style bound to a value goes through a shared helper, `styleProperties`, that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
     },
     "attribute-spread": {
       support: "emulated",
@@ -150,12 +150,12 @@ export const solid2: Target = defineTarget({
     "model-array": {
       support: "emulated",
       helper: "toggle",
-      note: "A checkbox group's array goes through an inline helper, `toggle`, a multiple select's through `selectedValues`, and the options of a select that a component, a slot or an interpolation renders through `selectOptions`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
+      note: "A checkbox group's array goes through an inline helper, `toggle`, a multiple select's through an inline `selectedValues`, and the options of a select that a component, a slot or an interpolation renders through a shared `selectOptions`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
     },
     "model-modifiers": {
       support: "emulated",
       helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
     },
     // Solid 2's `omit` leaves what a component declares out of its props, and its root spreads
     // the others after its own attributes, its own listeners calling the consumer's (ADR-0118,
@@ -178,7 +178,7 @@ export const solid2: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so a root that takes what falls through takes them with it, and an inline helper picks them out of its props by name for any other root: each branch of a root conditional, a root <component is>, and the root of a component that spreads the props' rest on another element, whose rest leaves them out by rule with Solid 2's `omit`, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass, so a root that takes what falls through takes them with it, and a shared helper, `scopeAttributes`, picks them out of its props by name for any other root: each branch of a root conditional, a root <component is>, and the root of a component that spreads the props' rest on another element, whose rest leaves them out by rule with Solid 2's `omit`, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -200,26 +200,26 @@ export const solid2: Target = defineTarget({
     // targets page: Solid 2 hydrates the subtree in place with the values its server render
     // serializes, so after hydration the awaits don't run again; the rest of the setup does.
     "async-setup": { support: "native" },
-    // `<For>` follows the items themselves, so a list goes through an inline helper whose rows
+    // `<For>` follows the items themselves, so a list goes through a shared helper whose rows
     // follow the source's key (ADR-0096).
     "keyed-identity": {
       support: "emulated",
       helper: KEYED_HELPER,
-      note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through an inline helper over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
+      note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through a shared helper, `KeyedFor`, over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
     },
     // `<Portal>` throws on the server and renders where it is created (ADR-0098, ADR-0102).
-    // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through an inline queue
+    // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through a shared queue
     // in Vue's order: Solid runs a parent's ref before its children's (ADR-0099).
     directive: {
       support: "emulated",
       helper: QUEUE_HELPER,
-      note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // Solid's transitions are a package of their own, which no output imports (P7, ADR-0100).
     transition: {
       support: "emulated",
       helper: "Transition",
-      note: "A `<Transition>` is an inline component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
+      note: "A `<Transition>` is a shared component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
     },
     teleport: {
       support: "emulated",
