@@ -33,9 +33,27 @@ const parent = (binding: string) =>
     "",
   ].join("\n");
 
+/** A component whose root binds the scope directive's input, `binding`. */
+const scoped = (binding: string) =>
+  [
+    'import { Component, ElementRef, inject } from "@angular/core";',
+    'import { ScopeAttributes } from "./_unframework/ScopeAttributes";',
+    "",
+    "@Component({",
+    '  selector: "uf-scoped",',
+    "  imports: [ScopeAttributes],",
+    `  template: \`<p ${binding}="this.host">x</p>\`,`,
+    "})",
+    "export default class Scoped {",
+    "  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;",
+    "}",
+    "",
+  ].join("\n");
+
 describe("ngtscVirtual", () => {
   const directory = isolatedDir();
   const id = (name: string) => join(directory, `${name}.uf.tsx.ts`);
+  const helper = (name: string) => join(directory, "_unframework", `${name}.ts`);
 
   it("compiles a virtual module ahead of time", async () => {
     const { transform, warnings } = await ngtscPlugin();
@@ -263,24 +281,6 @@ describe("ngtscVirtual", () => {
   // ADR-0121: an output imports its shared helpers from `_unframework/`, modules the unframework
   // plugin serves once a compile has emitted them, and a helper module imports its siblings.
   describe("a shared helper module", () => {
-    const helper = (name: string) => join(directory, "_unframework", `${name}.ts`);
-    /** A component whose root binds the scope directive's input, `binding`. */
-    const scoped = (binding: string) =>
-      [
-        'import { Component, ElementRef, inject } from "@angular/core";',
-        'import { ScopeAttributes } from "./_unframework/ScopeAttributes";',
-        "",
-        "@Component({",
-        '  selector: "uf-scoped",',
-        "  imports: [ScopeAttributes],",
-        `  template: \`<p ${binding}="this.host">x</p>\`,`,
-        "})",
-        "export default class Scoped {",
-        "  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;",
-        "}",
-        "",
-      ].join("\n");
-
     it("is read before the parent compiles, which is checked against it", async () => {
       const { transform } = await ngtscPlugin({
         [helper("ScopeAttributes")]: sharedModule("ScopeAttributes"),

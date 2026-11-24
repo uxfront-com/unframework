@@ -30,6 +30,9 @@ import {
 
 afterAll(removeScratch);
 
+/** Node resolves a relative import by its full name, which a bundler finds without it. */
+const linked = (code: string) => code.replace(/(from "\.\/(?:_unframework\/)?\w+)"/g, '$1.js"');
+
 /**
  * Compiles Angular source with the ngtsc plugin and imports the component it exports. A golden
  * output imports its shared helper modules from its tree's `_unframework/` (ADR-0121), which the
@@ -47,8 +50,6 @@ async function load(name: string, source: string, golden?: string): Promise<unkn
         ]),
   );
   const { transform } = await ngtscPlugin(helpers);
-  // Node resolves a relative import by its full name, which a bundler finds without it.
-  const linked = (code: string) => code.replace(/(from "\.\/(?:_unframework\/)?\w+)"/g, '$1.js"');
   mkdirSync(join(directory, "_unframework"), { recursive: true });
   for (const id of Object.keys(helpers)) {
     const compiled = await transform(id);

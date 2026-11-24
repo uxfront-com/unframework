@@ -32,6 +32,10 @@ function emitShared(source: string, file = "Fixture.uf.tsx") {
 const fileAt = (files: readonly OutputFile[], path: string) =>
   files.find((file) => file.path === path)!.contents;
 
+/** The text of the `ClickCapture` module among a compile's helper modules. */
+const clickCapture = (helpers: readonly OutputFile[]) =>
+  helpers.find(({ path }) => path === "_unframework/ClickCapture.ts")!.contents;
+
 const importsOf = (contents: string) => contents.match(/^import .*_unframework.*$/gm) ?? [];
 
 /** Whether the code declares `name` at its top level, as a function, a class or a constant. */
@@ -116,9 +120,7 @@ describe("shared helper modules", () => {
       'export default function Other() {\n  return <button type="button" onClickCapture={() => console.log("x")}>x</button>;\n}\n',
       "Other.uf.tsx",
     ).helpers;
-    const text = (helpers: OutputFile[]) =>
-      helpers.find(({ path }) => path === "_unframework/ClickCapture.ts")!.contents;
-    expect(text(one)).toBe(text(other));
+    expect(clickCapture(one)).toBe(clickCapture(other));
   });
 
   it("imports ScopeAttributes alike in every component of a source", () => {
