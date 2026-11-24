@@ -41,10 +41,13 @@ export default defineConfig({
     // (`AST.Expression`), a compiler a toolchain loads lazily, typed as its module, and the
     // exports a test checks one by one.
     "import/no-namespace": "off",
+    // `instanceof` is how this code narrows its own classes (`ImportSet`, `NameScope`, an internal
+    // error), the platform's collections (`Map`, `Set`) and DOM nodes and events, each in the realm
+    // that made it. The union parameters it narrows are public, like `formatDiagnostics`' sources.
+    "@nkzw/no-instanceof": "off",
     // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
-    "@nkzw/no-instanceof": "off",
     "no-promise-executor-return": "off",
     "quality/no-array-filter-map": "off",
     "quality/no-chained-type-assertions": "off",
