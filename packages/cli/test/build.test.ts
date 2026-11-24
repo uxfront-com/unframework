@@ -183,6 +183,7 @@ describe("build", () => {
   it.each([
     ["the design system", FIXTURE],
     ["the shared helpers' fixture", fixtureFor("react")],
+    ["the shared helpers' fixture: Angular", fixtureFor("angular")],
   ])(
     "gives identical bytes on a second run and in another directory (P8): %s",
     async (_, files) => {

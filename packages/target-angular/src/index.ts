@@ -96,7 +96,7 @@ import { declaredTypes } from "./types.ts";
 
 /** The note the emulated cells share: why a listener's option needs a directive. */
 const OPTION_NOTE =
-  "A template's `(event)` binding takes no listener options: the file declares an attribute directive per event and option (`[ufClickCapture]`) that listens with `Renderer2.listen` and re-emits the event (ADR-0047).";
+  "A template's `(event)` binding takes no listener options: an attribute directive per event and option (`[ufClickCapture]`), shared in the tree's `_unframework/`, listens with `Renderer2.listen` and re-emits the event (ADR-0047).";
 
 /**
  * The Angular 22 target: standalone, zoneless components. The host element gets
@@ -157,7 +157,7 @@ export const angular: Target = defineTarget({
     "style-binding": {
       support: "emulated",
       helper: "styleObject",
-      note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+      note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, a shared helper, `styleObject`, splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
     // Angular sanitises a bound `innerHTML`: it drops `id`, `data-*` and `style` attributes, form
@@ -204,7 +204,7 @@ export const angular: Target = defineTarget({
     "model-modifiers": {
       support: "emulated",
       helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
     },
     fallthrough: {
       support: "emulated",
@@ -242,7 +242,7 @@ export const angular: Target = defineTarget({
       code: "UF4003",
       severity: "info",
       reason:
-        "Each root node of a child binds an inline attribute directive, `[ufScope]`, that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
+        "Each root node of a child binds a shared attribute directive, `[ufScope]`, that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
     },
     "slotted-styles": { support: "native" },
     // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
@@ -278,7 +278,7 @@ export const angular: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: RUNNER_HELPER,
-      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // Angular's `animate.enter` and `animate.leave` take one class list, which can't run Vue's
     // three phases, so an inline directive runs them, with `animate.leave`'s function form
