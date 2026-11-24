@@ -84,6 +84,13 @@ export function formatDiagnostic(
   return output.join("\n");
 }
 
+/** Narrows the sources to a map, whose entries `instanceof` alone would type as `any`. */
+function isSourceMap(
+  sources: ReadonlyMap<string, string> | Readonly<Record<string, string>>,
+): sources is ReadonlyMap<string, string> {
+  return sources instanceof Map;
+}
+
 /** Renders several diagnostics, separated by blank lines. */
 export function formatDiagnostics(
   diagnostics: ReadonlyArray<Diagnostic>,
@@ -92,7 +99,7 @@ export function formatDiagnostics(
 ): string {
   // Own keys only: a file named `constructor` has no source on the prototype.
   const sourceOf = (file: string) =>
-    sources instanceof Map
+    isSourceMap(sources)
       ? sources.get(file)
       : Object.hasOwn(sources, file)
         ? (sources as Record<string, string>)[file]

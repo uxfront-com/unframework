@@ -1232,7 +1232,7 @@ export function parseHtml(html: string, options: ParseOptions = {}): Array<DomNo
   function decode(text: string): string {
     return text.replaceAll(
       /&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);?/g,
-      (reference, body) => {
+      (reference, body: string) => {
         if (body.startsWith("#x")) {
           return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
         }

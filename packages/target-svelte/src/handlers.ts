@@ -37,7 +37,8 @@ export function handlerTypes(component: UfComponent): Map<FunctionCode, Function
   const receive = (fn: FunctionCode, index: number, interfaces: Iterable<string>) => {
     let byIndex = received.get(fn);
     if (!byIndex) {
-      received.set(fn, (byIndex = new Map()));
+      byIndex = new Map();
+      received.set(fn, byIndex);
     }
     let set = byIndex.get(index);
     if (!set) {

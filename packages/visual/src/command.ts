@@ -35,7 +35,7 @@ const STATE = Symbol.for("unframework.visual.captures");
 
 function store(): Map<string, Array<RecordedCapture>> {
   const holder = globalThis as { [STATE]?: Map<string, Array<RecordedCapture>> };
-  return (holder[STATE] ??= new Map());
+  return (holder[STATE] ??= new Map<string, Array<RecordedCapture>>());
 }
 
 /** The captures a run recorded, and forgets them. */

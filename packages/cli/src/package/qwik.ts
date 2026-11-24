@@ -68,14 +68,16 @@ export const qwik: Packager = {
       }),
     );
     const core = resolve(CORE);
-    const manifest: { exports: { "./optimizer": { import: string } } } = JSON.parse(
-      await readFile(core, "utf8"),
-    );
+    const manifest = JSON.parse(await readFile(core, "utf8")) as {
+      exports: { "./optimizer": { import: string } };
+    };
     const optimizer = join(dirname(core), manifest.exports["./optimizer"].import);
-    const { qwikVite }: Optimizer = await import(/* @vite-ignore */ pathToFileURL(optimizer).href);
-    const vite: { build(config: object): Promise<unknown> } = await import(
-      /* @vite-ignore */ pathToFileURL(resolve(VITE)).href
-    );
+    const { qwikVite } = (await import(
+      /* @vite-ignore */ pathToFileURL(optimizer).href
+    )) as Optimizer;
+    const vite = (await import(/* @vite-ignore */ pathToFileURL(resolve(VITE)).href)) as {
+      build(config: object): Promise<unknown>;
+    };
     await vite.build({
       configFile: false,
       envFile: false,

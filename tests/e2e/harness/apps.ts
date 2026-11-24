@@ -164,7 +164,7 @@ export function readPacked(directory: string = tarballsDir): Packed {
 
 /** Reads one package's manifest. */
 export function readManifest(directory: string): Manifest {
-  return JSON.parse(readFileSync(join(directory, "package.json"), "utf8"));
+  return JSON.parse(readFileSync(join(directory, "package.json"), "utf8")) as Manifest;
 }
 
 /** The workspace packages under `packages/`, by name. */

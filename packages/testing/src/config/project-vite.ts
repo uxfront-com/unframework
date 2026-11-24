@@ -107,7 +107,10 @@ export async function withProjectVite<T extends object>(
   const project = await serverConfig(vite, context);
   const own = (config as { plugins?: unknown }).plugins;
   const merged = mergeConfig(config as Record<string, unknown>, project.rest);
-  return { ...merged, plugins: [...project.plugins, ...(Array.isArray(own) ? own : [])] } as T;
+  return {
+    ...merged,
+    plugins: [...project.plugins, ...(Array.isArray(own) ? (own as Array<unknown>) : [])],
+  } as T;
 }
 
 /**

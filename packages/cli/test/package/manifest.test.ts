@@ -35,7 +35,10 @@ export const made = make();
 };
 
 const manifestOf = (root: string) =>
-  JSON.parse(readFileSync(join(root, "dist", "package", "package.json"), "utf8"));
+  JSON.parse(readFileSync(join(root, "dist", "package", "package.json"), "utf8")) as Record<
+    string,
+    any
+  >;
 
 describe("build --package: the manifest", () => {
   it("takes the name, version and license from the project, and nothing else", async () => {

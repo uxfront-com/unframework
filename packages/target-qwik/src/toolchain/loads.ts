@@ -185,8 +185,11 @@ export class SegmentLoads {
       return known;
     }
     const wrapped: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
-    for (const [name, value] of Object.entries(module)) {
-      wrapped[name] = typeof value === "function" ? this.#body(value) : value;
+    for (const [name, value] of Object.entries(module) as Array<[string, unknown]>) {
+      wrapped[name] =
+        typeof value === "function"
+          ? this.#body(value as (...args: Array<unknown>) => unknown)
+          : value;
     }
     this.#modules.set(module, wrapped);
     return wrapped;

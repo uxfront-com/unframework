@@ -10,7 +10,7 @@ import { page, userEvent } from "vitest/browser";
 import { mount } from "../src/toolchain/client.ts";
 
 const load = async (name: string): Promise<{ default: unknown }> =>
-  import(`./fixtures/${name}.tsx`);
+  import(`./fixtures/${name}.tsx`) as Promise<{ default: unknown }>;
 const Emitter = (await load("Emitter")).default;
 
 let container: HTMLElement;

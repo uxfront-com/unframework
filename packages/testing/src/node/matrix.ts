@@ -203,11 +203,13 @@ export function buildCells(records: ReadonlyArray<UfLayerMeta>): MatrixCells {
   for (const record of records) {
     let targets = outcomes.get(record.case);
     if (!targets) {
-      outcomes.set(record.case, (targets = new Map()));
+      targets = new Map();
+      outcomes.set(record.case, targets);
     }
     let layers = targets.get(record.target);
     if (!layers) {
-      targets.set(record.target, (layers = new Map()));
+      layers = new Map();
+      targets.set(record.target, layers);
     }
     for (const layer of LAYERS) {
       const outcome = record.layers[layer];
@@ -251,7 +253,8 @@ export function mergeScenarios(sets: ReadonlyArray<MatrixScenarios>): MatrixScen
     for (const [caseId, targets] of Object.entries(scenarios)) {
       let byTarget = names.get(caseId);
       if (!byTarget) {
-        names.set(caseId, (byTarget = new Map()));
+        byTarget = new Map();
+        names.set(caseId, byTarget);
       }
       for (const [target, list] of Object.entries(targets)) {
         const set = byTarget.get(target) ?? new Set<string>();

@@ -833,7 +833,8 @@ export function inliner(plan: SetupPlan, synchronous: boolean): Inliner {
       }
       let known = inlineFunctions.get(plan);
       if (!known) {
-        inlineFunctions.set(plan, (known = new Map()));
+        known = new Map();
+        inlineFunctions.set(plan, known);
       }
       let found = known.get(id);
       if (!found) {

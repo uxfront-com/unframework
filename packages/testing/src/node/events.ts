@@ -26,7 +26,7 @@ const STORE = Symbol.for("@unframework.dev/testing:compiled-modules");
 
 function store(): Map<string, UfModule | undefined> {
   const holder = globalThis as { [STORE]?: Map<string, UfModule | undefined> };
-  return (holder[STORE] ??= new Map());
+  return (holder[STORE] ??= new Map<string, UfModule | undefined>());
 }
 
 /** The key of a file's compile for a target: its real path, so links never split it. */

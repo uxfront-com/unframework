@@ -34,7 +34,7 @@ export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
     status: "fail",
     message: expect.stringMatching(
       new RegExp(pattern.source, pattern.flags.replaceAll(/[gy]/g, "")),
-    ),
+    ) as unknown,
   });
   if (outcome?.status !== "fail") {
     throw new Error(`${layer} did not fail.`);

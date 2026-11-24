@@ -143,6 +143,8 @@ export function assertCompilerMatchesAstro(root: string): void {
 }
 
 function versionOf(require: NodeJS.Require): string {
-  const manifest = JSON.parse(readFileSync(require.resolve(`${COMPILER}/package.json`), "utf8"));
-  return (manifest as { version: string }).version;
+  const manifest = JSON.parse(
+    readFileSync(require.resolve(`${COMPILER}/package.json`), "utf8"),
+  ) as { version: string };
+  return manifest.version;
 }

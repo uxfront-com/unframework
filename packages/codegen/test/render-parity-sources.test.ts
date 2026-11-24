@@ -115,7 +115,7 @@ describe("jsLiteral", () => {
     expect(code).toBe(
       '{ "a": undefined, "b": -0, "c": NaN, "d": [Infinity, -Infinity, 1e+21], "e": null }',
     );
-    // oxlint-disable-next-line typescript/no-implied-eval -- reads the printed literal back, as an output would
+    // oxlint-disable-next-line typescript/no-implied-eval, typescript/no-unsafe-call -- reads the printed literal back, as an output would
     const read = new Function(`return (${code});`)() as typeof value;
     expect(Object.is(read.b, -0)).toBe(true);
     expect(read).toEqual(value);

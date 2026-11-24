@@ -43,7 +43,8 @@ function projectBin(project: string): string | undefined {
     return undefined;
   }
   // Whatever is installed under the name may not have this bin, like a release from before it.
-  const bin: unknown = JSON.parse(readFileSync(manifest, "utf8")).bin?.unframework;
+  const parsed = JSON.parse(readFileSync(manifest, "utf8")) as { bin?: { unframework?: unknown } };
+  const bin = parsed.bin?.unframework;
   return typeof bin === "string" ? join(dirname(manifest), bin) : undefined;
 }
 

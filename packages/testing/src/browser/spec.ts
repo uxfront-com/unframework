@@ -21,6 +21,12 @@ const REFUSED = [
   "tags",
 ] as const;
 
+/**
+ * Whether a value is an array, for options a JavaScript caller may get wrong. Not a type guard:
+ * `Array.isArray` would narrow a readonly list to `any[]`.
+ */
+const isList = (value: unknown): boolean => Array.isArray(value);
+
 /** A corpus test's options: Vitest's (a timeout, metadata), and the capabilities it requires. */
 export interface SpecOptions extends Omit<TestOptions, (typeof REFUSED)[number]> {
   /**
@@ -56,7 +62,7 @@ export const it: SpecTest = (
   }
   const { requires, meta, ...rest } = options;
   if (requires !== undefined) {
-    if (!Array.isArray(requires) || !requires.length) {
+    if (!isList(requires) || !requires.length) {
       throw new TypeError(`it("${name}"): requires names one or more capabilities.`);
     }
     // An unknown name throws here, when the tests are collected.

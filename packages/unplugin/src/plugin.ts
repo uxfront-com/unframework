@@ -1395,10 +1395,10 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       void exclusive(() => handOver([toPosix(id)]));
     },
     webpack(compiler) {
-      root = toPosix(compiler.context);
+      root = toPosix((compiler as { context: string }).context);
     },
     rspack(compiler) {
-      root = toPosix(compiler.context);
+      root = toPosix((compiler as { context: string }).context);
     },
     esbuild: {
       config(buildOptions) {

@@ -261,7 +261,7 @@ function checkJsonLd(
 
   const nodes = page.jsonLd.flatMap((block) => {
     const graph = (block as { "@graph"?: unknown })["@graph"];
-    return Array.isArray(graph) ? graph : [block];
+    return Array.isArray(graph) ? (graph as Array<unknown>) : [block];
   }) as Array<Record<string, unknown>>;
   const ofType = (type: string) => nodes.filter((node) => node["@type"] === type);
 

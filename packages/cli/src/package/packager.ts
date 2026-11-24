@@ -104,9 +104,10 @@ export const sanitizeBelow =
 
 /** The script a package's manifest names for the first of these binaries it has. */
 export async function binOf(manifest: string, ...names: ReadonlyArray<string>): Promise<string> {
-  const { name: owner, bin }: { name: string; bin: Readonly<Record<string, string>> } = JSON.parse(
-    await readFile(manifest, "utf8"),
-  );
+  const { name: owner, bin } = JSON.parse(await readFile(manifest, "utf8")) as {
+    name: string;
+    bin: Readonly<Record<string, string>>;
+  };
   const script = names.map((name) => bin[name]).find((path) => path !== undefined);
   if (script === undefined) {
     throw new Error(`${owner} has no ${names.join(" or ")} binary.`);

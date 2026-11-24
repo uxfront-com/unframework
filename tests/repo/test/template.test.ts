@@ -33,7 +33,7 @@ function checkPackage(pkg: PackageFiles): Array<string> {
     manifest.repository?.directory === `packages/${pkg.directory}`,
     "has a wrong repository.directory",
   );
-  expect(manifest.files?.includes("dist"), "does not publish dist");
+  expect((manifest.files as Array<string> | undefined)?.includes("dist"), "does not publish dist");
   expect(manifest.publishConfig?.access === "public", "has no public publishConfig");
 
   const exportsMap: Record<string, unknown> = manifest.exports ?? {};
@@ -63,7 +63,10 @@ function checkPackage(pkg: PackageFiles): Array<string> {
 
   expect(manifest.scripts?.build === "tsdown", "does not build with tsdown");
   expect(manifest.scripts?.["check-types"], "has no check-types script");
-  expect(manifest.scripts?.test?.startsWith("vitest run"), "does not test with vitest run");
+  expect(
+    (manifest.scripts as { test?: string } | undefined)?.test?.startsWith("vitest run"),
+    "does not test with vitest run",
+  );
 
   const tsconfig = pkg.read("tsconfig.json");
   expect(

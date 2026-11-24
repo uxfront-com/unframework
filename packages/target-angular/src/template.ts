@@ -440,7 +440,7 @@ function mapNodes<T>(
   }
   let changed = false;
   const next: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value)) {
+  for (const [key, child] of Object.entries(value) as Array<[string, unknown]>) {
     const mapped = key === "attributes" || key === "span" ? child : mapNodes(child, replace);
     if (mapped !== child) {
       changed = true;

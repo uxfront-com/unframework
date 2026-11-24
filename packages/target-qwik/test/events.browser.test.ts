@@ -12,7 +12,7 @@ import { mount } from "../src/toolchain/client.ts";
 
 /** The fixture's component, compiled by the optimizer (a computed path: not this tsconfig's). */
 const load = async (name: string): Promise<{ default: unknown }> =>
-  import(`./fixtures/${name}.tsx`);
+  import(`./fixtures/${name}.tsx`) as Promise<{ default: unknown }>;
 const Emitter = (await load("Emitter")).default;
 
 const logged: Array<Array<unknown>> = [];

@@ -13,7 +13,9 @@ const SVG = "http://www.w3.org/2000/svg";
 
 /** A read element without the live state of its form controls, as {@link domOf} describes it. */
 function withoutState(node: unknown): unknown {
-  return JSON.parse(JSON.stringify(node, (key, value) => (key === "state" ? undefined : value)));
+  return JSON.parse(
+    JSON.stringify(node, (key, value: unknown) => (key === "state" ? undefined : value)),
+  );
 }
 
 describe("buildDom", () => {

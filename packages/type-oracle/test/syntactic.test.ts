@@ -939,7 +939,7 @@ describe("createSyntacticOracle", () => {
           root: project,
           readFile: (path) => readFile(path, "utf8").catch(() => undefined),
         });
-        const shapes = new Map();
+        const shapes = new Map<unknown, TypeShape | undefined>();
         for (const query of order) {
           shapes.set(query, await oracle.resolveShape(query));
         }
@@ -947,6 +947,9 @@ describe("createSyntacticOracle", () => {
       }
       expect(results[0]).toEqual(results[1]);
       const [a, b] = results[0]!;
+      if (!a || !b) {
+        throw new Error("The oracle resolved no shape for a query.");
+      }
       expect(printShape(a)).toBe('{ tone: "v2.0.0" }');
       expect(printShape(b)).toBe('{ tone: "v3.0.0" }');
       expect(a.dependencies).toEqual(["pkg:tokens", "pkg:ui"]);
@@ -974,7 +977,7 @@ describe("createSyntacticOracle", () => {
         root: project,
         readFile: (path) => readFile(path, "utf8").catch(() => undefined),
       });
-      const shapes = new Map();
+      const shapes = new Map<unknown, TypeShape | undefined>();
       for (const query of order) {
         shapes.set(query, await oracle.resolveShape(query));
       }

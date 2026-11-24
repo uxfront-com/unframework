@@ -29,7 +29,9 @@ export function chainSvelteOnce(
     if (!isOwn(id)) {
       return handler.call(this, code, id, options);
     }
-    const context = Object.create(this, { getCombinedSourcemap: { value: () => undefined } });
+    const context = Object.create(this, {
+      getCombinedSourcemap: { value: () => undefined },
+    }) as typeof this;
     return handler.call(context, code, id, options);
   };
 }

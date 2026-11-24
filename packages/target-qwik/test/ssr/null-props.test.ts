@@ -9,7 +9,7 @@ import { renderToString } from "../../src/toolchain/server.ts";
 
 /** A fixture's components, compiled by Qwik's plugin (a computed path: see server.test.ts). */
 const load = async (name: string): Promise<Readonly<Record<string, unknown>>> =>
-  import(`../fixtures/${name}.tsx`);
+  import(`../fixtures/${name}.tsx`) as Promise<{ default: unknown }>;
 const fixtures = await load("NullProps");
 
 /** The text a component renders: what its probe read. */

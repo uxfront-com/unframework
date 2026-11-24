@@ -48,7 +48,9 @@ describe("renderReport", () => {
     const { html, report: fixture } = writeReportFixture("report-missing");
     const named = new Set(
       fixture.examples.flatMap((example) =>
-        example.cells.flatMap((each) => Object.values(each.images)),
+        example.cells.flatMap((each) =>
+          Object.values(each.images as Readonly<Record<string, string | undefined>>),
+        ),
       ),
     );
     const linked = [...html.matchAll(/(?:src|href)="([^"#][^"]*)"/g)].map((match) => match[1]);

@@ -129,10 +129,10 @@ export const vue: Packager = {
         include: ["in/**/*.ts", "in/**/*.vue"],
       }),
     );
-    const vite: Vite = await import(/* @vite-ignore */ pathToFileURL(resolve(VITE)).href);
-    const { default: vuePlugin }: { default: (options: object) => object } = await import(
+    const vite = (await import(/* @vite-ignore */ pathToFileURL(resolve(VITE)).href)) as Vite;
+    const { default: vuePlugin } = (await import(
       /* @vite-ignore */ pathToFileURL(resolve(PLUGIN_VUE)).href
-    );
+    )) as { default: (options: object) => object };
     await vite.build({
       configFile: false,
       envFile: false,

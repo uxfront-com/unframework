@@ -43,7 +43,9 @@ describe("layering", () => {
   const all = packages();
 
   it("knows the layer of every package", () => {
-    expect(all.map((pkg) => pkg.manifest.name).filter((name) => !layerOf.has(name))).toEqual([]);
+    expect(
+      all.map((pkg) => pkg.manifest.name as string).filter((name) => !layerOf.has(name)),
+    ).toEqual([]);
   });
 
   it.each(all.map((pkg) => [pkg.manifest.name as string, pkg] as const))(

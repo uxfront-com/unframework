@@ -324,7 +324,7 @@ function parseCode(code: string): { root: unknown; base: number } {
     root = parseStatementsSource(code).statements;
   }
   // Code that is a function (a handler, a setup function) is not nested in itself.
-  const top = Array.isArray(root) ? (root.length === 1 ? root[0] : undefined) : root;
+  const top: unknown = Array.isArray(root) ? (root.length === 1 ? root[0] : undefined) : root;
   return { root, base: isNode(top) && FUNCTIONS.has(top.type) ? 1 : 0 };
 }
 

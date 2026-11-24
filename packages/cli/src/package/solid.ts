@@ -17,7 +17,7 @@ interface Babel {
  * reads the preserved JSX through the `solid` condition instead, which also serves its SSR.
  */
 async function solidCompiler({ resolve }: PackagerInput): Promise<object> {
-  const babel: Babel = await import(/* @vite-ignore */ pathToFileURL(resolve(BABEL)).href);
+  const babel = (await import(/* @vite-ignore */ pathToFileURL(resolve(BABEL)).href)) as Babel;
   const options = {
     babelrc: false,
     configFile: false,

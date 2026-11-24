@@ -54,13 +54,18 @@ export function mergeTextRuns(root: Element): () => void {
   };
 }
 
+/** Narrows to the list, whose elements `Array.isArray` alone would type as `any`. */
+function isElementList(roots: Element | ReadonlyArray<Element>): roots is ReadonlyArray<Element> {
+  return Array.isArray(roots);
+}
+
 /** Runs `capture` with the text runs under `root` merged, and restores them afterwards. */
 export async function withMergedTextRuns<T>(
   roots: Element | ReadonlyArray<Element>,
   capture: () => Promise<T>,
 ): Promise<T> {
   // A view's container, and what it teleported (ADR-0098).
-  const restores = (Array.isArray(roots) ? roots : [roots]).map((root) => mergeTextRuns(root));
+  const restores = (isElementList(roots) ? roots : [roots]).map((root) => mergeTextRuns(root));
   try {
     return await capture();
   } finally {

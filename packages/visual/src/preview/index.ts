@@ -82,7 +82,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
       ...started.map((server) => server.close()),
     ]);
     const failed = results.flatMap((result) =>
-      result.status === "rejected" ? [result.reason] : [],
+      result.status === "rejected" ? [result.reason as unknown] : [],
     );
     if (failed.length) {
       throw new AggregateError(failed, "[uf:preview] A server failed to close.");
@@ -109,7 +109,9 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
       ),
     );
     const failed = servers.flatMap((result, index) =>
-      result.status === "rejected" ? [{ target: targets[index]!, reason: result.reason }] : [],
+      result.status === "rejected"
+        ? [{ target: targets[index]!, reason: result.reason as unknown }]
+        : [],
     );
     if (failed.length) {
       throw startFailure(failed);

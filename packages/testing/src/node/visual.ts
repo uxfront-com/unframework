@@ -92,7 +92,7 @@ const STATE = Symbol.for("unframework.visual.references");
 
 function references(): Map<string, ReferenceCapture> {
   const store = globalThis as { [STATE]?: Map<string, ReferenceCapture> };
-  return (store[STATE] ??= new Map());
+  return (store[STATE] ??= new Map<string, ReferenceCapture>());
 }
 
 const cdpSessions = new WeakMap<Page, Promise<CDPSession>>();

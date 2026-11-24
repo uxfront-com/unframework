@@ -78,11 +78,6 @@ export default defineConfig({
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
     "typescript/no-non-null-assertion": "off",
-    "typescript/no-unsafe-argument": "off",
-    "typescript/no-unsafe-assignment": "off",
-    "typescript/no-unsafe-call": "off",
-    "typescript/no-unsafe-member-access": "off",
-    "typescript/no-unsafe-return": "off",
     "typescript/no-unsafe-type-assertion": "off",
   },
   overrides: [
@@ -236,6 +231,58 @@ export default defineConfig({
       rules: {
         // Each of these reads, replaces or writes the console on purpose.
         "no-console": "off",
+      },
+    },
+    {
+      // The type-aware rules read types that aren't there. The e2e apps install their frameworks
+      // only in their copies outside the repository (ADR-0079), so here every import from one is
+      // unresolved. A component is checked against the authoring types, whose JSX contract hands
+      // its callbacks `any` (`jsx-runtime.ts`), and some components, like the Qwik target's
+      // behaviour fixtures, sit outside any project the type-aware linter reads.
+      files: ["tests/e2e/apps/**", "**/*.uf.{ts,tsx}"],
+      rules: {
+        // Values from unresolved imports and the JSX contract are `error` or `any` typed here.
+        "typescript/no-unsafe-argument": "off",
+        // As above.
+        "typescript/no-unsafe-assignment": "off",
+        // As above.
+        "typescript/no-unsafe-call": "off",
+        // As above.
+        "typescript/no-unsafe-member-access": "off",
+        // As above.
+        "typescript/no-unsafe-return": "off",
+      },
+    },
+    {
+      // Cloudflare's config turns these off in test files, named `*.test.ts`. Here tests also keep
+      // their helpers in `test/` directories, the corpus's harness and scripts live under
+      // `tests/`, and they read JSON, loaded modules and framework internals as tests do.
+      files: ["**/test/**", "tests/**", "**/scripts/**"],
+      rules: {
+        // As Cloudflare's config does for tests.
+        "typescript/no-unsafe-argument": "off",
+        // As above.
+        "typescript/no-unsafe-assignment": "off",
+        // As above.
+        "typescript/no-unsafe-member-access": "off",
+      },
+    },
+    {
+      // A target's fixtures are its outputs, and the toolchains' consumers are hand-written users
+      // of the outputs that each framework's own checker reads (L4), some misusing a component on
+      // purpose. Their types are the framework's, which these rules can't resolve from here.
+      files: ["packages/*/test/fixtures/**", "tests/toolchains/*/consumers/**"],
+      rules: {
+        // The values are typed by frameworks the root project doesn't resolve.
+        "typescript/no-unsafe-argument": "off",
+        // As above.
+        "typescript/no-unsafe-assignment": "off",
+        // As above.
+        "typescript/no-unsafe-call": "off",
+        // As above.
+        "typescript/no-unsafe-member-access": "off",
+        // As above.
+        "typescript/no-unsafe-return": "off",
       },
     },
   ],

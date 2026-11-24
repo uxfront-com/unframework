@@ -47,9 +47,10 @@ const KEEP_IMPORTS = {
  */
 async function checkDeclarations(tsdown: string, work: string): Promise<void> {
   const manifest = createRequire(tsdown).resolve("typescript/package.json");
-  const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
-    await readFile(manifest, "utf8"),
-  );
+  const { version, bin } = JSON.parse(await readFile(manifest, "utf8")) as {
+    version: string;
+    bin: { tsc: string };
+  };
   if (!version.startsWith("7.")) {
     return;
   }
@@ -85,9 +86,9 @@ export async function buildWithTsdown(
     }),
   );
   const tsdownPath = resolve("tsdown");
-  const tsdown: { build(config: object): Promise<unknown> } = await import(
-    /* @vite-ignore */ pathToFileURL(tsdownPath).href
-  );
+  const tsdown = (await import(/* @vite-ignore */ pathToFileURL(tsdownPath).href)) as {
+    build(config: object): Promise<unknown>;
+  };
   const scratch = join(work, "in");
   const common = {
     config: false,

@@ -216,7 +216,8 @@ class Names {
   import(source: Module, name: string, { type = false }: { type?: boolean } = {}): string {
     let names = this.#imports.get(source);
     if (!names) {
-      this.#imports.set(source, (names = new Map()));
+      names = new Map();
+      this.#imports.set(source, names);
     }
     let entry = names.get(name);
     if (entry === undefined) {
@@ -316,7 +317,9 @@ class Names {
   }: { types?: boolean; shared?: boolean } = {}): Array<string> {
     const locals = this.#sortedLocals().flatMap((each) => {
       const entry =
-        shared || !each.shared ? each : { ...each, default: undefined, names: new Map() };
+        shared || !each.shared
+          ? each
+          : { ...each, default: undefined, names: new Map<string, string>() };
       const named = [
         ...[...entry.names].map(([local, name]) => importedAs(name, local)),
         ...(withTypes

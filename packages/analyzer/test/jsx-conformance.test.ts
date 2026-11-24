@@ -69,7 +69,7 @@ function babel(samples: ReadonlyArray<string>, kind: "text" | "attribute"): Arra
 function evaluate(code: string, kind: "text" | "attribute"): Array<Reading> {
   const h = (_tag: string, props: { title?: string } | null, ...children: Array<string>) =>
     kind === "text" ? children.join("") : props!.title!;
-  // oxlint-disable-next-line typescript/no-implied-eval -- runs the transform's output, which is what is compared
+  // oxlint-disable-next-line typescript/no-implied-eval, typescript/no-unsafe-call -- runs the transform's output, which is what is compared
   return new Function("h", `let x; ${code}; return x;`)(h) as Array<Reading>;
 }
 
