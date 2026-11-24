@@ -45,7 +45,6 @@ export default defineConfig({
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
     "@nkzw/no-instanceof": "off",
-    "no-console": "off",
     "no-promise-executor-return": "off",
     "quality/no-array-filter-map": "off",
     "quality/no-chained-type-assertions": "off",
@@ -195,6 +194,23 @@ export default defineConfig({
       rules: {
         // domino has no `append`.
         "unicorn/prefer-dom-node-append": "off",
+      },
+    },
+    {
+      // The console is what these files work with: the harness and the toolchains capture what a
+      // framework logs (L13), tests and their fixtures log on purpose to check that, components
+      // warn in development as their authors' do, and scripts print their report.
+      files: [
+        "**/*.uf.{ts,tsx}",
+        "**/scripts/**",
+        "**/test/**",
+        "packages/*/src/toolchain/**",
+        "packages/testing/src/**",
+        "tests/integration/harness/**",
+      ],
+      rules: {
+        // Each of these reads, replaces or writes the console on purpose.
+        "no-console": "off",
       },
     },
   ],
