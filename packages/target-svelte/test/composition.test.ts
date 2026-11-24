@@ -3,8 +3,9 @@
 // Vue renders for the same sources.
 import { pathToFileURL } from "node:url";
 
+import { transformScriptModule } from "@unframework.dev/codegen/toolchain-node";
 import type { Component } from "svelte";
-import { compile } from "svelte/compiler";
+import { compile, compileModule } from "svelte/compiler";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
@@ -24,19 +25,44 @@ async function render(
 ): Promise<string> {
   const outputs = await compileSources(sources);
   const modules = Object.fromEntries(
-    Object.entries(outputs).map(([path, contents]) => [
-      path.replace(/\.svelte$/, ".js"),
-      compile(contents, { filename: path, generate: "server" }).js.code.replace(
-        /(from\s+["']\.\/[^"']+)\.svelte(["'])/g,
-        "$1.js$2",
-      ),
-    ]),
+    await Promise.all(
+      Object.entries(outputs).map(async ([path, contents]) => [
+        path.replace(/(?:\.svelte)?(?:\.ts)?$/, ".js"),
+        withExtensions(
+          path.endsWith(".ts")
+            ? await serverModule(path, contents)
+            : compile(contents, { filename: path, generate: "server" }).js.code,
+        ),
+      ]),
+    ),
   );
   const paths = writeScratch(modules);
   const module = (await import(pathToFileURL(paths[`${main}.js`]!).href)) as {
     default: Component;
   };
   return renderToString(module.default, { props });
+}
+
+/**
+ * A shared helper module (ADR-0121) as vite-plugin-svelte compiles it for the server: Vite's
+ * TypeScript transform, then, for a `.svelte.ts` module, Svelte's `compileModule`.
+ */
+async function serverModule(path: string, contents: string): Promise<string> {
+  const { code, result } = await transformScriptModule({ path, contents });
+  if (code === undefined) throw new Error(`${path}: ${result.errors[0]?.message ?? ""}`);
+  return path.endsWith(".svelte.ts")
+    ? compileModule(code, { filename: path, generate: "server" }).js.code
+    : code;
+}
+
+/**
+ * A server module's relative imports as Node resolves the scratch files: `./Card.svelte` and
+ * `./_unframework/modelText.svelte` are `.js`, and so is the extensionless `./_unframework/cx`.
+ */
+function withExtensions(code: string): string {
+  return code
+    .replace(/(from\s+["']\.\.?\/[^"']+)\.svelte(["'])/g, "$1.js$2")
+    .replace(/(from\s+["']\.\.?\/_unframework\/[\w$-]+)(["'])/g, "$1.js$2");
 }
 
 /** svelte-check's messages on every output of the sources, by file name. */
@@ -214,9 +240,12 @@ describe("svelte composition across files", () => {
       "}",
       "",
     ].join("\n");
+    // Field's root still picks its styled parents' scope attributes out of its props, through
+    // the shared helper's module, which svelte-check reads too (ADR-0121).
     expect(await check({ "Field.uf.tsx": field, "Form.uf.tsx": form })).toEqual({
       "Field.svelte": [],
       "Form.svelte": [],
+      "_unframework/scopeAttributes.ts": [],
     });
   });
 

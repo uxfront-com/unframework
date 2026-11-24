@@ -22,6 +22,27 @@ const packaged = async (under?: string) => {
   return root;
 };
 
+/**
+ * A component that uses two shared helpers: `nextTick`, and `modelText`, whose module exports the
+ * type its declaration names.
+ */
+const helperUser = (name: string) => `import { nextTick, ref } from "@uxfront/unframework";
+
+export default function ${name}() {
+  const text = ref("");
+  async function clear() {
+    text.value = "";
+    await nextTick();
+  }
+  return (
+    <p>
+      <input v-model_trim={text.value} />
+      <button type="button" onClick={clear}>Clear</button>
+    </p>
+  );
+}
+`;
+
 describe("build --package: Qwik", () => {
   it("builds one .qwik.mjs under the qwik condition, with declarations beside it", async () => {
     // Qwik's plugin reports on the console directly, past `main`'s `io`.
@@ -128,6 +149,38 @@ export default function Styled() {
     expect(files["qwik/index.qwik.mjs"]).toContain('from "virtual:styled"');
     expect(files["qwik/index.qwik.mjs"]).toContain('import "virtual:styled.css"');
     expect(files["qwik/Styled.d.ts"]).not.toContain("virtual:styled.css");
+  });
+
+  it("bundles each shared helper module once, and exports none of them", async () => {
+    const root = qwik();
+    write(root, {
+      "src/Search.uf.tsx": helperUser("Search"),
+      "src/Filter.uf.tsx": helperUser("Filter"),
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(stderr).not.toContain("error[");
+    expect(code).toBe(0);
+    const files = tree(join(root, "dist", "package"));
+    expect(Object.keys(files).filter((file) => file.startsWith("qwik/"))).toEqual([
+      "qwik/Card.d.ts",
+      "qwik/CardTitle.d.ts",
+      "qwik/Filter.d.ts",
+      "qwik/Search.d.ts",
+      "qwik/_unframework/modelText.d.ts",
+      "qwik/_unframework/nextTick.d.ts",
+      "qwik/index.d.ts",
+      "qwik/index.qwik.mjs",
+      "qwik/shared/format.d.ts",
+      "qwik/useToggle.d.ts",
+    ]);
+    const bundle = files["qwik/index.qwik.mjs"] ?? "";
+    // The bundle holds each module once, and imports none of them.
+    expect(bundle.match(/function nextTick\b/g)).toHaveLength(1);
+    expect(bundle.match(/\bmodelText = \{/g)).toHaveLength(1);
+    expect(bundle).not.toContain("_unframework");
+    expect(files["qwik/_unframework/modelText.d.ts"]).toContain("export interface TextModifiers");
+    const manifest = JSON.parse(files["package.json"] ?? "");
+    expect(JSON.stringify(manifest.exports)).not.toContain("_unframework");
   });
 
   it("puts a dynamic import in the one file, as a chunk wouldn't be named .qwik.mjs", async () => {

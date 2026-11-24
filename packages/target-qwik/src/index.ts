@@ -106,11 +106,18 @@ import {
 import type { Passed } from "./fallthrough.ts";
 import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
+import {
+  modelTextHelper,
+  nextTickHelper,
+  scopeAttributesHelper,
+  styleObjectHelper,
+} from "./helpers.ts";
 import { Listeners } from "./listeners.ts";
 import { moduleReads } from "./modules.ts";
 import { OutputNames, planSetup, selfReadingArguments, usedFunctionRenderCalls } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
+import { importShared, SHARED_HELPER_NAMES } from "./shared.ts";
 import { teleportHelper, teleportJsx, teleportNames, teleportSetup } from "./teleport.ts";
 import { qwikTitles } from "./title.ts";
 import { qwikTransitions } from "./transition.ts";
@@ -176,7 +183,7 @@ export const qwik: Target = defineTarget({
     "style-binding": {
       support: "emulated",
       helper: "styleObject",
-      note: "A style bound to a value is Qwik's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+      note: "A style bound to a value is Qwik's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, a helper shared in the tree's _unframework/, `styleObject`, splits a declaration list into an object as Vue does (ADR-0065, ADR-0121).",
     },
     "attribute-spread": { support: "native" },
     "raw-html": { support: "native" },
@@ -213,7 +220,7 @@ export const qwik: Target = defineTarget({
     "model-modifiers": {
       support: "emulated",
       helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054, ADR-0121).",
     },
     // Qwik's own props' rest (ADR-0118, ./fallthrough.ts): what a consumer passes and a component
     // does not declare is `...attributes`, which its root, or the element that spreads the
@@ -235,7 +242,7 @@ export const qwik: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass. A root that spreads the props' rest takes them with it, and elsewhere an inline helper picks them out of its props by name and spreads them on the root, while a rest spread on another element leaves them out through `restAttributes` (ADR-0118).",
+      note: "A child cannot know the scope attributes its styled parents pass. A root that spreads the props' rest takes them with it, and elsewhere a shared helper picks them out of its props by name and spreads them on the root, while a rest spread on another element leaves them out through `restAttributes` (ADR-0118).",
     },
     "slotted-styles": { support: "native" },
     // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
@@ -265,7 +272,7 @@ export const qwik: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: DIRECTIVE_HELPER,
-      note: "Qwik has no directive, so an element's directive is a `ref` function that adds each element one use renders to a signal of them, and a document-ready visible task that tracks them and the value, and calls an inline helper, `runDirective`, for each (with each element's own value, which its `ref` passes through `collectValues` where it reads a list's row or a scoped fill's props), which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik calls the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
+      note: "Qwik has no directive, so an element's directive is a `ref` function that adds each element one use renders to a signal of them, and a document-ready visible task that tracks them and the value, and calls an inline helper, `runDirective`, for each (with each element's own value, which its `ref` passes through `collectValues` where it reads a list's row or a scoped fill's props), which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik calls the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through a shared queue, `queueHook` (ADR-0121).",
     },
     // Qwik removes a node at once and has no transition primitive (ADR-0100).
     transition: {
@@ -326,16 +333,22 @@ export const qwik: Target = defineTarget({
     const reserved = ownNames(component);
     for (const name of typeNamesOf(component, module)) reserved.add(name);
     const imports = new ImportSet(reserved);
-    // A source's components are joined into one module where it is loaded (ADR-0053): each
-    // claims the scope helper from a base of its own (`scopeAttributes_1`), past the names any
-    // other component declares.
-    const { base, others } = moduleHelperName(
-      SCOPE_HELPER,
-      module.components.map(ownNames),
-      module.components.findIndex((each) => each.name === component.name),
-    );
-    imports.reserve(...others);
-    imports.scope.rebase(SCOPE_HELPER, base);
+    // With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
+    const shared = context.helper ? new Map<string, string>() : undefined;
+    if (shared) {
+      reserveShared(module.components.map(ownNames), module, imports);
+    } else {
+      // A source's components are joined into one module where it is loaded (ADR-0053): each
+      // claims the scope helper from a base of its own (`scopeAttributes_1`), past the names any
+      // other component declares.
+      const { base, others } = moduleHelperName(
+        SCOPE_HELPER,
+        module.components.map(ownNames),
+        module.components.findIndex((each) => each.name === component.name),
+      );
+      imports.reserve(...others);
+      imports.scope.rebase(SCOPE_HELPER, base);
+    }
     // The imports that pass through, which the render reads as written (ADR-0064).
     addPassThroughImports(component, module, imports);
     // Each child's output by the name the template uses (ADR-0053), and each key from the output
@@ -526,15 +539,27 @@ export const qwik: Target = defineTarget({
     const keys = keyDeclarations(component, module, plan);
     const exported = exportsOf(component.name, module.exports);
     // A component that renders itself refers to its own `const` (ADR-0053).
-    const helperCode = helpers(plan, listeners);
-    if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
+    const helperCode = helpers(plan, listeners, shared);
+    if (scope) {
+      if (shared) shared.set(SCOPE_HELPER, scope.helper);
+      else helperCode.push(scopeAttributesHelper(scope.helper));
+    }
     if (restHelper && passed?.tag !== undefined) {
       const type = `${names.core("PropsOf", { type: true })}<${JSON.stringify(passed.tag)}>`;
       helperCode.push(restAttributesHelper(restHelper, type));
     }
-    if (teleport) helperCode.push(teleportHelper(teleport));
-    if (transitions) helperCode.push(transitions.helpers());
-    helperCode.push(...directives.helpers(names));
+    if (teleport) {
+      if (shared) shared.set("teleport", teleport.helper);
+      else helperCode.push(teleportHelper(teleport));
+    }
+    if (transitions) {
+      if (shared) for (const [name, local] of transitions.shared()) shared.set(name, local);
+      else helperCode.push(transitions.helpers());
+    }
+    helperCode.push(...directives.helpers(names, shared));
+    if (context.helper && shared) {
+      importShared(context.helper, `${component.name}.tsx`, imports, shared);
+    }
     // The sheet's import comes after the other imports, as on the other targets: an `?inline`
     // import loads nothing, and `useStyles$` attaches the sheet as the component first renders
     // (`sheet-order`). Collected last: the types and the helpers import what they name.
@@ -598,10 +623,19 @@ export default qwik;
 function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
   const { module } = context;
   const owner = setupOwner(composable);
-  const reserved = sourceNames(owner, module);
-  for (const name of apiNames(owner)) reserved.delete(name);
+  const ownNames = (each: UfComponent) => {
+    const names = sourceNames(each, module);
+    for (const name of apiNames(each)) names.delete(name);
+    return names;
+  };
+  const reserved = ownNames(owner);
   for (const name of typeNamesOf(owner, module)) reserved.add(name);
   const imports = new ImportSet(reserved);
+  // With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
+  const shared = context.helper ? new Map<string, string>() : undefined;
+  if (shared) {
+    reserveShared((module.composables ?? []).map(setupOwner).map(ownNames), module, imports);
+  }
   const names = new OutputNames(imports);
   const plan = planSetup(owner, module, names, composable);
   // What Qwik's forms of its arguments cannot keep is reported, never emitted (P2).
@@ -625,7 +659,10 @@ function emitComposable(composable: UfComposable, context: EmitContext): OutputF
         })
         .join(", ")}>`
     : "";
-  const helperCode = helpers(plan, new Listeners(plan));
+  const helperCode = helpers(plan, new Listeners(plan), shared);
+  if (context.helper && shared) {
+    importShared(context.helper, `${composable.name}.ts`, imports, shared);
+  }
   // The types it reads, by name, from where the source imports them (ADR-0067): its setup's, and
   // its parameters' and type parameters', which its setup owner holds no trace of.
   addTypeImports(owner, module, imports, (name) => name);
@@ -646,6 +683,26 @@ function emitComposable(composable: UfComposable, context: EmitContext): OutputF
     ...helperCode,
   ].join("\n\n");
   return [{ path: `${composable.name}.ts`, contents: `${contents}\n` }];
+}
+
+/**
+ * Reserves, in one output, every name a shared helper might take that another output of its
+ * source declares (`reserved`, one set per output) or binds to a child it imports, so every
+ * output of the source imports the helper under one name, and the unplugin's join of them writes
+ * one import (ADR-0053, ADR-0121).
+ */
+function reserveShared(
+  reserved: readonly Iterable<string>[],
+  module: UfModule,
+  imports: ImportSet,
+): void {
+  const imported = (module.imports ?? []).flatMap((entry) => entry.names.map(({ local }) => local));
+  for (const helper of SHARED_HELPER_NAMES) {
+    const own = new RegExp(`^${helper}(?:_\\d+)*$`);
+    for (const each of [...reserved, imported]) {
+      for (const name of each) if (own.test(name)) imports.reserve(name);
+    }
+  }
 }
 
 /**
@@ -692,7 +749,7 @@ interface ScopePlan {
   pending: Set<string>;
   /** What the roots pick them out of: the props pattern's rest, or the props object. */
   props: string;
-  /** The inline helper that picks them. */
+  /** The helper that picks them, shared or inline (ADR-0121). */
   helper: string;
 }
 
@@ -724,23 +781,6 @@ function scopePlan(
 /** A span's key in {@link ScopePlan.pending}. */
 function spanKey({ start, end }: { start: number; end: number }): string {
   return `${start}:${end}`;
-}
-
-/**
- * `child-root-scope`: the scope attributes a component's styled parents pass it (ADR-0063),
- * which its root carries. Their names are the parents' ids, which the component cannot know, so
- * it picks the props' `data-uf-*` keys by name, each with the empty value the parent passes: a
- * rest spread alone would also pass on the props the output leaves unread.
- */
-function scopeAttributesHelper(name: string): string {
-  return `/** The scope attributes of the styled parents that render this component, for its root. */
-function ${name}(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const key of Object.keys(props)) {
-    if (key.startsWith("data-uf-")) scope[key] = "";
-  }
-  return scope;
-}`;
 }
 
 /**
@@ -1344,10 +1384,12 @@ function oneLineConst(code: string): boolean {
 }
 
 /**
- * The inline helpers after the component (ADR-0033): the `once` listeners' WeakSets, `nextTick`
- * and `rendered`, each only where the output uses it.
+ * The helpers after the component (ADR-0033), each only where the output uses it: the `once`
+ * listeners' WeakSets, `rendered`, `exposeRef`, `toggle` and `selectedValues` inline, and
+ * `styleObject`, `nextTick` and `modelText` inline too unless `shared` is given, which then takes
+ * each by the name the output claimed, to import from its module (ADR-0121).
  */
-function helpers(plan: SetupPlan, listeners: Listeners): string[] {
+function helpers(plan: SetupPlan, listeners: Listeners, shared?: Map<string, string>): string[] {
   const { names } = plan;
   const found: string[] = [];
   if (listeners.helpers.length) {
@@ -1359,38 +1401,12 @@ function helpers(plan: SetupPlan, listeners: Listeners): string[] {
     );
   }
   if (names.has("styleObject")) {
-    // Raw, so the regular expressions keep their escapes.
-    found.push(String.raw`/**
- * A style bound to a value as an object, which a merge spreads: a declaration list splits as
- * Vue's parseStringStyle splits it, with camel-case keys.
- */
-function ${names.once("styleObject")}(style: object | string | null | undefined): Record<string, string> {
-  if (typeof style !== "string") return { ...style };
-  const object: Record<string, string> = {};
-  for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
-    const [property, value] = declaration.split(/:([^]+)/);
-    const key = property!.trim();
-    // A property is a custom property or a CSS identifier: anything else would reach the markup.
-    if (value === undefined || !/^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key)) continue;
-    // A standard name is case-insensitive, as the browser reads it: COLOR is color.
-    const camel = key.toLowerCase().replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
-    object[key.startsWith("--") ? key : camel] = value.trim();
-  }
-  return object;
-}`);
+    if (shared) shared.set("styleObject", names.once("styleObject"));
+    else found.push(styleObjectHelper(names.once("styleObject")));
   }
   if (names.has("nextTick")) {
-    found.push(
-      [
-        "/**",
-        " * Resolves once Qwik has rendered the writes made before it: Qwik renders them in a microtask,",
-        " * so they are in the DOM by the next task.",
-        " */",
-        `function ${names.once("nextTick")}(): Promise<void> {`,
-        "  return new Promise((resolve) => setTimeout(resolve));",
-        "}",
-      ].join("\n"),
-    );
+    if (shared) shared.set("nextTick", names.once("nextTick"));
+    else found.push(nextTickHelper(names.once("nextTick")));
   }
   if (names.has("rendered")) {
     found.push(
@@ -1444,47 +1460,8 @@ function ${names.once("styleObject")}(style: object | string | null | undefined)
     );
   }
   if (names.has("modelText")) {
-    const modifiers = names.once("TextModifiers");
-    found.push(
-      [
-        "/**",
-        " * A text control's `v-model` as Vue's `vModelText` runs it: `read` is what the control's text",
-        " * writes, trimmed with `trim` and cast with `number` as `looseToNumber` does; `shown` is the text",
-        " * the control shows for a value, which keeps the person's own text while it is focused and",
-        " * reads as the value (`trim`, `lazy`), or casts to it.",
-        " */",
-        `const ${names.once("modelText")} = {`,
-        `  read<T>(element: HTMLInputElement | HTMLTextAreaElement, modifiers: ${modifiers}): T {`,
-        "    const text = modifiers.trim ? element.value.trim() : element.value;",
-        "    const number = Number.parseFloat(text);",
-        "    // The state's type: where the text is no number, Vue writes the text, as here.",
-        "    return (modifiers.number && !Number.isNaN(number) ? number : text) as T;",
-        "  },",
-        "  shown(",
-        "    element: HTMLInputElement | HTMLTextAreaElement | undefined,",
-        "    value: unknown,",
-        `    modifiers: ${modifiers},`,
-        "  ): string {",
-        '    const text = value == null ? "" : String(value);',
-        "    if (!element || element.value === text) return text;",
-        '    if (element === document.activeElement && element.type !== "range") {',
-        "      if (modifiers.lazy || (modifiers.trim && element.value.trim() === text)) {",
-        "        return element.value;",
-        "      }",
-        "    }",
-        "    if (modifiers.number && this.read(element, modifiers) === value) return element.value;",
-        "    return text;",
-        "  },",
-        "};",
-        "",
-        "/** The modifiers of a text control's `v-model`. */",
-        `interface ${modifiers} {`,
-        "  trim?: boolean;",
-        "  lazy?: boolean;",
-        "  number?: boolean;",
-        "}",
-      ].join("\n"),
-    );
+    if (shared) shared.set("modelText", names.once("modelText"));
+    else found.push(modelTextHelper(names.once("modelText"), names.once("TextModifiers")));
   }
   return found;
 }
