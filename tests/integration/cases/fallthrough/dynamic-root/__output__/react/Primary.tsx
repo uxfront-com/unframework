@@ -1,16 +1,15 @@
 import Base from "./Base";
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithoutRef, Ref } from "react";
 
 export interface PrimaryEvents {
   onPress?: () => void;
 }
 
-export interface PrimaryAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type PrimaryAttributes = Omit<
+  ComponentPropsWithoutRef<typeof Base>,
+  "href" | "disabled" | "text" | "onPress" | "children"
+> & { ref?: Ref<HTMLAnchorElement | HTMLButtonElement> };
 
 export default function Primary({
   href,
@@ -29,7 +28,7 @@ export default function Primary({
       className={cx("primary", className)}
       onPress={() => onPress?.()}
       style={style}
-      {...scopeAttributes(attributes)}
+      {...attributes}
     />
   );
 }

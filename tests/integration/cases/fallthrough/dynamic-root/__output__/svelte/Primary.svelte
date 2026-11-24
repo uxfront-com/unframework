@@ -2,19 +2,45 @@
 
 <script lang="ts">
   import Base from "./Base.svelte";
-  import { scopeAttributes } from "./_unframework/scopeAttributes";
-  import type { ClassValue } from "svelte/elements";
+  import type {
+    ClassValue,
+    DOMAttributes,
+    HTMLAnchorAttributes,
+    HTMLButtonAttributes,
+  } from "svelte/elements";
 
-  type Props = {
-    href?: string;
-    disabled?: boolean;
-    text: string;
-    onpress?: () => void;
-    class?: ClassValue;
-    style?: string;
-  };
+  type Props = Omit<
+    HTMLAnchorAttributes & HTMLButtonAttributes,
+    | "href"
+    | "disabled"
+    | "text"
+    | "onpress"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+    | keyof DOMAttributes<HTMLElementTagNameMap["a" | "button"]>
+  > &
+    Omit<DOMAttributes<HTMLElementTagNameMap["a" | "button"]>, "onpress" | "children"> & {
+      href?: string;
+      disabled?: boolean;
+      text: string;
+      onpress?: () => void;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["a" | "button"] | null;
+    };
 
-  let { href, disabled, text, onpress, class: className, style, ...attributes }: Props = $props();
+  let {
+    href,
+    disabled,
+    text,
+    onpress,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <Base
@@ -24,5 +50,6 @@
   class={["primary", className]}
   onpress={() => onpress?.()}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:ref
+  {...attributes}
 />

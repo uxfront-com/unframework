@@ -90,6 +90,50 @@ describe("portability diagnostics", () => {
   });
 });
 
+describe("a listener that falls through to a <component is> root (ADR-0122)", () => {
+  // The listener is the page's only code that runs in the browser: Astro reports it alone, at its
+  // own span, and drops it, as it does on an element root.
+  it("reports it on Astro, and drops it", async () => {
+    const files: Record<string, string> = {
+      "/project/Base.uf.tsx": [
+        "export default function Base({ href, text }: { href?: string; text: string }) {",
+        '  return <component is={href ? "a" : "button"} href={href}>{text}</component>;',
+        "}",
+        "",
+      ].join("\n"),
+    };
+    const resolve = createFileResolver({
+      root: "/project",
+      readFile: (path) => Promise.resolve(files[path]),
+    });
+    const source = [
+      'import Base from "./Base.uf.tsx";',
+      "",
+      "export default function Page() {",
+      "  function go() {}",
+      "  return (",
+      "    <section>",
+      '      <Base text="Go" id="go" onClick={go} />',
+      "    </section>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const result = await compile(source, { filename: "Page.uf.tsx", targets: ["astro"], resolve });
+    expect(
+      result.diagnostics.map(({ code, severity, target, span }) => [
+        code,
+        severity,
+        target,
+        source.slice(span.start, span.end),
+      ]),
+    ).toEqual([["UF4001", "info", "astro", "onClick={go}"]]);
+    const [output] = result.outputs.astro!;
+    expect(output!.contents).toContain('<Base text="Go" id="go" />');
+    expect(output!.contents).not.toMatch(/onClick/);
+  });
+});
+
 describe("the capability check on code that runs in the browser", () => {
   /** A target supporting every capability, but the cells given. */
   const target = (cells: Partial<Record<CapabilityName, CapabilityCell>>): Target =>

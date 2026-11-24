@@ -1,11 +1,10 @@
 import { cx } from "./_unframework/cx";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
-import type { CSSProperties } from "react";
+import type { ComponentPropsWithoutRef, Ref } from "react";
 
-export interface HeadingAttributes {
-  className?: string;
-  style?: CSSProperties;
-}
+export type HeadingAttributes = Omit<
+  ComponentPropsWithoutRef<"h2"> & ComponentPropsWithoutRef<"h3">,
+  "big" | "text" | "children"
+> & { ref?: Ref<HTMLHeadingElement> };
 
 export default function Heading({
   big,
@@ -17,7 +16,7 @@ export default function Heading({
   const Tag = big ? "h2" : "h3";
 
   return (
-    <Tag className={cx("heading", className)} style={style} {...scopeAttributes(attributes)}>
+    <Tag className={cx("heading", className)} style={style} {...attributes}>
       {text}
     </Tag>
   );

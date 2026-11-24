@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "fallthrough/dynamic-root-passthrough/Base.uf.tsx",
+    "start": {
+      "line": 25,
+      "column": 7,
+      "offset": 797
+    },
+    "end": {
+      "line": 25,
+      "column": 22,
+      "offset": 812
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "fallthrough/dynamic-root-passthrough/Page.uf.tsx",
+    "start": {
+      "line": 25,
+      "column": 9,
+      "offset": 690
+    },
+    "end": {
+      "line": 25,
+      "column": 94,
+      "offset": 775
+    },
+    "target": "astro"
+  }
+]

@@ -234,6 +234,7 @@ export interface SolidListeners {
     element: ElementNode,
     prop: string,
     passed: string,
+    typed?: boolean,
   ): JsxAttributeItem[];
 }
 
@@ -382,8 +383,17 @@ export function solidListeners(
       ];
       return [js.jsxAttribute("ref", expression(`(${held}) => {\n${statements.join("\n")}\n}`))];
     },
-    composedEventAttribute(attribute, _element, prop, passed) {
-      return [js.jsxAttribute(prop, expression(composedHandler(attribute, passed)))];
+    composedEventAttribute(attribute, _element, prop, passed, typed) {
+      // On a `<component is>` root, Solid types the listener as each tag's, which no one
+      // parameter type fits: it is checked as the consumer's, which takes the event of whichever
+      // tag renders (ADR-0122).
+      const handler = composedHandler(attribute, passed);
+      return [
+        js.jsxAttribute(
+          prop,
+          expression(typed ? `(${handler}) satisfies typeof ${passed}` : handler),
+        ),
+      ];
     },
   };
 

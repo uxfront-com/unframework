@@ -1,6 +1,6 @@
 # ADR-0118: Attributes, listeners and refs fall through to a component's root
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0122
 - **Date:** 2026-11-21
 - **Plan:** §4.2 (Options, Expose), §4.3 (Composition), §5.6, §6 (fallthrough attributes), §9 M3;
   P2, P3, P4, P6, P7; R5; ADR-0010, ADR-0022, ADR-0033, ADR-0034, ADR-0039, ADR-0053, ADR-0054,

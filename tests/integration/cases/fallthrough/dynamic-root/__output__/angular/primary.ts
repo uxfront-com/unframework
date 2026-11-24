@@ -1,6 +1,7 @@
+import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
 import Base from "./base";
-import { Component, ElementRef, inject, input, output } from "@angular/core";
+import { Component, ElementRef, computed, inject, input, output, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-primary",
@@ -18,7 +19,10 @@ import { Component, ElementRef, inject, input, output } from "@angular/core";
       [class]="['primary', this.class()].join(' ')"
       (press)="press.emit()"
       [style]="this.style()"
+      [ufAttributes]="this.ufAttributes()"
+      [ufListeners]="this.ufListeners()"
       [ufScope]="this.host"
+      #ufElement
     />
   `,
 })
@@ -28,6 +32,10 @@ export default class Primary {
   readonly text = input.required<string>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufAttributes = input<Record<string, unknown>>();
+  readonly ufListeners = input<Listeners>();
   readonly press = output<void>();
+  private readonly rootComponent = viewChild("ufElement", { read: Base });
+  readonly ufElement = computed(() => this.rootComponent()?.ufElement());
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

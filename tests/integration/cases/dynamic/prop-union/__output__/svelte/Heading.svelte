@@ -1,17 +1,40 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import { scopeAttributes } from "./_unframework/scopeAttributes";
-  import type { ClassValue } from "svelte/elements";
+  import type { ClassValue, DOMAttributes, SvelteHTMLElements } from "svelte/elements";
 
-  type Props = { tag: "h1" | "h2" | "h3"; text: string; class?: ClassValue; style?: string };
+  type Props = Omit<
+    SvelteHTMLElements["h1"] & SvelteHTMLElements["h2"] & SvelteHTMLElements["h3"],
+    | "tag"
+    | "text"
+    | "children"
+    | "class"
+    | "style"
+    | "ref"
+    | keyof DOMAttributes<HTMLElementTagNameMap["h1" | "h2" | "h3"]>
+  > &
+    Omit<DOMAttributes<HTMLElementTagNameMap["h1" | "h2" | "h3"]>, "children"> & {
+      tag: "h1" | "h2" | "h3";
+      text: string;
+      class?: ClassValue;
+      style?: string;
+      ref?: HTMLElementTagNameMap["h1" | "h2" | "h3"] | null;
+    };
 
-  let { tag, text, class: className, style, ...attributes }: Props = $props();
+  let {
+    tag,
+    text,
+    class: className,
+    style,
+    ref = $bindable(null),
+    ...attributes
+  }: Props = $props();
 </script>
 
 <svelte:element
   this={tag}
   class={["heading", className]}
   {style}
-  {...scopeAttributes(attributes)}
+  bind:this={ref}
+  {...attributes}
 >{text}</svelte:element>

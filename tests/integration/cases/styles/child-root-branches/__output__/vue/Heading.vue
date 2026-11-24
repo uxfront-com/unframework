@@ -1,5 +1,12 @@
 <script setup lang="ts">
-const { big, text } = defineProps<{ big: boolean; text: string }>();
+import type { IntrinsicElementAttributes } from "vue";
+
+const { big, text } = defineProps<
+  { big: boolean; text: string } & /* @vue-ignore */ Omit<
+    IntrinsicElementAttributes["h2"] & IntrinsicElementAttributes["h3"],
+    "big" | "text"
+  >
+>();
 </script>
 
 <template>

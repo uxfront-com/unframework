@@ -143,11 +143,13 @@ export default function Page() {
 }`);
     const heading = files.get("Heading")!;
     expect(heading).toContain("const Tag = level;");
-    // The tag a root `<component is>` renders takes its styled parents' scope attributes (ADR-0063),
-    // and a consumer's class and style, as a root element does (ADR-0119).
+    // The tag a root `<component is>` renders takes a consumer's class and style (ADR-0119), and
+    // what else falls through, its styled parents' scope attributes with it (ADR-0122), as a root
+    // element does. Its tags share one interface, so the consumer's ref passes in the rest.
     expect(heading).toContain(
-      '<Tag className={cx("title", className)} style={style} {...scopeAttributes(attributes)}>',
+      '<Tag className={cx("title", className)} style={style} {...attributes}>',
     );
+    expect(heading).toContain("{ ref?: Ref<HTMLHeadingElement> }");
   });
 
   it("renders an attribute only some of a <component is>'s tags take on those (ADR-0119)", async () => {
@@ -158,8 +160,12 @@ export default function Page() {
     const action = files.get("Action")!;
     expect(action).toContain('href={Tag === "a" ? href : undefined}');
     expect(action).toContain('disabled={Tag === "button" ? off : undefined}');
-    // A listener on it is planned as an element's: it used to fail to emit (UF9001).
-    expect(action).toContain("onClick={() => {}}");
+    // A listener on it is planned as an element's: it used to fail to emit (UF9001). It runs the
+    // consumer's after its own, typed as either tag's (ADR-0122), and the consumer's ref reaches
+    // whichever tag renders through a callback.
+    expect(action).toMatch(/onClick=\{\(event\) => \{\s*onClick\?\.\(event\);\s*\}\}/);
+    expect(action).toContain("keyof DOMAttributes<HTMLAnchorElement | HTMLButtonElement>");
+    expect(action).toContain("const rootRef = useMemo(() => mergeRefs(ref), [ref]);");
   });
 
   it("merges a consumer's class and style into the root, the consumer's style last", async () => {

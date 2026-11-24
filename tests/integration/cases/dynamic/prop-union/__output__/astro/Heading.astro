@@ -1,20 +1,19 @@
 ---
-import { scopeAttributes } from "./_unframework/scopeAttributes";
+import type { HTMLAttributes } from "astro/types";
 
-interface Props {
+interface Props extends Omit<
+  HTMLAttributes<"h1"> & HTMLAttributes<"h2"> & HTMLAttributes<"h3">,
+  "tag" | "text"
+> {
   tag: "h1" | "h2" | "h3";
   text: string;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { tag, text, class: className, style } = Astro.props;
+const { tag, text, class: className, style, ...attrs } = Astro.props;
 
 const Tag = tag;
 ---
 
-<Tag
-  class:list={["heading", className]}
-  style={style}
-  {...scopeAttributes(Astro.props)}
->{text}</Tag>
+<Tag class:list={["heading", className]} style={style} {...attrs}>{text}</Tag>

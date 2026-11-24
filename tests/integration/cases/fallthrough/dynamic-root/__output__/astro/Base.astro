@@ -1,7 +1,10 @@
 ---
-import { scopeAttributes } from "./_unframework/scopeAttributes";
+import type { HTMLAttributes } from "astro/types";
 
-interface Props {
+interface Props extends Omit<
+  HTMLAttributes<"a"> & HTMLAttributes<"button">,
+  "href" | "disabled" | "text"
+> {
   href?: string;
   disabled?: boolean;
   text: string;
@@ -9,7 +12,7 @@ interface Props {
   style?: Record<string, string | number | undefined>;
 }
 
-const { href, disabled, text, class: className, style } = Astro.props;
+const { href, disabled, text, class: className, style, ...attrs } = Astro.props;
 
 const Tag = href ? "a" : "button";
 ---
@@ -19,5 +22,5 @@ const Tag = href ? "a" : "button";
   disabled={Tag === "button" ? disabled : undefined}
   class:list={["base", className]}
   style={{ padding: "4px 8px", ...style }}
-  {...scopeAttributes(Astro.props)}
+  {...attrs}
 >{text}</Tag>

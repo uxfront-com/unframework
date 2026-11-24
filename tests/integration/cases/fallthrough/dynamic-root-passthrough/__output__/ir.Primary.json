@@ -1,0 +1,265 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/dynamic-root-passthrough/Primary.uf.tsx",
+  "components": [
+    {
+      "name": "Primary",
+      "span": {
+        "start": 129,
+        "end": 272
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 186,
+              "end": 192
+            }
+          },
+          "binding": "href@163",
+          "span": {
+            "start": 179,
+            "end": 193
+          }
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 200,
+              "end": 206
+            }
+          },
+          "binding": "text@169",
+          "span": {
+            "start": 194,
+            "end": 206
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ href?: string; text: string }",
+          "span": {
+            "start": 177,
+            "end": 208
+          }
+        },
+        "span": {
+          "start": 161,
+          "end": 208
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "href@163",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 163,
+            "end": 167
+          }
+        },
+        {
+          "id": "text@169",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 169,
+            "end": 173
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Base",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 233,
+                    "end": 237
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@163",
+                      "span": {
+                        "start": 233,
+                        "end": 237
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 227,
+                  "end": 238
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 245,
+                    "end": 249
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@169",
+                      "span": {
+                        "start": 245,
+                        "end": 249
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 239,
+                  "end": 250
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "primary",
+                    "span": {
+                      "start": 251,
+                      "end": 266
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 251,
+                  "end": 266
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 221,
+              "end": 269
+            }
+          }
+        ],
+        "span": {
+          "start": 221,
+          "end": 269
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Primary",
+      "span": {
+        "start": 129,
+        "end": 272
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Base.uf.tsx",
+      "file": "Base.uf.tsx",
+      "api": {
+        "file": "Base.uf.tsx",
+        "components": [
+          {
+            "name": "Base",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "disabled",
+                "optional": true,
+                "type": "boolean"
+              },
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                },
+                {
+                  "name": "disabled"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                },
+                {
+                  "name": "title",
+                  "value": "Base"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Base",
+          "span": {
+            "start": 7,
+            "end": 11
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

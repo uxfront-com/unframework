@@ -12,7 +12,8 @@ component, written as a React developer would write it (plan §6):
   also takes `className`, `style` and what else a consumer passes it, its props' rest (see
   Composition below), and then takes every prop it declares out of the rest, under a `_` name
   where nothing reads it (`title: _title`). One whose root is a `<component is>` over tags takes
-  `className` and `style` alone (ADR-0119).
+  `className`, `style` and what every tag takes, typed as every tag's props with the listeners of
+  whichever renders, and a consumer's ref through a callback (ADR-0119, ADR-0122).
 - the types the source imports, by name, where the output reads them (ADR-0067): from a `.ts`
   module or a package as written, `import type { BadgeProps } from "./types"`, and from a
   child's output, `import Field, { type FieldProps } from "./Field"`. The output of the module's

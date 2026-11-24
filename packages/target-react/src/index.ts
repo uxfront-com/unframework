@@ -83,7 +83,7 @@ import {
 import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
 import { moduleReads } from "./modules.ts";
-import { planComponent } from "./plan.ts";
+import { passedTags, planComponent } from "./plan.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
 import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
@@ -258,11 +258,17 @@ export const react: Target = defineTarget({
     // keeps the DOM's semantics, and nothing passes the child one yet.
     const passed = passedListeners(component);
     for (const [listener, { element }] of plan.listeners) {
-      if (passed.has(listener) && !synthetic(listener, element)) {
+      // On a `<component is>` root, every tag that may render must keep them (ADR-0122).
+      const tag = passed.has(listener)
+        ? (passedTags.get(element) ?? [element.tag]).find(
+            (each) => !synthetic(listener, { ...element, tag: each }),
+          )
+        : undefined;
+      if (tag !== undefined) {
         context.report({
           code: "UF1002",
           severity: "error",
-          message: `The react target does not pass a \`${listener.event}\` listener through to a component yet: React's prop for it would not keep the DOM's semantics on its <${element.tag}>. Listen to the event on an element instead.`,
+          message: `The react target does not pass a \`${listener.event}\` listener through to a component yet: React's prop for it would not keep the DOM's semantics on its <${tag}>. Listen to the event on an element instead.`,
           span: listener.span,
         });
         return [];
@@ -776,7 +782,9 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
     // those its element sets itself: one it declares (`value: number`) is no attribute.
     const handle =
       composition.expose && `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
-    const own = handle === undefined && passing.refTag === passing.tag;
+    const [tag, ...others] = passing.tags;
+    const [refTag, ...otherRefs] = passing.refTags ?? [];
+    const own = handle === undefined && !others.length && !otherRefs.length && refTag === tag;
     const props = type(own ? "ComponentPropsWithRef" : "ComponentPropsWithoutRef");
     const { target } = passing;
     const rootComponent = target.kind === "Component" && !passing.inner;
@@ -791,11 +799,20 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
       .map((name) => JSON.stringify(name))
       .join(" | ");
     const ref =
-      handle ??
-      (passing.refTag === undefined || own ? undefined : elementInterface(passing.refTag));
-    const base = rootComponent ? `typeof ${target.component}` : JSON.stringify(passing.tag);
+      handle ?? (passing.refTags === undefined || own ? undefined : elementUnion(passing.refTags));
+    // A `<component is>` root's are what every tag takes, and its listeners take the event of
+    // whichever tag renders, so a listener it merges with its own takes that event (ADR-0122).
+    const bases = rootComponent
+      ? [`typeof ${target.component}`]
+      : passing.tags.map((each) => JSON.stringify(each));
+    // Tags of one interface (`h2`, `h3`) type their listeners alike.
+    const element = elementUnion(passing.tags);
+    const dom = !rootComponent && element.includes(" | ") && type("DOMAttributes");
     const parts = [
-      `Omit<${props}<${base}>, ${omitted}>`,
+      dom
+        ? `Omit<${bases.map((base) => `${props}<${base}>`).join(" & ")}, ${omitted} | keyof ${dom}<${element}>>`
+        : `Omit<${bases.map((base) => `${props}<${base}>`).join(" & ")}, ${omitted}>`,
+      ...(dom ? [`Omit<${dom}<${element}>, ${domOmitted(passing.declared)}>`] : []),
       ...(ref === undefined ? [] : [`{ ref?: ${type("Ref")}<${ref}> }`]),
     ];
     const parameters = generic.expose?.declared ?? "";
@@ -808,14 +825,14 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
   } else if (
     interfaces.attributes &&
     !composition.fallthrough &&
-    composition.refTag !== undefined
+    composition.refTags?.length === 1
   ) {
     // Nothing passes through, but a ref holds the root element (ADR-0118).
     const props = type("ComponentPropsWithRef");
     declarations.push({
       name: interfaces.attributes,
       exported: true,
-      code: `type ${interfaces.attributes} = Pick<${props}<${JSON.stringify(composition.refTag)}>, "ref">;`,
+      code: `type ${interfaces.attributes} = Pick<${props}<${JSON.stringify(composition.refTags[0])}>, "ref">;`,
       span: component.span,
     });
   } else if (interfaces.attributes) {
@@ -826,13 +843,37 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
     if (composition.expose) {
       const handle = `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
       members.push(`ref?: ${type("Ref")}<${handle}>;`);
-    } else if (composition.refTag !== undefined) {
-      members.push(`ref?: ${type("Ref")}<${elementInterface(composition.refTag)}>;`);
+    } else if (composition.refTags !== undefined) {
+      members.push(`ref?: ${type("Ref")}<${elementUnion(composition.refTags)}>;`);
     }
     // The handle is the attributes' one member a type parameter may type.
     declare(interfaces.attributes, members, generic.expose?.declared);
   }
   return declarations;
+}
+
+/**
+ * The names a `<component is>` root's `DOMAttributes` leave out (ADR-0122): its content, which
+ * a component takes as `children` or not at all, and the listener props it declares as events.
+ */
+function domOmitted(declared: readonly string[]): string {
+  return [
+    ...new Set([
+      "children",
+      "dangerouslySetInnerHTML",
+      ...declared.filter((name) => /^on[A-Z]/.test(name)),
+    ]),
+  ]
+    .map((name) => JSON.stringify(name))
+    .join(" | ");
+}
+
+/**
+ * The DOM interface of the element a ref holds, or the union of the interfaces of a `<component
+ * is>`'s tags, each once, where it holds whichever renders (ADR-0122).
+ */
+function elementUnion(tags: readonly string[]): string {
+  return [...new Set(tags.map(elementInterface))].join(" | ");
 }
 
 /** The name a callback's type gives its one parameter: any name, never a keyword's. */
@@ -1194,6 +1235,10 @@ function mergedRefDeclaration(plan: ReactPlan, composer: ReactComposer): string 
   const consumer = composer.consumerRef!;
   const useMemo = plan.names.add("react", "useMemo");
   const merge = plan.helpers.mergeRefs!;
+  // A `<component is>` root's ref is the consumer's alone, as a callback (ADR-0122).
+  if (own === undefined) {
+    return `const ${local} = ${useMemo}(() => ${merge}(${consumer}), [${consumer}]);`;
+  }
   return `const ${local} = ${useMemo}(() => ${merge}(${own}, ${consumer}), [${own}, ${consumer}]);`;
 }
 

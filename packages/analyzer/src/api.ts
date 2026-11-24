@@ -108,8 +108,15 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
     if (fallthrough.svg) api.fallthroughNamespace = "svg";
     api.fallthroughOwn = ownOf(fallthrough.opening);
   }
-  // A ref holds what the component exposes, or else its root element (ADR-0118).
+  // A `<component is>` root's own attributes and listeners are its own, which a parent checks
+  // what it passes with on each tag (ADR-0122).
+  if (api.inheritAttrs && root.tags !== undefined && rootOpening) {
+    api.fallthroughOwn = ownOf(rootOpening);
+  }
+  // A ref holds what the component exposes, or else its root element (ADR-0118), the one of
+  // a `<component is>` root that renders (ADR-0122).
   if (!api.exposes.length && root.tag !== undefined) api.refTag = root.tag;
+  if (!api.exposes.length && root.tags !== undefined) api.refTags = root.tags;
   if (root.tags !== undefined) api.rootTags = root.tags;
   if (root.unlisted) api.rootUnlisted = true;
   return api;
@@ -148,10 +155,16 @@ export function fillRootComponents(
       // `style` a consumer gives it (ADR-0119), so it reads the tags that root may render.
       if (api.inheritAttrs && child.inheritAttrs && child.rootTags !== undefined && !api.rootTags) {
         api.rootTags = child.rootTags;
+        if (child.fallthroughOwn && !api.fallthroughOwn) api.fallthroughOwn = child.fallthroughOwn;
         changed = true;
       }
       if (!api.exposes.length && child.refTag !== undefined && !api.refTag) {
         api.refTag = child.refTag;
+        changed = true;
+      }
+      // A ref on it holds the element its root component's `<component is>` renders (ADR-0122).
+      if (!api.exposes.length && child.refTags !== undefined && !api.refTags) {
+        api.refTags = child.refTags;
         changed = true;
       }
       // What a consumer passes reaches the root component, whose declarations take it first.
@@ -225,7 +238,7 @@ function ownOf(opening: AST.JSXOpeningElement): ApiFallthroughOwn {
       if (!own.listeners.includes(listener.event)) own.listeners.push(listener.event);
       continue;
     }
-    if (written === "key" || written === "ref") continue;
+    if (written === "key" || written === "ref" || written === "is") continue;
     const { value } = item;
     // A bound attribute has no value here: the check reads it as present, value unknown.
     const known =
