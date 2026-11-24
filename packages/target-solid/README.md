@@ -403,14 +403,18 @@ The shared helpers are modules of their own in the tree's `_unframework/` (ADR-0
 `EmitContext.helper` and printed by `src/shared.ts`: `cx.ts`, `styleProperties.ts`,
 `scopeAttributes.ts`, `modelText.ts`, `selectOptions.ts`, `nextTick.ts`, `queueHook.ts`,
 `KeyedFor.tsx`, `Teleport.tsx` and `Transition.tsx`. Each imports Solid by its own names, so its
-text depends only on the helper, and one that holds JSX is a `.tsx` module, which Solid's compiler
-transforms as it does a component. A component, a composable and a directive module import each
-without the extension, `import { cx } from "./_unframework/cx"`, and the components of one source
-import it under one name, `cx`, or `cx as cx_1` where one of them declares `cx`, since a source's
-outputs are joined into one module where it is loaded (ADR-0053). The watchers and their
-scheduler stay inline, since each output tailors them and their queue is the file's, and so do
-`restAttributes`, `textCaret`, `toggle` and `selectedValues`, each short and in few files. A
-context without `helper` gets every helper printed inline after the component, as before.
+text depends only on the helper. One that holds JSX is a `.tsx` module, which Solid's compiler
+transforms as it does a component.
+
+A component, a composable and a directive module import each helper without the extension:
+`import { cx } from "./_unframework/cx"`. The components of one source import it under one name,
+which is `cx as cx_1` where one of them declares `cx`, since a source's outputs are joined into one module
+where it is loaded (ADR-0053). A context without `helper` gets every helper printed inline after
+the component, as before.
+
+The watchers and their scheduler stay inline, since each output tailors them and their queue is
+the file's. So do `restAttributes`, `textCaret`, `toggle` and `selectedValues`, each short and in
+few files.
 
 | Capability                                     | Cell                                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -488,7 +492,7 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   remove it, so a root's own style is spread before the consumer's:
   `style={{ ...{ padding: "2px" }, ...props.style }}`, and a consumer's `undefined` removes the
   root's declaration, as Vue's merge does. A root's static class merges with a conditional
-  rather than `cx`, so it calls no helper; a root's class from parts or from a spread merges
+  rather than `cx`, so it calls no helper. A root's class from parts or from a spread merges
   through `cx`.
 - A bound `<textarea>`'s `ref` callback, `textCaret`, sets its text again, so a hydrated field's
   caret is after its text, as a client render leaves it (ADR-0095).
