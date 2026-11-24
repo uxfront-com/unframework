@@ -45,16 +45,33 @@ export default defineConfig({
     // error), the platform's collections (`Map`, `Set`) and DOM nodes and events, each in the realm
     // that made it. The union parameters it narrows are public, like `formatDiagnostics`' sources.
     "@nkzw/no-instanceof": "off",
+    // The IR is plain JSON (P5), checked against its schema, so a field with no value is left out
+    // rather than set to `undefined`. A node built in one expression leaves a field out with a
+    // conditional spread, and the rule's alternative, a mutable object filled statement by
+    // statement, gives up the readonly node types.
+    "quality/no-conditional-empty-object-spread": "off",
+    // `isolatedDeclarations` needs an explicit type on every export, and the code writes its return
+    // types out as the contract it keeps, anonymous object types included.
+    "quality/no-known-value-widening": "off",
+    // The compiler and the harness carry values whose shape belongs to someone else: a component's
+    // props, case.json, a plugin's options, a framework's globals. `Record<string, unknown>` says
+    // so, and each reader checks what it reads.
+    "quality/no-unsafe-dictionary-type": "off",
+    // What a loaded module, a component's handler or a framework hook returns is the caller's own
+    // business, so the harness and the toolchains hand it on as `unknown` for the caller to check.
+    "quality/no-unknown-returns": "off",
+    // `object` is the right type where any non-primitive will do: a `WeakMap` key, a scope
+    // manager's declaration, the options a bundler's plugin takes.
+    "quality/no-object-parameters": "off",
+    // The analyser reads one tree through two type systems, oxc's AST and the scope manager's
+    // ESTree, and a node passes between them through `unknown`.
+    "quality/no-chained-type-assertions": "off",
+    // A `filter` with a type guard narrows what its `map` reads, which a single `flatMap` loses,
+    // and the lists are a component's nodes or a file's names, tens of items.
+    "quality/no-array-filter-map": "off",
     // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
     // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
     // with its reason.
-    "quality/no-array-filter-map": "off",
-    "quality/no-chained-type-assertions": "off",
-    "quality/no-conditional-empty-object-spread": "off",
-    "quality/no-known-value-widening": "off",
-    "quality/no-object-parameters": "off",
-    "quality/no-unknown-returns": "off",
-    "quality/no-unsafe-dictionary-type": "off",
     "typescript/no-non-null-assertion": "off",
     "typescript/no-unsafe-argument": "off",
     "typescript/no-unsafe-assignment": "off",
