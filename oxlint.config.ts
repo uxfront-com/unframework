@@ -25,6 +25,9 @@ export default defineConfig({
     // sent on as a reply's field. The rule's fix renames such shorthand properties too, which
     // changes the object it builds.
     "unicorn/catch-error-name": "off",
+    // The rule reads every "utf-8" as an encoding name, but here they're HTML `charset` values,
+    // which HTML spells "utf-8", in the rendered markup that tests expect.
+    "unicorn/text-encoding-identifier-case": "off",
     // Hexadecimal numbers here are code points and hash constants, written as their standards
     // write them (`0xd800`, `0x811c9dc5`), so the rule groups only those already grouped, by four.
     "unicorn/numeric-separators-style": [
@@ -82,7 +85,6 @@ export default defineConfig({
     "unicorn/prefer-string-replace-all": "off",
     "unicorn/prefer-structured-clone": "off",
     "unicorn/prefer-top-level-await": "off",
-    "unicorn/text-encoding-identifier-case": "off",
   },
   overrides: [
     {
