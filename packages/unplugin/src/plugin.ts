@@ -135,8 +135,10 @@ export interface UnframeworkOptions {
 export interface UnframeworkApi {
   /**
    * The target source of the last load of a module id that finished, in any environment, or
-   * `undefined` when the id has not loaded or that load failed. Angular's `ngtscVirtual` reads
-   * child components with it.
+   * `undefined` when the id has not loaded or that load failed. For a shared helper module's id
+   * (ADR-0121), it is the module's text once a compile has emitted it, as `load` serves it, and
+   * `undefined` where a project file sits at its path. Angular's `ngtscVirtual` reads child
+   * components and helper modules with it.
    */
   getCompiled(id: string): string | undefined;
   /**
@@ -1452,7 +1454,13 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         return qwikClient ? reloadQwikClient(this.environment, update, modules) : modules;
       },
       api: {
-        getCompiled: (id: string) => compiled.get(id),
+        getCompiled: (id: string) => {
+          const own = compiled.get(id);
+          if (own !== undefined) return own;
+          // A shared helper module (ADR-0121), as `load` serves it: never in a project file's place.
+          const helper = helperModules.get(id);
+          return helper && !existsSync(id) ? helper.contents : undefined;
+        },
         getSheet: (file: string) => sheets.get(file),
       } satisfies UnframeworkApi,
     },

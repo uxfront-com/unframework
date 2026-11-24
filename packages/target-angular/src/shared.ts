@@ -21,8 +21,11 @@ import {
 import type { DirectiveSpec } from "./directives.ts";
 import { modelHelperCode } from "./models.ts";
 
-/** A shared helper: its module's code after its imports, which it adds to `imports`. */
-type ModuleCode = (imports: ImportSet, placeholders: Placeholders) => string;
+/**
+ * A shared helper: its module's code after its imports, which it adds to `imports`, or a function
+ * that prints that code once the placeholders it made can be printed.
+ */
+type ModuleCode = (imports: ImportSet, placeholders: Placeholders) => string | (() => string);
 
 /** Exports the declaration of `name`: `function styleObject(` → `export function styleObject(`. */
 function exported(code: string, name: string): string {
@@ -77,8 +80,9 @@ export const SHARED_HELPER_NAMES: readonly string[] = Object.keys(SHARED_HELPERS
 function moduleText(code: ModuleCode): string {
   const imports = new ImportSet();
   const placeholders = new Placeholders();
+  const built = code(imports, placeholders);
   return placeholders.print(() => {
-    const body = code(imports, placeholders).trim();
+    const body = (typeof built === "string" ? built : built()).trim();
     const declarations = imports.toDeclarations();
     const head = declarations.length ? `${printProgram(js.program(declarations)).trim()}\n\n` : "";
     return `${head}${body}\n`;
@@ -98,7 +102,7 @@ export function directiveModule(spec: DirectiveSpec): string {
       imports,
       placeholders,
     );
-    return `${decorator}\n${printProgram(js.program(statements))}`;
+    return () => `${decorator}\n${printProgram(js.program(statements))}`;
   });
 }
 
