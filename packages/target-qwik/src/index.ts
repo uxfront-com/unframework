@@ -897,8 +897,13 @@ function elementProps(plan: SetupPlan): string | undefined {
     for (const name of declared.models) omitted.add(name).add(modelCallback(name));
     for (const name of declared.events) omitted.add(qwikEventProp(name));
   }
-  const element = root ? `typeof ${root.component}` : JSON.stringify(passed.tag);
-  return `Omit<${props}<${element}>, ${[...omitted].map((name) => JSON.stringify(name)).join(" | ")}>`;
+  const names = [...omitted].map((name) => JSON.stringify(name)).join(" | ");
+  // A `<component is>` root's are what every tag takes (ADR-0122). Its listeners are each
+  // tag's, so a parent's handler is typed as written (`landsOnTags`).
+  const elements = root
+    ? [`typeof ${root.component}`]
+    : (passed.tags ?? [passed.tag]).map((tag) => JSON.stringify(tag));
+  return `Omit<${elements.map((element) => `${props}<${element}>`).join(" & ")}, ${names}>`;
 }
 
 /**
@@ -1070,9 +1075,15 @@ function passThrough(
   printed: PrintedPassed,
 ): { message: string; span: Span; help: string } | undefined {
   const { fallthrough } = plan.composition;
+  // A `<component is>` root's branches each take it, one of which shows (ADR-0122).
+  const roots = (): JsxElementNode[] => {
+    if (passed.tags) return rootElements(root);
+    const element = rootElement(root);
+    return element ? [element] : [];
+  };
   if (passed.rest !== undefined) {
-    const target = printed.rest ? elementHolding(root, printed.rest) : rootElement(root);
-    if (target) {
+    const found = printed.rest ? elementHolding(root, printed.rest) : undefined;
+    for (const target of found ? [found] : roots()) {
       if (fallthrough) mergeFallthrough(target, fallthrough);
       const attributes = target.openingElement.attributes;
       const spread = printed.rest ?? js.jsxSpreadAttribute(js.identifier(passed.rest));
@@ -1082,8 +1093,23 @@ function passThrough(
     }
   }
   if (!passed.rootRef) return undefined;
-  const element = rootElement(root);
-  if (!element) return undefined;
+  for (const element of roots()) {
+    const problem = passRef(element, plan, passed, printed);
+    if (problem) return problem;
+  }
+  return undefined;
+}
+
+/**
+ * The root element's ref (see {@link passThrough}): the consumer's, in the rest or beside the
+ * root's own, on each branch of a `<component is>` root (ADR-0122).
+ */
+function passRef(
+  element: JsxElementNode,
+  plan: SetupPlan,
+  passed: Passed,
+  printed: PrintedPassed,
+): { message: string; span: Span; help: string } | undefined {
   const attributes = element.openingElement.attributes;
   const own = attributes.find(
     (attribute): attribute is JsxAttributeNode =>

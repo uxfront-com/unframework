@@ -39,6 +39,11 @@ export class Passed {
   readonly #fresh: Fresh;
   /** The tag whose attributes the props take: `PropsOf<"button">`. */
   readonly tag: string | undefined;
+  /**
+   * The tags a `<component is>` root may render, where it spreads the rest: each branch takes it
+   * (ADR-0122), and the props take what every tag takes. Absent otherwise.
+   */
+  readonly tags: readonly string[] | undefined;
   /** The span of the node that spreads the rest: the root, or the `{...rest}` element. */
   readonly target: Span | undefined;
   /** Whether the rest spreads on the root, which then takes the scope attributes in it. */
@@ -82,7 +87,7 @@ export class Passed {
     const root = singleRoot(component);
     const target = fallthroughTarget(component, module);
     this.target = target?.span;
-    this.onRoot = target !== undefined && target === root;
+    this.onRoot = target !== undefined && (target === root || target.kind === "Dynamic");
     const rootComponent =
       this.onRoot && root?.kind === "Component" && root.component !== component.name
         ? root
@@ -91,11 +96,12 @@ export class Passed {
     this.rootComponent = generic ? undefined : rootComponent;
     this.genericRoot = generic ? rootComponent : undefined;
     this.tag = fallthroughTag(component, module);
+    this.tags = target?.kind === "Dynamic" ? dynamicTags(target) : undefined;
     this.rest = target === undefined ? undefined : fresh("attributes");
     this.rootRef =
       component.exposes === undefined &&
-      root !== undefined &&
-      (root.kind === "Element" || holdsElement(module, root.component));
+      ((root !== undefined && (root.kind === "Element" || holdsElement(module, root.component))) ||
+        target?.kind === "Dynamic");
     const own =
       this.rootRef && root?.kind === "Component"
         ? root.attributes.find((attribute) => attribute.kind === "Ref")
@@ -158,12 +164,28 @@ export class Passed {
 export function fallthroughTarget(
   component: UfComponent,
   module: UfModule,
-): ElementNode | ComponentNode | undefined {
+): ElementNode | ComponentNode | DynamicNode | undefined {
   if (component.inheritAttrs === false) return restElement(component);
   const root = singleRoot(component);
-  return root && (root.kind === "Element" || takesFallthrough(module, root.component))
+  if (!root) return dynamicRoot(component);
+  return root.kind === "Element" || takesFallthrough(module, root.component) ? root : undefined;
+}
+
+/** The component's root, where it is one `<component is>` over tags (ADR-0119). */
+function dynamicRoot(component: UfComponent): DynamicNode | undefined {
+  const { render } = component;
+  if (render.kind !== "Fragment") return undefined;
+  const [root, ...others] = render.children;
+  return root?.kind === "Dynamic" &&
+    !others.length &&
+    root.candidates.every((each) => each.kind === "Tag")
     ? root
     : undefined;
+}
+
+/** The tags a `<component is>` over tags may render. */
+function dynamicTags(node: DynamicNode): string[] {
+  return node.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
 }
 
 /**
@@ -229,7 +251,11 @@ export function fallthroughTag(
   if (component.inheritAttrs === false) return restElement(component)?.tag;
   const root = singleRoot(component);
   if (root?.kind === "Element") return root.tag;
-  if (!root) return undefined;
+  // A `<component is>` root's first tag stands for them all (ADR-0122).
+  if (!root) {
+    const dynamic = dynamicRoot(component);
+    return dynamic && dynamicTags(dynamic)[0];
+  }
   return childTag(module, root.component, "fallthroughTag", new Set([...seen, component.name]));
 }
 
@@ -244,6 +270,35 @@ export function takesFallthrough(module: UfModule, local: string): boolean {
  */
 export function childFallthroughTag(module: UfModule, local: string): string | undefined {
   return childTag(module, local, "fallthroughTag", new Set());
+}
+
+/**
+ * Whether what a parent passes a child, by its local name, lands on a `<component is>` root of
+ * several tags (ADR-0122): the child types its listeners as each tag's, so a parent's handler
+ * takes no one type from them, and is typed as written.
+ */
+export function landsOnTags(
+  module: UfModule,
+  local: string,
+  seen: ReadonlySet<string> = new Set(),
+): boolean {
+  const api = importedApi(module, local);
+  if (api !== null) {
+    return (
+      api !== undefined &&
+      api.fallthroughTag === undefined &&
+      api.inheritAttrs &&
+      (api.rootTags?.length ?? 0) > 1
+    );
+  }
+  const own = module.components.find((each) => each.name === local);
+  if (!own || seen.has(own.name)) return false;
+  const target = fallthroughTarget(own, module);
+  if (target?.kind === "Dynamic") return dynamicTags(target).length > 1;
+  return (
+    target?.kind === "Component" &&
+    landsOnTags(module, target.component, new Set([...seen, own.name]))
+  );
 }
 
 /** Whether a ref on a component, by its local name, holds an element (it exposes nothing). */
@@ -262,13 +317,23 @@ function childTag(
   seen: ReadonlySet<string>,
 ): string | undefined {
   const api = importedApi(module, local);
-  if (api !== null) return api?.[tag];
+  // A `<component is>` root's first tag stands for them all (ADR-0122).
+  if (api !== null) {
+    if (!api) return undefined;
+    return tag === "fallthroughTag"
+      ? (api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined))
+      : (api.refTag ?? api.refTags?.[0]);
+  }
   const own = module.components.find((each) => each.name === local);
   if (!own || seen.has(own.name)) return undefined;
   if (tag === "fallthroughTag") return fallthroughTag(own, module, seen);
   if (own.exposes) return undefined;
   const root = singleRoot(own);
   if (root?.kind === "Element") return root.tag;
+  if (!root) {
+    const dynamic = dynamicRoot(own);
+    return dynamic && dynamicTags(dynamic)[0];
+  }
   return root && childTag(module, root.component, tag, new Set([...seen, own.name]));
 }
 
