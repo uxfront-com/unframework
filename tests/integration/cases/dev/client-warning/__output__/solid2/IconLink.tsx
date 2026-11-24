@@ -1,5 +1,6 @@
+import { clearedRef } from "./_unframework/clearedRef";
 import { type ComponentProps, type JSX, isDev } from "@solidjs/web";
-import { omit, onCleanup, onSettled } from "solid-js";
+import { omit, onSettled } from "solid-js";
 
 export default function IconLink(
   props: { href: string; label?: string } & Omit<
@@ -37,10 +38,4 @@ export default function IconLink(
       </svg>
     </a>
   );
-}
-
-/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
-function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
-  onCleanup(clear);
-  return callback;
 }
