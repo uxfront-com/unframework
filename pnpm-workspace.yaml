@@ -71,7 +71,7 @@ peerDependencyRules:
     "@typescript-eslint/type-utils>typescript": "7.1.0-beta"
     "ts-api-utils>typescript": "7.1.0-beta"
 minimumReleaseAgeExclude:
-  - "@uxfront/layer-docs@0.8.4"
+  - "@uxfront/layer-docs@0.9.1"
   - "@uxfront/layer-ui@0.1.11"
   - "@uxfront/oxfmt-config@0.1.1"
   - "@uxfront/oxlint-config@0.1.1"
@@ -176,7 +176,7 @@ catalog:
   oxlint: 1.86.0
   oxlint-tsgolint: 7.0.2003
   parse5: ^8.0.1
-  pixelmatch: ^7.2.0
+  pixelmatch: ^8.0.0
   playwright: 1.63.0
   pngjs: ^7.0.0
   postcss: 8.5.28
