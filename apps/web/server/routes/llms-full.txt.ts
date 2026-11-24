@@ -14,7 +14,6 @@ import type { DocsPage } from "../utils/raw-markdown";
  * prerendered ones.
  */
 export default defineEventHandler(async (event) => {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
   const pages = (await queryCollection(event, "docs" as never).all()) as Array<DocsPage>;
   const documents = await Promise.all(
     pages.filter((page) => !isNavigationPath(page.path)).map((page) => rawMarkdown(page)),

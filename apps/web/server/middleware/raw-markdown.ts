@@ -17,7 +17,6 @@ export default defineEventHandler(async (event) => {
     return undefined;
   }
 
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
   const page = (await queryCollection(event, "docs" as never)
     .path(match[1])
     .first()) as DocsPage | null;

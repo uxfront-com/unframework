@@ -7,9 +7,6 @@ export default defineConfig({
   env: vue.env,
   options: {
     typeAware: true,
-    // Migration baseline (UXF-1048): four directives name rules the baseline turns off. Restored
-    // with the last rule.
-    reportUnusedDisableDirectives: "off",
   },
   ignorePatterns: [
     ...vue.ignorePatterns,
@@ -74,10 +71,16 @@ export default defineConfig({
     // functions belong to its setup, as its outputs' do. Elsewhere a helper sits beside the one
     // test or step that uses it.
     "unicorn/consistent-function-scoping": "off",
-    // Migration baseline (UXF-1048): the rules of @uxfront/oxlint-config 0.2.0 that this code
-    // doesn't pass yet. Each later commit removes one entry and fixes its errors, or keeps it off
-    // with its reason.
+    // `noUncheckedIndexedAccess` types every index and key read as possibly `undefined`, and the
+    // compiler reads its arrays and maps at indexes and keys its own structures guarantee: a node's
+    // children, a plan's functions by id, a regular expression's groups. Each `!` marks such a
+    // read, where a runtime check would be a branch no input reaches (the IR's invariants check
+    // the structures, ADR-0032).
     "typescript/no-non-null-assertion": "off",
+    // The analyser and the targets narrow oxc's AST by a node's `type` or `kind`, and walk it as
+    // records, which TypeScript can't follow through the scope manager's types. JSON and modules
+    // the code loads are asserted once to the shape it reads. Each assertion stands for a check
+    // or a contract the type system can't see.
     "typescript/no-unsafe-type-assertion": "off",
   },
   overrides: [
@@ -243,13 +246,13 @@ export default defineConfig({
       rules: {
         // Values from unresolved imports and the JSX contract are `error` or `any` typed here.
         "typescript/no-unsafe-argument": "off",
-        // As above.
+        // Values from unresolved imports and the JSX contract are `error` or `any` typed here.
         "typescript/no-unsafe-assignment": "off",
-        // As above.
+        // Values from unresolved imports and the JSX contract are `error` or `any` typed here.
         "typescript/no-unsafe-call": "off",
-        // As above.
+        // Values from unresolved imports and the JSX contract are `error` or `any` typed here.
         "typescript/no-unsafe-member-access": "off",
-        // As above.
+        // Values from unresolved imports and the JSX contract are `error` or `any` typed here.
         "typescript/no-unsafe-return": "off",
       },
     },
@@ -259,11 +262,11 @@ export default defineConfig({
       // `tests/`, and they read JSON, loaded modules and framework internals as tests do.
       files: ["**/test/**", "tests/**", "**/scripts/**"],
       rules: {
-        // As Cloudflare's config does for tests.
+        // Tests read JSON, loaded modules and framework internals, as Cloudflare allows in tests.
         "typescript/no-unsafe-argument": "off",
-        // As above.
+        // Tests read JSON, loaded modules and framework internals, as Cloudflare allows in tests.
         "typescript/no-unsafe-assignment": "off",
-        // As above.
+        // Tests read JSON, loaded modules and framework internals, as Cloudflare allows in tests.
         "typescript/no-unsafe-member-access": "off",
       },
     },
@@ -275,13 +278,25 @@ export default defineConfig({
       rules: {
         // The values are typed by frameworks the root project doesn't resolve.
         "typescript/no-unsafe-argument": "off",
-        // As above.
+        // The values are typed by frameworks the root project doesn't resolve.
         "typescript/no-unsafe-assignment": "off",
-        // As above.
+        // The values are typed by frameworks the root project doesn't resolve.
         "typescript/no-unsafe-call": "off",
-        // As above.
+        // The values are typed by frameworks the root project doesn't resolve.
         "typescript/no-unsafe-member-access": "off",
-        // As above.
+        // The values are typed by frameworks the root project doesn't resolve.
+        "typescript/no-unsafe-return": "off",
+      },
+    },
+    {
+      // The root's scripts belong to no TypeScript project, so the type-aware linter infers one for
+      // them, and Node's types reach it on some runs and not on others: `process` is then `error`
+      // typed, and the result changes from run to run.
+      files: ["scripts/**"],
+      rules: {
+        // Calls on Node's globals, whose types don't always resolve here.
+        "typescript/no-unsafe-call": "off",
+        // Node's types don't always resolve for these scripts.
         "typescript/no-unsafe-return": "off",
       },
     },

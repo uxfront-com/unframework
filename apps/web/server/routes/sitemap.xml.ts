@@ -23,7 +23,6 @@ interface DocsPage {
  */
 export default defineEventHandler(async (event) => {
   const { siteUrl } = useRuntimeConfig(event).public;
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
   const pages = (await queryCollection(event, "docs" as never).all()) as Array<DocsPage>;
 
   const paths = [
