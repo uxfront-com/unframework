@@ -55,14 +55,23 @@ export interface ImportRecord {
 /** The module specifiers a file imports or re-exports, statically or dynamically. */
 export function importsOf(file: string): ImportRecord[] {
   const source = readFileSync(file, "utf8");
-  const { module, program } = parseSync(file, source);
+  const result = parseSync(file, source);
+  const { module } = result;
   const records: ImportRecord[] = [];
   const name = relative(root, file);
   for (const entry of module.staticImports) {
     const typeOnly = entry.entries.length > 0 && entry.entries.every((item) => item.isType);
-    const declaration = program.body.find(
-      (statement) => statement.type === "ImportDeclaration" && statement.start === entry.start,
-    );
+    // `isType` answers for every import that names something. Only `import type {} from "x"`
+    // names nothing and is still type-only, so the AST is read for an import with no entry alone.
+    // oxc-parser's `program` getter parses the whole AST from JSON: reading it for every file
+    // made the layering scan about 2.5 times slower.
+    const declaration =
+      entry.entries.length === 0
+        ? result.program.body.find(
+            (statement) =>
+              statement.type === "ImportDeclaration" && statement.start === entry.start,
+          )
+        : undefined;
     const declaredType =
       declaration?.type === "ImportDeclaration" && declaration.importKind === "type";
     records.push({
