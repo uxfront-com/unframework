@@ -1971,12 +1971,14 @@ function decodeReferences(code: string): string {
     nbsp: "\u00a0",
     quot: '"',
   };
-  return code.replace(/&(?:#x([0-9a-f]+)|#(\d+)|([a-z]+));/gi, (reference, hex, decimal, name) =>
-    hex !== undefined
-      ? String.fromCodePoint(Number.parseInt(hex as string, 16))
-      : decimal !== undefined
-        ? String.fromCodePoint(Number(decimal))
-        : (named[(name as string).toLowerCase()] ?? reference),
+  return code.replaceAll(
+    /&(?:#x([0-9a-f]+)|#(\d+)|([a-z]+));/gi,
+    (reference, hex, decimal, name) =>
+      hex !== undefined
+        ? String.fromCodePoint(Number.parseInt(hex as string, 16))
+        : decimal !== undefined
+          ? String.fromCodePoint(Number(decimal))
+          : (named[(name as string).toLowerCase()] ?? reference),
   );
 }
 
@@ -2150,7 +2152,7 @@ function glue(lines: Array<string>, next: Array<string>): Array<string> {
 export function directiveAttributeName(name: string): string {
   return name
     .slice(1)
-    .replace(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
+    .replaceAll(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
 }
 
 /** The `never` default of an exhaustive switch. */

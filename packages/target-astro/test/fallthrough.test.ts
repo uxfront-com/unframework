@@ -29,7 +29,7 @@ async function renderComponents(
   let file = "";
   for (const [path, contents] of Object.entries(outputs(source, `${main}.uf.tsx`))) {
     const name = path.replace(/\.astro$/, "");
-    const written = writeAstroModule(directory, contents.replace(/\.astro";/g, '.mjs";'), name);
+    const written = writeAstroModule(directory, contents.replaceAll('.astro";', '.mjs";'), name);
     if (name === main) {
       file = written;
     }

@@ -95,7 +95,7 @@ function angularCharacter(character: string): string | undefined {
 }
 
 /** A run of spaces, which Angular's whitespace processing would condense, as escapes. */
-const escapeSpaceRuns = (text: string) => text.replace(/ {2,}/g, unicodeEscape);
+const escapeSpaceRuns = (text: string) => text.replaceAll(/ {2,}/g, unicodeEscape);
 
 /** `<` where Angular's template lexer opens a tag: before a letter, `/`, `!` or `?`. */
 const TAG_START = /<(?=[A-Za-z!/?])/g;
@@ -131,15 +131,17 @@ export function angularCode(code: string, context: AngularContext): string {
           return regex;
         }
         // `a</b/` would open a tag; `\}` means `}` in a regular expression either way.
-        return `${before.endsWith("<") ? " " : ""}${regex.replace(/(?<=\})\}/g, String.raw`\}`)}`;
+        return `${before.endsWith("<") ? " " : ""}${regex.replaceAll(/(?<=\})\}/g, String.raw`\}`)}`;
       },
       comment: () => " ",
       other: (text, before) => {
-        const spaced = `${before.endsWith("/") && text.startsWith("/") ? " " : ""}${text.replace(
+        const spaced = `${before.endsWith("/") && text.startsWith("/") ? " " : ""}${text.replaceAll(
           NON_ASCII_SPACE,
           " ",
         )}`;
-        return interpolation ? spaced.replace(/\}(?=\})/g, "} ").replace(TAG_START, "< ") : spaced;
+        return interpolation
+          ? spaced.replaceAll(/\}(?=\})/g, "} ").replaceAll(TAG_START, "< ")
+          : spaced;
       },
     },
     kind,
@@ -149,7 +151,7 @@ export function angularCode(code: string, context: AngularContext): string {
   }
   // An attribute value's lexer decodes each reference on its own.
   if (quoted) {
-    return escapeReferences(respelled).replace(/"/g, "&quot;");
+    return escapeReferences(respelled).replaceAll('"', "&quot;");
   }
   // Angular decodes an interpolation's references only once it has found its end, with
   // `/&([^;]+);/`: a bare `&` (`a && b`) would take the `;` of a reference after it, which then
@@ -157,7 +159,7 @@ export function angularCode(code: string, context: AngularContext): string {
   // that could start one (`/R&D/`), and a `<` left before a letter, which is a regular
   // expression's (`(?<name>…)`), where a space would change it, and which would open a tag.
   return /&[A-Za-z0-9#]/.test(respelled) || respelled.search(TAG_START) !== -1
-    ? respelled.replace(/&/g, "&amp;").replace(TAG_START, "&lt;")
+    ? respelled.replaceAll("&", "&amp;").replaceAll(TAG_START, "&lt;")
     : respelled;
 }
 
@@ -187,7 +189,7 @@ function angularNumber(raw: string, value: number, before: string, next?: string
 function angularString(value: string, preferred: "'" | '"'): string {
   const other = preferred === "'" ? '"' : "'";
   const quote = value.includes(preferred) && !value.includes(other) ? other : preferred;
-  return escapeSpaceRuns(quoteString(value, quote, angularCharacter)).replace(
+  return escapeSpaceRuns(quoteString(value, quote, angularCharacter)).replaceAll(
     /\\[\s\S]/g,
     (escape) => (escape === `\\${quote}` ? unicodeEscape(quote) : escape),
   );
@@ -267,7 +269,7 @@ function angularRegex(raw: string, interpolation: boolean): string {
     units
       .map((unit) => (slashes && unit.slash ? String.raw`\x2f` : unit.text))
       .join("")
-      .replace(/ {2,}/g, (run) => String.raw`\x20`.repeat(run.length));
+      .replaceAll(/ {2,}/g, (run) => String.raw`\x20`.repeat(run.length));
   const body = `/${write(false)}/`.includes("//") ? write(true) : write(false);
   return `/${body}/${raw.slice(close + 1)}`;
 }
@@ -749,7 +751,7 @@ function componentStyle(parts: ReadonlyArray<StylePart>): PrintedAttribute {
  * the component's selector in camel case and the slot's name, `ufFieldTitle` for `uf-field`.
  */
 function slotAttribute(tag: string, slot: string): string {
-  const component = tag.replace(/-(\w)/g, (_, next: string) => next.toUpperCase());
+  const component = tag.replaceAll(/-(\w)/g, (_, next: string) => next.toUpperCase());
   return `${component}${slot.charAt(0).toUpperCase()}${slot.slice(1)}`;
 }
 
@@ -909,7 +911,7 @@ function contextKey(key: string): string {
     return key;
   }
   return key
-    .replace(/[^A-Za-z0-9_$]+(.)?/g, (_, next: string | undefined) => next?.toUpperCase() ?? "")
+    .replaceAll(/[^A-Za-z0-9_$]+(.)?/g, (_, next: string | undefined) => next?.toUpperCase() ?? "")
     .replace(/^(?=\d)/, "_");
 }
 
@@ -962,7 +964,7 @@ function unreachableControl(control: never): never {
 function angularText(text: string, position: TextPosition): string {
   const afterBlock = position.previous === "If" || position.previous === "For";
   if (afterBlock && text.trim() === "") {
-    return angularInterpolation(text).replace(/[^\u0020-\u007e]/g, unicodeEscape);
+    return angularInterpolation(text).replaceAll(/[^\u0020-\u007e]/g, unicodeEscape);
   }
   // Only an escape in a literal keeps U+E500 from becoming a space, in a `<pre>` too.
   if (text.includes(NGSP)) {
@@ -997,7 +999,7 @@ function rootEdge(position: TextPosition, written: string): string {
  */
 const angularLiteralDialect: MarkupDialect = {
   name: "angular-literal",
-  escapeText: (text) => escapeBraces(escapeHtmlText(text)).replace(/@/g, "&#64;"),
+  escapeText: (text) => escapeBraces(escapeHtmlText(text)).replaceAll("@", "&#64;"),
   attribute: (name, value) => `${name}="${escapeBraces(escapeHtmlAttribute(value))}"`,
   voidElement: "self-closing",
   stripsWhitespaceBetweenElements: false,
@@ -1090,5 +1092,5 @@ function escapeAngular(text: string, position: TextPosition): string {
     position.next === "Interpolation" ? /(?:&#123;)+$|(?:&#123;){2,}/g : /(?:&#123;){2,}/g;
   return escapeBraces(escapeHtmlText(text))
     .replace(braces, (run) => `{{ ${stringLiteral("{".repeat(run.length / "&#123;".length))} }}`)
-    .replace(/@/g, "&#64;");
+    .replaceAll("@", "&#64;");
 }

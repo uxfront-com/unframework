@@ -352,7 +352,7 @@ function vueAllowedAttributes(): Array<RegExp> {
   return (options?.dataAttributes ?? []).map(
     (pattern) =>
       new RegExp(
-        `^${pattern.replace(/[.+?^${}()|[\]\\]/g, String.raw`\$&`).replace(/\*/g, ".*")}$`,
+        `^${pattern.replaceAll(/[.+?^${}()|[\]\\]/g, String.raw`\$&`).replaceAll("*", ".*")}$`,
       ),
   );
 }

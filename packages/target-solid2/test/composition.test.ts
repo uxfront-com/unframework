@@ -36,8 +36,8 @@ async function serverHtml(name: string, props: Record<string, unknown>): Promise
     noScripts: true,
   });
   return String(html)
-    .replace(/<!--[^>]*-->/g, "")
-    .replace(/ _hk=[^ >]*/g, "");
+    .replaceAll(/<!--[^>]*-->/g, "")
+    .replaceAll(/ _hk=[^ >]*/g, "");
 }
 
 describe("solid2 slots", () => {

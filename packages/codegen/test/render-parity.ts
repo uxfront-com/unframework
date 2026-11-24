@@ -1016,7 +1016,7 @@ function splitTopLevel(text: string, separator: string, limit = Infinity): Array
 
 /** Collapses CSS whitespace (not U+00A0, which belongs to a value) to one space, and trims. */
 function collapseSpaces(text: string): string {
-  return text.replace(/[ \t\n\r\f]+/g, " ").trim();
+  return text.replaceAll(/[ \t\n\r\f]+/g, " ").trim();
 }
 
 /**
@@ -1230,19 +1230,22 @@ export function parseHtml(html: string, options: ParseOptions = {}): Array<DomNo
   }
 
   function decode(text: string): string {
-    return text.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);?/g, (reference, body) => {
-      if (body.startsWith("#x")) {
-        return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
-      }
-      if (body.startsWith("#")) {
-        return String.fromCodePoint(Number.parseInt(body.slice(1), 10));
-      }
-      const named = NAMED_REFERENCES[body];
-      if (named === undefined || !reference.endsWith(";")) {
-        fail(`unexpected entity ${reference}`);
-      }
-      return named!;
-    });
+    return text.replaceAll(
+      /&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);?/g,
+      (reference, body) => {
+        if (body.startsWith("#x")) {
+          return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
+        }
+        if (body.startsWith("#")) {
+          return String.fromCodePoint(Number.parseInt(body.slice(1), 10));
+        }
+        const named = NAMED_REFERENCES[body];
+        if (named === undefined || !reference.endsWith(";")) {
+          fail(`unexpected entity ${reference}`);
+        }
+        return named!;
+      },
+    );
   }
 }
 

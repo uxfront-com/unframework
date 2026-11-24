@@ -135,7 +135,11 @@ export function tidied(code: string, kind: CodeKind): string {
     return code;
   }
   const read = code.includes("?.nativeElement?.")
-    ? mapCode(code, { other: (text) => text.replace(/(\(\)\?\.nativeElement)\?\./g, "$1.") }, kind)
+    ? mapCode(
+        code,
+        { other: (text) => text.replaceAll(/(\(\)\?\.nativeElement)\?\./g, "$1.") },
+        kind,
+      )
     : code;
   return withNullElements(read, kind);
 }

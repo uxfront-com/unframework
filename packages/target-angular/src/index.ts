@@ -1107,5 +1107,5 @@ function typeParameters(
  * with its body's `{` where a field's holds ` = `.
  */
 function spaced(printed: string): string {
-  return printed.replace(/\n(?= {2}[^\s}][^\n]*\{\n)(?! {2}[^\n]* = )/g, "\n\n");
+  return printed.replaceAll(/\n(?= {2}[^\s}][^\n]*\{\n)(?! {2}[^\n]* = )/g, "\n\n");
 }

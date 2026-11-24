@@ -402,7 +402,7 @@ function optionValue(
   }
   const [only] = option.children;
   if (option.children.length === 1 && only?.kind === "Text") {
-    return JSON.stringify(only.value.replace(ASCII_EDGES, "").replace(ASCII_WHITESPACE, " "));
+    return JSON.stringify(only.value.replaceAll(ASCII_EDGES, "").replaceAll(ASCII_WHITESPACE, " "));
   }
   const parts = option.children.flatMap((child) => {
     if (child.kind === "Text") {

@@ -32,7 +32,9 @@ export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
   const outcome = test.meta.uf?.layers[layer];
   expect(outcome, `${layer}'s recorded outcome`).toEqual({
     status: "fail",
-    message: expect.stringMatching(new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, ""))),
+    message: expect.stringMatching(
+      new RegExp(pattern.source, pattern.flags.replaceAll(/[gy]/g, "")),
+    ),
   });
   if (outcome?.status !== "fail") {
     throw new Error(`${layer} did not fail.`);
@@ -113,7 +115,7 @@ const PAGE_HTML = /\n+HTML:\n[\s\S]*$/;
  * page's HTML that an element error appends (its ARIA tree stays, which says what was there).
  */
 function describeTestError(error: TestError): string {
-  const message = error.message.replace(ANSI_COLOUR, "");
+  const message = error.message.replaceAll(ANSI_COLOUR, "");
   if (message === NO_ASSERTIONS) {
     return "The test asserted nothing: every test asserts at least one fact about what it rendered (expect.requireAssertions).";
   }

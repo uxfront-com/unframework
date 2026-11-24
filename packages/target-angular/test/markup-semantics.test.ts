@@ -34,7 +34,7 @@ afterAll(removeScratch);
 
 /** Text inside a JavaScript template literal, as `js.templateLiteral` writes it. */
 const templateText = (text: string) =>
-  text.replace(/[\\`]/g, (character) => `\\${character}`).replace(/\$\{/g, "\\${");
+  text.replaceAll(/[\\`]/g, (character) => `\\${character}`).replaceAll("${", "\\${");
 
 /**
  * A component around the markup: a required input for each prop a case passes, an optional one

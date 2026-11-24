@@ -290,7 +290,7 @@ export function runName(
   if (allProjects && [...new Set(allProjects)].sort().join("\n") === selected.join("\n")) {
     return "all";
   }
-  const joined = selected.map((name) => name.replace(/[^a-zA-Z0-9-]+/g, "-")).join("+");
+  const joined = selected.map((name) => name.replaceAll(/[^a-zA-Z0-9-]+/g, "-")).join("+");
   if (joined.length <= 80) {
     return joined || "none";
   }

@@ -115,7 +115,7 @@ function frameLines(index: LineIndex, span: Span, label: string | undefined): Ar
   const lines: Array<FrameLine> = [{ number: start.line, text: first }];
   const caretEnd = start.line === end.line ? end.column : first.length + 1;
   const width = Math.max(1, caretEnd - start.column);
-  const indent = first.slice(0, start.column - 1).replace(/[^\t]/g, " ");
+  const indent = first.slice(0, start.column - 1).replaceAll(/[^\t]/g, " ");
   lines.push({
     number: undefined,
     text: `${indent}${"^".repeat(width)}${label ? ` ${label}` : ""}`,
@@ -128,7 +128,7 @@ function frameLines(index: LineIndex, span: Span, label: string | undefined): Ar
     lines.push({ number: end.line, text: last });
     const covered = last.slice(0, end.column - 1);
     if (covered) {
-      lines.push({ number: undefined, text: covered.replace(/[^\t]/g, "^") });
+      lines.push({ number: undefined, text: covered.replaceAll(/[^\t]/g, "^") });
     }
   }
   return lines;

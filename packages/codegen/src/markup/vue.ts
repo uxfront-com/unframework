@@ -47,8 +47,8 @@ const VUE_WHITESPACE_ONLY = /^[\t\n\f\r ]+$/;
 function boundLiteral(value: string): string {
   const body = stringLiteral(value)
     .slice(1, -1)
-    .replace(/\\"/g, '"')
-    .replace(/'/g, String.raw`\'`);
+    .replaceAll(String.raw`\"`, '"')
+    .replaceAll("'", String.raw`\'`);
   return escapeHtmlAttribute(`'${body}'`);
 }
 
@@ -70,7 +70,7 @@ export function vueAttributeCode(code: string, kind: CodeKind = "expression"): s
   const requoted = code.includes('"')
     ? mapCode(code, { string: (raw) => (raw.startsWith('"') ? singleQuoted(raw) : raw) }, kind)
     : code;
-  return escapeReferences(requoted).replace(/"/g, "&quot;");
+  return escapeReferences(requoted).replaceAll('"', "&quot;");
 }
 
 /** A double-quoted string literal's raw text, in single quotes with the same escapes. */
@@ -230,7 +230,7 @@ export const vueDialect: MarkupDialect = {
     if (condensed) {
       return `{{ ${stringLiteral(text)} }}`;
     }
-    const escaped = escapeHtmlText(text).replace(/\{\{/g, "{&#123;");
+    const escaped = escapeHtmlText(text).replaceAll("{{", "{&#123;");
     // A `{` right before an interpolation would open it early (`{{{ x }}`).
     return position.next === "Interpolation" && escaped.endsWith("{")
       ? `${escaped.slice(0, -1)}&#123;`
@@ -502,10 +502,10 @@ function atRootEdge(position: TextPosition): boolean {
  * camelises back to `imageURL`.
  */
 function hyphenate(name: string): string {
-  return name.replace(/\B([A-Z])/g, "-$1").toLowerCase();
+  return name.replaceAll(/\B([A-Z])/g, "-$1").toLowerCase();
 }
 
 /** Vue's camelisation of a hyphenated name (`camelize` in `@vue/shared`). */
 function camelize(name: string): string {
-  return name.replace(/-(\w)/g, (_, character: string) => character.toUpperCase());
+  return name.replaceAll(/-(\w)/g, (_, character: string) => character.toUpperCase());
 }

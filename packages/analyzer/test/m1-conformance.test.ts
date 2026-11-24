@@ -298,9 +298,9 @@ describe("string-only attributes", () => {
     const aliases = new Map(
       [...VENDORED.matchAll(/^type (\w+) = ([^;]+);/gm)].map((match) => [match[1]!, match[2]!]),
     );
-    let text = type.replace(/\s*\|\s*undefined/g, "").trim();
+    let text = type.replaceAll(/\s*\|\s*undefined/g, "").trim();
     for (let depth = 0; depth < 3; depth++) {
-      text = text.replace(/\b([A-Z]\w+)\b/g, (name) =>
+      text = text.replaceAll(/\b([A-Z]\w+)\b/g, (name) =>
         aliases.has(name) ? `(${aliases.get(name)})` : name,
       );
     }
@@ -308,7 +308,7 @@ describe("string-only attributes", () => {
       return false;
     }
     const parts = text
-      .replace(/[()]/g, "")
+      .replaceAll(/[()]/g, "")
       .split("|")
       .map((part) => part.trim())
       .filter(Boolean);

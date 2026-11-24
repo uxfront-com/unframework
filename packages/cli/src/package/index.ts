@@ -141,7 +141,7 @@ async function projectFields(root: string): Promise<Record<string, string>> {
 }
 
 /** A path as it reads in a regular expression. */
-const escape = (path: string): string => path.replace(/[\\^$.*+?()[\]{}|]/g, String.raw`\$&`);
+const escape = (path: string): string => path.replaceAll(/[\\^$.*+?()[\]{}|]/g, String.raw`\$&`);
 
 /** A packager's own error: no stack, and its paths into the scratch copy as the tree just written. */
 function failure(error: unknown, work: string, tree: string): string {
@@ -154,7 +154,7 @@ function failure(error: unknown, work: string, tree: string): string {
   const forms = [escape(scratch), ...(fromCwd ? [`(?<![\\w./-])${escape(fromCwd)}(?=/)`] : [])];
   const paths = new RegExp([...forms, String.raw`(?<![\w./-])in(?=/)`].join("|"), "g");
   return text
-    .replace(paths, () => tree)
+    .replaceAll(paths, () => tree)
     .split("\n")
     .filter((line) => !/^\s+at /.test(line))
     .join("\n")

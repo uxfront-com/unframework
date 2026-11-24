@@ -290,7 +290,7 @@ function optionText(option: ElementNode): Expression | string {
     return JSON.stringify(
       parts
         .join("")
-        .replace(/[\t\n\f\r ]+/g, " ")
+        .replaceAll(/[\t\n\f\r ]+/g, " ")
         .trim(),
     );
   }

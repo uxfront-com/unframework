@@ -204,7 +204,7 @@ export function reactCode(plan: ReactPlan): ReactCode {
     }
     const marker = `${escape(prefix)}\\d+__`;
     const pattern = new RegExp(`(?:\\(\\s*(${marker})\\s*\\)|(${marker}))(\\s*;)?`, "g");
-    const expanded = text.replace(
+    const expanded = text.replaceAll(
       pattern,
       (_match, wrapped: string | undefined, bare: string | undefined, end: string | undefined) => {
         const found = expansions.get((wrapped ?? bare)!)!;
@@ -549,5 +549,5 @@ function isNode(value: unknown): value is Node {
 }
 
 function escape(text: string): string {
-  return text.replace(/[$]/g, String.raw`\$`);
+  return text.replaceAll(/[$]/g, String.raw`\$`);
 }

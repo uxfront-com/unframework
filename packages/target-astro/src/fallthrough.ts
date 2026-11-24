@@ -205,7 +205,7 @@ export function scopeRootsOf(
 
 /** The local an attribute is read under: `ariaLabel` for `aria-label`, `forAttribute` for `for`. */
 function localName(attribute: string): string {
-  const camel = attribute.replace(/[^A-Za-z0-9_$]+([A-Za-z0-9_$]?)/g, (_, next: string) =>
+  const camel = attribute.replaceAll(/[^A-Za-z0-9_$]+([A-Za-z0-9_$]?)/g, (_, next: string) =>
     next.toUpperCase(),
   );
   return isIdentifier(camel) && !RESERVED_PROP_NAMES.has(camel) ? camel : `${camel}Attribute`;

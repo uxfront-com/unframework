@@ -439,7 +439,7 @@ function collectGlobals(value: unknown, found: Set<string>): Set<string> {
  * and style declarations without a value are dropped and the others sorted.
  */
 export function canonical(html: string): Array<DomNode> {
-  const expanded = html.replace(
+  const expanded = html.replaceAll(
     /<([A-Za-z][A-Za-z0-9]*)((?:\s+[^\s"'=<>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'))?)*)\s*\/>/g,
     (tag, name: string, attributes: string) =>
       /^(?:area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/i.test(name)

@@ -370,7 +370,7 @@ function keyProperty(key: string): { property: string; kebab: boolean; vendor: b
   }
   const vendor = /^(Webkit|Moz|ms|O)[A-Z]/.test(key);
   return {
-    property: key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
+    property: key.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
     kebab: false,
     vendor,
   };
@@ -378,7 +378,7 @@ function keyProperty(key: string): { property: string; kebab: boolean; vendor: b
 
 /** `margin-top` as a style object's key: `marginTop`. */
 function camelCase(property: string): string {
-  return property.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+  return property.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /** Lowers `style={{ … }}`. */

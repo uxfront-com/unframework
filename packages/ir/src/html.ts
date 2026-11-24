@@ -417,7 +417,7 @@ export const URL_ATTRIBUTES: ReadonlySet<string> = words(
  */
 function urlScheme(url: string): string | undefined {
   // oxlint-disable-next-line no-control-regex -- the leading C0 controls the URL parser strips.
-  const stripped = url.replace(/^[\u0000-\u001F ]+/, "").replace(/[\t\n\r]/g, "");
+  const stripped = url.replace(/^[\u0000-\u001F ]+/, "").replaceAll(/[\t\n\r]/g, "");
   return /^([a-z][a-z\d+.-]*):/i.exec(stripped)?.[1]?.toLowerCase();
 }
 
@@ -517,12 +517,12 @@ export function replaceIdReferences(
   replace: (id: string) => string,
 ): string {
   if (ID_REFERENCE_ATTRIBUTES.has(name)) {
-    return value.replace(/[^\t\n\f\r ]+/g, (id) => replace(id));
+    return value.replaceAll(/[^\t\n\f\r ]+/g, (id) => replace(id));
   }
   if (FRAGMENT_ATTRIBUTES.has(name) && value.length > 1 && value.startsWith("#")) {
     return `#${replace(value.slice(1))}`;
   }
-  return value.replace(
+  return value.replaceAll(
     URL_REFERENCE,
     (_reference, quote: string, id: string) => `url(${quote}#${replace(id)}${quote})`,
   );

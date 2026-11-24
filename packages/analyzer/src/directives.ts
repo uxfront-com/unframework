@@ -941,7 +941,7 @@ export function isDirectiveAttribute(name: string): boolean {
 function kebab(name: string): string {
   return name
     .slice(1)
-    .replace(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
+    .replaceAll(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
 }
 
 /** The expression inside parentheses, `as`, `satisfies` and `!`. */

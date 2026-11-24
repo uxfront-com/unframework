@@ -84,8 +84,8 @@ const hasStyle = (element: Element): element is Element & ElementCSSInlineStyle 
   "style" in element;
 
 const escapeText = (text: string) =>
-  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const escapeAttribute = (value: string) => value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+const escapeAttribute = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 
 /**
  * The form-control state an HTML element holds in properties, as `uf:*` pseudo-attributes:

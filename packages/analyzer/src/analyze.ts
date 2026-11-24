@@ -633,7 +633,7 @@ function reportDirectiveShadows(component: UfComponent, reporter: Reporter): boo
   let reported = false;
   const report = (name: string, what: "model" | "slot", at: Span) => {
     reported = true;
-    const authored = `v-${name.slice(1).replace(/[A-Z]/g, (letter, index: number) => `${index ? "-" : ""}${letter.toLowerCase()}`)}`;
+    const authored = `v-${name.slice(1).replaceAll(/[A-Z]/g, (letter, index: number) => `${index ? "-" : ""}${letter.toLowerCase()}`)}`;
     reporter.report(
       "UF3024",
       at,

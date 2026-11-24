@@ -23,8 +23,8 @@ const ENTITIES: Readonly<Record<string, string>> = { "&lt;": "<", "&gt;": ">", "
 function titles(html: string): Array<string> {
   return [...html.matchAll(/<title[^>]*>([\s\S]*?)<\/title>/g)].map(([, inner]) =>
     inner!
-      .replace(/<!--[\s\S]*?-->/g, "")
-      .replace(/&(?:lt|gt|amp);/g, (entity) => ENTITIES[entity]!),
+      .replaceAll(/<!--[\s\S]*?-->/g, "")
+      .replaceAll(/&(?:lt|gt|amp);/g, (entity) => ENTITIES[entity]!),
   );
 }
 

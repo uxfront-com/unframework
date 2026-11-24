@@ -26,7 +26,7 @@ async function render(
   const modules = Object.fromEntries(
     Object.entries(outputs).map(([path, contents]) => [
       path.replace(/\.svelte$/, ".js"),
-      compile(contents, { filename: path, generate: "server" }).js.code.replace(
+      compile(contents, { filename: path, generate: "server" }).js.code.replaceAll(
         /(from\s+["']\.\/[^"']+)\.svelte(["'])/g,
         "$1.js$2",
       ),

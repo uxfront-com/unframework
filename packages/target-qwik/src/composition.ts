@@ -763,7 +763,7 @@ export function keyType(type: string, names: OutputNames): string {
   for (const [name, signal] of REF_SIGNALS) {
     const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
     if (reference.test(written)) {
-      written = written.replace(reference, names.core(signal, { type: true }));
+      written = written.replaceAll(reference, names.core(signal, { type: true }));
     }
   }
   return written;
@@ -807,7 +807,7 @@ export function textOptionSelected(
     const template = parts
       .map((part) =>
         typeof part === "string"
-          ? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
+          ? part.replaceAll(/[`\\]|\$\{/g, (found) => `\\${found}`)
           : // A nullish value renders nothing, as in Vue's text. TypeScript rejects `?? ""` after
             // an expression it knows never is, or always is (./values.ts).
             textPart(part, context),
@@ -849,5 +849,5 @@ function nullishOperand(code: string): string {
 
 /** An option's value from its text, as the DOM reads it: ASCII whitespace collapsed and stripped. */
 function optionText(text: string): string {
-  return text.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "");
+  return text.replaceAll(/[\t\n\f\r ]+/g, " ").replaceAll(/^ | $/g, "");
 }

@@ -48,7 +48,7 @@ export function textTemplate(parts: ReadonlyArray<TextPart>): AST.TemplateLitera
 }
 
 function templateRaw(cooked: string): string {
-  return cooked.replace(/[\\`]|\$\{|\p{Cc}/gu, (match) =>
+  return cooked.replaceAll(/[\\`]|\$\{|\p{Cc}/gu, (match) =>
     match.length > 1 || match === "\\" || match === "`"
       ? `\\${match}`
       : JSON.stringify(match).slice(1, -1),

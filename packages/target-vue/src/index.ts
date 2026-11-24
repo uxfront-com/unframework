@@ -245,7 +245,7 @@ export default vue;
 function directiveAttribute(name: string): { name: string; text: string } {
   const attribute = `v-${name
     .slice(1)
-    .replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
+    .replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
     .replace(/^-/, "")}`;
   return { name: attribute, text: attribute };
 }

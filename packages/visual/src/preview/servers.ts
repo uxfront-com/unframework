@@ -235,7 +235,7 @@ function previewPlugin(
     transformIndexHtml: {
       order: "post",
       handler: (html, context) =>
-        context.bundle ? html.replace(/\b(src|href)="\/(?!\/)/g, '$1="./') : html,
+        context.bundle ? html.replaceAll(/\b(src|href)="\/(?!\/)/g, '$1="./') : html,
     },
     // A development build names its sources by path, as React's `jsxDEV`, Vue's `__file` and
     // Qwik's QRLs do: relative to the root, or to its repository for a file outside it, in a

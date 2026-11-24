@@ -191,7 +191,7 @@ async function serverRender(name: string, props: Record<string, unknown>): Promi
 /** The Narrowing fixture's server HTML, without Solid's hydration markers and keys. */
 async function narrowingHtml(props: Record<string, unknown>): Promise<string> {
   const html = await serverRender("Narrowing", props);
-  return html.replace(/<!--[^>]*-->/g, "").replace(/ _hk=[^ >]*/g, "");
+  return html.replaceAll(/<!--[^>]*-->/g, "").replaceAll(/ _hk=[^ >]*/g, "");
 }
 
 // test/rewrites.browser.test.ts mounts these fixtures in Chromium; here, they are the
@@ -240,7 +240,7 @@ describe("solid2 output where Solid needs a rewrite (src/render.ts, src/attribut
 
   it("renders every line feed of a <pre> whose text follows expressions on the server", async () => {
     const html = await serverRender("Address", { name: "Ada", street: "12 St James's Square" });
-    const text = /<pre[^>]*>([\s\S]*)<\/pre>/.exec(html)![1]!.replace(/<!--[^>]*-->/g, "");
+    const text = /<pre[^>]*>([\s\S]*)<\/pre>/.exec(html)![1]!.replaceAll(/<!--[^>]*-->/g, "");
     expect(text).toBe("Ada\n12 St James's Square\n-");
   });
 

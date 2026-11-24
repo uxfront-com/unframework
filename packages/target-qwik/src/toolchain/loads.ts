@@ -59,7 +59,7 @@ export function segmentLoads(): Plugin {
       if (!code.includes("import(")) {
         return null;
       }
-      const imports = code.replace(
+      const imports = code.replaceAll(
         QRL_IMPORT,
         (_, call: string, specifier: string) =>
           `${call}((globalThis.${TRACKER} ?? ((load) => load))(() => import(${specifier}))`,
@@ -67,26 +67,29 @@ export function segmentLoads(): Plugin {
       if (imports === code) {
         return null;
       }
-      const instrumented = imports.replace(CORE_IMPORT, (statement, list: string, from: string) => {
-        const names = list
-          .split(",")
-          .map((name) => name.trim())
-          .filter(Boolean);
-        const factories: Array<string> = names.filter(
-          (name) => name === "qrlDEV" || name === "qrl",
-        );
-        if (!factories.length) {
-          return statement;
-        }
-        const renamed = names.map((name) =>
-          factories.includes(name) ? `${name} as __uf_${name}` : name,
-        );
-        const wrappers = factories.map(
-          (name) =>
-            `const ${name} = (...args) => (globalThis.${QRLS} ?? ((qrl) => qrl))(__uf_${name}(...args));`,
-        );
-        return [`import { ${renamed.join(", ")} } from ${from};`, ...wrappers].join("\n");
-      });
+      const instrumented = imports.replaceAll(
+        CORE_IMPORT,
+        (statement, list: string, from: string) => {
+          const names = list
+            .split(",")
+            .map((name) => name.trim())
+            .filter(Boolean);
+          const factories: Array<string> = names.filter(
+            (name) => name === "qrlDEV" || name === "qrl",
+          );
+          if (!factories.length) {
+            return statement;
+          }
+          const renamed = names.map((name) =>
+            factories.includes(name) ? `${name} as __uf_${name}` : name,
+          );
+          const wrappers = factories.map(
+            (name) =>
+              `const ${name} = (...args) => (globalThis.${QRLS} ?? ((qrl) => qrl))(__uf_${name}(...args));`,
+          );
+          return [`import { ${renamed.join(", ")} } from ${from};`, ...wrappers].join("\n");
+        },
+      );
       return { code: instrumented, map: null };
     },
   };

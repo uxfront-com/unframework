@@ -57,7 +57,7 @@ it("renders a slot a list's row tests in every row, once each", async () => {
   });
   // Solid 2 marks where it inserts a branch with comments, which are no content.
   const rows = [...container.querySelectorAll("li")];
-  expect(rows.map((row) => row.innerHTML.replace(/<!--[^>]*-->/g, ""))).toEqual([
+  expect(rows.map((row) => row.innerHTML.replaceAll(/<!--[^>]*-->/g, ""))).toEqual([
     "a<b><span>badge</span></b>",
     "b<b><span>badge</span></b>",
     "c<b><span>badge</span></b>",

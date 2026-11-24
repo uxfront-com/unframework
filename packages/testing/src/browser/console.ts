@@ -79,7 +79,7 @@ export function allowConsole(pattern: RegExp, reason: string): void {
   // Without `g` and `y`: their `test()` carries `lastIndex` from one message to the next, so a
   // second matching message would not match.
   allowances.push({
-    pattern: new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, "")),
+    pattern: new RegExp(pattern.source, pattern.flags.replaceAll(/[gy]/g, "")),
     reason,
   });
 }
@@ -188,7 +188,7 @@ export function formatConsoleArgs(args: ReadonlyArray<unknown>): string {
     return args.map(text).join(" ");
   }
   let index = 0;
-  const head = first.replace(/%[sdifoOc%]/g, (token) => {
+  const head = first.replaceAll(/%[sdifoOc%]/g, (token) => {
     if (token === "%%") {
       return "%";
     }

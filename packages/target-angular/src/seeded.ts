@@ -334,7 +334,7 @@ function union(first: string, second: string): string {
 
 /** Whether two types are written alike, whitespace apart. */
 function same(first: string, second: string): boolean {
-  return first.replace(/\s+/g, "") === second.replace(/\s+/g, "");
+  return first.replaceAll(/\s+/g, "") === second.replaceAll(/\s+/g, "");
 }
 
 /** A type in parentheses where `[]` would bind into it (a union, a function or a conditional). */

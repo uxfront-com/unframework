@@ -466,7 +466,7 @@ function optionValue(option: ElementNode, code: (expression: Expression) => stri
     }
   }
   const text = option.children.map((child) => (child.kind === "Text" ? child.value : "")).join("");
-  return JSON.stringify(text.trim().replace(/\s+/g, " "));
+  return JSON.stringify(text.trim().replaceAll(/\s+/g, " "));
 }
 
 /**

@@ -14,7 +14,7 @@ const fixtures = await load("NullProps");
 
 /** The text a component renders: what its probe read. */
 async function read(name: string, props?: Record<string, unknown>): Promise<string> {
-  return (await renderToString(fixtures[name], { props })).replace(/<[^>]*>/g, "");
+  return (await renderToString(fixtures[name], { props })).replaceAll(/<[^>]*>/g, "");
 }
 
 describe("null props on Qwik's server", () => {

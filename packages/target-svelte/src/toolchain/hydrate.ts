@@ -27,7 +27,7 @@ export const hydrate: HydrateAdapter = async (component, container, html, { prop
   console.warn = (...args: Array<unknown>) => {
     const message = args.map(String).join(" ");
     if (MISMATCH.test(message)) {
-      mismatches.push(message.replace(/%c/g, ""));
+      mismatches.push(message.replaceAll("%c", ""));
     }
     warn(...args);
   };

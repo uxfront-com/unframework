@@ -254,7 +254,7 @@ describe("solid2 renderToString (SSR)", () => {
     const html = await renderToString(ProfileCard, {});
     // A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
     // which, on Solid 2, writes no `style` the key leaves out, and no space after a class.
-    expect(html.replace(/ _hk=[^ >]*/g, "")).toBe(
+    expect(html.replaceAll(/ _hk=[^ >]*/g, "")).toBe(
       [
         '<article class="profile" aria-labelledby="profile-name">',
         '<header class="profile-header">',

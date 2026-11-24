@@ -634,6 +634,6 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
 
 /** A string literal in a bound attribute's expression: single-quoted, its quotes escaped. */
 function angularString(value: string): string {
-  const quoted = value.replace(/\\/g, String.raw`\\`).replace(/'/g, String.raw`\'`);
-  return `'${quoted.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}'`;
+  const quoted = value.replaceAll("\\", String.raw`\\`).replaceAll("'", String.raw`\'`);
+  return `'${quoted.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}'`;
 }

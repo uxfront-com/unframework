@@ -427,7 +427,7 @@ describe("canaries", () => {
     for (const id of gated) {
       const job = workflowJob("ci.yml", id);
       const needs = /^ {4}needs:\s*(\[[^\]]*\]|\S+)/m.exec(job)?.[1] ?? "";
-      expect(needs.replace(/[[\]\s]/g, "").split(","), id).toContain("changes");
+      expect(needs.replaceAll(/[[\]\s]/g, "").split(","), id).toContain("changes");
       const condition = /^ {4}if: \$\{\{ (.*) \}\}$/m.exec(job)?.[1] ?? "";
       expect(condition, id).toMatch(/^!cancelled\(\) && /);
       expect(condition, id).toContain("needs.changes.outputs.tests != 'false'");
@@ -870,7 +870,7 @@ describe("canaries", () => {
     const names = (code: string) =>
       qwikImport
         .exec(code)![0]
-        .replace(/^import \{|\} from[\s\S]*$/g, "")
+        .replaceAll(/^import \{|\} from[\s\S]*$/g, "")
         .split(",")
         .map((name) => name.trim())
         .filter(Boolean);

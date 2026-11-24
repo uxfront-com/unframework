@@ -580,7 +580,7 @@ function readPage(path: string, html: string): Page {
   }
 
   // Count only rendered headings: scripts (the payload), styles and comments can quote markup.
-  const body = html.replace(/<(script|style|template)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi, "");
+  const body = html.replaceAll(/<(script|style|template)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi, "");
   const title = head.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1];
   return {
     path,
@@ -674,7 +674,7 @@ const others = (paths: Array<string>, path: string) =>
   paths.filter((other) => other !== path).join(", ");
 
 function decodeEntities(value: string) {
-  return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (entity, code: string) => {
+  return value.replaceAll(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (entity, code: string) => {
     const named: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
     if (code[0] !== "#") {
       return named[code.toLowerCase()] ?? entity;
@@ -696,7 +696,7 @@ function safeDecode(value: string) {
 }
 
 function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 /** Prints the report: one line per target, its problems under it, then a summary. */

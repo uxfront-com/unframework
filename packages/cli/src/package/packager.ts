@@ -49,7 +49,7 @@ export interface Packager {
  * error (TS2882) in a consumer with `skipLibCheck` off, since nothing declares a sheet's module there.
  */
 export const dropSideEffectImports = (code: string): string =>
-  code.replace(/^import "[^"]+";\n/gm, "");
+  code.replaceAll(/^import "[^"]+";\n/gm, "");
 
 /** {@link dropSideEffectImports} over every declaration a tool wrote to a directory. */
 export async function dropDeclarationSideEffects(directory: string): Promise<void> {
@@ -99,8 +99,8 @@ export const sanitizeBelow =
   (scratch: string): ((name: string) => string) =>
   (name) =>
     name.startsWith(scratch)
-      ? scratch + name.slice(scratch.length).replace(UNSAFE_IN_A_NAME, "_")
-      : name.replace(UNSAFE_IN_A_NAME, "_");
+      ? scratch + name.slice(scratch.length).replaceAll(UNSAFE_IN_A_NAME, "_")
+      : name.replaceAll(UNSAFE_IN_A_NAME, "_");
 
 /** The script a package's manifest names for the first of these binaries it has. */
 export async function binOf(manifest: string, ...names: ReadonlyArray<string>): Promise<string> {

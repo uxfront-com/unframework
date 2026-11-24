@@ -555,7 +555,7 @@ export const CANARIES: ReadonlyArray<Canary> = [
           contents: injectScript(
             file,
             target,
-            `const ufCanaryGuard_${file.path.replace(/\W/g, "_")} = "${MARKER}";`,
+            `const ufCanaryGuard_${file.path.replaceAll(/\W/g, "_")} = "${MARKER}";`,
             "module",
           ),
         })),
@@ -1176,7 +1176,7 @@ function sparing(plugin: CompilerPlugin, cases: ReadonlyArray<string>): Compiler
   }
   const spared = (module: UfModule) =>
     cases.some((id) =>
-      new RegExp(`(?:^|/)${id.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}/[^/]+$`).test(
+      new RegExp(`(?:^|/)${id.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}/[^/]+$`).test(
         module.file,
       ),
     );
@@ -1836,7 +1836,7 @@ function withoutTypedFallthrough(file: OutputFile): string {
  */
 export function anyExportedTypes(contents: string): string {
   const reExported = new Set<string>();
-  contents = contents.replace(
+  contents = contents.replaceAll(
     /\bexport\s+type\s*\{([^}]*)\}\s*from\s*(["'])[^"']*\2;?/g,
     (_, names: string) =>
       names
@@ -1856,7 +1856,7 @@ export function anyExportedTypes(contents: string): string {
   );
   // A type import of a name the module re-exported now declares it twice (TS2440): the
   // declaration replaces the import, and an import left with no name goes.
-  contents = contents.replace(
+  contents = contents.replaceAll(
     /^(\s*)import\s+type\s*\{([^}]*)\}\s*from\s*(["'][^"']*["']);?[ \t]*\n?/gm,
     (whole, indent: string, names: string, from: string) => {
       const kept = names
@@ -2332,5 +2332,5 @@ function insertAfter(contents: string, pattern: RegExp, text: string): string | 
 }
 
 function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+  return text.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }

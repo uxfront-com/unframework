@@ -40,8 +40,8 @@ export const CANARY_PATHS: ReadonlyArray<string> = [
 /** A glob as a regular expression over a whole path. */
 export function globToRegExp(glob: string): RegExp {
   const source = glob
-    .replace(/[.+?^${}()|[\]\\]/g, String.raw`\$&`)
-    .replace(/\*\*\/|\*\*|\*/g, (stars) =>
+    .replaceAll(/[.+?^${}()|[\]\\]/g, String.raw`\$&`)
+    .replaceAll(/\*\*\/|\*\*|\*/g, (stars) =>
       stars === "**/" ? "(?:[^/]+/)*" : stars === "**" ? ".*" : "[^/]*",
     );
   return new RegExp(`^${source}$`);

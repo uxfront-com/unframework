@@ -4689,7 +4689,7 @@ function isMemberOf(text: string, object: string, member: string): boolean {
     return false;
   }
   const between = text.slice(object.length, text.length - member.length);
-  return between.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$)|\s+/g, "") === ".";
+  return between.replaceAll(/\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$)|\s+/g, "") === ".";
 }
 
 /**

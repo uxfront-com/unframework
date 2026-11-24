@@ -1048,7 +1048,7 @@ export function styleKey(property: string, keys: "camel" | "kebab"): string {
   return property
     .replace(/^-ms-/, "ms-")
     .replace(/^-/, "")
-    .replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())
+    .replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())
     .replace(/^(webkit|moz|o)(?=[A-Z])/, (prefix) => prefix[0]!.toUpperCase() + prefix.slice(1));
 }
 
@@ -1178,7 +1178,7 @@ const UNSAFE_JSX_TEXT = /[{}]|[^\S ]|[\u0085​]| {2}|(?:^| )\/[/*]/;
  */
 export function jsxText(value: string): AST.JSXText | AST.JSXExpressionContainer {
   if (!UNSAFE_JSX_TEXT.test(value) && value.trim() !== "") {
-    const raw = value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const raw = value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     return { type: "JSXText", value, raw, start: 0, end: 0 };
   }
   return js.jsxExpressionContainer(js.stringLiteral(value));

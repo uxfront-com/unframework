@@ -162,7 +162,7 @@ describe("angular child-root rule, rendered by Angular", () => {
     for (const [id, { name }] of outputs) {
       const { code } = await transform(id);
       last = join(directory, `${name}.js`);
-      writeFileSync(last, code.replace(/from "\.\/([\w-]+)"/g, 'from "./$1.js"'));
+      writeFileSync(last, code.replaceAll(/from "\.\/([\w-]+)"/g, 'from "./$1.js"'));
     }
     return ((await import(pathToFileURL(last).href)) as { default: unknown }).default;
   }

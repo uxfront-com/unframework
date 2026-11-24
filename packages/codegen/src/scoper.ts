@@ -533,7 +533,7 @@ function problemIn(selector: Selector, global: boolean, top: boolean): Problem |
           ? item.value
           : raw
               .replace(/^(["'])([^]*)\1(?:\/\*[^]*?\*\/)*$/, "$2")
-              .replace(/\\(?:\r\n|[\n\r\f])/g, "");
+              .replaceAll(/\\(?:\r\n|[\n\r\f])/g, "");
       if (
         (name === "class" || name === "style") &&
         (!operator || (value === "" && (operator === "=" || operator === "|=")))

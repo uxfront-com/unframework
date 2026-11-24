@@ -242,7 +242,7 @@ describe("solid renderToString (SSR)", () => {
     const html = await renderToString(ProfileCard, {});
     // A root that spreads what falls through renders through Solid's \`ssrElement\` (ADR-0063,
     // ADR-0118), which writes a space after a class.
-    expect(html.replace(/ data-hk="[^"]*"/g, "")).toBe(
+    expect(html.replaceAll(/ data-hk="[^"]*"/g, "")).toBe(
       [
         '<article class="profile " aria-labelledby="profile-name">',
         '<header class="profile-header">',

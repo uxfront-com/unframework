@@ -80,7 +80,7 @@ export function codeAt(offset: number, code: string, ...targets: Array<CodeTarge
   const at = (start: number, text: string) => span(offset + start, offset + start + text.length);
   const variable = (text: string): number => {
     const pattern = new RegExp(
-      `(?<![.\\w$])${text.replace(/\./g, String.raw`\.`)}(?![\\w$]|\\s*:)`,
+      `(?<![.\\w$])${text.replaceAll(".", String.raw`\.`)}(?![\\w$]|\\s*:)`,
       "g",
     );
     pattern.lastIndex = from;

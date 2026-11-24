@@ -77,7 +77,6 @@ export default defineConfig({
     "unicorn/no-magic-array-flat-depth": "off",
     "unicorn/prefer-array-flat-map": "off",
     "unicorn/prefer-native-coercion-functions": "off",
-    "unicorn/prefer-string-replace-all": "off",
     "unicorn/prefer-structured-clone": "off",
     "unicorn/prefer-top-level-await": "off",
   },
@@ -158,6 +157,8 @@ export default defineConfig({
         "unicorn/numeric-separators-style": "off",
         // Strings in a component reach its outputs as written.
         "unicorn/prefer-string-raw": "off",
+        // Calls in a component reach its outputs as written.
+        "unicorn/prefer-string-replace-all": "off",
       },
     },
   ],

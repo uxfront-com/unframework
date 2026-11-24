@@ -387,7 +387,7 @@ describe("angular output", () => {
       cases.map(async ({ name, file, source }) =>
         (await emitFormatted(lower(source, file, true))).map((output) => ({
           ...output,
-          prefix: `${name.replace(/\//g, "-")}-`,
+          prefix: `${name.replaceAll("/", "-")}-`,
         })),
       ),
     );

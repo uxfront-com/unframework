@@ -1149,7 +1149,7 @@ ${relay}  return (
         ),
       );
       expect(probe.indexOf("const counter_1 =")).toBeLessThan(probe.indexOf("const counter ="));
-      await expectToolchainClean(`calls/same-hook-${how.replace(/\W+/g, "-")}`, project.outputs);
+      await expectToolchainClean(`calls/same-hook-${how.replaceAll(/\W+/g, "-")}`, project.outputs);
       // The server's build hoists every segment into the module (Qwik's Vite plugin runs the
       // optimizer with `hoist` for every server transform), where two calls the optimizer named
       // alike would be declared twice.

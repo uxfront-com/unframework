@@ -419,7 +419,7 @@ function withoutThrownSteps(code: string): string {
       }
     }
     const start = match.index + match[0].length;
-    result = `${result.slice(0, start)}${code.slice(start, end - 1).replace(/[^\n]/g, " ")}${result.slice(end - 1)}`;
+    result = `${result.slice(0, start)}${code.slice(start, end - 1).replaceAll(/[^\n]/g, " ")}${result.slice(end - 1)}`;
   }
   return result;
 }
@@ -460,7 +460,7 @@ export function specTests(source: string): Array<SpecTest> {
     const parity = body.search(/\.expectParity\s*\(/);
     const action = body.search(ACTION);
     const assertion =
-      parity === -1 ? undefined : ASSERTION.exec(body.slice(parity))?.[0].replace(/\s+/g, "");
+      parity === -1 ? undefined : ASSERTION.exec(body.slice(parity))?.[0].replaceAll(/\s+/g, "");
     return {
       name: call[2]!,
       requires: declaredRequires(call[2]!, header),
@@ -513,7 +513,7 @@ function uncomparedSteps(code: string, start: number, body: string): Array<Uncom
     pending = undefined;
   };
   for (const match of body.matchAll(EVENTS)) {
-    const text = match[0].replace(/\s+/g, "");
+    const text = match[0].replaceAll(/\s+/g, "");
     if (text.startsWith(".expectParity")) {
       pending = undefined;
     } else if (text.startsWith(".unmount")) {
@@ -538,8 +538,8 @@ function uncomparedSteps(code: string, start: number, body: string): Array<Uncom
  * URL) is kept: a comment starts a line or follows whitespace.
  */
 function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\/|(?<=^|\s)\/\/[^\n]*/g, (comment) =>
-    comment.replace(/[^\n]/g, " "),
+  return source.replaceAll(/\/\*[\s\S]*?\*\/|(?<=^|\s)\/\/[^\n]*/g, (comment) =>
+    comment.replaceAll(/[^\n]/g, " "),
   );
 }
 

@@ -148,7 +148,7 @@ export const astroDialect: MarkupDialect = {
     (isRoot(position.container) &&
       ((position.first && /^(?:\s|---)/.test(text)) || (position.last && /\s$/.test(text))))
       ? `{${stringLiteral(text)}}`
-      : escapeBraces(escapeHtmlText(text)).replace(/>/g, "&gt;"),
+      : escapeBraces(escapeHtmlText(text)).replaceAll(">", "&gt;"),
   attribute: quotedAttribute,
   voidElement: "self-closing",
   stripsWhitespaceBetweenElements: true,

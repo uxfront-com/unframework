@@ -763,7 +763,7 @@ export function isSelected(name: string, patterns: ReadonlyArray<string> | undef
 function toRegExp(pattern: string): RegExp {
   const parts = pattern
     .split("*")
-    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`));
+    .map((part) => part.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`));
   return new RegExp(`^${parts.join(".*")}$`, "i");
 }
 

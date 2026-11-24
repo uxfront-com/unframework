@@ -65,7 +65,7 @@ export function readMatrix(path: string): MatrixContents {
     scenarios,
     tests,
   };
-  return JSON.parse(stringifyMatrix(contents).replace(RUN_ID, "$1/<run>")) as MatrixContents;
+  return JSON.parse(stringifyMatrix(contents).replaceAll(RUN_ID, "$1/<run>")) as MatrixContents;
 }
 
 /** The sorted keys of several records, L7 before L10. */

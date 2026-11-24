@@ -73,9 +73,9 @@ export function shellData(
 /** JSON safe inside a `<script>` element: no `</script>` or `<!--` can close it. */
 export function scriptJson(value: unknown): string {
   return JSON.stringify(value)
-    .replace(/</g, String.raw`\u003c`)
-    .replace(/\u2028/g, String.raw`\u2028`)
-    .replace(/\u2029/g, String.raw`\u2029`);
+    .replaceAll("<", String.raw`\u003c`)
+    .replaceAll("\u2028", String.raw`\u2028`)
+    .replaceAll("\u2029", String.raw`\u2029`);
 }
 
 /** Where the shell keeps the reader's theme, when they chose one over their system's. */

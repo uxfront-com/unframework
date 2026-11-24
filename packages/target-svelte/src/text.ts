@@ -86,5 +86,5 @@ export function block(open: string, statements: ReadonlyArray<string>, close: st
  * it (UF1002); the target escapes it anyway, as a guard, as Vue's does.
  */
 export function escapeScriptEnd(code: string): string {
-  return code.replace(/<\/(script)/gi, String.raw`<\/$1`);
+  return code.replaceAll(/<\/(script)/gi, String.raw`<\/$1`);
 }

@@ -1345,7 +1345,7 @@ function callbackBase(element: ElementNode, bindings: ReadonlyMap<BindingId, Bin
     label("name") ??
     (ref?.kind === "Ref" ? bindings.get(ref.binding)!.name : undefined) ??
     label("aria-label") ??
-    element.tag.replace(/-([a-z])/g, (_, next: string) => next.toUpperCase())
+    element.tag.replaceAll(/-([a-z])/g, (_, next: string) => next.toUpperCase())
   );
 }
 

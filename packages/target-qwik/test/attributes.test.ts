@@ -167,7 +167,9 @@ async function typecheck(
     },
   });
   // A string value only tests the name: Qwik types many values narrower than HTML does.
-  const contents = blankStrings ? file!.contents.replace(/="x"/g, "={undefined}") : file!.contents;
+  const contents = blankStrings
+    ? file!.contents.replaceAll('="x"', "={undefined}")
+    : file!.contents;
   const formatted = (await formatOutput({ ...file!, contents })).file.contents;
   // Each element sits on its own line, in order, after the `<div>` line.
   const first = formatted.split("\n").findIndex((line) => line.trim().startsWith("<div")) + 2;

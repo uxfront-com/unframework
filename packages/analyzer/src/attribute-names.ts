@@ -104,7 +104,7 @@ export function canonicalName(tag: string, namespace: Namespace, authored: strin
     if (authored === "xlink:href" || authored === "xlinkHref") {
       return "href";
     }
-    const kebab = authored.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    const kebab = authored.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
     if (kebab !== authored && isSvgAttribute(tag, kebab)) {
       return kebab;
     }

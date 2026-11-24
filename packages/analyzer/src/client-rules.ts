@@ -119,7 +119,7 @@ function awaitFix(call: AST.CallExpression, context: ClientRulesContext): Fix | 
       for (const declarator of each.declarations) {
         for (const name of patternNames(declarator.id)) {
           if (
-            new RegExp(`(?<![\\w$])${name.name.replace(/\$/g, String.raw`\$`)}(?![\\w$])`).test(
+            new RegExp(`(?<![\\w$])${name.name.replaceAll("$", String.raw`\$`)}(?![\\w$])`).test(
               outside,
             )
           ) {

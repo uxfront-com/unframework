@@ -173,7 +173,7 @@ const anyValue = ([tag, name]: Pair): string | true =>
 const NUMBER_ONLY = /not assignable to type 'number(?: \| undefined)?'/;
 
 /** Writes every quoted value as `{undefined}`, so only the attribute's name is checked. */
-const namesOnly = (contents: string) => contents.replace(/="x"/g, "={undefined}");
+const namesOnly = (contents: string) => contents.replaceAll('="x"', "={undefined}");
 
 describe("React's attribute types", { timeout: 120_000 }, () => {
   const { html, svg } = vocabulary();
@@ -217,7 +217,7 @@ describe("React's attribute types", { timeout: 120_000 }, () => {
       "div",
       pairs,
       () => "1",
-      (contents) => contents.replace(/=\{1\}/g, '="1"'),
+      (contents) => contents.replaceAll("={1}", '="1"'),
     );
     // Every message says so, as the next test reads them.
     for (const message of strings.values()) {

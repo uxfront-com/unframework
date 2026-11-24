@@ -61,7 +61,7 @@ export function splitHandler(
   ]);
   const empty = fn.expression
     ? body.code.trim() === ""
-    : body.code.replace(/^\{|\}$/g, "").trim() === "";
+    : body.code.replaceAll(/^\{|\}$/g, "").trim() === "";
   // `event.currentTarget` becomes Qwik's element argument: it is no use of the event.
   const targets = body.refs.filter(
     (reference) => reference.kind === "Event" && reference.member === "currentTarget",
@@ -221,7 +221,7 @@ function emptyCalls(
 
 /** Whether code reads a name, as a word that is not a member's property. */
 export function readsName(code: string, name: string): boolean {
-  return new RegExp(`(?<![\\w$.])${name.replace(/\$/g, String.raw`\$`)}(?![\\w$])`).test(code);
+  return new RegExp(`(?<![\\w$.])${name.replaceAll("$", String.raw`\$`)}(?![\\w$])`).test(code);
 }
 
 /**

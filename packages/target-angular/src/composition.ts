@@ -82,7 +82,7 @@ export function selectorOf(name: string): string {
  * selector in camel case and the slot's name (`ufCardTitle`).
  */
 function slotAttribute(name: string, slot: string): string {
-  const component = selectorOf(name).replace(/-(\w)/g, (_, next: string) => next.toUpperCase());
+  const component = selectorOf(name).replaceAll(/-(\w)/g, (_, next: string) => next.toUpperCase());
   return `${component}${pascalCase(slot)}`;
 }
 
@@ -370,6 +370,6 @@ function aliases(props: string): string {
 /** A prop's name as a context key a template variable can read: `data-id` → `dataId`. */
 function contextAlias(key: string): string {
   return key
-    .replace(/[^A-Za-z0-9_$]+(.)?/g, (_, next: string | undefined) => next?.toUpperCase() ?? "")
+    .replaceAll(/[^A-Za-z0-9_$]+(.)?/g, (_, next: string | undefined) => next?.toUpperCase() ?? "")
     .replace(/^(?=\d)/, "_");
 }

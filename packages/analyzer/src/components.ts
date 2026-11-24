@@ -714,7 +714,7 @@ function namespaceOf(api: ComponentApi): Namespace {
  * Vue passes an attribute in kebab case to the prop of its camel case.
  */
 function camelize(name: string): string {
-  return name.replace(/-(\w)/g, (_, letter: string) => letter.toUpperCase());
+  return name.replaceAll(/-(\w)/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /**

@@ -224,7 +224,7 @@ describe("solid child-root rule, rendered by Solid's server", () => {
         ],
       })!;
       path = join(scratch, `${name}.js`);
-      writeFileSync(path, code!.replace(/from "\.\/(\w+)"/g, 'from "./$1.js"'));
+      writeFileSync(path, code!.replaceAll(/from "\.\/(\w+)"/g, 'from "./$1.js"'));
     }
     return ((await import(path)) as { default: Component<Record<string, unknown>> }).default;
   }
@@ -235,7 +235,7 @@ describe("solid child-root rule, rendered by Solid's server", () => {
     props: Record<string, unknown>,
   ) {
     const html = await renderToStringAsync(() => createComponent(component, props));
-    return html.replace(/<!--[^>]*-->/g, "").replace(/ data-hk="[^"]*"/g, "");
+    return html.replaceAll(/<!--[^>]*-->/g, "").replaceAll(/ data-hk="[^"]*"/g, "");
   }
 
   const BUTTON = `export default function Button({ text, note }: { text: string; note?: string }) {

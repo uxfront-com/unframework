@@ -217,7 +217,7 @@ export function solidJsx(
   // two components joined into one module would both declare (the unplugin's `joinModules`).
   const mergedClass = (names: string, context: JsxContext): JsxAttribute => {
     printed.class = true;
-    const own = names.replace(/[`\\]|\$\{/g, (match) => `\\${match}`);
+    const own = names.replaceAll(/[`\\]|\$\{/g, (match) => `\\${match}`);
     const read = `${object!}.class`;
     const merged = `${read} ? \`${own} \${${read}}\` : ${JSON.stringify(names)}`;
     return js.jsxAttribute(

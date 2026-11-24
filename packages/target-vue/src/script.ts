@@ -463,7 +463,7 @@ function keyBlock(
         continue;
       }
       const local = imports.add("vue", name, { type: true });
-      type = type.replace(reference, local);
+      type = type.replaceAll(reference, local);
     }
     return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
   });
@@ -1058,5 +1058,5 @@ function objectDeclaration(
  * could hold it; the target escapes it anyway, as a guard.
  */
 function escapeScriptEnd(code: string): string {
-  return code.replace(/<\/(script)/gi, String.raw`<\/$1`);
+  return code.replaceAll(/<\/(script)/gi, String.raw`<\/$1`);
 }

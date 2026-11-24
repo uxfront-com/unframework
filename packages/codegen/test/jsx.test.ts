@@ -140,7 +140,7 @@ async function formatted(render: ElementNode | FragmentNode, options = {}): Prom
   const value = outcome.file.contents.replace(/^x = /, "").replace(/;\n$/, "");
   // A multi-line JSX value is wrapped in parentheses and indented: unwrap it.
   const wrapped = /^\(\n([^]*)\n\)$/.exec(value);
-  return wrapped ? wrapped[1]!.replace(/^ {2}/gm, "") : value;
+  return wrapped ? wrapped[1]!.replaceAll(/^ {2}/gm, "") : value;
 }
 
 /** Whether printed JSX parses as TSX, with oxc. */

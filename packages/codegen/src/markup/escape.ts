@@ -13,22 +13,22 @@ import type { CodeKind } from "../parse.ts";
  */
 export const escapeHtmlText = (text: string): string =>
   text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/\u00a0/g, "&nbsp;")
-    .replace(/\r/g, "&#13;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll("\u00A0", "&nbsp;")
+    .replaceAll("\r", "&#13;");
 
 /** A double-quoted attribute value, with the same references as text plus `"`. */
 export const escapeHtmlAttribute = (value: string): string =>
   value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/\u00a0/g, "&nbsp;")
-    .replace(/\r/g, "&#13;");
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("\u00A0", "&nbsp;")
+    .replaceAll("\r", "&#13;");
 
 /** Each UTF-16 code unit of the text as a `\uXXXX` escape. */
 export const unicodeEscape = (text: string): string =>
-  text.replace(/[\s\S]/g, (unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  text.replaceAll(/[\s\S]/g, (unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, "0")}`);
 
 /**
  * A string literal for a template expression (`{{ … }}`, `{…}`): JSON escaping, plus `\u`
@@ -38,7 +38,7 @@ export const unicodeEscape = (text: string): string =>
  * JavaScript tools.
  */
 export const stringLiteral = (text: string): string =>
-  JSON.stringify(text).replace(/[&<>{}\u2028\u2029]/g, unicodeEscape);
+  JSON.stringify(text).replaceAll(/[&<>{}\u2028\u2029]/g, unicodeEscape);
 
 /** `name="value"`, escaped as HTML reads it back. */
 export const quotedAttribute = (name: string, value: string): string =>
@@ -46,7 +46,7 @@ export const quotedAttribute = (name: string, value: string): string =>
 
 /** `{` and `}` as references, which Svelte, Astro and Angular would read as syntax. */
 export function escapeBraces(text: string): string {
-  return text.replace(/\{/g, "&#123;").replace(/\}/g, "&#125;");
+  return text.replaceAll("{", "&#123;").replaceAll("}", "&#125;");
 }
 
 /**
@@ -56,12 +56,12 @@ export function escapeBraces(text: string): string {
  * (`a && b`) stays as written: no reference starts there.
  */
 export function escapeReferences(code: string): string {
-  return code.replace(/&(?=[A-Za-z0-9#])/g, "&amp;");
+  return code.replaceAll(/&(?=[A-Za-z0-9#])/g, "&amp;");
 }
 
 /** A name in kebab case as a camel-case style key (`margin-top` → `marginTop`). */
 export function camelCaseProperty(property: string): string {
-  return property.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+  return property.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /** Whether a name can be written as an identifier key or after a dot (ASCII, as the IR's). */
@@ -236,7 +236,7 @@ export function quasiText(
 ): string {
   return escapeCharacters(cooked, (character) =>
     character === "`" ? "\\`" : escape(character),
-  ).replace(/\$(?=\{)/g, String.raw`\$`);
+  ).replaceAll(/\$(?=\{)/g, String.raw`\$`);
 }
 
 const SIMPLE_ESCAPES: Readonly<Record<string, string>> = {
@@ -301,9 +301,9 @@ export function separateClosingBraces(code: string): string {
       raw.includes("}}") || (before.endsWith("}") && raw.startsWith("}"))
         ? quasiText(cooked, escapeClosingBrace)
         : raw,
-    regex: (raw) => raw.replace(/(?<=\})\}/g, String.raw`\}`),
-    comment: (raw) => raw.replace(/\}(?=\})/g, "} "),
-    other: (text) => text.replace(/\}(?=\})/g, "} "),
+    regex: (raw) => raw.replaceAll(/(?<=\})\}/g, String.raw`\}`),
+    comment: (raw) => raw.replaceAll(/\}(?=\})/g, "} "),
+    other: (text) => text.replaceAll(/\}(?=\})/g, "} "),
   });
 }
 
