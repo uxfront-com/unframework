@@ -93,7 +93,7 @@ export function passedType(
   if (tags.length === 1) return `Omit<${attributes}, ${names(declared)}>`;
   const dom = `${importType("DOMAttributes")}<${elementType(tags)}>`;
   // `DOMAttributes` holds the listeners and `children` alone.
-  const listeners = declared.filter((name) => name === "children" || /^on/.test(name));
+  const listeners = declared.filter((name) => name === "children" || name.startsWith("on"));
   return `Omit<${attributes}, ${names(declared)} | keyof ${dom}> & Omit<${dom}, ${names(listeners)}>`;
 }
 

@@ -35,7 +35,9 @@ describeTargets("fallthrough/dynamic-root-passthrough", () => {
     const view = await mount(Page);
     await view.expectParity("initial");
     await expectAttributes(view, "link");
-    await expect.element(view.getByRole("link", { name: "Direct" })).toHaveAttribute("href", "#direct");
+    await expect
+      .element(view.getByRole("link", { name: "Direct" }))
+      .toHaveAttribute("href", "#direct");
   });
 
   it("moves the attributes as the tag changes", { requires: ["interactivity"] }, async () => {

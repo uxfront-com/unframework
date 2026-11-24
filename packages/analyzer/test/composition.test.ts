@@ -805,10 +805,9 @@ function Outer() { return <Child />; }
       const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef<${type}>(); const b = useTemplateRef<${type}>(); return <div><Child ref={a} /><Outer ref={b} /></div>; }`;
       expect(codes(run(source).diagnostics), type).toEqual([]);
     }
-    expect(apiOf(`${DYNAMIC}export function Child2() { return <Outer />; }`, "Outer").refTags).toEqual([
-      "a",
-      "button",
-    ]);
+    expect(
+      apiOf(`${DYNAMIC}export function Child2() { return <Outer />; }`, "Outer").refTags,
+    ).toEqual(["a", "button"]);
   });
 
   it("reports a ref typed as one tag, a supertype or nothing, naming the union (UF3046)", () => {
@@ -823,7 +822,9 @@ function Outer() { return <Child />; }
       const { diagnostics } = run(source);
       expect(problems(source, diagnostics), type).toEqual(["UF3046 ref={a}"]);
       expect(diagnostics[0]!.message).toContain("`HTMLAnchorElement | HTMLButtonElement`");
-      expect(diagnostics[0]!.message).toContain("a supertype such as `HTMLElement` is not accepted");
+      expect(diagnostics[0]!.message).toContain(
+        "a supertype such as `HTMLElement` is not accepted",
+      );
       expect(diagnostics[0]!.help).toBe(
         "Type it as the elements the root may render: `useTemplateRef<HTMLAnchorElement | HTMLButtonElement>()`.",
       );

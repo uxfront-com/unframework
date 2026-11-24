@@ -789,8 +789,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
       .map((name) => JSON.stringify(name))
       .join(" | ");
     const ref =
-      handle ??
-      (passing.refTags === undefined || own ? undefined : elementUnion(passing.refTags));
+      handle ?? (passing.refTags === undefined || own ? undefined : elementUnion(passing.refTags));
     // A `<component is>` root's are what every tag takes, and its listeners take the event of
     // whichever tag renders, so a listener it merges with its own takes that event (ADR-0122).
     const bases = rootComponent

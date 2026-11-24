@@ -46,8 +46,8 @@ import { isElementEvent, listenerName, lowerComponentHandler, lowerRef } from ".
 import { hasContent, lowerChildren, lowerContent, textPlacementProblem } from "./lower.ts";
 import type { Place } from "./lower.ts";
 import { CONTROL_MODEL, lowerModelBinding, namelessModel } from "./models.ts";
-import type { ComponentInfo, LoopVariable, RenderContext } from "./render.ts";
 import { merge, probe } from "./probes.ts";
+import type { ComponentInfo, LoopVariable, RenderContext } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
 import type { TypeTable } from "./types/from-type.ts";
 import { UNKNOWN } from "./types/kinds.ts";
@@ -251,9 +251,7 @@ function dynamicRefProblem(
   info: ComponentInfo,
   render: RenderContext,
 ): boolean {
-  const elements = [
-    ...new Set(tags.map((tag) => ELEMENT_INTERFACES.get(tag) ?? "HTMLElement")),
-  ];
+  const elements = [...new Set(tags.map((tag) => ELEMENT_INTERFACES.get(tag) ?? "HTMLElement"))];
   const type = templateRefType(binding, render);
   const members = type?.type === "TSUnionType" ? type.types : type ? [type] : [];
   const written = members.flatMap((member) =>
@@ -297,7 +295,8 @@ function componentRefProblem(
   };
   if (!api.exposes.length) {
     // A `<component is>` root's ref holds the element that renders (ADR-0122).
-    if (api.refTags !== undefined) return dynamicRefProblem(item, binding, api.refTags, info, render);
+    if (api.refTags !== undefined)
+      return dynamicRefProblem(item, binding, api.refTags, info, render);
     // A ref on a component that exposes nothing holds its root element (ADR-0118), typed as
     // that element's DOM interface.
     const element = api.refTag === undefined ? undefined : ELEMENT_INTERFACES.get(api.refTag);
