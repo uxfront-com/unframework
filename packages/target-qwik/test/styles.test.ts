@@ -105,7 +105,9 @@ export default function Bare() {
 }`,
       ).module,
     );
-    expect(code.match(/\{\.\.\.scopeAttributes\(attributes\)\}/g)).toHaveLength(2);
+    // Each candidate tag spreads what falls through, which holds the scope attributes (ADR-0122).
+    expect(code.match(/\{\.\.\.attributes\}/g)).toHaveLength(2);
+    expect(code).not.toContain("scopeAttributes");
   });
 
   // The unplugin joins a source's outputs into one module (ADR-0053): a prop that takes the

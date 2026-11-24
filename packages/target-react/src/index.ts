@@ -795,8 +795,9 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
     const bases = rootComponent
       ? [`typeof ${target.component}`]
       : passing.tags.map((each) => JSON.stringify(each));
-    const dom = !rootComponent && bases.length > 1 && type("DOMAttributes");
-    const element = dom && elementUnion(passing.tags);
+    // Tags of one interface (`h2`, `h3`) type their listeners alike.
+    const element = elementUnion(passing.tags);
+    const dom = !rootComponent && element.includes(" | ") && type("DOMAttributes");
     const parts = [
       dom
         ? `Omit<${bases.map((base) => `${props}<${base}>`).join(" & ")}, ${omitted} | keyof ${dom}<${element}>>`

@@ -35,6 +35,7 @@ import type {
 } from "@unframework.dev/ir";
 
 import { slotProp, spanKey } from "./composition.ts";
+import { elementInterface } from "./elements.ts";
 import type { ReactListeners } from "./listeners.ts";
 import type { ReactPlan } from "./plan.ts";
 import type { ReactCode } from "./rules.ts";
@@ -109,7 +110,12 @@ export class ReactComposer {
     if ((passing?.refTags ?? refTags) !== undefined && only) this.#refRoot = spanKey(only.span);
     // A `<component is>` root renders one of several elements: a `ref` typed for whichever
     // renders is no ref of each tag's, so it reaches the root through a callback (ADR-0122).
-    this.#dynamicRef = only?.kind === "Dynamic" && this.#refRoot !== undefined;
+    // Tags of one interface (`h2`, `h3`) take one ref type, which reaches the root as it is.
+    const tags = passing?.refTags ?? refTags ?? [];
+    this.#dynamicRef =
+      only?.kind === "Dynamic" &&
+      this.#refRoot !== undefined &&
+      new Set(tags.map(elementInterface)).size > 1;
     // The root takes the consumer's `ref` apart from the rest where the rest is elsewhere, or
     // nothing else passes through (ADR-0118), or the root is a `<component is>` (ADR-0122).
     this.#takesRef = passing ? passing.inner || this.#dynamicRef : refTags !== undefined;
