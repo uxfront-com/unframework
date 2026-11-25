@@ -36,6 +36,12 @@ pnpm install   # also installs the Chromium build the browser tests run in
 pnpm dev
 ```
 
+`.git-blame-ignore-revs` lists commits that only reformat the code. GitHub's blame skips them already. To make `git blame` skip them too, run this once in your clone:
+
+```sh
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 ## Scripts
 
 | Command                        | Does                                                                                     |
