@@ -1,8 +1,10 @@
-// Whether a pull request runs the canaries (ADR-0073) and the test jobs (ADR-0084): CI's `changes`
-// job pipes the PR's changed files here, one per line, and this prints `canaries=<bool>` and
-// `tests=<bool>` for $GITHUB_OUTPUT. It imports Node's builtins alone, because that job installs
-// nothing.
+// Whether a run of ci.yml runs the canaries (ADR-0073, ADR-0123) and the test jobs (ADR-0084): CI's
+// `changes` job pipes the changed files here, one per line, with `--event <name>`, and this prints
+// `canaries=<bool>` and `tests=<bool>` for $GITHUB_OUTPUT. With no `--event`, it prints the answer
+// for every path on CANARY_PATHS, which `pnpm test:full` reads (scripts/test-loop.ts). It imports
+// Node's builtins alone, because that job installs nothing.
 import { readFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 
 /** The paths that can change a canary's answer, as globs: `*` within a segment, `**` across them. */
 export const CANARY_PATHS: ReadonlyArray<string> = [
@@ -37,6 +39,23 @@ export const CANARY_PATHS: ReadonlyArray<string> = [
 	"pnpm-lock.yaml",
 ];
 
+/**
+ * The harness itself: the paths where a pull request still runs the canaries (ADR-0123). Every
+ * other path on CANARY_PATHS runs them in the merge queue, on the commit `main` receives. Each
+ * entry is also on CANARY_PATHS, which canary-paths.unit.test.ts holds.
+ */
+export const HARNESS_PATHS: ReadonlyArray<string> = [
+	".github/workflows/ci.yml",
+	".github/actions/setup/**",
+	"tests/integration/harness/**",
+	"tests/integration/scripts/**",
+	"tests/integration/*.ts",
+	"tests/integration/*.d.ts",
+	"tests/integration/tsconfig*.json",
+	"tests/integration/package.json",
+	"packages/testing/**",
+];
+
 /** A glob as a regular expression over a whole path. */
 export function globToRegExp(glob: string): RegExp {
 	const source = glob
@@ -69,6 +88,7 @@ export const TESTED_DOCS: ReadonlyArray<string> = [
 ];
 
 const CANARY_PATTERNS: ReadonlyArray<RegExp> = CANARY_PATHS.map(globToRegExp);
+const HARNESS_PATTERNS: ReadonlyArray<RegExp> = HARNESS_PATHS.map(globToRegExp);
 const DOCS_PATTERNS: ReadonlyArray<RegExp> = DOCS_PATHS.map(globToRegExp);
 const TESTED_DOCS_PATTERNS: ReadonlyArray<RegExp> = TESTED_DOCS.map(globToRegExp);
 
@@ -84,9 +104,18 @@ function unquote(file: string): string {
  * off, and such a name never skips the canaries (P2).
  */
 export function runsCanaries(files: ReadonlyArray<string>): boolean {
+	return matchesAny(files, CANARY_PATTERNS);
+}
+
+/** Whether any of the files is the harness's own, Markdown left out as for `runsCanaries`. */
+export function runsHarnessCanaries(files: ReadonlyArray<string>): boolean {
+	return matchesAny(files, HARNESS_PATTERNS);
+}
+
+function matchesAny(files: ReadonlyArray<string>, patterns: ReadonlyArray<RegExp>): boolean {
 	return files.some((file) => {
 		const path = unquote(file);
-		return !path.endsWith(".md") && CANARY_PATTERNS.some((pattern) => pattern.test(path));
+		return !path.endsWith(".md") && patterns.some((pattern) => pattern.test(path));
 	});
 }
 
@@ -107,7 +136,40 @@ export function runsTests(files: ReadonlyArray<string>): boolean {
 	);
 }
 
+/** The `changes` job's outputs. */
+export interface Outputs {
+	canaries: boolean;
+	tests: boolean;
+}
+
+/**
+ * The outputs for a run of ci.yml, from its event and changed files (ADR-0123). The merge queue
+ * runs the canaries whenever a path on CANARY_PATHS changed, as ADR-0073 decided for every pull
+ * request, and a pull request runs them only when it changes the harness. A push to `main` runs
+ * every test job and no canary, and `workflow_dispatch` runs them all (ADR-0084). Any other event
+ * throws, so the job fails rather than guess (P2).
+ */
+export function resolveOutputs(event: string, files: ReadonlyArray<string>): Outputs {
+	switch (event) {
+		case "merge_group":
+			return { canaries: runsCanaries(files), tests: runsTests(files) };
+		case "pull_request":
+			return { canaries: runsHarnessCanaries(files), tests: runsTests(files) };
+		case "push":
+			return { canaries: false, tests: true };
+		case "workflow_dispatch":
+			return { canaries: true, tests: true };
+		default:
+			throw new Error(`canary-paths.ts: no rule for the event ${JSON.stringify(event)}.`);
+	}
+}
+
 if (import.meta.main) {
+	const { values } = parseArgs({ options: { event: { type: "string" } } });
 	const files = readFileSync(0, "utf8").split("\n");
-	process.stdout.write(`canaries=${runsCanaries(files)}\ntests=${runsTests(files)}\n`);
+	const outputs: Outputs =
+		values.event === undefined
+			? { canaries: runsCanaries(files), tests: runsTests(files) }
+			: resolveOutputs(values.event, files);
+	process.stdout.write(`canaries=${outputs.canaries}\ntests=${outputs.tests}\n`);
 }

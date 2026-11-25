@@ -1,6 +1,6 @@
 # ADR-0084: Docs-only pull requests skip the tests, and pushes run no canary
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0123
 - **Date:** 2026-11-11
 - **Plan:** §7.7, §7.9; P2; ADR-0073, ADR-0079; amends ADR-0073
 

@@ -1,5 +1,5 @@
-// The rules that decide whether a pull request runs the canaries (ADR-0073) and the test jobs
-// (ADR-0084).
+// The rules that decide whether a run of ci.yml runs the canaries (ADR-0073, ADR-0123) and the
+// test jobs (ADR-0084).
 import { spawnSync } from "node:child_process";
 import { globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -10,7 +10,10 @@ import {
 	CANARY_PATHS,
 	DOCS_PATHS,
 	globToRegExp,
+	HARNESS_PATHS,
+	resolveOutputs,
 	runsCanaries,
+	runsHarnessCanaries,
 	runsTests,
 	TESTED_DOCS,
 } from "../scripts/canary-paths.ts";
@@ -45,8 +48,11 @@ const ON_THE_LIST: ReadonlyArray<readonly [string, string]> = [
 ];
 
 /** What CI's `changes` job does: the names on stdin, the output's line on stdout. */
-function runScript(input: string): { status: number | null; stdout: string } {
-	return spawnSync(process.execPath, [join(ROOT, "scripts", "canary-paths.ts")], {
+function runScript(
+	input: string,
+	args: ReadonlyArray<string> = [],
+): { status: number | null; stdout: string; stderr: string } {
+	return spawnSync(process.execPath, [join(ROOT, "scripts", "canary-paths.ts"), ...args], {
 		input,
 		encoding: "utf8",
 	});
@@ -252,5 +258,100 @@ describe("the canary path filter", () => {
 		expect(runsCanaries([String.raw`"tests/integration/harness/caf\303\251.ts"`])).toBe(true);
 		expect(runsCanaries([String.raw`"tests/integration/caf\303\251.ts"`])).toBe(true);
 		expect(runsCanaries([String.raw`"packages/target-vue/src/caf\303\251.ts"`])).toBe(false);
+	});
+});
+
+describe("the canaries' rule for each event (ADR-0123)", () => {
+	it("lists only the harness's own paths in HARNESS_PATHS, each on CANARY_PATHS too", () => {
+		expect(HARNESS_PATHS.length).toBeGreaterThan(0);
+		for (const glob of HARNESS_PATHS) {
+			expect(CANARY_PATHS, glob).toContain(glob);
+		}
+		expect(HARNESS_PATHS.length).toBeLessThan(CANARY_PATHS.length);
+	});
+
+	it.each<readonly [string, ReadonlyArray<string>, boolean, boolean]>([
+		["a compiler change", ["packages/compiler/src/compile.ts"], true, false],
+		["a corpus spec", ["tests/integration/cases/state/counter/counter.test.ts"], true, false],
+		["the lockfile", ["pnpm-lock.yaml"], true, false],
+		["a target's toolchain", ["packages/target-vue/src/toolchain/index.ts"], true, false],
+		["a harness file", ["tests/integration/harness/cases.ts"], true, true],
+		["the workflow", [".github/workflows/ci.yml"], true, true],
+		["the test kit", ["packages/testing/src/index.ts"], true, true],
+		["a README", ["README.md"], false, false],
+		["Markdown under the harness", ["tests/integration/harness/NOTES.md"], false, false],
+		["a target's emit code", ["packages/target-vue/src/script.ts"], false, false],
+	])(
+		"for %s, runs the canaries in the merge queue: %s, on a pull request: %s",
+		(_, files, queue, pr) => {
+			expect(resolveOutputs("merge_group", files).canaries).toBe(queue);
+			expect(resolveOutputs("pull_request", files).canaries).toBe(pr);
+			expect(runsHarnessCanaries(files)).toBe(pr);
+		},
+	);
+
+	it("resolves the merge queue's canaries as runsCanaries, and a pull request's as runsHarnessCanaries", () => {
+		for (const [, file] of ON_THE_LIST) {
+			expect(resolveOutputs("merge_group", [file]), file).toEqual({
+				canaries: runsCanaries([file]),
+				tests: runsTests([file]),
+			});
+			expect(resolveOutputs("pull_request", [file]), file).toEqual({
+				canaries: runsHarnessCanaries([file]),
+				tests: runsTests([file]),
+			});
+		}
+	});
+
+	it("leaves out the tests for documentation alone, in the merge queue as on a pull request", () => {
+		for (const event of ["merge_group", "pull_request"]) {
+			expect(resolveOutputs(event, PR_147), event).toEqual({ canaries: false, tests: false });
+			expect(resolveOutputs(event, []), event).toEqual({ canaries: false, tests: true });
+		}
+	});
+
+	it("runs every test job and no canary on a push to main, and everything by hand (ADR-0084)", () => {
+		for (const files of [[], ["tests/integration/harness/guard.ts"], PR_147]) {
+			expect(resolveOutputs("push", files)).toEqual({ canaries: false, tests: true });
+			expect(resolveOutputs("workflow_dispatch", files)).toEqual({ canaries: true, tests: true });
+		}
+	});
+
+	it("throws for an event it has no rule for, so the changes job fails (P2)", () => {
+		expect(() => resolveOutputs("pull_request_target", [])).toThrow(/no rule for the event/);
+		expect(() => resolveOutputs("", [])).toThrow(/no rule for the event/);
+	});
+
+	it("prints each event's lines with --event, and fails on an unknown one", () => {
+		const compiler = "packages/compiler/src/compile.ts\n";
+		expect(runScript(compiler, ["--event", "merge_group"])).toMatchObject({
+			status: 0,
+			stdout: "canaries=true\ntests=true\n",
+		});
+		expect(runScript(compiler, ["--event", "pull_request"])).toMatchObject({
+			status: 0,
+			stdout: "canaries=false\ntests=true\n",
+		});
+		expect(runScript("", ["--event", "push"])).toMatchObject({
+			status: 0,
+			stdout: "canaries=false\ntests=true\n",
+		});
+		expect(runScript("", ["--event", "workflow_dispatch"])).toMatchObject({
+			status: 0,
+			stdout: "canaries=true\ntests=true\n",
+		});
+		const unknown = runScript(compiler, ["--event", "schedule"]);
+		expect(unknown.status).not.toBe(0);
+		expect(unknown.stdout).toBe("");
+		expect(unknown.stderr).toContain("no rule for the event");
+	});
+
+	// scripts/test-loop.ts reads this output for `pnpm test:full`, which runs the canaries on any
+	// path on CANARY_PATHS, as the merge queue does.
+	it("prints the CANARY_PATHS answer with no --event", () => {
+		expect(runScript("packages/compiler/src/compile.ts\n")).toMatchObject({
+			status: 0,
+			stdout: "canaries=true\ntests=true\n",
+		});
 	});
 });

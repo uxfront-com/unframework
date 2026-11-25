@@ -160,6 +160,7 @@ export const EXCLUDED_JOBS: Readonly<Record<string, string>> = {
 	parity: "merges CI's artefacts: the corpus step's own summary judges the local run",
 	build: "builds the docs site, not a test: `pnpm --filter web build`",
 	lighthouse: "audits the docs site, not a test: `pnpm --filter web lighthouse` after a build",
+	gate: "Merge gate reads the other jobs' results, not a test: each step here reports its own",
 };
 
 /** 0 when every step passed or was skipped, 1 otherwise. */
