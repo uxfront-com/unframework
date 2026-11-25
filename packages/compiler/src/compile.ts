@@ -1,3 +1,4 @@
+// A comment for a CI measurement. This branch is never merged.
 import {
 	analyze,
 	componentImports,
