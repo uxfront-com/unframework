@@ -245,6 +245,8 @@ interface EffectiveConfig {
   rules: Record<string, RuleSetting>;
   /** Absent without overrides. */
   overrides?: Array<{ files: Array<string>; rules: Record<string, RuleSetting> }>;
+  /** Each plugin's settings, by plugin. */
+  settings?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -267,7 +269,8 @@ function effectiveConfig(target: string): EffectiveConfig {
 /** The `group` of each `no-restricted-imports` pattern: what an output may import. */
 function importGroups(config: EffectiveConfig): unknown {
   const setting = config.rules["no-restricted-imports"];
-  const [options] = Array.isArray(setting) ? setting[1] : [];
+  // oxlint prints a rule's severity and then its options object.
+  const options: unknown = Array.isArray(setting) ? setting[1] : undefined;
   return (options as { patterns?: Array<{ group?: unknown }> } | undefined)?.patterns?.map(
     (pattern) => pattern.group,
   );
@@ -289,7 +292,10 @@ describe("every toolchain's oxlint configuration", () => {
 
   it("holds the same baseline on every target, but for the import allow-list and its exceptions", () => {
     const baselines = TARGETS.map((target) => {
-      const { overrides: _framework, rules, ...rest } = configs.get(target)!;
+      const { overrides: _framework, rules, settings, ...rest } = configs.get(target)!;
+      // A framework's JS-plugin rules read their own settings, like Solid 2's `settings.solid`
+      // (ADR-0102), which belong to the framework's layer as its overrides do.
+      const { solid: _frameworkSettings, ...baselineSettings } = settings ?? {};
       const { "no-restricted-imports": _allowList, ...baselineRules } = rules;
       // An excepted rule is off where it is excepted, and on everywhere else.
       for (const rule of Object.values(BASELINE_EXCEPTIONS).flat()) {
@@ -297,7 +303,7 @@ describe("every toolchain's oxlint configuration", () => {
         expect(baselineRules[rule], `${target}: ${rule}`).toBe(off ? "allow" : "deny");
         delete baselineRules[rule];
       }
-      return { target, baseline: { ...rest, rules: baselineRules } };
+      return { target, baseline: { ...rest, settings: baselineSettings, rules: baselineRules } };
     });
     const [first] = baselines;
     for (const { target, baseline } of baselines) {
