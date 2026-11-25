@@ -4,9 +4,14 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The merge queue runs every job on the commit `main` receives, the canaries included, and
+  # `Merge gate` decides whether it lands (ADR-0123).
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
-# A new push to a PR supersedes the run in progress. Runs on main always finish.
+# A new push to a PR supersedes the run in progress. Runs on main always finish. Each merge group
+# has a ref of its own (gh-readonly-queue/main/…), so one group never cancels another.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -278,18 +283,19 @@ jobs:
           retention-days: 7
 
   # The Linux screenshots and geometry, generated where CI compares them (ADR-0062): `pnpm
-  # test:baselines`' update run, in the same image on a real x64 runner, without Docker. The
-  # baselines that changed or are new go up as the `baselines` artefact, which
-  # `pnpm test:baselines:download` copies into the cases; with none, nothing is uploaded. CI
-  # never commits, and a baseline that differs fails no PR here: `Integration: browser` does.
-  # The job fails only where the update run fails, a DOM, ARIA, trace or server HTML expectation
-  # among them that reads otherwise on Linux. The script installs into its own copy of the
-  # checkout, as the container does, so the job sets up neither pnpm nor Node. The artefact's
-  # directory is under the checkout's .reports, which that copy leaves out.
+  # test:baselines`' update run, in the same image on a real x64 runner, without Docker. It runs on
+  # a pull request and by hand, never on a push to main or in the merge queue, whose runs no one
+  # downloads baselines from (ADR-0123). The baselines that changed or are new go up as the
+  # `baselines` artefact, which `pnpm test:baselines:download` copies into the cases; with none,
+  # nothing is uploaded. CI never commits, and a baseline that differs fails no PR here:
+  # `Integration: browser` does. The job fails only where the update run fails, a DOM, ARIA, trace
+  # or server HTML expectation among them that reads otherwise on Linux. The script installs into
+  # its own copy of the checkout, as the container does, so the job sets up neither pnpm nor Node.
+  # The artefact's directory is under the checkout's .reports, which that copy leaves out.
   baselines:
     name: Baselines
     needs: changes
-    if: ${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.tests != 'false' }}
+    if: ${{ !cancelled() && github.event_name != 'push' && github.event_name != 'merge_group' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -316,16 +322,21 @@ jobs:
           overwrite: true
           retention-days: 7
 
-  # Decides whether the canaries run (ADR-0073) and whether the test jobs run (ADR-0084). On a pull
-  # request it diffs the merge commit against its first parent: the PR's net change against the
-  # current base. --no-renames lists both sides of a move, so moving a file off the list still
-  # counts. `shell: bash` sets pipefail, which a step with no `shell` lacks: a failed diff turns this
-  # job red, and never passes as a skip (P2). A push to main runs every test job and no canary, and
-  # workflow_dispatch runs them all. Each test job needs this one and runs unless `tests` is
-  # 'false', so a failed filter, whose outputs are empty, still runs the tests (fail-open), and a
-  # docs-only pull request skips them. A skipped job counts as passed. The required checks (Format,
-  # lint & types, Build and Lighthouse) never wait for it, since the docs site is built from the
-  # docs. harness/canaries.unit.test.ts holds every new job to the same gate.
+  # Decides whether the canaries run (ADR-0073, ADR-0123) and whether the test jobs run (ADR-0084).
+  # On a pull request it diffs the merge commit against its first parent: the PR's net change
+  # against the current base. In the merge queue it diffs the group's base against its head, the
+  # net change of every PR in the group, after fetching the base, which can sit several commits
+  # below the head. --no-renames lists both sides of a move, so moving a file off the list still
+  # counts. canary-paths.ts --event decides for each event: the merge queue runs the canaries on any
+  # path on CANARY_PATHS, a pull request only on the harness's own (HARNESS_PATHS), a push to main
+  # runs every test job and no canary, and workflow_dispatch runs them all. `shell: bash` sets
+  # errexit and pipefail, which a step with no `shell` lacks: a failed fetch, diff or script, or an
+  # event the script has no rule for, turns this job red and never passes as a skip (P2), and Merge
+  # gate fails on it. Each test job needs this one and runs unless `tests` is 'false', so a failed
+  # filter, whose outputs are empty, still runs the tests (fail-open), and a docs-only pull request
+  # skips them. A skipped job counts as passed. Format, lint & types and Build never wait for it,
+  # since the docs site is built from the docs. harness/canaries.unit.test.ts holds every new job to
+  # the same gate.
   changes:
     name: Changes
     runs-on: ubuntu-latest
@@ -350,15 +361,15 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts >> "$GITHUB_OUTPUT"
-          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "canaries=true" >> "$GITHUB_OUTPUT"
-            echo "tests=true" >> "$GITHUB_OUTPUT"
+            git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts --event "$EVENT_NAME" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" = "merge_group" ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+            git diff --no-renames --name-only "$BASE_SHA" HEAD | node tests/integration/scripts/canary-paths.ts --event "$EVENT_NAME" >> "$GITHUB_OUTPUT"
           else
-            echo "canaries=false" >> "$GITHUB_OUTPUT"
-            echo "tests=true" >> "$GITHUB_OUTPUT"
+            node tests/integration/scripts/canary-paths.ts --event "$EVENT_NAME" < /dev/null >> "$GITHUB_OUTPUT"
           fi
 
   # Each live layer has a canary: a corruption that layer must catch. A job fails if any of its
@@ -369,15 +380,18 @@ jobs:
   # (ADR-0052, ADR-0115).
   # harness/canaries.unit.test.ts holds the matrix to every canary, once or in every shard, at
   # most one browser canary per job, and shards for each whose browser or hydrate specs run.
-  # A pull request runs them only when it changes a path that can change a canary's answer: the
-  # list is CANARY_PATHS in tests/integration/scripts/canary-paths.ts, Markdown left out. A
-  # skipped job counts as passed. A push to main runs none, and workflow_dispatch runs them all
-  # (ADR-0084). Unlike the test jobs, they skip when the filter fails, as ADR-0073 decided. The
+  # The merge queue runs them when its group changes a path that can change a canary's answer: the
+  # list is CANARY_PATHS in tests/integration/scripts/canary-paths.ts, Markdown left out. A pull
+  # request runs them only when it changes the harness itself (HARNESS_PATHS), where a canary is
+  # most likely to fail and where review reads them (ADR-0123). A skipped job counts as passed. A
+  # push to main runs none, and workflow_dispatch runs them all (ADR-0084). Unlike the test jobs,
+  # they skip when the filter fails, as ADR-0073 decided, and Merge gate then fails. The
   # accepted risk (ADR-0073): a change to a compile package the list leaves out (ir, parser,
   # diagnostics, analyzer, type-oracle, type-oracle-tsgo, codegen and the targets apart from their
   # toolchain files, unframework) can change a canary's answer, most plainly a target-specific one
   # such as L13-qwik-handler-throws. The harness's unit tests, which run on every change that isn't
-  # documentation alone, and nightly.yml, which runs every canary, are the backstop.
+  # documentation alone, and nightly.yml, which runs every canary, are the backstop. A merge that
+  # bypasses the queue runs no canary before main, and the nightly is its backstop too.
   canaries:
     name: "Canaries (${{ matrix.canaries }}${{ matrix.shard && format(', shard {0}', matrix.shard) || '' }})"
     needs: changes
@@ -760,3 +774,43 @@ jobs:
           include-hidden-files: true
           overwrite: true
           retention-days: 7
+
+  # The one check the merge queue requires (ADR-0123): a matrix job can't be required by name, so
+  # this job carries every other job's result into the merge rule, the canaries and the parity
+  # matrix among them. It fails unless `changes` succeeded and every other job succeeded or was
+  # skipped, as ADR-0073 and ADR-0084 skip a job, so a failed, cancelled or timed-out job, or a
+  # failed filter whose skipped canaries would read as passed, blocks the merge.
+  # harness/canaries.unit.test.ts holds it to every other job of this file.
+  gate:
+    name: Merge gate
+    needs:
+      [
+        check,
+        unit,
+        integration-compile,
+        integration-toolchains,
+        integration-ssr,
+        integration-browser,
+        integration-hydrate,
+        baselines,
+        changes,
+        canaries,
+        bench,
+        parity,
+        pack,
+        e2e,
+        design-system,
+        build,
+        lighthouse,
+      ]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check every job's result
+        shell: bash
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          jq -e '.changes.result == "success" and all(.[]; .result == "success" or .result == "skipped")' <<< "$NEEDS" > /dev/null

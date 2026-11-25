@@ -74,6 +74,20 @@ function workflowJob(file: string, id: string): string {
 	return job;
 }
 
+/** A workflow's job ids, in order. */
+function workflowJobIds(file: string): Array<string> {
+	const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", file), "utf8");
+	return [...workflow.slice(workflow.indexOf("\njobs:\n")).matchAll(/^ {2}([a-z0-9-]+):\n/gm)].map(
+		([, id]) => id!,
+	);
+}
+
+/** A workflow's `on:` block. */
+function workflowTriggers(file: string): string {
+	const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", file), "utf8");
+	return workflow.slice(workflow.indexOf("\non:\n"), workflow.indexOf("\nconcurrency:"));
+}
+
 /** The lines of a job's `matrix.include`. */
 function matrixInclude(job: string): string {
 	return /^ {8}include:\n((?: {10}.*\n)+)/m.exec(job)?.[1] ?? "";
@@ -386,29 +400,75 @@ describe("canaries", () => {
 		// A step with no `shell` has no pipefail: a failed diff would read as an empty list.
 		expect(changes).toMatch(/^ {8}shell: bash$/m);
 		expect(changes).toContain(
-			'git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts >> "$GITHUB_OUTPUT"\n',
+			'git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts --event "$EVENT_NAME" >> "$GITHUB_OUTPUT"\n',
 		);
 		expect(changes).toContain('if [ "$EVENT_NAME" = "pull_request" ]; then\n');
-		expect(changes).toContain('echo "canaries=true" >> "$GITHUB_OUTPUT"\n');
 		expect(changes).not.toMatch(/\|\| true|continue-on-error/);
 	});
 
-	it("run by hand, and never on a push to main, which runs every test job (ADR-0084)", () => {
+	// ADR-0123: a merge group's base can sit several commits below its head, under the depth the
+	// checkout fetched, so the job fetches it before the diff. The diff is the group's net change.
+	it("diff a merge group's base against its head, after fetching the base (ADR-0123)", () => {
 		const changes = workflowJob("ci.yml", "changes");
-		expect(changes).toContain("tests: ${{ steps.filter.outputs.tests }}\n");
-		// The script prints both lines on a pull request; each other branch writes both itself.
+		expect(changes).toContain("BASE_SHA: ${{ github.event.merge_group.base_sha }}\n");
 		expect(changes).toContain(
 			[
-				'          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then',
-				'            echo "canaries=true" >> "$GITHUB_OUTPUT"',
-				'            echo "tests=true" >> "$GITHUB_OUTPUT"',
+				'          elif [ "$EVENT_NAME" = "merge_group" ]; then',
+				'            git fetch --no-tags --depth=1 origin "$BASE_SHA"',
+				'            git diff --no-renames --name-only "$BASE_SHA" HEAD | node tests/integration/scripts/canary-paths.ts --event "$EVENT_NAME" >> "$GITHUB_OUTPUT"',
+			].join("\n"),
+		);
+		expect(workflowTriggers("ci.yml")).toContain("  merge_group:\n    types: [checks_requested]\n");
+	});
+
+	// The script decides for every event (resolveOutputs, canary-paths.unit.test.ts): a push to
+	// main runs every test job and no canary, workflow_dispatch runs them all (ADR-0084), and an
+	// event it has no rule for fails the job.
+	it("decide every event in the script, so a push to main and a run by hand follow its rules", () => {
+		const changes = workflowJob("ci.yml", "changes");
+		expect(changes).toContain("tests: ${{ steps.filter.outputs.tests }}\n");
+		expect(changes).toContain(
+			[
 				"          else",
-				'            echo "canaries=false" >> "$GITHUB_OUTPUT"',
-				'            echo "tests=true" >> "$GITHUB_OUTPUT"',
+				'            node tests/integration/scripts/canary-paths.ts --event "$EVENT_NAME" < /dev/null >> "$GITHUB_OUTPUT"',
 				"          fi\n",
 			].join("\n"),
 		);
-		expect(changes.match(/canaries=true/g)).toHaveLength(1);
+		expect(changes).not.toMatch(/echo "(?:canaries|tests)=/);
+		expect(changes.match(/canary-paths\.ts --event "\$EVENT_NAME"/g)).toHaveLength(3);
+	});
+
+	// ADR-0123: the merge queue requires this one job, which carries every other job's result. A
+	// job added to ci.yml and left out of its `needs` fails here, so nothing escapes the merge rule.
+	it("fail Merge gate unless `changes` succeeded and every other job passed or was skipped (ADR-0123)", () => {
+		const gate = workflowJob("ci.yml", "gate");
+		expect(gate).toMatch(/^ {4}name: Merge gate$/m);
+		expect(gate).toMatch(/^ {4}if: \$\{\{ !cancelled\(\) \}\}$/m);
+		const needs = /^ {4}needs:\s*\[([^\]]*)\]/m.exec(gate)?.[1] ?? "";
+		const others = workflowJobIds("ci.yml").filter((id) => id !== "gate");
+		expect(needs.replaceAll(/\s/g, "").split(",").filter(Boolean).toSorted()).toEqual(
+			others.toSorted(),
+		);
+		expect(others).toEqual(expect.arrayContaining(["changes", "canaries", "parity"]));
+		expect(gate).toContain("NEEDS: ${{ toJSON(needs) }}\n");
+		expect(gate).toContain(
+			`jq -e '.changes.result == "success" and all(.[]; .result == "success" or .result == "skipped")' <<< "$NEEDS" > /dev/null\n`,
+		);
+		expect(gate).toMatch(/^ {8}shell: bash$/m);
+		expect(gate).not.toMatch(/\|\| true|continue-on-error/);
+	});
+
+	it("run Baselines on a pull request and by hand, never in the merge queue (ADR-0123)", () => {
+		const baselines = workflowJob("ci.yml", "baselines");
+		expect(baselines).toContain(
+			"if: ${{ !cancelled() && github.event_name != 'push' && github.event_name != 'merge_group' && needs.changes.outputs.tests != 'false' }}\n",
+		);
+	});
+
+	it("run the parity matrix in the merge queue, where Merge gate waits for it (ADR-0123)", () => {
+		const parity = workflowJob("ci.yml", "parity");
+		expect(parity).not.toContain("event_name");
+		expect(workflowJob("ci.yml", "canaries")).not.toContain("event_name");
 	});
 
 	// ADR-0084: a docs-only pull request skips the test jobs. Every job but the required checks
@@ -416,11 +476,9 @@ describe("canaries", () => {
 	// ADR-0073's gate, needs `changes` and runs unless it says `tests=false`, so a failed filter,
 	// whose outputs are empty, still runs them. A new job that doesn't opt out fails here.
 	it("leave out the test jobs only when the changes job says so, and run them if it fails (ADR-0084)", () => {
-		const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
-		const ids = [
-			...workflow.slice(workflow.indexOf("\njobs:\n")).matchAll(/^ {2}([a-z0-9-]+):\n/gm),
-		].map(([, id]) => id!);
-		const ungated = new Set(["changes", "check", "build", "lighthouse", "canaries"]);
+		const ids = workflowJobIds("ci.yml");
+		// Merge gate reports on a docs-only pull request too, or the required check stays pending.
+		const ungated = new Set(["changes", "check", "build", "lighthouse", "canaries", "gate"]);
 		expect(ids).toEqual(expect.arrayContaining([...ungated]));
 		const gated = ids.filter((id) => !ungated.has(id));
 		expect(gated.length).toBeGreaterThan(0);
