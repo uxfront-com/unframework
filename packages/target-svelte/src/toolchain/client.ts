@@ -13,29 +13,29 @@ import { reactiveProps } from "./props.svelte.ts";
  * name in lower case, D8), which every rerender keeps.
  */
 export const mount: MountAdapter = async (component, container, { props, on }) => {
-  const listeners = listenerProps(on);
-  const current = reactiveProps({ ...props, ...listeners });
-  const instance = mountComponent(component as Component<Record<string, unknown>>, {
-    target: container,
-    props: current.props,
-  });
-  flushSync();
-  return {
-    settle: () => settled(),
-    async rerender(next) {
-      current.replace({ ...next, ...listeners });
-      flushSync();
-      await settled();
-    },
-    unmount: () => unmount(instance),
-  };
+	const listeners = listenerProps(on);
+	const current = reactiveProps({ ...props, ...listeners });
+	const instance = mountComponent(component as Component<Record<string, unknown>>, {
+		target: container,
+		props: current.props,
+	});
+	flushSync();
+	return {
+		settle: () => settled(),
+		async rerender(next) {
+			current.replace({ ...next, ...listeners });
+			flushSync();
+			await settled();
+		},
+		unmount: () => unmount(instance),
+	};
 };
 
 /** Svelte's callback props for the test's listeners: `onchange` for `change`, `onvaluechange` for `valueChange`. */
 export function listenerProps(
-  on: Readonly<Record<string, MountListener>> = {},
+	on: Readonly<Record<string, MountListener>> = {},
 ): Record<string, MountListener> {
-  return Object.fromEntries(
-    Object.entries(on).map(([name, listener]) => [`on${name.toLowerCase()}`, listener]),
-  );
+	return Object.fromEntries(
+		Object.entries(on).map(([name, listener]) => [`on${name.toLowerCase()}`, listener]),
+	);
 }

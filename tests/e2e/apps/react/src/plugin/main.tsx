@@ -6,11 +6,11 @@ import { Showcase } from "./Showcase.tsx";
 
 const root = document.getElementById("app");
 if (root) {
-  createRoot(root).render(
-    <>
-      <Hello />
-      <Greeting name="React" />
-      <Showcase />
-    </>,
-  );
+	createRoot(root).render(
+		<>
+			<Hello />
+			<Greeting name="React" />
+			<Showcase />
+		</>,
+	);
 }

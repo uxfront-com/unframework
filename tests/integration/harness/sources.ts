@@ -16,10 +16,10 @@ import type { CaseInfo, CaseSource } from "./cases.ts";
 
 /** One source of a case and its compile to every target. */
 export interface SourceCompile {
-  source: CaseSource;
-  /** What was compiled: the input, or the input a source canary corrupted. */
-  text: string;
-  result: Pick<CompileResult, "diagnostics" | "outputs">;
+	source: CaseSource;
+	/** What was compiled: the input, or the input a source canary corrupted. */
+	text: string;
+	result: Pick<CompileResult, "diagnostics" | "outputs">;
 }
 
 /**
@@ -27,20 +27,20 @@ export interface SourceCompile {
  * file a diagnostic points into: a stylesheet beside the sources (UF5002, UF5004, ADR-0063).
  */
 export function sourceTexts(compiles: readonly SourceCompile[]): Map<string, string> {
-  const texts = new Map(compiles.map(({ source, text }) => [source.filename, text]));
-  for (const { source, result } of compiles) {
-    // The cases directory: the source's path, without its file name relative to it.
-    const root = source.source.slice(0, source.source.length - source.filename.length);
-    for (const { file } of result.diagnostics) {
-      if (!texts.has(file)) texts.set(file, readFileSync(join(root, file), "utf8"));
-    }
-  }
-  return texts;
+	const texts = new Map(compiles.map(({ source, text }) => [source.filename, text]));
+	for (const { source, result } of compiles) {
+		// The cases directory: the source's path, without its file name relative to it.
+		const root = source.source.slice(0, source.source.length - source.filename.length);
+		for (const { file } of result.diagnostics) {
+			if (!texts.has(file)) texts.set(file, readFileSync(join(root, file), "utf8"));
+		}
+	}
+	return texts;
 }
 
 /** Every source's diagnostics in one list, sorted by file, then by span. */
 export function caseDiagnostics(compiles: readonly SourceCompile[]): Diagnostic[] {
-  return sortDiagnostics(compiles.flatMap(({ result }) => result.diagnostics));
+	return sortDiagnostics(compiles.flatMap(({ result }) => result.diagnostics));
 }
 
 /**
@@ -52,28 +52,28 @@ export function caseDiagnostics(compiles: readonly SourceCompile[]): Diagnostic[
  * the same contents is one file.
  */
 export function caseOutputs(
-  compiles: readonly SourceCompile[],
-  target: string,
+	compiles: readonly SourceCompile[],
+	target: string,
 ): { files: Map<string, string>; problems: string[] } {
-  const files = new Map<string, string>();
-  const producer = new Map<string, string>();
-  const problems: string[] = [];
-  for (const { source, result } of compiles) {
-    for (const file of result.outputs[target] ?? []) {
-      const key = file.path.toLowerCase();
-      const other = producer.get(key);
-      if (other !== undefined && files.get(file.path) === file.contents) continue;
-      if (other !== undefined) {
-        problems.push(
-          `${other} and ${source.filename} both produce ${target}/${file.path}: the components of a case need names of their own on every target.`,
-        );
-        continue;
-      }
-      producer.set(key, source.filename);
-      files.set(file.path, file.contents);
-    }
-  }
-  return { files, problems };
+	const files = new Map<string, string>();
+	const producer = new Map<string, string>();
+	const problems: string[] = [];
+	for (const { source, result } of compiles) {
+		for (const file of result.outputs[target] ?? []) {
+			const key = file.path.toLowerCase();
+			const other = producer.get(key);
+			if (other !== undefined && files.get(file.path) === file.contents) continue;
+			if (other !== undefined) {
+				problems.push(
+					`${other} and ${source.filename} both produce ${target}/${file.path}: the components of a case need names of their own on every target.`,
+				);
+				continue;
+			}
+			producer.set(key, source.filename);
+			files.set(file.path, file.contents);
+		}
+	}
+	return { files, problems };
 }
 
 /**
@@ -83,19 +83,19 @@ export function caseOutputs(
  * children's types are read through `typeOracle`, the compile's own (ADR-0067).
  */
 export function caseResolver(
-  info: Pick<CaseInfo, "dir">,
-  casesDir: string,
-  typeOracle?: TypeOracle,
+	info: Pick<CaseInfo, "dir">,
+	casesDir: string,
+	typeOracle?: TypeOracle,
 ): Resolver {
-  return createFileResolver({
-    root: casesDir.split(sep).join("/"),
-    readFile: async (path) => {
-      const file = join(path);
-      if (relative(info.dir, dirname(file)) !== "") return undefined;
-      return readFile(file, "utf8").catch(() => undefined);
-    },
-    ...(typeOracle ? { typeOracle } : {}),
-  });
+	return createFileResolver({
+		root: casesDir.split(sep).join("/"),
+		readFile: async (path) => {
+			const file = join(path);
+			if (relative(info.dir, dirname(file)) !== "") return undefined;
+			return readFile(file, "utf8").catch(() => undefined);
+		},
+		...(typeOracle ? { typeOracle } : {}),
+	});
 }
 
 /**
@@ -109,22 +109,22 @@ export function caseResolver(
  * `compile()` is given.
  */
 export function caseOracle(
-  info: Pick<CaseInfo, "dir" | "config">,
-  casesDir: string,
-  compiled: { filename: string; text: string },
+	info: Pick<CaseInfo, "dir" | "config">,
+	casesDir: string,
+	compiled: { filename: string; text: string },
 ): TypeOracle {
-  const root = casesDir.split(sep).join("/");
-  const read = async (path: string) => {
-    if (path === `${root}/${compiled.filename}`) return compiled.text;
-    const file = join(path);
-    if (relative(info.dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
-      return undefined;
-    }
-    return readFile(file, "utf8").catch(() => undefined);
-  };
-  if (info.config.typeOracle === "tsgo") {
-    const directory = relative(casesDir, info.dir).split(sep).join("/");
-    return createTsgoOracle({ root, include: [`${directory}/**/*`], readFile: read });
-  }
-  return createSyntacticOracle({ root, readFile: read });
+	const root = casesDir.split(sep).join("/");
+	const read = async (path: string) => {
+		if (path === `${root}/${compiled.filename}`) return compiled.text;
+		const file = join(path);
+		if (relative(info.dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
+			return undefined;
+		}
+		return readFile(file, "utf8").catch(() => undefined);
+	};
+	if (info.config.typeOracle === "tsgo") {
+		const directory = relative(casesDir, info.dir).split(sep).join("/");
+		return createTsgoOracle({ root, include: [`${directory}/**/*`], readFile: read });
+	}
+	return createSyntacticOracle({ root, readFile: read });
 }

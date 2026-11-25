@@ -5,9 +5,9 @@ import { createRequire } from "node:module";
 
 const cli = createRequire(import.meta.url).resolve("@playwright/test/cli");
 process.argv = [
-  process.execPath,
-  cli,
-  "test",
-  ...process.argv.slice(2).filter((arg) => arg !== "--"),
+	process.execPath,
+	cli,
+	"test",
+	...process.argv.slice(2).filter((arg) => arg !== "--"),
 ];
 await import(cli);

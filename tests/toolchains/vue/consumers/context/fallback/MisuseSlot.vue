@@ -3,8 +3,8 @@ import LocaleProvider from "../../../../../integration/cases/context/fallback/__
 </script>
 
 <template>
-  <LocaleProvider locale="pt">
-    <!-- @uf-expect TS2493 LocaleProvider.slot:default -->
-    <template #default="props">Olá</template>
-  </LocaleProvider>
+	<LocaleProvider locale="pt">
+		<!-- @uf-expect TS2493 LocaleProvider.slot:default -->
+		<template #default="props">Olá</template>
+	</LocaleProvider>
 </template>

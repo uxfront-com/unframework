@@ -4,10 +4,10 @@
  * @layout row column
  */
 export default function Broken() {
-  return (
-    <>
-      <span>One</span>
-      <span>Two</span>
-    </>
-  );
+	return (
+		<>
+			<span>One</span>
+			<span>Two</span>
+		</>
+	);
 }

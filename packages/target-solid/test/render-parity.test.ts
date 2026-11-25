@@ -24,32 +24,32 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Compiles and server-renders the parity component, as the `ssr:solid` project would. */
 async function render(suite: ParitySuite, format: boolean): Promise<string> {
-  const [file] = await emitParity(target, suite, { format });
-  const { code } = transformSync(file!.contents, {
-    filename: join(scratch, file!.path),
-    babelrc: false,
-    configFile: false,
-    presets: [
-      [require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
-      [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
-    ],
-  })!;
-  const path = join(scratch, `${randomUUID()}.js`);
-  writeFileSync(path, code!);
-  return renderToString(((await import(path)) as { default: unknown }).default, {
-    props: parityProps(suite),
-  });
+	const [file] = await emitParity(target, suite, { format });
+	const { code } = transformSync(file!.contents, {
+		filename: join(scratch, file!.path),
+		babelrc: false,
+		configFile: false,
+		presets: [
+			[require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
+			[require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
+		],
+	})!;
+	const path = join(scratch, `${randomUUID()}.js`);
+	writeFileSync(path, code!);
+	return renderToString(((await import(path)) as { default: unknown }).default, {
+		props: parityProps(suite),
+	});
 }
 
 describe.each([true, false])("solid output (formatted: %s), rendered by Solid", (format) => {
-  it.each(paritySuites())(
-    "renders $title exactly as the reference describes them",
-    async (suite) => {
-      const html = await render(suite, format);
-      const rendered = parseHtml(html, { ignoreAttribute: (name) => name === "data-hk" });
-      for (const { name, expected, actual } of compareCases(rendered, suite)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    },
-  );
+	it.each(paritySuites())(
+		"renders $title exactly as the reference describes them",
+		async (suite) => {
+			const html = await render(suite, format);
+			const rendered = parseHtml(html, { ignoreAttribute: (name) => name === "data-hk" });
+			for (const { name, expected, actual } of compareCases(rendered, suite)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		},
+	);
 });

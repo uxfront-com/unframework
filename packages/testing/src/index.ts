@@ -21,16 +21,16 @@ export type { TraceStep } from "./browser/trace.ts";
 export type { ClickOptions, ViewUser } from "./browser/user.ts";
 export { mount, mountScenario } from "./browser/view.ts";
 export type {
-  ComponentMountOptions,
-  NotAFunction,
-  Props,
-  View,
-  ViewOptions,
+	ComponentMountOptions,
+	NotAFunction,
+	Props,
+	View,
+	ViewOptions,
 } from "./browser/view.ts";
 export type { CaseConfig, SsrScenario } from "./harness.ts";
 export type { PixelTolerance } from "./visual-types.ts";
 
 /** `describe()` with the project's target in the title, so reports tell the targets apart. */
 export function describeTargets(name: string, fn: () => void): void {
-  describe(`${name} [${currentTarget()}]`, fn);
+	describe(`${name} [${currentTarget()}]`, fn);
 }

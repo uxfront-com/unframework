@@ -1,4 +1,4 @@
 {
-  "description": "Attributes, a listener and a ref passed to a component whose root is another component reach that component's root element.",
-  "main": "Toolbar.uf.tsx"
+	"description": "Attributes, a listener and a ref passed to a component whose root is another component reach that component's root element.",
+	"main": "Toolbar.uf.tsx"
 }

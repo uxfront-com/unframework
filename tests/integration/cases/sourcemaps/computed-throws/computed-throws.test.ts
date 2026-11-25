@@ -10,16 +10,16 @@ import { expect } from "vitest";
 import InvoiceTotal from "./InvoiceTotal.uf.tsx";
 
 describeTargets("sourcemaps/computed-throws", () => {
-  it("renders the total", async () => {
-    const view = await mountScenario(InvoiceTotal, "two-units");
-    await view.expectParity("two-units");
-    await expect.element(view.getByRole("status")).toHaveTextContent("10 after 0 refunded");
-  });
+	it("renders the total", async () => {
+		const view = await mountScenario(InvoiceTotal, "two-units");
+		await view.expectParity("two-units");
+		await expect.element(view.getByRole("status")).toHaveTextContent("10 after 0 refunded");
+	});
 
-  it("maps the computed's throw to its line", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(InvoiceTotal, "two-units");
-    const button = view.getByRole("button", { name: "Refund" });
-    await expect.element(button).toBeVisible();
-    await view.expectThrown(() => view.user.click(button));
-  });
+	it("maps the computed's throw to its line", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(InvoiceTotal, "two-units");
+		const button = view.getByRole("button", { name: "Refund" });
+		await expect.element(button).toBeVisible();
+		await view.expectThrown(() => view.user.click(button));
+	});
 });

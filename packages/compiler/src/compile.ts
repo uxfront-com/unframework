@@ -1,31 +1,31 @@
 import {
-  analyze,
-  componentImports,
-  directiveValueQueries,
-  shapeQueries,
-  sharedModuleImports,
-  stylesheetImports,
+	analyze,
+	componentImports,
+	directiveValueQueries,
+	shapeQueries,
+	sharedModuleImports,
+	stylesheetImports,
 } from "@unframework.dev/analyzer";
 import type { SharedModule, StylesheetSource } from "@unframework.dev/analyzer";
 import {
-  anchorOutput,
-  createHelperModules,
-  formatOutput,
-  identityMapped,
-  kebabCase,
-  remapFormatted,
-  scopeStylesheet,
+	anchorOutput,
+	createHelperModules,
+	formatOutput,
+	identityMapped,
+	kebabCase,
+	remapFormatted,
+	scopeStylesheet,
 } from "@unframework.dev/codegen";
 import type { EmitContext, FormatOutcome, OutputFile, Target } from "@unframework.dev/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { checkInvariants, validateModule } from "@unframework.dev/ir";
 import type {
-  IrValidationError,
-  ModuleApi,
-  Span,
-  UfComponent,
-  UfModule,
+	IrValidationError,
+	ModuleApi,
+	Span,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 import { parseModule } from "@unframework.dev/parser";
 import type { ParsedModule } from "@unframework.dev/parser";
@@ -35,12 +35,12 @@ import type { DirectiveValueCheck, TypeOracle, TypeShape } from "@unframework.de
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
 import {
-  componentImportNames,
-  directoryOf,
-  joinPath,
-  relativePath,
-  stylesheetSource,
-  takesComponent,
+	componentImportNames,
+	directoryOf,
+	joinPath,
+	relativePath,
+	stylesheetSource,
+	takesComponent,
 } from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
@@ -48,9 +48,9 @@ import type { TargetSelector } from "./targets.ts";
 
 /** What an `output` plugin hook receives besides the files. */
 export interface OutputHookContext {
-  target: string;
-  component: UfComponent;
-  module: UfModule;
+	target: string;
+	component: UfComponent;
+	module: UfModule;
 }
 
 /**
@@ -63,74 +63,74 @@ export interface OutputHookContext {
  * write its own.
  */
 export interface CompilerPlugin {
-  name: string;
-  /** Transforms the IR after analysis. Return a new module, or nothing to keep it. */
-  ir?(module: UfModule): UfModule | void;
-  /** Transforms one component's files for one target, before formatting. */
-  output?(files: readonly OutputFile[], context: OutputHookContext): OutputFile[] | void;
+	name: string;
+	/** Transforms the IR after analysis. Return a new module, or nothing to keep it. */
+	ir?(module: UfModule): UfModule | void;
+	/** Transforms one component's files for one target, before formatting. */
+	output?(files: readonly OutputFile[], context: OutputHookContext): OutputFile[] | void;
 }
 
 /** Options for {@link compile}. */
 export interface CompileOptions {
-  /**
-   * The file name as it appears in the IR and in diagnostics. Pass a project-relative path
-   * with forward slashes for output that does not depend on the machine.
-   */
-  filename: string;
-  /**
-   * The targets to emit, by selector (`solid@2`, ADR-0102) or as target objects. Outputs are keyed
-   * by each target's id, so `solid@2`'s are under `solid2`.
-   */
-  targets: readonly (TargetSelector | Target)[];
-  /** Formats the output with oxfmt. Defaults to `true`; the dev server may skip it. */
-  format?: boolean;
-  /**
-   * Gives each output file a `map` back to the source (ADR-0074): anchored after the `output`
-   * hooks, then carried through formatting. Defaults to `false`. A map that can't follow formatting
-   * is UF9002, and one whose diff passes its cap is UF9003, a warning: either way the file comes
-   * without one.
-   */
-  sourceMap?: boolean;
-  plugins?: readonly CompilerPlugin[];
-  /** Each target's options, by target name. */
-  targetOptions?: Readonly<Record<string, unknown>>;
-  /**
-   * Resolves an imported `.uf.tsx` module to its public API (ADR-0053): `createFileResolver`
-   * reads files. `importer` is `filename`. It is pure and deterministic (P8): it analyses the
-   * child's declarations, never compiles it, so the output depends only on the source, the
-   * options and what it returns. Without it, or when it returns nothing, the import is UF1202;
-   * a resolver that throws is UF9001 as well. Its `stylesheet` reads each stylesheet the source
-   * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005. Its `module`
-   * reads each shared `.ts` module the source imports (ADR-0070): without it, or when it returns
-   * nothing, a value import of one is UF1202.
-   */
-  resolve?: Resolver;
-  /**
-   * The specifier prefixes whose imports pass through to every output as written (plan §4.4,
-   * ADR-0064): a styling engine's virtual modules, which its own bundler plugin resolves. It
-   * defaults to `["virtual:"]`, Vite's convention for a module a plugin registers, and a list
-   * replaces the default (`["virtual:", "styled-system/"]`). A prefix that is empty, relative or
-   * absolute throws (`checkPassThrough`). An import the analyser classifies itself (the
-   * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
-   */
-  passThrough?: readonly string[];
-  /**
-   * The type oracle the props, events, models, slots and injection keys' types are resolved
-   * through (plan §5.5, ADR-0067): `compile()` asks it for each type the analyser reads before it
-   * analyses, as it asks the resolver for each child's API. Its queries name files relative to its
-   * root, so `filename` is relative to that root too. Without it, `compile()` uses an in-process
-   * syntactic oracle over the one source, which reads no file: a type imported from another
-   * module is UF6001. An oracle that throws is UF9001 as well. It reads the source's own file
-   * too, so it must hold the text given here. The caller owns it, and disposes of it.
-   */
-  typeOracle?: TypeOracle;
-  /**
-   * The directory whose output tree holds `_unframework/`, the shared helper modules (ADR-0121),
-   * named as `filename` is: the directory of `filename` or one above it, with forward slashes, and
-   * `""` for the root. It defaults to the directory of `filename`, so one compile's outputs are a
-   * complete tree. Any other directory throws (`checkHelperRoot`).
-   */
-  helperRoot?: string;
+	/**
+	 * The file name as it appears in the IR and in diagnostics. Pass a project-relative path
+	 * with forward slashes for output that does not depend on the machine.
+	 */
+	filename: string;
+	/**
+	 * The targets to emit, by selector (`solid@2`, ADR-0102) or as target objects. Outputs are keyed
+	 * by each target's id, so `solid@2`'s are under `solid2`.
+	 */
+	targets: readonly (TargetSelector | Target)[];
+	/** Formats the output with oxfmt. Defaults to `true`; the dev server may skip it. */
+	format?: boolean;
+	/**
+	 * Gives each output file a `map` back to the source (ADR-0074): anchored after the `output`
+	 * hooks, then carried through formatting. Defaults to `false`. A map that can't follow formatting
+	 * is UF9002, and one whose diff passes its cap is UF9003, a warning: either way the file comes
+	 * without one.
+	 */
+	sourceMap?: boolean;
+	plugins?: readonly CompilerPlugin[];
+	/** Each target's options, by target name. */
+	targetOptions?: Readonly<Record<string, unknown>>;
+	/**
+	 * Resolves an imported `.uf.tsx` module to its public API (ADR-0053): `createFileResolver`
+	 * reads files. `importer` is `filename`. It is pure and deterministic (P8): it analyses the
+	 * child's declarations, never compiles it, so the output depends only on the source, the
+	 * options and what it returns. Without it, or when it returns nothing, the import is UF1202;
+	 * a resolver that throws is UF9001 as well. Its `stylesheet` reads each stylesheet the source
+	 * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005. Its `module`
+	 * reads each shared `.ts` module the source imports (ADR-0070): without it, or when it returns
+	 * nothing, a value import of one is UF1202.
+	 */
+	resolve?: Resolver;
+	/**
+	 * The specifier prefixes whose imports pass through to every output as written (plan §4.4,
+	 * ADR-0064): a styling engine's virtual modules, which its own bundler plugin resolves. It
+	 * defaults to `["virtual:"]`, Vite's convention for a module a plugin registers, and a list
+	 * replaces the default (`["virtual:", "styled-system/"]`). A prefix that is empty, relative or
+	 * absolute throws (`checkPassThrough`). An import the analyser classifies itself (the
+	 * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
+	 */
+	passThrough?: readonly string[];
+	/**
+	 * The type oracle the props, events, models, slots and injection keys' types are resolved
+	 * through (plan §5.5, ADR-0067): `compile()` asks it for each type the analyser reads before it
+	 * analyses, as it asks the resolver for each child's API. Its queries name files relative to its
+	 * root, so `filename` is relative to that root too. Without it, `compile()` uses an in-process
+	 * syntactic oracle over the one source, which reads no file: a type imported from another
+	 * module is UF6001. An oracle that throws is UF9001 as well. It reads the source's own file
+	 * too, so it must hold the text given here. The caller owns it, and disposes of it.
+	 */
+	typeOracle?: TypeOracle;
+	/**
+	 * The directory whose output tree holds `_unframework/`, the shared helper modules (ADR-0121),
+	 * named as `filename` is: the directory of `filename` or one above it, with forward slashes, and
+	 * `""` for the root. It defaults to the directory of `filename`, so one compile's outputs are a
+	 * complete tree. Any other directory throws (`checkHelperRoot`).
+	 */
+	helperRoot?: string;
 }
 
 /**
@@ -139,25 +139,25 @@ export interface CompileOptions {
  * `filename` or one above it, since a helper module there would sit outside the output tree.
  */
 export function checkHelperRoot(filename: string, helperRoot: string | undefined): string {
-  const parts = (path: string) => path.split("/").filter((part) => part && part !== ".");
-  const directory = parts(directoryOf(filename));
-  if (helperRoot === undefined) return "";
-  const root = typeof helperRoot === "string" ? parts(helperRoot) : [];
-  // Named as `filename` is: both absolute, or both relative.
-  const above =
-    typeof helperRoot === "string" &&
-    helperRoot.startsWith("/") === filename.startsWith("/") &&
-    root.length <= directory.length &&
-    root.every((part, index) => part === directory[index]);
-  if (!above) {
-    throw new TypeError(
-      `The helperRoot ${JSON.stringify(helperRoot)} is invalid: the helper modules' directory is the directory of ${filename} or one above it, named as the file is (ADR-0121).`,
-    );
-  }
-  return directory
-    .slice(root.length)
-    .map(() => "..")
-    .join("/");
+	const parts = (path: string) => path.split("/").filter((part) => part && part !== ".");
+	const directory = parts(directoryOf(filename));
+	if (helperRoot === undefined) return "";
+	const root = typeof helperRoot === "string" ? parts(helperRoot) : [];
+	// Named as `filename` is: both absolute, or both relative.
+	const above =
+		typeof helperRoot === "string" &&
+		helperRoot.startsWith("/") === filename.startsWith("/") &&
+		root.length <= directory.length &&
+		root.every((part, index) => part === directory[index]);
+	if (!above) {
+		throw new TypeError(
+			`The helperRoot ${JSON.stringify(helperRoot)} is invalid: the helper modules' directory is the directory of ${filename} or one above it, named as the file is (ADR-0121).`,
+		);
+	}
+	return directory
+		.slice(root.length)
+		.map(() => "..")
+		.join("/");
 }
 
 /**
@@ -166,50 +166,50 @@ export function checkHelperRoot(filename: string, helperRoot: string | undefined
  * own sheet or a child, never a module a plugin registers.
  */
 export function checkPassThrough(prefixes: readonly string[]): void {
-  for (const prefix of prefixes) {
-    if (typeof prefix !== "string" || !prefix || /^(?:[./\\]|[A-Za-z]:)/.test(prefix)) {
-      throw new TypeError(
-        `The passThrough prefix ${JSON.stringify(prefix)} is invalid: a prefix that passes through names a module a bundler plugin registers, such as "virtual:", so it is not empty, relative or absolute.`,
-      );
-    }
-  }
+	for (const prefix of prefixes) {
+		if (typeof prefix !== "string" || !prefix || /^(?:[./\\]|[A-Za-z]:)/.test(prefix)) {
+			throw new TypeError(
+				`The passThrough prefix ${JSON.stringify(prefix)} is invalid: a prefix that passes through names a module a bundler plugin registers, such as "virtual:", so it is not empty, relative or absolute.`,
+			);
+		}
+	}
 }
 
 /** The result of {@link compile}. */
 export interface CompileResult {
-  filename: string;
-  /** The module's IR (frozen), or `undefined` when module-level errors stop compilation. */
-  ir: UfModule | undefined;
-  /** Every diagnostic, sorted. Portability diagnostics carry their target. */
-  diagnostics: Diagnostic[];
-  /**
-   * Each target's files, by target name, in the order of `targets`: each component's, then a copy
-   * of each shared `.ts` module the source reaches, unchanged, at its path relative to the source
-   * (ADR-0070).
-   */
-  outputs: Record<string, OutputFile[]>;
-  /**
-   * The paths in each target's `outputs` that are shared helper modules (ADR-0121), by target
-   * name, sorted: `_unframework/<file>` in the `helperRoot` directory. Each one's text depends only
-   * on the target and the helper, so every compile that emits it writes the same file, and a
-   * caller that writes a tree writes it once. A caller must write them beside the components.
-   */
-  helpers: Record<string, string[]>;
-  /**
-   * The component each output file is written for, by target name, then by the file's path, or
-   * the composable for a `.uf.ts` source's: the unplugin loads a file's components under ids of
-   * their own (ADR-0053). The scoped sheet, `<source>.css`, is no component's module, and is left
-   * out (ADR-0063).
-   */
-  owners: Record<string, Record<string, string>>;
-  /**
-   * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
-   * oracle read or looked for, relative to its root, the shared `.ts` modules the resolver read,
-   * named as `filename` is, the `.uf.ts` modules whose composables the source imports, named so
-   * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is
-   * not installed included. Never an absolute path (P8).
-   */
-  dependencies: string[];
+	filename: string;
+	/** The module's IR (frozen), or `undefined` when module-level errors stop compilation. */
+	ir: UfModule | undefined;
+	/** Every diagnostic, sorted. Portability diagnostics carry their target. */
+	diagnostics: Diagnostic[];
+	/**
+	 * Each target's files, by target name, in the order of `targets`: each component's, then a copy
+	 * of each shared `.ts` module the source reaches, unchanged, at its path relative to the source
+	 * (ADR-0070).
+	 */
+	outputs: Record<string, OutputFile[]>;
+	/**
+	 * The paths in each target's `outputs` that are shared helper modules (ADR-0121), by target
+	 * name, sorted: `_unframework/<file>` in the `helperRoot` directory. Each one's text depends only
+	 * on the target and the helper, so every compile that emits it writes the same file, and a
+	 * caller that writes a tree writes it once. A caller must write them beside the components.
+	 */
+	helpers: Record<string, string[]>;
+	/**
+	 * The component each output file is written for, by target name, then by the file's path, or
+	 * the composable for a `.uf.ts` source's: the unplugin loads a file's components under ids of
+	 * their own (ADR-0053). The scoped sheet, `<source>.css`, is no component's module, and is left
+	 * out (ADR-0063).
+	 */
+	owners: Record<string, Record<string, string>>;
+	/**
+	 * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
+	 * oracle read or looked for, relative to its root, the shared `.ts` modules the resolver read,
+	 * named as `filename` is, the `.uf.ts` modules whose composables the source imports, named so
+	 * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is
+	 * not installed included. Never an absolute path (P8).
+	 */
+	dependencies: string[];
 }
 
 /**
@@ -222,244 +222,244 @@ export interface CompileResult {
  * component or target never stops the others.
  */
 export async function compile(source: string, options: CompileOptions): Promise<CompileResult> {
-  const file = options.filename;
-  if (options.passThrough) checkPassThrough(options.passThrough);
-  const helperBase = checkHelperRoot(file, options.helperRoot);
-  const diagnostics: Diagnostic[] = [];
-  const targets = options.targets.map(resolveTarget);
-  const outputs: Record<string, OutputFile[]> = {};
-  const owners: Record<string, Record<string, string>> = {};
-  const helpers: Record<string, string[]> = {};
-  for (const target of targets) {
-    if (Object.hasOwn(outputs, target.name)) {
-      throw new TypeError(`Two targets are named "${target.name}".`);
-    }
-    outputs[target.name] = [];
-    owners[target.name] = {};
-    helpers[target.name] = [];
-  }
+	const file = options.filename;
+	if (options.passThrough) checkPassThrough(options.passThrough);
+	const helperBase = checkHelperRoot(file, options.helperRoot);
+	const diagnostics: Diagnostic[] = [];
+	const targets = options.targets.map(resolveTarget);
+	const outputs: Record<string, OutputFile[]> = {};
+	const owners: Record<string, Record<string, string>> = {};
+	const helpers: Record<string, string[]> = {};
+	for (const target of targets) {
+		if (Object.hasOwn(outputs, target.name)) {
+			throw new TypeError(`Two targets are named "${target.name}".`);
+		}
+		outputs[target.name] = [];
+		owners[target.name] = {};
+		helpers[target.name] = [];
+	}
 
-  // The analyser's module, frozen: every plugin's module is compared with it, whatever the
-  // plugins before it returned.
-  let analysed: UfModule | undefined;
-  /** Each stylesheet's file, by its specifier, as the resolver named it. */
-  let sheetFiles = new Map<string, string>();
-  const dependencies = new Set<string>();
-  /**
-   * Each shared `.ts` module's text, by its path relative to the source, with the specifier of
-   * the source's import that first reaches it (ADR-0070).
-   */
-  const copies = new Map<string, Copy>();
-  try {
-    const parsed = parseModule(file, source);
-    // Each type the analyser reads, resolved before it analyses: the analyser is synchronous,
-    // and the oracle is not (ADR-0067).
-    const oracle = options.typeOracle ?? sourceOracle(file, source);
-    const shapes = new Map<string, TypeShape>();
-    for (const query of shapeQueries(parsed)) {
-      try {
-        const shape = await oracle.resolveShape(query);
-        shapes.set(`${query.span.start}:${query.span.end}`, shape);
-        for (const dependency of shape.dependencies) dependencies.add(dependency);
-      } catch (error) {
-        const type = source.slice(query.span.start, query.span.end);
-        diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
-      }
-    }
-    // Each directive's value, checked against its type argument by an oracle with a checker, in
-    // one request for the module (ADR-0109).
-    const directiveValues = new Map<string, DirectiveValueCheck>();
-    const valueQueries = oracle.checkDirectiveValues ? directiveValueQueries(parsed) : [];
-    if (valueQueries.length) {
-      try {
-        const answer = await oracle.checkDirectiveValues!(file, source, valueQueries);
-        valueQueries.forEach((query, index) => {
-          const check = answer.checks[index];
-          if (check) directiveValues.set(`${query.value.start}:${query.value.end}`, check);
-        });
-        for (const dependency of answer.dependencies) dependencies.add(dependency);
-      } catch (error) {
-        diagnostics.push(internal(file, error, "The type oracle failed on the directives' values"));
-      }
-    }
-    const imports = new Map<string, ModuleApi | undefined>();
-    for (const specifier of options.resolve ? componentImports(parsed) : []) {
-      // A caller's output depends on its composables' APIs, which the project graph watches
-      // (ADR-0069, ADR-0071): a module that is missing too, so creating it recompiles the caller.
-      const composable = COMPOSABLE_SPECIFIER.test(specifier)
-        ? joinPath(directoryOf(file), specifier)
-        : undefined;
-      if (composable !== undefined) dependencies.add(composable);
-      try {
-        const api = await options.resolve!({ specifier, importer: file });
-        imports.set(specifier, api);
-      } catch (error) {
-        imports.set(specifier, undefined);
-        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
-      }
-    }
-    const stylesheets = new Map<string, StylesheetSource | undefined>();
-    for (const specifier of stylesheetImports(parsed)) {
-      try {
-        const sheet = await options.resolve?.stylesheet?.({ specifier, importer: file });
-        stylesheets.set(specifier, sheet && stylesheetSource(sheet.file, sheet.source));
-      } catch (error) {
-        stylesheets.set(specifier, undefined);
-        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
-      }
-    }
-    sheetFiles = new Map(
-      [...stylesheets].flatMap(([specifier, sheet]) => (sheet ? [[specifier, sheet.file]] : [])),
-    );
-    const modules = new Map<string, SharedModule | undefined>();
-    const fromSource = (path: string) => relativePath(directoryOf(file), path);
-    for (const specifier of options.resolve?.module ? sharedModuleImports(parsed) : []) {
-      try {
-        const resolved = await options.resolve!.module!({ specifier, importer: file });
-        if (!resolved?.files.length) {
-          modules.set(specifier, undefined);
-          continue;
-        }
-        const { framework, unresolved } = resolved;
-        modules.set(specifier, {
-          file: fromSource(resolved.files[0]!.file),
-          ...(framework ? { framework: { ...framework, file: fromSource(framework.file) } } : {}),
-          ...(unresolved
-            ? { unresolved: { ...unresolved, file: fromSource(unresolved.file) } }
-            : {}),
-        });
-        // The first import or re-export that names the module: a type re-export alone reaches it
-        // too.
-        const at = relativeImports(parsed).find((entry) => entry.specifier === specifier)!.span;
-        for (const { file: path, source: text } of resolved.files) {
-          dependencies.add(path);
-          if (!copies.has(fromSource(path))) {
-            copies.set(fromSource(path), {
-              contents: text,
-              span: at,
-            });
-          }
-        }
-      } catch (error) {
-        modules.set(specifier, undefined);
-        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
-      }
-    }
-    // A component edge that closes a cycle of component edges (UF1205), which the resolver's
-    // project finds, not the analyser: components that import each other to render cannot each
-    // load before the others, on Angular (ADR-0053, ADR-0071). A key, a type or another value
-    // imported back closes none, so the context pattern stays valid (UF2033).
-    const cycles: Diagnostic[] = [];
-    const edges = componentImportNames(parsed).filter(({ specifier, names }) =>
-      takesComponent(imports.get(specifier), names),
-    );
-    for (const { specifier, span } of options.resolve?.cycle ? edges : []) {
-      try {
-        const files = await options.resolve!.cycle!({ specifier, importer: file });
-        if (files) cycles.push(importCycle(file, specifier, span, files));
-      } catch (error) {
-        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
-      }
-    }
-    const analysis = analyze(parsed, {
-      imports,
-      modules,
-      stylesheets,
-      shapes: (span) => shapes.get(`${span.start}:${span.end}`),
-      ...(directiveValues.size
-        ? { directiveValues: (span: Span) => directiveValues.get(`${span.start}:${span.end}`) }
-        : {}),
-      ...(options.passThrough ? { passThrough: options.passThrough } : {}),
-    });
-    diagnostics.push(...analysis.diagnostics);
-    // The analyser keeps the IR's invariants by construction; a module that breaks one is a
-    // compiler bug, and no target may emit from it.
-    const broken = analysis.module && checkInvariants(analysis.module);
-    if (broken?.length) {
-      diagnostics.push(internal(file, describeProblems(broken), "The analyser lowered invalid IR"));
-    } else {
-      analysed = analysis.module && deepFreeze(analysis.module);
-    }
-    // A copy named like a component's output, or a cycle, withholds the module, as an analyser
-    // error does.
-    const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
-    diagnostics.push(...collisions, ...cycles);
-    if (collisions.length || cycles.length) analysed = undefined;
-  } catch (error) {
-    diagnostics.push(internal(file, error, "The analyser failed"));
-  }
+	// The analyser's module, frozen: every plugin's module is compared with it, whatever the
+	// plugins before it returned.
+	let analysed: UfModule | undefined;
+	/** Each stylesheet's file, by its specifier, as the resolver named it. */
+	let sheetFiles = new Map<string, string>();
+	const dependencies = new Set<string>();
+	/**
+	 * Each shared `.ts` module's text, by its path relative to the source, with the specifier of
+	 * the source's import that first reaches it (ADR-0070).
+	 */
+	const copies = new Map<string, Copy>();
+	try {
+		const parsed = parseModule(file, source);
+		// Each type the analyser reads, resolved before it analyses: the analyser is synchronous,
+		// and the oracle is not (ADR-0067).
+		const oracle = options.typeOracle ?? sourceOracle(file, source);
+		const shapes = new Map<string, TypeShape>();
+		for (const query of shapeQueries(parsed)) {
+			try {
+				const shape = await oracle.resolveShape(query);
+				shapes.set(`${query.span.start}:${query.span.end}`, shape);
+				for (const dependency of shape.dependencies) dependencies.add(dependency);
+			} catch (error) {
+				const type = source.slice(query.span.start, query.span.end);
+				diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
+			}
+		}
+		// Each directive's value, checked against its type argument by an oracle with a checker, in
+		// one request for the module (ADR-0109).
+		const directiveValues = new Map<string, DirectiveValueCheck>();
+		const valueQueries = oracle.checkDirectiveValues ? directiveValueQueries(parsed) : [];
+		if (valueQueries.length) {
+			try {
+				const answer = await oracle.checkDirectiveValues!(file, source, valueQueries);
+				valueQueries.forEach((query, index) => {
+					const check = answer.checks[index];
+					if (check) directiveValues.set(`${query.value.start}:${query.value.end}`, check);
+				});
+				for (const dependency of answer.dependencies) dependencies.add(dependency);
+			} catch (error) {
+				diagnostics.push(internal(file, error, "The type oracle failed on the directives' values"));
+			}
+		}
+		const imports = new Map<string, ModuleApi | undefined>();
+		for (const specifier of options.resolve ? componentImports(parsed) : []) {
+			// A caller's output depends on its composables' APIs, which the project graph watches
+			// (ADR-0069, ADR-0071): a module that is missing too, so creating it recompiles the caller.
+			const composable = COMPOSABLE_SPECIFIER.test(specifier)
+				? joinPath(directoryOf(file), specifier)
+				: undefined;
+			if (composable !== undefined) dependencies.add(composable);
+			try {
+				const api = await options.resolve!({ specifier, importer: file });
+				imports.set(specifier, api);
+			} catch (error) {
+				imports.set(specifier, undefined);
+				diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+			}
+		}
+		const stylesheets = new Map<string, StylesheetSource | undefined>();
+		for (const specifier of stylesheetImports(parsed)) {
+			try {
+				const sheet = await options.resolve?.stylesheet?.({ specifier, importer: file });
+				stylesheets.set(specifier, sheet && stylesheetSource(sheet.file, sheet.source));
+			} catch (error) {
+				stylesheets.set(specifier, undefined);
+				diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+			}
+		}
+		sheetFiles = new Map(
+			[...stylesheets].flatMap(([specifier, sheet]) => (sheet ? [[specifier, sheet.file]] : [])),
+		);
+		const modules = new Map<string, SharedModule | undefined>();
+		const fromSource = (path: string) => relativePath(directoryOf(file), path);
+		for (const specifier of options.resolve?.module ? sharedModuleImports(parsed) : []) {
+			try {
+				const resolved = await options.resolve!.module!({ specifier, importer: file });
+				if (!resolved?.files.length) {
+					modules.set(specifier, undefined);
+					continue;
+				}
+				const { framework, unresolved } = resolved;
+				modules.set(specifier, {
+					file: fromSource(resolved.files[0]!.file),
+					...(framework ? { framework: { ...framework, file: fromSource(framework.file) } } : {}),
+					...(unresolved
+						? { unresolved: { ...unresolved, file: fromSource(unresolved.file) } }
+						: {}),
+				});
+				// The first import or re-export that names the module: a type re-export alone reaches it
+				// too.
+				const at = relativeImports(parsed).find((entry) => entry.specifier === specifier)!.span;
+				for (const { file: path, source: text } of resolved.files) {
+					dependencies.add(path);
+					if (!copies.has(fromSource(path))) {
+						copies.set(fromSource(path), {
+							contents: text,
+							span: at,
+						});
+					}
+				}
+			} catch (error) {
+				modules.set(specifier, undefined);
+				diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+			}
+		}
+		// A component edge that closes a cycle of component edges (UF1205), which the resolver's
+		// project finds, not the analyser: components that import each other to render cannot each
+		// load before the others, on Angular (ADR-0053, ADR-0071). A key, a type or another value
+		// imported back closes none, so the context pattern stays valid (UF2033).
+		const cycles: Diagnostic[] = [];
+		const edges = componentImportNames(parsed).filter(({ specifier, names }) =>
+			takesComponent(imports.get(specifier), names),
+		);
+		for (const { specifier, span } of options.resolve?.cycle ? edges : []) {
+			try {
+				const files = await options.resolve!.cycle!({ specifier, importer: file });
+				if (files) cycles.push(importCycle(file, specifier, span, files));
+			} catch (error) {
+				diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+			}
+		}
+		const analysis = analyze(parsed, {
+			imports,
+			modules,
+			stylesheets,
+			shapes: (span) => shapes.get(`${span.start}:${span.end}`),
+			...(directiveValues.size
+				? { directiveValues: (span: Span) => directiveValues.get(`${span.start}:${span.end}`) }
+				: {}),
+			...(options.passThrough ? { passThrough: options.passThrough } : {}),
+		});
+		diagnostics.push(...analysis.diagnostics);
+		// The analyser keeps the IR's invariants by construction; a module that breaks one is a
+		// compiler bug, and no target may emit from it.
+		const broken = analysis.module && checkInvariants(analysis.module);
+		if (broken?.length) {
+			diagnostics.push(internal(file, describeProblems(broken), "The analyser lowered invalid IR"));
+		} else {
+			analysed = analysis.module && deepFreeze(analysis.module);
+		}
+		// A copy named like a component's output, or a cycle, withholds the module, as an analyser
+		// error does.
+		const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
+		diagnostics.push(...collisions, ...cycles);
+		if (collisions.length || cycles.length) analysed = undefined;
+	} catch (error) {
+		diagnostics.push(internal(file, error, "The analyser failed"));
+	}
 
-  let module = analysed;
-  for (const plugin of options.plugins ?? []) {
-    if (!module || !analysed || !plugin.ir) continue;
-    try {
-      const result = plugin.ir(module);
-      if (result === undefined) continue;
-      const problems = validateModule(result);
-      // Only a module of the schema's shape can be walked for its invariants.
-      if (!problems.length) {
-        problems.push(...checkInvariants(result), ...pluginIrProblems(result, analysed, source));
-      }
-      if (problems.length) {
-        const what = `returned invalid IR: ${describeProblems(problems)}`;
-        diagnostics.push(pluginFailed(file, plugin.name, "ir", what));
-        continue;
-      }
-      module = deepFreeze(result);
-    } catch (error) {
-      diagnostics.push(pluginFailed(file, plugin.name, "ir", `threw: ${messageOf(error)}`));
-    }
-  }
+	let module = analysed;
+	for (const plugin of options.plugins ?? []) {
+		if (!module || !analysed || !plugin.ir) continue;
+		try {
+			const result = plugin.ir(module);
+			if (result === undefined) continue;
+			const problems = validateModule(result);
+			// Only a module of the schema's shape can be walked for its invariants.
+			if (!problems.length) {
+				problems.push(...checkInvariants(result), ...pluginIrProblems(result, analysed, source));
+			}
+			if (problems.length) {
+				const what = `returned invalid IR: ${describeProblems(problems)}`;
+				diagnostics.push(pluginFailed(file, plugin.name, "ir", what));
+				continue;
+			}
+			module = deepFreeze(result);
+		} catch (error) {
+			diagnostics.push(pluginFailed(file, plugin.name, "ir", `threw: ${messageOf(error)}`));
+		}
+	}
 
-  // The scoper runs once per sheet, on the module the targets emit from: after the plugins' `ir`
-  // hooks, which may keep or drop the analyser's sheets, never change them (ADR-0063). A
-  // selector it rejects (UF5004) withholds the module from every target, as an analyser error
-  // does.
-  /** Each styled component's scoped sheets, joined in import order, by its name. */
-  const sheets = new Map<string, string>();
-  for (const component of module?.components ?? []) {
-    let joined = "";
-    for (const sheet of component.styles ?? []) {
-      const sheetFile = sheetFiles.get(sheet.specifier) ?? sheet.specifier;
-      const scoped = scopeStylesheet(sheetFile, sheet.source, component.scopeId!);
-      diagnostics.push(...scoped.diagnostics);
-      if (scoped.diagnostics.length) module = undefined;
-      joined += joined && !joined.endsWith("\n") ? `\n${scoped.code}` : scoped.code;
-    }
-    if (component.styles?.length) sheets.set(component.name, joined);
-  }
+	// The scoper runs once per sheet, on the module the targets emit from: after the plugins' `ir`
+	// hooks, which may keep or drop the analyser's sheets, never change them (ADR-0063). A
+	// selector it rejects (UF5004) withholds the module from every target, as an analyser error
+	// does.
+	/** Each styled component's scoped sheets, joined in import order, by its name. */
+	const sheets = new Map<string, string>();
+	for (const component of module?.components ?? []) {
+		let joined = "";
+		for (const sheet of component.styles ?? []) {
+			const sheetFile = sheetFiles.get(sheet.specifier) ?? sheet.specifier;
+			const scoped = scopeStylesheet(sheetFile, sheet.source, component.scopeId!);
+			diagnostics.push(...scoped.diagnostics);
+			if (scoped.diagnostics.length) module = undefined;
+			joined += joined && !joined.endsWith("\n") ? `\n${scoped.code}` : scoped.code;
+		}
+		if (component.styles?.length) sheets.set(component.name, joined);
+	}
 
-  if (module) {
-    for (const target of targets) {
-      try {
-        const emitted = await emitTarget(
-          target,
-          module,
-          source,
-          options,
-          diagnostics,
-          sheets,
-          copies,
-          helperBase,
-        );
-        outputs[target.name] = emitted.files;
-        owners[target.name] = emitted.owners;
-        helpers[target.name] = emitted.helpers;
-      } catch (error) {
-        diagnostics.push(internal(file, error, `The ${target.name} target failed`, target.name));
-      }
-    }
-  }
+	if (module) {
+		for (const target of targets) {
+			try {
+				const emitted = await emitTarget(
+					target,
+					module,
+					source,
+					options,
+					diagnostics,
+					sheets,
+					copies,
+					helperBase,
+				);
+				outputs[target.name] = emitted.files;
+				owners[target.name] = emitted.owners;
+				helpers[target.name] = emitted.helpers;
+			} catch (error) {
+				diagnostics.push(internal(file, error, `The ${target.name} target failed`, target.name));
+			}
+		}
+	}
 
-  return {
-    filename: file,
-    ir: module,
-    diagnostics: sortDiagnostics(diagnostics),
-    outputs,
-    helpers,
-    owners,
-    dependencies: [...dependencies].toSorted(),
-  };
+	return {
+		filename: file,
+		ir: module,
+		diagnostics: sortDiagnostics(diagnostics),
+		outputs,
+		helpers,
+		owners,
+		dependencies: [...dependencies].toSorted(),
+	};
 }
 
 /** An import of a `.uf.ts` module's composables (ADR-0069). */
@@ -471,10 +471,10 @@ const COMPOSABLE_SPECIFIER = /\.uf\.ts$/;
  * the module's own types only.
  */
 function sourceOracle(file: string, source: string): TypeOracle {
-  return createSyntacticOracle({
-    root: "",
-    readFile: async (path) => (path === `/${file}` ? source : undefined),
-  });
+	return createSyntacticOracle({
+		root: "",
+		readFile: async (path) => (path === `/${file}` ? source : undefined),
+	});
 }
 
 /**
@@ -486,35 +486,35 @@ function sourceOracle(file: string, source: string): TypeOracle {
  * compiles to each.
  */
 function copyCollisions(
-  module: UfModule,
-  copies: ReadonlyMap<string, Copy>,
-  file: string,
+	module: UfModule,
+	copies: ReadonlyMap<string, Copy>,
+	file: string,
 ): Diagnostic[] {
-  const names = new Map<string, string>();
-  const add = (directory: string, name: string) => {
-    for (const stem of [name, kebabCase(name)]) {
-      names.set(`${directory}${stem}`.toLowerCase(), name);
-    }
-  };
-  for (const component of module.components) add("", component.name);
-  for (const entry of module.imports ?? []) {
-    const slash = entry.file.lastIndexOf("/");
-    for (const component of entry.api.components) {
-      add(slash === -1 ? "" : entry.file.slice(0, slash + 1), component.name);
-    }
-  }
-  return [...copies].flatMap(([path, { span }]) => {
-    const name = names.get(path.replace(/\.ts$/, "").toLowerCase());
-    if (name === undefined) return [];
-    return [
-      createDiagnostic("UF1104", {
-        file,
-        span,
-        message: `The shared module ${path} is named like ${name}'s output file, which an output imports without its extension (\`${name}\`, and \`${kebabCase(name)}\` on Angular): each output tree holds the module's copy beside the components.`,
-        help: "Rename the shared module, or the component.",
-      }),
-    ];
-  });
+	const names = new Map<string, string>();
+	const add = (directory: string, name: string) => {
+		for (const stem of [name, kebabCase(name)]) {
+			names.set(`${directory}${stem}`.toLowerCase(), name);
+		}
+	};
+	for (const component of module.components) add("", component.name);
+	for (const entry of module.imports ?? []) {
+		const slash = entry.file.lastIndexOf("/");
+		for (const component of entry.api.components) {
+			add(slash === -1 ? "" : entry.file.slice(0, slash + 1), component.name);
+		}
+	}
+	return [...copies].flatMap(([path, { span }]) => {
+		const name = names.get(path.replace(/\.ts$/, "").toLowerCase());
+		if (name === undefined) return [];
+		return [
+			createDiagnostic("UF1104", {
+				file,
+				span,
+				message: `The shared module ${path} is named like ${name}'s output file, which an output imports without its extension (\`${name}\`, and \`${kebabCase(name)}\` on Angular): each output tree holds the module's copy beside the components.`,
+				help: "Rename the shared module, or the component.",
+			}),
+		];
+	});
 }
 
 /**
@@ -522,36 +522,36 @@ function copyCollisions(
  * declaration's specifier.
  */
 function relativeImports(parsed: ParsedModule): { specifier: string; span: Span }[] {
-  const found = new Map<string, Span>();
-  for (const statement of parsed.program.body) {
-    const from =
-      statement.type === "ImportDeclaration" ||
-      statement.type === "ExportAllDeclaration" ||
-      statement.type === "ExportNamedDeclaration"
-        ? statement.source
-        : null;
-    if (!from || found.has(from.value)) continue;
-    if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
-    found.set(from.value, { start: from.start, end: from.end });
-  }
-  return [...found].map(([specifier, span]) => ({ specifier, span }));
+	const found = new Map<string, Span>();
+	for (const statement of parsed.program.body) {
+		const from =
+			statement.type === "ImportDeclaration" ||
+			statement.type === "ExportAllDeclaration" ||
+			statement.type === "ExportNamedDeclaration"
+				? statement.source
+				: null;
+		if (!from || found.has(from.value)) continue;
+		if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
+		found.set(from.value, { start: from.start, end: from.end });
+	}
+	return [...found].map(([specifier, span]) => ({ specifier, span }));
 }
 
 /** UF1205 at an import that closes a cycle, which names its files relative to the source. */
 function importCycle(file: string, specifier: string, span: Span, files: string[]): Diagnostic {
-  const names = files.map((path) => relativePath(directoryOf(file), path));
-  return createDiagnostic("UF1205", {
-    file,
-    span,
-    message: `"${specifier}" closes an import cycle of components, ${names.join(" → ")}: each imports the next to render it, so none of them can load before the others.`,
-    help: "Render the components of the cycle from one module, which declares them all.",
-  });
+	const names = files.map((path) => relativePath(directoryOf(file), path));
+	return createDiagnostic("UF1205", {
+		file,
+		span,
+		message: `"${specifier}" closes an import cycle of components, ${names.join(" → ")}: each imports the next to render it, so none of them can load before the others.`,
+		help: "Render the components of the cycle from one module, which declares them all.",
+	});
 }
 
 /** A shared module's copy (ADR-0070), and the specifier of the import that first reaches it. */
 interface Copy {
-  contents: string;
-  span: { start: number; end: number };
+	contents: string;
+	span: { start: number; end: number };
 }
 
 /**
@@ -566,258 +566,258 @@ interface Copy {
  * `owners` leaves it out too (ADR-0121).
  */
 async function emitTarget(
-  target: Target,
-  module: UfModule,
-  source: string,
-  options: CompileOptions,
-  diagnostics: Diagnostic[],
-  sheets: ReadonlyMap<string, string>,
-  copies: ReadonlyMap<string, Copy>,
-  helperBase: string,
+	target: Target,
+	module: UfModule,
+	source: string,
+	options: CompileOptions,
+	diagnostics: Diagnostic[],
+	sheets: ReadonlyMap<string, string>,
+	copies: ReadonlyMap<string, Copy>,
+	helperBase: string,
 ): Promise<{ files: OutputFile[]; owners: Record<string, string>; helpers: string[] }> {
-  const file = options.filename;
-  const helperModules = createHelperModules(helperBase);
-  const helper = helperModules.helper;
-  const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
-  diagnostics.push(...checkCapabilities(module, target));
-  const written: OutputFile[] = [];
-  const owners = new Map<string, { path: string; component: string }>();
-  for (const component of module.components) {
-    let files: readonly OutputFile[];
-    try {
-      const emitted = readFiles(
-        target.emit(component, {
-          module,
-          options: options.targetOptions?.[target.name],
-          report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
-          helper,
-        }),
-      );
-      if ("problem" in emitted) throw new TypeError(`emit returned ${emitted.problem}`);
-      const sheet = sheets.get(component.name);
-      if (sheet !== undefined) emitted.files.push({ path: sheetPath, contents: sheet });
-      files = deepFreeze(emitted.files);
-    } catch (error) {
-      const what = `The ${target.name} target failed on ${component.name}`;
-      diagnostics.push(internal(file, error, what, target.name));
-      continue;
-    }
+	const file = options.filename;
+	const helperModules = createHelperModules(helperBase);
+	const helper = helperModules.helper;
+	const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
+	diagnostics.push(...checkCapabilities(module, target));
+	const written: OutputFile[] = [];
+	const owners = new Map<string, { path: string; component: string }>();
+	for (const component of module.components) {
+		let files: readonly OutputFile[];
+		try {
+			const emitted = readFiles(
+				target.emit(component, {
+					module,
+					options: options.targetOptions?.[target.name],
+					report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
+					helper,
+				}),
+			);
+			if ("problem" in emitted) throw new TypeError(`emit returned ${emitted.problem}`);
+			const sheet = sheets.get(component.name);
+			if (sheet !== undefined) emitted.files.push({ path: sheetPath, contents: sheet });
+			files = deepFreeze(emitted.files);
+		} catch (error) {
+			const what = `The ${target.name} target failed on ${component.name}`;
+			diagnostics.push(internal(file, error, what, target.name));
+			continue;
+		}
 
-    for (const plugin of options.plugins ?? []) {
-      if (!plugin.output) continue;
-      try {
-        const result: unknown = plugin.output(files, { target: target.name, component, module });
-        if (result === undefined) continue;
-        const returned = readFiles(result);
-        if ("problem" in returned) {
-          const what = `returned ${returned.problem}`;
-          diagnostics.push(pluginFailed(file, plugin.name, "output", what, target.name));
-          continue;
-        }
-        files = deepFreeze(returned.files);
-      } catch (error) {
-        diagnostics.push(
-          pluginFailed(file, plugin.name, "output", `threw: ${messageOf(error)}`, target.name),
-        );
-      }
-    }
+		for (const plugin of options.plugins ?? []) {
+			if (!plugin.output) continue;
+			try {
+				const result: unknown = plugin.output(files, { target: target.name, component, module });
+				if (result === undefined) continue;
+				const returned = readFiles(result);
+				if ("problem" in returned) {
+					const what = `returned ${returned.problem}`;
+					diagnostics.push(pluginFailed(file, plugin.name, "output", what, target.name));
+					continue;
+				}
+				files = deepFreeze(returned.files);
+			} catch (error) {
+				diagnostics.push(
+					pluginFailed(file, plugin.name, "output", `threw: ${messageOf(error)}`, target.name),
+				);
+			}
+		}
 
-    // Only this component's code: another's identical text must not claim its place.
-    if (options.sourceMap) {
-      // An exported directive's code is its own module's (ADR-0099); an in-file one's is printed
-      // in the components that apply it.
-      const own = {
-        ...module,
-        components: [component],
-        composables: [],
-        directives: (module.directives ?? []).filter((directive) => !directive.exported),
-      };
-      files = files.map((output) => anchorOutput(output, own, source));
-    }
-    if (options.format !== false) {
-      const unformatted = files;
-      const formatted = await Promise.all(unformatted.map((output) => formatOutput(output)));
-      files = formatted.map((outcome, index) => {
-        if (outcome.error) {
-          const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
-          diagnostics.push(internal(file, outcome.error, what, target.name));
-        }
-        return remapped(unformatted[index]!, outcome, file, target.name, diagnostics);
-      });
-    }
+		// Only this component's code: another's identical text must not claim its place.
+		if (options.sourceMap) {
+			// An exported directive's code is its own module's (ADR-0099); an in-file one's is printed
+			// in the components that apply it.
+			const own = {
+				...module,
+				components: [component],
+				composables: [],
+				directives: (module.directives ?? []).filter((directive) => !directive.exported),
+			};
+			files = files.map((output) => anchorOutput(output, own, source));
+		}
+		if (options.format !== false) {
+			const unformatted = files;
+			const formatted = await Promise.all(unformatted.map((output) => formatOutput(output)));
+			files = formatted.map((outcome, index) => {
+				if (outcome.error) {
+					const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
+					diagnostics.push(internal(file, outcome.error, what, target.name));
+				}
+				return remapped(unformatted[index]!, outcome, file, target.name, diagnostics);
+			});
+		}
 
-    for (const output of files) {
-      const key = output.path.toLowerCase();
-      const owner = owners.get(key);
-      if (owner) {
-        diagnostics.push(
-          internal(
-            file,
-            `${owner.path} (${owner.component}) and ${output.path} (${component.name}) are one file on a case-insensitive file system`,
-            `The ${target.name} target wrote two files at one path`,
-            target.name,
-          ),
-        );
-        continue;
-      }
-      owners.set(key, { path: output.path, component: component.name });
-      written.push(output);
-    }
-  }
-  // A `.uf.ts` module's composables and exported directives, each one module (ADR-0069,
-  // ADR-0099). The `output` hooks are a component's, so they see none of it.
-  const emitComposable = target.emitComposable?.bind(target);
-  const emitDirective = target.emitDirective?.bind(target);
-  const modules: {
-    name: string;
-    span: Span;
-    what: string;
-    emit: ((context: EmitContext) => OutputFile[]) | undefined;
-    own: Pick<UfModule, "composables" | "directives">;
-  }[] = [
-    ...(module.composables ?? []).map((composable) => ({
-      name: composable.name,
-      span: composable.span,
-      what: "composables: it has no `emitComposable`",
-      emit: emitComposable && ((context: EmitContext) => emitComposable(composable, context)),
-      own: { composables: [composable] },
-    })),
-    ...(module.directives ?? [])
-      .filter((directive) => directive.exported)
-      .map((directive) => ({
-        name: directive.name,
-        span: directive.span,
-        what: "directives: it has no `emitDirective`",
-        emit: emitDirective && ((context: EmitContext) => emitDirective(directive, context)),
-        own: { composables: [], directives: [directive] },
-      })),
-  ].toSorted((a, b) => a.span.start - b.span.start);
-  for (const each of modules) {
-    if (!each.emit) {
-      diagnostics.push(
-        createDiagnostic("UF1002", {
-          file,
-          span: each.span,
-          message: `The ${target.name} target does not emit ${each.what}.`,
-          target: target.name,
-        }),
-      );
-      continue;
-    }
-    let files: OutputFile[];
-    try {
-      const emitted = readFiles(
-        each.emit({
-          module,
-          options: options.targetOptions?.[target.name],
-          report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
-          helper,
-        }),
-      );
-      if ("problem" in emitted)
-        throw new TypeError(`emitting ${each.name} returned ${emitted.problem}`);
-      files = emitted.files;
-    } catch (error) {
-      const what = `The ${target.name} target failed on ${each.name}`;
-      diagnostics.push(internal(file, error, what, target.name));
-      continue;
-    }
-    if (options.sourceMap) {
-      const own = { ...module, components: [], ...each.own };
-      files = files.map((output) => anchorOutput(output, own, source));
-    }
-    if (options.format !== false) {
-      const unformatted = files;
-      const formatted = await Promise.all(unformatted.map((output) => formatOutput(output)));
-      files = formatted.map((outcome, index) => {
-        if (outcome.error) {
-          const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
-          diagnostics.push(internal(file, outcome.error, what, target.name));
-        }
-        return remapped(unformatted[index]!, outcome, file, target.name, diagnostics);
-      });
-    }
-    for (const output of files) {
-      const key = output.path.toLowerCase();
-      const owner = owners.get(key);
-      if (owner) {
-        diagnostics.push(
-          internal(
-            file,
-            `${owner.path} (${owner.component}) and ${output.path} (${each.name}) are one file on a case-insensitive file system`,
-            `The ${target.name} target wrote two files at one path`,
-            target.name,
-          ),
-        );
-        continue;
-      }
-      owners.set(key, { path: output.path, component: each.name });
-      written.push(output);
-    }
-  }
-  for (const [path, { contents, span }] of written.length ? copies : []) {
-    const owner = owners.get(path.toLowerCase());
-    if (owner) {
-      diagnostics.push(
-        createDiagnostic("UF1104", {
-          file,
-          span,
-          message: `The shared module ${path} and ${owner.component}'s ${target.name} output, ${owner.path}, are one file: each output tree holds a copy of the module beside the components.`,
-          help: "Rename the shared module, or the component.",
-          target: target.name,
-        }),
-      );
-      continue;
-    }
-    written.push(options.sourceMap ? identityMapped({ path, contents }) : { path, contents });
-  }
-  // The helper modules, where an output was written: formatted like generated code, then mapped
-  // onto themselves, since no source holds their text (ADR-0121).
-  const helperPaths: string[] = [];
-  for (const module of written.length ? helperModules.files() : []) {
-    let output = module;
-    if (options.format !== false) {
-      const outcome = await formatOutput(module);
-      if (outcome.error) {
-        const what = `The ${target.name} target emitted the helper module ${module.path}, which does not parse`;
-        diagnostics.push(internal(file, outcome.error, what, target.name));
-      }
-      output = { path: module.path, contents: outcome.file.contents };
-    }
-    // Compared where each file lands, so `../_unframework/cx.ts` from a source inside
-    // `_unframework/` meets that source's copy `cx.ts`.
-    const place = (path: string) => joinPath(directoryOf(file), `./${path}`)?.toLowerCase();
-    const key = place(output.path);
-    const owner = [...owners.values()].find(({ path }) => place(path) === key);
-    const copy = [...copies].find(([path]) => place(path) === key);
-    if (owner || copy) {
-      const span = copy?.[1].span ?? { start: 0, end: 0 };
-      const what = copy
-        ? `The shared module ${copy[0]}`
-        : `${owner!.component}'s output, ${owner!.path},`;
-      diagnostics.push(
-        createDiagnostic("UF1104", {
-          file,
-          span,
-          message: `${what} and the ${target.name} helper module ${output.path} are one file: \`_unframework/\` at the root of each output tree holds the helper modules (ADR-0121).`,
-          help: "Rename the shared module, or the directory that holds it.",
-          target: target.name,
-        }),
-      );
-      continue;
-    }
-    written.push(options.sourceMap ? identityMapped(output) : output);
-    helperPaths.push(output.path);
-  }
-  return {
-    helpers: helperPaths,
-    files: written,
-    owners: Object.fromEntries(
-      [...owners.values()]
-        .filter(({ path }) => path !== sheetPath)
-        .map(({ path, component }) => [path, component]),
-    ),
-  };
+		for (const output of files) {
+			const key = output.path.toLowerCase();
+			const owner = owners.get(key);
+			if (owner) {
+				diagnostics.push(
+					internal(
+						file,
+						`${owner.path} (${owner.component}) and ${output.path} (${component.name}) are one file on a case-insensitive file system`,
+						`The ${target.name} target wrote two files at one path`,
+						target.name,
+					),
+				);
+				continue;
+			}
+			owners.set(key, { path: output.path, component: component.name });
+			written.push(output);
+		}
+	}
+	// A `.uf.ts` module's composables and exported directives, each one module (ADR-0069,
+	// ADR-0099). The `output` hooks are a component's, so they see none of it.
+	const emitComposable = target.emitComposable?.bind(target);
+	const emitDirective = target.emitDirective?.bind(target);
+	const modules: {
+		name: string;
+		span: Span;
+		what: string;
+		emit: ((context: EmitContext) => OutputFile[]) | undefined;
+		own: Pick<UfModule, "composables" | "directives">;
+	}[] = [
+		...(module.composables ?? []).map((composable) => ({
+			name: composable.name,
+			span: composable.span,
+			what: "composables: it has no `emitComposable`",
+			emit: emitComposable && ((context: EmitContext) => emitComposable(composable, context)),
+			own: { composables: [composable] },
+		})),
+		...(module.directives ?? [])
+			.filter((directive) => directive.exported)
+			.map((directive) => ({
+				name: directive.name,
+				span: directive.span,
+				what: "directives: it has no `emitDirective`",
+				emit: emitDirective && ((context: EmitContext) => emitDirective(directive, context)),
+				own: { composables: [], directives: [directive] },
+			})),
+	].toSorted((a, b) => a.span.start - b.span.start);
+	for (const each of modules) {
+		if (!each.emit) {
+			diagnostics.push(
+				createDiagnostic("UF1002", {
+					file,
+					span: each.span,
+					message: `The ${target.name} target does not emit ${each.what}.`,
+					target: target.name,
+				}),
+			);
+			continue;
+		}
+		let files: OutputFile[];
+		try {
+			const emitted = readFiles(
+				each.emit({
+					module,
+					options: options.targetOptions?.[target.name],
+					report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
+					helper,
+				}),
+			);
+			if ("problem" in emitted)
+				throw new TypeError(`emitting ${each.name} returned ${emitted.problem}`);
+			files = emitted.files;
+		} catch (error) {
+			const what = `The ${target.name} target failed on ${each.name}`;
+			diagnostics.push(internal(file, error, what, target.name));
+			continue;
+		}
+		if (options.sourceMap) {
+			const own = { ...module, components: [], ...each.own };
+			files = files.map((output) => anchorOutput(output, own, source));
+		}
+		if (options.format !== false) {
+			const unformatted = files;
+			const formatted = await Promise.all(unformatted.map((output) => formatOutput(output)));
+			files = formatted.map((outcome, index) => {
+				if (outcome.error) {
+					const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
+					diagnostics.push(internal(file, outcome.error, what, target.name));
+				}
+				return remapped(unformatted[index]!, outcome, file, target.name, diagnostics);
+			});
+		}
+		for (const output of files) {
+			const key = output.path.toLowerCase();
+			const owner = owners.get(key);
+			if (owner) {
+				diagnostics.push(
+					internal(
+						file,
+						`${owner.path} (${owner.component}) and ${output.path} (${each.name}) are one file on a case-insensitive file system`,
+						`The ${target.name} target wrote two files at one path`,
+						target.name,
+					),
+				);
+				continue;
+			}
+			owners.set(key, { path: output.path, component: each.name });
+			written.push(output);
+		}
+	}
+	for (const [path, { contents, span }] of written.length ? copies : []) {
+		const owner = owners.get(path.toLowerCase());
+		if (owner) {
+			diagnostics.push(
+				createDiagnostic("UF1104", {
+					file,
+					span,
+					message: `The shared module ${path} and ${owner.component}'s ${target.name} output, ${owner.path}, are one file: each output tree holds a copy of the module beside the components.`,
+					help: "Rename the shared module, or the component.",
+					target: target.name,
+				}),
+			);
+			continue;
+		}
+		written.push(options.sourceMap ? identityMapped({ path, contents }) : { path, contents });
+	}
+	// The helper modules, where an output was written: formatted like generated code, then mapped
+	// onto themselves, since no source holds their text (ADR-0121).
+	const helperPaths: string[] = [];
+	for (const module of written.length ? helperModules.files() : []) {
+		let output = module;
+		if (options.format !== false) {
+			const outcome = await formatOutput(module);
+			if (outcome.error) {
+				const what = `The ${target.name} target emitted the helper module ${module.path}, which does not parse`;
+				diagnostics.push(internal(file, outcome.error, what, target.name));
+			}
+			output = { path: module.path, contents: outcome.file.contents };
+		}
+		// Compared where each file lands, so `../_unframework/cx.ts` from a source inside
+		// `_unframework/` meets that source's copy `cx.ts`.
+		const place = (path: string) => joinPath(directoryOf(file), `./${path}`)?.toLowerCase();
+		const key = place(output.path);
+		const owner = [...owners.values()].find(({ path }) => place(path) === key);
+		const copy = [...copies].find(([path]) => place(path) === key);
+		if (owner || copy) {
+			const span = copy?.[1].span ?? { start: 0, end: 0 };
+			const what = copy
+				? `The shared module ${copy[0]}`
+				: `${owner!.component}'s output, ${owner!.path},`;
+			diagnostics.push(
+				createDiagnostic("UF1104", {
+					file,
+					span,
+					message: `${what} and the ${target.name} helper module ${output.path} are one file: \`_unframework/\` at the root of each output tree holds the helper modules (ADR-0121).`,
+					help: "Rename the shared module, or the directory that holds it.",
+					target: target.name,
+				}),
+			);
+			continue;
+		}
+		written.push(options.sourceMap ? identityMapped(output) : output);
+		helperPaths.push(output.path);
+	}
+	return {
+		helpers: helperPaths,
+		files: written,
+		owners: Object.fromEntries(
+			[...owners.values()]
+				.filter(({ path }) => path !== sheetPath)
+				.map(({ path, component }) => [path, component]),
+		),
+	};
 }
 
 /**
@@ -826,19 +826,19 @@ async function emitTarget(
  * UF9003: the file goes without one.
  */
 function remapped(
-  before: OutputFile,
-  { file: after, error }: FormatOutcome,
-  file: string,
-  target: string,
-  diagnostics: Diagnostic[],
+	before: OutputFile,
+	{ file: after, error }: FormatOutcome,
+	file: string,
+	target: string,
+	diagnostics: Diagnostic[],
 ): OutputFile {
-  if (!before.map || error) return after;
-  const { map: _stale, ...formatted } = after;
-  const result = remapFormatted(before, after, before.map);
-  if ("map" in result) return { ...formatted, map: result.map };
-  const { code, ...init } = result.diagnostic;
-  diagnostics.push(createDiagnostic(code, { ...init, file, target }));
-  return formatted;
+	if (!before.map || error) return after;
+	const { map: _stale, ...formatted } = after;
+	const result = remapFormatted(before, after, before.map);
+	if ("map" in result) return { ...formatted, map: result.map };
+	const { code, ...init } = result.diagnostic;
+	diagnostics.push(createDiagnostic(code, { ...init, file, target }));
+	return formatted;
 }
 
 /**
@@ -846,136 +846,136 @@ function remapped(
  * code, a span outside the source) becomes UF9001: it could neither be sorted nor shown.
  */
 function reported(value: unknown, source: string, file: string, target: string): Diagnostic {
-  const problem = diagnosticProblem(value, source.length);
-  if (problem) {
-    return internal(file, problem, `The ${target} target reported a malformed diagnostic`, target);
-  }
-  const { code, ...init } = value as Omit<Diagnostic, "file" | "target">;
-  return createDiagnostic(code, { ...init, file, target });
+	const problem = diagnosticProblem(value, source.length);
+	if (problem) {
+		return internal(file, problem, `The ${target} target reported a malformed diagnostic`, target);
+	}
+	const { code, ...init } = value as Omit<Diagnostic, "file" | "target">;
+	return createDiagnostic(code, { ...init, file, target });
 }
 
 /** Why a value is not a diagnostic whose spans lie in a source of `length` characters. */
 function diagnosticProblem(value: unknown, length: number): string | undefined {
-  if (!isRecord(value)) return `${describe(value)} instead of a diagnostic`;
-  const { code, message } = value;
-  if (typeof code !== "string" || typeof message !== "string") {
-    return "a diagnostic without a code or a message";
-  }
-  const malformed = `${code}, which is not a well-formed diagnostic: ${message}`;
-  const related = value.related ?? [];
-  const fixes = value.fixes ?? [];
-  if (
-    !SEVERITIES.has(value.severity) ||
-    !(value.help === undefined || typeof value.help === "string") ||
-    !isRecordList(related) ||
-    !isRecordList(fixes)
-  ) {
-    return malformed;
-  }
-  const edits: Record<string, unknown>[] = [];
-  for (const fix of fixes) {
-    const { title, confidence, edits: written } = fix;
-    if (typeof title !== "string" || !CONFIDENCES.has(confidence) || !isRecordList(written)) {
-      return malformed;
-    }
-    edits.push(...written);
-  }
-  if (
-    related.some((item) => typeof item.message !== "string") ||
-    edits.some((edit) => typeof edit.text !== "string")
-  ) {
-    return malformed;
-  }
-  const spans = [
-    value.span,
-    ...related.map((item) => item.span),
-    ...edits.map((edit) => edit.span),
-  ];
-  if (!spans.every((span) => isSpanIn(span, length))) {
-    return `${code}, which points outside the source (${length} characters): ${message}`;
-  }
-  return undefined;
+	if (!isRecord(value)) return `${describe(value)} instead of a diagnostic`;
+	const { code, message } = value;
+	if (typeof code !== "string" || typeof message !== "string") {
+		return "a diagnostic without a code or a message";
+	}
+	const malformed = `${code}, which is not a well-formed diagnostic: ${message}`;
+	const related = value.related ?? [];
+	const fixes = value.fixes ?? [];
+	if (
+		!SEVERITIES.has(value.severity) ||
+		!(value.help === undefined || typeof value.help === "string") ||
+		!isRecordList(related) ||
+		!isRecordList(fixes)
+	) {
+		return malformed;
+	}
+	const edits: Record<string, unknown>[] = [];
+	for (const fix of fixes) {
+		const { title, confidence, edits: written } = fix;
+		if (typeof title !== "string" || !CONFIDENCES.has(confidence) || !isRecordList(written)) {
+			return malformed;
+		}
+		edits.push(...written);
+	}
+	if (
+		related.some((item) => typeof item.message !== "string") ||
+		edits.some((edit) => typeof edit.text !== "string")
+	) {
+		return malformed;
+	}
+	const spans = [
+		value.span,
+		...related.map((item) => item.span),
+		...edits.map((edit) => edit.span),
+	];
+	if (!spans.every((span) => isSpanIn(span, length))) {
+		return `${code}, which points outside the source (${length} characters): ${message}`;
+	}
+	return undefined;
 }
 
 const SEVERITIES: ReadonlySet<unknown> = new Set(["error", "warning", "info"]);
 const CONFIDENCES: ReadonlySet<unknown> = new Set(["safe", "likely"]);
 
 function isRecordList(value: unknown): value is Record<string, unknown>[] {
-  return Array.isArray(value) && value.every(isRecord);
+	return Array.isArray(value) && value.every(isRecord);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** A target's or a plugin's files, copied, or why the value is not a list of output files. */
 function readFiles(value: unknown): { files: OutputFile[] } | { problem: string } {
-  if (!Array.isArray(value)) return { problem: `${describe(value)} instead of a list of files` };
-  const files: OutputFile[] = [];
-  for (const [index, item] of (value as unknown[]).entries()) {
-    if (
-      typeof item !== "object" ||
-      item === null ||
-      !("path" in item) ||
-      !("contents" in item) ||
-      typeof item.path !== "string" ||
-      typeof item.contents !== "string"
-    ) {
-      return { problem: `a list whose item ${index} is not a file ({ path, contents } strings)` };
-    }
-    files.push({ path: item.path, contents: item.contents });
-  }
-  return { files };
+	if (!Array.isArray(value)) return { problem: `${describe(value)} instead of a list of files` };
+	const files: OutputFile[] = [];
+	for (const [index, item] of (value as unknown[]).entries()) {
+		if (
+			typeof item !== "object" ||
+			item === null ||
+			!("path" in item) ||
+			!("contents" in item) ||
+			typeof item.path !== "string" ||
+			typeof item.contents !== "string"
+		) {
+			return { problem: `a list whose item ${index} is not a file ({ path, contents } strings)` };
+		}
+		files.push({ path: item.path, contents: item.contents });
+	}
+	return { files };
 }
 
 /** `undefined`, `an array`, `a string`, … */
 function describe(value: unknown): string {
-  if (value === null || value === undefined) return String(value);
-  if (Array.isArray(value)) return "an array";
-  const type = typeof value;
-  return `${/^[aeiou]/.test(type) ? "an" : "a"} ${type}`;
+	if (value === null || value === undefined) return String(value);
+	if (Array.isArray(value)) return "an array";
+	const type = typeof value;
+	return `${/^[aeiou]/.test(type) ? "an" : "a"} ${type}`;
 }
 
 /** The first problems with a module, by JSON Pointer: `/components/0/render/tag must …`. */
 function describeProblems(problems: readonly IrValidationError[]): string {
-  const first = problems.slice(0, 3).map(({ path, message }) => `${path || "/"} ${message}`);
-  const more = problems.length > 3 ? ` (and ${problems.length - 3} more)` : "";
-  return `${first.join("; ")}${more}`;
+	const first = problems.slice(0, 3).map(({ path, message }) => `${path || "/"} ${message}`);
+	const more = problems.length > 3 ? ` (and ${problems.length - 3} more)` : "";
+	return `${first.join("; ")}${more}`;
 }
 
 /** Freezes a plain-data value and everything in it, so a plugin cannot edit it in place. */
 function deepFreeze<T>(value: T): T {
-  if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const item of Object.values(value)) deepFreeze(item);
-  }
-  return value;
+	if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
+		Object.freeze(value);
+		for (const item of Object.values(value)) deepFreeze(item);
+	}
+	return value;
 }
 
 function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+	return error instanceof Error ? error.message : String(error);
 }
 
 function internal(file: string, error: unknown, what: string, target?: string): Diagnostic {
-  return createDiagnostic("UF9001", {
-    file,
-    span: { start: 0, end: 0 },
-    message: `${what}: ${messageOf(error)}`,
-    ...(target ? { target } : {}),
-  });
+	return createDiagnostic("UF9001", {
+		file,
+		span: { start: 0, end: 0 },
+		message: `${what}: ${messageOf(error)}`,
+		...(target ? { target } : {}),
+	});
 }
 
 function pluginFailed(
-  file: string,
-  plugin: string,
-  hook: string,
-  what: string,
-  target?: string,
+	file: string,
+	plugin: string,
+	hook: string,
+	what: string,
+	target?: string,
 ): Diagnostic {
-  return createDiagnostic("UF8001", {
-    file,
-    span: { start: 0, end: 0 },
-    message: `The "${plugin}" plugin's ${hook} hook ${what}`,
-    ...(target ? { target } : {}),
-  });
+	return createDiagnostic("UF8001", {
+		file,
+		span: { start: 0, end: 0 },
+		message: `The "${plugin}" plugin's ${hook} hook ${what}`,
+		...(target ? { target } : {}),
+	});
 }

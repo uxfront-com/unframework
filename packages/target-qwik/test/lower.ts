@@ -12,9 +12,9 @@ import target from "../src/index.ts";
 
 /** The module the analyser lowers a source to, which must hold no error. */
 export function lower(source: string, file = "Card.uf.tsx"): UfModule {
-  const { module, diagnostics } = analyze(parseModule(file, source));
-  expect(diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
-  return module!;
+	const { module, diagnostics } = analyze(parseModule(file, source));
+	expect(diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
+	return module!;
 }
 
 /**
@@ -25,29 +25,29 @@ export function lower(source: string, file = "Card.uf.tsx"): UfModule {
  * `frozen` freezes the module, as `compile()` does, so a target that writes into the IR throws.
  */
 export async function emitSource(
-  source: string,
-  options: { fallthrough?: boolean; frozen?: boolean } = {},
+	source: string,
+	options: { fallthrough?: boolean; frozen?: boolean } = {},
 ): Promise<string> {
-  const module = lower(source);
-  if (!options.fallthrough) module.components[0]!.inheritAttrs = false;
-  if (options.frozen) deepFreeze(module);
-  const reported: unknown[] = [];
-  const context: EmitContext = {
-    module,
-    options: undefined,
-    report: (diagnostic) => void reported.push(diagnostic),
-  };
-  const [file, ...rest] = target.emit(module.components[0]!, context);
-  expect(reported).toEqual([]);
-  expect(rest).toEqual([]);
-  const outcome = await formatOutput(file!);
-  expect(outcome.error).toBeUndefined();
-  return outcome.file.contents;
+	const module = lower(source);
+	if (!options.fallthrough) module.components[0]!.inheritAttrs = false;
+	if (options.frozen) deepFreeze(module);
+	const reported: unknown[] = [];
+	const context: EmitContext = {
+		module,
+		options: undefined,
+		report: (diagnostic) => void reported.push(diagnostic),
+	};
+	const [file, ...rest] = target.emit(module.components[0]!, context);
+	expect(reported).toEqual([]);
+	expect(rest).toEqual([]);
+	const outcome = await formatOutput(file!);
+	expect(outcome.error).toBeUndefined();
+	return outcome.file.contents;
 }
 
 /** Freezes a value and everything in it, as `compile()` freezes the IR it hands the targets. */
 function deepFreeze(value: unknown): void {
-  if (typeof value !== "object" || value === null || Object.isFrozen(value)) return;
-  Object.freeze(value);
-  for (const item of Object.values(value)) deepFreeze(item);
+	if (typeof value !== "object" || value === null || Object.isFrozen(value)) return;
+	Object.freeze(value);
+	for (const item of Object.values(value)) deepFreeze(item);
 }

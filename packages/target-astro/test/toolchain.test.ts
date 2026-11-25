@@ -10,76 +10,76 @@ import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const context = { toolchainDir, root: integrationRoot };
 const pluginNames = (plugins: unknown): string[] =>
-  [plugins]
-    .flat(Number.POSITIVE_INFINITY)
-    .filter((plugin): plugin is Plugin => typeof plugin === "object" && plugin !== null)
-    .map((plugin) => plugin.name);
+	[plugins]
+		.flat(Number.POSITIVE_INFINITY)
+		.filter((plugin): plugin is Plugin => typeof plugin === "object" && plugin !== null)
+		.map((plugin) => plugin.name);
 
 describe("the Astro toolchain", () => {
-  it("is the default and the named export", () => {
-    expect(defaultToolchain).toBe(toolchain);
-    expect(toolchain.name).toBe("astro");
-  });
+	it("is the default and the named export", () => {
+		expect(defaultToolchain).toBe(toolchain);
+		expect(toolchain.name).toBe("astro");
+	});
 
-  it("names its runtime entries by package subpath", () => {
-    const require = createRequire(import.meta.url);
-    for (const specifier of [toolchain.client, toolchain.server]) {
-      expect(specifier).toMatch(/^@unframework\.dev\/target-astro\/toolchain\//);
-      expect(existsSync(require.resolve(specifier))).toBe(true);
-    }
-  });
+	it("names its runtime entries by package subpath", () => {
+		const require = createRequire(import.meta.url);
+		for (const specifier of [toolchain.client, toolchain.server]) {
+			expect(specifier).toMatch(/^@unframework\.dev\/target-astro\/toolchain\//);
+			expect(existsSync(require.resolve(specifier))).toBe(true);
+		}
+	});
 
-  it("builds SSR projects from Astro's own pipeline", async () => {
-    const config = await toolchain.vite("ssr", context);
-    const names = pluginNames(config.plugins);
-    expect(names).toContain("astro:build");
-    expect(names).not.toContain("unframework:astro-browser-ref");
-  });
+	it("builds SSR projects from Astro's own pipeline", async () => {
+		const config = await toolchain.vite("ssr", context);
+		const names = pluginNames(config.plugins);
+		expect(names).toContain("astro:build");
+		expect(names).not.toContain("unframework:astro-browser-ref");
+	});
 
-  it("keeps Astro's plugins out of browser projects, which get the reference plugin alone", async () => {
-    const config = await toolchain.vite("browser", context);
-    expect(pluginNames(config.plugins)).toEqual(["unframework:astro-browser-ref"]);
-    expect(config.optimizeDeps).toBeUndefined();
-  });
+	it("keeps Astro's plugins out of browser projects, which get the reference plugin alone", async () => {
+		const config = await toolchain.vite("browser", context);
+		expect(pluginNames(config.plugins)).toEqual(["unframework:astro-browser-ref"]);
+		expect(config.optimizeDeps).toBeUndefined();
+	});
 
-  it("gives browser projects the render command, and nothing interactive", () => {
-    const commands = toolchain.browserCommands!(context);
-    expect(Object.keys(commands)).toEqual(["ufAstroRender"]);
-  });
+	it("gives browser projects the render command, and nothing interactive", () => {
+		const commands = toolchain.browserCommands!(context);
+		expect(Object.keys(commands)).toEqual(["ufAstroRender"]);
+	});
 
-  it("names the render command a host outside Vitest calls, and closes what it starts", async () => {
-    // The preview (ADR-0088) runs it behind an endpoint and passes the adapter its transport.
-    expect(toolchain.renderCommandName).toBe("ufAstroRender");
-    expect(Object.keys(toolchain.browserCommands!(context))).toContain(toolchain.renderCommandName);
-    await expect(toolchain.close!()).resolves.toBeUndefined();
-  });
+	it("names the render command a host outside Vitest calls, and closes what it starts", async () => {
+		// The preview (ADR-0088) runs it behind an endpoint and passes the adapter its transport.
+		expect(toolchain.renderCommandName).toBe("ufAstroRender");
+		expect(Object.keys(toolchain.browserCommands!(context))).toContain(toolchain.renderCommandName);
+		await expect(toolchain.close!()).resolves.toBeUndefined();
+	});
 });
 
 describe("the browser protocol", () => {
-  it("references a virtual id by its path and component name", () => {
-    const ref = astroComponentRef("/abs/cases/ProfileCard.uf.tsx.astro?import");
-    expect(ref).toEqual({
-      __ufTarget: "astro",
-      id: "/abs/cases/ProfileCard.uf.tsx.astro",
-      name: "ProfileCard",
-    });
-    expect(isAstroComponentRef(ref)).toBe(true);
-  });
+	it("references a virtual id by its path and component name", () => {
+		const ref = astroComponentRef("/abs/cases/ProfileCard.uf.tsx.astro?import");
+		expect(ref).toEqual({
+			__ufTarget: "astro",
+			id: "/abs/cases/ProfileCard.uf.tsx.astro",
+			name: "ProfileCard",
+		});
+		expect(isAstroComponentRef(ref)).toBe(true);
+	});
 
-  it("recognises only Astro references", () => {
-    expect(isAstroComponentRef({ __ufTarget: "astro", id: "/a/X.uf.tsx", name: "X" })).toBe(false);
-    expect(isAstroComponentRef({ __ufTarget: "vue", id: "/a/X.uf.tsx.astro", name: "X" })).toBe(
-      false,
-    );
-    expect(isAstroComponentRef(() => null)).toBe(false);
-    expect(isAstroComponentRef(null)).toBe(false);
-  });
+	it("recognises only Astro references", () => {
+		expect(isAstroComponentRef({ __ufTarget: "astro", id: "/a/X.uf.tsx", name: "X" })).toBe(false);
+		expect(isAstroComponentRef({ __ufTarget: "vue", id: "/a/X.uf.tsx.astro", name: "X" })).toBe(
+			false,
+		);
+		expect(isAstroComponentRef(() => null)).toBe(false);
+		expect(isAstroComponentRef(null)).toBe(false);
+	});
 
-  it("splits the query off an id", () => {
-    expect(splitQuery("/a/X.uf.tsx.astro?astro&type=style")).toEqual([
-      "/a/X.uf.tsx.astro",
-      "?astro&type=style",
-    ]);
-    expect(splitQuery("/a/X.uf.tsx.astro")).toEqual(["/a/X.uf.tsx.astro", ""]);
-  });
+	it("splits the query off an id", () => {
+		expect(splitQuery("/a/X.uf.tsx.astro?astro&type=style")).toEqual([
+			"/a/X.uf.tsx.astro",
+			"?astro&type=style",
+		]);
+		expect(splitQuery("/a/X.uf.tsx.astro")).toEqual(["/a/X.uf.tsx.astro", ""]);
+	});
 });

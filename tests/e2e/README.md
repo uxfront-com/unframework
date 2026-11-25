@@ -120,9 +120,9 @@ Import `test` and `expect` from `harness/fixtures.ts`. Then `page.goto("/")` ope
 import { expect, test } from "../../../../harness/fixtures.ts";
 
 test("hmr", async ({ page, edit }) => {
-  await page.goto("/");
-  await edit("src/package/Hello.tsx", "Hello from", "Goodbye from");
-  await expect(page.getByRole("heading", { name: "Goodbye from React" })).toBeVisible();
+	await page.goto("/");
+	await edit("src/package/Hello.tsx", "Hello from", "Goodbye from");
+	await expect(page.getByRole("heading", { name: "Goodbye from React" })).toBeVisible();
 });
 ```
 

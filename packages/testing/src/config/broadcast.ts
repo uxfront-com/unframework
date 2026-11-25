@@ -14,18 +14,18 @@ export const NO_ERROR_BROADCAST = "uf-testing:no-error-broadcast";
  * `server.hmr: false`, and Vite reads `overlay` only from an object.
  */
 export function noErrorBroadcast(): Plugin {
-  return {
-    name: NO_ERROR_BROADCAST,
-    configureServer(server) {
-      const hot = server.environments.client.hot;
-      const send = hot.send.bind(hot);
-      hot.send = (...args: unknown[]) => {
-        const [payload] = args;
-        if (typeof payload === "object" && payload !== null && "type" in payload) {
-          if (payload.type === "error") return;
-        }
-        Reflect.apply(send, undefined, args);
-      };
-    },
-  };
+	return {
+		name: NO_ERROR_BROADCAST,
+		configureServer(server) {
+			const hot = server.environments.client.hot;
+			const send = hot.send.bind(hot);
+			hot.send = (...args: unknown[]) => {
+				const [payload] = args;
+				if (typeof payload === "object" && payload !== null && "type" in payload) {
+					if (payload.type === "error") return;
+				}
+				Reflect.apply(send, undefined, args);
+			};
+		},
+	};
 }

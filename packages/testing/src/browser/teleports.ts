@@ -15,7 +15,7 @@ import { ROOT_ATTRIBUTE } from "./determinism.ts";
 
 /** The test id of what a view teleported, beside its container's `uf-root-N`. */
 export function teleportedTestId(testId: string): string {
-  return `${testId}-teleported`;
+	return `${testId}-teleported`;
 }
 
 /** Who claims teleported elements: a view, or L12's client render. */
@@ -32,14 +32,14 @@ let baseline = new WeakSet<Element>(document.body.children);
 
 /** Starts a test: what `body` holds now is the page's, not anything a view teleports. */
 export function startTeleports(): void {
-  baseline = new WeakSet(document.body.children);
+	baseline = new WeakSet(document.body.children);
 }
 
 /** Whether an element of `body` is a mount root, or holds one (L12's client render's `<form>`). */
 function holdsRoot(element: Element): boolean {
-  return (
-    element.hasAttribute(ROOT_ATTRIBUTE) || element.querySelector(`[${ROOT_ATTRIBUTE}]`) !== null
-  );
+	return (
+		element.hasAttribute(ROOT_ATTRIBUTE) || element.querySelector(`[${ROOT_ATTRIBUTE}]`) !== null
+	);
 }
 
 /**
@@ -48,24 +48,24 @@ function holdsRoot(element: Element): boolean {
  * of its own fails, since the stamp would replace it.
  */
 export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
-  const found: Element[] = [];
-  for (const element of document.body.children) {
-    if (!owners.has(element) && !baseline.has(element) && !holdsRoot(element)) {
-      if (stamp !== undefined) {
-        const own = element.getAttribute("data-testid");
-        if (own !== null && own !== stamp) {
-          throw new Error(
-            `A teleported <${element.localName}> has a data-testid of its own, "${own}": the harness gives what a view teleports a test id of the view's, so its queries reach it. Query it by its role, its label or its text.`,
-          );
-        }
-        element.setAttribute("data-testid", stamp);
-        stamps.set(element, stamp);
-      }
-      owners.set(element, owner);
-    }
-    if (owners.get(element) === owner) found.push(element);
-  }
-  return found;
+	const found: Element[] = [];
+	for (const element of document.body.children) {
+		if (!owners.has(element) && !baseline.has(element) && !holdsRoot(element)) {
+			if (stamp !== undefined) {
+				const own = element.getAttribute("data-testid");
+				if (own !== null && own !== stamp) {
+					throw new Error(
+						`A teleported <${element.localName}> has a data-testid of its own, "${own}": the harness gives what a view teleports a test id of the view's, so its queries reach it. Query it by its role, its label or its text.`,
+					);
+				}
+				element.setAttribute("data-testid", stamp);
+				stamps.set(element, stamp);
+			}
+			owners.set(element, owner);
+		}
+		if (owners.get(element) === owner) found.push(element);
+	}
+	return found;
 }
 
 /**
@@ -73,13 +73,13 @@ export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
  * gone: the DOM capture shows what the component rendered.
  */
 export function withoutStamps<T>(elements: readonly Element[], stamp: string, read: () => T): T {
-  const stamped = elements.filter((element) => element.getAttribute("data-testid") === stamp);
-  for (const element of stamped) element.removeAttribute("data-testid");
-  try {
-    return read();
-  } finally {
-    for (const element of stamped) element.setAttribute("data-testid", stamp);
-  }
+	const stamped = elements.filter((element) => element.getAttribute("data-testid") === stamp);
+	for (const element of stamped) element.removeAttribute("data-testid");
+	try {
+		return read();
+	} finally {
+		for (const element of stamped) element.setAttribute("data-testid", stamp);
+	}
 }
 
 /**
@@ -88,13 +88,13 @@ export function withoutStamps<T>(elements: readonly Element[], stamp: string, re
  * teleport's content included, removes it when it unmounts.
  */
 export function leftInBody(): string[] {
-  return [...document.body.children]
-    .filter((element) => !baseline.has(element) && !holdsRoot(element))
-    .map((element) => {
-      const attributes = [...element.attributes]
-        .filter(({ name, value }) => name !== "data-testid" || stamps.get(element) !== value)
-        .map(({ name, value }) => (value === "" ? ` ${name}` : ` ${name}="${value}"`))
-        .join("");
-      return `<${element.localName}${attributes}>`;
-    });
+	return [...document.body.children]
+		.filter((element) => !baseline.has(element) && !holdsRoot(element))
+		.map((element) => {
+			const attributes = [...element.attributes]
+				.filter(({ name, value }) => name !== "data-testid" || stamps.get(element) !== value)
+				.map(({ name, value }) => (value === "" ? ` ${name}` : ` ${name}="${value}"`))
+				.join("");
+			return `<${element.localName}${attributes}>`;
+		});
 }

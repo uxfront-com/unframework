@@ -9,8 +9,8 @@ import target from "./src/index.ts";
 import { toolchain } from "./src/toolchain/index.ts";
 
 const context = {
-  root: fileURLToPath(new URL(".", import.meta.url)),
-  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/svelte", import.meta.url)),
+	root: fileURLToPath(new URL(".", import.meta.url)),
+	toolchainDir: fileURLToPath(new URL("../../tests/toolchains/svelte", import.meta.url)),
 };
 
 /**
@@ -18,24 +18,24 @@ const context = {
  * the toolchain's own Vite configuration and mount adapter (test/render-parity.browser.test.ts).
  */
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          environment: "node",
-          include: ["test/**/*.test.ts"],
-          exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
-        },
-      },
-      browserProject({
-        provider: playwright(),
-        vite: await toolchain.vite("browser", context),
-        // The script block is formatted (ADR-0041), so the formatted output differs too.
-        modules: { target, extension: ".svelte", formatted: true },
-      }),
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					environment: "node",
+					include: ["test/**/*.test.ts"],
+					exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
+				},
+			},
+			browserProject({
+				provider: playwright(),
+				vite: await toolchain.vite("browser", context),
+				// The script block is formatted (ADR-0041), so the formatted output differs too.
+				modules: { target, extension: ".svelte", formatted: true },
+			}),
+		],
+	},
 });
 
 export default config;

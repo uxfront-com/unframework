@@ -3,42 +3,42 @@
 // `style` key, which is the same), and a class part that may hold an array or an object.
 import { walk } from "@unframework.dev/ir";
 import type {
-  Attribute,
-  ComponentAttribute,
-  Expression,
-  SpreadAttribute,
-  UfComponent,
+	Attribute,
+	ComponentAttribute,
+	Expression,
+	SpreadAttribute,
+	UfComponent,
 } from "@unframework.dev/ir";
 
 /** Which of the forms a component's template uses. */
 export interface BindingForms {
-  /** A `style` bound to one value, or a spread's `style` key. */
-  wholeStyle: boolean;
-  /** A class part that may be an array or an object at run time. */
-  classCollection: boolean;
+	/** A `style` bound to one value, or a spread's `style` key. */
+	wholeStyle: boolean;
+	/** A class part that may be an array or an object at run time. */
+	classCollection: boolean;
 }
 
 /** The forms a component's template uses, on its elements, components and `<component is>`. */
 export function bindingForms(component: UfComponent): BindingForms {
-  const forms: BindingForms = { wholeStyle: false, classCollection: false };
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Style" && attribute.value) forms.wholeStyle = true;
-        if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
-          forms.wholeStyle = true;
-        }
-        if (
-          attribute.kind === "Class" &&
-          attribute.items.some((item) => item.kind === "Dynamic" && item.collection)
-        ) {
-          forms.classCollection = true;
-        }
-      }
-    },
-  });
-  return forms;
+	const forms: BindingForms = { wholeStyle: false, classCollection: false };
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Style" && attribute.value) forms.wholeStyle = true;
+				if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
+					forms.wholeStyle = true;
+				}
+				if (
+					attribute.kind === "Class" &&
+					attribute.items.some((item) => item.kind === "Dynamic" && item.collection)
+				) {
+					forms.classCollection = true;
+				}
+			}
+		},
+	});
+	return forms;
 }
 
 /**
@@ -48,21 +48,21 @@ export function bindingForms(component: UfComponent): BindingForms {
  * source that needs them and the member after it.
  */
 export function spreadStyleExpression(attribute: SpreadAttribute): Expression {
-  const { value } = attribute;
-  const bare = /^[\w$]+(?:\??\.[\w$]+)*$/.test(value.code);
-  const source = bare ? value.code : `(${value.code})`;
-  const code = `${source}${attribute.nullish ? "?." : "."}style`;
-  const start = bare ? value.span.start : value.span.start - 1;
-  return { code, span: { start, end: start + code.length }, refs: value.refs };
+	const { value } = attribute;
+	const bare = /^[\w$]+(?:\??\.[\w$]+)*$/.test(value.code);
+	const source = bare ? value.code : `(${value.code})`;
+	const code = `${source}${attribute.nullish ? "?." : "."}style`;
+	const start = bare ? value.span.start : value.span.start - 1;
+	return { code, span: { start, end: start + code.length }, refs: value.refs };
 }
 
 /** Whether attributes hold a style bound to one value, or a spread's `style` key. */
 function whole(attributes: readonly (Attribute | ComponentAttribute)[]): boolean {
-  return attributes.some(
-    (attribute) =>
-      (attribute.kind === "Style" && attribute.value !== undefined) ||
-      (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")),
-  );
+	return attributes.some(
+		(attribute) =>
+			(attribute.kind === "Style" && attribute.value !== undefined) ||
+			(attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")),
+	);
 }
 
 /**
@@ -72,26 +72,26 @@ function whole(attributes: readonly (Attribute | ComponentAttribute)[]): boolean
  * by an object spread turn it into an object first (ADR-0065).
  */
 export function mergesWholeStyle(component: UfComponent): boolean {
-  const { render } = component;
-  const [only] = render.kind === "Fragment" ? render.children : [render];
-  const root =
-    render.kind === "Element" || (render.kind === "Fragment" && render.children.length === 1)
-      ? only
-      : undefined;
-  if (
-    component.inheritAttrs !== false &&
-    (root?.kind === "Element" || root?.kind === "Component" || root?.kind === "Dynamic") &&
-    whole(root.attributes)
-  ) {
-    return true;
-  }
-  let found = false;
-  walk(render, {
-    enter(node) {
-      if ((node.kind === "Component" || node.kind === "Dynamic") && whole(node.attributes)) {
-        found = true;
-      }
-    },
-  });
-  return found;
+	const { render } = component;
+	const [only] = render.kind === "Fragment" ? render.children : [render];
+	const root =
+		render.kind === "Element" || (render.kind === "Fragment" && render.children.length === 1)
+			? only
+			: undefined;
+	if (
+		component.inheritAttrs !== false &&
+		(root?.kind === "Element" || root?.kind === "Component" || root?.kind === "Dynamic") &&
+		whole(root.attributes)
+	) {
+		return true;
+	}
+	let found = false;
+	walk(render, {
+		enter(node) {
+			if ((node.kind === "Component" || node.kind === "Dynamic") && whole(node.attributes)) {
+				found = true;
+			}
+		},
+	});
+	return found;
 }

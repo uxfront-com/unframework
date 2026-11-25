@@ -3,8 +3,8 @@ import Table from "../../../../../integration/cases/slots/prop-names/__output__/
 </script>
 
 <template>
-  <Table :people="[{ id: 'a', name: 'Ada' }]">
-    <!-- @uf-expect TS2339 Table.slot:row -->
-    <template #row="{ size }">{{ size }}</template>
-  </Table>
+	<Table :people="[{ id: 'a', name: 'Ada' }]">
+		<!-- @uf-expect TS2339 Table.slot:row -->
+		<template #row="{ size }">{{ size }}</template>
+	</Table>
 </template>

@@ -34,57 +34,57 @@ const cases = await compileComposableCases("qwik");
 
 /** The output a case's source compiles to, by the output's path. */
 function caseOutput(id: string, path: string): string {
-  return cases
-    .find((each) => each.id === id)!
-    .sources.flatMap(({ outputs }) => outputs)
-    .find((each) => each.path === path)!.contents;
+	return cases
+		.find((each) => each.id === id)!
+		.sources.flatMap(({ outputs }) => outputs)
+		.find((each) => each.path === path)!.contents;
 }
 
 describe("qwik composable cases", () => {
-  it("finds every composable and shared-module case", () => {
-    expect(cases.map(({ id }) => id)).toEqual([
-      "composables/use-toggle",
-      "composables/use-controllable-state",
-      "composables/use-media-query",
-      "composables/getter-argument",
-      "composables/callback-argument",
-      "modules/shared-constants",
-      "modules/shared-helpers",
-      "modules/module-constants",
-      "modules/nested-modules",
-      "semantics/composable-read-after-write",
-      "semantics/composable-effect-order",
-      "semantics/composable-unmount-order",
-    ]);
-  });
+	it("finds every composable and shared-module case", () => {
+		expect(cases.map(({ id }) => id)).toEqual([
+			"composables/use-toggle",
+			"composables/use-controllable-state",
+			"composables/use-media-query",
+			"composables/getter-argument",
+			"composables/callback-argument",
+			"modules/shared-constants",
+			"modules/shared-helpers",
+			"modules/module-constants",
+			"modules/nested-modules",
+			"semantics/composable-read-after-write",
+			"semantics/composable-effect-order",
+			"semantics/composable-unmount-order",
+		]);
+	});
 
-  it.each(cases)(
-    "compiles $id to outputs that pass L3 to L5",
-    { timeout: 60_000 },
-    async ({ id, dir, sources }) => {
-      const errors = sources.flatMap(({ diagnostics }) =>
-        diagnostics.filter(({ severity }) => severity === "error"),
-      );
-      expect(errors).toEqual([]);
-      // A hook per composable, a component per `.uf.tsx`, and each `.ts` copy once, however
-      // many sources import it.
-      const emitted = [
-        ...new Map(
-          sources.flatMap(({ outputs }) => outputs).map((each) => [each.path, each]),
-        ).values(),
-      ];
-      // Each source's own output, and each `.ts` of the case as its copy, and nothing else.
-      const expected = readdirSync(dir)
-        .flatMap((name) => {
-          if (name.endsWith(".uf.ts")) return [`${name.slice(0, -6)}.ts`];
-          if (name.endsWith(".uf.tsx")) return [`${name.slice(0, -7)}.tsx`];
-          return name.endsWith(".ts") && !name.endsWith(".test.ts") ? [name] : [];
-        })
-        .toSorted();
-      expect(emitted.map(({ path }) => path).toSorted()).toEqual(expected);
-      await expectToolchainClean(id, emitted);
-    },
-  );
+	it.each(cases)(
+		"compiles $id to outputs that pass L3 to L5",
+		{ timeout: 60_000 },
+		async ({ id, dir, sources }) => {
+			const errors = sources.flatMap(({ diagnostics }) =>
+				diagnostics.filter(({ severity }) => severity === "error"),
+			);
+			expect(errors).toEqual([]);
+			// A hook per composable, a component per `.uf.tsx`, and each `.ts` copy once, however
+			// many sources import it.
+			const emitted = [
+				...new Map(
+					sources.flatMap(({ outputs }) => outputs).map((each) => [each.path, each]),
+				).values(),
+			];
+			// Each source's own output, and each `.ts` of the case as its copy, and nothing else.
+			const expected = readdirSync(dir)
+				.flatMap((name) => {
+					if (name.endsWith(".uf.ts")) return [`${name.slice(0, -6)}.ts`];
+					if (name.endsWith(".uf.tsx")) return [`${name.slice(0, -7)}.tsx`];
+					return name.endsWith(".ts") && !name.endsWith(".test.ts") ? [name] : [];
+				})
+				.toSorted();
+			expect(emitted.map(({ path }) => path).toSorted()).toEqual(expected);
+			await expectToolchainClean(id, emitted);
+		},
+	);
 });
 
 /**
@@ -92,83 +92,83 @@ describe("qwik composable cases", () => {
  * and the lint rules (L5) to accept each with no message.
  */
 async function expectToolchainClean(name: string, outputs: readonly OutputFile[]): Promise<void> {
-  const directory = join(scratch, name);
-  mkdirSync(directory, { recursive: true });
-  const files = outputs.map(({ path, contents }) => {
-    const absolute = join(directory, path);
-    writeFileSync(absolute, contents);
-    return { path: absolute, contents };
-  });
-  const compiled = await toolchain.frameworkCompile(files, context);
-  for (const { path } of files) {
-    expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
-  }
-  const paths = files.map(({ path }) => path);
-  const checked = await toolchain.typecheck(paths, context);
-  for (const path of paths) expect(checked.get(path) ?? [], path).toEqual([]);
-  const linted = await toolchain.lint(paths, context);
-  for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+	const directory = join(scratch, name);
+	mkdirSync(directory, { recursive: true });
+	const files = outputs.map(({ path, contents }) => {
+		const absolute = join(directory, path);
+		writeFileSync(absolute, contents);
+		return { path: absolute, contents };
+	});
+	const compiled = await toolchain.frameworkCompile(files, context);
+	for (const { path } of files) {
+		expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
+	}
+	const paths = files.map(({ path }) => path);
+	const checked = await toolchain.typecheck(paths, context);
+	for (const path of paths) expect(checked.get(path) ?? [], path).toEqual([]);
+	const linted = await toolchain.lint(paths, context);
+	for (const [path, messages] of linted) expect(messages, path).toEqual([]);
 }
 
 /** A composable module's source compiled for Qwik, its diagnostics' codes and spans with it. */
 async function compileProbe(source: string) {
-  const result = await compile(source, { filename: "probe/useProbe.uf.ts", targets: ["qwik"] });
-  const errors = result.diagnostics
-    .filter(({ severity }) => severity === "error")
-    .map(({ code, span }) => ({ code, text: source.slice(span.start, span.end), at: span.start }));
-  return { errors, outputs: result.outputs.qwik ?? [], source };
+	const result = await compile(source, { filename: "probe/useProbe.uf.ts", targets: ["qwik"] });
+	const errors = result.diagnostics
+		.filter(({ severity }) => severity === "error")
+		.map(({ code, span }) => ({ code, text: source.slice(span.start, span.end), at: span.start }));
+	return { errors, outputs: result.outputs.qwik ?? [], source };
 }
 
 /** The hook a case's composable compiles to. */
 function hook(id: string): string {
-  return cases
-    .find((each) => each.id === id)!
-    .sources.find(({ filename }) => filename.endsWith(".uf.ts"))!.outputs[0]!.contents;
+	return cases
+		.find((each) => each.id === id)!
+		.sources.find(({ filename }) => filename.endsWith(".uf.ts"))!.outputs[0]!.contents;
 }
 
 describe("qwik composable hooks", () => {
-  it("returns its signals as they are, and its functions as `$()` QRLs", () => {
-    const output = hook("composables/use-toggle");
-    expect(output).toContain("export function useToggle(initial: boolean) {");
-    expect(output).toContain("const on = useSignal(initial);");
-    expect(output).toContain("const toggle = $(() => {");
-    expect(output).toContain("return { on, toggle, close };");
-  });
+	it("returns its signals as they are, and its functions as `$()` QRLs", () => {
+		const output = hook("composables/use-toggle");
+		expect(output).toContain("export function useToggle(initial: boolean) {");
+		expect(output).toContain("const on = useSignal(initial);");
+		expect(output).toContain("const toggle = $(() => {");
+		expect(output).toContain("return { on, toggle, close };");
+	});
 
-  it("takes a getter argument as the signal its caller computes, read through `.value`", () => {
-    const output = hook("composables/getter-argument");
-    expect(output).toContain(
-      "export function useTotal(price: ReadonlySignal<number>, quantity: ReadonlySignal<number>) {",
-    );
-    expect(output).toContain("const total = useComputed$(() => price.value * quantity.value);");
-  });
+	it("takes a getter argument as the signal its caller computes, read through `.value`", () => {
+		const output = hook("composables/getter-argument");
+		expect(output).toContain(
+			"export function useTotal(price: ReadonlySignal<number>, quantity: ReadonlySignal<number>) {",
+		);
+		expect(output).toContain("const total = useComputed$(() => price.value * quantity.value);");
+	});
 
-  it("takes a callback argument as a QRL, which a call that returns nothing leaves to run", () => {
-    const output = hook("composables/callback-argument");
-    expect(output).toContain("onLimit: QRL<(count: number) => void>");
-    expect(output).toContain("if (count.value === limit) void onLimit(count.value);");
-  });
+	it("takes a callback argument as a QRL, which a call that returns nothing leaves to run", () => {
+		const output = hook("composables/callback-argument");
+		expect(output).toContain("onLimit: QRL<(count: number) => void>");
+		expect(output).toContain("if (count.value === limit) void onLimit(count.value);");
+	});
 
-  it("keeps its type parameters, which its parameters' forms carry", () => {
-    const output = hook("composables/use-controllable-state");
-    expect(output).toContain("export function useControllableState<T>(");
-    expect(output).toContain("value: ReadonlySignal<T | undefined>,");
-    expect(output).toContain("onChange: QRL<(next: T) => void>,");
-  });
+	it("keeps its type parameters, which its parameters' forms carry", () => {
+		const output = hook("composables/use-controllable-state");
+		expect(output).toContain("export function useControllableState<T>(");
+		expect(output).toContain("value: ReadonlySignal<T | undefined>,");
+		expect(output).toContain("onChange: QRL<(next: T) => void>,");
+	});
 
-  it("reads a getter argument as its signal in a derived value and in a hook", () => {
-    const output = hook("semantics/composable-unmount-order");
-    expect(output).toContain("const title = useComputed$(() => `Panel ${name.value}`);");
-    expect(output).toMatch(/^\s*report\(`\$\{name\.value\} closed`\);$/m);
-  });
+	it("reads a getter argument as its signal in a derived value and in a hook", () => {
+		const output = hook("semantics/composable-unmount-order");
+		expect(output).toContain("const title = useComputed$(() => `Panel ${name.value}`);");
+		expect(output).toMatch(/^\s*report\(`\$\{name\.value\} closed`\);$/m);
+	});
 });
 
 describe("qwik composable forms", () => {
-  it(
-    "keeps a returned function that reads nothing of the hook a `$()` QRL",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it(
+		"keeps a returned function that reads nothing of the hook a `$()` QRL",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe() {
   const count = ref(0);
@@ -178,19 +178,19 @@ export function useProbe() {
   return { count, format };
 }
 `);
-      expect(errors).toEqual([]);
-      expect(outputs[0]!.contents).toContain("const format = $((value: number) => {");
-      expect(outputs[0]!.contents).toContain("return { count, format };");
-      await expectToolchainClean("returned-pure", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			expect(outputs[0]!.contents).toContain("const format = $((value: number) => {");
+			expect(outputs[0]!.contents).toContain("return { count, format };");
+			await expectToolchainClean("returned-pure", outputs);
+		},
+	);
 
-  it(
-    "tracks a getter argument through a function in a watcher and an effect",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } =
-        await compileProbe(`import { ref, watch, watchEffect } from "@uxfront/unframework";
+	it(
+		"tracks a getter argument through a function in a watcher and an effect",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } =
+				await compileProbe(`import { ref, watch, watchEffect } from "@uxfront/unframework";
 
 export function useProbe(price: () => number, limit?: () => number) {
   const last = ref(0);
@@ -207,23 +207,23 @@ export function useProbe(price: () => number, limit?: () => number) {
   return { last, seen };
 }
 `);
-      expect(errors).toEqual([]);
-      const output = outputs[0]!.contents;
-      expect(output).toContain("const value = track(() => price.value);");
-      expect(output).toContain(
-        'const values: [typeof price.value, NonNullable<typeof limit>["value"] | undefined] = [',
-      );
-      expect(output).toContain("track(() => limit?.value)");
-      expect(output).toContain("last.value = price.value + (limit?.value ?? 0);");
-      await expectToolchainClean("tracked-getters", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			const output = outputs[0]!.contents;
+			expect(output).toContain("const value = track(() => price.value);");
+			expect(output).toContain(
+				'const values: [typeof price.value, NonNullable<typeof limit>["value"] | undefined] = [',
+			);
+			expect(output).toContain("track(() => limit?.value)");
+			expect(output).toContain("last.value = price.value + (limit?.value ?? 0);");
+			await expectToolchainClean("tracked-getters", outputs);
+		},
+	);
 
-  it(
-    "floats a statement call of a callback that returns a promise, and awaits one whose value is used",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it(
+		"floats a statement call of a callback that returns a promise, and awaits one whose value is used",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(onSave: (count: number) => Promise<void>, accept: (count: number) => boolean) {
   const count = ref(0);
@@ -234,16 +234,16 @@ export function useProbe(onSave: (count: number) => Promise<void>, accept: (coun
   return { count, save };
 }
 `);
-      expect(errors).toEqual([]);
-      const output = outputs[0]!.contents;
-      expect(output).toContain("void onSave(count.value);");
-      expect(output).toContain("if (await accept(count.value)) count.value += 10;");
-      await expectToolchainClean("callback-calls", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			const output = outputs[0]!.contents;
+			expect(output).toContain("void onSave(count.value);");
+			expect(output).toContain("if (await accept(count.value)) count.value += 10;");
+			await expectToolchainClean("callback-calls", outputs);
+		},
+	);
 
-  it("reports a getter passed on or kept other than by a call, and emits nothing", async () => {
-    const { errors, outputs } = await compileProbe(`import { computed } from "@uxfront/unframework";
+	it("reports a getter passed on or kept other than by a call, and emits nothing", async () => {
+		const { errors, outputs } = await compileProbe(`import { computed } from "@uxfront/unframework";
 
 export function useProbe(price: () => number) {
   function apply(get: () => number) {
@@ -255,15 +255,15 @@ export function useProbe(price: () => number) {
   return { double, applied };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "price" },
-      { code: "UF1002", text: "price" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "price" },
+			{ code: "UF1002", text: "price" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it("reports a callback passed on or called in a function of the code's own", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it("reports a callback passed on or called in a function of the code's own", async () => {
+		const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(accept: (value: number) => boolean, compare: (a: number, b: number) => number) {
   const list = ref([3, 1, 2]);
@@ -276,15 +276,15 @@ export function useProbe(accept: (value: number) => boolean, compare: (a: number
   return { list, keep, order };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "accept" },
-      { code: "UF1002", text: "compare" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "accept" },
+			{ code: "UF1002", text: "compare" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it("reports a value whose type holds a function where a `$` scope captures it", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it("reports a value whose type holds a function where a `$` scope captures it", async () => {
+		const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 interface Formats {
   label: string;
@@ -300,16 +300,16 @@ export function useProbe(options: { format: (value: number) => string }, named: 
   return { label, initial, show };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "options" },
-      { code: "UF1002", text: "named" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "options" },
+			{ code: "UF1002", text: "named" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it("reports a `const` that takes a function-holding value or a part of it, where a `$` scope captures it", async () => {
-    const { errors, outputs } =
-      await compileProbe(`import { computed, ref } from "@uxfront/unframework";
+	it("reports a `const` that takes a function-holding value or a part of it, where a `$` scope captures it", async () => {
+		const { errors, outputs } =
+			await compileProbe(`import { computed, ref } from "@uxfront/unframework";
 
 export function useProbe(options: { step: number; format: (value: number) => string }) {
   const count = ref(0);
@@ -324,18 +324,18 @@ export function useProbe(options: { step: number; format: (value: number) => str
   return { count, label, shown, show };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "format" },
-      { code: "UF1002", text: "settings" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "format" },
+			{ code: "UF1002", text: "settings" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it(
-    "judges a `const` by the types its value reads: a member that holds no function is free",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it(
+		"judges a `const` by the types its value reads: a member that holds no function is free",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 interface Base {
   format(value: number): string;
@@ -358,14 +358,14 @@ export function useProbe(options: Options) {
   return { count, bump };
 }
 `);
-      expect(errors).toEqual([]);
-      expect(outputs[0]!.contents).toContain("const step = options.step;");
-      await expectToolchainClean("written-free", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			expect(outputs[0]!.contents).toContain("const step = options.step;");
+			await expectToolchainClean("written-free", outputs);
+		},
+	);
 
-  it("judges a `const` by a call's declared return type, a function's `bind` and an array's copies", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it("judges a `const` by a call's declared return type, a function's `bind` and an array's copies", async () => {
+		const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: {
   make: () => (value: number) => string;
@@ -383,20 +383,20 @@ export function useProbe(options: {
   return { label, show };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "made" },
-      { code: "UF1002", text: "bound" },
-      { code: "UF1002", text: "copied" },
-      { code: "UF1002", text: "one" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "made" },
+			{ code: "UF1002", text: "bound" },
+			{ code: "UF1002", text: "copied" },
+			{ code: "UF1002", text: "one" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it(
-    "reads a primitive's methods and a function's `name` as free, and an array's callback by what it returns",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it(
+		"reads a primitive's methods and a function's `name` as free, and an array's callback by what it returns",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: {
   name: string;
@@ -421,13 +421,13 @@ export function useProbe(options: {
   return { total, sum };
 }
 `);
-      expect(errors).toEqual([]);
-      await expectToolchainClean("written-methods", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			await expectToolchainClean("written-methods", outputs);
+		},
+	);
 
-  it("reads a value the written types give no type by what it reads", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it("reads a value the written types give no type by what it reads", async () => {
+		const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: {
   format: (value: number) => string;
@@ -448,20 +448,20 @@ export function useProbe(options: {
   return { total, count };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "merged" },
-      { code: "UF1002", text: "mapped" },
-      { code: "UF1002", text: "copied" },
-      { code: "UF1002", text: "values" },
-      { code: "UF1002", text: "spread" },
-      { code: "UF1002", text: "kept" },
-      { code: "UF1002", text: "cloned" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "merged" },
+			{ code: "UF1002", text: "mapped" },
+			{ code: "UF1002", text: "copied" },
+			{ code: "UF1002", text: "values" },
+			{ code: "UF1002", text: "spread" },
+			{ code: "UF1002", text: "kept" },
+			{ code: "UF1002", text: "cloned" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it("reads a value the written types don't type exactly by what its code reads", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it("reads a value the written types don't type exactly by what its code reads", async () => {
+		const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 type Format = (value: number) => string;
 
@@ -501,28 +501,28 @@ export function useProbe(options: {
   return { total, count };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual(
-      [
-        "destructured",
-        "picked",
-        "boxed",
-        "local",
-        "defaulted",
-        "rested",
-        "indexed",
-        "same",
-        "made",
-        "gathered",
-      ].map((text) => ({ code: "UF1002", text })),
-    );
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual(
+			[
+				"destructured",
+				"picked",
+				"boxed",
+				"local",
+				"defaulted",
+				"rested",
+				"indexed",
+				"same",
+				"made",
+				"gathered",
+			].map((text) => ({ code: "UF1002", text })),
+		);
+		expect(outputs).toEqual([]);
+	});
 
-  it(
-    "reads through an optional array, the utility types and a substituted generic to a free member",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it(
+		"reads through an optional array, the utility types and a substituted generic to a free member",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 type Format = (value: number) => string;
 
@@ -546,13 +546,13 @@ export function useProbe(
   return { total, count };
 }
 `);
-      expect(errors).toEqual([]);
-      await expectToolchainClean("written-wrappers", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			await expectToolchainClean("written-wrappers", outputs);
+		},
+	);
 
-  it("reports a `let` whose initial value holds a function, since it is a signal", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it("reports a `let` whose initial value holds a function, since it is a signal", async () => {
+		const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: { format: (value: number) => string; step: number }) {
   const count = ref(0);
@@ -565,14 +565,14 @@ export function useProbe(options: { format: (value: number) => string; step: num
   return { count, label, show };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "options.format" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "options.format" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it("reports a value whose type inherits a function from an interface the module extends", async () => {
-    const { errors, outputs } = await compileProbe(`import { computed } from "@uxfront/unframework";
+	it("reports a value whose type inherits a function from an interface the module extends", async () => {
+		const { errors, outputs } = await compileProbe(`import { computed } from "@uxfront/unframework";
 
 interface Base {
   format(value: number): string;
@@ -587,19 +587,19 @@ export function useProbe(options: Options) {
   return { shown };
 }
 `);
-    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
-      { code: "UF1002", text: "options" },
-      { code: "UF1002", text: "options" },
-    ]);
-    expect(outputs).toEqual([]);
-  });
+		expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+			{ code: "UF1002", text: "options" },
+			{ code: "UF1002", text: "options" },
+		]);
+		expect(outputs).toEqual([]);
+	});
 
-  it(
-    "tests whether an optional getter or callback was passed, as the source does",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } =
-        await compileProbe(`import { computed, ref } from "@uxfront/unframework";
+	it(
+		"tests whether an optional getter or callback was passed, as the source does",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } =
+				await compileProbe(`import { computed, ref } from "@uxfront/unframework";
 
 export function useProbe(
   price: () => number,
@@ -618,23 +618,23 @@ export function useProbe(
   return { count, capped, bounded, set };
 }
 `);
-      expect(errors).toEqual([]);
-      const output = outputs[0]!.contents;
-      expect(output).toContain(
-        "const capped = useComputed$(() => (limit ? Math.min(price.value, limit.value) : price.value));",
-      );
-      expect(output).toContain("limit !== undefined && !!price ? limit!.value : 0");
-      expect(output).toContain("if (onChange) void onChange(next);");
-      expect(output).toContain("if (accept && (await accept!(next))) count.value += 1;");
-      await expectToolchainClean("guards", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			const output = outputs[0]!.contents;
+			expect(output).toContain(
+				"const capped = useComputed$(() => (limit ? Math.min(price.value, limit.value) : price.value));",
+			);
+			expect(output).toContain("limit !== undefined && !!price ? limit!.value : 0");
+			expect(output).toContain("if (onChange) void onChange(next);");
+			expect(output).toContain("if (accept && (await accept!(next))) count.value += 1;");
+			await expectToolchainClean("guards", outputs);
+		},
+	);
 
-  it(
-    "declares a module's constant a composable reads beside the hook",
-    { timeout: 60_000 },
-    async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
+	it(
+		"declares a module's constant a composable reads beside the hook",
+		{ timeout: 60_000 },
+		async () => {
+			const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 const STEP = 2;
 
@@ -646,65 +646,65 @@ export function useProbe() {
   return { count, add };
 }
 `);
-      expect(errors).toEqual([]);
-      expect(outputs[0]!.contents).toMatch(/^const STEP = 2;\n\nexport function useProbe\(\) \{$/m);
-      await expectToolchainClean("module-constant", outputs);
-    },
-  );
+			expect(errors).toEqual([]);
+			expect(outputs[0]!.contents).toMatch(/^const STEP = 2;\n\nexport function useProbe\(\) \{$/m);
+			await expectToolchainClean("module-constant", outputs);
+		},
+	);
 });
 
 /** A composable's parameter of a kind, with its type as written. */
 function parameter(
-  name: string,
-  kind: ComposableParameterKind,
-  type: string,
-  optional = false,
+	name: string,
+	kind: ComposableParameterKind,
+	type: string,
+	optional = false,
 ): ComposableParameter {
-  const span = { start: 0, end: type.length };
-  return createComposableParameter(
-    name,
-    kind,
-    createTypeText(type, span),
-    `${name}@0`,
-    span,
-    optional,
-  );
+	const span = { start: 0, end: type.length };
+	return createComposableParameter(
+		name,
+		kind,
+		createTypeText(type, span),
+		`${name}@0`,
+		span,
+		optional,
+	);
 }
 
 describe("qwik composable parameters", () => {
-  it("declares a value as written, a getter as a signal and a callback as a QRL", () => {
-    const names = new OutputNames(new ImportSet(new Set()));
-    expect(parameterCode(parameter("initial", "value", "boolean"), names)).toBe("initial: boolean");
-    expect(parameterCode(parameter("price", "getter", "() => number | undefined"), names)).toBe(
-      "price: ReadonlySignal<number | undefined>",
-    );
-    expect(parameterCode(parameter("pick", "getter", "<T>() => T", true), names)).toBe(
-      "pick?: ReadonlySignal<ReturnType<<T>() => T>>",
-    );
-    expect(parameterCode(parameter("onLimit", "callback", "(count: number) => void"), names)).toBe(
-      "onLimit: QRL<(count: number) => void>",
-    );
-  });
+	it("declares a value as written, a getter as a signal and a callback as a QRL", () => {
+		const names = new OutputNames(new ImportSet(new Set()));
+		expect(parameterCode(parameter("initial", "value", "boolean"), names)).toBe("initial: boolean");
+		expect(parameterCode(parameter("price", "getter", "() => number | undefined"), names)).toBe(
+			"price: ReadonlySignal<number | undefined>",
+		);
+		expect(parameterCode(parameter("pick", "getter", "<T>() => T", true), names)).toBe(
+			"pick?: ReadonlySignal<ReturnType<<T>() => T>>",
+		);
+		expect(parameterCode(parameter("onLimit", "callback", "(count: number) => void"), names)).toBe(
+			"onLimit: QRL<(count: number) => void>",
+		);
+	});
 
-  it("floats the calls of a callback that returns nothing or a promise", () => {
-    expect(callbackFloats(parameter("onSave", "callback", "(n: number) => void"))).toBe(true);
-    expect(callbackFloats(parameter("onSave", "callback", "(n: number) => Promise<void>"))).toBe(
-      true,
-    );
-    expect(
-      callbackFloats(parameter("onSave", "callback", "(n: number) => void | PromiseLike<void>")),
-    ).toBe(true);
-    expect(callbackFloats(parameter("accept", "callback", "(n: number) => boolean"))).toBe(false);
-  });
+	it("floats the calls of a callback that returns nothing or a promise", () => {
+		expect(callbackFloats(parameter("onSave", "callback", "(n: number) => void"))).toBe(true);
+		expect(callbackFloats(parameter("onSave", "callback", "(n: number) => Promise<void>"))).toBe(
+			true,
+		);
+		expect(
+			callbackFloats(parameter("onSave", "callback", "(n: number) => void | PromiseLike<void>")),
+		).toBe(true);
+		expect(callbackFloats(parameter("accept", "callback", "(n: number) => boolean"))).toBe(false);
+	});
 
-  it("reads a getter's signal where code calls it, an optional call included", () => {
-    const getters = new Set(["price"]);
-    expect(readGetters("price() * 2", "expression", getters)).toBe("price.value * 2");
-    expect(readGetters("price?.() ?? 0", "expression", getters)).toBe("price?.value ?? 0");
-    expect(
-      readGetters("{ const total = price(); log(total, prices()); }", "statements", getters),
-    ).toBe("{ const total = price.value; log(total, prices()); }");
-  });
+	it("reads a getter's signal where code calls it, an optional call included", () => {
+		const getters = new Set(["price"]);
+		expect(readGetters("price() * 2", "expression", getters)).toBe("price.value * 2");
+		expect(readGetters("price?.() ?? 0", "expression", getters)).toBe("price?.value ?? 0");
+		expect(
+			readGetters("{ const total = price(); log(total, prices()); }", "statements", getters),
+		).toBe("{ const total = price.value; log(total, prices()); }");
+	});
 });
 
 /**
@@ -713,32 +713,32 @@ describe("qwik composable parameters", () => {
  * copy beside them, by path.
  */
 async function compileProject(files: Record<string, string>) {
-  const readFile = (path: string) => Promise.resolve(files[path]);
-  const resolve = createFileResolver({ root: "/project", readFile });
-  const typeOracle = createSyntacticOracle({ root: "/project", readFile });
-  const diagnostics = [];
-  const outputs = new Map<string, string>();
-  for (const [path, source] of Object.entries(files)) {
-    const filename = path.slice("/project/".length);
-    if (!/\.uf\.tsx?$/.test(filename)) {
-      outputs.set(filename, source);
-      continue;
-    }
-    const result = await compile(source, { filename, targets: ["qwik"], resolve, typeOracle });
-    diagnostics.push(
-      ...result.diagnostics.map(({ code, severity, span }) => ({
-        code,
-        severity,
-        text: source.slice(span.start, span.end),
-      })),
-    );
-    for (const file of result.outputs.qwik ?? []) outputs.set(file.path, file.contents);
-  }
-  return {
-    diagnostics,
-    outputs: [...outputs].map(([path, contents]) => ({ path, contents })),
-    output: (path: string) => outputs.get(path)!,
-  };
+	const readFile = (path: string) => Promise.resolve(files[path]);
+	const resolve = createFileResolver({ root: "/project", readFile });
+	const typeOracle = createSyntacticOracle({ root: "/project", readFile });
+	const diagnostics = [];
+	const outputs = new Map<string, string>();
+	for (const [path, source] of Object.entries(files)) {
+		const filename = path.slice("/project/".length);
+		if (!/\.uf\.tsx?$/.test(filename)) {
+			outputs.set(filename, source);
+			continue;
+		}
+		const result = await compile(source, { filename, targets: ["qwik"], resolve, typeOracle });
+		diagnostics.push(
+			...result.diagnostics.map(({ code, severity, span }) => ({
+				code,
+				severity,
+				text: source.slice(span.start, span.end),
+			})),
+		);
+		for (const file of result.outputs.qwik ?? []) outputs.set(file.path, file.contents);
+	}
+	return {
+		diagnostics,
+		outputs: [...outputs].map(([path, contents]) => ({ path, contents })),
+		output: (path: string) => outputs.get(path)!,
+	};
 }
 
 /** A composable that takes a callback, as the pending `callback-argument` case's does. */
@@ -779,59 +779,59 @@ export function useBits(start: number) {
 `;
 
 describe("qwik composable calls", () => {
-  it("destructures what the output reads, from the hook its output imports", () => {
-    const disclosure = caseOutput("composables/use-toggle", "Disclosure.tsx");
-    expect(disclosure).toContain('import { useToggle } from "./useToggle";');
-    expect(disclosure).toContain("const { on, toggle, close } = useToggle(false);");
-    expect(disclosure).toContain("aria-expanded={on.value} onClick$={() => toggle()}");
-  });
+	it("destructures what the output reads, from the hook its output imports", () => {
+		const disclosure = caseOutput("composables/use-toggle", "Disclosure.tsx");
+		expect(disclosure).toContain('import { useToggle } from "./useToggle";');
+		expect(disclosure).toContain("const { on, toggle, close } = useToggle(false);");
+		expect(disclosure).toContain("aria-expanded={on.value} onClick$={() => toggle()}");
+	});
 
-  it("destructures a renamed member under its local, once per call", () => {
-    const layout = caseOutput("composables/use-media-query", "Layout.tsx");
-    expect(layout).toContain('const { matches: wide } = useMediaQuery("(min-width: 1px)");');
-    expect(layout).toContain('const { matches: tiny } = useMediaQuery("(max-width: 1px)");');
-  });
+	it("destructures a renamed member under its local, once per call", () => {
+		const layout = caseOutput("composables/use-media-query", "Layout.tsx");
+		expect(layout).toContain('const { matches: wide } = useMediaQuery("(min-width: 1px)");');
+		expect(layout).toContain('const { matches: tiny } = useMediaQuery("(max-width: 1px)");');
+	});
 
-  it("passes a getter as the signal `useComputed$` makes, and a callback as a `$()` QRL", () => {
-    const basket = caseOutput("composables/getter-argument", "Basket.tsx");
-    expect(lines(basket)).toContain(
-      lines(
-        "useTotal(\n      useComputed$(() => price),\n      useComputed$(() => quantity.value),\n    );",
-      ),
-    );
-    const clicker = caseOutput("composables/callback-argument", "Clicker.tsx");
-    expect(lines(clicker)).toContain(
-      lines("const { count, step, increment, reset } = useCounter(\n      3,"),
-    );
-    expect(lines(clicker)).toContain(
-      lines("$((reached) => {\n        message.value = `Reached ${reached}`;"),
-    );
-  });
+	it("passes a getter as the signal `useComputed$` makes, and a callback as a `$()` QRL", () => {
+		const basket = caseOutput("composables/getter-argument", "Basket.tsx");
+		expect(lines(basket)).toContain(
+			lines(
+				"useTotal(\n      useComputed$(() => price),\n      useComputed$(() => quantity.value),\n    );",
+			),
+		);
+		const clicker = caseOutput("composables/callback-argument", "Clicker.tsx");
+		expect(lines(clicker)).toContain(
+			lines("const { count, step, increment, reset } = useCounter(\n      3,"),
+		);
+		expect(lines(clicker)).toContain(
+			lines("$((reached) => {\n        message.value = `Reached ${reached}`;"),
+		);
+	});
 
-  it("awaits a returned function's call in client code, so a read after it sees the write", () => {
-    const cart = caseOutput("semantics/composable-read-after-write", "Cart.tsx");
-    expect(lines(cart)).toContain(
-      lines(
-        "const addTwiceAndReport = $(async () => {\n      await add(1);\n      await add(2);\n      onTotal$?.(items.value);",
-      ),
-    );
-  });
+	it("awaits a returned function's call in client code, so a read after it sees the write", () => {
+		const cart = caseOutput("semantics/composable-read-after-write", "Cart.tsx");
+		expect(lines(cart)).toContain(
+			lines(
+				"const addTwiceAndReport = $(async () => {\n      await add(1);\n      await add(2);\n      onTotal$?.(items.value);",
+			),
+		);
+	});
 
-  it("tracks a returned ref in a watcher as its own", () => {
-    const timeline = caseOutput("semantics/composable-effect-order", "Timeline.tsx");
-    expect(timeline).toContain(
-      "const { count, increment } = useTracked($((entry) => record(entry)));",
-    );
-    expect(timeline).toContain("const value = track(count);");
-  });
+	it("tracks a returned ref in a watcher as its own", () => {
+		const timeline = caseOutput("semantics/composable-effect-order", "Timeline.tsx");
+		expect(timeline).toContain(
+			"const { count, increment } = useTracked($((entry) => record(entry)));",
+		);
+		expect(timeline).toContain("const value = track(count);");
+	});
 
-  it(
-    "leaves out what nothing reads, and floats a statement call of an async function",
-    { timeout: 60_000 },
-    async () => {
-      const project = await compileProject({
-        "/project/useBits.uf.ts": USE_BITS,
-        "/project/Probe.uf.tsx": `import { useBits } from "./useBits.uf.ts";
+	it(
+		"leaves out what nothing reads, and floats a statement call of an async function",
+		{ timeout: 60_000 },
+		async () => {
+			const project = await compileProject({
+				"/project/useBits.uf.ts": USE_BITS,
+				"/project/Probe.uf.tsx": `import { useBits } from "./useBits.uf.ts";
 
 export default function Probe() {
   const { count, add, save, unit } = useBits(1);
@@ -847,21 +847,21 @@ export default function Probe() {
   );
 }
 `,
-      });
-      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      const probe = project.output("Probe.tsx");
-      expect(lines(probe)).toContain(
-        lines("const { count, add, save } = useBits(1);\n    useBits(2);"),
-      );
-      expect(lines(probe)).toContain(lines("void save();\n      await add();"));
-      await expectToolchainClean("calls/unread", project.outputs);
-    },
-  );
+			});
+			expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+			const probe = project.output("Probe.tsx");
+			expect(lines(probe)).toContain(
+				lines("const { count, add, save } = useBits(1);\n    useBits(2);"),
+			);
+			expect(lines(probe)).toContain(lines("void save();\n      await add();"));
+			await expectToolchainClean("calls/unread", project.outputs);
+		},
+	);
 
-  it("reports a returned function the template or a getter calls (UF1002), and emits nothing", async () => {
-    const project = await compileProject({
-      "/project/useBits.uf.ts": USE_BITS,
-      "/project/Probe.uf.tsx": `import { computed } from "@uxfront/unframework";
+	it("reports a returned function the template or a getter calls (UF1002), and emits nothing", async () => {
+		const project = await compileProject({
+			"/project/useBits.uf.ts": USE_BITS,
+			"/project/Probe.uf.tsx": `import { computed } from "@uxfront/unframework";
 
 import { useBits } from "./useBits.uf.ts";
 
@@ -878,18 +878,18 @@ export default function Probe() {
   );
 }
 `,
-    });
-    expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
-      { code: "UF1002", severity: "error", text: "label" },
-      { code: "UF1002", severity: "error", text: "label" },
-    ]);
-    expect(project.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
-  });
+		});
+		expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+			{ code: "UF1002", severity: "error", text: "label" },
+			{ code: "UF1002", severity: "error", text: "label" },
+		]);
+		expect(project.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+	});
 
-  it("reports a returned function each other site of render code calls (UF1002)", async () => {
-    const project = await compileProject({
-      "/project/useBits.uf.ts": USE_BITS,
-      "/project/Probe.uf.tsx": `import { provide, ref, watch } from "@uxfront/unframework";
+	it("reports a returned function each other site of render code calls (UF1002)", async () => {
+		const project = await compileProject({
+			"/project/useBits.uf.ts": USE_BITS,
+			"/project/Probe.uf.tsx": `import { provide, ref, watch } from "@uxfront/unframework";
 import type { InjectionKey } from "@uxfront/unframework";
 
 import { useBits } from "./useBits.uf.ts";
@@ -913,7 +913,7 @@ export default function Probe() {
   );
 }
 `,
-      "/project/Reader.uf.tsx": `import { inject } from "@uxfront/unframework";
+			"/project/Reader.uf.tsx": `import { inject } from "@uxfront/unframework";
 
 import { NameKey } from "./Probe.uf.tsx";
 import { useBits } from "./useBits.uf.ts";
@@ -924,17 +924,17 @@ export default function Reader() {
   return <p>{name}</p>;
 }
 `,
-    });
-    expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual(
-      Array.from({ length: 6 }, () => ({ code: "UF1002", severity: "error", text: "label" })),
-    );
-    expect(project.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
-    expect(project.outputs.map(({ path }) => path)).not.toContain("Reader.tsx");
-  });
+		});
+		expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual(
+			Array.from({ length: 6 }, () => ({ code: "UF1002", severity: "error", text: "label" })),
+		);
+		expect(project.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+		expect(project.outputs.map(({ path }) => path)).not.toContain("Reader.tsx");
+	});
 
-  it("reports a returned function a named slot's fill calls, since the fill renders (UF1002)", async () => {
-    const project = await compileProject({
-      "/project/useName.uf.ts": `import { ref } from "@uxfront/unframework";
+	it("reports a returned function a named slot's fill calls, since the fill renders (UF1002)", async () => {
+		const project = await compileProject({
+			"/project/useName.uf.ts": `import { ref } from "@uxfront/unframework";
 
 export function useName() {
   const n = ref("Ada");
@@ -944,7 +944,7 @@ export function useName() {
   return { n, label };
 }
 `,
-      "/project/Card.uf.tsx": `import { defineSlots } from "@uxfront/unframework";
+			"/project/Card.uf.tsx": `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function Card() {
@@ -956,7 +956,7 @@ export default function Card() {
   );
 }
 `,
-      "/project/Page.uf.tsx": `import Card from "./Card.uf.tsx";
+			"/project/Page.uf.tsx": `import Card from "./Card.uf.tsx";
 import { useName } from "./useName.uf.ts";
 
 export default function Page() {
@@ -964,18 +964,18 @@ export default function Page() {
   return <Card>{{ title: () => <span aria-label={label()}>{label()}</span> }}</Card>;
 }
 `,
-    });
-    expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
-      { code: "UF1002", severity: "error", text: "label" },
-      { code: "UF1002", severity: "error", text: "label" },
-    ]);
-    expect(project.outputs.map(({ path }) => path)).not.toContain("Page.tsx");
-  });
+		});
+		expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+			{ code: "UF1002", severity: "error", text: "label" },
+			{ code: "UF1002", severity: "error", text: "label" },
+		]);
+		expect(project.outputs.map(({ path }) => path)).not.toContain("Page.tsx");
+	});
 
-  it("reports an argument that reads what its own call returns, itself or through a function (UF1002)", async () => {
-    const direct = await compileProject({
-      "/project/useCounter.uf.ts": USE_COUNTER,
-      "/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
+	it("reports an argument that reads what its own call returns, itself or through a function (UF1002)", async () => {
+		const direct = await compileProject({
+			"/project/useCounter.uf.ts": USE_COUNTER,
+			"/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
 
 export default function Probe() {
   const { count, increment, reset } = useCounter(3, () => {
@@ -988,14 +988,14 @@ export default function Probe() {
   );
 }
 `,
-    });
-    expect(direct.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
-      { code: "UF1002", severity: "error", text: "reset" },
-    ]);
-    expect(direct.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
-    const through = await compileProject({
-      "/project/useCounter.uf.ts": USE_COUNTER,
-      "/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
+		});
+		expect(direct.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+			{ code: "UF1002", severity: "error", text: "reset" },
+		]);
+		expect(direct.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+		const through = await compileProject({
+			"/project/useCounter.uf.ts": USE_COUNTER,
+			"/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
 
 export default function Probe() {
   const { count, increment, reset } = useCounter(3, (n) => {
@@ -1012,16 +1012,16 @@ export default function Probe() {
   );
 }
 `,
-    });
-    expect(through.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
-      { code: "UF1002", severity: "error", text: "report" },
-    ]);
-    expect(through.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
-    // Two calls whose callbacks read each other's members: each argument is made before both
-    // calls return.
-    const crossed = await compileProject({
-      "/project/useCounter.uf.ts": USE_COUNTER,
-      "/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
+		});
+		expect(through.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+			{ code: "UF1002", severity: "error", text: "report" },
+		]);
+		expect(through.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+		// Two calls whose callbacks read each other's members: each argument is made before both
+		// calls return.
+		const crossed = await compileProject({
+			"/project/useCounter.uf.ts": USE_COUNTER,
+			"/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
 
 export default function Probe() {
   const { count: a, reset: resetA } = useCounter(3, () => {
@@ -1037,21 +1037,21 @@ export default function Probe() {
   );
 }
 `,
-    });
-    expect(crossed.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
-      { code: "UF1002", severity: "error", text: "resetB" },
-      { code: "UF1002", severity: "error", text: "resetA" },
-    ]);
-    expect(crossed.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
-  });
+		});
+		expect(crossed.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+			{ code: "UF1002", severity: "error", text: "resetB" },
+			{ code: "UF1002", severity: "error", text: "resetA" },
+		]);
+		expect(crossed.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+	});
 
-  it(
-    "declares a call before what reads its members, and after what its callback calls, a QRL it awaits",
-    { timeout: 60_000 },
-    async () => {
-      const project = await compileProject({
-        "/project/useCounter.uf.ts": USE_COUNTER,
-        "/project/Probe.uf.tsx": `import { ref } from "@uxfront/unframework";
+	it(
+		"declares a call before what reads its members, and after what its callback calls, a QRL it awaits",
+		{ timeout: 60_000 },
+		async () => {
+			const project = await compileProject({
+				"/project/useCounter.uf.ts": USE_COUNTER,
+				"/project/Probe.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 import { useCounter } from "./useCounter.uf.ts";
 
@@ -1073,38 +1073,38 @@ export default function Probe() {
   );
 }
 `,
-      });
-      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      const probe = project.output("Probe.tsx");
-      const at = (text: string) => {
-        expect(probe).toContain(text);
-        return probe.indexOf(text);
-      };
-      const announce = at("const announce = $(() => {");
-      const call = at("const { count, increment } = useCounter(");
-      const bump = at("const bump = $(async () => {\n    await increment();");
-      expect(at("$(async () => {\n      await announce();")).toBeGreaterThan(call);
-      expect(announce).toBeLessThan(call);
-      expect(call).toBeLessThan(bump);
-      await expectToolchainClean("calls/order", project.outputs);
-    },
-  );
+			});
+			expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+			const probe = project.output("Probe.tsx");
+			const at = (text: string) => {
+				expect(probe).toContain(text);
+				return probe.indexOf(text);
+			};
+			const announce = at("const announce = $(() => {");
+			const call = at("const { count, increment } = useCounter(");
+			const bump = at("const bump = $(async () => {\n    await increment();");
+			expect(at("$(async () => {\n      await announce();")).toBeGreaterThan(call);
+			expect(announce).toBeLessThan(call);
+			expect(call).toBeLessThan(bump);
+			await expectToolchainClean("calls/order", project.outputs);
+		},
+	);
 
-  it.each([
-    { how: "itself", callback: "resetB();", relay: "", read: "resetB" },
-    {
-      how: "through a setup function",
-      callback: "relay();",
-      relay: "  function relay() {\n    resetB();\n  }\n",
-      read: "relay",
-    },
-  ])(
-    "names every call of a hook another call's argument reads $how, so the server builds it",
-    { timeout: 60_000 },
-    async ({ how, callback, relay, read }) => {
-      const project = await compileProject({
-        "/project/useCounter.uf.ts": USE_COUNTER,
-        "/project/Probe.uf.tsx": `import { ref } from "@uxfront/unframework";
+	it.each([
+		{ how: "itself", callback: "resetB();", relay: "", read: "resetB" },
+		{
+			how: "through a setup function",
+			callback: "relay();",
+			relay: "  function relay() {\n    resetB();\n  }\n",
+			read: "relay",
+		},
+	])(
+		"names every call of a hook another call's argument reads $how, so the server builds it",
+		{ timeout: 60_000 },
+		async ({ how, callback, relay, read }) => {
+			const project = await compileProject({
+				"/project/useCounter.uf.ts": USE_COUNTER,
+				"/project/Probe.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 import { useCounter } from "./useCounter.uf.ts";
 
@@ -1123,71 +1123,71 @@ ${relay}  return (
   );
 }
 `,
-      });
-      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      const probe = project.output("Probe.tsx");
-      // The call another call's argument reads comes first, as an object of its own.
-      expect(probe).toMatch(
-        /const counter_1 = useCounter\(\s*4,[\s\S]*?\);\n\s*const \{ count: b, reset: resetB \} = counter_1;/,
-      );
-      expect(probe).toMatch(
-        new RegExp(
-          `const counter = useCounter\\(\\s*3,\\s*\\$\\(async \\(\\) => \\{\\s*await ${read}\\(\\);[\\s\\S]*?\\);\\n\\s*const \\{ count: a, increment \\} = counter;`,
-        ),
-      );
-      expect(probe.indexOf("const counter_1 =")).toBeLessThan(probe.indexOf("const counter ="));
-      await expectToolchainClean(`calls/same-hook-${how.replace(/\W+/g, "-")}`, project.outputs);
-      // The server's build hoists every segment into the module (Qwik's Vite plugin runs the
-      // optimizer with `hoist` for every server transform), where two calls the optimizer named
-      // alike would be declared twice.
-      const optimizer = await createOptimizer();
-      const { modules } = await optimizer.transformModules({
-        input: [{ path: "Probe.tsx", code: probe }],
-        srcDir: scratch,
-        entryStrategy: { type: "hoist" },
-        minify: "simplify",
-        transpileTs: true,
-        transpileJsx: true,
-        explicitExtensions: true,
-        mode: "dev",
-        isServer: true,
-      });
-      expect(modules.length).toBeGreaterThan(0);
-      for (const { code } of modules)
-        expect(() => parseCodeSource(code, "statements")).not.toThrow();
-    },
-  );
+			});
+			expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+			const probe = project.output("Probe.tsx");
+			// The call another call's argument reads comes first, as an object of its own.
+			expect(probe).toMatch(
+				/const counter_1 = useCounter\(\s*4,[\s\S]*?\);\n\s*const \{ count: b, reset: resetB \} = counter_1;/,
+			);
+			expect(probe).toMatch(
+				new RegExp(
+					`const counter = useCounter\\(\\s*3,\\s*\\$\\(async \\(\\) => \\{\\s*await ${read}\\(\\);[\\s\\S]*?\\);\\n\\s*const \\{ count: a, increment \\} = counter;`,
+				),
+			);
+			expect(probe.indexOf("const counter_1 =")).toBeLessThan(probe.indexOf("const counter ="));
+			await expectToolchainClean(`calls/same-hook-${how.replace(/\W+/g, "-")}`, project.outputs);
+			// The server's build hoists every segment into the module (Qwik's Vite plugin runs the
+			// optimizer with `hoist` for every server transform), where two calls the optimizer named
+			// alike would be declared twice.
+			const optimizer = await createOptimizer();
+			const { modules } = await optimizer.transformModules({
+				input: [{ path: "Probe.tsx", code: probe }],
+				srcDir: scratch,
+				entryStrategy: { type: "hoist" },
+				minify: "simplify",
+				transpileTs: true,
+				transpileJsx: true,
+				explicitExtensions: true,
+				mode: "dev",
+				isServer: true,
+			});
+			expect(modules.length).toBeGreaterThan(0);
+			for (const { code } of modules)
+				expect(() => parseCodeSource(code, "statements")).not.toThrow();
+		},
+	);
 });
 
 describe("qwik shared modules", () => {
-  it("imports a shared module's values as the source does", () => {
-    const picker = caseOutput("modules/shared-constants", "SizePicker.tsx");
-    expect(picker).toContain(
-      'import { DEFAULT_SIZE, SIZES, SIZE_ORDER, type Size } from "./tokens";',
-    );
-    expect(picker).toContain("const size = useSignal<Size>(DEFAULT_SIZE);");
-  });
+	it("imports a shared module's values as the source does", () => {
+		const picker = caseOutput("modules/shared-constants", "SizePicker.tsx");
+		expect(picker).toContain(
+			'import { DEFAULT_SIZE, SIZES, SIZE_ORDER, type Size } from "./tokens";',
+		);
+		expect(picker).toContain("const size = useSignal<Size>(DEFAULT_SIZE);");
+	});
 
-  it("declares the module's constants at module scope, in source order", () => {
-    const stepper = caseOutput("modules/module-constants", "Stepper.tsx");
-    expect(stepper).toContain(
-      [
-        "const STEPS = [1, 5, 10] as const;",
-        "const LIMITS = Object.freeze({ min: 0, max: 20 });",
-        "const caption = (value: number): string => `${value} of ${LIMITS.max}`;",
-        "const START = LIMITS.min + 2;",
-        "",
-        "export default component$",
-      ].join("\n"),
-    );
-  });
+	it("declares the module's constants at module scope, in source order", () => {
+		const stepper = caseOutput("modules/module-constants", "Stepper.tsx");
+		expect(stepper).toContain(
+			[
+				"const STEPS = [1, 5, 10] as const;",
+				"const LIMITS = Object.freeze({ min: 0, max: 20 });",
+				"const caption = (value: number): string => `${value} of ${LIMITS.max}`;",
+				"const START = LIMITS.min + 2;",
+				"",
+				"export default component$",
+			].join("\n"),
+		);
+	});
 
-  it(
-    "declares a constant two components read in the main one's output, which the other imports",
-    { timeout: 60_000 },
-    async () => {
-      const project = await compileProject({
-        "/project/Pair.uf.tsx": `const STEP = 2;
+	it(
+		"declares a constant two components read in the main one's output, which the other imports",
+		{ timeout: 60_000 },
+		async () => {
+			const project = await compileProject({
+				"/project/Pair.uf.tsx": `const STEP = 2;
 
 function Half() {
   return <span>{STEP / 2}</span>;
@@ -1201,21 +1201,21 @@ export default function Pair() {
   );
 }
 `,
-      });
-      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      expect(project.output("Pair.tsx")).toContain("const STEP = 2;\nexport { STEP };");
-      expect(project.output("Half.tsx")).toContain('import { STEP } from "./Pair";');
-      expect(project.output("Half.tsx")).not.toContain("const STEP");
-      await expectToolchainClean("modules/pair", project.outputs);
-    },
-  );
+			});
+			expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+			expect(project.output("Pair.tsx")).toContain("const STEP = 2;\nexport { STEP };");
+			expect(project.output("Half.tsx")).toContain('import { STEP } from "./Pair";');
+			expect(project.output("Half.tsx")).not.toContain("const STEP");
+			await expectToolchainClean("modules/pair", project.outputs);
+		},
+	);
 
-  it(
-    "moves what reads only module values to module scope, but in an owner that imports them",
-    { timeout: 60_000 },
-    async () => {
-      const project = await compileProject({
-        "/project/Pair.uf.tsx": `const STEP = 2;
+	it(
+		"moves what reads only module values to module scope, but in an owner that imports them",
+		{ timeout: 60_000 },
+		async () => {
+			const project = await compileProject({
+				"/project/Pair.uf.tsx": `const STEP = 2;
 
 function Half() {
   const LIMIT = STEP * 2;
@@ -1234,27 +1234,27 @@ export default function Pair() {
   );
 }
 `,
-      });
-      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      const pair = project.output("Pair.tsx");
-      const component = pair.indexOf("export default component$");
-      expect(pair.indexOf("const DOUBLE = STEP * 2;")).toBeLessThan(component);
-      expect(pair.indexOf("function grow(value: number): number {")).toBeLessThan(component);
-      const half = project.output("Half.tsx");
-      expect(half.indexOf("const LIMIT = STEP * 2;")).toBeGreaterThan(
-        half.indexOf("export const Half = component$"),
-      );
-      await expectToolchainClean("modules/hoisted", project.outputs);
-    },
-  );
+			});
+			expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+			const pair = project.output("Pair.tsx");
+			const component = pair.indexOf("export default component$");
+			expect(pair.indexOf("const DOUBLE = STEP * 2;")).toBeLessThan(component);
+			expect(pair.indexOf("function grow(value: number): number {")).toBeLessThan(component);
+			const half = project.output("Half.tsx");
+			expect(half.indexOf("const LIMIT = STEP * 2;")).toBeGreaterThan(
+				half.indexOf("export const Half = component$"),
+			);
+			await expectToolchainClean("modules/hoisted", project.outputs);
+		},
+	);
 
-  it(
-    "declares the constants, types and type imports a reached constant names, and what a type queries",
-    { timeout: 60_000 },
-    async () => {
-      const project = await compileProject({
-        "/project/units.ts": 'export type Unit = "km" | "mi";\n',
-        "/project/Gauge.uf.tsx": `import { ref } from "@uxfront/unframework";
+	it(
+		"declares the constants, types and type imports a reached constant names, and what a type queries",
+		{ timeout: 60_000 },
+		async () => {
+			const project = await compileProject({
+				"/project/units.ts": 'export type Unit = "km" | "mi";\n',
+				"/project/Gauge.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 import type { Unit } from "./units";
 
@@ -1277,29 +1277,29 @@ export default function Gauge() {
   );
 }
 `,
-      });
-      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      const gauge = project.output("Gauge.tsx");
-      expect(gauge).toContain('import type { Unit } from "./units";');
-      expect(gauge).toContain("interface Limits {");
-      expect(gauge).toContain(
-        [
-          "const LIMITS: Limits = { min: 0, max: 9 };",
-          "const START = LIMITS.min + 1;",
-          'const UNIT: Unit = "km";',
-          "const SIZES = { sm: 1, md: 2 } as const;",
-        ].join("\n"),
-      );
-      await expectToolchainClean("modules/closure", project.outputs);
-    },
-  );
+			});
+			expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+			const gauge = project.output("Gauge.tsx");
+			expect(gauge).toContain('import type { Unit } from "./units";');
+			expect(gauge).toContain("interface Limits {");
+			expect(gauge).toContain(
+				[
+					"const LIMITS: Limits = { min: 0, max: 9 };",
+					"const START = LIMITS.min + 1;",
+					'const UNIT: Unit = "km";',
+					"const SIZES = { sm: 1, md: 2 } as const;",
+				].join("\n"),
+			);
+			await expectToolchainClean("modules/closure", project.outputs);
+		},
+	);
 });
 
 /** Code's lines without their indentation, and without blank ones. */
 function lines(code: string): string {
-  return code
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .join("\n");
+	return code
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.join("\n");
 }

@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Panel from "./Panel.uf.tsx";
 
 describeTargets("styleframe/tokens", () => {
-  it("renders the token values", async () => {
-    const view = await mountScenario(Panel, "default");
-    await view.expectParity("default");
-    await expect.element(view.getByText("Tokens reach scoped styles.")).toBeVisible();
-  });
+	it("renders the token values", async () => {
+		const view = await mountScenario(Panel, "default");
+		await view.expectParity("default");
+		await expect.element(view.getByText("Tokens reach scoped styles.")).toBeVisible();
+	});
 });

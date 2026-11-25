@@ -6,13 +6,13 @@
  * itself, is a change to this one file plus a probe run.
  */
 export type {
-  /** Per-tag attribute interfaces, with HTML attribute names: `class`, `for`, `tabindex`, `aria-*`. */
-  IntrinsicElementAttributes as UpstreamIntrinsicElements,
-  /** Global HTML attributes, including the `on*` handlers. */
-  HTMLAttributes as UpstreamHTMLAttributes,
-  /** Event name to event type, in Vue's casing: `onClick`, `onKeydown`, `onDblclick`. */
-  Events as UpstreamEvents,
-  ClassValue,
-  StyleValue,
-  CSSProperties,
+	/** Per-tag attribute interfaces, with HTML attribute names: `class`, `for`, `tabindex`, `aria-*`. */
+	IntrinsicElementAttributes as UpstreamIntrinsicElements,
+	/** Global HTML attributes, including the `on*` handlers. */
+	HTMLAttributes as UpstreamHTMLAttributes,
+	/** Event name to event type, in Vue's casing: `onClick`, `onKeydown`, `onDblclick`. */
+	Events as UpstreamEvents,
+	ClassValue,
+	StyleValue,
+	CSSProperties,
 } from "./vendor/vue-jsx.d.ts";

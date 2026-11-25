@@ -1,41 +1,41 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  // L4 for Qwik: tsgo over every case's Qwik output, as a strict Qwik 2 project would check it,
-  // with the type strictness every target's checker shares (the strictest of the seven
-  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from
-  // tests/integration, which holds @qwik.dev/core: the outputs' by their own location, the
-  // consumer fixtures' through `paths`.
-  // `@unframework.dev/target-qwik/toolchain` extends this file with a temporary config that lists
-  // the files to check.
-  "compilerOptions": {
-    "target": "es2024",
-    "lib": ["es2024", "dom", "dom.iterable"],
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "jsxImportSource": "@qwik.dev/core",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": [],
-    "noEmit": true,
-    // Consumer fixtures (ADR-0059) sit here, outside tests/integration: map the framework's types
-    // to the copy the outputs resolve, so both sides see one declaration.
-    "paths": {
-      "@qwik.dev/core": ["../../integration/node_modules/@qwik.dev/core"],
-      "@qwik.dev/core/*": ["../../integration/node_modules/@qwik.dev/core/*"]
-    }
-  },
-  "include": [
-    "../../integration/cases/**/__output__/qwik/**/*.ts",
-    "../../integration/cases/**/__output__/qwik/**/*.tsx",
-    "consumers/**/*.tsx"
-  ]
+	"$schema": "https://json.schemastore.org/tsconfig",
+	// L4 for Qwik: tsgo over every case's Qwik output, as a strict Qwik 2 project would check it,
+	// with the type strictness every target's checker shares (the strictest of the seven
+	// frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from
+	// tests/integration, which holds @qwik.dev/core: the outputs' by their own location, the
+	// consumer fixtures' through `paths`.
+	// `@unframework.dev/target-qwik/toolchain` extends this file with a temporary config that lists
+	// the files to check.
+	"compilerOptions": {
+		"target": "es2024",
+		"lib": ["es2024", "dom", "dom.iterable"],
+		"module": "preserve",
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"jsx": "react-jsx",
+		"jsxImportSource": "@qwik.dev/core",
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"types": [],
+		"noEmit": true,
+		// Consumer fixtures (ADR-0059) sit here, outside tests/integration: map the framework's types
+		// to the copy the outputs resolve, so both sides see one declaration.
+		"paths": {
+			"@qwik.dev/core": ["../../integration/node_modules/@qwik.dev/core"],
+			"@qwik.dev/core/*": ["../../integration/node_modules/@qwik.dev/core/*"]
+		}
+	},
+	"include": [
+		"../../integration/cases/**/__output__/qwik/**/*.ts",
+		"../../integration/cases/**/__output__/qwik/**/*.tsx",
+		"consumers/**/*.tsx"
+	]
 }

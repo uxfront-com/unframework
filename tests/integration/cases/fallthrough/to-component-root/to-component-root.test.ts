@@ -6,11 +6,11 @@ import { expect } from "vitest";
 import Toolbar from "./Toolbar.uf.tsx";
 
 describeTargets("fallthrough/to-component-root", () => {
-  it("passes the class down to the root element", async () => {
-    const view = await mount(Toolbar);
-    await view.expectParity("initial");
-    await expect
-      .element(view.getByRole("button", { name: "Save" }))
-      .toHaveClass("base", "primary", "wide");
-  });
+	it("passes the class down to the root element", async () => {
+		const view = await mount(Toolbar);
+		await view.expectParity("initial");
+		await expect
+			.element(view.getByRole("button", { name: "Save" }))
+			.toHaveClass("base", "primary", "wide");
+	});
 });

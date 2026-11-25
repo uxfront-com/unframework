@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Note from "./Note.uf.tsx";
 
 describeTargets("theming/dark-theme", () => {
-  it("renders the dark tokens", async () => {
-    const view = await mountScenario(Note, "default");
-    await view.expectParity("default");
-    await expect.element(view.getByText("Dark by preference.")).toBeVisible();
-  });
+	it("renders the dark tokens", async () => {
+		const view = await mountScenario(Note, "default");
+		await view.expectParity("default");
+		await expect.element(view.getByText("Dark by preference.")).toBeVisible();
+	});
 });

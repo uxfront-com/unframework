@@ -8,7 +8,7 @@ import type { QuarantineEntry } from "./layers.ts";
 
 /** An SSR scenario of a case: the props it renders with. */
 export interface SsrScenario {
-  props?: Record<string, unknown>;
+	props?: Record<string, unknown>;
 }
 
 /** The `prefers-color-scheme` a browser project emulates for a case. */
@@ -29,44 +29,44 @@ export type BrowserEngine = (typeof BROWSER_ENGINES)[number];
 
 /** A case's optional `case.json` (plan §7.1). */
 export interface CaseConfig {
-  description?: string;
-  /**
-   * The input the spec and the SSR scenarios render, relative to the case's directory, when the
-   * case holds several or none: the others are its children or its harness parents (ADR-0057). A
-   * case with one input needs none. In the corpus it is one of the case's own file names
-   * (`"Form.uf.tsx"`); in a project's tests it may lie outside the case
-   * (`"../../src/Counter.uf.tsx"`, ADR-0086).
-   */
-  main?: string;
-  /** L6 scenarios by name; a case without any renders `default` with no props. */
-  ssr?: Record<string, SsrScenario>;
-  /**
-   * Props the server render throws with (L14, ADR-0078): the `ssr` project renders them once, and
-   * checks the error's stack. Not a scenario of `ssr`, which each must render cleanly (L6).
-   */
-  ssrThrows?: SsrScenario;
-  /** The axe rule ids L11 expects to fail on this case, exactly; none by default. */
-  axe?: string[];
-  /**
-   * Why every test of the case requires a capability (ADR-0050): its client code changes the
-   * mounted DOM (an `onMounted` that writes state, say), so no test of it can pass on a target
-   * without the capability, and the server render (L6) is what checks that target. The harness
-   * refuses the note on a case with a test that requires nothing, and requires it on a case
-   * whose every test requires something.
-   */
-  requires?: string;
-  /**
-   * The target that writes the case's shared expectations in place of the run's reference
-   * (ADR-0057), for a case that requires a capability Vue renders differently (`listbox`): the
-   * compile project checks that Vue declares the capability unsupported and this target native.
-   */
-  reference?: string;
-  /**
-   * The `prefers-color-scheme` the browser projects emulate before the case's spec mounts
-   * anything, `light` by default: a dark-theme case opts in (plan §7.6, ADR-0061). The server
-   * render (L6) has no colour scheme.
-   */
-  colorScheme?: ColorScheme;
+	description?: string;
+	/**
+	 * The input the spec and the SSR scenarios render, relative to the case's directory, when the
+	 * case holds several or none: the others are its children or its harness parents (ADR-0057). A
+	 * case with one input needs none. In the corpus it is one of the case's own file names
+	 * (`"Form.uf.tsx"`); in a project's tests it may lie outside the case
+	 * (`"../../src/Counter.uf.tsx"`, ADR-0086).
+	 */
+	main?: string;
+	/** L6 scenarios by name; a case without any renders `default` with no props. */
+	ssr?: Record<string, SsrScenario>;
+	/**
+	 * Props the server render throws with (L14, ADR-0078): the `ssr` project renders them once, and
+	 * checks the error's stack. Not a scenario of `ssr`, which each must render cleanly (L6).
+	 */
+	ssrThrows?: SsrScenario;
+	/** The axe rule ids L11 expects to fail on this case, exactly; none by default. */
+	axe?: string[];
+	/**
+	 * Why every test of the case requires a capability (ADR-0050): its client code changes the
+	 * mounted DOM (an `onMounted` that writes state, say), so no test of it can pass on a target
+	 * without the capability, and the server render (L6) is what checks that target. The harness
+	 * refuses the note on a case with a test that requires nothing, and requires it on a case
+	 * whose every test requires something.
+	 */
+	requires?: string;
+	/**
+	 * The target that writes the case's shared expectations in place of the run's reference
+	 * (ADR-0057), for a case that requires a capability Vue renders differently (`listbox`): the
+	 * compile project checks that Vue declares the capability unsupported and this target native.
+	 */
+	reference?: string;
+	/**
+	 * The `prefers-color-scheme` the browser projects emulate before the case's spec mounts
+	 * anything, `light` by default: a dark-theme case opts in (plan §7.6, ADR-0061). The server
+	 * render (L6) has no colour scheme.
+	 */
+	colorScheme?: ColorScheme;
 }
 
 /**
@@ -77,118 +77,118 @@ export type PixelMode = "baseline" | "live";
 
 /** The run-wide harness context, provided to every project as `ufHarness`. */
 export interface HarnessContext {
-  /** Identifies this run: the scratch files of different runs never mix. */
-  runId: string;
-  /** Absolute path of the cases directory; a case id is a path relative to it. */
-  casesDir: string;
-  /** The reference target (D10): in update mode it alone writes the shared artefacts. */
-  reference: string;
-  /** Update mode (`UF_UPDATE=1`): writes artefacts instead of only comparing. */
-  update: boolean;
-  /**
-   * The command that writes the artefacts, which a failure names: `pnpm test:update` when absent
-   * (the corpus), `unframework test --update` in a project's tests (ADR-0086).
-   */
-  updateCommand?: string;
-  pixels: PixelMode;
-  /**
-   * The font families that may draw text in a live capture besides the bundled Inter: the
-   * project's `liveFonts` (ADR-0105). A comparison with committed baselines ignores them.
-   */
-  liveFonts?: readonly string[];
-  /** The canary installed in this run (`UF_CANARY`), or `null`. */
-  canary: string | null;
-  /**
-   * The image and platform the run is in (`UF_BASELINE_ENVIRONMENT`), or `null`. The visual
-   * command writes the committed baselines only when it is `BASELINE_ENVIRONMENT`.
-   */
-  baselineEnvironment: string | null;
-  /** The engine the browser projects run in (`UF_BROWSER`). */
-  browser: BrowserEngine;
-  /** Update mode: where the reference records what it wrote in this run, for its followers. */
-  ledgerDir: string;
-  /** Live pixels: where the reference publishes its captures for this run. */
-  liveDir: string;
-  /** Where this run's failed visual comparisons leave their reference, actual and diff images. */
-  diffsDir: string;
-  quarantine: QuarantineEntry[];
-  /** Every case's `case.json`, by case id (`{}` when a case has none). */
-  cases: Record<string, CaseConfig>;
+	/** Identifies this run: the scratch files of different runs never mix. */
+	runId: string;
+	/** Absolute path of the cases directory; a case id is a path relative to it. */
+	casesDir: string;
+	/** The reference target (D10): in update mode it alone writes the shared artefacts. */
+	reference: string;
+	/** Update mode (`UF_UPDATE=1`): writes artefacts instead of only comparing. */
+	update: boolean;
+	/**
+	 * The command that writes the artefacts, which a failure names: `pnpm test:update` when absent
+	 * (the corpus), `unframework test --update` in a project's tests (ADR-0086).
+	 */
+	updateCommand?: string;
+	pixels: PixelMode;
+	/**
+	 * The font families that may draw text in a live capture besides the bundled Inter: the
+	 * project's `liveFonts` (ADR-0105). A comparison with committed baselines ignores them.
+	 */
+	liveFonts?: readonly string[];
+	/** The canary installed in this run (`UF_CANARY`), or `null`. */
+	canary: string | null;
+	/**
+	 * The image and platform the run is in (`UF_BASELINE_ENVIRONMENT`), or `null`. The visual
+	 * command writes the committed baselines only when it is `BASELINE_ENVIRONMENT`.
+	 */
+	baselineEnvironment: string | null;
+	/** The engine the browser projects run in (`UF_BROWSER`). */
+	browser: BrowserEngine;
+	/** Update mode: where the reference records what it wrote in this run, for its followers. */
+	ledgerDir: string;
+	/** Live pixels: where the reference publishes its captures for this run. */
+	liveDir: string;
+	/** Where this run's failed visual comparisons leave their reference, actual and diff images. */
+	diffsDir: string;
+	quarantine: QuarantineEntry[];
+	/** Every case's `case.json`, by case id (`{}` when a case has none). */
+	cases: Record<string, CaseConfig>;
 }
 
 declare module "vitest" {
-  interface ProvidedContext {
-    /** The target this project verifies, such as `"vue"`. */
-    target: string;
-    ufHarness: HarnessContext;
-    /**
-     * Browser projects: the target's capability matrix, as plain data. The browser reads it to
-     * skip a test that requires an unsupported capability (`it(name, { requires }, fn)`) and to
-     * refuse interactions where nothing runs; it never imports a target, whose compiler code
-     * does not run in a browser.
-     */
-    ufCapabilities: Capabilities;
-    /**
-     * Browser projects: the cases the target has no output for (their expected diagnostics hold
-     * an error for it, the one it declares for a capability it lacks), by case id, each with
-     * those errors. Their specs load against a stand-in for the component, and each test is
-     * skipped with `no output: <the errors>`. Absent outside the harness.
-     */
-    ufNoOutput: Record<string, string>;
-    /**
-     * Browser projects: the cases the target cannot compile yet (ADR-0068), by case id, each with
-     * the cause: the case's L3 is quarantined on the target, whose browser build type-checks its
-     * output. Their specs load against a stand-in for the component, and each test runs and
-     * records every browser layer as failed with the cause. Absent outside the harness.
-     */
-    ufStandIn?: Record<string, string>;
-    /**
-     * SSR projects of a target the run adds only as some case's reference (ADR-0057): the ids
-     * of those cases, which it renders alone. Absent everywhere else.
-     */
-    ufOnly?: string[];
-    /**
-     * SSR and hydrate projects: the module specifier of the target's renderer
-     * (`toolchain.server`).
-     */
-    ufServer?: string;
-    /**
-     * Hydrate projects (L12, ADR-0095): `mount` renders on the server and hydrates, and every
-     * check a spec runs is recorded as L12. Absent everywhere else.
-     */
-    ufHydrate?: boolean;
-    /**
-     * SSR projects: the cases the server render spec renders (`@unframework.dev/testing/ssr`,
-     * ADR-0086), in order, each with its main source by absolute path. The spec imports each
-     * from there, so it runs the same from the workspace and from `node_modules`.
-     */
-    ufSsrCases?: SsrCase[];
-  }
+	interface ProvidedContext {
+		/** The target this project verifies, such as `"vue"`. */
+		target: string;
+		ufHarness: HarnessContext;
+		/**
+		 * Browser projects: the target's capability matrix, as plain data. The browser reads it to
+		 * skip a test that requires an unsupported capability (`it(name, { requires }, fn)`) and to
+		 * refuse interactions where nothing runs; it never imports a target, whose compiler code
+		 * does not run in a browser.
+		 */
+		ufCapabilities: Capabilities;
+		/**
+		 * Browser projects: the cases the target has no output for (their expected diagnostics hold
+		 * an error for it, the one it declares for a capability it lacks), by case id, each with
+		 * those errors. Their specs load against a stand-in for the component, and each test is
+		 * skipped with `no output: <the errors>`. Absent outside the harness.
+		 */
+		ufNoOutput: Record<string, string>;
+		/**
+		 * Browser projects: the cases the target cannot compile yet (ADR-0068), by case id, each with
+		 * the cause: the case's L3 is quarantined on the target, whose browser build type-checks its
+		 * output. Their specs load against a stand-in for the component, and each test runs and
+		 * records every browser layer as failed with the cause. Absent outside the harness.
+		 */
+		ufStandIn?: Record<string, string>;
+		/**
+		 * SSR projects of a target the run adds only as some case's reference (ADR-0057): the ids
+		 * of those cases, which it renders alone. Absent everywhere else.
+		 */
+		ufOnly?: string[];
+		/**
+		 * SSR and hydrate projects: the module specifier of the target's renderer
+		 * (`toolchain.server`).
+		 */
+		ufServer?: string;
+		/**
+		 * Hydrate projects (L12, ADR-0095): `mount` renders on the server and hydrates, and every
+		 * check a spec runs is recorded as L12. Absent everywhere else.
+		 */
+		ufHydrate?: boolean;
+		/**
+		 * SSR projects: the cases the server render spec renders (`@unframework.dev/testing/ssr`,
+		 * ADR-0086), in order, each with its main source by absolute path. The spec imports each
+		 * from there, so it runs the same from the workspace and from `node_modules`.
+		 */
+		ufSsrCases?: SsrCase[];
+	}
 }
 
 /** A case the server render spec renders (`ufSsrCases`). */
 export interface SsrCase {
-  /** The case id, a key of `HarnessContext.cases`. */
-  id: string;
-  /** The case's directory (absolute): its `__expected__/` is here. */
-  dir: string;
-  /** The main `.uf.tsx` source (absolute): what the scenarios render. */
-  source: string;
-  /**
-   * Why every scenario of the case is skipped on this target, recorded on L6 and L13: the corpus
-   * skips a case whose every test requires a capability the target lacks (ADR-0050).
-   */
-  skip?: string;
-  /**
-   * Why the case cannot be judged, which fails each of its scenarios: the corpus fails a case
-   * whose expected diagnostics are missing.
-   */
-  failure?: string;
+	/** The case id, a key of `HarnessContext.cases`. */
+	id: string;
+	/** The case's directory (absolute): its `__expected__/` is here. */
+	dir: string;
+	/** The main `.uf.tsx` source (absolute): what the scenarios render. */
+	source: string;
+	/**
+	 * Why every scenario of the case is skipped on this target, recorded on L6 and L13: the corpus
+	 * skips a case whose every test requires a capability the target lacks (ADR-0050).
+	 */
+	skip?: string;
+	/**
+	 * Why the case cannot be judged, which fails each of its scenarios: the corpus fails a case
+	 * whose expected diagnostics are missing.
+	 */
+	failure?: string;
 }
 
 /** The SSR scenarios of a case: its declared ones, or `default` with no props. */
 export function ssrScenarios(config: CaseConfig): Record<string, SsrScenario> {
-  return config.ssr && Object.keys(config.ssr).length ? config.ssr : { default: {} };
+	return config.ssr && Object.keys(config.ssr).length ? config.ssr : { default: {} };
 }
 
 /**
@@ -197,19 +197,19 @@ export function ssrScenarios(config: CaseConfig): Record<string, SsrScenario> {
  * outside every case, because its results would have nowhere to go in the parity matrix.
  */
 export function caseOfFile(
-  file: string,
-  harness: Pick<HarnessContext, "casesDir" | "cases">,
+	file: string,
+	harness: Pick<HarnessContext, "casesDir" | "cases">,
 ): string {
-  const normalized = file.replaceAll("\\", "/");
-  const casesDir = harness.casesDir.replaceAll("\\", "/").replace(/\/$/, "");
-  const directory = normalized.slice(0, normalized.lastIndexOf("/"));
-  const id = directory.startsWith(`${casesDir}/`) ? directory.slice(casesDir.length + 1) : "";
-  if (!id || !Object.hasOwn(harness.cases, id)) {
-    throw new Error(
-      `${file} is not in a case directory under ${casesDir}: a spec lives next to its case's .uf.tsx.`,
-    );
-  }
-  return id;
+	const normalized = file.replaceAll("\\", "/");
+	const casesDir = harness.casesDir.replaceAll("\\", "/").replace(/\/$/, "");
+	const directory = normalized.slice(0, normalized.lastIndexOf("/"));
+	const id = directory.startsWith(`${casesDir}/`) ? directory.slice(casesDir.length + 1) : "";
+	if (!id || !Object.hasOwn(harness.cases, id)) {
+		throw new Error(
+			`${file} is not in a case directory under ${casesDir}: a spec lives next to its case's .uf.tsx.`,
+		);
+	}
+	return id;
 }
 
 /**
@@ -217,10 +217,10 @@ export function caseOfFile(
  * the run's reference.
  */
 export function caseReference(
-  harness: Pick<HarnessContext, "reference" | "cases">,
-  caseId: string,
+	harness: Pick<HarnessContext, "reference" | "cases">,
+	caseId: string,
 ): string {
-  return harness.cases[caseId]?.reference ?? harness.reference;
+	return harness.cases[caseId]?.reference ?? harness.reference;
 }
 
 /**
@@ -228,11 +228,11 @@ export function caseReference(
  * (`caseReference`).
  */
 export function isReference(
-  harness: Pick<HarnessContext, "reference" | "cases">,
-  target: string,
-  caseId: string,
+	harness: Pick<HarnessContext, "reference" | "cases">,
+	target: string,
+	caseId: string,
 ): boolean {
-  return caseReference(harness, caseId) === target;
+	return caseReference(harness, caseId) === target;
 }
 
 /**
@@ -240,11 +240,11 @@ export function isReference(
  * (ADR-0057): they run after the reference and before every other target (`groupOrder`).
  */
 export function caseReferences(harness: Pick<HarnessContext, "reference" | "cases">): string[] {
-  return [
-    ...new Set(
-      Object.values(harness.cases).flatMap((config) =>
-        config.reference && config.reference !== harness.reference ? [config.reference] : [],
-      ),
-    ),
-  ].sort();
+	return [
+		...new Set(
+			Object.values(harness.cases).flatMap((config) =>
+				config.reference && config.reference !== harness.reference ? [config.reference] : [],
+			),
+		),
+	].sort();
 }

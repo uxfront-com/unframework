@@ -4,8 +4,8 @@
 
 /** A half-open range `[start, end)` of UTF-16 offsets into a file's source. */
 export interface Span {
-  start: number;
-  end: number;
+	start: number;
+	end: number;
 }
 
 /**
@@ -14,8 +14,8 @@ export interface Span {
  * node's own span in it.
  */
 export interface ShapeQuery {
-  file: string;
-  span: Span;
+	file: string;
+	span: Span;
 }
 
 /** A type to print, named as a {@link ShapeQuery} names it. */
@@ -26,63 +26,63 @@ export type TypeQuery = ShapeQuery;
  * `defineDirective<T>` that `vFocusTrap` names. Its spans are in the queried file.
  */
 export interface DirectiveValueQuery {
-  /** The value as the parser spans it: a container's expression, or a string attribute's literal. */
-  value: Span;
-  /** Which of the two the value is: a string attribute's literal, or a container's expression. */
-  kind: "string" | "expression";
-  /** An identifier in the same file bound to the directive: its `const`'s name, or its import's local name. */
-  directive: Span;
+	/** The value as the parser spans it: a container's expression, or a string attribute's literal. */
+	value: Span;
+	/** Which of the two the value is: a string attribute's literal, or a container's expression. */
+	kind: "string" | "expression";
+	/** An identifier in the same file bound to the directive: its `const`'s name, or its import's local name. */
+	directive: Span;
 }
 
 /** What the checker says of one directive's value. */
 export interface DirectiveValueCheck {
-  assignable: boolean;
-  /** The value's type, as the checker prints it. */
-  value: string;
-  /** The directive's `T`, as the checker prints it. */
-  expected: string;
+	assignable: boolean;
+	/** The value's type, as the checker prints it. */
+	value: string;
+	/** The directive's `T`, as the checker prints it. */
+	expected: string;
 }
 
 /** The answer to {@link TypeOracle.checkDirectiveValues}. */
 export interface DirectiveValueChecks {
-  /** One per query, in order: `null` where the adapter can't type the value or the directive. */
-  checks: (DirectiveValueCheck | null)[];
-  /**
-   * The files the answers read besides the queried one, sorted, named as
-   * {@link TypeShape.dependencies} names them.
-   */
-  dependencies: string[];
+	/** One per query, in order: `null` where the adapter can't type the value or the directive. */
+	checks: (DirectiveValueCheck | null)[];
+	/**
+	 * The files the answers read besides the queried one, sorted, named as
+	 * {@link TypeShape.dependencies} names them.
+	 */
+	dependencies: string[];
 }
 
 /** The files that changed, were created or were deleted, relative to the oracle's root. */
 export interface FileChanges {
-  /**
-   * Files relative to the root, and packages installed, removed or changed as `pkg:<name>`, by
-   * the name they are imported under (`pkg:x` for `@types/x`).
-   */
-  files: string[];
+	/**
+	 * Files relative to the root, and packages installed, removed or changed as `pkg:<name>`, by
+	 * the name they are imported under (`pkg:x` for `@types/x`).
+	 */
+	files: string[];
 }
 
 export interface TypeOracle {
-  /** Resolves the shape of a type at a location: props, emits, slot props, model types. */
-  resolveShape(query: ShapeQuery): Promise<TypeShape>;
-  /** Prints a type in a form every target's type system accepts. */
-  printType(query: TypeQuery): Promise<string>;
-  /**
-   * Checks each directive's value in a file against the directive's type argument (ADR-0109):
-   * one call per module, with every use. `source` is the text the caller compiles for `file`,
-   * which the queries' spans index, and which is checked in place of the file's text on the disk.
-   * Only a type-checker can type a value, so an adapter without one leaves the method out, and
-   * nothing is checked.
-   */
-  checkDirectiveValues?(
-    file: string,
-    source: string,
-    queries: DirectiveValueQuery[],
-  ): Promise<DirectiveValueChecks>;
-  /** Tells the oracle which files changed, for incremental builds. */
-  update(changes: FileChanges): Promise<void>;
-  dispose(): Promise<void>;
+	/** Resolves the shape of a type at a location: props, emits, slot props, model types. */
+	resolveShape(query: ShapeQuery): Promise<TypeShape>;
+	/** Prints a type in a form every target's type system accepts. */
+	printType(query: TypeQuery): Promise<string>;
+	/**
+	 * Checks each directive's value in a file against the directive's type argument (ADR-0109):
+	 * one call per module, with every use. `source` is the text the caller compiles for `file`,
+	 * which the queries' spans index, and which is checked in place of the file's text on the disk.
+	 * Only a type-checker can type a value, so an adapter without one leaves the method out, and
+	 * nothing is checked.
+	 */
+	checkDirectiveValues?(
+		file: string,
+		source: string,
+		queries: DirectiveValueQuery[],
+	): Promise<DirectiveValueChecks>;
+	/** Tells the oracle which files changed, for incremental builds. */
+	update(changes: FileChanges): Promise<void>;
+	dispose(): Promise<void>;
 }
 
 /**
@@ -91,115 +91,115 @@ export interface TypeOracle {
  * cannot evaluate is an `opaque` node with an entry in `unresolved`, never a wrong node.
  */
 export interface TypeShape {
-  /** The index in `nodes` of the queried type. */
-  root: number;
-  nodes: TypeNode[];
-  /**
-   * How the type is built, each construct once, in the order resolution met it: `import`,
-   * `package`, `extends`, `intersection`, `union`, `generic` (an instantiation) and
-   * `utility:<Name>` (`utility:Pick`), and for what it could not evaluate `conditional`,
-   * `mapped`, `indexed-access`, `keyof`, `typeof`, `template-literal`, `import-type`, `infer`,
-   * `qualified-name`, `class-or-enum`, `index-signature`, `call-signature`, `computed-key`,
-   * `accessor`, `overload`, `circular`, `duplicate-declaration` or `unsupported`. A construct it
-   * met and could not evaluate there, such as a `Pick` of a key the object lacks, is listed too,
-   * with its span in `unresolved`.
-   */
-  construction: string[];
-  /**
-   * What the shape was read from, besides the query's own file, sorted: files relative to the
-   * root, and packages as `pkg:<name>`. Never an absolute path (P8).
-   */
-  dependencies: string[];
-  /** The spans the adapter could not resolve, in the order it met them. */
-  unresolved: UnresolvedType[];
+	/** The index in `nodes` of the queried type. */
+	root: number;
+	nodes: TypeNode[];
+	/**
+	 * How the type is built, each construct once, in the order resolution met it: `import`,
+	 * `package`, `extends`, `intersection`, `union`, `generic` (an instantiation) and
+	 * `utility:<Name>` (`utility:Pick`), and for what it could not evaluate `conditional`,
+	 * `mapped`, `indexed-access`, `keyof`, `typeof`, `template-literal`, `import-type`, `infer`,
+	 * `qualified-name`, `class-or-enum`, `index-signature`, `call-signature`, `computed-key`,
+	 * `accessor`, `overload`, `circular`, `duplicate-declaration` or `unsupported`. A construct it
+	 * met and could not evaluate there, such as a `Pick` of a key the object lacks, is listed too,
+	 * with its span in `unresolved`.
+	 */
+	construction: string[];
+	/**
+	 * What the shape was read from, besides the query's own file, sorted: files relative to the
+	 * root, and packages as `pkg:<name>`. Never an absolute path (P8).
+	 */
+	dependencies: string[];
+	/** The spans the adapter could not resolve, in the order it met them. */
+	unresolved: UnresolvedType[];
 }
 
 export type TypeNode =
-  | PrimitiveNode
-  | LiteralNode
-  | UnionNode
-  | ArrayNode
-  | TupleNode
-  | ObjectNode
-  | FunctionNode
-  | TypeParameterNode
-  | OpaqueNode;
+	| PrimitiveNode
+	| LiteralNode
+	| UnionNode
+	| ArrayNode
+	| TupleNode
+	| ObjectNode
+	| FunctionNode
+	| TypeParameterNode
+	| OpaqueNode;
 
 export interface PrimitiveNode {
-  kind: "primitive";
-  name:
-    | "string"
-    | "number"
-    | "boolean"
-    | "bigint"
-    | "symbol"
-    | "object"
-    | "null"
-    | "undefined"
-    | "void"
-    | "any"
-    | "unknown"
-    | "never";
+	kind: "primitive";
+	name:
+		| "string"
+		| "number"
+		| "boolean"
+		| "bigint"
+		| "symbol"
+		| "object"
+		| "null"
+		| "undefined"
+		| "void"
+		| "any"
+		| "unknown"
+		| "never";
 }
 
 export interface LiteralNode {
-  kind: "literal";
-  value: string | number | boolean;
+	kind: "literal";
+	value: string | number | boolean;
 }
 
 /** A union, flattened: no member is itself a union, and no node appears twice. */
 export interface UnionNode {
-  kind: "union";
-  types: number[];
+	kind: "union";
+	types: number[];
 }
 
 export interface ArrayNode {
-  kind: "array";
-  element: number;
-  readonly: boolean;
+	kind: "array";
+	element: number;
+	readonly: boolean;
 }
 
 export interface TupleNode {
-  kind: "tuple";
-  elements: TupleElement[];
-  readonly: boolean;
+	kind: "tuple";
+	elements: TupleElement[];
+	readonly: boolean;
 }
 
 export interface TupleElement {
-  /** The label of a named member, `[value: string]`. */
-  name?: string;
-  type: number;
-  optional: boolean;
-  rest: boolean;
+	/** The label of a named member, `[value: string]`. */
+	name?: string;
+	type: number;
+	optional: boolean;
+	rest: boolean;
 }
 
 export interface ObjectNode {
-  kind: "object";
-  /** The interface or alias that declares this object, when one does. */
-  declaration?: DeclarationRef;
-  /** The arguments that instantiate a generic declaration, `ListProps<string>`, in order. */
-  typeArguments?: number[];
-  members: ShapeMember[];
+	kind: "object";
+	/** The interface or alias that declares this object, when one does. */
+	declaration?: DeclarationRef;
+	/** The arguments that instantiate a generic declaration, `ListProps<string>`, in order. */
+	typeArguments?: number[];
+	members: ShapeMember[];
 }
 
 export interface FunctionNode {
-  kind: "function";
-  parameters: FunctionParameter[];
-  returns: number;
+	kind: "function";
+	parameters: FunctionParameter[];
+	returns: number;
 }
 
 export interface FunctionParameter {
-  name: string;
-  type: number;
-  optional: boolean;
-  rest: boolean;
+	name: string;
+	type: number;
+	optional: boolean;
+	rest: boolean;
 }
 
 /** A type parameter in scope at the query, such as `T` in `function List<T>(…)`. */
 export interface TypeParameterNode {
-  kind: "typeParameter";
-  name: string;
-  constraint?: number;
+	kind: "typeParameter";
+	name: string;
+	constraint?: number;
 }
 
 /**
@@ -207,52 +207,52 @@ export interface TypeParameterNode {
  * is not unresolved, or a construct it could not evaluate, which has its entry in `unresolved`.
  */
 export interface OpaqueNode {
-  kind: "opaque";
-  /** The type's text as written. */
-  text: string;
-  file: string;
-  span: Span;
+	kind: "opaque";
+	/** The type's text as written. */
+	text: string;
+	file: string;
+	span: Span;
 }
 
 /** A named `interface` or `type` declaration. */
 export interface DeclarationRef {
-  /** The declaring file, relative to the root. */
-  file: string;
-  name: string;
-  exported: boolean;
+	/** The declaring file, relative to the root. */
+	file: string;
+	name: string;
+	exported: boolean;
 }
 
 export interface ShapeMember {
-  name: string;
-  optional: boolean;
-  readonly: boolean;
-  type: number;
-  /** The file the member is written in, relative to the root. */
-  file: string;
-  /** The named declaration it belongs to; absent for a type literal written in place. */
-  declaration?: DeclarationRef;
-  /** The member's own span in `file`: its signature, as the parser spans it. */
-  span: Span;
-  /** The member's type as written in `file`, with its span; absent when it has none. */
-  typeText?: TypeText;
-  /** The type names its type references, each once, in source order. */
-  references: string[];
+	name: string;
+	optional: boolean;
+	readonly: boolean;
+	type: number;
+	/** The file the member is written in, relative to the root. */
+	file: string;
+	/** The named declaration it belongs to; absent for a type literal written in place. */
+	declaration?: DeclarationRef;
+	/** The member's own span in `file`: its signature, as the parser spans it. */
+	span: Span;
+	/** The member's type as written in `file`, with its span; absent when it has none. */
+	typeText?: TypeText;
+	/** The type names its type references, each once, in source order. */
+	references: string[];
 }
 
 export interface TypeText {
-  code: string;
-  span: Span;
+	code: string;
+	span: Span;
 }
 
 export interface UnresolvedType {
-  file: string;
-  span: Span;
-  /**
-   * Why: `missing-module` (the file cannot be read), `missing-export` (the module declares or
-   * exports no such type), `external` (an import that the in-module path does not follow),
-   * `unsupported` (a construct this adapter cannot evaluate, named in `construction`) or
-   * `conflict` (two parts of an intersection, or two declarations of an interface, write one
-   * member with different types; the member's type is kept as written).
-   */
-  reason: "missing-module" | "missing-export" | "external" | "unsupported" | "conflict";
+	file: string;
+	span: Span;
+	/**
+	 * Why: `missing-module` (the file cannot be read), `missing-export` (the module declares or
+	 * exports no such type), `external` (an import that the in-module path does not follow),
+	 * `unsupported` (a construct this adapter cannot evaluate, named in `construction`) or
+	 * `conflict` (two parts of an intersection, or two declarations of an interface, write one
+	 * member with different types; the member's type is kept as written).
+	 */
+	reason: "missing-module" | "missing-export" | "external" | "unsupported" | "conflict";
 }

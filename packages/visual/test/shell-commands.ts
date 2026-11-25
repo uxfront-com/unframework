@@ -6,21 +6,21 @@
  * whose examples have controls (ADR-0113).
  */
 export const SHELL_FIXTURES = [
-  "design-system",
-  "shell-tree",
-  "example-controls",
-  "example-twins",
+	"design-system",
+	"shell-tree",
+	"example-controls",
+	"example-twins",
 ] as const;
 export type ShellFixture = (typeof SHELL_FIXTURES)[number];
 
 declare module "vitest/browser" {
-  interface BrowserCommands {
-    /**
-     * Writes a fixture's shell page to `.output/shell/<name>.html`, with a frame per target (all
-     * seven unless `targets` names some) on a stub that answers every render, and returns the page.
-     */
-    ufShellFixture(name: ShellFixture, targets?: string[]): Promise<{ html: string }>;
-    /** Emulates the system's colour scheme, as `prefers-color-scheme` reads it. */
-    ufShellColorScheme(scheme: "light" | "dark"): Promise<void>;
-  }
+	interface BrowserCommands {
+		/**
+		 * Writes a fixture's shell page to `.output/shell/<name>.html`, with a frame per target (all
+		 * seven unless `targets` names some) on a stub that answers every render, and returns the page.
+		 */
+		ufShellFixture(name: ShellFixture, targets?: string[]): Promise<{ html: string }>;
+		/** Emulates the system's colour scheme, as `prefers-color-scheme` reads it. */
+		ufShellColorScheme(scheme: "light" | "dark"): Promise<void>;
+	}
 }

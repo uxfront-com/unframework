@@ -6,11 +6,11 @@ import { expect } from "vitest";
 import Post from "./Post.uf.tsx";
 
 describeTargets("slots/named", () => {
-  it("renders each fill in its slot", async () => {
-    const view = await mountScenario(Post, "grace");
-    await view.expectParity("grace");
-    await expect.element(view.getByRole("heading", { name: "Release notes" })).toBeVisible();
-    await expect.element(view.getByText("By Grace")).toBeVisible();
-    await expect.element(view.getByText("Slots arrive in M3.")).toBeVisible();
-  });
+	it("renders each fill in its slot", async () => {
+		const view = await mountScenario(Post, "grace");
+		await view.expectParity("grace");
+		await expect.element(view.getByRole("heading", { name: "Release notes" })).toBeVisible();
+		await expect.element(view.getByText("By Grace")).toBeVisible();
+		await expect.element(view.getByText("Slots arrive in M3.")).toBeVisible();
+	});
 });

@@ -1,33 +1,33 @@
 {
-  "name": "web",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "nuxt generate",
-    "check-types": "tsc -b --pretty false 2>&1 | awk '/^[^ ]/ { own = !/node_modules\\/(docus|@uxfront\\/layer-docs)\\// } own { print; failed = 1 } END { exit failed }'",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "lighthouse": "pnpm dlx @lhci/cli autorun",
-    "check:seo": "node scripts/check-seo.ts",
-    "test": "node --test \"scripts/**/*.test.ts\""
-  },
-  "dependencies": {
-    "@amplitude/session-replay-browser": "^1.51.0",
-    "@nuxt/content": "^3.16.1",
-    "@nuxtjs/partytown": "^2.0.0",
-    "@uxfront/layer-docs": "^0.9.1",
-    "@uxfront/layer-ui": "^0.1.11",
-    "@uxfront/scene": "^0.5.1",
-    "@uxfront/ui": "^0.9.1",
-    "docus": "^5.13.0",
-    "nuxt": "^4.5.2",
-    "vue": "^3.5.43",
-    "vue-router": "^5.3.1"
-  },
-  "devDependencies": {
-    "@nuxt/kit": "^4.5.2",
-    "@types/node": "^24.19.0"
-  }
+	"name": "web",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "nuxt generate",
+		"check-types": "tsc -b --pretty false 2>&1 | awk '/^[^ ]/ { own = !/node_modules\\/(docus|@uxfront\\/layer-docs)\\// } own { print; failed = 1 } END { exit failed }'",
+		"dev": "nuxt dev",
+		"generate": "nuxt generate",
+		"preview": "nuxt preview",
+		"postinstall": "nuxt prepare",
+		"lighthouse": "pnpm dlx @lhci/cli autorun",
+		"check:seo": "node scripts/check-seo.ts",
+		"test": "node --test \"scripts/**/*.test.ts\""
+	},
+	"dependencies": {
+		"@amplitude/session-replay-browser": "^1.51.0",
+		"@nuxt/content": "^3.16.1",
+		"@nuxtjs/partytown": "^2.0.0",
+		"@uxfront/layer-docs": "^0.9.1",
+		"@uxfront/layer-ui": "^0.1.11",
+		"@uxfront/scene": "^0.5.1",
+		"@uxfront/ui": "^0.9.1",
+		"docus": "^5.13.0",
+		"nuxt": "^4.5.2",
+		"vue": "^3.5.43",
+		"vue-router": "^5.3.1"
+	},
+	"devDependencies": {
+		"@nuxt/kit": "^4.5.2",
+		"@types/node": "^24.19.0"
+	}
 }

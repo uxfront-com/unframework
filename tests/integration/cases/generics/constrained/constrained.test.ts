@@ -7,17 +7,17 @@ import Table from "./Table.uf.tsx";
 
 /** A row of the scenario: more than the constraint declares. */
 interface Person {
-  id: string;
-  label: string;
-  born: number;
+	id: string;
+	label: string;
+	born: number;
 }
 
 describeTargets("generics/constrained", () => {
-  it("renders a row for each item", async () => {
-    const view = await mountScenario(Table<Person>, "people");
-    await view.expectParity("people");
-    await expect.element(view.getByRole("table", { name: "People" })).toBeVisible();
-    await expect.element(view.getByRole("rowheader", { name: "ada" })).toBeVisible();
-    await expect.element(view.getByRole("cell", { name: "Grace Hopper" })).toBeVisible();
-  });
+	it("renders a row for each item", async () => {
+		const view = await mountScenario(Table<Person>, "people");
+		await view.expectParity("people");
+		await expect.element(view.getByRole("table", { name: "People" })).toBeVisible();
+		await expect.element(view.getByRole("rowheader", { name: "ada" })).toBeVisible();
+		await expect.element(view.getByRole("cell", { name: "Grace Hopper" })).toBeVisible();
+	});
 });

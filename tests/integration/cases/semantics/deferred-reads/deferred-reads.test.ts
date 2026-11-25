@@ -8,30 +8,30 @@ import { expect } from "vitest";
 import DeleteFile from "./DeleteFile.uf.tsx";
 
 describeTargets("semantics/deferred-reads", () => {
-  it("renders the file and its delete button", async () => {
-    const view = await mountScenario(DeleteFile, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByText("report.pdf, 1 copy")).toBeVisible();
-    await expect.element(view.getByRole("button", { name: "Delete" })).toBeVisible();
-  });
+	it("renders the file and its delete button", async () => {
+		const view = await mountScenario(DeleteFile, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByText("report.pdf, 1 copy")).toBeVisible();
+		await expect.element(view.getByRole("button", { name: "Delete" })).toBeVisible();
+	});
 
-  // Browser-only: a rerender has no server twin.
-  it(
-    "reads the state and props written while it waited",
-    { requires: ["interactivity"] },
-    async () => {
-      const view = await mountScenario(DeleteFile, "initial");
-      await view.user.click(view.getByRole("button", { name: "Delete" }));
-      // Compared before the confirmation, which only Delete's handler shows: a later step on it
-      // must not abort the test before L9 compares this one.
-      await view.expectParity("delete-requested");
-      await view.user.click(view.getByRole("button", { name: "Add a copy" }));
-      await view.rerender({ fileName: "report-final.pdf" });
-      await view.user.click(view.getByRole("button", { name: "Confirm the deletion" }));
-      await view.expectParity("deleted");
-      await expect.element(view.getByText("report-final.pdf, 2 copies")).toBeVisible();
-      await expect.element(view.getByRole("button", { name: "Delete" })).toBeVisible();
-      expect(view.emitted("deleted")).toEqual([["report-final.pdf", 2]]);
-    },
-  );
+	// Browser-only: a rerender has no server twin.
+	it(
+		"reads the state and props written while it waited",
+		{ requires: ["interactivity"] },
+		async () => {
+			const view = await mountScenario(DeleteFile, "initial");
+			await view.user.click(view.getByRole("button", { name: "Delete" }));
+			// Compared before the confirmation, which only Delete's handler shows: a later step on it
+			// must not abort the test before L9 compares this one.
+			await view.expectParity("delete-requested");
+			await view.user.click(view.getByRole("button", { name: "Add a copy" }));
+			await view.rerender({ fileName: "report-final.pdf" });
+			await view.user.click(view.getByRole("button", { name: "Confirm the deletion" }));
+			await view.expectParity("deleted");
+			await expect.element(view.getByText("report-final.pdf, 2 copies")).toBeVisible();
+			await expect.element(view.getByRole("button", { name: "Delete" })).toBeVisible();
+			expect(view.emitted("deleted")).toEqual([["report-final.pdf", 2]]);
+		},
+	);
 });

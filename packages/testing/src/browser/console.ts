@@ -10,21 +10,21 @@
 
 /** A captured console message. */
 export interface ConsoleEntry {
-  level: "warn" | "error";
-  message: string;
-  /** Where it was logged: the page, or the adapter's server-side render. */
-  source: "page" | "server";
-  /** It was logged before the test that judges it began. */
-  beforeTest?: true;
-  /** Why it is not judged: a step that fails on purpose logged it (ADR-0078). */
-  excused?: string;
-  /** The case of the spec file that had ended on this page when it was logged (ADR-0092). */
-  afterFile?: string;
+	level: "warn" | "error";
+	message: string;
+	/** Where it was logged: the page, or the adapter's server-side render. */
+	source: "page" | "server";
+	/** It was logged before the test that judges it began. */
+	beforeTest?: true;
+	/** Why it is not judged: a step that fails on purpose logged it (ADR-0078). */
+	excused?: string;
+	/** The case of the spec file that had ended on this page when it was logged (ADR-0092). */
+	afterFile?: string;
 }
 
 interface Allowance {
-  pattern: RegExp;
-  reason: string;
+	pattern: RegExp;
+	reason: string;
 }
 
 const entries: ConsoleEntry[] = [];
@@ -35,7 +35,7 @@ let endedFile: string | undefined;
 
 /** A captured message, with the spec file it followed if it came between two files. */
 function capture(entry: ConsoleEntry): void {
-  entries.push(endedFile === undefined ? entry : { ...entry, afterFile: endedFile });
+	entries.push(endedFile === undefined ? entry : { ...entry, afterFile: endedFile });
 }
 
 /**
@@ -43,23 +43,23 @@ function capture(entry: ConsoleEntry): void {
  * keeps the messages.
  */
 export function installConsoleCapture(): void {
-  if (installed) return;
-  installed = true;
-  for (const level of ["warn", "error"] as const) {
-    const original = console[level].bind(console);
-    console[level] = (...args: unknown[]) => {
-      capture({ level, message: formatConsoleArgs(args), source: "page" });
-      for (const arg of args) errorWatcher?.(arg);
-      original(...args);
-    };
-  }
+	if (installed) return;
+	installed = true;
+	for (const level of ["warn", "error"] as const) {
+		const original = console[level].bind(console);
+		console[level] = (...args: unknown[]) => {
+			capture({ level, message: formatConsoleArgs(args), source: "page" });
+			for (const arg of args) errorWatcher?.(arg);
+			original(...args);
+		};
+	}
 }
 
 /** Records messages an adapter captured outside the page. */
 export function captureExternalConsole(
-  messages: readonly { level: "warn" | "error"; message: string }[],
+	messages: readonly { level: "warn" | "error"; message: string }[],
 ): void {
-  for (const { level, message } of messages) capture({ level, message, source: "server" });
+	for (const { level, message } of messages) capture({ level, message, source: "server" });
 }
 
 /**
@@ -67,13 +67,13 @@ export function captureExternalConsole(
  * the only record of why the message is acceptable.
  */
 export function allowConsole(pattern: RegExp, reason: string): void {
-  if (!reason.trim()) throw new Error("allowConsole needs a reason.");
-  // Without `g` and `y`: their `test()` carries `lastIndex` from one message to the next, so a
-  // second matching message would not match.
-  allowances.push({
-    pattern: new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, "")),
-    reason,
-  });
+	if (!reason.trim()) throw new Error("allowConsole needs a reason.");
+	// Without `g` and `y`: their `test()` carries `lastIndex` from one message to the next, so a
+	// second matching message would not match.
+	allowances.push({
+		pattern: new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, "")),
+		reason,
+	});
 }
 
 /**
@@ -81,13 +81,13 @@ export function allowConsole(pattern: RegExp, reason: string): void {
  * and are judged with this one. The previous test's allowances end here.
  */
 export function beginTestConsole(): void {
-  for (const entry of entries) entry.beforeTest = true;
-  allowances.length = 0;
+	for (const entry of entries) entry.beforeTest = true;
+	allowances.length = 0;
 }
 
 /** Ends a judgement: the messages captured so far have been judged. */
 export function endTestConsole(): void {
-  entries.length = 0;
+	entries.length = 0;
 }
 
 /**
@@ -95,25 +95,25 @@ export function endTestConsole(): void {
  * file starts, came after it.
  */
 export function endSpecFileConsole(caseId: string): void {
-  endedFile = caseId;
+	endedFile = caseId;
 }
 
 /** Starts a spec file: what the page logs from now on is this file's. */
 export function beginSpecFileConsole(): void {
-  endedFile = undefined;
+	endedFile = undefined;
 }
 
 /** Calls `watch` with each argument the console is given, until the returned function runs. */
 export function watchConsoleErrors(watch: (value: unknown) => void): () => void {
-  errorWatcher = watch;
-  return () => {
-    errorWatcher = undefined;
-  };
+	errorWatcher = watch;
+	return () => {
+		errorWatcher = undefined;
+	};
 }
 
 /** Where the captured messages end now, for {@link excuseConsoleSince}. */
 export function consoleMark(): number {
-  return entries.length;
+	return entries.length;
 }
 
 /**
@@ -122,38 +122,38 @@ export function consoleMark(): number {
  * pattern would hold for the rest of the test.
  */
 export function excuseConsoleSince(mark: number, reason: string): void {
-  if (!reason.trim()) throw new Error("excuseConsoleSince needs a reason.");
-  for (const entry of entries.slice(mark)) entry.excused = reason;
+	if (!reason.trim()) throw new Error("excuseConsoleSince needs a reason.");
+	for (const entry of entries.slice(mark)) entry.excused = reason;
 }
 
 /** Every message the current test will be judged on, those logged before it began first. */
 export function capturedConsole(): readonly ConsoleEntry[] {
-  return entries;
+	return entries;
 }
 
 /** The captured messages no allowance covers. */
 export function unexpectedConsole(): ConsoleEntry[] {
-  return entries.filter(
-    (entry) =>
-      entry.excused === undefined && !allowances.some(({ pattern }) => pattern.test(entry.message)),
-  );
+	return entries.filter(
+		(entry) =>
+			entry.excused === undefined && !allowances.some(({ pattern }) => pattern.test(entry.message)),
+	);
 }
 
 /** Describes unexpected messages for a failure: one line each, the first line of the message. */
 export function describeConsole(unexpected: readonly ConsoleEntry[]): string {
-  const lines = unexpected.map((entry) => {
-    const where = [
-      ...(entry.source === "server" ? ["server render"] : []),
-      ...(entry.beforeTest
-        ? ["before the test: module evaluation, a beforeAll hook or an earlier teardown"]
-        : []),
-      ...(entry.afterFile === undefined
-        ? []
-        : [`after the last test of ${entry.afterFile}, which ran earlier on this page`]),
-    ];
-    return `  console.${entry.level}${where.length ? ` (${where.join("; ")})` : ""}: ${entry.message.split("\n")[0]}`;
-  });
-  return `${unexpected.length} unexpected console message(s):\n${lines.join("\n")}`;
+	const lines = unexpected.map((entry) => {
+		const where = [
+			...(entry.source === "server" ? ["server render"] : []),
+			...(entry.beforeTest
+				? ["before the test: module evaluation, a beforeAll hook or an earlier teardown"]
+				: []),
+			...(entry.afterFile === undefined
+				? []
+				: [`after the last test of ${entry.afterFile}, which ran earlier on this page`]),
+		];
+		return `  console.${entry.level}${where.length ? ` (${where.join("; ")})` : ""}: ${entry.message.split("\n")[0]}`;
+	});
+	return `${unexpected.length} unexpected console message(s):\n${lines.join("\n")}`;
 }
 
 /**
@@ -161,34 +161,34 @@ export function describeConsole(unexpected: readonly ConsoleEntry[]): string {
  * which React uses (`console.error("…%s", name)`), so allowlist patterns match the real text.
  */
 export function formatConsoleArgs(args: readonly unknown[]): string {
-  const text = (value: unknown) =>
-    value instanceof Error
-      ? value.message
-      : typeof value === "string"
-        ? value
-        : typeof value === "object" && value !== null
-          ? safeJson(value)
-          : String(value);
-  const [first, ...rest] = args;
-  if (typeof first !== "string") return args.map(text).join(" ");
-  let index = 0;
-  const head = first.replace(/%[sdifoOc%]/g, (token) => {
-    if (token === "%%") return "%";
-    if (token === "%c") {
-      index += 1;
-      return "";
-    }
-    return index < rest.length ? text(rest[index++]) : token;
-  });
-  return [head, ...rest.slice(index).map(text)].join(" ");
+	const text = (value: unknown) =>
+		value instanceof Error
+			? value.message
+			: typeof value === "string"
+				? value
+				: typeof value === "object" && value !== null
+					? safeJson(value)
+					: String(value);
+	const [first, ...rest] = args;
+	if (typeof first !== "string") return args.map(text).join(" ");
+	let index = 0;
+	const head = first.replace(/%[sdifoOc%]/g, (token) => {
+		if (token === "%%") return "%";
+		if (token === "%c") {
+			index += 1;
+			return "";
+		}
+		return index < rest.length ? text(rest[index++]) : token;
+	});
+	return [head, ...rest.slice(index).map(text)].join(" ");
 }
 
 function safeJson(value: object): string {
-  try {
-    // JSON.stringify has no text for some objects (a function's own properties, for one).
-    return JSON.stringify(value) ?? Object.prototype.toString.call(value);
-  } catch {
-    // Circular structures (DOM nodes, framework internals) have no JSON form; their tag is enough.
-    return Object.prototype.toString.call(value);
-  }
+	try {
+		// JSON.stringify has no text for some objects (a function's own properties, for one).
+		return JSON.stringify(value) ?? Object.prototype.toString.call(value);
+	} catch {
+		// Circular structures (DOM nodes, framework internals) have no JSON form; their tag is enough.
+		return Object.prototype.toString.call(value);
+	}
 }

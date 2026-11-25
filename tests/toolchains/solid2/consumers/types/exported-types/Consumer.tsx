@@ -1,11 +1,11 @@
 import Button, {
-  type ButtonProps,
-  type ButtonSize,
+	type ButtonProps,
+	type ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/solid2/Button";
 
 const props: ButtonProps = { label: "Save", tone: "secondary" };
 const size: ButtonSize = "large";
 
 export function Consumer() {
-  return <Button label={props.label} tone={props.tone} data-size={size} />;
+	return <Button label={props.label} tone={props.tone} data-size={size} />;
 }

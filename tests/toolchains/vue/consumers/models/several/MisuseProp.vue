@@ -3,6 +3,6 @@ import PriceRange from "../../../../../integration/cases/models/several/__output
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 PriceRange.prop:label -->
-  <PriceRange :label="false" />
+	<!-- @uf-expect TS2322 PriceRange.prop:label -->
+	<PriceRange :label="false" />
 </template>

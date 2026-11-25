@@ -3,5 +3,5 @@ import Button from "../../../../../integration/cases/types/extends-chain/__outpu
 </script>
 
 <template>
-  <Button id="save" label="Save" :disabled="true" />
+	<Button id="save" label="Save" :disabled="true" />
 </template>

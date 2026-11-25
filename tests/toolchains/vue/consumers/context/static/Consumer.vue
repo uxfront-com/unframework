@@ -3,5 +3,5 @@ import Badge from "../../../../../integration/cases/context/static/__output__/vu
 </script>
 
 <template>
-  <Badge text="New" />
+	<Badge text="New" />
 </template>

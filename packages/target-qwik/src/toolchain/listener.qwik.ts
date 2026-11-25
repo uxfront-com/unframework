@@ -9,8 +9,8 @@ import type { MountListener } from "@unframework.dev/codegen";
 
 /** A QRL that calls the test's listener with the arguments the component emits. */
 export function listenerQrl(listener: MountListener): QRL<MountListener> {
-  // The listener lives in the test's page only, and a client render never serialises it: Qwik's
-  // development check refuses to capture a function unless it is marked so.
-  const local = noSerialize(listener);
-  return $((...args: unknown[]) => local?.(...args));
+	// The listener lives in the test's page only, and a client render never serialises it: Qwik's
+	// development check refuses to capture a function unless it is marked so.
+	const local = noSerialize(listener);
+	return $((...args: unknown[]) => local?.(...args));
 }

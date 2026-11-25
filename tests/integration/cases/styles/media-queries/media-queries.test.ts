@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Panel from "./Panel.uf.tsx";
 
 describeTargets("styles/media-queries", () => {
-  it("applies the query that matches the viewport, and not the other", async () => {
-    const view = await mountScenario(Panel, "notice");
-    await view.expectParity("notice");
-    await expect.element(view.getByText("Wide enough for padding.")).toBeVisible();
-  });
+	it("applies the query that matches the viewport, and not the other", async () => {
+		const view = await mountScenario(Panel, "notice");
+		await view.expectParity("notice");
+		await expect.element(view.getByText("Wide enough for padding.")).toBeVisible();
+	});
 });

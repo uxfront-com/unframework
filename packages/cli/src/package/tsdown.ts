@@ -10,15 +10,15 @@ import { dropSideEffectImports, runScript, sanitizeBelow, writeFiles } from "./p
 
 /** What a target's tsconfig says about its JSX. */
 export interface JsxOptions {
-  jsx: "react-jsx" | "preserve";
-  jsxImportSource: string;
+	jsx: "react-jsx" | "preserve";
+	jsxImportSource: string;
 }
 
 /** One tsdown run over a target's tree. */
 export interface TsdownRun {
-  /** The extension of what it writes. */
-  extension: ".js" | ".jsx";
-  plugins?: readonly object[];
+	/** The extension of what it writes. */
+	extension: ".js" | ".jsx";
+	plugins?: readonly object[];
 }
 
 const SCRIPT = /\.[cm]?[jt]sx?$/;
@@ -29,12 +29,12 @@ const SCRIPT = /\.[cm]?[jt]sx?$/;
  * more of: each import stays as written, and the sheet is copied to where it points.
  */
 const KEEP_IMPORTS = {
-  name: "unframework:keep-imports",
-  resolveId(id: string, importer: string | undefined) {
-    if (importer === undefined) return null;
-    const local = id.startsWith(".") || isAbsolute(id);
-    return !local || id.endsWith(".css") ? { id, external: true } : null;
-  },
+	name: "unframework:keep-imports",
+	resolveId(id: string, importer: string | undefined) {
+		if (importer === undefined) return null;
+		const local = id.startsWith(".") || isAbsolute(id);
+		return !local || id.endsWith(".css") ? { id, external: true } : null;
+	},
 };
 
 /**
@@ -44,12 +44,12 @@ const KEEP_IMPORTS = {
  * without failing. Its other generators throw what they find.
  */
 async function checkDeclarations(tsdown: string, work: string): Promise<void> {
-  const manifest = createRequire(tsdown).resolve("typescript/package.json");
-  const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
-    await readFile(manifest, "utf8"),
-  );
-  if (!version.startsWith("7.")) return;
-  await runScript(join(dirname(manifest), bin.tsc), ["--declaration", "--noCheck"], work);
+	const manifest = createRequire(tsdown).resolve("typescript/package.json");
+	const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
+		await readFile(manifest, "utf8"),
+	);
+	if (!version.startsWith("7.")) return;
+	await runScript(join(dirname(manifest), bin.tsc), ["--declaration", "--noCheck"], work);
 }
 
 /**
@@ -57,68 +57,68 @@ async function checkDeclarations(tsdown: string, work: string): Promise<void> {
  * copies its sheets to `out`. A syntax error reaches the JS first, whose error names the file.
  */
 export async function buildWithTsdown(
-  { files, out, work, resolve }: PackagerInput,
-  options: JsxOptions,
-  runs: readonly TsdownRun[],
+	{ files, out, work, resolve }: PackagerInput,
+	options: JsxOptions,
+	runs: readonly TsdownRun[],
 ): Promise<void> {
-  await writeFiles(join(work, "in"), files);
-  await writeFile(
-    join(work, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: {
-        target: "es2024",
-        lib: ["es2024", "dom", "dom.iterable"],
-        module: "esnext",
-        moduleResolution: "bundler",
-        strict: true,
-        skipLibCheck: true,
-        allowImportingTsExtensions: true,
-        noEmit: true,
-        types: [],
-        ...options,
-      },
-      include: ["in"],
-    }),
-  );
-  const tsdownPath = resolve("tsdown");
-  const tsdown: { build(config: object): Promise<unknown> } = await import(
-    /* @vite-ignore */ pathToFileURL(tsdownPath).href
-  );
-  const scratch = join(work, "in");
-  const common = {
-    config: false,
-    cwd: work,
-    entry: ["in/index.ts"],
-    root: "in",
-    unbundle: true,
-    outDir: out,
-    format: "esm",
-    platform: "neutral",
-    tsconfig: "tsconfig.json",
-    clean: false,
-    logLevel: "silent",
-    // Off: `TSDOWN_` variables would reach the published JS, against P8.
-    envPrefix: [],
-    outputOptions: { sanitizeFileName: sanitizeBelow(scratch) },
-  };
-  for (const { extension, plugins = [] } of runs) {
-    await tsdown.build({
-      ...common,
-      dts: false,
-      outExtensions: () => ({ js: extension }),
-      plugins: [KEEP_IMPORTS, ...plugins],
-    });
-  }
-  await checkDeclarations(tsdownPath, work);
-  await tsdown.build({
-    ...common,
-    dts: { emitDtsOnly: true },
-    outExtensions: () => ({ js: ".js", dts: ".ts" }),
-    plugins: [
-      KEEP_IMPORTS,
-      { name: "unframework:declarations", renderChunk: dropSideEffectImports },
-    ],
-  });
-  const sheets: OutputFile[] = files.filter((file) => !SCRIPT.test(file.path));
-  await writeFiles(out, sheets);
+	await writeFiles(join(work, "in"), files);
+	await writeFile(
+		join(work, "tsconfig.json"),
+		JSON.stringify({
+			compilerOptions: {
+				target: "es2024",
+				lib: ["es2024", "dom", "dom.iterable"],
+				module: "esnext",
+				moduleResolution: "bundler",
+				strict: true,
+				skipLibCheck: true,
+				allowImportingTsExtensions: true,
+				noEmit: true,
+				types: [],
+				...options,
+			},
+			include: ["in"],
+		}),
+	);
+	const tsdownPath = resolve("tsdown");
+	const tsdown: { build(config: object): Promise<unknown> } = await import(
+		/* @vite-ignore */ pathToFileURL(tsdownPath).href
+	);
+	const scratch = join(work, "in");
+	const common = {
+		config: false,
+		cwd: work,
+		entry: ["in/index.ts"],
+		root: "in",
+		unbundle: true,
+		outDir: out,
+		format: "esm",
+		platform: "neutral",
+		tsconfig: "tsconfig.json",
+		clean: false,
+		logLevel: "silent",
+		// Off: `TSDOWN_` variables would reach the published JS, against P8.
+		envPrefix: [],
+		outputOptions: { sanitizeFileName: sanitizeBelow(scratch) },
+	};
+	for (const { extension, plugins = [] } of runs) {
+		await tsdown.build({
+			...common,
+			dts: false,
+			outExtensions: () => ({ js: extension }),
+			plugins: [KEEP_IMPORTS, ...plugins],
+		});
+	}
+	await checkDeclarations(tsdownPath, work);
+	await tsdown.build({
+		...common,
+		dts: { emitDtsOnly: true },
+		outExtensions: () => ({ js: ".js", dts: ".ts" }),
+		plugins: [
+			KEEP_IMPORTS,
+			{ name: "unframework:declarations", renderChunk: dropSideEffectImports },
+		],
+	});
+	const sheets: OutputFile[] = files.filter((file) => !SCRIPT.test(file.path));
+	await writeFiles(out, sheets);
 }

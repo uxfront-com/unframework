@@ -1,7 +1,7 @@
 {
-  "description": "An async setup awaits a user and keeps a count that starts from it: the server renders the resolved data, and the count works once the setup resolves.",
-  "main": "Profile.uf.tsx",
-  "ssr": {
-    "ada": { "props": { "id": "ada" } }
-  }
+	"description": "An async setup awaits a user and keeps a count that starts from it: the server renders the resolved data, and the count works once the setup resolves.",
+	"main": "Profile.uf.tsx",
+	"ssr": {
+		"ada": { "props": { "id": "ada" } }
+	}
 }

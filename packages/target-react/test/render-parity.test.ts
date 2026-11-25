@@ -21,32 +21,32 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Imports and server-renders the parity component, with what React logged meanwhile. */
 async function render(suite: ParitySuite, format: boolean) {
-  const [file] = await emitParity(target, suite, { format });
-  const path = join(scratch, `${randomUUID()}.tsx`);
-  writeFileSync(path, file!.contents);
-  const component = ((await import(path)) as { default: unknown }).default;
-  const logged: string[] = [];
-  const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
-  const spies = [
-    vi.spyOn(console, "error").mockImplementation(capture),
-    vi.spyOn(console, "warn").mockImplementation(capture),
-  ];
-  try {
-    return { html: await renderToString(component, { props: parityProps(suite) }), logged };
-  } finally {
-    for (const spy of spies) spy.mockRestore();
-  }
+	const [file] = await emitParity(target, suite, { format });
+	const path = join(scratch, `${randomUUID()}.tsx`);
+	writeFileSync(path, file!.contents);
+	const component = ((await import(path)) as { default: unknown }).default;
+	const logged: string[] = [];
+	const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+	const spies = [
+		vi.spyOn(console, "error").mockImplementation(capture),
+		vi.spyOn(console, "warn").mockImplementation(capture),
+	];
+	try {
+		return { html: await renderToString(component, { props: parityProps(suite) }), logged };
+	} finally {
+		for (const spy of spies) spy.mockRestore();
+	}
 }
 
 describe.each([true, false])("react output (formatted: %s), rendered by React", (format) => {
-  it.each(paritySuites())(
-    "renders $title exactly as the reference describes them",
-    async (suite) => {
-      const { html, logged } = await render(suite, format);
-      expect(logged).toEqual([]);
-      for (const { name, expected, actual } of compareCases(parseHtml(html), suite)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    },
-  );
+	it.each(paritySuites())(
+		"renders $title exactly as the reference describes them",
+		async (suite) => {
+			const { html, logged } = await render(suite, format);
+			expect(logged).toEqual([]);
+			for (const { name, expected, actual } of compareCases(parseHtml(html), suite)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		},
+	);
 });

@@ -7,37 +7,37 @@ component, written as a Solid developer would write it (plan §6).
 import { type JSX, Show, createMemo, createSignal, mergeProps, untrack } from "solid-js";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
+	initial?: number;
+	step?: number;
 }
 
 export interface CounterEvents {
-  onChange?: (value: number) => void;
+	onChange?: (value: number) => void;
 }
 
 export default function Counter(
-  rawProps: CounterProps & CounterEvents & { class?: string; style?: JSX.CSSProperties },
+	rawProps: CounterProps & CounterEvents & { class?: string; style?: JSX.CSSProperties },
 ) {
-  const props = mergeProps({ initial: 0, step: 1 } satisfies Partial<CounterProps>, rawProps);
-  const [count, setCount] = createSignal(untrack(() => props.initial));
-  const doubled = createMemo(() => count() * 2);
+	const props = mergeProps({ initial: 0, step: 1 } satisfies Partial<CounterProps>, rawProps);
+	const [count, setCount] = createSignal(untrack(() => props.initial));
+	const doubled = createMemo(() => count() * 2);
 
-  function increment() {
-    setCount(count() + props.step);
-    props.onChange?.(count());
-  }
+	function increment() {
+		setCount(count() + props.step);
+		props.onChange?.(count());
+	}
 
-  return (
-    <div class={props.class ? `counter ${props.class}` : "counter"} style={props.style}>
-      <output>{count()}</output>
-      <Show when={doubled() > 10}>
-        <span>Big</span>
-      </Show>
-      <button type="button" onClick={increment}>
-        +{props.step}
-      </button>
-    </div>
-  );
+	return (
+		<div class={props.class ? `counter ${props.class}` : "counter"} style={props.style}>
+			<output>{count()}</output>
+			<Show when={doubled() > 10}>
+				<span>Big</span>
+			</Show>
+			<button type="button" onClick={increment}>
+				+{props.step}
+			</button>
+		</div>
+	);
 }
 ```
 
@@ -275,20 +275,20 @@ it in the function child of `<Show>`, inside a `<Suspense>` with no fallback:
 
 ```tsx
 const [awaited] = createResource(async () => {
-  const user = await loadUser(props.id);
-  return { user };
+	const user = await loadUser(props.id);
+	return { user };
 });
 
 return (
-  <Suspense>
-    <Show when={awaited()}>
-      {(resolved) => {
-        const { user } = resolved();
-        const [visits, setVisits] = createSignal(user.visits);
-        return <p>…</p>;
-      }}
-    </Show>
-  </Suspense>
+	<Suspense>
+		<Show when={awaited()}>
+			{(resolved) => {
+				const { user } = resolved();
+				const [visits, setVisits] = createSignal(user.visits);
+				return <p>…</p>;
+			}}
+		</Show>
+	</Suspense>
 );
 ```
 
@@ -320,13 +320,13 @@ calls them.
 import { createSignal } from "solid-js";
 
 export function useToggle(initial: boolean) {
-  const [on, setOn] = createSignal(initial);
+	const [on, setOn] = createSignal(initial);
 
-  function toggle() {
-    setOn(!on());
-  }
+	function toggle() {
+		setOn(!on());
+	}
 
-  return { on, toggle };
+	return { on, toggle };
 }
 ```
 

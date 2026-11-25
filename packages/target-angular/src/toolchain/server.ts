@@ -3,10 +3,10 @@
 // load (see ./linker.ts), so no JIT compiler is loaded, as in a production server.
 import { DOCUMENT, createComponent, provideZonelessChangeDetection } from "@angular/core";
 import {
-  createApplication,
-  provideClientHydration,
-  withNoIncrementalHydration,
-  type BootstrapContext,
+	createApplication,
+	provideClientHydration,
+	withNoIncrementalHydration,
+	type BootstrapContext,
 } from "@angular/platform-browser";
 import { provideServerRendering, renderApplication } from "@angular/platform-server";
 import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
@@ -23,7 +23,7 @@ const DOCUMENT_HTML = "<html><head></head><body></body></html>";
  * `ng-server-context`, which `bootstrapApplication` would.
  */
 export const renderToString: SsrRenderer = (component, options) =>
-  oneAtATime(() => render(component, options, false));
+	oneAtATime(() => render(component, options, false));
 
 /**
  * Renders the server HTML the hydrate adapter hydrates (L12, ADR-0095): the same render with
@@ -31,7 +31,7 @@ export const renderToString: SsrRenderer = (component, options) =>
  * hydration marker (`<!--nghm-->`) and the state script (`ng-state`) the client reads.
  */
 export const renderForHydration: HydrationRenderer = (component, options) =>
-  oneAtATime(() => render(component, options, true));
+	oneAtATime(() => render(component, options, true));
 
 /** The renders queued in this module instance. */
 let queue: Promise<unknown> = Promise.resolve();
@@ -42,45 +42,45 @@ let queue: Promise<unknown> = Promise.resolve();
  * has no `ng-state` script, and the client does not hydrate (NG0505).
  */
 function oneAtATime<T>(run: () => Promise<T>): Promise<T> {
-  const result = queue.then(run, run);
-  queue = result.then(
-    () => undefined,
-    () => undefined,
-  );
-  return result;
+	const result = queue.then(run, run);
+	queue = result.then(
+		() => undefined,
+		() => undefined,
+	);
+	return result;
 }
 
 async function render(
-  component: unknown,
-  options: Parameters<SsrRenderer>[1],
-  hydration: boolean,
+	component: unknown,
+	options: Parameters<SsrRenderer>[1],
+	hydration: boolean,
 ): Promise<string> {
-  const type = angularComponent(component);
-  const html = await renderApplication(
-    async (context: BootstrapContext) => {
-      const app = await createApplication(
-        {
-          providers: [
-            provideZonelessChangeDetection(),
-            // The hydration data reaches the page in the transfer state, which the server
-            // rendering providers serialise into the `ng-state` script.
-            ...(hydration
-              ? [provideClientHydration(withNoIncrementalHydration()), provideServerRendering()]
-              : []),
-          ],
-        },
-        context,
-      );
-      const ref = createComponent(type, { environmentInjector: app.injector });
-      for (const [name, value] of Object.entries(options.props ?? {})) ref.setInput(name, value);
-      app.attachView(ref.hostView);
-      app.injector.get(DOCUMENT).body.appendChild(ref.location.nativeElement as Node);
-      return app;
-    },
-    // The URL must be an allowed host, or the render fails with NG05706.
-    { document: DOCUMENT_HTML, url: "http://localhost/", allowedHosts: ["localhost"] },
-  );
-  const body = /<body[^>]*>([\s\S]*)<\/body>/.exec(html);
-  if (!body) throw new Error(`Angular rendered a document without a <body>: ${html}`);
-  return body[1]!;
+	const type = angularComponent(component);
+	const html = await renderApplication(
+		async (context: BootstrapContext) => {
+			const app = await createApplication(
+				{
+					providers: [
+						provideZonelessChangeDetection(),
+						// The hydration data reaches the page in the transfer state, which the server
+						// rendering providers serialise into the `ng-state` script.
+						...(hydration
+							? [provideClientHydration(withNoIncrementalHydration()), provideServerRendering()]
+							: []),
+					],
+				},
+				context,
+			);
+			const ref = createComponent(type, { environmentInjector: app.injector });
+			for (const [name, value] of Object.entries(options.props ?? {})) ref.setInput(name, value);
+			app.attachView(ref.hostView);
+			app.injector.get(DOCUMENT).body.appendChild(ref.location.nativeElement as Node);
+			return app;
+		},
+		// The URL must be an allowed host, or the render fails with NG05706.
+		{ document: DOCUMENT_HTML, url: "http://localhost/", allowedHosts: ["localhost"] },
+	);
+	const body = /<body[^>]*>([\s\S]*)<\/body>/.exec(html);
+	if (!body) throw new Error(`Angular rendered a document without a <body>: ${html}`);
+	return body[1]!;
 }

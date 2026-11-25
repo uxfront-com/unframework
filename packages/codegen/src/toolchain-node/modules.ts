@@ -8,10 +8,10 @@ import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "..
 
 /** One error of a failed transform, as Rolldown reports it. */
 interface TransformError {
-  message: string;
-  code?: string;
-  /** 1-based line, 0-based column. */
-  loc?: { line: number; column: number };
+	message: string;
+	code?: string;
+	/** 1-based line, 0-based column. */
+	loc?: { line: number; column: number };
 }
 
 /**
@@ -19,11 +19,11 @@ interface TransformError {
  * warnings by path.
  */
 export async function compileScriptModules(
-  files: readonly ToolchainFile[],
+	files: readonly ToolchainFile[],
 ): Promise<Map<string, FrameworkCompileResult>> {
-  const results = new Map<string, FrameworkCompileResult>();
-  for (const file of files) results.set(file.path, (await transformScriptModule(file)).result);
-  return results;
+	const results = new Map<string, FrameworkCompileResult>();
+	for (const file of files) results.set(file.path, (await transformScriptModule(file)).result);
+	return results;
 }
 
 /**
@@ -32,35 +32,35 @@ export async function compileScriptModules(
  * Svelte compiles a `.svelte.ts` module's JavaScript next, as vite-plugin-svelte does.
  */
 export async function transformScriptModule(
-  file: ToolchainFile,
+	file: ToolchainFile,
 ): Promise<{ code: string | undefined; result: FrameworkCompileResult }> {
-  const { transformWithOxc } = await import("vite");
-  try {
-    const { code, warnings } = await transformWithOxc(file.contents, file.path, { lang: "ts" });
-    return { code, result: { errors: [], warnings: warnings.map(fromTransformError) } };
-  } catch (error) {
-    const errors = (error as { errors?: TransformError[] }).errors;
-    return {
-      code: undefined,
-      result: {
-        errors: errors?.length
-          ? errors.map(fromTransformError)
-          : [{ message: error instanceof Error ? error.message : String(error) }],
-        warnings: [],
-      },
-    };
-  }
+	const { transformWithOxc } = await import("vite");
+	try {
+		const { code, warnings } = await transformWithOxc(file.contents, file.path, { lang: "ts" });
+		return { code, result: { errors: [], warnings: warnings.map(fromTransformError) } };
+	} catch (error) {
+		const errors = (error as { errors?: TransformError[] }).errors;
+		return {
+			code: undefined,
+			result: {
+				errors: errors?.length
+					? errors.map(fromTransformError)
+					: [{ message: error instanceof Error ? error.message : String(error) }],
+				warnings: [],
+			},
+		};
+	}
 }
 
 /** The message's first line, without its colours and its `[CODE]` prefix; its code frame goes. */
 function fromTransformError(error: TransformError): ToolchainMessage {
-  const message = stripVTControlCharacters(error.message)
-    .split("\n")[0]!
-    .replace(/^\[[A-Z_]+\]\s*/, "")
-    .trim();
-  return {
-    message,
-    ...(error.loc ? { line: error.loc.line, column: error.loc.column + 1 } : {}),
-    ...(error.code ? { code: error.code } : {}),
-  };
+	const message = stripVTControlCharacters(error.message)
+		.split("\n")[0]!
+		.replace(/^\[[A-Z_]+\]\s*/, "")
+		.trim();
+	return {
+		message,
+		...(error.loc ? { line: error.loc.line, column: error.loc.column + 1 } : {}),
+		...(error.code ? { code: error.code } : {}),
+	};
 }

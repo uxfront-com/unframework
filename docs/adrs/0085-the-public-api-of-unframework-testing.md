@@ -73,10 +73,10 @@ import { expect } from "vitest";
 import Counter from "./Counter.uf.tsx";
 
 describeTargets("state/counter", () => {
-  it("renders the initial count", async () => {
-    const view = await mountScenario(Counter, "initial");
-    await expect.element(view.getByRole("status")).toHaveNoAxeViolations();
-  });
+	it("renders the initial count", async () => {
+		const view = await mountScenario(Counter, "initial");
+		await expect.element(view.getByRole("status")).toHaveNoAxeViolations();
+	});
 });
 ```
 

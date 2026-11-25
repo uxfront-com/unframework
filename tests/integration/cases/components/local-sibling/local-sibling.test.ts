@@ -6,10 +6,10 @@ import { expect } from "vitest";
 import Card from "./Card.uf.tsx";
 
 describeTargets("components/local-sibling", () => {
-  it("renders the local component twice", async () => {
-    const view = await mountScenario(Card, "starred");
-    await view.expectParity("starred");
-    await expect.element(view.getByRole("heading", { name: "Starred" })).toBeVisible();
-    await expect.element(view.getByText("+")).toBeInTheDocument();
-  });
+	it("renders the local component twice", async () => {
+		const view = await mountScenario(Card, "starred");
+		await view.expectParity("starred");
+		await expect.element(view.getByRole("heading", { name: "Starred" })).toBeVisible();
+		await expect.element(view.getByText("+")).toBeInTheDocument();
+	});
 });

@@ -15,48 +15,48 @@ import type { PropControl, PropControls, UncontrolledProp } from "./controls.ts"
 
 /** A live control of an example: a prop of one component, sent under its own key. */
 export type ExampleControl = PropControl & {
-  /** The prop the example takes for it, `ufControl<n>`: unique across the example. */
-  key: string;
+	/** The prop the example takes for it, `ufControl<n>`: unique across the example. */
+	key: string;
 };
 
 /** The controls of one component an example renders, in the order of its first instance. */
 export interface ExampleControlGroup {
-  /** The catalogue component's id. */
-  component: string;
-  /** Its name. */
-  name: string;
-  /** The props an instance leaves unset somewhere, in member order: each optional. */
-  controls: ExampleControl[];
-  /** The controllable props every instance sets, in member order. */
-  setByExample: string[];
-  /** The props no control can set, as a component entry lists them. */
-  uncontrolled: UncontrolledProp[];
+	/** The catalogue component's id. */
+	component: string;
+	/** Its name. */
+	name: string;
+	/** The props an instance leaves unset somewhere, in member order: each optional. */
+	controls: ExampleControl[];
+	/** The controllable props every instance sets, in member order. */
+	setByExample: string[];
+	/** The props no control can set, as a component entry lists them. */
+	uncontrolled: UncontrolledProp[];
 }
 
 /** A catalogue component, as the analysis matches an instance to it. */
 export interface CatalogueComponent extends PropControls {
-  id: string;
-  name: string;
-  /** Its file, absolute. */
-  file: string;
+	id: string;
+	name: string;
+	/** Its file, absolute. */
+	file: string;
 }
 
 /** One instance of a catalogue component in an example's render. */
 interface Instance {
-  component: CatalogueComponent;
-  /** The props the child declares now, as the import's API reads them. */
-  declared: Set<string>;
-  /** The props the instance sets. */
-  set: Set<string>;
-  /** Where its binding goes: just after `<Name`. */
-  insertAt: number;
+	component: CatalogueComponent;
+	/** The props the child declares now, as the import's API reads them. */
+	declared: Set<string>;
+	/** The props the instance sets. */
+	set: Set<string>;
+	/** Where its binding goes: just after `<Name`. */
+	insertAt: number;
 }
 
 /** An example the preview can instrument: its instances, and where its parameter goes. */
 interface Analysis {
-  instances: Instance[];
-  /** Just after the `(` of the default export's empty parameter list. */
-  parameterAt: number;
+	instances: Instance[];
+	/** Just after the `(` of the default export's empty parameter list. */
+	parameterAt: number;
 }
 
 /** The prefix of a control's key. */
@@ -74,67 +74,67 @@ const toPosix = (path: string) => path.replaceAll("\\", "/");
  * so the real compile reports its real errors.
  */
 async function analyse(
-  source: string,
-  file: string,
-  root: string,
-  resolver: Resolver,
-  components: readonly CatalogueComponent[],
+	source: string,
+	file: string,
+	root: string,
+	resolver: Resolver,
+	components: readonly CatalogueComponent[],
 ): Promise<Analysis | undefined> {
-  const filename = posix.relative(toPosix(root), toPosix(file));
-  let ir: UfModule | undefined;
-  try {
-    const result = await compile(source, { filename, targets: [], resolve: resolver });
-    if (result.diagnostics.some((each) => each.severity === "error")) return undefined;
-    ir = result.ir;
-  } catch {
-    return undefined;
-  }
-  if (!ir) return undefined;
-  const local = ir.exports.find((each) => each.kind === "default")?.local;
-  const example = ir.components.find((each) => each.name === local);
-  if (!example || example.propsParameter) return undefined;
-  const parameterAt = emptyParameters(source, example.name, example.span);
-  if (parameterAt === undefined) return undefined;
+	const filename = posix.relative(toPosix(root), toPosix(file));
+	let ir: UfModule | undefined;
+	try {
+		const result = await compile(source, { filename, targets: [], resolve: resolver });
+		if (result.diagnostics.some((each) => each.severity === "error")) return undefined;
+		ir = result.ir;
+	} catch {
+		return undefined;
+	}
+	if (!ir) return undefined;
+	const local = ir.exports.find((each) => each.kind === "default")?.local;
+	const example = ir.components.find((each) => each.name === local);
+	if (!example || example.propsParameter) return undefined;
+	const parameterAt = emptyParameters(source, example.name, example.span);
+	if (parameterAt === undefined) return undefined;
 
-  // A local name of an imported default export, by the catalogue component its file is.
-  const byFile = new Map(components.map((each) => [toPosix(each.file), each]));
-  const directory = posix.dirname(toPosix(file));
-  const imported = new Map<string, { component: CatalogueComponent; declared: Set<string> }>();
-  for (const each of ir.imports ?? []) {
-    const component = byFile.get(posix.join(directory, each.file));
-    if (!component) continue;
-    const api = each.api.components.find((entry) => entry.export === "default");
-    const declared = new Set(api?.props.map((prop) => prop.name));
-    for (const name of each.names) {
-      if (name.kind === "Component" && name.imported === "default") {
-        imported.set(name.local, { component, declared });
-      }
-    }
-  }
+	// A local name of an imported default export, by the catalogue component its file is.
+	const byFile = new Map(components.map((each) => [toPosix(each.file), each]));
+	const directory = posix.dirname(toPosix(file));
+	const imported = new Map<string, { component: CatalogueComponent; declared: Set<string> }>();
+	for (const each of ir.imports ?? []) {
+		const component = byFile.get(posix.join(directory, each.file));
+		if (!component) continue;
+		const api = each.api.components.find((entry) => entry.export === "default");
+		const declared = new Set(api?.props.map((prop) => prop.name));
+		for (const name of each.names) {
+			if (name.kind === "Component" && name.imported === "default") {
+				imported.set(name.local, { component, declared });
+			}
+		}
+	}
 
-  // Only the default export's render: a component the file declares is not the example, and an
-  // instance under `<component is>` is a `Dynamic` node, whose candidates all take its attributes.
-  const instances: Instance[] = [];
-  let placed = true;
-  walk(example.render, {
-    enter(node) {
-      if (node.kind !== "Component") return;
-      const match = imported.get(node.component);
-      if (!match) return;
-      const insertAt = afterTagName(source, node);
-      if (insertAt === undefined) {
-        placed = false;
-        return;
-      }
-      const set = new Set(
-        node.attributes.flatMap((attribute) => (attribute.kind === "Prop" ? [attribute.name] : [])),
-      );
-      instances.push({ ...match, set, insertAt });
-    },
-  });
-  if (!placed) return undefined;
-  instances.sort((a, b) => a.insertAt - b.insertAt);
-  return { instances, parameterAt };
+	// Only the default export's render: a component the file declares is not the example, and an
+	// instance under `<component is>` is a `Dynamic` node, whose candidates all take its attributes.
+	const instances: Instance[] = [];
+	let placed = true;
+	walk(example.render, {
+		enter(node) {
+			if (node.kind !== "Component") return;
+			const match = imported.get(node.component);
+			if (!match) return;
+			const insertAt = afterTagName(source, node);
+			if (insertAt === undefined) {
+				placed = false;
+				return;
+			}
+			const set = new Set(
+				node.attributes.flatMap((attribute) => (attribute.kind === "Prop" ? [attribute.name] : [])),
+			);
+			instances.push({ ...match, set, insertAt });
+		},
+	});
+	if (!placed) return undefined;
+	instances.sort((a, b) => a.insertAt - b.insertAt);
+	return { instances, parameterAt };
 }
 
 /**
@@ -142,27 +142,27 @@ async function analyse(
  * text there is not that empty list.
  */
 function emptyParameters(
-  source: string,
-  name: string,
-  span: { start: number; end: number },
+	source: string,
+	name: string,
+	span: { start: number; end: number },
 ): number | undefined {
-  const pattern = new RegExp(`\\bfunction\\s+${name}\\s*\\(\\s*\\)`, "y");
-  const text = source.slice(span.start, span.end);
-  for (let index = text.indexOf("function"); index !== -1;) {
-    pattern.lastIndex = index;
-    const match = pattern.exec(text);
-    if (match) return span.start + index + match[0].indexOf("(") + 1;
-    index = text.indexOf("function", index + 1);
-  }
-  return undefined;
+	const pattern = new RegExp(`\\bfunction\\s+${name}\\s*\\(\\s*\\)`, "y");
+	const text = source.slice(span.start, span.end);
+	for (let index = text.indexOf("function"); index !== -1;) {
+		pattern.lastIndex = index;
+		const match = pattern.exec(text);
+		if (match) return span.start + index + match[0].indexOf("(") + 1;
+		index = text.indexOf("function", index + 1);
+	}
+	return undefined;
 }
 
 /** Just after `<Name` of an instance, checked against the source, or `undefined`. */
 function afterTagName(source: string, node: ComponentNode): number | undefined {
-  const open = `<${node.component}`;
-  if (!source.startsWith(open, node.span.start)) return undefined;
-  const at = node.span.start + open.length;
-  return /[\s/>]/.test(source[at] ?? "") ? at : undefined;
+	const open = `<${node.component}`;
+	if (!source.startsWith(open, node.span.start)) return undefined;
+	const at = node.span.start + open.length;
+	return /[\s/>]/.test(source[at] ?? "") ? at : undefined;
 }
 
 /**
@@ -173,41 +173,41 @@ function afterTagName(source: string, node: ComponentNode): number | undefined {
  * instrument.
  */
 export async function exampleControls(
-  source: string,
-  file: string,
-  root: string,
-  resolver: Resolver,
-  components: readonly CatalogueComponent[],
+	source: string,
+	file: string,
+	root: string,
+	resolver: Resolver,
+	components: readonly CatalogueComponent[],
 ): Promise<ExampleControlGroup[]> {
-  const analysis = await analyse(source, file, root, resolver, components);
-  if (!analysis) return [];
-  const order: CatalogueComponent[] = [];
-  for (const { component } of analysis.instances) {
-    if (!order.includes(component)) order.push(component);
-  }
-  const groups: ExampleControlGroup[] = [];
-  let next = 0;
-  for (const component of order) {
-    if (!component.controls.length) continue;
-    const instances = analysis.instances.filter((each) => each.component === component);
-    const controls: ExampleControl[] = [];
-    const setByExample: string[] = [];
-    for (const control of component.controls) {
-      if (instances.every((each) => each.set.has(control.name))) {
-        setByExample.push(control.name);
-      } else {
-        controls.push({ ...control, optional: true, key: `${KEY_PREFIX}${next++}` });
-      }
-    }
-    groups.push({
-      component: component.id,
-      name: component.name,
-      controls,
-      setByExample,
-      uncontrolled: component.uncontrolled,
-    });
-  }
-  return groups;
+	const analysis = await analyse(source, file, root, resolver, components);
+	if (!analysis) return [];
+	const order: CatalogueComponent[] = [];
+	for (const { component } of analysis.instances) {
+		if (!order.includes(component)) order.push(component);
+	}
+	const groups: ExampleControlGroup[] = [];
+	let next = 0;
+	for (const component of order) {
+		if (!component.controls.length) continue;
+		const instances = analysis.instances.filter((each) => each.component === component);
+		const controls: ExampleControl[] = [];
+		const setByExample: string[] = [];
+		for (const control of component.controls) {
+			if (instances.every((each) => each.set.has(control.name))) {
+				setByExample.push(control.name);
+			} else {
+				controls.push({ ...control, optional: true, key: `${KEY_PREFIX}${next++}` });
+			}
+		}
+		groups.push({
+			component: component.id,
+			name: component.name,
+			controls,
+			setByExample,
+			uncontrolled: component.uncontrolled,
+		});
+	}
+	return groups;
 }
 
 /**
@@ -220,60 +220,60 @@ export async function exampleControls(
  * none until a restart.
  */
 export async function instrumentExample(
-  source: string,
-  file: string,
-  root: string,
-  resolver: Resolver,
-  components: readonly CatalogueComponent[],
-  groups: readonly ExampleControlGroup[],
+	source: string,
+	file: string,
+	root: string,
+	resolver: Resolver,
+	components: readonly CatalogueComponent[],
+	groups: readonly ExampleControlGroup[],
 ): Promise<string | undefined> {
-  if (!groups.some((group) => group.controls.length)) return undefined;
-  const analysis = await analyse(source, file, root, resolver, components);
-  if (!analysis) return undefined;
-  const parameter = freeName(source);
-  const insertions: [at: number, text: string][] = [];
-  const used = new Set<ExampleControl>();
-  for (const instance of analysis.instances) {
-    const group = groups.find((each) => each.component === instance.component.id);
-    let text = "";
-    for (const control of group?.controls ?? []) {
-      // A prop the child no longer declares, after an edit, would fail the compile.
-      if (instance.set.has(control.name) || !instance.declared.has(control.name)) continue;
-      text += ` ${control.name}={${parameter}.${control.key}}`;
-      used.add(control);
-    }
-    if (text) insertions.push([instance.insertAt, text]);
-  }
-  if (!used.size) return undefined;
-  const members = groups
-    .flatMap((group) => group.controls)
-    .filter((control) => used.has(control))
-    .map((control) => `${control.key}?: ${typeOf(control)}`);
-  insertions.push([analysis.parameterAt, `${parameter}: { ${members.join("; ")} }`]);
-  let result = source;
-  for (const [at, text] of insertions.sort((a, b) => b[0] - a[0])) {
-    result = result.slice(0, at) + text + result.slice(at);
-  }
-  return result;
+	if (!groups.some((group) => group.controls.length)) return undefined;
+	const analysis = await analyse(source, file, root, resolver, components);
+	if (!analysis) return undefined;
+	const parameter = freeName(source);
+	const insertions: [at: number, text: string][] = [];
+	const used = new Set<ExampleControl>();
+	for (const instance of analysis.instances) {
+		const group = groups.find((each) => each.component === instance.component.id);
+		let text = "";
+		for (const control of group?.controls ?? []) {
+			// A prop the child no longer declares, after an edit, would fail the compile.
+			if (instance.set.has(control.name) || !instance.declared.has(control.name)) continue;
+			text += ` ${control.name}={${parameter}.${control.key}}`;
+			used.add(control);
+		}
+		if (text) insertions.push([instance.insertAt, text]);
+	}
+	if (!used.size) return undefined;
+	const members = groups
+		.flatMap((group) => group.controls)
+		.filter((control) => used.has(control))
+		.map((control) => `${control.key}?: ${typeOf(control)}`);
+	insertions.push([analysis.parameterAt, `${parameter}: { ${members.join("; ")} }`]);
+	let result = source;
+	for (const [at, text] of insertions.sort((a, b) => b[0] - a[0])) {
+		result = result.slice(0, at) + text + result.slice(at);
+	}
+	return result;
 }
 
 /** `ufPreview`, or `ufPreview<n>` with the first `n` the source does not use. */
 function freeName(source: string): string {
-  const uses = (name: string) => new RegExp(`(?<![\\w$])${name}(?![\\w$])`).test(source);
-  if (!uses(PARAMETER)) return PARAMETER;
-  let index = 1;
-  while (uses(`${PARAMETER}${index}`)) index += 1;
-  return `${PARAMETER}${index}`;
+	const uses = (name: string) => new RegExp(`(?<![\\w$])${name}(?![\\w$])`).test(source);
+	if (!uses(PARAMETER)) return PARAMETER;
+	let index = 1;
+	while (uses(`${PARAMETER}${index}`)) index += 1;
+	return `${PARAMETER}${index}`;
 }
 
 /** A control's type, as the example's parameter declares it: one line, whatever its options. */
 function typeOf(control: PropControl): string {
-  if (control.kind !== "select") return control.kind;
-  return control.options
-    .map((option) =>
-      JSON.stringify(option).replaceAll("\u2028", "\\u2028").replaceAll("\u2029", "\\u2029"),
-    )
-    .join(" | ");
+	if (control.kind !== "select") return control.kind;
+	return control.options
+		.map((option) =>
+			JSON.stringify(option).replaceAll("\u2028", "\\u2028").replaceAll("\u2029", "\\u2029"),
+		)
+		.join(" | ");
 }
 
 /** What the preview's servers rewrite a source file with: the unplugin's `transformSource`. */
@@ -286,29 +286,29 @@ export type SourceTransform = (file: string, source: string) => Promise<string |
  * edit to a child is seen.
  */
 export function exampleTransform(
-  root: string,
-  catalogue: {
-    examples: readonly { file: string; controls: readonly ExampleControlGroup[] }[];
-    components: readonly CatalogueComponent[];
-  },
+	root: string,
+	catalogue: {
+		examples: readonly { file: string; controls: readonly ExampleControlGroup[] }[];
+		components: readonly CatalogueComponent[];
+	},
 ): SourceTransform | undefined {
-  const examples = new Map(
-    catalogue.examples
-      .filter((example) => example.controls.some((group) => group.controls.length))
-      .map((example) => [toPosix(example.file), example.controls]),
-  );
-  if (!examples.size) return undefined;
-  return async (file, source) => {
-    const groups = examples.get(toPosix(file));
-    if (!groups) return undefined;
-    const read = (path: string): Promise<string | undefined> =>
-      readFile(path, "utf8").catch(() => undefined);
-    const typeOracle = createSyntacticOracle({ root, readFile: read });
-    try {
-      const resolver = createFileResolver({ root, readFile: read, typeOracle });
-      return await instrumentExample(source, file, root, resolver, catalogue.components, groups);
-    } finally {
-      await typeOracle.dispose();
-    }
-  };
+	const examples = new Map(
+		catalogue.examples
+			.filter((example) => example.controls.some((group) => group.controls.length))
+			.map((example) => [toPosix(example.file), example.controls]),
+	);
+	if (!examples.size) return undefined;
+	return async (file, source) => {
+		const groups = examples.get(toPosix(file));
+		if (!groups) return undefined;
+		const read = (path: string): Promise<string | undefined> =>
+			readFile(path, "utf8").catch(() => undefined);
+		const typeOracle = createSyntacticOracle({ root, readFile: read });
+		try {
+			const resolver = createFileResolver({ root, readFile: read, typeOracle });
+			return await instrumentExample(source, file, root, resolver, catalogue.components, groups);
+		} finally {
+			await typeOracle.dispose();
+		}
+	};
 }

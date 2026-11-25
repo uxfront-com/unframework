@@ -2,12 +2,12 @@ import { join, resolve } from "node:path";
 
 import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
 import {
-  createComponent,
-  createElement,
-  createExport,
-  createModule,
-  createStaticAttribute,
-  createText,
+	createComponent,
+	createElement,
+	createExport,
+	createModule,
+	createStaticAttribute,
+	createText,
 } from "@unframework.dev/ir";
 import type { ElementNode, UfModule } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
@@ -17,14 +17,14 @@ import { toolchain } from "../src/toolchain/index.ts";
 import { createHost, strictOptions } from "../src/toolchain/ngtsc.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
 import {
-  context,
-  emitModule,
-  emitted,
-  formatted,
-  lower,
-  removeScratch,
-  scratchDir,
-  writeFiles,
+	context,
+	emitModule,
+	emitted,
+	formatted,
+	lower,
+	removeScratch,
+	scratchDir,
+	writeFiles,
 } from "./helpers.ts";
 
 afterAll(removeScratch);
@@ -32,15 +32,15 @@ afterAll(removeScratch);
 const at = { start: 0, end: 0 };
 const text = (value: string) => createText(value, at);
 const element = (tag: string, children: ElementNode["children"] = []) =>
-  createElement(tag, [], children, at);
+	createElement(tag, [], children, at);
 
 function moduleOf(
-  render: ElementNode,
-  name = "Hello",
-  kind: "default" | "named" = "default",
+	render: ElementNode,
+	name = "Hello",
+	kind: "default" | "named" = "default",
 ): UfModule {
-  const component = createComponent(name, render, at);
-  return createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, at)]);
+	const component = createComponent(name, render, at);
+	return createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, at)]);
 }
 
 /**
@@ -48,32 +48,32 @@ function moduleOf(
  * (`angularCompilerOptions`), as a program that includes the file would.
  */
 async function compiled(contents: string, consumer: Record<string, unknown>): Promise<string> {
-  const compiler = await loadCompiler(context.toolchainDir);
-  const options = { ...strictOptions(compiler), noEmit: false, declaration: false, ...consumer };
-  const file = join(scratchDir(), "component.ts");
-  const host = createHost(compiler, options, (name) =>
-    resolve(name) === file ? contents : undefined,
-  );
-  const program = new compiler.cli.NgtscProgram([file], options, host);
-  await program.compiler.analyzeAsync();
-  const { transformers } = program.compiler.prepareEmit();
-  const tsProgram = program.getTsProgram();
-  let code = "";
-  tsProgram.emit(
-    tsProgram.getSourceFile(file),
-    (name, output) => {
-      if (name.endsWith(".js")) code = output;
-    },
-    undefined,
-    false,
-    transformers,
-  );
-  return code;
+	const compiler = await loadCompiler(context.toolchainDir);
+	const options = { ...strictOptions(compiler), noEmit: false, declaration: false, ...consumer };
+	const file = join(scratchDir(), "component.ts");
+	const host = createHost(compiler, options, (name) =>
+		resolve(name) === file ? contents : undefined,
+	);
+	const program = new compiler.cli.NgtscProgram([file], options, host);
+	await program.compiler.analyzeAsync();
+	const { transformers } = program.compiler.prepareEmit();
+	const tsProgram = program.getTsProgram();
+	let code = "";
+	tsProgram.emit(
+		tsProgram.getSourceFile(file),
+		(name, output) => {
+			if (name.endsWith(".js")) code = output;
+		},
+		undefined,
+		false,
+		transformers,
+	);
+	return code;
 }
 
 /** The template literal's contents of an emitted file, as written: backslashes doubled. */
 function templateOf(contents: string): string {
-  return /template: `([\s\S]*)`\n/.exec(contents)![1]!;
+	return /template: `([\s\S]*)`\n/.exec(contents)![1]!;
 }
 
 /**
@@ -82,30 +82,30 @@ function templateOf(contents: string): string {
  * them, and the shape tests here expect them as written.
  */
 const SCOPE_DIRECTIVE = [
-  "/** The scope attributes taken off each host, for the roots its component renders later. */",
-  "const scopes = new WeakMap<Element, string[]>();",
-  "",
-  "/**",
-  " * Gives a root node of its component the scope attributes the component's styled parents put on",
-  " * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.",
-  " */",
-  '@Directive({ selector: "[ufScope]" })',
-  "export class ScopeAttributes implements OnInit {",
-  "  readonly ufScope = input.required<HTMLElement>();",
-  "  private readonly element = inject<ElementRef<Element>>(ElementRef);",
-  "  private readonly renderer = inject(Renderer2);",
-  "",
-  "  ngOnInit(): void {",
-  "    const host = this.ufScope();",
-  "    let names = scopes.get(host);",
-  "    if (!names) {",
-  '      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));',
-  "      for (const name of names) this.renderer.removeAttribute(host, name);",
-  "      scopes.set(host, names);",
-  "    }",
-  '    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");',
-  "  }",
-  "}",
+	"/** The scope attributes taken off each host, for the roots its component renders later. */",
+	"const scopes = new WeakMap<Element, string[]>();",
+	"",
+	"/**",
+	" * Gives a root node of its component the scope attributes the component's styled parents put on",
+	" * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.",
+	" */",
+	'@Directive({ selector: "[ufScope]" })',
+	"export class ScopeAttributes implements OnInit {",
+	"  readonly ufScope = input.required<HTMLElement>();",
+	"  private readonly element = inject<ElementRef<Element>>(ElementRef);",
+	"  private readonly renderer = inject(Renderer2);",
+	"",
+	"  ngOnInit(): void {",
+	"    const host = this.ufScope();",
+	"    let names = scopes.get(host);",
+	"    if (!names) {",
+	'      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));',
+	"      for (const name of names) this.renderer.removeAttribute(host, name);",
+	"      scopes.set(host, names);",
+	"    }",
+	'    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");',
+	"  }",
+	"}",
 ];
 const HOST = "protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;";
 
@@ -115,296 +115,296 @@ const HOST = "protected readonly host = inject<ElementRef<HTMLElement>>(ElementR
  * tests here expect it as written.
  */
 const FALLTHROUGH_DIRECTIVE = [
-  "/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */",
-  "type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };",
-  "",
-  "/**",
-  " * Puts what a consumer passes the component, and the component does not declare, on the element",
-  " * that takes it (ADR-0118): the attributes, the consumer's winning over the element's own, and",
-  " * the native listeners, which run after the element's own.",
-  " */",
-  '@Directive({ selector: "[ufFallthrough]" })',
-  "export class Fallthrough implements OnChanges, OnDestroy {",
-  "  readonly ufFallthrough = input.required<{",
-  "    attributes: Record<string, unknown> | undefined;",
-  "    listeners: Listeners | undefined;",
-  "  }>();",
-  "  private readonly element = inject<ElementRef<Element>>(ElementRef);",
-  "  private readonly renderer = inject(Renderer2);",
-  "  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));",
-  "  private readonly listening = new Map<string, { handler: unknown; stop: () => void }>();",
-  "  private written: Record<string, unknown> = {};",
-  "",
-  "  ngOnChanges(): void {",
-  "    const element = this.element.nativeElement;",
-  "    const { attributes = {}, listeners = {} } = this.ufFallthrough();",
-  "    for (const name of Object.keys(this.written)) {",
-  "      if (!(name in attributes)) this.renderer.removeAttribute(element, name);",
-  "    }",
-  "    for (const [name, value] of Object.entries(attributes)) {",
-  "      if (value === null || value === undefined) this.renderer.removeAttribute(element, name);",
-  "      else this.renderer.setAttribute(element, name, String(value));",
-  "    }",
-  "    this.written = attributes;",
-  "    if (!this.browser) return;",
-  "    const handlers = new Map(Object.entries(listeners));",
-  "    for (const [event, { handler, stop }] of this.listening) {",
-  "      if (handlers.get(event) === handler) continue;",
-  "      stop();",
-  "      this.listening.delete(event);",
-  "    }",
-  "    for (const [event, handler] of handlers) {",
-  "      if (handler === undefined || this.listening.has(event)) continue;",
-  "      this.listening.set(event, { handler, stop: this.renderer.listen(element, event, handler) });",
-  "    }",
-  "  }",
-  "",
-  "  ngOnDestroy(): void {",
-  "    for (const { stop } of this.listening.values()) stop();",
-  "  }",
-  "}",
+	"/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */",
+	"type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };",
+	"",
+	"/**",
+	" * Puts what a consumer passes the component, and the component does not declare, on the element",
+	" * that takes it (ADR-0118): the attributes, the consumer's winning over the element's own, and",
+	" * the native listeners, which run after the element's own.",
+	" */",
+	'@Directive({ selector: "[ufFallthrough]" })',
+	"export class Fallthrough implements OnChanges, OnDestroy {",
+	"  readonly ufFallthrough = input.required<{",
+	"    attributes: Record<string, unknown> | undefined;",
+	"    listeners: Listeners | undefined;",
+	"  }>();",
+	"  private readonly element = inject<ElementRef<Element>>(ElementRef);",
+	"  private readonly renderer = inject(Renderer2);",
+	"  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));",
+	"  private readonly listening = new Map<string, { handler: unknown; stop: () => void }>();",
+	"  private written: Record<string, unknown> = {};",
+	"",
+	"  ngOnChanges(): void {",
+	"    const element = this.element.nativeElement;",
+	"    const { attributes = {}, listeners = {} } = this.ufFallthrough();",
+	"    for (const name of Object.keys(this.written)) {",
+	"      if (!(name in attributes)) this.renderer.removeAttribute(element, name);",
+	"    }",
+	"    for (const [name, value] of Object.entries(attributes)) {",
+	"      if (value === null || value === undefined) this.renderer.removeAttribute(element, name);",
+	"      else this.renderer.setAttribute(element, name, String(value));",
+	"    }",
+	"    this.written = attributes;",
+	"    if (!this.browser) return;",
+	"    const handlers = new Map(Object.entries(listeners));",
+	"    for (const [event, { handler, stop }] of this.listening) {",
+	"      if (handlers.get(event) === handler) continue;",
+	"      stop();",
+	"      this.listening.delete(event);",
+	"    }",
+	"    for (const [event, handler] of handlers) {",
+	"      if (handler === undefined || this.listening.has(event)) continue;",
+	"      this.listening.set(event, { handler, stop: this.renderer.listen(element, event, handler) });",
+	"    }",
+	"  }",
+	"",
+	"  ngOnDestroy(): void {",
+	"    for (const { stop } of this.listening.values()) stop();",
+	"  }",
+	"}",
 ];
 /** The root's binding of the fallthrough directive. */
 const PASSED =
-  '[ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"';
+	'[ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"';
 /** The inputs of what a consumer passes beside `class` and `style`, as the class declares them. */
 const PASSED_INPUTS = [
-  "readonly ufAttributes = input<Record<string, unknown>>();",
-  "readonly ufListeners = input<Listeners>();",
+	"readonly ufAttributes = input<Record<string, unknown>>();",
+	"readonly ufListeners = input<Listeners>();",
 ];
 /** The member that holds the root element a ref on the component holds. */
 const rootElement = (type: string) =>
-  `readonly ufElement = viewChild<ElementRef<${type}>>("ufElement");`;
+	`readonly ufElement = viewChild<ElementRef<${type}>>("ufElement");`;
 
 const greeting = createElement(
-  "p",
-  [createStaticAttribute("class", "greeting", at)],
-  [text("Hello, world!")],
-  at,
+	"p",
+	[createStaticAttribute("class", "greeting", at)],
+	[text("Hello, world!")],
+	at,
 );
 
 describe("angular target", () => {
-  it("declares every capability", () => {
-    expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
-  });
+	it("declares every capability", () => {
+		expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
+	});
 
-  it("emulates the listener options, ids, nextTick, class and style bindings, raw HTML, composition's cells, a ref's root element, teleports, transitions and directives, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
-    const emulated = Object.entries(target.capabilities)
-      .filter(([, cell]) => cell.support !== "native")
-      .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
-    expect(emulated).toEqual([
-      ["event-capture", "emulated", "uf<Event>Capture"],
-      ["event-once", "emulated", "uf<Event>Once"],
-      ["event-passive", "emulated", "uf<Event>Passive"],
-      ["use-id", "emulated", "idCounter"],
-      ["next-tick", "emulated", "nextTick"],
-      ["class-binding", "emulated", "classNames"],
-      ["style-binding", "emulated", "styleObject"],
-      ["raw-html", "emulated", "TrustedHtmlPipe"],
-      ["named-slot", "emulated", "uf<Component><Slot>"],
-      ["scoped-slot", "emulated", "uf<Component><Slot>"],
-      ["default-slot-presence", "unsupported", undefined],
-      ["slot-forwarding", "emulated", "uf<Component><Slot>"],
-      ["model-array", "emulated", "toggle"],
-      ["model-modifiers", "emulated", "modelText"],
-      ["fallthrough", "emulated", "Fallthrough"],
-      ["contextual-root", "unsupported", undefined],
-      ["expose", "emulated", "ufElement"],
-      ["reactive-context", "emulated", "refObject"],
-      ["dynamic-component", "emulated", "@switch"],
-      ["child-root-scope", "unsupported", undefined],
-      ["sheet-order", "unsupported", undefined],
-      ["generic-slot-props", "unsupported", undefined],
-      ["directive", "emulated", "runDirective"],
-      ["transition", "emulated", "Transition"],
-      ["teleport", "emulated", "Teleport"],
-    ]);
-  });
+	it("emulates the listener options, ids, nextTick, class and style bindings, raw HTML, composition's cells, a ref's root element, teleports, transitions and directives, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
+		const emulated = Object.entries(target.capabilities)
+			.filter(([, cell]) => cell.support !== "native")
+			.map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
+		expect(emulated).toEqual([
+			["event-capture", "emulated", "uf<Event>Capture"],
+			["event-once", "emulated", "uf<Event>Once"],
+			["event-passive", "emulated", "uf<Event>Passive"],
+			["use-id", "emulated", "idCounter"],
+			["next-tick", "emulated", "nextTick"],
+			["class-binding", "emulated", "classNames"],
+			["style-binding", "emulated", "styleObject"],
+			["raw-html", "emulated", "TrustedHtmlPipe"],
+			["named-slot", "emulated", "uf<Component><Slot>"],
+			["scoped-slot", "emulated", "uf<Component><Slot>"],
+			["default-slot-presence", "unsupported", undefined],
+			["slot-forwarding", "emulated", "uf<Component><Slot>"],
+			["model-array", "emulated", "toggle"],
+			["model-modifiers", "emulated", "modelText"],
+			["fallthrough", "emulated", "Fallthrough"],
+			["contextual-root", "unsupported", undefined],
+			["expose", "emulated", "ufElement"],
+			["reactive-context", "emulated", "refObject"],
+			["dynamic-component", "emulated", "@switch"],
+			["child-root-scope", "unsupported", undefined],
+			["sheet-order", "unsupported", undefined],
+			["generic-slot-props", "unsupported", undefined],
+			["directive", "emulated", "runDirective"],
+			["transition", "emulated", "Transition"],
+			["teleport", "emulated", "Teleport"],
+		]);
+	});
 
-  it("emits a standalone component whose decorator precedes `export default class`", () => {
-    expect(emitModule(moduleOf(greeting))).toEqual([
-      {
-        path: "hello.ts",
-        contents: [
-          'import { isPlatformBrowser } from "@angular/common";',
-          'import { Component, Directive, ElementRef, type OnChanges, type OnDestroy, type OnInit, PLATFORM_ID, Renderer2, inject, input, viewChild } from "@angular/core";',
-          "",
-          ...SCOPE_DIRECTIVE,
-          "",
-          ...FALLTHROUGH_DIRECTIVE,
-          "",
-          "@Component({",
-          '  selector: "uf-hello",',
-          "  imports: [ScopeAttributes, Fallthrough],",
-          "  host: {",
-          '    "[attr.class]": "null",',
-          '    "[attr.style]": "\'display: contents;\'"',
-          "  },",
-          "  preserveWhitespaces: false,",
-          "  template: `",
-          "    <p",
-          '      class="greeting"',
-          '      [class]="this.class()"',
-          '      [style]="this.style()"',
-          `      ${PASSED}`,
-          '      [ufScope]="this.host"',
-          "      #ufElement",
-          "    >Hello, world!</p>",
-          "  `",
-          "})",
-          "export default class Hello {",
-          "  readonly class = input<string>();",
-          "  readonly style = input<Record<string, string | null | undefined>>();",
-          ...PASSED_INPUTS.map((line) => `  ${line}`),
-          `  ${rootElement("HTMLParagraphElement")}`,
-          `  ${HOST}`,
-          "}",
-          "",
-        ].join("\n"),
-      },
-    ]);
-  });
+	it("emits a standalone component whose decorator precedes `export default class`", () => {
+		expect(emitModule(moduleOf(greeting))).toEqual([
+			{
+				path: "hello.ts",
+				contents: [
+					'import { isPlatformBrowser } from "@angular/common";',
+					'import { Component, Directive, ElementRef, type OnChanges, type OnDestroy, type OnInit, PLATFORM_ID, Renderer2, inject, input, viewChild } from "@angular/core";',
+					"",
+					...SCOPE_DIRECTIVE,
+					"",
+					...FALLTHROUGH_DIRECTIVE,
+					"",
+					"@Component({",
+					'  selector: "uf-hello",',
+					"  imports: [ScopeAttributes, Fallthrough],",
+					"  host: {",
+					'    "[attr.class]": "null",',
+					'    "[attr.style]": "\'display: contents;\'"',
+					"  },",
+					"  preserveWhitespaces: false,",
+					"  template: `",
+					"    <p",
+					'      class="greeting"',
+					'      [class]="this.class()"',
+					'      [style]="this.style()"',
+					`      ${PASSED}`,
+					'      [ufScope]="this.host"',
+					"      #ufElement",
+					"    >Hello, world!</p>",
+					"  `",
+					"})",
+					"export default class Hello {",
+					"  readonly class = input<string>();",
+					"  readonly style = input<Record<string, string | null | undefined>>();",
+					...PASSED_INPUTS.map((line) => `  ${line}`),
+					`  ${rootElement("HTMLParagraphElement")}`,
+					`  ${HOST}`,
+					"}",
+					"",
+				].join("\n"),
+			},
+		]);
+	});
 
-  it("exports a named component by name", () => {
-    const [file] = emitModule(moduleOf(greeting, "Hello", "named"));
-    expect(file!.contents).toMatch(/\}\)\nexport class Hello \{\n[\s\S]*\n\}\n$/);
-  });
+	it("exports a named component by name", () => {
+		const [file] = emitModule(moduleOf(greeting, "Hello", "named"));
+		expect(file!.contents).toMatch(/\}\)\nexport class Hello \{\n[\s\S]*\n\}\n$/);
+	});
 
-  it("names the file and the selector after the component, in kebab case", () => {
-    const [file] = emitModule(moduleOf(greeting, "ProfileCard"));
-    expect(file!.path).toBe("profile-card.ts");
-    expect(file!.contents).toContain('selector: "uf-profile-card"');
-  });
+	it("names the file and the selector after the component, in kebab case", () => {
+		const [file] = emitModule(moduleOf(greeting, "ProfileCard"));
+		expect(file!.path).toBe("profile-card.ts");
+		expect(file!.contents).toContain('selector: "uf-profile-card"');
+	});
 
-  // Angular 22 defaults to standalone components and OnPush change detection.
-  it("leaves the Angular 22 defaults out of the metadata", () => {
-    const [file] = emitModule(moduleOf(greeting));
-    expect(file!.contents).not.toMatch(/standalone|changeDetection/);
-  });
+	// Angular 22 defaults to standalone components and OnPush change detection.
+	it("leaves the Angular 22 defaults out of the metadata", () => {
+		const [file] = emitModule(moduleOf(greeting));
+		expect(file!.contents).not.toMatch(/standalone|changeDetection/);
+	});
 
-  it("escapes Angular's template syntax and the template literal's", () => {
-    const [file] = emitModule(moduleOf(element("p", [text("@if (b) {} <c> & `${d}` \\e")])));
-    expect(templateOf(file!.contents)).toBe(
-      [
-        "",
-        "    <p",
-        '      [class]="this.class()"',
-        '      [style]="this.style()"',
-        `      ${PASSED}`,
-        '      [ufScope]="this.host"',
-        "      #ufElement",
-        "    >&#64;if (b) &#123;&#125; &lt;c> &amp; \\`$&#123;d&#125;\\` \\\\e</p>",
-        "  ",
-      ].join("\n"),
-    );
-  });
+	it("escapes Angular's template syntax and the template literal's", () => {
+		const [file] = emitModule(moduleOf(element("p", [text("@if (b) {} <c> & `${d}` \\e")])));
+		expect(templateOf(file!.contents)).toBe(
+			[
+				"",
+				"    <p",
+				'      [class]="this.class()"',
+				'      [style]="this.style()"',
+				`      ${PASSED}`,
+				'      [ufScope]="this.host"',
+				"      #ufElement",
+				"    >&#64;if (b) &#123;&#125; &lt;c> &amp; \\`$&#123;d&#125;\\` \\\\e</p>",
+				"  ",
+			].join("\n"),
+		);
+	});
 
-  // Angular decodes `&#123;&#123;` before it looks for interpolations.
-  it("prints a run of opening braces through a string interpolation", () => {
-    const [file] = emitModule(moduleOf(element("p", [text("{{ a }} {b} {{{")])));
-    expect(templateOf(file!.contents)).toContain(
-      String.raw`>{{ "\\u007b\\u007b" }} a &#125;&#125; &#123;b&#125; {{ "\\u007b\\u007b\\u007b" }}</p>`,
-    );
-  });
+	// Angular decodes `&#123;&#123;` before it looks for interpolations.
+	it("prints a run of opening braces through a string interpolation", () => {
+		const [file] = emitModule(moduleOf(element("p", [text("{{ a }} {b} {{{")])));
+		expect(templateOf(file!.contents)).toContain(
+			String.raw`>{{ "\\u007b\\u007b" }} a &#125;&#125; &#123;b&#125; {{ "\\u007b\\u007b\\u007b" }}</p>`,
+		);
+	});
 
-  // Angular finds `{{` in an attribute after decoding its entities, and would evaluate it; a
-  // binding instead would go through its sanitizer (test/render-parity.test.ts renders both).
-  it("writes an element whose attribute holds `{{` where Angular binds nothing", () => {
-    const render = createElement(
-      "p",
-      [createStaticAttribute("title", "{{ 1 + 1 }}", at), createStaticAttribute("id", "{x}", at)],
-      [],
-      at,
-    );
-    const [file] = emitModule(moduleOf(render));
-    expect(templateOf(file!.contents)).toBe(
-      [
-        "",
-        "    <ng-container ngNonBindable ngPreserveWhitespaces><p",
-        '      title="&#123;&#123; 1 + 1 &#125;&#125;"',
-        '      id="&#123;x&#125;"',
-        "    ></p></ng-container>",
-        "  ",
-      ].join("\n"),
-    );
-  });
+	// Angular finds `{{` in an attribute after decoding its entities, and would evaluate it; a
+	// binding instead would go through its sanitizer (test/render-parity.test.ts renders both).
+	it("writes an element whose attribute holds `{{` where Angular binds nothing", () => {
+		const render = createElement(
+			"p",
+			[createStaticAttribute("title", "{{ 1 + 1 }}", at), createStaticAttribute("id", "{x}", at)],
+			[],
+			at,
+		);
+		const [file] = emitModule(moduleOf(render));
+		expect(templateOf(file!.contents)).toBe(
+			[
+				"",
+				"    <ng-container ngNonBindable ngPreserveWhitespaces><p",
+				'      title="&#123;&#123; 1 + 1 &#125;&#125;"',
+				'      id="&#123;x&#125;"',
+				"    ></p></ng-container>",
+				"  ",
+			].join("\n"),
+		);
+	});
 
-  // The template is a JS template literal, which would turn a raw CR into a line feed.
-  it("writes a carriage return in an attribute as a reference", () => {
-    const render = createElement("p", [createStaticAttribute("title", "a\rb", at)], [], at);
-    const [file] = emitModule(moduleOf(render));
-    expect(templateOf(file!.contents)).toContain(
-      [
-        "<p",
-        '      title="a&#13;b"',
-        '      [class]="this.class()"',
-        '      [style]="this.style()"',
-        `      ${PASSED}`,
-        '      [ufScope]="this.host"',
-        "      #ufElement",
-        "    ></p>",
-      ].join("\n"),
-    );
-  });
+	// The template is a JS template literal, which would turn a raw CR into a line feed.
+	it("writes a carriage return in an attribute as a reference", () => {
+		const render = createElement("p", [createStaticAttribute("title", "a\rb", at)], [], at);
+		const [file] = emitModule(moduleOf(render));
+		expect(templateOf(file!.contents)).toContain(
+			[
+				"<p",
+				'      title="a&#13;b"',
+				'      [class]="this.class()"',
+				'      [style]="this.style()"',
+				`      ${PASSED}`,
+				'      [ufScope]="this.host"',
+				"      #ufElement",
+				"    ></p>",
+			].join("\n"),
+		);
+	});
 
-  // Angular's compiler accepts a signal input only in a class whose decorator it imports as
-  // `Component` (NG8110 otherwise), so the class takes another name; the export keeps its own.
-  it("names the class apart when the component is named after Angular's decorator", () => {
-    const [file] = emitModule(moduleOf(greeting, "Component"));
-    expect(file!.contents).toMatch(
-      /^import \{ isPlatformBrowser \} from "@angular\/common";\nimport \{ Component, [^}]*\binput, viewChild \} from "@angular\/core";\n/,
-    );
-    expect(file!.contents).toContain("\n@Component({\n");
-    expect(file!.contents).toMatch(/\nexport default class Component_1 \{\n[\s\S]*\n\}\n$/);
-    const [named] = emitModule(moduleOf(greeting, "Component", "named"));
-    expect(named!.contents).toMatch(
-      /\nclass Component_1 \{\n[\s\S]*\n\}\nexport \{ Component_1 as Component \};\n$/,
-    );
-  });
+	// Angular's compiler accepts a signal input only in a class whose decorator it imports as
+	// `Component` (NG8110 otherwise), so the class takes another name; the export keeps its own.
+	it("names the class apart when the component is named after Angular's decorator", () => {
+		const [file] = emitModule(moduleOf(greeting, "Component"));
+		expect(file!.contents).toMatch(
+			/^import \{ isPlatformBrowser \} from "@angular\/common";\nimport \{ Component, [^}]*\binput, viewChild \} from "@angular\/core";\n/,
+		);
+		expect(file!.contents).toContain("\n@Component({\n");
+		expect(file!.contents).toMatch(/\nexport default class Component_1 \{\n[\s\S]*\n\}\n$/);
+		const [named] = emitModule(moduleOf(greeting, "Component", "named"));
+		expect(named!.contents).toMatch(
+			/\nclass Component_1 \{\n[\s\S]*\n\}\nexport \{ Component_1 as Component \};\n$/,
+		);
+	});
 
-  // Angular drops every whitespace-only text node, even one the browser renders as a space.
-  it("keeps a space between inline elements with &ngsp;", () => {
-    const render = element("p", [element("b", [text("a")]), text(" "), element("i", [text("b")])]);
-    const [file] = emitModule(moduleOf(render));
-    expect(templateOf(file!.contents)).toContain("<b>a</b>&ngsp;<i>b</i>");
-  });
+	// Angular drops every whitespace-only text node, even one the browser renders as a space.
+	it("keeps a space between inline elements with &ngsp;", () => {
+		const render = element("p", [element("b", [text("a")]), text(" "), element("i", [text("b")])]);
+		const [file] = emitModule(moduleOf(render));
+		expect(templateOf(file!.contents)).toContain("<b>a</b>&ngsp;<i>b</i>");
+	});
 
-  it("keeps whitespace as written inside <pre>", () => {
-    const render = element("div", [
-      element("pre", [element("b", [text("a")]), text(" "), element("i", [text("b")])]),
-    ]);
-    const [file] = emitModule(moduleOf(render));
-    expect(templateOf(file!.contents)).toContain("<pre><b>a</b> <i>b</i></pre>");
-  });
+	it("keeps whitespace as written inside <pre>", () => {
+		const render = element("div", [
+			element("pre", [element("b", [text("a")]), text(" "), element("i", [text("b")])]),
+		]);
+		const [file] = emitModule(moduleOf(render));
+		expect(templateOf(file!.contents)).toContain("<pre><b>a</b> <i>b</i></pre>");
+	});
 
-  // The template's layout is printed for Angular's default, `preserveWhitespaces: false`. A
-  // program that compiles the component with its own `preserveWhitespaces: true` (a consumer's
-  // `angularCompilerOptions`) would turn the indentation into text: the metadata pins it.
-  it("keeps the template's layout out of the DOM whatever the consumer's whitespace option", async () => {
-    const list = element("ul", [element("li", [text("a")]), element("li", [text("b")])]);
-    const [file] = emitModule(moduleOf(list, "List"));
-    expect(file!.contents).toContain("  preserveWhitespaces: false,\n");
-    const whitespace = /ɵɵtext\(\d+, "(?:\\n| )+"\)/;
-    const unpinned = file!.contents.replace("  preserveWhitespaces: false,\n", "");
-    expect(await compiled(unpinned, { preserveWhitespaces: true })).toMatch(whitespace);
-    expect(await compiled(file!.contents, { preserveWhitespaces: true })).not.toMatch(whitespace);
-  });
+	// The template's layout is printed for Angular's default, `preserveWhitespaces: false`. A
+	// program that compiles the component with its own `preserveWhitespaces: true` (a consumer's
+	// `angularCompilerOptions`) would turn the indentation into text: the metadata pins it.
+	it("keeps the template's layout out of the DOM whatever the consumer's whitespace option", async () => {
+		const list = element("ul", [element("li", [text("a")]), element("li", [text("b")])]);
+		const [file] = emitModule(moduleOf(list, "List"));
+		expect(file!.contents).toContain("  preserveWhitespaces: false,\n");
+		const whitespace = /ɵɵtext\(\d+, "(?:\\n| )+"\)/;
+		const unpinned = file!.contents.replace("  preserveWhitespaces: false,\n", "");
+		expect(await compiled(unpinned, { preserveWhitespaces: true })).toMatch(whitespace);
+		expect(await compiled(file!.contents, { preserveWhitespaces: true })).not.toMatch(whitespace);
+	});
 
-  it("leaves text with content alone", () => {
-    const render = element("p", [text("a "), element("b", [text("b")]), text(" c")]);
-    const [file] = emitModule(moduleOf(render));
-    expect(templateOf(file!.contents)).toContain(
-      [
-        "<p",
-        '      [class]="this.class()"',
-        '      [style]="this.style()"',
-        `      ${PASSED}`,
-        '      [ufScope]="this.host"',
-        "      #ufElement",
-        "    >a <b>b</b> c</p>",
-      ].join("\n"),
-    );
-  });
+	it("leaves text with content alone", () => {
+		const render = element("p", [text("a "), element("b", [text("b")]), text(" c")]);
+		const [file] = emitModule(moduleOf(render));
+		expect(templateOf(file!.contents)).toContain(
+			[
+				"<p",
+				'      [class]="this.class()"',
+				'      [style]="this.style()"',
+				`      ${PASSED}`,
+				'      [ufScope]="this.host"',
+				"      #ufElement",
+				"    >a <b>b</b> c</p>",
+			].join("\n"),
+		);
+	});
 });
 
 /**
@@ -412,34 +412,34 @@ describe("angular target", () => {
  * it: the class after `@Component(`, past a directive the file declares before it.
  */
 function classBody(contents: string): string[] {
-  const component = contents.slice(Math.max(contents.indexOf("@Component("), 0));
-  const body =
-    /\n(?:export (?:default )?)?class \w+(?: implements [\w, ]+)? \{\n([\s\S]*?)\n\}\n/.exec(
-      component,
-    );
-  return body ? body[1]!.split("\n").map((line) => line.trim()) : [];
+	const component = contents.slice(Math.max(contents.indexOf("@Component("), 0));
+	const body =
+		/\n(?:export (?:default )?)?class \w+(?: implements [\w, ]+)? \{\n([\s\S]*?)\n\}\n/.exec(
+			component,
+		);
+	return body ? body[1]!.split("\n").map((line) => line.trim()) : [];
 }
 
 /** The messages of Angular's L3 check (ngtsc) on an emitted file, alone in a scratch directory. */
 async function l3Errors(file: { path: string; contents: string }): Promise<string[]> {
-  const path = join(scratchDir(), file.path);
-  const results = await toolchain.frameworkCompile([{ path, contents: file.contents }], context);
-  const { errors, warnings } = results.get(path)!;
-  return [...errors, ...warnings].map(({ code, message }) => `${code}: ${message}`);
+	const path = join(scratchDir(), file.path);
+	const results = await toolchain.frameworkCompile([{ path, contents: file.contents }], context);
+	const { errors, warnings } = results.get(path)!;
+	return [...errors, ...warnings].map(({ code, message }) => `${code}: ${message}`);
 }
 
 /** The lines of an emitted file's template, without their indentation, formatted or not. */
 function templateLines(contents: string): string[] {
-  return /template: `([\s\S]*)`,?\n/
-    .exec(contents)![1]!
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+	return /template: `([\s\S]*)`,?\n/
+		.exec(contents)![1]!
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean);
 }
 
 describe("props (ADR-0034)", () => {
-  it("emits a component whose props are signal inputs, read through `@let`", async () => {
-    const file = await formatted(`
+	it("emits a component whose props are signal inputs, read through `@let`", async () => {
+		const file = await formatted(`
 export interface BadgeProps {
   label: string;
   tone?: "info" | "warn";
@@ -450,75 +450,75 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
   return <p data-tone={tone}>{label} {count ?? 0}</p>;
 }
 `);
-    expect(file).toEqual({
-      path: "badge.ts",
-      contents: [
-        'import { isPlatformBrowser } from "@angular/common";',
-        "import {",
-        "  Component,",
-        "  Directive,",
-        "  ElementRef,",
-        "  type OnChanges,",
-        "  type OnDestroy,",
-        "  type OnInit,",
-        "  PLATFORM_ID,",
-        "  Renderer2,",
-        "  inject,",
-        "  input,",
-        "  viewChild,",
-        '} from "@angular/core";',
-        "",
-        "export interface BadgeProps {",
-        "  label: string;",
-        '  tone?: "info" | "warn";',
-        "  count?: number;",
-        "}",
-        "",
-        ...SCOPE_DIRECTIVE,
-        "",
-        ...FALLTHROUGH_DIRECTIVE,
-        "",
-        "@Component({",
-        '  selector: "uf-badge",',
-        "  imports: [ScopeAttributes, Fallthrough],",
-        '  host: { "[attr.class]": "null", "[attr.style]": "\'display: contents;\'" },',
-        "  preserveWhitespaces: false,",
-        "  template: `",
-        "    @let label = this.label();",
-        "    @let tone = this.tone();",
-        "    @let count = this.count();",
-        "    <p",
-        // The root's own attribute, unless the consumer passes it (ADR-0118).
-        "      [attr.data-tone]=\"'data-tone' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-tone'] : tone\"",
-        '      [class]="this.class()"',
-        '      [style]="this.style()"',
-        `      ${PASSED}`,
-        '      [ufScope]="this.host"',
-        "      #ufElement",
-        "    >{{ label }}&ngsp;{{ count ?? 0 }}</p>",
-        "  `,",
-        "})",
-        "export default class Badge {",
-        "  readonly label = input.required<string>();",
-        '  readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", {',
-        '    transform: (value) => (value === undefined ? "info" : value),',
-        "  });",
-        "  readonly count = input<number>();",
-        "  readonly class = input<string>();",
-        "  readonly style = input<Record<string, string | null | undefined>>();",
-        ...PASSED_INPUTS.map((line) => `  ${line}`),
-        `  ${rootElement("HTMLParagraphElement")}`,
-        `  ${HOST}`,
-        "}",
-        "",
-      ].join("\n"),
-    });
-  });
+		expect(file).toEqual({
+			path: "badge.ts",
+			contents: [
+				'import { isPlatformBrowser } from "@angular/common";',
+				"import {",
+				"  Component,",
+				"  Directive,",
+				"  ElementRef,",
+				"  type OnChanges,",
+				"  type OnDestroy,",
+				"  type OnInit,",
+				"  PLATFORM_ID,",
+				"  Renderer2,",
+				"  inject,",
+				"  input,",
+				"  viewChild,",
+				'} from "@angular/core";',
+				"",
+				"export interface BadgeProps {",
+				"  label: string;",
+				'  tone?: "info" | "warn";',
+				"  count?: number;",
+				"}",
+				"",
+				...SCOPE_DIRECTIVE,
+				"",
+				...FALLTHROUGH_DIRECTIVE,
+				"",
+				"@Component({",
+				'  selector: "uf-badge",',
+				"  imports: [ScopeAttributes, Fallthrough],",
+				'  host: { "[attr.class]": "null", "[attr.style]": "\'display: contents;\'" },',
+				"  preserveWhitespaces: false,",
+				"  template: `",
+				"    @let label = this.label();",
+				"    @let tone = this.tone();",
+				"    @let count = this.count();",
+				"    <p",
+				// The root's own attribute, unless the consumer passes it (ADR-0118).
+				"      [attr.data-tone]=\"'data-tone' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-tone'] : tone\"",
+				'      [class]="this.class()"',
+				'      [style]="this.style()"',
+				`      ${PASSED}`,
+				'      [ufScope]="this.host"',
+				"      #ufElement",
+				"    >{{ label }}&ngsp;{{ count ?? 0 }}</p>",
+				"  `,",
+				"})",
+				"export default class Badge {",
+				"  readonly label = input.required<string>();",
+				'  readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", {',
+				'    transform: (value) => (value === undefined ? "info" : value),',
+				"  });",
+				"  readonly count = input<number>();",
+				"  readonly class = input<string>();",
+				"  readonly style = input<Record<string, string | null | undefined>>();",
+				...PASSED_INPUTS.map((line) => `  ${line}`),
+				`  ${rootElement("HTMLParagraphElement")}`,
+				`  ${HOST}`,
+				"}",
+				"",
+			].join("\n"),
+		});
+	});
 
-  // Angular's initial value covers an absent input only: `setInput(name, undefined)` sets
-  // `undefined`, where JavaScript's destructuring takes the default. `null` stays a value.
-  it("gives every default a transform that maps `undefined`, and only it, to the default", async () => {
-    const file = await formatted(`
+	// Angular's initial value covers an absent input only: `setInput(name, undefined)` sets
+	// `undefined`, where JavaScript's destructuring takes the default. `null` stays a value.
+	it("gives every default a transform that maps `undefined`, and only it, to the default", async () => {
+		const file = await formatted(`
 export interface DefaultsProps {
   label?: string | null;
   size?: number;
@@ -530,32 +530,32 @@ export default function Defaults({ label = null, size = 1000, tags = [], author 
   return <p data-size={size}>{label} {tags.join(", ")} {author.name}</p>;
 }
 `);
-    expect(classBody(file.contents)).toEqual([
-      "readonly label = input<string | null, string | null | undefined>(null, {",
-      "transform: (value) => (value === undefined ? null : value),",
-      "});",
-      "readonly size = input<number, number | undefined>(1000, {",
-      "transform: (value) => (value === undefined ? 1000 : value),",
-      "});",
-      "readonly tags = input<readonly string[], readonly string[] | undefined>([], {",
-      "transform: (value) => (value === undefined ? [] : value),",
-      "});",
-      "readonly author = input<{ name: string }, { name: string } | undefined>(",
-      '{ name: "Ada" },',
-      '{ transform: (value) => (value === undefined ? { name: "Ada" } : value) },',
-      ");",
-      "readonly class = input<string>();",
-      "readonly style = input<Record<string, string | null | undefined>>();",
-      ...PASSED_INPUTS,
-      rootElement("HTMLParagraphElement"),
-      HOST,
-    ]);
-  });
+		expect(classBody(file.contents)).toEqual([
+			"readonly label = input<string | null, string | null | undefined>(null, {",
+			"transform: (value) => (value === undefined ? null : value),",
+			"});",
+			"readonly size = input<number, number | undefined>(1000, {",
+			"transform: (value) => (value === undefined ? 1000 : value),",
+			"});",
+			"readonly tags = input<readonly string[], readonly string[] | undefined>([], {",
+			"transform: (value) => (value === undefined ? [] : value),",
+			"});",
+			"readonly author = input<{ name: string }, { name: string } | undefined>(",
+			'{ name: "Ada" },',
+			'{ transform: (value) => (value === undefined ? { name: "Ada" } : value) },',
+			");",
+			"readonly class = input<string>();",
+			"readonly style = input<Record<string, string | null | undefined>>();",
+			...PASSED_INPUTS,
+			rootElement("HTMLParagraphElement"),
+			HOST,
+		]);
+	});
 
-  // The transform never returns `undefined`, so the input's value type leaves it out: the
-  // template reads the prop as the source does, where the default removed it.
-  it("types an input with a default without `undefined`", async () => {
-    const file = await formatted(`
+	// The transform never returns `undefined`, so the input's value type leaves it out: the
+	// template reads the prop as the source does, where the default removed it.
+	it("types an input with a default without `undefined`", async () => {
+		const file = await formatted(`
 type Tone = "info" | "warn" | undefined;
 
 export interface ToneProps {
@@ -567,55 +567,55 @@ export default function ToneLabel({ tone = "info", size = 1 }: ToneProps) {
   return <p data-size={size}>{tone.toUpperCase()}</p>;
 }
 `);
-    expect(classBody(file.contents)).toEqual([
-      'readonly tone = input<Exclude<Tone, undefined>, Exclude<Tone, undefined> | undefined>("info", {',
-      'transform: (value) => (value === undefined ? "info" : value),',
-      "});",
-      "readonly size = input<number, number | undefined>(1, {",
-      "transform: (value) => (value === undefined ? 1 : value),",
-      "});",
-      "readonly class = input<string>();",
-      "readonly style = input<Record<string, string | null | undefined>>();",
-      ...PASSED_INPUTS,
-      rootElement("HTMLParagraphElement"),
-      HOST,
-    ]);
-  });
+		expect(classBody(file.contents)).toEqual([
+			'readonly tone = input<Exclude<Tone, undefined>, Exclude<Tone, undefined> | undefined>("info", {',
+			'transform: (value) => (value === undefined ? "info" : value),',
+			"});",
+			"readonly size = input<number, number | undefined>(1, {",
+			"transform: (value) => (value === undefined ? 1 : value),",
+			"});",
+			"readonly class = input<string>();",
+			"readonly style = input<Record<string, string | null | undefined>>();",
+			...PASSED_INPUTS,
+			rootElement("HTMLParagraphElement"),
+			HOST,
+		]);
+	});
 
-  it("reads the `props` form through the same variables", async () => {
-    const file = await formatted(`
+	it("reads the `props` form through the same variables", async () => {
+		const file = await formatted(`
 export default function Byline(props: { author: string; minutes?: number }) {
   return <p>By {props.author}, {props.minutes ?? 1} min</p>;
 }
 `);
-    expect(templateLines(file.contents)).toEqual([
-      "@let author = this.author();",
-      "@let minutes = this.minutes();",
-      "<p",
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">By {{ author }}, {{ minutes ?? 1 }} min</p>",
-    ]);
-    expect(classBody(file.contents)).toEqual([
-      "readonly author = input.required<string>();",
-      "readonly minutes = input<number>();",
-      "readonly class = input<string>();",
-      "readonly style = input<Record<string, string | null | undefined>>();",
-      ...PASSED_INPUTS,
-      rootElement("HTMLParagraphElement"),
-      HOST,
-    ]);
-    // An inline props type declares nothing, beside the type of the consumer's listeners.
-    expect(file.contents).not.toMatch(/\binterface\b|^(?:export )?type (?!Listeners )/m);
-  });
+		expect(templateLines(file.contents)).toEqual([
+			"@let author = this.author();",
+			"@let minutes = this.minutes();",
+			"<p",
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">By {{ author }}, {{ minutes ?? 1 }} min</p>",
+		]);
+		expect(classBody(file.contents)).toEqual([
+			"readonly author = input.required<string>();",
+			"readonly minutes = input<number>();",
+			"readonly class = input<string>();",
+			"readonly style = input<Record<string, string | null | undefined>>();",
+			...PASSED_INPUTS,
+			rootElement("HTMLParagraphElement"),
+			HOST,
+		]);
+		// An inline props type declares nothing, beside the type of the consumer's listeners.
+		expect(file.contents).not.toMatch(/\binterface\b|^(?:export )?type (?!Listeners )/m);
+	});
 
-  // A prop is the component's API: a consumer may pass one the template does not read, which
-  // Angular would report for an undeclared input (NG0303). An unread `@let` is NG8112.
-  it("declares an input for every prop, and a variable only for those the template reads", async () => {
-    const file = await formatted(`
+	// A prop is the component's API: a consumer may pass one the template does not read, which
+	// Angular would report for an undeclared input (NG0303). An unread `@let` is NG8112.
+	it("declares an input for every prop, and a variable only for those the template reads", async () => {
+		const file = await formatted(`
 export interface QuietProps {
   label: string;
   hidden?: boolean;
@@ -626,32 +626,32 @@ export default function Quiet({ label, note }: QuietProps) {
   return <p>{label}</p>;
 }
 `);
-    expect(templateLines(file.contents)).toEqual([
-      "@let label = this.label();",
-      "<p",
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">{{ label }}</p>",
-    ]);
-    expect(classBody(file.contents)).toEqual([
-      "readonly label = input.required<string>();",
-      "readonly hidden = input<boolean>();",
-      "readonly note = input<string>();",
-      "readonly class = input<string>();",
-      "readonly style = input<Record<string, string | null | undefined>>();",
-      ...PASSED_INPUTS,
-      rootElement("HTMLParagraphElement"),
-      HOST,
-    ]);
-  });
+		expect(templateLines(file.contents)).toEqual([
+			"@let label = this.label();",
+			"<p",
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">{{ label }}</p>",
+		]);
+		expect(classBody(file.contents)).toEqual([
+			"readonly label = input.required<string>();",
+			"readonly hidden = input<boolean>();",
+			"readonly note = input<string>();",
+			"readonly class = input<string>();",
+			"readonly style = input<Record<string, string | null | undefined>>();",
+			...PASSED_INPUTS,
+			rootElement("HTMLParagraphElement"),
+			HOST,
+		]);
+	});
 
-  // An input is typed by its member's type, never by the props type: a props interface the
-  // source does not export would be declared and unused (oxlint's no-unused-vars, L5).
-  it("declares the exported types and the ones an input reaches, in source order", async () => {
-    const file = await formatted(`
+	// An input is typed by its member's type, never by the props type: a props interface the
+	// source does not export would be declared and unused (oxlint's no-unused-vars, L5).
+	it("declares the exported types and the ones an input reaches, in source order", async () => {
+		const file = await formatted(`
 type Size = "s" | "m";
 
 interface Unused {
@@ -675,21 +675,21 @@ export default function Panel({ finishes, extra }: PanelProps) {
   return <p>{finishes.length} {extra.unused.a}</p>;
 }
 `);
-    const declared = [...file.contents.matchAll(/^(?:export )?(?:interface|type) (\w+)/gm)];
-    // Then the type of the consumer's listeners, which the file declares (ADR-0118).
-    expect(declared.map((match) => match[1])).toEqual([
-      "Size",
-      "Unused",
-      "Finish",
-      "Extra",
-      "Listeners",
-    ]);
-  });
+		const declared = [...file.contents.matchAll(/^(?:export )?(?:interface|type) (\w+)/gm)];
+		// Then the type of the consumer's listeners, which the file declares (ADR-0118).
+		expect(declared.map((match) => match[1])).toEqual([
+			"Size",
+			"Unused",
+			"Finish",
+			"Extra",
+			"Listeners",
+		]);
+	});
 
-  it("imports `input` only when there are props, under another name when the module declares it", async () => {
-    // A component that opts out of the fallthrough declares no `class` and `style` inputs, only
-    // the element a ref on it holds (ADR-0118).
-    const plain = await formatted(`
+	it("imports `input` only when there are props, under another name when the module declares it", async () => {
+		// A component that opts out of the fallthrough declares no `class` and `style` inputs, only
+		// the element a ref on it holds (ADR-0118).
+		const plain = await formatted(`
 import { defineOptions } from "@uxfront/unframework";
 
 export default function Plain() {
@@ -697,10 +697,10 @@ export default function Plain() {
   return <p>{Math.PI}</p>;
 }
 `);
-    expect(plain.contents).toMatch(
-      /^import \{ Component, ElementRef, viewChild \} from "@angular\/core";\n/,
-    );
-    const taken = await formatted(`
+		expect(plain.contents).toMatch(
+			/^import \{ Component, ElementRef, viewChild \} from "@angular\/core";\n/,
+		);
+		const taken = await formatted(`
 export interface input {
   value: string;
 }
@@ -709,24 +709,24 @@ export default function Field({ value }: input) {
   return <p>{value}</p>;
 }
 `);
-    expect(taken.contents).toMatch(
-      /^import \{ isPlatformBrowser \} from "@angular\/common";\nimport \{\n {2}Component,\n[^}]*\n {2}input as input_1,\n {2}viewChild,\n\} from "@angular\/core";/,
-    );
-    expect(classBody(taken.contents)).toEqual([
-      "readonly value = input_1.required<string>();",
-      "readonly class = input_1<string>();",
-      "readonly style = input_1<Record<string, string | null | undefined>>();",
-      "readonly ufAttributes = input_1<Record<string, unknown>>();",
-      "readonly ufListeners = input_1<Listeners>();",
-      rootElement("HTMLParagraphElement"),
-      HOST,
-    ]);
-  });
+		expect(taken.contents).toMatch(
+			/^import \{ isPlatformBrowser \} from "@angular\/common";\nimport \{\n {2}Component,\n[^}]*\n {2}input as input_1,\n {2}viewChild,\n\} from "@angular\/core";/,
+		);
+		expect(classBody(taken.contents)).toEqual([
+			"readonly value = input_1.required<string>();",
+			"readonly class = input_1<string>();",
+			"readonly style = input_1<Record<string, string | null | undefined>>();",
+			"readonly ufAttributes = input_1<Record<string, unknown>>();",
+			"readonly ufListeners = input_1<Listeners>();",
+			rootElement("HTMLParagraphElement"),
+			HOST,
+		]);
+	});
 });
 
 describe("cross-file types and generics (ADR-0067, ADR-0068)", () => {
-  it("reads a member another declaration declares from the props type, by indexed access", async () => {
-    const file = await formatted(`
+	it("reads a member another declaration declares from the props type, by indexed access", async () => {
+		const file = await formatted(`
 interface Labelled {
   label: string;
   tone?: "info" | "danger";
@@ -740,22 +740,22 @@ export default function Badge({ label, tone = "info", size }: BadgeProps) {
   return <span class={\`badge-\${tone} badge-\${size}\`}>{label}</span>;
 }
 `);
-    const body = classBody(file.contents);
-    expect(body).toContain('readonly label = input.required<BadgeProps["label"]>();');
-    expect(body).toContain(
-      'readonly tone = input<Exclude<BadgeProps["tone"], undefined>, BadgeProps["tone"]>("info", {',
-    );
-    // A member the props type declares keeps its text.
-    expect(body).toContain('readonly size = input<"s" | "l">();');
-    // The props type is declared, since the inputs read it, with what it extends.
-    expect([...file.contents.matchAll(/^interface (\w+)/gm)].map((match) => match[1])).toEqual([
-      "Labelled",
-      "BadgeProps",
-    ]);
-  });
+		const body = classBody(file.contents);
+		expect(body).toContain('readonly label = input.required<BadgeProps["label"]>();');
+		expect(body).toContain(
+			'readonly tone = input<Exclude<BadgeProps["tone"], undefined>, BadgeProps["tone"]>("info", {',
+		);
+		// A member the props type declares keeps its text.
+		expect(body).toContain('readonly size = input<"s" | "l">();');
+		// The props type is declared, since the inputs read it, with what it extends.
+		expect([...file.contents.matchAll(/^interface (\w+)/gm)].map((match) => match[1])).toEqual([
+			"Labelled",
+			"BadgeProps",
+		]);
+	});
 
-  it("leaves the nullish out of a member read by indexed access, as `??` and `!` do", async () => {
-    const file = await formatted(`
+	it("leaves the nullish out of a member read by indexed access, as `??` and `!` do", async () => {
+		const file = await formatted(`
 interface Labelled {
   note?: string;
 }
@@ -774,21 +774,21 @@ export default function Badge({ label, note, mark }: Labelled & Marked & { label
   return <button type="button" onClick={shout}>{label}</button>;
 }
 `);
-    // An inline props type is read in parentheses, so the access applies to all of it.
-    expect(file.contents).toContain(
-      'readonly note = input<(Labelled & Marked & { label: string })["note"]>();',
-    );
-    expect(file.contents).toContain(
-      'private shown!: NonNullable<(Labelled & Marked & { label: string })["note"]> | string;',
-    );
-    expect(file.contents).toContain(
-      'private first!: NonNullable<(Labelled & Marked & { label: string })["mark"]>;',
-    );
-    expect(await l3Errors(file)).toEqual([]);
-  });
+		// An inline props type is read in parentheses, so the access applies to all of it.
+		expect(file.contents).toContain(
+			'readonly note = input<(Labelled & Marked & { label: string })["note"]>();',
+		);
+		expect(file.contents).toContain(
+			'private shown!: NonNullable<(Labelled & Marked & { label: string })["note"]> | string;',
+		);
+		expect(file.contents).toContain(
+			'private first!: NonNullable<(Labelled & Marked & { label: string })["mark"]>;',
+		);
+		expect(await l3Errors(file)).toEqual([]);
+	});
 
-  it("declares the types a type parameter's constraint and default name, and nothing else does", async () => {
-    const file = await formatted(`
+	it("declares the types a type parameter's constraint and default name, and nothing else does", async () => {
+		const file = await formatted(`
 interface Item {
   id: string;
 }
@@ -802,16 +802,16 @@ export default function List<T extends Item = Fallback>({ items }: { items: T[] 
   return <ul>{items.map((item) => <li key={item.id}>{item.id}</li>)}</ul>;
 }
 `);
-    expect(file.contents).toContain("export default class List<T extends Item = Fallback> {");
-    expect([...file.contents.matchAll(/^interface (\w+)/gm)].map((match) => match[1])).toEqual([
-      "Item",
-      "Fallback",
-    ]);
-    expect(await l3Errors(file)).toEqual([]);
-  });
+		expect(file.contents).toContain("export default class List<T extends Item = Fallback> {");
+		expect([...file.contents.matchAll(/^interface (\w+)/gm)].map((match) => match[1])).toEqual([
+			"Item",
+			"Fallback",
+		]);
+		expect(await l3Errors(file)).toEqual([]);
+	});
 
-  it("declares a generic component's class with its type parameters as written", async () => {
-    const file = await formatted(`
+	it("declares a generic component's class with its type parameters as written", async () => {
+		const file = await formatted(`
 export interface TableProps<T extends { id: string }> {
   rows: T[];
 }
@@ -820,12 +820,12 @@ export default function Table<T extends { id: string }>({ rows }: TableProps<T>)
   return <ul>{rows.map((row) => <li key={row.id}>{row.id}</li>)}</ul>;
 }
 `);
-    expect(file.contents).toContain("export default class Table<T extends { id: string }> {");
-    expect(file.contents).toContain("readonly rows = input.required<T[]>();");
-  });
+		expect(file.contents).toContain("export default class Table<T extends { id: string }> {");
+		expect(file.contents).toContain("readonly rows = input.required<T[]>();");
+	});
 
-  it("types a generic slot's context at the constraints, which its directive cannot infer", async () => {
-    const file = await formatted(`
+	it("types a generic slot's context at the constraints, which its directive cannot infer", async () => {
+		const file = await formatted(`
 import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
@@ -834,16 +834,16 @@ export default function Options<T extends { value: string }, U>({ options, extra
   return <ul>{options.map((option) => <li key={option.value}>{slots.option?.({ option, extra })}</li>)}</ul>;
 }
 `);
-    expect(file.contents).toContain(
-      "export type OptionsOptionContext = { option: { value: string }; extra: any };",
-    );
-    expect(file.contents).toContain(
-      "export default class Options<T extends { value: string }, U> {",
-    );
-  });
+		expect(file.contents).toContain(
+			"export type OptionsOptionContext = { option: { value: string }; extra: any };",
+		);
+		expect(file.contents).toContain(
+			"export default class Options<T extends { value: string }, U> {",
+		);
+	});
 
-  it("writes a select's choice into a model of a type parameter through the template's cast", async () => {
-    const file = await formatted(`
+	it("writes a select's choice into a model of a type parameter through the template's cast", async () => {
+		const file = await formatted(`
 import { defineModel } from "@uxfront/unframework";
 
 export default function Select<T extends string>({ options }: { options: readonly T[] }) {
@@ -855,11 +855,11 @@ export default function Select<T extends string>({ options }: { options: readonl
   );
 }
 `);
-    expect(file.contents).toContain('(change)="this.value.set($any(valueField.value))"');
-  });
+		expect(file.contents).toContain('(change)="this.value.set($any(valueField.value))"');
+	});
 
-  it("exports a type no component reaches, in source order among the declared ones", async () => {
-    const file = await formatted(`
+	it("exports a type no component reaches, in source order among the declared ones", async () => {
+		const file = await formatted(`
 export type Tone = "primary" | "secondary";
 
 export type Size = "small" | "large";
@@ -872,17 +872,17 @@ export default function Button({ tone = "primary" }: ButtonProps) {
   return <button type="button" class={tone}>Save</button>;
 }
 `);
-    expect(
-      [...file.contents.matchAll(/^export (?:interface|type) (\w+)/gm)].map((m) => m[1]),
-    ).toEqual(["Tone", "Size", "ButtonProps"]);
-  });
+		expect(
+			[...file.contents.matchAll(/^export (?:interface|type) (\w+)/gm)].map((m) => m[1]),
+		).toEqual(["Tone", "Size", "ButtonProps"]);
+	});
 });
 
 describe("template (ADR-0035)", () => {
-  // Angular narrows a template variable as TypeScript narrows a local, never a signal call
-  // (TS2532 on \`owner() && owner().name\`): output.test.ts proves this source type-checks.
-  it("writes the source's expressions as written, against the variables", async () => {
-    const file = await formatted(`
+	// Angular narrows a template variable as TypeScript narrows a local, never a signal call
+	// (TS2532 on \`owner() && owner().name\`): output.test.ts proves this source type-checks.
+	it("writes the source's expressions as written, against the variables", async () => {
+		const file = await formatted(`
 interface Owner {
   name: string;
 }
@@ -895,25 +895,25 @@ export default function Card({ owner }: CardProps) {
   return <div>{owner && <p>{owner.name.toUpperCase()}</p>}</div>;
 }
 `);
-    expect(templateLines(file.contents)).toEqual([
-      "@let owner = this.owner();",
-      "<div",
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">",
-      "@if (owner) {",
-      "<p>{{ owner.name.toUpperCase() }}</p>",
-      "}",
-      "</div>",
-    ]);
-  });
+		expect(templateLines(file.contents)).toEqual([
+			"@let owner = this.owner();",
+			"<div",
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">",
+			"@if (owner) {",
+			"<p>{{ owner.name.toUpperCase() }}</p>",
+			"}",
+			"</div>",
+		]);
+	});
 
-  // A \`track\` expression reads only its own item, \`$index\` and the component's members (NG8009).
-  it("reads a prop in a list's key from its input, and declares the index the key reads", async () => {
-    const file = await formatted(`
+	// A \`track\` expression reads only its own item, \`$index\` and the component's members (NG8009).
+	it("reads a prop in a list's key from its input, and declares the index the key reads", async () => {
+		const file = await formatted(`
 export interface RowsProps {
   prefix: string;
   rows: { id: string; label: string }[];
@@ -929,30 +929,30 @@ export default function Rows({ prefix, rows }: RowsProps) {
   );
 }
 `);
-    expect(templateLines(file.contents)).toEqual([
-      "@let rows = this.rows();",
-      "<ul",
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">",
-      "@for (row of rows; track this.prefix() + row.id) {",
-      "<li>{{ row.label }}</li>",
-      "}",
-      "@for (row of rows; track index; let index = $index) {",
-      "<li>{{ row.label }}</li>",
-      "}",
-      "@for (row of rows; track row.id) {",
-      "<li>{{ row.label }}</li>",
-      "}",
-      "</ul>",
-    ]);
-  });
+		expect(templateLines(file.contents)).toEqual([
+			"@let rows = this.rows();",
+			"<ul",
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">",
+			"@for (row of rows; track this.prefix() + row.id) {",
+			"<li>{{ row.label }}</li>",
+			"}",
+			"@for (row of rows; track index; let index = $index) {",
+			"<li>{{ row.label }}</li>",
+			"}",
+			"@for (row of rows; track row.id) {",
+			"<li>{{ row.label }}</li>",
+			"}",
+			"</ul>",
+		]);
+	});
 
-  it("makes each allowed global the template reads a protected member", async () => {
-    const file = await formatted(`
+	it("makes each allowed global the template reads a protected member", async () => {
+		const file = await formatted(`
 export interface StatsProps {
   values: number[];
 }
@@ -961,24 +961,24 @@ export default function Stats({ values }: StatsProps) {
   return <p title={JSON.stringify(values)}>{Math.max(...values)} {String(undefined)} {NaN}</p>;
 }
 `);
-    expect(classBody(file.contents)).toEqual([
-      "readonly values = input.required<number[]>();",
-      "readonly class = input<string>();",
-      "readonly style = input<Record<string, string | null | undefined>>();",
-      ...PASSED_INPUTS,
-      rootElement("HTMLParagraphElement"),
-      "protected readonly JSON = JSON;",
-      "protected readonly Math = Math;",
-      "protected readonly NaN = NaN;",
-      "protected readonly String = String;",
-      HOST,
-    ]);
-  });
+		expect(classBody(file.contents)).toEqual([
+			"readonly values = input.required<number[]>();",
+			"readonly class = input<string>();",
+			"readonly style = input<Record<string, string | null | undefined>>();",
+			...PASSED_INPUTS,
+			rootElement("HTMLParagraphElement"),
+			"protected readonly JSON = JSON;",
+			"protected readonly Math = Math;",
+			"protected readonly NaN = NaN;",
+			"protected readonly String = String;",
+			HOST,
+		]);
+	});
 
-  // Angular's parser drops a text node that `trim()` empties right after a block, while it looks
-  // for the block's `@else` or `@empty`; an interpolated literal is no blank text.
-  it("writes blank text after a block as an interpolated literal", async () => {
-    const file = await formatted(`
+	// Angular's parser drops a text node that `trim()` empties right after a block, while it looks
+	// for the block's `@else` or `@empty`; an interpolated literal is no blank text.
+	it("writes blank text after a block as an interpolated literal", async () => {
+		const file = await formatted(`
 export interface GapProps {
   on: boolean;
   names: string[];
@@ -993,27 +993,27 @@ export default function Gap({ on, names }: GapProps) {
   );
 }
 `);
-    expect(templateLines(file.contents)).toEqual([
-      "@let on = this.on();",
-      "@let names = this.names();",
-      "<p",
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">",
-      '@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
-      '@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
-      "</p>",
-    ]);
-  });
+		expect(templateLines(file.contents)).toEqual([
+			"@let on = this.on();",
+			"@let names = this.names();",
+			"<p",
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">",
+			'@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
+			'@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
+			"</p>",
+		]);
+	});
 
-  // Angular's lexers read quotes, `;`, parentheses and `//` in a regular expression, its
-  // whitespace processing turns U+E500 into a space and its expression lexer rejects whitespace
-  // outside ASCII; it reads a `<title>`'s content as text unless the tag names SVG's namespace.
-  it("writes what Angular's template would read differently with escapes", async () => {
-    const file = await formatted(`
+	// Angular's lexers read quotes, `;`, parentheses and `//` in a regular expression, its
+	// whitespace processing turns U+E500 into a space and its expression lexer rejects whitespace
+	// outside ASCII; it reads a `<title>`'s content as text unless the tag names SVG's namespace.
+	it("writes what Angular's template would read differently with escapes", async () => {
+		const file = await formatted(`
 export interface MatchProps {
   label: string;
   on: boolean;
@@ -1030,35 +1030,35 @@ export default function Match({ label, on }: MatchProps) {
   );
 }
 `);
-    expect(templateLines(file.contents)).toEqual([
-      "@let label = this.label();",
-      "@let on = this.on();",
-      "<div",
-      "[attr.title]=\"'title' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['title'] : /\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">",
-      "@if (/^\\\\x2f/.test(label)) {",
-      "<b>slash</b>",
-      "}",
-      "@for (part of label.split(/[\\\\x3b\\\\x29]/); track part) {",
-      "<i>{{ part }}</i>",
-      "}",
-      '<p>{{ "x\\\\ue500y" }}{{ label + label }}@if (/(?<x>a)/.test(label)) {named}</p>',
-      '<svg viewBox="0 0 2 2">',
-      "<svg:title>{{ label }}@if (on) { on}</svg:title>",
-      "</svg>",
-      "</div>",
-    ]);
-  });
+		expect(templateLines(file.contents)).toEqual([
+			"@let label = this.label();",
+			"@let on = this.on();",
+			"<div",
+			"[attr.title]=\"'title' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['title'] : /\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">",
+			"@if (/^\\\\x2f/.test(label)) {",
+			"<b>slash</b>",
+			"}",
+			"@for (part of label.split(/[\\\\x3b\\\\x29]/); track part) {",
+			"<i>{{ part }}</i>",
+			"}",
+			'<p>{{ "x\\\\ue500y" }}{{ label + label }}@if (/(?<x>a)/.test(label)) {named}</p>',
+			'<svg viewBox="0 0 2 2">',
+			"<svg:title>{{ label }}@if (on) { on}</svg:title>",
+			"</svg>",
+			"</div>",
+		]);
+	});
 
-  // A spread without keys prints nothing (ADR-0039). The analyser rejects one (UF3004), but a
-  // plugin may drop a spread's keys, and an unread `@let` is NG8112.
-  it("declares no variable for a spread that prints nothing", () => {
-    const module = lower(`
+	// A spread without keys prints nothing (ADR-0039). The analyser rejects one (UF3004), but a
+	// plugin may drop a spread's keys, and an unread `@let` is NG8112.
+	it("declares no variable for a spread that prints nothing", () => {
+		const module = lower(`
 export interface EmptyProps {
   attrs: { id?: string };
 }
@@ -1067,34 +1067,34 @@ export default function Empty({ attrs }: EmptyProps) {
   return <p {...attrs}>x</p>;
 }
 `);
-    const [component] = module.components;
-    const render = component!.render as ElementNode;
-    const keyless = {
-      ...module,
-      components: [
-        {
-          ...component!,
-          render: {
-            ...render,
-            attributes: render.attributes.map((attribute) => ({ ...attribute, keys: [] })),
-          },
-        },
-      ],
-    } as UfModule;
-    const [file] = emitModule(keyless);
-    expect(templateLines(file!.contents)).toEqual([
-      "<p",
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">x</p>",
-    ]);
-  });
+		const [component] = module.components;
+		const render = component!.render as ElementNode;
+		const keyless = {
+			...module,
+			components: [
+				{
+					...component!,
+					render: {
+						...render,
+						attributes: render.attributes.map((attribute) => ({ ...attribute, keys: [] })),
+					},
+				},
+			],
+		} as UfModule;
+		const [file] = emitModule(keyless);
+		expect(templateLines(file!.contents)).toEqual([
+			"<p",
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">x</p>",
+		]);
+	});
 
-  it("prints valid TypeScript before formatting too", () => {
-    const contents = emitted(`
+	it("prints valid TypeScript before formatting too", () => {
+		const contents = emitted(`
 export interface BadgeProps {
   tone?: "info" | "warn";
 }
@@ -1103,20 +1103,20 @@ export default function Badge({ tone = "info" }: BadgeProps) {
   return <p>{tone}</p>;
 }
 `);
-    expect(classBody(contents)).toEqual([
-      'readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", { transform: (value) => value === undefined ? "info" : value });',
-      "readonly class = input<string>();",
-      "readonly style = input<Record<string, string | null | undefined>>();",
-      ...PASSED_INPUTS,
-      rootElement("HTMLParagraphElement"),
-      HOST,
-    ]);
-  });
+		expect(classBody(contents)).toEqual([
+			'readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", { transform: (value) => value === undefined ? "info" : value });',
+			"readonly class = input<string>();",
+			"readonly style = input<Record<string, string | null | undefined>>();",
+			...PASSED_INPUTS,
+			rootElement("HTMLParagraphElement"),
+			HOST,
+		]);
+	});
 });
 
 describe("async setup (ADR-0101)", () => {
-  // A loader the module declares, so the file compiles alone.
-  const PROFILE = `
+	// A loader the module declares, so the file compiles alone.
+	const PROFILE = `
 import { ref } from "@uxfront/unframework";
 
 interface User {
@@ -1137,8 +1137,8 @@ export default async function Profile({ id }: { id: string }) {
 }
 `;
 
-  // Every kind of item after the awaits that reads one, and the hooks and watchers after them.
-  const CARD = `
+	// Every kind of item after the awaits that reads one, and the hooks and watchers after them.
+	const CARD = `
 import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";
 
 interface User {
@@ -1175,115 +1175,115 @@ export default async function Card({ id }: { id: string }) {
 }
 `;
 
-  it("goes on in ngOnInit as a pending task, and renders the template once the setup resolves", async () => {
-    const file = await formatted(PROFILE);
-    expect(templateLines(file.contents)).toEqual([
-      "@if (resolved()) {",
-      "@let visits = this.visits();",
-      "<button",
-      'type="button"',
-      '(click)="onClick()"',
-      '[class]="this.class()"',
-      '[style]="this.style()"',
-      PASSED,
-      '[ufScope]="this.host"',
-      "#ufElement",
-      ">{{ user.name }}: {{ visits }}</button>",
-      "}",
-    ]);
-    expect(classBody(file.contents)).toEqual([
-      "readonly id = input.required<string>();",
-      "readonly class = input<string>();",
-      "readonly style = input<Record<string, string | null | undefined>>();",
-      ...PASSED_INPUTS,
-      rootElement("HTMLButtonElement"),
-      "private readonly pendingTasks = inject(PendingTasks);",
-      "private readonly destroyRef = inject(DestroyRef);",
-      "protected readonly resolved = signal(false);",
-      "protected user!: Awaited<ReturnType<typeof this.initialUser>>;",
-      "protected readonly visits = linkedSignal(() => untracked(() => this.user.visits));",
-      "",
-      "ngOnInit(): void {",
-      "this.pendingTasks.run(async () => {",
-      "this.user = await this.initialUser();",
-      "",
-      "// Destroyed while it waited: the rest of the setup never runs.",
-      "if (this.destroyRef.destroyed) return;",
-      "",
-      "// Read once the inputs are set: these keep the values they start with.",
-      "this.visits();",
-      "",
-      "this.resolved.set(true);",
-      "});",
-      "}",
-      "",
-      "private initialUser() {",
-      "return loadUser(this.id());",
-      "}",
-      "",
-      "protected onClick() {",
-      "this.visits.update((visits) => visits + 1);",
-      "}",
-      HOST,
-    ]);
-  });
+	it("goes on in ngOnInit as a pending task, and renders the template once the setup resolves", async () => {
+		const file = await formatted(PROFILE);
+		expect(templateLines(file.contents)).toEqual([
+			"@if (resolved()) {",
+			"@let visits = this.visits();",
+			"<button",
+			'type="button"',
+			'(click)="onClick()"',
+			'[class]="this.class()"',
+			'[style]="this.style()"',
+			PASSED,
+			'[ufScope]="this.host"',
+			"#ufElement",
+			">{{ user.name }}: {{ visits }}</button>",
+			"}",
+		]);
+		expect(classBody(file.contents)).toEqual([
+			"readonly id = input.required<string>();",
+			"readonly class = input<string>();",
+			"readonly style = input<Record<string, string | null | undefined>>();",
+			...PASSED_INPUTS,
+			rootElement("HTMLButtonElement"),
+			"private readonly pendingTasks = inject(PendingTasks);",
+			"private readonly destroyRef = inject(DestroyRef);",
+			"protected readonly resolved = signal(false);",
+			"protected user!: Awaited<ReturnType<typeof this.initialUser>>;",
+			"protected readonly visits = linkedSignal(() => untracked(() => this.user.visits));",
+			"",
+			"ngOnInit(): void {",
+			"this.pendingTasks.run(async () => {",
+			"this.user = await this.initialUser();",
+			"",
+			"// Destroyed while it waited: the rest of the setup never runs.",
+			"if (this.destroyRef.destroyed) return;",
+			"",
+			"// Read once the inputs are set: these keep the values they start with.",
+			"this.visits();",
+			"",
+			"this.resolved.set(true);",
+			"});",
+			"}",
+			"",
+			"private initialUser() {",
+			"return loadUser(this.id());",
+			"}",
+			"",
+			"protected onClick() {",
+			"this.visits.update((visits) => visits + 1);",
+			"}",
+			HOST,
+		]);
+	});
 
-  it("types an awaited value by its annotation, and defers what reads one as what reads an input", async () => {
-    const lines = classBody((await formatted(CARD)).contents);
-    expect(lines).toEqual(
-      expect.arrayContaining([
-        "private again!: User;",
-        "private readonly visits = linkedSignal(() => untracked(() => this.user.visits));",
-        "protected readonly label = computed(() => untracked(() => `${this.user.name}!`));",
-        "private seen!: ReturnType<typeof this.initialSeen>;",
-        "this.again = await loadUser(this.user.name);",
-      ]),
-    );
-    const body = lines.join("\n");
-    // The awaits run first, the guard next, then today's `ngOnInit` code, the hooks and the
-    // watchers registered with the injector, and the template last.
-    const order = [
-      "this.user = await this.initialUser();",
-      "if (this.destroyRef.destroyed) return;",
-      "this.visits();\nthis.label();\nthis.seen = this.initialSeen();",
-      "effect(",
-      "afterRenderEffect(",
-      "afterNextRender(",
-      "this.resolved.set(true);",
-    ].map((snippet) => body.indexOf(snippet));
-    expect(order.every((index) => index !== -1)).toBe(true);
-    expect(order).toEqual(order.toSorted((a, b) => a - b));
-    expect(body.match(/\{ injector: this\.injector \}/g)).toHaveLength(3);
-    // A component destroyed before its setup resolved runs no `onUnmounted` hook.
-    expect(body).toContain(
-      [
-        "ngOnDestroy(): void {",
-        "if (this.resolved()) {",
-        "if (isPlatformBrowser(this.platformId)) {",
-        "console.log(this.user.name);",
-      ].join("\n"),
-    );
-  });
+	it("types an awaited value by its annotation, and defers what reads one as what reads an input", async () => {
+		const lines = classBody((await formatted(CARD)).contents);
+		expect(lines).toEqual(
+			expect.arrayContaining([
+				"private again!: User;",
+				"private readonly visits = linkedSignal(() => untracked(() => this.user.visits));",
+				"protected readonly label = computed(() => untracked(() => `${this.user.name}!`));",
+				"private seen!: ReturnType<typeof this.initialSeen>;",
+				"this.again = await loadUser(this.user.name);",
+			]),
+		);
+		const body = lines.join("\n");
+		// The awaits run first, the guard next, then today's `ngOnInit` code, the hooks and the
+		// watchers registered with the injector, and the template last.
+		const order = [
+			"this.user = await this.initialUser();",
+			"if (this.destroyRef.destroyed) return;",
+			"this.visits();\nthis.label();\nthis.seen = this.initialSeen();",
+			"effect(",
+			"afterRenderEffect(",
+			"afterNextRender(",
+			"this.resolved.set(true);",
+		].map((snippet) => body.indexOf(snippet));
+		expect(order.every((index) => index !== -1)).toBe(true);
+		expect(order).toEqual(order.toSorted((a, b) => a - b));
+		expect(body.match(/\{ injector: this\.injector \}/g)).toHaveLength(3);
+		// A component destroyed before its setup resolved runs no `onUnmounted` hook.
+		expect(body).toContain(
+			[
+				"ngOnDestroy(): void {",
+				"if (this.resolved()) {",
+				"if (isPlatformBrowser(this.platformId)) {",
+				"console.log(this.user.name);",
+			].join("\n"),
+		);
+	});
 
-  it("names the signal past a binding of its name", async () => {
-    const file = await formatted(
-      PROFILE.replace("const visits = ref(user.visits);", "const resolved = ref(user.visits);")
-        .replace("visits.value++", "resolved.value++")
-        .replace("{visits.value}", "{resolved.value}"),
-    );
-    expect(templateLines(file.contents)[0]).toBe("@if (resolved_1()) {");
-    expect(classBody(file.contents)).toContain("protected readonly resolved_1 = signal(false);");
-  });
+	it("names the signal past a binding of its name", async () => {
+		const file = await formatted(
+			PROFILE.replace("const visits = ref(user.visits);", "const resolved = ref(user.visits);")
+				.replace("visits.value++", "resolved.value++")
+				.replace("{visits.value}", "{resolved.value}"),
+		);
+		expect(templateLines(file.contents)[0]).toBe("@if (resolved_1()) {");
+		expect(classBody(file.contents)).toContain("protected readonly resolved_1 = signal(false);");
+	});
 
-  it("passes L3, L4 and L5 with no message", { timeout: 120_000 }, async () => {
-    for (const source of [PROFILE, CARD]) {
-      const file = await formatted(source);
-      expect(await l3Errors(file)).toEqual([]);
-      const [path] = Object.values(writeFiles(scratchDir(), { [file.path]: file.contents }));
-      const checked = await toolchain.typecheck([path!], context);
-      for (const [each, messages] of checked) expect(messages, each).toEqual([]);
-      const linted = await toolchain.lint([path!], context);
-      for (const [each, messages] of linted) expect(messages, each).toEqual([]);
-    }
-  });
+	it("passes L3, L4 and L5 with no message", { timeout: 120_000 }, async () => {
+		for (const source of [PROFILE, CARD]) {
+			const file = await formatted(source);
+			expect(await l3Errors(file)).toEqual([]);
+			const [path] = Object.values(writeFiles(scratchDir(), { [file.path]: file.contents }));
+			const checked = await toolchain.typecheck([path!], context);
+			for (const [each, messages] of checked) expect(messages, each).toEqual([]);
+			const linted = await toolchain.lint([path!], context);
+			for (const [each, messages] of linted) expect(messages, each).toEqual([]);
+		}
+	});
 });

@@ -8,40 +8,40 @@ import { expect } from "vitest";
 import Panels from "./Panels.uf.tsx";
 
 describeTargets("semantics/models", () => {
-  it("seeds the bound child from its parent and the unbound one from its default", async () => {
-    const view = await mount(Panels);
-    await view.expectParity("initial");
-    await expect
-      .element(view.getByRole("button", { name: "Shipping" }))
-      .toHaveAttribute("aria-expanded", "true");
-    await expect
-      .element(view.getByRole("button", { name: "Returns" }))
-      .toHaveAttribute("aria-expanded", "false");
-    await expect.element(view.getByText("Details of Shipping")).toBeVisible();
-  });
+	it("seeds the bound child from its parent and the unbound one from its default", async () => {
+		const view = await mount(Panels);
+		await view.expectParity("initial");
+		await expect
+			.element(view.getByRole("button", { name: "Shipping" }))
+			.toHaveAttribute("aria-expanded", "true");
+		await expect
+			.element(view.getByRole("button", { name: "Returns" }))
+			.toHaveAttribute("aria-expanded", "false");
+		await expect.element(view.getByText("Details of Shipping")).toBeVisible();
+	});
 
-  it(
-    "writes the parent's state from the bound child",
-    { requires: ["interactivity"] },
-    async () => {
-      const view = await mount(Panels);
-      await view.user.click(view.getByRole("button", { name: "Shipping" }));
-      await view.expectParity("bound-closed");
-      await expect.element(view.getByRole("status")).toHaveTextContent("Shipping is closed");
-      await view.user.click(view.getByRole("button", { name: "Toggle shipping" }));
-      await view.expectParity("parent-opened");
-      await expect.element(view.getByText("Details of Shipping")).toBeVisible();
-    },
-  );
+	it(
+		"writes the parent's state from the bound child",
+		{ requires: ["interactivity"] },
+		async () => {
+			const view = await mount(Panels);
+			await view.user.click(view.getByRole("button", { name: "Shipping" }));
+			await view.expectParity("bound-closed");
+			await expect.element(view.getByRole("status")).toHaveTextContent("Shipping is closed");
+			await view.user.click(view.getByRole("button", { name: "Toggle shipping" }));
+			await view.expectParity("parent-opened");
+			await expect.element(view.getByText("Details of Shipping")).toBeVisible();
+		},
+	);
 
-  it("keeps an unbound child's state its own", { requires: ["interactivity"] }, async () => {
-    const view = await mount(Panels);
-    await view.user.click(view.getByRole("button", { name: "Returns" }));
-    await view.expectParity("unbound-opened");
-    await expect.element(view.getByText("Details of Returns")).toBeVisible();
-    await expect.element(view.getByRole("status")).toHaveTextContent("Shipping is open");
-    await view.user.click(view.getByRole("button", { name: "Toggle shipping" }));
-    await view.expectParity("unbound-kept");
-    await expect.element(view.getByText("Details of Returns")).toBeVisible();
-  });
+	it("keeps an unbound child's state its own", { requires: ["interactivity"] }, async () => {
+		const view = await mount(Panels);
+		await view.user.click(view.getByRole("button", { name: "Returns" }));
+		await view.expectParity("unbound-opened");
+		await expect.element(view.getByText("Details of Returns")).toBeVisible();
+		await expect.element(view.getByRole("status")).toHaveTextContent("Shipping is open");
+		await view.user.click(view.getByRole("button", { name: "Toggle shipping" }));
+		await view.expectParity("unbound-kept");
+		await expect.element(view.getByText("Details of Returns")).toBeVisible();
+	});
 });

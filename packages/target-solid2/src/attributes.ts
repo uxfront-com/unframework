@@ -16,76 +16,76 @@ const FILTERS = words(`
 
 /** The elements whose type lacks each attribute, which SVG's presentation attributes are. */
 const UNDECLARED: ReadonlyMap<string, ReadonlySet<string>> = new Map(
-  Object.entries({
-    color: [
-      ...FILTERS.filter(
-        (tag) => !["feDiffuseLighting", "feFlood", "feSpecularLighting"].includes(tag),
-      ),
-      ...words("clipPath image linearGradient metadata mpath radialGradient view"),
-    ],
-    cursor: [
-      ...FILTERS,
-      ...words("clipPath linearGradient metadata mpath radialGradient stop textPath tspan view"),
-    ],
-    direction: [
-      ...FILTERS,
-      ...words(
-        "circle clipPath defs ellipse g image line linearGradient marker mask metadata mpath path pattern polygon polyline radialGradient rect stop switch symbol view",
-      ),
-    ],
-    display: [
-      ...FILTERS,
-      ...words(
-        "clipPath defs linearGradient marker mask metadata mpath pattern radialGradient stop symbol view",
-      ),
-    ],
-    edgeMode: ["feGaussianBlur"],
-    fill: [
-      ...FILTERS,
-      ...words("clipPath image linearGradient metadata mpath radialGradient stop view"),
-    ],
-    filter: [
-      ...FILTERS,
-      ...words(
-        "clipPath linearGradient mask metadata mpath radialGradient stop textPath tspan view",
-      ),
-    ],
-    href: ["mpath"],
-    lengthAdjust: ["textPath"],
-    mask: [
-      ...FILTERS,
-      ...words("clipPath linearGradient metadata mpath radialGradient stop textPath tspan view"),
-    ],
-    opacity: [
-      ...FILTERS,
-      ...words(
-        "clipPath linearGradient mask metadata mpath radialGradient stop textPath tspan view",
-      ),
-    ],
-    overflow: [
-      ...FILTERS,
-      ...words(
-        "circle clipPath defs ellipse g line linearGradient mask metadata mpath path polygon polyline radialGradient rect stop switch text textPath tspan view",
-      ),
-    ],
-    stroke: [
-      ...FILTERS,
-      ...words("clipPath image linearGradient metadata mpath radialGradient stop view"),
-    ],
-    textLength: ["textPath"],
-    transform: [
-      ...FILTERS,
-      ...words(
-        "linearGradient marker mask metadata mpath pattern radialGradient stop svg symbol textPath tspan view",
-      ),
-    ],
-    visibility: [
-      ...FILTERS,
-      ...words(
-        "clipPath defs linearGradient marker mask metadata mpath pattern radialGradient stop symbol view",
-      ),
-    ],
-  }).map(([name, tags]) => [name, new Set(tags)]),
+	Object.entries({
+		color: [
+			...FILTERS.filter(
+				(tag) => !["feDiffuseLighting", "feFlood", "feSpecularLighting"].includes(tag),
+			),
+			...words("clipPath image linearGradient metadata mpath radialGradient view"),
+		],
+		cursor: [
+			...FILTERS,
+			...words("clipPath linearGradient metadata mpath radialGradient stop textPath tspan view"),
+		],
+		direction: [
+			...FILTERS,
+			...words(
+				"circle clipPath defs ellipse g image line linearGradient marker mask metadata mpath path pattern polygon polyline radialGradient rect stop switch symbol view",
+			),
+		],
+		display: [
+			...FILTERS,
+			...words(
+				"clipPath defs linearGradient marker mask metadata mpath pattern radialGradient stop symbol view",
+			),
+		],
+		edgeMode: ["feGaussianBlur"],
+		fill: [
+			...FILTERS,
+			...words("clipPath image linearGradient metadata mpath radialGradient stop view"),
+		],
+		filter: [
+			...FILTERS,
+			...words(
+				"clipPath linearGradient mask metadata mpath radialGradient stop textPath tspan view",
+			),
+		],
+		href: ["mpath"],
+		lengthAdjust: ["textPath"],
+		mask: [
+			...FILTERS,
+			...words("clipPath linearGradient metadata mpath radialGradient stop textPath tspan view"),
+		],
+		opacity: [
+			...FILTERS,
+			...words(
+				"clipPath linearGradient mask metadata mpath radialGradient stop textPath tspan view",
+			),
+		],
+		overflow: [
+			...FILTERS,
+			...words(
+				"circle clipPath defs ellipse g line linearGradient mask metadata mpath path polygon polyline radialGradient rect stop switch text textPath tspan view",
+			),
+		],
+		stroke: [
+			...FILTERS,
+			...words("clipPath image linearGradient metadata mpath radialGradient stop view"),
+		],
+		textLength: ["textPath"],
+		transform: [
+			...FILTERS,
+			...words(
+				"linearGradient marker mask metadata mpath pattern radialGradient stop svg symbol textPath tspan view",
+			),
+		],
+		visibility: [
+			...FILTERS,
+			...words(
+				"clipPath defs linearGradient marker mask metadata mpath pattern radialGradient stop symbol view",
+			),
+		],
+	}).map(([name, tags]) => [name, new Set(tags)]),
 );
 
 /**
@@ -94,12 +94,12 @@ const UNDECLARED: ReadonlyMap<string, ReadonlySet<string>> = new Map(
  * are spread from an object typed `Record<string, unknown>`.
  */
 const FORBIDDEN: ReadonlyMap<string, ReadonlySet<string>> = new Map([
-  ["tabindex", new Set(["dialog"])],
+	["tabindex", new Set(["dialog"])],
 ]);
 
 /** Whether Solid's types reject an attribute on an element (see {@link untypedAttribute}). */
 export function isUntyped(tag: string, name: string): boolean {
-  return Boolean(FORBIDDEN.get(name)?.has(tag) || UNDECLARED.get(name)?.has(tag));
+	return Boolean(FORBIDDEN.get(name)?.has(tag) || UNDECLARED.get(name)?.has(tag));
 }
 
 /**
@@ -114,11 +114,11 @@ export function isUntyped(tag: string, name: string): boolean {
  * The names are an element's own (SVG's case): every tag here is an SVG element but `<dialog>`.
  */
 export function untypedAttribute(
-  tag: string,
-  name: string,
-  besides: boolean,
+	tag: string,
+	name: string,
+	besides: boolean,
 ): "spread" | "untyped" | undefined {
-  if (FORBIDDEN.get(name)?.has(tag)) return "untyped";
-  if (!UNDECLARED.get(name)?.has(tag)) return undefined;
-  return besides ? "spread" : "untyped";
+	if (FORBIDDEN.get(name)?.has(tag)) return "untyped";
+	if (!UNDECLARED.get(name)?.has(tag)) return undefined;
+	return besides ? "spread" : "untyped";
 }

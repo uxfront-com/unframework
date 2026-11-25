@@ -3,33 +3,33 @@
 import type { ButtonProps } from "./types.ts";
 
 interface IconButtonProps extends Omit<ButtonProps, "label"> {
-  icon: string;
+	icon: string;
 }
 
 export function Partials(props: Partial<ButtonProps>) {
-  return props;
+	return props;
 }
 
 export function Requireds(props: Required<ButtonProps>) {
-  return props;
+	return props;
 }
 
 export function Picked(props: Pick<ButtonProps, "label" | "tone">) {
-  return props;
+	return props;
 }
 
 export function Omitted(props: Omit<ButtonProps, "onClick" | "count">) {
-  return props;
+	return props;
 }
 
 export function Readonlys(props: Readonly<ButtonProps>) {
-  return props;
+	return props;
 }
 
 export function Combined(props: Required<Pick<ButtonProps, "tone">> & Omit<ButtonProps, "tone">) {
-  return props;
+	return props;
 }
 
 export function Extending(props: IconButtonProps) {
-  return props;
+	return props;
 }

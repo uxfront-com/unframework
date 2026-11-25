@@ -9,7 +9,7 @@
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.astro": `---
+	"Badge.astro": `---
 export interface BadgeProps {
   label: string;
   tone?: "info" | "warn";
@@ -43,7 +43,7 @@ const { label, tone = "info", count, pill = false, gap, quiet } = Astro.props;
   <label for="count">Count</label>
 </span>
 `,
-  "LinkCard.astro": `---
+	"LinkCard.astro": `---
 interface LinkAttrs {
   href: string;
   title?: string;
@@ -69,7 +69,7 @@ const props = Astro.props;
   <p id={props.extra?.id} role={props.extra?.role}>More</p>
 </div>
 `,
-  "TodoList.astro": `---
+	"TodoList.astro": `---
 interface Todo {
   id: string;
   title: string;
@@ -119,7 +119,7 @@ const { todos, heading } = Astro.props;
  * shapes, and lint.test.ts the L5 configuration against them (ADR-0042).
  */
 export const M2_SHAPES: Readonly<Record<string, string>> = {
-  "Counter.astro": `---
+	"Counter.astro": `---
 import type { HTMLAttributes } from "astro/types";
 
 export interface CounterProps {
@@ -146,7 +146,7 @@ const doubled = count * 2;
   <button type="button">Add</button>
 </div>
 `,
-  "Casts.astro": `---
+	"Casts.astro": `---
 import type { HTMLAttributes } from "astro/types";
 
 type Status = "idle" | "busy";
@@ -183,7 +183,7 @@ const tags = ["a", "b"];
   <dd>{tags.join(", ")}</dd>
 </dl>
 `,
-  "Price.astro": `---
+	"Price.astro": `---
 import type { HTMLAttributes } from "astro/types";
 
 export type Tier = "low" | "high";
@@ -225,7 +225,7 @@ const label = getLabel();
   {...attrs}
 >{label} {unit === "USD" ? "(US)" : "(EU)"}</p>
 `,
-  "Field.astro": `---
+	"Field.astro": `---
 import type { HTMLAttributes } from "astro/types";
 
 export interface FieldProps {

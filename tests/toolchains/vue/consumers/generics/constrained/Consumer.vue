@@ -3,5 +3,5 @@ import Table from "../../../../../integration/cases/generics/constrained/__outpu
 </script>
 
 <template>
-  <Table caption="People" :rows="[{ id: 'ada', label: 'Ada Lovelace', born: 1815 }]" />
+	<Table caption="People" :rows="[{ id: 'ada', label: 'Ada Lovelace', born: 1815 }]" />
 </template>

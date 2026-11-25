@@ -12,12 +12,12 @@ export const LIVE_REFERENCE_SKIP = "live pixels: the reference's capture is this
  * folds every such cell into one problem that names the reference project (`REFERENCE_NOT_RUN_SKIP`).
  */
 export function referenceNotRunSkip(project: string): string {
-  return `reference not run: ${project} did not finish this case's spec file in this run`;
+	return `reference not run: ${project} did not finish this case's spec file in this run`;
 }
 
 /** Matches {@link referenceNotRunSkip}'s reason; group 1 is the reference project. */
 export const REFERENCE_NOT_RUN_SKIP: RegExp =
-  /^reference not run: (.+) did not finish this case's spec file in this run$/s;
+	/^reference not run: (.+) did not finish this case's spec file in this run$/s;
 
 /**
  * Why L10 skips the font audit outside Chromium (ADR-0066). The audit asks CDP which font drew
@@ -35,94 +35,94 @@ export type GeometryBox = [x: number, y: number, width: number, height: number];
  * no box).
  */
 export interface GeometryNode {
-  box?: GeometryBox | GeometryBox[];
-  style?: Record<string, string>;
+	box?: GeometryBox | GeometryBox[];
+	style?: Record<string, string>;
 }
 
 /** The committed `__expected__/geometry.<name>.json`. */
 export interface GeometrySnapshot {
-  version: 1;
-  nodes: Record<string, GeometryNode>;
+	version: 1;
+	nodes: Record<string, GeometryNode>;
 }
 
 /** A pixel tolerance; zero by default, and never without a reason. */
 export interface PixelTolerance {
-  maxDiffPixels: number;
-  reason: string;
+	maxDiffPixels: number;
+	reason: string;
 }
 
 /** What the browser sends to `ufVisualCapture`. */
 export interface CaptureRequest {
-  /** The serialised locator of the capture container. */
-  element: { selector: string; locator: string };
-  /**
-   * The serialised locator of each element the view teleported (ADR-0098): the screenshot clips
-   * the union of their boxes and the container's.
-   */
-  teleported?: readonly { selector: string; locator: string }[];
-  case: string;
-  /** The scenario, such as `"initial"`. */
-  name: string;
-  /** Captured in the browser right before the command. */
-  geometry: GeometrySnapshot;
-  /** The marker attribute value on the container, which the font audit queries. */
-  marker: string;
-  tolerance?: PixelTolerance;
+	/** The serialised locator of the capture container. */
+	element: { selector: string; locator: string };
+	/**
+	 * The serialised locator of each element the view teleported (ADR-0098): the screenshot clips
+	 * the union of their boxes and the container's.
+	 */
+	teleported?: readonly { selector: string; locator: string }[];
+	case: string;
+	/** The scenario, such as `"initial"`. */
+	name: string;
+	/** Captured in the browser right before the command. */
+	geometry: GeometrySnapshot;
+	/** The marker attribute value on the container, which the font audit queries. */
+	marker: string;
+	tolerance?: PixelTolerance;
 }
 
 /** How a capture ended. */
 export type CaptureOutcome =
-  | "matched"
-  | "matched-within-tolerance"
-  /** The reference with live pixels: its capture is the expectation, so there is nothing to compare. */
-  | "published-reference"
-  | "wrote-reference"
-  /** Update mode outside the baseline environment: the committed baselines are not written. */
-  | "refused-write"
-  | "missing-artefact"
-  | "missing-reference-capture"
-  /**
-   * A follower whose reference project is in the run but did not finish the case's spec file:
-   * its browser connection closed, say, and Vitest dropped the rest of its queue (ADR-0091).
-   */
-  | "reference-not-run"
-  | "geometry-mismatch"
-  | "pixel-mismatch"
-  | "size-mismatch"
-  | "font-fallback"
-  | "unstable";
+	| "matched"
+	| "matched-within-tolerance"
+	/** The reference with live pixels: its capture is the expectation, so there is nothing to compare. */
+	| "published-reference"
+	| "wrote-reference"
+	/** Update mode outside the baseline environment: the committed baselines are not written. */
+	| "refused-write"
+	| "missing-artefact"
+	| "missing-reference-capture"
+	/**
+	 * A follower whose reference project is in the run but did not finish the case's spec file:
+	 * its browser connection closed, say, and Vitest dropped the rest of its queue (ADR-0091).
+	 */
+	| "reference-not-run"
+	| "geometry-mismatch"
+	| "pixel-mismatch"
+	| "size-mismatch"
+	| "font-fallback"
+	| "unstable";
 
 /** An image a failed capture leaves behind, in the shape Vitest's visual artifacts use. */
 export interface CaptureAttachment {
-  name: "reference" | "actual" | "diff";
-  path: string;
-  width: number;
-  height: number;
+	name: "reference" | "actual" | "diff";
+	path: string;
+	width: number;
+	height: number;
 }
 
 /** One difference between two geometry snapshots, at an element path. */
 export interface GeometryDelta {
-  path: string;
-  /** `box`, `(node)` for an element on one side only, or a computed style's name. */
-  property: string;
-  expected: unknown;
-  actual: unknown;
+	path: string;
+	/** `box`, `(node)` for an element on one side only, or a computed style's name. */
+	property: string;
+	expected: unknown;
+	actual: unknown;
 }
 
 /** What `ufVisualCapture` returns. */
 export interface CaptureResult {
-  pass: boolean;
-  /** `check+baseline`, `update+live`, …: how the run treated this capture. */
-  mode: string;
-  role: "reference" | "follower";
-  outcome: CaptureOutcome;
-  message: string;
-  diffPixels?: number;
-  attachments: CaptureAttachment[];
-  /** `reference-not-run`: the reference's browser project, which did not finish the case. */
-  referenceProject?: string;
-  /** A failed comparison: the geometry and computed-style deltas, which may be none. */
-  deltas?: GeometryDelta[];
-  /** Where the capture was written, when its location keeps every capture (ADR-0087). */
-  capture?: string;
+	pass: boolean;
+	/** `check+baseline`, `update+live`, …: how the run treated this capture. */
+	mode: string;
+	role: "reference" | "follower";
+	outcome: CaptureOutcome;
+	message: string;
+	diffPixels?: number;
+	attachments: CaptureAttachment[];
+	/** `reference-not-run`: the reference's browser project, which did not finish the case. */
+	referenceProject?: string;
+	/** A failed comparison: the geometry and computed-style deltas, which may be none. */
+	deltas?: GeometryDelta[];
+	/** Where the capture was written, when its location keeps every capture (ADR-0087). */
+	capture?: string;
 }

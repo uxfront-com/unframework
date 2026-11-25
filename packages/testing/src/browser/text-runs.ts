@@ -8,9 +8,9 @@
 
 /** One merged run: its first text node, what it held, and the nodes taken out after it. */
 interface MergedRun {
-  first: Text;
-  data: string;
-  detached: ChildNode[];
+	first: Text;
+	data: string;
+	detached: ChildNode[];
 }
 
 /** Elements whose text is not laid out as text: raw text, and a form control's value. */
@@ -26,63 +26,63 @@ const SKIPPED = new Set(["script", "style", "textarea"]);
  * its nodes stay valid.
  */
 export function mergeTextRuns(root: Element): () => void {
-  const runs: MergedRun[] = [];
-  const visit = (parent: Node): void => {
-    let child = parent.firstChild;
-    while (child) {
-      if (child instanceof Text) {
-        const run = runFrom(child);
-        if (run.detached.length) {
-          runs.push(run);
-          child.data = [run.data, ...run.detached.map(textOf)].join("");
-          for (const node of run.detached) node.remove();
-        }
-      } else if (child instanceof Element && !SKIPPED.has(child.localName)) {
-        visit(child);
-      }
-      child = child.nextSibling;
-    }
-  };
-  visit(root);
-  return () => {
-    for (const { first, data, detached } of runs.toReversed()) {
-      first.data = data;
-      first.after(...detached);
-    }
-  };
+	const runs: MergedRun[] = [];
+	const visit = (parent: Node): void => {
+		let child = parent.firstChild;
+		while (child) {
+			if (child instanceof Text) {
+				const run = runFrom(child);
+				if (run.detached.length) {
+					runs.push(run);
+					child.data = [run.data, ...run.detached.map(textOf)].join("");
+					for (const node of run.detached) node.remove();
+				}
+			} else if (child instanceof Element && !SKIPPED.has(child.localName)) {
+				visit(child);
+			}
+			child = child.nextSibling;
+		}
+	};
+	visit(root);
+	return () => {
+		for (const { first, data, detached } of runs.toReversed()) {
+			first.data = data;
+			first.after(...detached);
+		}
+	};
 }
 
 /** Runs `capture` with the text runs under `root` merged, and restores them afterwards. */
 export async function withMergedTextRuns<T>(
-  roots: Element | readonly Element[],
-  capture: () => Promise<T>,
+	roots: Element | readonly Element[],
+	capture: () => Promise<T>,
 ): Promise<T> {
-  // A view's container, and what it teleported (ADR-0098).
-  const restores = (Array.isArray(roots) ? roots : [roots]).map((root) => mergeTextRuns(root));
-  try {
-    return await capture();
-  } finally {
-    for (const restore of restores.toReversed()) restore();
-  }
+	// A view's container, and what it teleported (ADR-0098).
+	const restores = (Array.isArray(roots) ? roots : [roots]).map((root) => mergeTextRuns(root));
+	try {
+		return await capture();
+	} finally {
+		for (const restore of restores.toReversed()) restore();
+	}
 }
 
 /** The run starting at `first`: the nodes after it up to its last adjacent text node. */
 function runFrom(first: Text): MergedRun {
-  const detached: ChildNode[] = [];
-  const pending: ChildNode[] = [];
-  for (let node = first.nextSibling; node; node = node.nextSibling) {
-    if (node instanceof Comment) {
-      pending.push(node);
-    } else if (node instanceof Text) {
-      detached.push(...pending.splice(0), node);
-    } else {
-      break;
-    }
-  }
-  return { first, data: first.data, detached };
+	const detached: ChildNode[] = [];
+	const pending: ChildNode[] = [];
+	for (let node = first.nextSibling; node; node = node.nextSibling) {
+		if (node instanceof Comment) {
+			pending.push(node);
+		} else if (node instanceof Text) {
+			detached.push(...pending.splice(0), node);
+		} else {
+			break;
+		}
+	}
+	return { first, data: first.data, detached };
 }
 
 /** The text a detached node adds to its run: a text node's data, nothing for a comment. */
 function textOf(node: ChildNode): string {
-  return node instanceof Text ? node.data : "";
+	return node instanceof Text ? node.data : "";
 }

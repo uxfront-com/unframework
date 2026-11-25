@@ -3,6 +3,6 @@ import Step from "../../../../../integration/cases/components/framework-names/__
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Transition.prop:step -->
-  <Step :step="2" />
+	<!-- @uf-expect TS2322 Transition.prop:step -->
+	<Step :step="2" />
 </template>

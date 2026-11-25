@@ -6,9 +6,9 @@ import { expect } from "vitest";
 import Palette from "./Palette.uf.tsx";
 
 describeTargets("types/shared-type", () => {
-  it("passes the shared type on to the child", async () => {
-    const view = await mountScenario(Palette, "accent");
-    await view.expectParity("accent");
-    await expect.element(view.getByText("accent")).toHaveClass("swatch swatch-accent");
-  });
+	it("passes the shared type on to the child", async () => {
+		const view = await mountScenario(Palette, "accent");
+		await view.expectParity("accent");
+		await expect.element(view.getByText("accent")).toHaveClass("swatch swatch-accent");
+	});
 });

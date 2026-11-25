@@ -3,6 +3,6 @@ import Countdown from "../../../../../integration/cases/components/recursion/__o
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Countdown.prop:from -->
-  <Countdown from="two" />
+	<!-- @uf-expect TS2322 Countdown.prop:from -->
+	<Countdown from="two" />
 </template>

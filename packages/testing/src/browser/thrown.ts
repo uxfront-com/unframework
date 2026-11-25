@@ -21,12 +21,12 @@ const SETTLE_ROUNDS = 3;
 
 /** What the wrapper needs from its view. */
 export interface ThrownStepHost {
-  /** Settles the view; a throw may have left it in any state, so this may fail too. */
-  settle(): Promise<void>;
-  /** Forgets the steps the trace recorded since `mark`. */
-  forgetSteps(mark: number): void;
-  /** How many steps the trace holds now. */
-  stepMark(): number;
+	/** Settles the view; a throw may have left it in any state, so this may fail too. */
+	settle(): Promise<void>;
+	/** Forgets the steps the trace recorded since `mark`. */
+	forgetSteps(mark: number): void;
+	/** How many steps the trace holds now. */
+	stepMark(): number;
 }
 
 /**
@@ -35,61 +35,61 @@ export interface ThrownStepHost {
  * registered, so these listeners also keep the deliberate throw from failing it.
  */
 export async function expectThrown(host: ThrownStepHost, step: () => Promise<void>): Promise<void> {
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) throw new Error("expectThrown must be called inside a test.");
-  const harness = inject("ufHarness");
-  const subject = {
-    case: caseOfFile(test.file.filepath, harness),
-    target: currentTarget(),
-    quarantine: harness.quarantine,
-  };
+	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+	if (!test) throw new Error("expectThrown must be called inside a test.");
+	const harness = inject("ufHarness");
+	const subject = {
+		case: caseOfFile(test.file.filepath, harness),
+		target: currentTarget(),
+		quarantine: harness.quarantine,
+	};
 
-  // A thrown error comes first: Vitest logs a window error as a new Error of its own, with a stack
-  // of its own, before any listener here hears it. The console is for a framework that only logs.
-  let thrown: Error | undefined;
-  let logged: Error | undefined;
-  const take = (value: unknown) => {
-    if (value instanceof Error) thrown ??= value;
-  };
-  const onError = (event: ErrorEvent) => take(event.error);
-  const onRejection = (event: PromiseRejectionEvent) => take(event.reason);
-  const unwatch = watchConsoleErrors((value) => {
-    if (value instanceof Error) logged ??= value;
-  });
-  window.addEventListener("error", onError);
-  window.addEventListener("unhandledrejection", onRejection);
-  const console = consoleMark();
-  const steps = host.stepMark();
-  try {
-    // A framework's scheduler may rethrow through the action (React's `act`).
-    await step().catch(take);
-    for (let round = 0; round < SETTLE_ROUNDS; round += 1) {
-      await host.settle().catch(take);
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    }
-  } finally {
-    window.removeEventListener("error", onError);
-    window.removeEventListener("unhandledrejection", onRejection);
-    unwatch();
-  }
-  excuseConsoleSince(console, EXCUSE);
-  host.forgetSteps(steps);
+	// A thrown error comes first: Vitest logs a window error as a new Error of its own, with a stack
+	// of its own, before any listener here hears it. The console is for a framework that only logs.
+	let thrown: Error | undefined;
+	let logged: Error | undefined;
+	const take = (value: unknown) => {
+		if (value instanceof Error) thrown ??= value;
+	};
+	const onError = (event: ErrorEvent) => take(event.error);
+	const onRejection = (event: PromiseRejectionEvent) => take(event.reason);
+	const unwatch = watchConsoleErrors((value) => {
+		if (value instanceof Error) logged ??= value;
+	});
+	window.addEventListener("error", onError);
+	window.addEventListener("unhandledrejection", onRejection);
+	const console = consoleMark();
+	const steps = host.stepMark();
+	try {
+		// A framework's scheduler may rethrow through the action (React's `act`).
+		await step().catch(take);
+		for (let round = 0; round < SETTLE_ROUNDS; round += 1) {
+			await host.settle().catch(take);
+			await new Promise<void>((resolve) => setTimeout(resolve, 0));
+		}
+	} finally {
+		window.removeEventListener("error", onError);
+		window.removeEventListener("unhandledrejection", onRejection);
+		unwatch();
+	}
+	excuseConsoleSince(console, EXCUSE);
+	host.forgetSteps(steps);
 
-  const first = thrown ?? logged;
-  const failure = await problem(subject.case, first);
-  recordLayer(
-    test,
-    subject,
-    "L14",
-    failure ? { status: "fail", message: failure } : { status: "pass" },
-  );
-  // Counted by `requireAssertions`: this wrapper is what the test verifies.
-  expect(first).toBeInstanceOf(Error);
+	const first = thrown ?? logged;
+	const failure = await problem(subject.case, first);
+	recordLayer(
+		test,
+		subject,
+		"L14",
+		failure ? { status: "fail", message: failure } : { status: "pass" },
+	);
+	// Counted by `requireAssertions`: this wrapper is what the test verifies.
+	expect(first).toBeInstanceOf(Error);
 }
 
 /** What is wrong with the captured error's mapped stack, or nothing. */
 async function problem(caseId: string, error: Error | undefined): Promise<string | undefined> {
-  if (!error) return "The step threw no Error.";
-  const { message } = await commands.ufMapStack({ case: caseId, stack: error.stack ?? "" });
-  return message;
+	if (!error) return "The step threw no Error.";
+	const { message } = await commands.ufMapStack({ case: caseId, stack: error.stack ?? "" });
+	return message;
 }

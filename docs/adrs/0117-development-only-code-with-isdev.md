@@ -120,14 +120,14 @@ For example, this source:
 
 ```tsx
 export default function IconButton({ label }: { label?: string }) {
-  if (isDev) {
-    if (!label) console.warn("IconButton has no accessible name: pass it a `label`.");
-  }
-  return (
-    <button type="button" aria-label={label}>
-      …
-    </button>
-  );
+	if (isDev) {
+		if (!label) console.warn("IconButton has no accessible name: pass it a `label`.");
+	}
+	return (
+		<button type="button" aria-label={label}>
+			…
+		</button>
+	);
 }
 ```
 

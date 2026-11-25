@@ -8,18 +8,18 @@ import type { CodeKind } from "@unframework.dev/codegen";
 
 /** A node of oxc's syntax tree, as far as this walk reads it. */
 interface Node {
-  type: string;
-  start: number;
-  end: number;
-  [key: string]: unknown;
+	type: string;
+	start: number;
+	end: number;
+	[key: string]: unknown;
 }
 
 /** What {@link awaitQrlCalls} returns. */
 export interface AwaitedCode {
-  /** The code with `await` before each call of a QRL, and `async` on each function it is in. */
-  code: string;
-  /** Whether a call is awaited directly in the code's own function, which must then be async. */
-  async: boolean;
+	/** The code with `await` before each call of a QRL, and `async` on each function it is in. */
+	code: string;
+	/** Whether a call is awaited directly in the code's own function, which must then be async. */
+	async: boolean;
 }
 
 /**
@@ -35,72 +35,72 @@ export interface AwaitedCode {
  * floats, `void run()`.
  */
 export function awaitQrlCalls(
-  code: string,
-  kind: CodeKind,
-  qrls: ReadonlySet<string>,
-  promiseQrls: ReadonlySet<string> = new Set(),
+	code: string,
+	kind: CodeKind,
+	qrls: ReadonlySet<string>,
+	promiseQrls: ReadonlySet<string> = new Set(),
 ): AwaitedCode {
-  if (qrls.size === 0 || ![...qrls].some((name) => code.includes(name))) {
-    return { code, async: false };
-  }
-  const { root } = parseCodeSource(code, kind);
-  const edits: { at: number; text: string }[] = [];
-  let ownAsync = false;
-  const asyncArrows = new Set<Node>();
-  const visit = (node: unknown, ancestors: readonly Node[]): void => {
-    if (Array.isArray(node)) {
-      for (const item of node) visit(item, ancestors);
-      return;
-    }
-    if (!isNode(node)) return;
-    if (
-      isQrlCall(node, promiseQrls) &&
-      !awaited(ancestors) &&
-      !(kind === "expression" && returned(node, ancestors, root))
-    ) {
-      if (ancestors.at(-1)?.type === "ExpressionStatement") {
-        edits.push({ at: node.start, text: "void " });
-      }
-    } else if (
-      isQrlCall(node, qrls) &&
-      !awaited(ancestors) &&
-      !(kind === "expression" && returned(node, ancestors, root))
-    ) {
-      const parent = ancestors.at(-1);
-      const wrap = parent !== undefined && needsParentheses(node, parent);
-      edits.push({ at: node.start, text: wrap ? "(await " : "await " });
-      if (wrap) edits.push({ at: node.end, text: ")" });
-      const fn = ancestors.findLast((ancestor) => isFunction(ancestor));
-      if (fn) asyncArrows.add(fn);
-      else ownAsync = true;
-    }
-    const next = [...ancestors, node];
-    for (const [key, value] of Object.entries(node)) {
-      if (key !== "type" && key !== "parent" && typeof value === "object") visit(value, next);
-    }
-  };
-  visit(root, []);
-  for (const fn of asyncArrows) {
-    if (fn.async !== true) edits.push({ at: fn.start, text: "async " });
-  }
-  let result = code;
-  for (const { at, text } of edits.toSorted((a, b) => b.at - a.at)) {
-    result = `${result.slice(0, at)}${text}${result.slice(at)}`;
-  }
-  return { code: result, async: ownAsync };
+	if (qrls.size === 0 || ![...qrls].some((name) => code.includes(name))) {
+		return { code, async: false };
+	}
+	const { root } = parseCodeSource(code, kind);
+	const edits: { at: number; text: string }[] = [];
+	let ownAsync = false;
+	const asyncArrows = new Set<Node>();
+	const visit = (node: unknown, ancestors: readonly Node[]): void => {
+		if (Array.isArray(node)) {
+			for (const item of node) visit(item, ancestors);
+			return;
+		}
+		if (!isNode(node)) return;
+		if (
+			isQrlCall(node, promiseQrls) &&
+			!awaited(ancestors) &&
+			!(kind === "expression" && returned(node, ancestors, root))
+		) {
+			if (ancestors.at(-1)?.type === "ExpressionStatement") {
+				edits.push({ at: node.start, text: "void " });
+			}
+		} else if (
+			isQrlCall(node, qrls) &&
+			!awaited(ancestors) &&
+			!(kind === "expression" && returned(node, ancestors, root))
+		) {
+			const parent = ancestors.at(-1);
+			const wrap = parent !== undefined && needsParentheses(node, parent);
+			edits.push({ at: node.start, text: wrap ? "(await " : "await " });
+			if (wrap) edits.push({ at: node.end, text: ")" });
+			const fn = ancestors.findLast((ancestor) => isFunction(ancestor));
+			if (fn) asyncArrows.add(fn);
+			else ownAsync = true;
+		}
+		const next = [...ancestors, node];
+		for (const [key, value] of Object.entries(node)) {
+			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value, next);
+		}
+	};
+	visit(root, []);
+	for (const fn of asyncArrows) {
+		if (fn.async !== true) edits.push({ at: fn.start, text: "async " });
+	}
+	let result = code;
+	for (const { at, text } of edits.toSorted((a, b) => b.at - a.at)) {
+		result = `${result.slice(0, at)}${text}${result.slice(at)}`;
+	}
+	return { code: result, async: ownAsync };
 }
 
 function isNode(value: unknown): value is Node {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as Node).type === "string" &&
-    typeof (value as Node).start === "number"
-  );
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		typeof (value as Node).type === "string" &&
+		typeof (value as Node).start === "number"
+	);
 }
 
 function isFunction(node: Node): boolean {
-  return node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression";
+	return node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression";
 }
 
 /**
@@ -108,16 +108,16 @@ function isFunction(node: Node): boolean {
  * optional callback argument. `save?.()` is not one (a QRL is defined).
  */
 function isQrlCall(node: Node, qrls: ReadonlySet<string>): boolean {
-  if (node.type !== "CallExpression") return false;
-  let callee = node.callee as Node;
-  if (callee.type === "TSNonNullExpression") callee = callee.expression as Node;
-  return callee.type === "Identifier" && qrls.has(callee.name as string);
+	if (node.type !== "CallExpression") return false;
+	let callee = node.callee as Node;
+	if (callee.type === "TSNonNullExpression") callee = callee.expression as Node;
+	return callee.type === "Identifier" && qrls.has(callee.name as string);
 }
 
 /** Whether the nearest enclosing expression already awaits the call. */
 function awaited(ancestors: readonly Node[]): boolean {
-  const parent = ancestors.at(-1);
-  return parent?.type === "AwaitExpression";
+	const parent = ancestors.at(-1);
+	return parent?.type === "AwaitExpression";
 }
 
 /**
@@ -126,17 +126,17 @@ function awaited(ancestors: readonly Node[]): boolean {
  * in oxc's tree). The arrow's caller awaits what it returns, so the call stays as written.
  */
 function returned(node: Node, ancestors: readonly Node[], root: unknown): boolean {
-  let child: Node = node;
-  for (let index = ancestors.length - 1; index >= 0; index--) {
-    const parent = ancestors[index]!;
-    const tail =
-      (parent.type === "LogicalExpression" && parent.right === child) ||
-      (parent.type === "ConditionalExpression" && parent.test !== child) ||
-      (parent.type === "SequenceExpression" && (parent.expressions as Node[]).at(-1) === child);
-    if (!tail) return false;
-    child = parent;
-  }
-  return child === root;
+	let child: Node = node;
+	for (let index = ancestors.length - 1; index >= 0; index--) {
+		const parent = ancestors[index]!;
+		const tail =
+			(parent.type === "LogicalExpression" && parent.right === child) ||
+			(parent.type === "ConditionalExpression" && parent.test !== child) ||
+			(parent.type === "SequenceExpression" && (parent.expressions as Node[]).at(-1) === child);
+		if (!tail) return false;
+		child = parent;
+	}
+	return child === root;
 }
 
 /**
@@ -145,22 +145,22 @@ function returned(node: Node, ancestors: readonly Node[], root: unknown): boolea
  * optional chain, the `await` would bind to more than the call.
  */
 function needsParentheses(node: Node, parent: Node): boolean {
-  switch (parent.type) {
-    case "MemberExpression":
-      return parent.object === node;
-    case "CallExpression":
-    case "NewExpression":
-      return parent.callee === node;
-    case "TaggedTemplateExpression":
-      return parent.tag === node;
-    case "ChainExpression":
-    case "TSNonNullExpression":
-      return true;
-    case "BinaryExpression":
-      return parent.operator === "**" && parent.left === node;
-    default:
-      return false;
-  }
+	switch (parent.type) {
+		case "MemberExpression":
+			return parent.object === node;
+		case "CallExpression":
+		case "NewExpression":
+			return parent.callee === node;
+		case "TaggedTemplateExpression":
+			return parent.tag === node;
+		case "ChainExpression":
+		case "TSNonNullExpression":
+			return true;
+		case "BinaryExpression":
+			return parent.operator === "**" && parent.left === node;
+		default:
+			return false;
+	}
 }
 
 /**
@@ -169,35 +169,35 @@ function needsParentheses(node: Node, parent: Node): boolean {
  * takes it after its event parameter.
  */
 export function passElement(
-  code: string,
-  kind: CodeKind,
-  callees: ReadonlySet<string>,
-  event: string,
-  element: string,
+	code: string,
+	kind: CodeKind,
+	callees: ReadonlySet<string>,
+	event: string,
+	element: string,
 ): string {
-  if (callees.size === 0 || ![...callees].some((name) => code.includes(name))) return code;
-  const { root } = parseCodeSource(code, kind);
-  const at: number[] = [];
-  const visit = (node: unknown): void => {
-    if (Array.isArray(node)) {
-      for (const item of node) visit(item);
-      return;
-    }
-    if (!isNode(node)) return;
-    if (isQrlCall(node, callees)) {
-      const argument = (node.arguments as Node[]).find(
-        (candidate) => candidate.type === "Identifier" && candidate.name === event,
-      );
-      if (argument) at.push(argument.end);
-    }
-    for (const [key, value] of Object.entries(node)) {
-      if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
-    }
-  };
-  visit(root);
-  let result = code;
-  for (const offset of at.toSorted((a, b) => b - a)) {
-    result = `${result.slice(0, offset)}, ${element}${result.slice(offset)}`;
-  }
-  return result;
+	if (callees.size === 0 || ![...callees].some((name) => code.includes(name))) return code;
+	const { root } = parseCodeSource(code, kind);
+	const at: number[] = [];
+	const visit = (node: unknown): void => {
+		if (Array.isArray(node)) {
+			for (const item of node) visit(item);
+			return;
+		}
+		if (!isNode(node)) return;
+		if (isQrlCall(node, callees)) {
+			const argument = (node.arguments as Node[]).find(
+				(candidate) => candidate.type === "Identifier" && candidate.name === event,
+			);
+			if (argument) at.push(argument.end);
+		}
+		for (const [key, value] of Object.entries(node)) {
+			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+		}
+	};
+	visit(root);
+	let result = code;
+	for (const offset of at.toSorted((a, b) => b - a)) {
+		result = `${result.slice(0, offset)}, ${element}${result.slice(offset)}`;
+	}
+	return result;
 }

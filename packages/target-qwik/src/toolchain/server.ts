@@ -14,10 +14,10 @@ import { withProps } from "./element.ts";
  * attributes deliver them, `null` included (./element.ts).
  */
 export const renderToString: SsrRenderer = async (component, options) => {
-  const result = await renderQwik(withProps(asComponent(component), options.props ?? {}), {
-    containerTagName: CONTAINER_TAG,
-    qwikLoader: "never",
-    preloader: false,
-  });
-  return componentHtml(result.html);
+	const result = await renderQwik(withProps(asComponent(component), options.props ?? {}), {
+		containerTagName: CONTAINER_TAG,
+		qwikLoader: "never",
+		preloader: false,
+	});
+	return componentHtml(result.html);
 };

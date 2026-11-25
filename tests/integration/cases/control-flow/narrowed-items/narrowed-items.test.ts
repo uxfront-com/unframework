@@ -8,23 +8,23 @@ import { expect } from "vitest";
 import Reading from "./Reading.uf.tsx";
 
 describeTargets("control-flow/narrowed-items", () => {
-  it("renders each source by its kind", async () => {
-    const view = await mountScenario(Reading, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByText("2. SICP (chapter 3)")).toBeVisible();
-    await expect
-      .element(view.getByRole("listitem").first())
-      .toHaveAttribute("title", "https://html.spec.whatwg.org/");
-    await expect
-      .element(view.getByRole("button", { name: "Open The HTML standard" }))
-      .toBeVisible();
-  });
+	it("renders each source by its kind", async () => {
+		const view = await mountScenario(Reading, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByText("2. SICP (chapter 3)")).toBeVisible();
+		await expect
+			.element(view.getByRole("listitem").first())
+			.toHaveAttribute("title", "https://html.spec.whatwg.org/");
+		await expect
+			.element(view.getByRole("button", { name: "Open The HTML standard" }))
+			.toBeVisible();
+	});
 
-  it("emits the link's address", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(Reading, "initial");
-    await view.user.click(view.getByRole("button", { name: "Open The HTML standard" }));
-    await view.expectParity("opened");
-    await expect.element(view.getByText("3. TAOCP")).toBeVisible();
-    expect(view.emitted("open")).toEqual([["https://html.spec.whatwg.org/"]]);
-  });
+	it("emits the link's address", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(Reading, "initial");
+		await view.user.click(view.getByRole("button", { name: "Open The HTML standard" }));
+		await view.expectParity("opened");
+		await expect.element(view.getByText("3. TAOCP")).toBeVisible();
+		expect(view.emitted("open")).toEqual([["https://html.spec.whatwg.org/"]]);
+	});
 });

@@ -3,5 +3,5 @@ import Tag from "../../../../../integration/cases/fallthrough/class-and-style/__
 </script>
 
 <template>
-  <Tag label="x" class="wide" style="color: red" />
+	<Tag label="x" class="wide" style="color: red" />
 </template>

@@ -61,9 +61,9 @@ built.
 import { defineConfig } from "unframework/config";
 
 export default defineConfig({
-  targets: ["react", "vue"],
-  srcDir: "src",
-  outDir: "dist",
+	targets: ["react", "vue"],
+	srcDir: "src",
+	outDir: "dist",
 });
 ```
 

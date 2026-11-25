@@ -5,18 +5,18 @@
 // `Teleport` keeps its queue in its module (R2), and `textCaret`, `toggle` and `selectedValues`
 // are too small to share (R4).
 export const SHARED_HELPER_NAMES: readonly string[] = [
-  "clearedRef",
-  "createState",
-  "cx",
-  "enumeratedValue",
-  "KeyedFor",
-  "modelText",
-  "nextTick",
-  "queueHook",
-  "scopeAttributes",
-  "selectOptions",
-  "styleProperties",
-  "Transition",
+	"clearedRef",
+	"createState",
+	"cx",
+	"enumeratedValue",
+	"KeyedFor",
+	"modelText",
+	"nextTick",
+	"queueHook",
+	"scopeAttributes",
+	"selectOptions",
+	"styleProperties",
+	"Transition",
 ];
 
 /**
@@ -24,7 +24,7 @@ export const SHARED_HELPER_NAMES: readonly string[] = [
  * imports once its helpers are collected (`./shared.ts`, `importShared`).
  */
 export class SharedHelpers {
-  readonly used: Map<string, string> = new Map();
+	readonly used: Map<string, string> = new Map();
 }
 
 /**
@@ -32,14 +32,14 @@ export class SharedHelpers {
  * one is shared, which records that the file imports it under `local` (ADR-0121).
  */
 export function printHelper(
-  shared: SharedHelpers | undefined,
-  name: string,
-  local: string,
-  code: (local: string) => string,
+	shared: SharedHelpers | undefined,
+	name: string,
+	local: string,
+	code: (local: string) => string,
 ): string[] {
-  if (!shared || !SHARED_HELPER_NAMES.includes(name)) return [code(local)];
-  shared.used.set(name, local);
-  return [];
+	if (!shared || !SHARED_HELPER_NAMES.includes(name)) return [code(local)];
+	shared.used.set(name, local);
+	return [];
 }
 
 /**
@@ -48,13 +48,13 @@ export function printHelper(
  * and the unplugin's join writes one import (ADR-0053, ADR-0121).
  */
 export function reserveSharedNames(
-  names: Set<string>,
-  reserved: readonly Iterable<string>[],
+	names: Set<string>,
+	reserved: readonly Iterable<string>[],
 ): void {
-  for (const helper of SHARED_HELPER_NAMES) {
-    const own = new RegExp(`^${helper}(?:_\\d+)*$`);
-    for (const each of reserved) for (const name of each) if (own.test(name)) names.add(name);
-  }
+	for (const helper of SHARED_HELPER_NAMES) {
+		const own = new RegExp(`^${helper}(?:_\\d+)*$`);
+		for (const each of reserved) for (const name of each) if (own.test(name)) names.add(name);
+	}
 }
 
 /**
@@ -63,13 +63,13 @@ export function reserveSharedNames(
  * module leaves free (`moduleNames`).
  */
 export function sharedName(
-  helper: string,
-  reserved: readonly Iterable<string>[],
-  moduleNames: Iterable<string>,
+	helper: string,
+	reserved: readonly Iterable<string>[],
+	moduleNames: Iterable<string>,
 ): string {
-  const taken = new Set(moduleNames);
-  for (const each of reserved) for (const name of each) taken.add(name);
-  let name = helper;
-  for (let suffix = 1; taken.has(name); suffix++) name = `${helper}_${suffix}`;
-  return name;
+	const taken = new Set(moduleNames);
+	for (const each of reserved) for (const name of each) taken.add(name);
+	let name = helper;
+	for (let suffix = 1; taken.has(name); suffix++) name = `${helper}_${suffix}`;
+	return name;
 }

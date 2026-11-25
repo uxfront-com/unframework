@@ -16,23 +16,23 @@
 //   text. Such a literal holding a character HTML reads there is wrapped in `String(…)`, the same
 //   string, which the compiler leaves to the run-time escape (see {@link escapedOnServer}).
 import {
-  LEADING_LINE_FEED_ELEMENTS,
-  parseExpression,
-  rewriteExpression,
-  scopeRoots,
+	LEADING_LINE_FEED_ELEMENTS,
+	parseExpression,
+	rewriteExpression,
+	scopeRoots,
 } from "@unframework.dev/codegen";
 import type { RewriteRules } from "@unframework.dev/codegen";
 import type {
-  Attribute,
-  ElementNode,
-  Expression,
-  FragmentNode,
-  IfBranch,
-  InterpolationNode,
-  RenderNode,
-  SlotFill,
-  Span,
-  UfComponent,
+	Attribute,
+	ElementNode,
+	Expression,
+	FragmentNode,
+	IfBranch,
+	InterpolationNode,
+	RenderNode,
+	SlotFill,
+	Span,
+	UfComponent,
 } from "@unframework.dev/ir";
 
 import { carriedPaths, narrowsFurther, samePath, slice, wholePath } from "./narrowing.ts";
@@ -45,12 +45,12 @@ import type { ReferencePath } from "./narrowing.ts";
  * spread element on the server.
  */
 function escapedText(node: RenderNode): RenderNode {
-  if (node.kind !== "Text" || !/[<>&]/.test(node.value)) return node;
-  return {
-    kind: "Interpolation",
-    value: { code: JSON.stringify(node.value), span: node.span, refs: [] },
-    span: node.span,
-  };
+	if (node.kind !== "Text" || !/[<>&]/.test(node.value)) return node;
+	return {
+		kind: "Interpolation",
+		value: { code: JSON.stringify(node.value), span: node.span, refs: [] },
+		span: node.span,
+	};
 }
 
 /**
@@ -58,135 +58,135 @@ function escapedText(node: RenderNode): RenderNode {
  * module comment.
  */
 export function forSolid(
-  component: UfComponent,
-  rules: RewriteRules,
-  types: BindingTypes,
-  spreads: readonly Span[] = [],
+	component: UfComponent,
+	rules: RewriteRules,
+	types: BindingTypes,
+	spreads: readonly Span[] = [],
 ): UfComponent["render"] {
-  // A root that spreads its styled parents' scope attributes, or an element that spreads what
-  // falls through (`spreads`, ADR-0118), renders through Solid's `ssrElement`, which writes its
-  // JSX text decoded and unescaped (ADR-0063).
-  const roots = new Set(
-    [...scopeRoots(component), ...spreads].map(({ start, end }) => `${start}:${end}`),
-  );
-  const element = <T extends ElementNode | FragmentNode>(node: T): T => {
-    const model =
-      node.kind === "Element"
-        ? node.attributes.find(
-            (attribute) =>
-              attribute.kind === "Model" &&
-              (attribute.control === "select" || attribute.control === "select-multiple"),
-          )
-        : undefined;
-    const printed = children(
-      model?.kind === "Model"
-        ? selectedOptions(node.children, model.value, model.control === "select-multiple")
-        : node.children,
-    );
-    const content = roots.has(`${node.span.start}:${node.span.end}`)
-      ? printed.map(escapedText)
-      : printed;
-    return {
-      ...node,
-      ...(node.kind === "Element"
-        ? {
-            attributes: node.attributes.map((attribute) =>
-              attribute.kind === "Bound"
-                ? { ...attribute, value: escapedOnServer(attribute.value, "attribute") }
-                : attribute,
-            ),
-          }
-        : {}),
-      children:
-        node.kind === "Element" && LEADING_LINE_FEED_ELEMENTS.has(node.tag)
-          ? insertedLineFeed(content)
-          : content,
-    };
-  };
-  // The paths the branch callbacks around a node receive, and those a keyed one receives, which
-  // print as plain names (src/narrowing.ts); an accessor's read is a call.
-  const around: ReferencePath[][] = [];
-  const keyed: ReferencePath[][] = [];
-  const children = (nodes: readonly RenderNode[]): RenderNode[] =>
-    nodes.flatMap((node): RenderNode[] => {
-      switch (node.kind) {
-        case "Element":
-          return [element(node)];
-        case "If": {
-          const tests = node.branches.flatMap((branch) =>
-            branch.condition ? [branch.condition] : [],
-          );
-          return [
-            {
-              ...node,
-              branches: node.branches.map((branch, index) => {
-                const paths = carriedPaths(
-                  branch.children,
-                  branch.condition ? tests.slice(0, index + 1) : tests,
-                  Boolean(branch.condition),
-                  around.flat(),
-                  types,
-                );
-                around.push(paths);
-                keyed.push(narrowsFurther(branch.children, paths) ? paths : []);
-                try {
-                  return { ...branch, children: children(branch.children) };
-                } finally {
-                  around.pop();
-                  keyed.pop();
-                }
-              }),
-            },
-          ];
-        }
-        case "For":
-          return [
-            {
-              ...node,
-              body:
-                node.body.kind === "Element"
-                  ? element(node.body)
-                  : { ...node.body, fills: fills(node.body.fills) },
-            },
-          ];
-        case "Interpolation":
-          // The `<Show>` an interpolation may become renders it as a component's content,
-          // which the server escapes whole; one left as text is escaped here.
-          return interpolation(node, (part) => {
-            const printed = parseExpression(rewriteExpression(part, component, rules));
-            if (printed.type === "Identifier") return true;
-            // A path a keyed callback receives prints as its plain name (src/narrowing.ts).
-            const path = wholePath(part);
-            return Boolean(path && keyed.flat().some((entry) => samePath(entry, path)));
-          }).map((child) =>
-            child.kind === "Interpolation"
-              ? { ...child, value: escapedOnServer(child.value, "child") }
-              : child,
-          );
-        case "Text":
-          return [node];
-        case "Component":
-          return [{ ...node, fills: fills(node.fills) }];
-        case "SlotOutlet":
-          return [{ ...node, fallback: children(node.fallback) }];
-        case "Dynamic":
-          return [
-            {
-              ...node,
-              children: children(node.children),
-              ...(node.fills ? { fills: fills(node.fills) } : {}),
-            },
-          ];
-        case "Teleport":
-        case "Transition":
-          return [{ ...node, children: children(node.children) }];
-        default:
-          return node satisfies never;
-      }
-    });
-  const fills = (list: readonly SlotFill[]): SlotFill[] =>
-    list.map((fill) => ({ ...fill, children: children(fill.children) }));
-  return element(component.render);
+	// A root that spreads its styled parents' scope attributes, or an element that spreads what
+	// falls through (`spreads`, ADR-0118), renders through Solid's `ssrElement`, which writes its
+	// JSX text decoded and unescaped (ADR-0063).
+	const roots = new Set(
+		[...scopeRoots(component), ...spreads].map(({ start, end }) => `${start}:${end}`),
+	);
+	const element = <T extends ElementNode | FragmentNode>(node: T): T => {
+		const model =
+			node.kind === "Element"
+				? node.attributes.find(
+						(attribute) =>
+							attribute.kind === "Model" &&
+							(attribute.control === "select" || attribute.control === "select-multiple"),
+					)
+				: undefined;
+		const printed = children(
+			model?.kind === "Model"
+				? selectedOptions(node.children, model.value, model.control === "select-multiple")
+				: node.children,
+		);
+		const content = roots.has(`${node.span.start}:${node.span.end}`)
+			? printed.map(escapedText)
+			: printed;
+		return {
+			...node,
+			...(node.kind === "Element"
+				? {
+						attributes: node.attributes.map((attribute) =>
+							attribute.kind === "Bound"
+								? { ...attribute, value: escapedOnServer(attribute.value, "attribute") }
+								: attribute,
+						),
+					}
+				: {}),
+			children:
+				node.kind === "Element" && LEADING_LINE_FEED_ELEMENTS.has(node.tag)
+					? insertedLineFeed(content)
+					: content,
+		};
+	};
+	// The paths the branch callbacks around a node receive, and those a keyed one receives, which
+	// print as plain names (src/narrowing.ts); an accessor's read is a call.
+	const around: ReferencePath[][] = [];
+	const keyed: ReferencePath[][] = [];
+	const children = (nodes: readonly RenderNode[]): RenderNode[] =>
+		nodes.flatMap((node): RenderNode[] => {
+			switch (node.kind) {
+				case "Element":
+					return [element(node)];
+				case "If": {
+					const tests = node.branches.flatMap((branch) =>
+						branch.condition ? [branch.condition] : [],
+					);
+					return [
+						{
+							...node,
+							branches: node.branches.map((branch, index) => {
+								const paths = carriedPaths(
+									branch.children,
+									branch.condition ? tests.slice(0, index + 1) : tests,
+									Boolean(branch.condition),
+									around.flat(),
+									types,
+								);
+								around.push(paths);
+								keyed.push(narrowsFurther(branch.children, paths) ? paths : []);
+								try {
+									return { ...branch, children: children(branch.children) };
+								} finally {
+									around.pop();
+									keyed.pop();
+								}
+							}),
+						},
+					];
+				}
+				case "For":
+					return [
+						{
+							...node,
+							body:
+								node.body.kind === "Element"
+									? element(node.body)
+									: { ...node.body, fills: fills(node.body.fills) },
+						},
+					];
+				case "Interpolation":
+					// The `<Show>` an interpolation may become renders it as a component's content,
+					// which the server escapes whole; one left as text is escaped here.
+					return interpolation(node, (part) => {
+						const printed = parseExpression(rewriteExpression(part, component, rules));
+						if (printed.type === "Identifier") return true;
+						// A path a keyed callback receives prints as its plain name (src/narrowing.ts).
+						const path = wholePath(part);
+						return Boolean(path && keyed.flat().some((entry) => samePath(entry, path)));
+					}).map((child) =>
+						child.kind === "Interpolation"
+							? { ...child, value: escapedOnServer(child.value, "child") }
+							: child,
+					);
+				case "Text":
+					return [node];
+				case "Component":
+					return [{ ...node, fills: fills(node.fills) }];
+				case "SlotOutlet":
+					return [{ ...node, fallback: children(node.fallback) }];
+				case "Dynamic":
+					return [
+						{
+							...node,
+							children: children(node.children),
+							...(node.fills ? { fills: fills(node.fills) } : {}),
+						},
+					];
+				case "Teleport":
+				case "Transition":
+					return [{ ...node, children: children(node.children) }];
+				default:
+					return node satisfies never;
+			}
+		});
+	const fills = (list: readonly SlotFill[]): SlotFill[] =>
+		list.map((fill) => ({ ...fill, children: children(fill.children) }));
+	return element(component.render);
 }
 
 /**
@@ -197,33 +197,33 @@ export function forSolid(
  * reads it.
  */
 function selectedOptions(
-  nodes: readonly RenderNode[],
-  model: Expression,
-  multiple: boolean,
+	nodes: readonly RenderNode[],
+	model: Expression,
+	multiple: boolean,
 ): RenderNode[] {
-  return nodes.map((node): RenderNode => {
-    switch (node.kind) {
-      case "For":
-        return node.body.kind === "Element" && node.body.tag === "option"
-          ? { ...node, body: selectedOption(node.body, model, multiple) }
-          : node;
-      case "If":
-        return {
-          ...node,
-          branches: node.branches.map((branch) => ({
-            ...branch,
-            children: selectedOptions(branch.children, model, multiple),
-          })),
-        };
-      case "Element":
-        if (node.tag === "optgroup") {
-          return { ...node, children: selectedOptions(node.children, model, multiple) };
-        }
-        return node.tag === "option" ? selectedOption(node, model, multiple) : node;
-      default:
-        return node;
-    }
-  });
+	return nodes.map((node): RenderNode => {
+		switch (node.kind) {
+			case "For":
+				return node.body.kind === "Element" && node.body.tag === "option"
+					? { ...node, body: selectedOption(node.body, model, multiple) }
+					: node;
+			case "If":
+				return {
+					...node,
+					branches: node.branches.map((branch) => ({
+						...branch,
+						children: selectedOptions(branch.children, model, multiple),
+					})),
+				};
+			case "Element":
+				if (node.tag === "optgroup") {
+					return { ...node, children: selectedOptions(node.children, model, multiple) };
+				}
+				return node.tag === "option" ? selectedOption(node, model, multiple) : node;
+			default:
+				return node;
+		}
+	});
 }
 
 /**
@@ -231,40 +231,40 @@ function selectedOptions(
  * interpolation or a `<component is>` renders them, or a list's row that is no `<option>`.
  */
 export function unmarkedOptions(nodes: readonly RenderNode[]): boolean {
-  return nodes.some((node) => {
-    switch (node.kind) {
-      case "Text":
-        return false;
-      case "Element":
-        return node.tag === "optgroup" ? unmarkedOptions(node.children) : node.tag !== "option";
-      case "If":
-        return node.branches.some((branch) => unmarkedOptions(branch.children));
-      case "For":
-        return node.body.kind !== "Element" || node.body.tag !== "option";
-      default:
-        return true;
-    }
-  });
+	return nodes.some((node) => {
+		switch (node.kind) {
+			case "Text":
+				return false;
+			case "Element":
+				return node.tag === "optgroup" ? unmarkedOptions(node.children) : node.tag !== "option";
+			case "If":
+				return node.branches.some((branch) => unmarkedOptions(branch.children));
+			case "For":
+				return node.body.kind !== "Element" || node.body.tag !== "option";
+			default:
+				return true;
+		}
+	});
 }
 
 function selectedOption(option: ElementNode, model: Expression, multiple: boolean): ElementNode {
-  const value = option.attributes.find(
-    (attribute) =>
-      (attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
-  );
-  const own =
-    value?.kind === "Static"
-      ? JSON.stringify(value.value === true ? "" : value.value)
-      : value?.kind === "Bound"
-        ? value.value
-        : optionText(option);
-  const selected: Attribute = {
-    kind: "Bound",
-    name: "selected",
-    value: selects(model, own, multiple),
-    span: value?.span ?? option.span,
-  };
-  return { ...option, attributes: [...option.attributes, selected] };
+	const value = option.attributes.find(
+		(attribute) =>
+			(attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
+	);
+	const own =
+		value?.kind === "Static"
+			? JSON.stringify(value.value === true ? "" : value.value)
+			: value?.kind === "Bound"
+				? value.value
+				: optionText(option);
+	const selected: Attribute = {
+		kind: "Bound",
+		name: "selected",
+		value: selects(model, own, multiple),
+		span: value?.span ?? option.span,
+	};
+	return { ...option, attributes: [...option.attributes, selected] };
 }
 
 /**
@@ -273,20 +273,20 @@ function selectedOption(option: ElementNode, model: Expression, multiple: boolea
  * `value` strips and collapses it (a static text's own).
  */
 function optionText(option: ElementNode): Expression | string {
-  const parts = option.children.flatMap((child): (Expression | string)[] => {
-    if (child.kind === "Text") return [child.value];
-    if (child.kind === "Interpolation") return [child.value];
-    return [];
-  });
-  if (parts.every((part) => typeof part === "string")) {
-    return JSON.stringify(
-      parts
-        .join("")
-        .replace(/[\t\n\f\r ]+/g, " ")
-        .trim(),
-    );
-  }
-  return joined(parts.map((part) => (typeof part === "string" ? JSON.stringify(part) : part)));
+	const parts = option.children.flatMap((child): (Expression | string)[] => {
+		if (child.kind === "Text") return [child.value];
+		if (child.kind === "Interpolation") return [child.value];
+		return [];
+	});
+	if (parts.every((part) => typeof part === "string")) {
+		return JSON.stringify(
+			parts
+				.join("")
+				.replace(/[\t\n\f\r ]+/g, " ")
+				.trim(),
+		);
+	}
+	return joined(parts.map((part) => (typeof part === "string" ? JSON.stringify(part) : part)));
 }
 
 /**
@@ -295,28 +295,28 @@ function optionText(option: ElementNode): Expression | string {
  * new code.
  */
 function joined(parts: readonly (Expression | string)[]): Expression {
-  const start = parts.find((part): part is Expression => typeof part !== "string")!.span.start;
-  let code = "String(";
-  const refs: Expression["refs"] = [];
-  for (const [index, part] of parts.entries()) {
-    if (index) code += " + ";
-    if (typeof part === "string") {
-      code += part;
-      continue;
-    }
-    code += "(";
-    const by = start + code.length - part.span.start;
-    code += `${part.code})`;
-    refs.push(...part.refs.map((reference) => shifted(reference, by)));
-  }
-  // The DOM strips and collapses an option's text into its value.
-  code += ').replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
-  return { code, span: { start, end: start + code.length }, refs };
+	const start = parts.find((part): part is Expression => typeof part !== "string")!.span.start;
+	let code = "String(";
+	const refs: Expression["refs"] = [];
+	for (const [index, part] of parts.entries()) {
+		if (index) code += " + ";
+		if (typeof part === "string") {
+			code += part;
+			continue;
+		}
+		code += "(";
+		const by = start + code.length - part.span.start;
+		code += `${part.code})`;
+		refs.push(...part.refs.map((reference) => shifted(reference, by)));
+	}
+	// The DOM strips and collapses an option's text into its value.
+	code += ').replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+	return { code, span: { start, end: start + code.length }, refs };
 }
 
 /** A reference moved by `by` characters. */
 function shifted<T extends { span: { start: number; end: number } }>(reference: T, by: number): T {
-  return { ...reference, span: { start: reference.span.start + by, end: reference.span.end + by } };
+	return { ...reference, span: { start: reference.span.start + by, end: reference.span.end + by } };
 }
 
 /**
@@ -324,14 +324,14 @@ function shifted<T extends { span: { start: number; end: number } }>(reference: 
  * code.
  */
 function selects(model: Expression, value: Expression | string, multiple: boolean): Expression {
-  const prefix = multiple ? `${model.code}.includes(` : `${model.code} === `;
-  const own = typeof value === "string" ? value : value.code;
-  const code = `${prefix}${own}${multiple ? ")" : ""}`;
-  const start = model.span.start;
-  const by = start + prefix.length - (typeof value === "string" ? 0 : value.span.start);
-  const ownRefs =
-    typeof value === "string" ? [] : value.refs.map((reference) => shifted(reference, by));
-  return { code, span: { start, end: start + code.length }, refs: [...model.refs, ...ownRefs] };
+	const prefix = multiple ? `${model.code}.includes(` : `${model.code} === `;
+	const own = typeof value === "string" ? value : value.code;
+	const code = `${prefix}${own}${multiple ? ")" : ""}`;
+	const start = model.span.start;
+	const by = start + prefix.length - (typeof value === "string" ? 0 : value.span.start);
+	const ownRefs =
+		typeof value === "string" ? [] : value.refs.map((reference) => shifted(reference, by));
+	return { code, span: { start, end: start + code.length }, refs: [...model.refs, ...ownRefs] };
 }
 
 /**
@@ -342,27 +342,27 @@ function selects(model: Expression, value: Expression | string, multiple: boolea
  * next static child may start the template in turn. The DOM text is the same.
  */
 function insertedLineFeed(nodes: readonly RenderNode[]): RenderNode[] {
-  let children = [...nodes];
-  for (;;) {
-    const first = children.findIndex((node) => node.kind === "Text" || node.kind === "Element");
-    const text = children[first];
-    if (first <= 0 || text?.kind !== "Text") return children;
-    const feeds = /^\n+/.exec(text.value)?.[0];
-    if (!feeds) return children;
-    const at = { start: text.span.start, end: text.span.start };
-    const inserted: InterpolationNode = {
-      kind: "Interpolation",
-      value: { code: `[${JSON.stringify(feeds)}]`, span: at, refs: [] },
-      span: at,
-    };
-    const rest = text.value.slice(feeds.length);
-    children = [
-      ...children.slice(0, first),
-      inserted,
-      ...(rest ? [{ ...text, value: rest }] : []),
-      ...children.slice(first + 1),
-    ];
-  }
+	let children = [...nodes];
+	for (;;) {
+		const first = children.findIndex((node) => node.kind === "Text" || node.kind === "Element");
+		const text = children[first];
+		if (first <= 0 || text?.kind !== "Text") return children;
+		const feeds = /^\n+/.exec(text.value)?.[0];
+		if (!feeds) return children;
+		const at = { start: text.span.start, end: text.span.start };
+		const inserted: InterpolationNode = {
+			kind: "Interpolation",
+			value: { code: `[${JSON.stringify(feeds)}]`, span: at, refs: [] },
+			span: at,
+		};
+		const rest = text.value.slice(feeds.length);
+		children = [
+			...children.slice(0, first),
+			inserted,
+			...(rest ? [{ ...text, value: rest }] : []),
+			...children.slice(first + 1),
+		];
+	}
 }
 
 /**
@@ -371,31 +371,31 @@ function insertedLineFeed(nodes: readonly RenderNode[]): RenderNode[] {
  * interpolation as it is. Only the outermost conditional counts: the rule reads nothing nested.
  */
 function interpolation(node: InterpolationNode, bare: (part: Expression) => boolean): RenderNode[] {
-  const parsed = parseExpression(node.value.code);
-  if (parsed.type !== "ConditionalExpression") return [node];
-  if (!bare(slice(node.value, parsed.consequent)) && !bare(slice(node.value, parsed.alternate))) {
-    return [node];
-  }
-  const branch = (part: typeof parsed.test, condition?: Expression): IfBranch => {
-    const value = slice(node.value, part);
-    const content: InterpolationNode[] = isNothing(part)
-      ? []
-      : [{ kind: "Interpolation", value, span: value.span }];
-    return condition
-      ? { condition, children: content, span: node.span }
-      : { children: content, span: node.span };
-  };
-  const then = branch(parsed.consequent, slice(node.value, parsed.test));
-  const otherwise = branch(parsed.alternate);
-  if (then.children.length === 0 && otherwise.children.length === 0) return [];
-  const branches = otherwise.children.length ? [then, otherwise] : [then];
-  return [{ kind: "If", branches, span: node.span }];
+	const parsed = parseExpression(node.value.code);
+	if (parsed.type !== "ConditionalExpression") return [node];
+	if (!bare(slice(node.value, parsed.consequent)) && !bare(slice(node.value, parsed.alternate))) {
+		return [node];
+	}
+	const branch = (part: typeof parsed.test, condition?: Expression): IfBranch => {
+		const value = slice(node.value, part);
+		const content: InterpolationNode[] = isNothing(part)
+			? []
+			: [{ kind: "Interpolation", value, span: value.span }];
+		return condition
+			? { condition, children: content, span: node.span }
+			: { children: content, span: node.span };
+	};
+	const then = branch(parsed.consequent, slice(node.value, parsed.test));
+	const otherwise = branch(parsed.alternate);
+	if (then.children.length === 0 && otherwise.children.length === 0) return [];
+	const branches = otherwise.children.length ? [then, otherwise] : [then];
+	return [{ kind: "If", branches, span: node.span }];
 }
 
 /** Whether a branch renders nothing: `null`, `undefined` or an empty string. */
 function isNothing(part: ReturnType<typeof parseExpression>): boolean {
-  if (part.type === "Identifier") return part.name === "undefined";
-  return part.type === "Literal" && (part.value === null || part.value === "");
+	if (part.type === "Identifier") return part.name === "undefined";
+	return part.type === "Literal" && (part.value === null || part.value === "");
 }
 
 /** The characters HTML reads in text (`<`, `&`) and in a quoted attribute value (`"`, `&`). */
@@ -415,75 +415,75 @@ type Parsed = ReturnType<typeof parseExpression>;
  * escapes whole.
  */
 export function escapedOnServer(
-  expression: Expression,
-  position: "child" | "attribute",
+	expression: Expression,
+	position: "child" | "attribute",
 ): Expression {
-  const significant = SIGNIFICANT[position];
-  const wrapped: Parsed[] = [];
-  const visit = (node: Parsed, top: boolean): void => {
-    switch (node.type) {
-      case "Literal":
-        // A literal on its own is static: compiled into the escaped template.
-        if (!top && typeof node.value === "string" && significant.test(node.value)) {
-          wrapped.push(node);
-        }
-        return;
-      case "TemplateLiteral": {
-        const text = node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join("");
-        if (node.expressions.length === 0) {
-          if (!top && significant.test(text)) wrapped.push(node);
-          return;
-        }
-        if (position === "child" && significant.test(text)) {
-          wrapped.push(node);
-          return;
-        }
-        for (const part of node.expressions) visit(part, false);
-        return;
-      }
-      case "ConditionalExpression":
-        visit(node.consequent, false);
-        visit(node.alternate, false);
-        return;
-      case "BinaryExpression":
-        if (node.left.type !== "PrivateIdentifier") visit(node.left, false);
-        visit(node.right, false);
-        return;
-      case "LogicalExpression":
-        if (node.operator === "&&") visit(node.right, false);
-        return;
-      default:
-    }
-  };
-  visit(parseExpression(expression.code), true);
-  if (!wrapped.length) return expression;
-  const inserts = wrapped
-    .flatMap((node) => [
-      { at: node.start, text: "String(" },
-      { at: node.end, text: ")" },
-    ])
-    .toSorted((a, b) => a.at - b.at);
-  let code = "";
-  let last = 0;
-  for (const { at, text } of inserts) {
-    code += expression.code.slice(last, at) + text;
-    last = at;
-  }
-  code += expression.code.slice(last);
-  // A reference after an insertion moves by the text inserted before it.
-  const shift = (offset: number) =>
-    inserts.filter(({ at }) => at <= offset).reduce((sum, { text }) => sum + text.length, 0);
-  const start = expression.span.start;
-  return {
-    code,
-    span: { start, end: start + code.length },
-    refs: expression.refs.map((reference) => {
-      const offset = reference.span.start - start;
-      const moved = shift(offset);
-      return {
-        ...reference,
-        span: { start: reference.span.start + moved, end: reference.span.end + moved },
-      };
-    }),
-  };
+	const significant = SIGNIFICANT[position];
+	const wrapped: Parsed[] = [];
+	const visit = (node: Parsed, top: boolean): void => {
+		switch (node.type) {
+			case "Literal":
+				// A literal on its own is static: compiled into the escaped template.
+				if (!top && typeof node.value === "string" && significant.test(node.value)) {
+					wrapped.push(node);
+				}
+				return;
+			case "TemplateLiteral": {
+				const text = node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join("");
+				if (node.expressions.length === 0) {
+					if (!top && significant.test(text)) wrapped.push(node);
+					return;
+				}
+				if (position === "child" && significant.test(text)) {
+					wrapped.push(node);
+					return;
+				}
+				for (const part of node.expressions) visit(part, false);
+				return;
+			}
+			case "ConditionalExpression":
+				visit(node.consequent, false);
+				visit(node.alternate, false);
+				return;
+			case "BinaryExpression":
+				if (node.left.type !== "PrivateIdentifier") visit(node.left, false);
+				visit(node.right, false);
+				return;
+			case "LogicalExpression":
+				if (node.operator === "&&") visit(node.right, false);
+				return;
+			default:
+		}
+	};
+	visit(parseExpression(expression.code), true);
+	if (!wrapped.length) return expression;
+	const inserts = wrapped
+		.flatMap((node) => [
+			{ at: node.start, text: "String(" },
+			{ at: node.end, text: ")" },
+		])
+		.toSorted((a, b) => a.at - b.at);
+	let code = "";
+	let last = 0;
+	for (const { at, text } of inserts) {
+		code += expression.code.slice(last, at) + text;
+		last = at;
+	}
+	code += expression.code.slice(last);
+	// A reference after an insertion moves by the text inserted before it.
+	const shift = (offset: number) =>
+		inserts.filter(({ at }) => at <= offset).reduce((sum, { text }) => sum + text.length, 0);
+	const start = expression.span.start;
+	return {
+		code,
+		span: { start, end: start + code.length },
+		refs: expression.refs.map((reference) => {
+			const offset = reference.span.start - start;
+			const moved = shift(offset);
+			return {
+				...reference,
+				span: { start: reference.span.start + moved, end: reference.span.end + moved },
+			};
+		}),
+	};
 }

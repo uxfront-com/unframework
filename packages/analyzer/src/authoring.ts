@@ -18,49 +18,49 @@ import { isAuthoringModule } from "./frameworks.ts";
  * (ADR-0099), and `isDev`, read only as the test of an `if` (ADR-0117).
  */
 export type AuthoringApi =
-  | "ref"
-  | "computed"
-  | "watch"
-  | "watchEffect"
-  | "onMounted"
-  | "onUnmounted"
-  | "nextTick"
-  | "defineEmits"
-  | "useTemplateRef"
-  | "useId"
-  | "defineSlots"
-  | "defineExpose"
-  | "defineOptions"
-  | "defineModel"
-  | "provide"
-  | "inject"
-  | "Teleport"
-  | "Transition"
-  | "defineDirective"
-  | "isDev";
+	| "ref"
+	| "computed"
+	| "watch"
+	| "watchEffect"
+	| "onMounted"
+	| "onUnmounted"
+	| "nextTick"
+	| "defineEmits"
+	| "useTemplateRef"
+	| "useId"
+	| "defineSlots"
+	| "defineExpose"
+	| "defineOptions"
+	| "defineModel"
+	| "provide"
+	| "inject"
+	| "Teleport"
+	| "Transition"
+	| "defineDirective"
+	| "isDev";
 
 /** The APIs the analyser lowers. */
 export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
-  "ref",
-  "computed",
-  "watch",
-  "watchEffect",
-  "onMounted",
-  "onUnmounted",
-  "nextTick",
-  "defineEmits",
-  "useTemplateRef",
-  "useId",
-  "defineSlots",
-  "defineExpose",
-  "defineOptions",
-  "defineModel",
-  "provide",
-  "inject",
-  "Teleport",
-  "Transition",
-  "defineDirective",
-  "isDev",
+	"ref",
+	"computed",
+	"watch",
+	"watchEffect",
+	"onMounted",
+	"onUnmounted",
+	"nextTick",
+	"defineEmits",
+	"useTemplateRef",
+	"useId",
+	"defineSlots",
+	"defineExpose",
+	"defineOptions",
+	"defineModel",
+	"provide",
+	"inject",
+	"Teleport",
+	"Transition",
+	"defineDirective",
+	"isDev",
 ]);
 
 /** The APIs the package exports that a later milestone lowers, and what each brings (UF1002). */
@@ -71,54 +71,54 @@ export const LATER_APIS: ReadonlyMap<string, string> = new Map<string, string>()
  * compiler copies or erases (a reference to one in a copied annotation is the rules' to judge).
  */
 export const AUTHORING_TYPES: ReadonlySet<string> = new Set([
-  "Child",
-  "Children",
-  "ClassValue",
-  "ComponentAttributes",
-  "ComponentOptions",
-  "ComputedRef",
-  "CSSProperties",
-  "Directive",
-  "DirectiveHooks",
-  "Element",
-  "EmitFn",
-  "EmitsMap",
-  "InjectionKey",
-  "JSX",
-  "ModelRef",
-  "OnCleanup",
-  "Ref",
-  "RefAttribute",
-  "SlotObject",
-  "SlotsMap",
-  "StyleValue",
-  "TemplateRef",
-  "TypedComponent",
-  "WatchEffectOptions",
-  "WatchOptions",
-  "WatchSource",
-  "WatchStopHandle",
+	"Child",
+	"Children",
+	"ClassValue",
+	"ComponentAttributes",
+	"ComponentOptions",
+	"ComputedRef",
+	"CSSProperties",
+	"Directive",
+	"DirectiveHooks",
+	"Element",
+	"EmitFn",
+	"EmitsMap",
+	"InjectionKey",
+	"JSX",
+	"ModelRef",
+	"OnCleanup",
+	"Ref",
+	"RefAttribute",
+	"SlotObject",
+	"SlotsMap",
+	"StyleValue",
+	"TemplateRef",
+	"TypedComponent",
+	"WatchEffectOptions",
+	"WatchOptions",
+	"WatchSource",
+	"WatchStopHandle",
 ]);
 
 /** Why a name Vue exports is not unframework's, where it has a canonical form instead (P3). */
 const VUE_ONLY: ReadonlyMap<string, string> = new Map([
-  ["reactive", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
-  ["shallowReactive", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
-  ["readonly", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
-  ["shallowRef", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
-  ["toRef", "a component reads its props as they are destructured in its signature"],
-  ["toRefs", "a component reads its props as they are destructured in its signature"],
-  ["toValue", "a ref's value is read as `x.value`"],
-  ["unref", "a ref's value is read as `x.value`"],
-  ["isRef", "a ref's value is read as `x.value`"],
-  ["watchPostEffect", 'a post effect is `watch(…, { flush: "post" })`'],
-  ["watchSyncEffect", "a watcher runs before the DOM updates or after it, never synchronously"],
-  ["defineProps", "a component declares its props as its typed parameter (ADR-0034)"],
-  ["withDefaults", "a prop's default is written in the parameter's destructuring (ADR-0034)"],
-  ["onBeforeMount", "a component's lifecycle is `onMounted` and `onUnmounted`"],
-  ["onBeforeUnmount", "a component's lifecycle is `onMounted` and `onUnmounted`"],
-  ["onUpdated", "a component's lifecycle is `onMounted` and `onUnmounted`"],
-  ["onBeforeUpdate", "a component's lifecycle is `onMounted` and `onUnmounted`"],
+	["reactive", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
+	["shallowReactive", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
+	["readonly", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
+	["shallowRef", "state is a `ref`, whose value is replaced whole (ADR-0008)"],
+	["toRef", "a component reads its props as they are destructured in its signature"],
+	["toRefs", "a component reads its props as they are destructured in its signature"],
+	["toValue", "a ref's value is read as `x.value`"],
+	["unref", "a ref's value is read as `x.value`"],
+	["isRef", "a ref's value is read as `x.value`"],
+	["watchPostEffect", 'a post effect is `watch(…, { flush: "post" })`'],
+	["watchSyncEffect", "a watcher runs before the DOM updates or after it, never synchronously"],
+	["defineProps", "a component declares its props as its typed parameter (ADR-0034)"],
+	["withDefaults", "a prop's default is written in the parameter's destructuring (ADR-0034)"],
+	["onBeforeMount", "a component's lifecycle is `onMounted` and `onUnmounted`"],
+	["onBeforeUnmount", "a component's lifecycle is `onMounted` and `onUnmounted`"],
+	["onUpdated", "a component's lifecycle is `onMounted` and `onUnmounted`"],
+	["onBeforeUpdate", "a component's lifecycle is `onMounted` and `onUnmounted`"],
 ]);
 
 const IMPORT_HELP = `Import what the component uses, as in \`import { ref } from "${AUTHORING_PACKAGE}";\`.`;
@@ -130,66 +130,66 @@ const IMPORT_HELP = `Import what the component uses, as in \`import { ref } from
  * API are UF2016. Type-only imports are erased, whatever they name.
  */
 export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter: Reporter): void {
-  if (statement.importKind === "type") return;
-  const specifier = statement.source.value;
-  const root = specifier === AUTHORING_PACKAGE;
-  if (!statement.specifiers.length) {
-    reporter.report(
-      "UF2016",
-      statement,
-      `\`import "${specifier}"\` imports nothing: a component imports the authoring API by name.`,
-      { help: IMPORT_HELP },
-    );
-    return;
-  }
-  for (const item of statement.specifiers) {
-    if (item.type === "ImportDefaultSpecifier") {
-      reporter.report(
-        "UF2016",
-        item,
-        `"${specifier}" has no default export: a component imports the authoring API by name.`,
-        { help: IMPORT_HELP },
-      );
-      continue;
-    }
-    if (item.type === "ImportNamespaceSpecifier") {
-      reporter.report(
-        "UF2016",
-        item,
-        `A namespace import of "${specifier}" hides which API a call uses: the compiler recognises the authoring API by the names its import declares (ADR-0006).`,
-        { help: IMPORT_HELP },
-      );
-      continue;
-    }
-    if (item.importKind === "type") continue;
-    const name = exportName(item.imported);
-    if (!root) {
-      reporter.report(
-        "UF2016",
-        item,
-        `"${specifier}" holds types only: \`${name}\` is imported as a value.`,
-        { help: `Import it as a type (\`import type { ${name} } from "${specifier}"\`).` },
-      );
-      continue;
-    }
-    if (AUTHORING_APIS.has(name as AuthoringApi) || AUTHORING_TYPES.has(name)) continue;
-    const later = LATER_APIS.get(name);
-    if (later) {
-      reporter.unsupported(item, `\`${name}\` is not supported yet: ${later}.`);
-      continue;
-    }
-    const vue = VUE_ONLY.get(name);
-    reporter.report(
-      "UF2016",
-      item,
-      vue
-        ? `\`${name}\` is Vue's, not unframework's: ${vue}.`
-        : `"${AUTHORING_PACKAGE}" exports no \`${name}\`.`,
-      {
-        help: `The authoring API is ${[...AUTHORING_APIS].map((api) => `\`${api}\``).join(", ")}.`,
-      },
-    );
-  }
+	if (statement.importKind === "type") return;
+	const specifier = statement.source.value;
+	const root = specifier === AUTHORING_PACKAGE;
+	if (!statement.specifiers.length) {
+		reporter.report(
+			"UF2016",
+			statement,
+			`\`import "${specifier}"\` imports nothing: a component imports the authoring API by name.`,
+			{ help: IMPORT_HELP },
+		);
+		return;
+	}
+	for (const item of statement.specifiers) {
+		if (item.type === "ImportDefaultSpecifier") {
+			reporter.report(
+				"UF2016",
+				item,
+				`"${specifier}" has no default export: a component imports the authoring API by name.`,
+				{ help: IMPORT_HELP },
+			);
+			continue;
+		}
+		if (item.type === "ImportNamespaceSpecifier") {
+			reporter.report(
+				"UF2016",
+				item,
+				`A namespace import of "${specifier}" hides which API a call uses: the compiler recognises the authoring API by the names its import declares (ADR-0006).`,
+				{ help: IMPORT_HELP },
+			);
+			continue;
+		}
+		if (item.importKind === "type") continue;
+		const name = exportName(item.imported);
+		if (!root) {
+			reporter.report(
+				"UF2016",
+				item,
+				`"${specifier}" holds types only: \`${name}\` is imported as a value.`,
+				{ help: `Import it as a type (\`import type { ${name} } from "${specifier}"\`).` },
+			);
+			continue;
+		}
+		if (AUTHORING_APIS.has(name as AuthoringApi) || AUTHORING_TYPES.has(name)) continue;
+		const later = LATER_APIS.get(name);
+		if (later) {
+			reporter.unsupported(item, `\`${name}\` is not supported yet: ${later}.`);
+			continue;
+		}
+		const vue = VUE_ONLY.get(name);
+		reporter.report(
+			"UF2016",
+			item,
+			vue
+				? `\`${name}\` is Vue's, not unframework's: ${vue}.`
+				: `"${AUTHORING_PACKAGE}" exports no \`${name}\`.`,
+			{
+				help: `The authoring API is ${[...AUTHORING_APIS].map((api) => `\`${api}\``).join(", ")}.`,
+			},
+		);
+	}
 }
 
 /**
@@ -198,26 +198,26 @@ export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter:
  * `checkAuthoringImport` reports), whose uses say nothing more.
  */
 export function authoringBindings(program: AST.Program): Map<object, AuthoringApi | undefined> {
-  const bindings = new Map<object, AuthoringApi | undefined>();
-  for (const statement of program.body) {
-    if (
-      statement.type !== "ImportDeclaration" ||
-      statement.importKind === "type" ||
-      !isAuthoringModule(statement.source.value)
-    ) {
-      continue;
-    }
-    const root = statement.source.value === AUTHORING_PACKAGE;
-    for (const item of statement.specifiers) {
-      if (item.type === "ImportSpecifier" && item.importKind === "type") continue;
-      const name = item.type === "ImportSpecifier" ? exportName(item.imported) : undefined;
-      bindings.set(
-        item.local,
-        root && name !== undefined && AUTHORING_APIS.has(name as AuthoringApi)
-          ? (name as AuthoringApi)
-          : undefined,
-      );
-    }
-  }
-  return bindings;
+	const bindings = new Map<object, AuthoringApi | undefined>();
+	for (const statement of program.body) {
+		if (
+			statement.type !== "ImportDeclaration" ||
+			statement.importKind === "type" ||
+			!isAuthoringModule(statement.source.value)
+		) {
+			continue;
+		}
+		const root = statement.source.value === AUTHORING_PACKAGE;
+		for (const item of statement.specifiers) {
+			if (item.type === "ImportSpecifier" && item.importKind === "type") continue;
+			const name = item.type === "ImportSpecifier" ? exportName(item.imported) : undefined;
+			bindings.set(
+				item.local,
+				root && name !== undefined && AUTHORING_APIS.has(name as AuthoringApi)
+					? (name as AuthoringApi)
+					: undefined,
+			);
+		}
+	}
+	return bindings;
 }

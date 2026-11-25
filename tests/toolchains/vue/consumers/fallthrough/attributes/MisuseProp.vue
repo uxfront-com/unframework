@@ -3,6 +3,6 @@ import SaveButton from "../../../../../integration/cases/fallthrough/attributes/
 </script>
 
 <template>
-  <!-- @uf-expect TS2561 SaveButton.prop:title -->
-  <SaveButton titel="Save" />
+	<!-- @uf-expect TS2561 SaveButton.prop:title -->
+	<SaveButton titel="Save" />
 </template>

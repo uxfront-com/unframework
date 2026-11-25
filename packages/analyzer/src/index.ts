@@ -4,10 +4,10 @@ export { shapeQueries } from "./shapes.ts";
 export { directiveValueQueries } from "./directives.ts";
 export type { DirectiveValues } from "./directives.ts";
 export {
-  isSharedModuleSpecifier,
-  moduleSpecifiers,
-  sharedModuleImports,
-  unfollowedImports,
+	isSharedModuleSpecifier,
+	moduleSpecifiers,
+	sharedModuleImports,
+	unfollowedImports,
 } from "./shared.ts";
 export type { SharedModule } from "./shared.ts";
 export type { Shapes } from "./shapes.ts";

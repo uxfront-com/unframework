@@ -5,10 +5,10 @@ import { Showcase } from "./Showcase.tsx";
 
 const root = document.getElementById("app");
 if (root) {
-  createRoot(root).render(
-    <>
-      <Hello />
-      <Showcase />
-    </>,
-  );
+	createRoot(root).render(
+		<>
+			<Hello />
+			<Showcase />
+		</>,
+	);
 }

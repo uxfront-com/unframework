@@ -189,38 +189,38 @@ import { computed, defineEmits, ref } from "@uxfront/unframework";
 import "./Counter.css";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
+	initial?: number;
+	step?: number;
 }
 
 export default function Counter({ initial = 0, step = 1 }: CounterProps) {
-  const emit = defineEmits<{ change: [value: number] }>();
+	const emit = defineEmits<{ change: [value: number] }>();
 
-  const count = ref(initial);
-  const doubled = computed(() => count.value * 2);
+	const count = ref(initial);
+	const doubled = computed(() => count.value * 2);
 
-  function increment() {
-    count.value += step;
-    emit("change", count.value);
-  }
+	function increment() {
+		count.value += step;
+		emit("change", count.value);
+	}
 
-  return (
-    <div class="counter">
-      <output>{count.value}</output>
-      {doubled.value > 10 ? <span>Big</span> : null}
-      <button type="button" onClick={increment}>
-        +{step}
-      </button>
-    </div>
-  );
+	return (
+		<div class="counter">
+			<output>{count.value}</output>
+			{doubled.value > 10 ? <span>Big</span> : null}
+			<button type="button" onClick={increment}>
+				+{step}
+			</button>
+		</div>
+	);
 }
 ```
 
 ```css
 /* Counter.css, scoped to Counter by the compiler */
 .counter {
-  display: flex;
-  gap: 0.5rem;
+	display: flex;
+	gap: 0.5rem;
 }
 ```
 
@@ -486,15 +486,15 @@ The compiler analyses expressions as ASTs and rewrites them as text.
 
 ```ts
 interface Expr {
-  code: string; // the original source slice
-  span: Span;
-  refs: Reference[]; // every identifier resolved to a binding, by scope
+	code: string; // the original source slice
+	span: Span;
+	refs: Reference[]; // every identifier resolved to a binding, by scope
 }
 interface Reference {
-  start: number;
-  end: number;
-  binding: BindingId;
-  access: "read" | "write" | "update" | "call";
+	start: number;
+	end: number;
+	binding: BindingId;
+	access: "read" | "write" | "update" | "call";
 }
 ```
 
@@ -539,13 +539,13 @@ The only part tsgo cannot see is the public API that the macros declare, which �
 
 ```ts
 export interface TypeOracle {
-  /** Resolves the shape of a type at a location: props, emits, slot props, model types. */
-  resolveShape(query: ShapeQuery): Promise<TypeShape>;
-  /** Prints a type in a form every target's type system accepts. */
-  printType(query: TypeQuery): Promise<string>;
-  /** Tells the oracle which files changed, for incremental builds. */
-  update(changes: FileChanges): Promise<void>;
-  dispose(): Promise<void>;
+	/** Resolves the shape of a type at a location: props, emits, slot props, model types. */
+	resolveShape(query: ShapeQuery): Promise<TypeShape>;
+	/** Prints a type in a form every target's type system accepts. */
+	printType(query: TypeQuery): Promise<string>;
+	/** Tells the oracle which files changed, for incremental builds. */
+	update(changes: FileChanges): Promise<void>;
+	dispose(): Promise<void>;
 }
 ```
 
@@ -625,11 +625,11 @@ still a distinct extension (`.uf`) associated with the TSX grammar (ADR-0005).
 
 ```ts
 export interface Target {
-  readonly name: string; // "react": an open string, and third-party targets are welcome
-  readonly framework: { package: string; range: string }; // "react", ">=19.2 <20"
-  readonly capabilities: Capabilities; // feature → native | emulated(helper) | unsupported(diagnostic)
-  readonly options?: StandardSchemaV1; // validated target options
-  emit(component: UfComponent, context: EmitContext): OutputFile[];
+	readonly name: string; // "react": an open string, and third-party targets are welcome
+	readonly framework: { package: string; range: string }; // "react", ">=19.2 <20"
+	readonly capabilities: Capabilities; // feature → native | emulated(helper) | unsupported(diagnostic)
+	readonly options?: StandardSchemaV1; // validated target options
+	emit(component: UfComponent, context: EmitContext): OutputFile[];
 }
 // `@unframework.dev/target-react/toolchain` (tests and tooling only): Vite plugins, SSR renderer,
 // mount adapter, typecheck and lint commands, settle hooks.
@@ -664,14 +664,14 @@ export interface Target {
 
 ```ts
 interface Diagnostic {
-  code: `UF${number}`; // stable, catalogued, documented at unframework.dev/diagnostics/UF2103
-  severity: "error" | "warning" | "info";
-  message: string;
-  span: Span;
-  related?: { span: Span; message: string }[];
-  help?: string;
-  fixes?: { title: string; edits: TextEdit[]; confidence: "safe" | "likely" }[];
-  target?: string; // set for portability diagnostics
+	code: `UF${number}`; // stable, catalogued, documented at unframework.dev/diagnostics/UF2103
+	severity: "error" | "warning" | "info";
+	message: string;
+	span: Span;
+	related?: { span: Span; message: string }[];
+	help?: string;
+	fixes?: { title: string; edits: TextEdit[]; confidence: "safe" | "likely" }[];
+	target?: string; // set for portability diagnostics
 }
 ```
 
@@ -785,19 +785,19 @@ import { describeTargets, mount } from "@unframework.dev/testing";
 import Counter from "./Counter.uf.tsx";
 
 describeTargets("counter", () => {
-  it("renders the initial value", async () => {
-    const view = await mount(Counter, { props: { initial: 2 } });
-    await expect.element(view.getByRole("status")).toHaveTextContent("2");
-    await view.expectParity("initial"); // DOM, ARIA tree, geometry and pixels vs the shared expectation
-  });
+	it("renders the initial value", async () => {
+		const view = await mount(Counter, { props: { initial: 2 } });
+		await expect.element(view.getByRole("status")).toHaveTextContent("2");
+		await view.expectParity("initial"); // DOM, ARIA tree, geometry and pixels vs the shared expectation
+	});
 
-  it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
-    const view = await mount(Counter, { props: { initial: 2, step: 3 } });
-    await view.user.click(view.getByRole("button", { name: "+3" }));
-    await expect.element(view.getByRole("status")).toHaveTextContent("5");
-    expect(view.emitted("change")).toEqual([[5]]);
-    await view.expectParity("after-increment");
-  });
+	it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
+		const view = await mount(Counter, { props: { initial: 2, step: 3 } });
+		await view.user.click(view.getByRole("button", { name: "+3" }));
+		await expect.element(view.getByRole("status")).toHaveTextContent("5");
+		expect(view.emitted("change")).toEqual([[5]]);
+		await view.expectParity("after-increment");
+	});
 });
 ```
 
@@ -964,12 +964,12 @@ The counts below are targets for each milestone's exit. Every case runs on all s
 import { defineConfig } from "@uxfront/unframework/config";
 
 export default defineConfig({
-  targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
-  srcDir: "src",
-  outDir: "dist",
-  targetOptions: { react: { compiler: true } }, // validated per target (Standard Schema)
-  typeOracle: "syntactic", // or "tsgo"
-  strict: false, // true: portability warnings become errors
+	targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
+	srcDir: "src",
+	outDir: "dist",
+	targetOptions: { react: { compiler: true } }, // validated per target (Standard Schema)
+	typeOracle: "syntactic", // or "tsgo"
+	strict: false, // true: portability warnings become errors
 });
 ```
 
@@ -1464,30 +1464,30 @@ import { useMemo, useState } from "react";
 import "./Counter.css";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
-  onChange?: (value: number) => void;
+	initial?: number;
+	step?: number;
+	onChange?: (value: number) => void;
 }
 
 export default function Counter({ initial = 0, step = 1, onChange }: CounterProps) {
-  const [count, setCount] = useState(initial);
-  const doubled = useMemo(() => count * 2, [count]);
+	const [count, setCount] = useState(initial);
+	const doubled = useMemo(() => count * 2, [count]);
 
-  function increment() {
-    const nextCount = count + step;
-    setCount(nextCount);
-    onChange?.(nextCount);
-  }
+	function increment() {
+		const nextCount = count + step;
+		setCount(nextCount);
+		onChange?.(nextCount);
+	}
 
-  return (
-    <div className="counter" data-uf-c3a1>
-      <output data-uf-c3a1>{count}</output>
-      {doubled > 10 ? <span data-uf-c3a1>Big</span> : null}
-      <button type="button" onClick={increment} data-uf-c3a1>
-        +{step}
-      </button>
-    </div>
-  );
+	return (
+		<div className="counter" data-uf-c3a1>
+			<output data-uf-c3a1>{count}</output>
+			{doubled > 10 ? <span data-uf-c3a1>Big</span> : null}
+			<button type="button" onClick={increment} data-uf-c3a1>
+				+{step}
+			</button>
+		</div>
+	);
 }
 ```
 
@@ -1498,8 +1498,8 @@ export default function Counter({ initial = 0, step = 1, onChange }: CounterProp
 import { computed, ref } from "vue";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
+	initial?: number;
+	step?: number;
 }
 
 const { initial = 0, step = 1 } = defineProps<CounterProps>();
@@ -1509,17 +1509,17 @@ const count = ref(initial);
 const doubled = computed(() => count.value * 2);
 
 function increment() {
-  count.value += step;
-  emit("change", count.value);
+	count.value += step;
+	emit("change", count.value);
 }
 </script>
 
 <template>
-  <div class="counter" data-uf-c3a1>
-    <output data-uf-c3a1>{{ count }}</output>
-    <span v-if="doubled > 10" data-uf-c3a1>Big</span>
-    <button type="button" data-uf-c3a1 @click="increment">+{{ step }}</button>
-  </div>
+	<div class="counter" data-uf-c3a1>
+		<output data-uf-c3a1>{{ count }}</output>
+		<span v-if="doubled > 10" data-uf-c3a1>Big</span>
+		<button type="button" data-uf-c3a1 @click="increment">+{{ step }}</button>
+	</div>
 </template>
 
 <style src="./Counter.css"></style>
@@ -1566,32 +1566,32 @@ the sketches below.
 import { createMemo, createSignal, mergeProps, Show } from "solid-js";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
-  onChange?: (value: number) => void;
+	initial?: number;
+	step?: number;
+	onChange?: (value: number) => void;
 }
 
 export default function Counter(rawProps: CounterProps) {
-  const props = mergeProps({ initial: 0, step: 1 }, rawProps);
-  const [count, setCount] = createSignal(props.initial);
-  const doubled = createMemo(() => count() * 2);
+	const props = mergeProps({ initial: 0, step: 1 }, rawProps);
+	const [count, setCount] = createSignal(props.initial);
+	const doubled = createMemo(() => count() * 2);
 
-  function increment() {
-    setCount(count() + props.step);
-    props.onChange?.(count());
-  }
+	function increment() {
+		setCount(count() + props.step);
+		props.onChange?.(count());
+	}
 
-  return (
-    <div class="counter">
-      <output>{count()}</output>
-      <Show when={doubled() > 10}>
-        <span>Big</span>
-      </Show>
-      <button type="button" onClick={increment}>
-        +{props.step}
-      </button>
-    </div>
-  );
+	return (
+		<div class="counter">
+			<output>{count()}</output>
+			<Show when={doubled() > 10}>
+				<span>Big</span>
+			</Show>
+			<button type="button" onClick={increment}>
+				+{props.step}
+			</button>
+		</div>
+	);
 }
 ```
 
@@ -1603,34 +1603,34 @@ exists to catch exactly that.
 import { Component, computed, input, output, signal, type OnInit } from "@angular/core";
 
 @Component({
-  selector: "uf-counter",
-  host: { style: "display: contents" },
-  template: `
-    <div class="counter">
-      <output>{{ count() }}</output>
-      @if (doubled() > 10) {
-        <span>Big</span>
-      }
-      <button type="button" (click)="increment()">+{{ step() }}</button>
-    </div>
-  `,
+	selector: "uf-counter",
+	host: { style: "display: contents" },
+	template: `
+		<div class="counter">
+			<output>{{ count() }}</output>
+			@if (doubled() > 10) {
+				<span>Big</span>
+			}
+			<button type="button" (click)="increment()">+{{ step() }}</button>
+		</div>
+	`,
 })
 export class Counter implements OnInit {
-  readonly initial = input(0);
-  readonly step = input(1);
-  readonly change = output<number>();
+	readonly initial = input(0);
+	readonly step = input(1);
+	readonly change = output<number>();
 
-  protected readonly count = signal(0);
-  protected readonly doubled = computed(() => this.count() * 2);
+	protected readonly count = signal(0);
+	protected readonly doubled = computed(() => this.count() * 2);
 
-  ngOnInit(): void {
-    this.count.set(this.initial());
-  }
+	ngOnInit(): void {
+		this.count.set(this.initial());
+	}
 
-  protected increment(): void {
-    this.count.update((count) => count + this.step());
-    this.change.emit(this.count());
-  }
+	protected increment(): void {
+		this.count.update((count) => count + this.step());
+		this.change.emit(this.count());
+	}
 }
 ```
 
@@ -1640,29 +1640,29 @@ export class Counter implements OnInit {
 import { $, component$, useComputed$, useSignal, type QRL } from "@qwik.dev/core";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
-  onChange$?: QRL<(value: number) => void>;
+	initial?: number;
+	step?: number;
+	onChange$?: QRL<(value: number) => void>;
 }
 
 export default component$<CounterProps>(({ initial = 0, step = 1, onChange$ }) => {
-  const count = useSignal(initial);
-  const doubled = useComputed$(() => count.value * 2);
+	const count = useSignal(initial);
+	const doubled = useComputed$(() => count.value * 2);
 
-  const increment = $(() => {
-    count.value += step;
-    onChange$?.(count.value);
-  });
+	const increment = $(() => {
+		count.value += step;
+		onChange$?.(count.value);
+	});
 
-  return (
-    <div class="counter">
-      <output>{count.value}</output>
-      {doubled.value > 10 ? <span>Big</span> : null}
-      <button type="button" onClick$={increment}>
-        +{step}
-      </button>
-    </div>
-  );
+	return (
+		<div class="counter">
+			<output>{count.value}</output>
+			{doubled.value > 10 ? <span>Big</span> : null}
+			<button type="button" onClick$={increment}>
+				+{step}
+			</button>
+		</div>
+	);
 });
 ```
 

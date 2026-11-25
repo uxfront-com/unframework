@@ -7,12 +7,12 @@ import { expect } from "vitest";
 import Outline from "./Outline.uf.tsx";
 
 describeTargets("context/nested", () => {
-  it("reads the nearest provider", { requires: ["context"] }, async () => {
-    const view = await mount(Outline);
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("heading", { name: "Book at depth 0" })).toBeVisible();
-    await expect.element(view.getByRole("heading", { name: "Part at depth 1" })).toBeVisible();
-    await expect.element(view.getByRole("heading", { name: "Chapter at depth 2" })).toBeVisible();
-    await expect.element(view.getByRole("heading", { name: "Appendix at depth 1" })).toBeVisible();
-  });
+	it("reads the nearest provider", { requires: ["context"] }, async () => {
+		const view = await mount(Outline);
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("heading", { name: "Book at depth 0" })).toBeVisible();
+		await expect.element(view.getByRole("heading", { name: "Part at depth 1" })).toBeVisible();
+		await expect.element(view.getByRole("heading", { name: "Chapter at depth 2" })).toBeVisible();
+		await expect.element(view.getByRole("heading", { name: "Appendix at depth 1" })).toBeVisible();
+	});
 });

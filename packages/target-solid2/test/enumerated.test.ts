@@ -34,20 +34,20 @@ export default function Disclosure({ pressed, attrs }: { pressed: boolean; attrs
 `;
 
 describe("solid2 enumerated attributes", () => {
-  it("writes a bound and a spread boolean as its name, false included", async () => {
-    const output = await emitSource(SOURCE);
-    expect(output).toContain("aria-pressed={enumeratedValue(props.pressed)}");
-    expect(output).toContain('aria-expanded={enumeratedValue(props.attrs["aria-expanded"])}');
-    expect(output).toContain("draggable={enumeratedValue(props.attrs.draggable)}");
-    const file = join(scratch, "Disclosure.tsx");
-    const path = join(scratch, `${randomUUID()}.js`);
-    writeFileSync(path, await compileForServer(output, file));
-    const component = ((await import(path)) as { default: unknown }).default;
-    const html = await renderToString(component, {
-      props: { pressed: false, attrs: { "aria-expanded": false, draggable: true } },
-    });
-    expect(html).toContain('aria-pressed="false"');
-    expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain('draggable="true"');
-  });
+	it("writes a bound and a spread boolean as its name, false included", async () => {
+		const output = await emitSource(SOURCE);
+		expect(output).toContain("aria-pressed={enumeratedValue(props.pressed)}");
+		expect(output).toContain('aria-expanded={enumeratedValue(props.attrs["aria-expanded"])}');
+		expect(output).toContain("draggable={enumeratedValue(props.attrs.draggable)}");
+		const file = join(scratch, "Disclosure.tsx");
+		const path = join(scratch, `${randomUUID()}.js`);
+		writeFileSync(path, await compileForServer(output, file));
+		const component = ((await import(path)) as { default: unknown }).default;
+		const html = await renderToString(component, {
+			props: { pressed: false, attrs: { "aria-expanded": false, draggable: true } },
+		});
+		expect(html).toContain('aria-pressed="false"');
+		expect(html).toContain('aria-expanded="false"');
+		expect(html).toContain('draggable="true"');
+	});
 });

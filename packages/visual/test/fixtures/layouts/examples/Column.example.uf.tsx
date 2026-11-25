@@ -4,10 +4,10 @@
  * @layout column justify-start align-end gap wrap
  */
 export default function Column() {
-  return (
-    <>
-      <span>One</span>
-      <span>Two</span>
-    </>
-  );
+	return (
+		<>
+			<span>One</span>
+			<span>Two</span>
+		</>
+	);
 }

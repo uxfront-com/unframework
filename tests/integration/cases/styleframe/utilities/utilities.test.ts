@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Tag from "./Tag.uf.tsx";
 
 describeTargets("styleframe/utilities", () => {
-  it("renders the utility classes", async () => {
-    const view = await mountScenario(Tag, "default");
-    await view.expectParity("default");
-    await expect.element(view.getByText("Utility")).toBeVisible();
-  });
+	it("renders the utility classes", async () => {
+		const view = await mountScenario(Tag, "default");
+		await view.expectParity("default");
+		await expect.element(view.getByText("Utility")).toBeVisible();
+	});
 });

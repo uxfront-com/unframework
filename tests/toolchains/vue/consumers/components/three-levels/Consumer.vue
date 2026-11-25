@@ -3,5 +3,5 @@ import Section from "../../../../../integration/cases/components/three-levels/__
 </script>
 
 <template>
-  <Section title="About" body="Text" />
+	<Section title="About" body="Text" />
 </template>

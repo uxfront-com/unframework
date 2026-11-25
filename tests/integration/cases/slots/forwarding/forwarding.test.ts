@@ -7,14 +7,14 @@ import { expect } from "vitest";
 import Gallery from "./Gallery.uf.tsx";
 
 describeTargets("slots/forwarding", () => {
-  it("renders the forwarded fills and the fallbacks", async () => {
-    const view = await mount(Gallery);
-    await view.expectParity("initial");
-    await expect
-      .element(view.getByRole("region", { name: "Filled" }))
-      .toHaveTextContent("SunsetTaken at dusk.");
-    await expect
-      .element(view.getByRole("region", { name: "Empty" }))
-      .toHaveTextContent("UntitledNo content");
-  });
+	it("renders the forwarded fills and the fallbacks", async () => {
+		const view = await mount(Gallery);
+		await view.expectParity("initial");
+		await expect
+			.element(view.getByRole("region", { name: "Filled" }))
+			.toHaveTextContent("SunsetTaken at dusk.");
+		await expect
+			.element(view.getByRole("region", { name: "Empty" }))
+			.toHaveTextContent("UntitledNo content");
+	});
 });

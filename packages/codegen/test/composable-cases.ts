@@ -19,32 +19,32 @@ import type { OutputFile } from "../src/index.ts";
 
 /** The integration corpus's package directory. */
 export const INTEGRATION_DIR: string = fileURLToPath(
-  new URL("../../../tests/integration", import.meta.url),
+	new URL("../../../tests/integration", import.meta.url),
 );
 
 /** The rendering cases of composables and shared modules, by id, `<area>/<case>`. */
 export const COMPOSABLE_CASES: readonly string[] = [
-  "composables/use-toggle",
-  "composables/use-controllable-state",
-  "composables/use-media-query",
-  "composables/getter-argument",
-  "composables/callback-argument",
-  "modules/shared-constants",
-  "modules/shared-helpers",
-  "modules/module-constants",
-  "modules/nested-modules",
-  "semantics/composable-read-after-write",
-  "semantics/composable-effect-order",
-  "semantics/composable-unmount-order",
+	"composables/use-toggle",
+	"composables/use-controllable-state",
+	"composables/use-media-query",
+	"composables/getter-argument",
+	"composables/callback-argument",
+	"modules/shared-constants",
+	"modules/shared-helpers",
+	"modules/module-constants",
+	"modules/nested-modules",
+	"semantics/composable-read-after-write",
+	"semantics/composable-effect-order",
+	"semantics/composable-unmount-order",
 ];
 
 /** Where a case is: the directory it sits under (`pending/` or `cases/`) and its own. */
 export interface CaseLocation {
-  id: string;
-  /** `tests/integration/pending` or `tests/integration/cases`, absolute. */
-  root: string;
-  /** The case's directory, absolute. */
-  dir: string;
+	id: string;
+	/** `tests/integration/pending` or `tests/integration/cases`, absolute. */
+	root: string;
+	/** The case's directory, absolute. */
+	dir: string;
 }
 
 /**
@@ -52,28 +52,28 @@ export interface CaseLocation {
  * listing a directory. Throws when it is in neither.
  */
 export function locateCase(id: string, integrationDir: string = INTEGRATION_DIR): CaseLocation {
-  for (const directory of ["pending", "cases"]) {
-    const root = join(integrationDir, directory);
-    const dir = join(root, id);
-    if (existsSync(dir)) return { id, root, dir };
-  }
-  throw new Error(
-    `The case ${id} is in neither tests/integration/pending/ nor tests/integration/cases/.`,
-  );
+	for (const directory of ["pending", "cases"]) {
+		const root = join(integrationDir, directory);
+		const dir = join(root, id);
+		if (existsSync(dir)) return { id, root, dir };
+	}
+	throw new Error(
+		`The case ${id} is in neither tests/integration/pending/ nor tests/integration/cases/.`,
+	);
 }
 
 /** One source of a case, compiled for one target. */
 export interface CompiledSource {
-  /** The source's path under its root, `composables/use-toggle/useToggle.uf.ts`. */
-  filename: string;
-  diagnostics: Diagnostic[];
-  /** What the target emitted, the copied `.ts` modules included, as `compile()` returns it. */
-  outputs: OutputFile[];
+	/** The source's path under its root, `composables/use-toggle/useToggle.uf.ts`. */
+	filename: string;
+	diagnostics: Diagnostic[];
+	/** What the target emitted, the copied `.ts` modules included, as `compile()` returns it. */
+	outputs: OutputFile[];
 }
 
 /** A case, each of its sources compiled for one target. */
 export interface CompiledCase extends CaseLocation {
-  sources: CompiledSource[];
+	sources: CompiledSource[];
 }
 
 /**
@@ -83,41 +83,41 @@ export interface CompiledCase extends CaseLocation {
  * passes it the oracle (`caseResolver`); the outputs are the same for these cases.
  */
 export async function compileComposableCases(
-  target: TargetName,
-  {
-    ids = COMPOSABLE_CASES,
-    integrationDir = INTEGRATION_DIR,
-  }: { ids?: readonly string[]; integrationDir?: string } = {},
+	target: TargetName,
+	{
+		ids = COMPOSABLE_CASES,
+		integrationDir = INTEGRATION_DIR,
+	}: { ids?: readonly string[]; integrationDir?: string } = {},
 ): Promise<CompiledCase[]> {
-  const compiled: CompiledCase[] = [];
-  for (const id of ids) {
-    const location = locateCase(id, integrationDir);
-    const root = location.root.split(sep).join("/");
-    const readFile = async (path: string): Promise<string | undefined> => {
-      const file = join(path);
-      const inCase = relative(location.dir, dirname(file)) === "";
-      if (!inCase && !file.split(sep).includes("node_modules")) return undefined;
-      return readText(file, "utf8").catch(() => undefined);
-    };
-    const names = readdirSync(location.dir)
-      .filter((name) => name.endsWith(".uf.tsx") || name.endsWith(".uf.ts"))
-      .toSorted();
-    const sources: CompiledSource[] = [];
-    for (const name of names) {
-      const filename = `${id}/${name}`;
-      const result = await compile(await readText(join(location.dir, name), "utf8"), {
-        filename,
-        targets: [target],
-        resolve: createFileResolver({ root, readFile }),
-        typeOracle: createSyntacticOracle({ root, readFile }),
-      });
-      sources.push({
-        filename,
-        diagnostics: result.diagnostics,
-        outputs: result.outputs[target] ?? [],
-      });
-    }
-    compiled.push({ ...location, sources });
-  }
-  return compiled;
+	const compiled: CompiledCase[] = [];
+	for (const id of ids) {
+		const location = locateCase(id, integrationDir);
+		const root = location.root.split(sep).join("/");
+		const readFile = async (path: string): Promise<string | undefined> => {
+			const file = join(path);
+			const inCase = relative(location.dir, dirname(file)) === "";
+			if (!inCase && !file.split(sep).includes("node_modules")) return undefined;
+			return readText(file, "utf8").catch(() => undefined);
+		};
+		const names = readdirSync(location.dir)
+			.filter((name) => name.endsWith(".uf.tsx") || name.endsWith(".uf.ts"))
+			.toSorted();
+		const sources: CompiledSource[] = [];
+		for (const name of names) {
+			const filename = `${id}/${name}`;
+			const result = await compile(await readText(join(location.dir, name), "utf8"), {
+				filename,
+				targets: [target],
+				resolve: createFileResolver({ root, readFile }),
+				typeOracle: createSyntacticOracle({ root, readFile }),
+			});
+			sources.push({
+				filename,
+				diagnostics: result.diagnostics,
+				outputs: result.outputs[target] ?? [],
+			});
+		}
+		compiled.push({ ...location, sources });
+	}
+	return compiled;
 }

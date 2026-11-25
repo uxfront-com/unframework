@@ -3,5 +3,5 @@ import Card from "../../../../../integration/cases/components/local-sibling/__ou
 </script>
 
 <template>
-  <Card title="Starred" />
+	<Card title="Starred" />
 </template>

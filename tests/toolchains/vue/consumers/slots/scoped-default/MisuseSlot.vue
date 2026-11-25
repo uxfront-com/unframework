@@ -3,8 +3,8 @@ import Names from "../../../../../integration/cases/slots/scoped-default/__outpu
 </script>
 
 <template>
-  <Names :names="['Ada']">
-    <!-- @uf-expect TS2339 Names.slot:default -->
-    <template #default="{ size }">{{ size }}</template>
-  </Names>
+	<Names :names="['Ada']">
+		<!-- @uf-expect TS2339 Names.slot:default -->
+		<template #default="{ size }">{{ size }}</template>
+	</Names>
 </template>

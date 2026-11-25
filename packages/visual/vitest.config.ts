@@ -17,53 +17,53 @@ const PREVIEW_FILES = ["test/preview.test.ts", "test/preview-build.test.ts"];
  * ports, and a frame's render raced the load.
  */
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          environment: "node",
-          include: ["test/**/*.test.ts"],
-          exclude: [
-            ...configDefaults.exclude,
-            "test/fixtures/**",
-            "test/**/*.browser.test.ts",
-            ...PREVIEW_FILES,
-          ],
-        },
-      },
-      {
-        test: {
-          name: "preview",
-          environment: "node",
-          include: PREVIEW_FILES,
-          fileParallelism: false,
-          sequence: { groupOrder: 1 },
-        },
-      },
-      {
-        test: {
-          name: "browser",
-          include: ["test/**/*.browser.test.ts"],
-          setupFiles: ["./test/setup.browser.ts"],
-          // The matchers name the target in their messages: this page belongs to none.
-          provide: { target: "report" },
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            // Always headless: headed runs inherit the host's device pixel ratio.
-            headless: true,
-            // Named, or Vitest calls the project "browser (chromium)".
-            instances: [{ browser: "chromium", name: "browser" }],
-            screenshotFailures: false,
-            // A desktop window, where the grid holds seven cells across: one test narrows it.
-            viewport: { width: 1280, height: 800 },
-            commands: { ufReportFixture, ufShellFixture, ufShellColorScheme },
-          },
-        },
-      },
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					environment: "node",
+					include: ["test/**/*.test.ts"],
+					exclude: [
+						...configDefaults.exclude,
+						"test/fixtures/**",
+						"test/**/*.browser.test.ts",
+						...PREVIEW_FILES,
+					],
+				},
+			},
+			{
+				test: {
+					name: "preview",
+					environment: "node",
+					include: PREVIEW_FILES,
+					fileParallelism: false,
+					sequence: { groupOrder: 1 },
+				},
+			},
+			{
+				test: {
+					name: "browser",
+					include: ["test/**/*.browser.test.ts"],
+					setupFiles: ["./test/setup.browser.ts"],
+					// The matchers name the target in their messages: this page belongs to none.
+					provide: { target: "report" },
+					browser: {
+						enabled: true,
+						provider: playwright(),
+						// Always headless: headed runs inherit the host's device pixel ratio.
+						headless: true,
+						// Named, or Vitest calls the project "browser (chromium)".
+						instances: [{ browser: "chromium", name: "browser" }],
+						screenshotFailures: false,
+						// A desktop window, where the grid holds seven cells across: one test narrows it.
+						viewport: { width: 1280, height: 800 },
+						commands: { ufReportFixture, ufShellFixture, ufShellColorScheme },
+					},
+				},
+			},
+		],
+	},
 });
 
 export default config;

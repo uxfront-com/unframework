@@ -3,6 +3,6 @@ import Field from "../../../../../integration/cases/components/props-and-events/
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Field.event:clear -->
-  <Field label="Street" @clear="(count: number) => count + 1" />
+	<!-- @uf-expect TS2322 Field.event:clear -->
+	<Field label="Street" @clear="(count: number) => count + 1" />
 </template>

@@ -6,9 +6,9 @@ import { expect } from "vitest";
 import Directory from "./Directory.uf.tsx";
 
 describeTargets("slots/prop-names", () => {
-  it("passes each prop to the fill", async () => {
-    const view = await mountScenario(Directory, "two");
-    await view.expectParity("two");
-    await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("2: Grace (g2)");
-  });
+	it("passes each prop to the fill", async () => {
+		const view = await mountScenario(Directory, "two");
+		await view.expectParity("two");
+		await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("2: Grace (g2)");
+	});
 });

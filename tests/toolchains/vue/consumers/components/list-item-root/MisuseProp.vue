@@ -3,6 +3,6 @@ import Menu from "../../../../../integration/cases/components/list-item-root/__o
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Menu.prop:entries -->
-  <Menu entries="Home" />
+	<!-- @uf-expect TS2322 Menu.prop:entries -->
+	<Menu entries="Home" />
 </template>

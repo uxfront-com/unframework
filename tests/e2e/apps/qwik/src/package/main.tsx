@@ -9,11 +9,11 @@ import { Showcase } from "./Showcase.tsx";
 
 const root = document.getElementById("app");
 if (root) {
-  void render(
-    root,
-    <>
-      <Hello />
-      <Showcase />
-    </>,
-  );
+	void render(
+		root,
+		<>
+			<Hello />
+			<Showcase />
+		</>,
+	);
 }

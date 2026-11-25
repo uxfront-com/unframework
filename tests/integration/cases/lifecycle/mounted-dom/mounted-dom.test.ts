@@ -9,20 +9,20 @@ import { expect } from "vitest";
 import ArticlePreview from "./ArticlePreview.uf.tsx";
 
 describeTargets("lifecycle/mounted-dom", () => {
-  it("reads the mounted DOM, writes state and emits", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(ArticlePreview, "article");
-    await view.expectParity("mounted");
-    await expect.element(view.getByRole("status")).toHaveTextContent("57 characters");
-    expect(view.emitted("ready")).toEqual([[57]]);
-  });
+	it("reads the mounted DOM, writes state and emits", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(ArticlePreview, "article");
+		await view.expectParity("mounted");
+		await expect.element(view.getByRole("status")).toHaveTextContent("57 characters");
+		expect(view.emitted("ready")).toEqual([[57]]);
+	});
 
-  // Browser-only: a rerender has no server twin.
-  it("does not run again on a rerender", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(ArticlePreview, "article");
-    await view.rerender({ title: "Release notes", text: "Short." });
-    await view.expectParity("after-rerender");
-    await expect.element(view.getByText("Short.")).toBeVisible();
-    await expect.element(view.getByRole("status")).toHaveTextContent("57 characters");
-    expect(view.emitted("ready")).toEqual([[57]]);
-  });
+	// Browser-only: a rerender has no server twin.
+	it("does not run again on a rerender", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(ArticlePreview, "article");
+		await view.rerender({ title: "Release notes", text: "Short." });
+		await view.expectParity("after-rerender");
+		await expect.element(view.getByText("Short.")).toBeVisible();
+		await expect.element(view.getByRole("status")).toHaveTextContent("57 characters");
+		expect(view.emitted("ready")).toEqual([[57]]);
+	});
 });

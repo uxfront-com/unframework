@@ -8,27 +8,27 @@ import { bindingOf, parseCodeSource, writtenValue } from "@unframework.dev/codeg
 import type { CodeKind, ImportSet, RewriteRules, RewriteSite } from "@unframework.dev/codegen";
 import { expressionsOf, functionsOf, summarizeCode, walk } from "@unframework.dev/ir";
 import type {
-  Binding,
-  BindingId,
-  BindingKind,
-  BindingReference,
-  Code,
-  CodeReference,
-  ComposableApi,
-  ComposableParameter,
-  ConstItem,
-  ElementNode,
-  EventAttribute,
-  Expression,
-  FunctionCode,
-  FunctionItem,
-  ListenerAttribute,
-  RenderNode,
-  UfComponent,
-  UfComposable,
-  UfModule,
-  UseArgument,
-  UseItem,
+	Binding,
+	BindingId,
+	BindingKind,
+	BindingReference,
+	Code,
+	CodeReference,
+	ComposableApi,
+	ComposableParameter,
+	ConstItem,
+	ElementNode,
+	EventAttribute,
+	Expression,
+	FunctionCode,
+	FunctionItem,
+	ListenerAttribute,
+	RenderNode,
+	UfComponent,
+	UfComposable,
+	UfModule,
+	UseArgument,
+	UseItem,
 } from "@unframework.dev/ir";
 
 import { declaredProps, fillExpressions, planComposition } from "./composition.ts";
@@ -58,17 +58,17 @@ export type ConstForm = "module" | "constant" | "plain";
 
 /** A setup function and where it goes. */
 export interface FunctionPlan {
-  item: FunctionItem;
-  binding: Binding;
-  form: FunctionForm;
-  /** The name client code calls it by: its own, or its QRL twin's (`both`). */
-  qrl: string;
-  /**
-   * Set where getters are its only plain callers, directly or through the functions they call:
-   * in a generic component, where it stays in the arrow, each getter declares it (./setup.ts
-   * `getterSource`), so the arrow declares no plain one.
-   */
-  gettersOnly?: true;
+	item: FunctionItem;
+	binding: Binding;
+	form: FunctionForm;
+	/** The name client code calls it by: its own, or its QRL twin's (`both`). */
+	qrl: string;
+	/**
+	 * Set where getters are its only plain callers, directly or through the functions they call:
+	 * in a generic component, where it stays in the arrow, each getter declares it (./setup.ts
+	 * `getterSource`), so the arrow declares no plain one.
+	 */
+	gettersOnly?: true;
 }
 
 /**
@@ -78,18 +78,18 @@ export interface FunctionPlan {
  * passes its event to a function that does.
  */
 export interface EventFunction {
-  split: SplitHandler;
-  /**
-   * The function to declare: the rest of its body, the element argument after the event where it
-   * takes it, and an event parameter nothing reads dropped (a function only listeners name) or
-   * named `_event` (one a handler calls); `null` when nothing is left of a function only listeners
-   * name (its controls run in its listeners' markers and `sync$` handlers).
-   */
-  code: FunctionCode | null;
-  /** Whether it takes Qwik's element argument after its event. */
-  element: boolean;
-  /** The functions taking an event that it calls, which it passes its event. */
-  passes: readonly BindingId[];
+	split: SplitHandler;
+	/**
+	 * The function to declare: the rest of its body, the element argument after the event where it
+	 * takes it, and an event parameter nothing reads dropped (a function only listeners name) or
+	 * named `_event` (one a handler calls); `null` when nothing is left of a function only listeners
+	 * name (its controls run in its listeners' markers and `sync$` handlers).
+	 */
+	code: FunctionCode | null;
+	/** Whether it takes Qwik's element argument after its event. */
+	element: boolean;
+	/** The functions taking an event that it calls, which it passes its event. */
+	passes: readonly BindingId[];
 }
 
 /**
@@ -97,142 +97,142 @@ export interface EventFunction {
  * (./listeners.ts): its window-scope capture listeners (see {@link ListenerPlan}) or the rest.
  */
 export interface ListenerGroup {
-  readonly element: ElementNode;
-  readonly event: string;
-  readonly scope: "element" | "window";
-  readonly listeners: readonly EventAttribute[];
-  /**
-   * Whether its handler runs its calls of local functions in place (./inline.ts), and an async
-   * one returns after its synchronous part (./listeners.ts): where it holds several listeners, or
-   * another listener of the component may run after it in the same dispatch (an ancestor's in the
-   * bubble phase; a descendant's or any bubble listener on the path after a capture listener; any
-   * after the window's). Qwik's loader runs each element's loaded handler as it walks the path,
-   * so the handler's synchronous code is done when the next element's starts; a handler the
-   * loader queues (one after a `sync$` on its element) waits for the promise of every handler
-   * started before it, which is then only the synchronous part's.
-   */
-  readonly synchronous: boolean;
+	readonly element: ElementNode;
+	readonly event: string;
+	readonly scope: "element" | "window";
+	readonly listeners: readonly EventAttribute[];
+	/**
+	 * Whether its handler runs its calls of local functions in place (./inline.ts), and an async
+	 * one returns after its synchronous part (./listeners.ts): where it holds several listeners, or
+	 * another listener of the component may run after it in the same dispatch (an ancestor's in the
+	 * bubble phase; a descendant's or any bubble listener on the path after a capture listener; any
+	 * after the window's). Qwik's loader runs each element's loaded handler as it walks the path,
+	 * so the handler's synchronous code is done when the next element's starts; a handler the
+	 * loader queues (one after a `sync$` on its element) waits for the promise of every handler
+	 * started before it, which is then only the synchronous part's.
+	 */
+	readonly synchronous: boolean;
 }
 
 /** How the component's listeners are grouped and lowered (./listeners.ts). */
 export interface ListenerPlan {
-  /**
-   * The events some element listens to in both phases. Qwik's `capture:<event>` makes every
-   * handler of the element a capture one, so every capture listener of such an event runs from
-   * the window (`window:onClick$`), which keeps their order.
-   */
-  readonly windowEvents: ReadonlySet<string>;
-  /**
-   * The events the component listens to both passively and not. Qwik's loader dispatches
-   * passive and other handlers from two document listeners, each walking the whole path, so
-   * every handler of one would run before every handler of the other whatever the nesting:
-   * every listener of such an event is non-passive (a passive listener's `preventDefault()`
-   * does nothing, so it is left out).
-   */
-  readonly mixedPassive: ReadonlySet<string>;
-  /** Each listener's group. */
-  readonly groups: ReadonlyMap<EventAttribute, ListenerGroup>;
-  /**
-   * The components with native listeners, which fall through to their fallthrough element
-   * (ADR-0118), by `start:end` of their spans: each as an element of those listeners, which the
-   * listeners are grouped and printed on, as a prop of the component.
-   */
-  readonly components: ReadonlyMap<string, ElementNode>;
+	/**
+	 * The events some element listens to in both phases. Qwik's `capture:<event>` makes every
+	 * handler of the element a capture one, so every capture listener of such an event runs from
+	 * the window (`window:onClick$`), which keeps their order.
+	 */
+	readonly windowEvents: ReadonlySet<string>;
+	/**
+	 * The events the component listens to both passively and not. Qwik's loader dispatches
+	 * passive and other handlers from two document listeners, each walking the whole path, so
+	 * every handler of one would run before every handler of the other whatever the nesting:
+	 * every listener of such an event is non-passive (a passive listener's `preventDefault()`
+	 * does nothing, so it is left out).
+	 */
+	readonly mixedPassive: ReadonlySet<string>;
+	/** Each listener's group. */
+	readonly groups: ReadonlyMap<EventAttribute, ListenerGroup>;
+	/**
+	 * The components with native listeners, which fall through to their fallthrough element
+	 * (ADR-0118), by `start:end` of their spans: each as an element of those listeners, which the
+	 * listeners are grouped and printed on, as a prop of the component.
+	 */
+	readonly components: ReadonlyMap<string, ElementNode>;
 }
 
 /** The names and imports of one output file, shared by the planner and the printers. */
 export class OutputNames {
-  readonly imports: ImportSet;
-  readonly #claimed = new Map<string, string>();
+	readonly imports: ImportSet;
+	readonly #claimed = new Map<string, string>();
 
-  constructor(imports: ImportSet) {
-    this.imports = imports;
-  }
+	constructor(imports: ImportSet) {
+		this.imports = imports;
+	}
 
-  /** An import from `@qwik.dev/core`, under a free name. */
-  core(name: string, options: { type?: boolean } = {}): string {
-    return this.imports.add("@qwik.dev/core", name, options);
-  }
+	/** An import from `@qwik.dev/core`, under a free name. */
+	core(name: string, options: { type?: boolean } = {}): string {
+		return this.imports.add("@qwik.dev/core", name, options);
+	}
 
-  /** A name the output declares once per file (`track`, `element`, a helper), claimed once. */
-  once(name: string): string {
-    let local = this.#claimed.get(name);
-    if (local === undefined) {
-      local = this.imports.claim(name);
-      this.#claimed.set(name, local);
-    }
-    return local;
-  }
+	/** A name the output declares once per file (`track`, `element`, a helper), claimed once. */
+	once(name: string): string {
+		let local = this.#claimed.get(name);
+		if (local === undefined) {
+			local = this.imports.claim(name);
+			this.#claimed.set(name, local);
+		}
+		return local;
+	}
 
-  /** A fresh name the output declares (`previousQuery`), `_1`, `_2`… when taken. */
-  fresh(name: string): string {
-    return this.imports.claim(name);
-  }
+	/** A fresh name the output declares (`previousQuery`), `_1`, `_2`… when taken. */
+	fresh(name: string): string {
+		return this.imports.claim(name);
+	}
 
-  /** Whether a once-claimed name has been taken (a helper the output then emits). */
-  has(name: string): boolean {
-    return this.#claimed.has(name);
-  }
+	/** Whether a once-claimed name has been taken (a helper the output then emits). */
+	has(name: string): boolean {
+		return this.#claimed.has(name);
+	}
 }
 
 /** What the planner decides for a component, which every printer reads. */
 export interface SetupPlan {
-  readonly component: UfComponent;
-  readonly module: UfModule;
-  readonly names: OutputNames;
-  /** A composable's parameters, by their `argument` bindings: none for a component (ADR-0069). */
-  readonly arguments: ReadonlyMap<BindingId, ComposableParameter>;
-  readonly functions: ReadonlyMap<BindingId, FunctionPlan>;
-  readonly consts: ReadonlyMap<BindingId, ConstForm>;
-  /** The names client code calls as QRLs, which a call awaits. */
-  readonly qrls: ReadonlySet<string>;
-  /** The template refs attached inside a conditional, read through the `rendered` helper. */
-  readonly conditionalRefs: ReadonlySet<BindingId>;
-  /** The events some code emits, which the props destructure. */
-  readonly emitted: ReadonlySet<string>;
-  /** How code spells an event's QRL prop: its destructured name, or `props.onX$`. */
-  eventProp(event: string): string;
-  /** The destructured name of each emitted event's prop, by event (destructured form only). */
-  readonly eventLocals: ReadonlyMap<string, string>;
-  /** The setup functions that take an event, with what moves out of them. */
-  readonly eventFunctions: ReadonlyMap<BindingId, EventFunction>;
-  /** The setup functions nothing is left of once their controls move out (./handlers.ts). */
-  readonly emptyFunctions: ReadonlySet<BindingId>;
-  /** How the listeners are grouped and lowered. */
-  readonly listeners: ListenerPlan;
-  /**
-   * The client functions whose `$()` QRL the component declares: those client code calls as a
-   * QRL, names as a handler that runs alone or passes on. A function every call writes in place
-   * (./inline.ts) has none.
-   */
-  readonly declared: ReadonlySet<BindingId>;
-  /**
-   * The QRL names whose function returns a promise (`returnsPromise`): a call of one is the
-   * promise itself, which only a call the source awaits awaits, and a statement call floats.
-   */
-  readonly promiseQrls: ReadonlySet<string>;
-  /** The function client code calls by a QRL name, by that name. */
-  readonly qrlFunctions: ReadonlyMap<string, BindingId>;
-  /** The functions that keep one identity for the instance's life (see {@link StablePlan}). */
-  readonly stable: StablePlan;
-  /** What composition adds: slots as render props, models, fallthrough, expose. */
-  readonly composition: CompositionPlan;
-  /**
-   * The reads of a template ref's value that client code uses whole (stored, passed on, compared,
-   * returned), by their offset in the source: \`T | null\` there, as the source's type is, where
-   * Qwik's ref signal holds \`T | undefined\`.
-   */
-  readonly wholeRefReads: ReadonlySet<number>;
-  /**
-   * The rules code is printed with; `event` names the event parameter of the function printed,
-   * whose members other than `currentTarget` stay as written.
-   */
-  rules(event?: string): RewriteRules;
-  /**
-   * The code a setup function is declared with: its own (`undefined`), the rest of a named
-   * handler's, or `null` for a named handler with nothing left.
-   */
-  functionCode(id: BindingId): FunctionCode | null | undefined;
+	readonly component: UfComponent;
+	readonly module: UfModule;
+	readonly names: OutputNames;
+	/** A composable's parameters, by their `argument` bindings: none for a component (ADR-0069). */
+	readonly arguments: ReadonlyMap<BindingId, ComposableParameter>;
+	readonly functions: ReadonlyMap<BindingId, FunctionPlan>;
+	readonly consts: ReadonlyMap<BindingId, ConstForm>;
+	/** The names client code calls as QRLs, which a call awaits. */
+	readonly qrls: ReadonlySet<string>;
+	/** The template refs attached inside a conditional, read through the `rendered` helper. */
+	readonly conditionalRefs: ReadonlySet<BindingId>;
+	/** The events some code emits, which the props destructure. */
+	readonly emitted: ReadonlySet<string>;
+	/** How code spells an event's QRL prop: its destructured name, or `props.onX$`. */
+	eventProp(event: string): string;
+	/** The destructured name of each emitted event's prop, by event (destructured form only). */
+	readonly eventLocals: ReadonlyMap<string, string>;
+	/** The setup functions that take an event, with what moves out of them. */
+	readonly eventFunctions: ReadonlyMap<BindingId, EventFunction>;
+	/** The setup functions nothing is left of once their controls move out (./handlers.ts). */
+	readonly emptyFunctions: ReadonlySet<BindingId>;
+	/** How the listeners are grouped and lowered. */
+	readonly listeners: ListenerPlan;
+	/**
+	 * The client functions whose `$()` QRL the component declares: those client code calls as a
+	 * QRL, names as a handler that runs alone or passes on. A function every call writes in place
+	 * (./inline.ts) has none.
+	 */
+	readonly declared: ReadonlySet<BindingId>;
+	/**
+	 * The QRL names whose function returns a promise (`returnsPromise`): a call of one is the
+	 * promise itself, which only a call the source awaits awaits, and a statement call floats.
+	 */
+	readonly promiseQrls: ReadonlySet<string>;
+	/** The function client code calls by a QRL name, by that name. */
+	readonly qrlFunctions: ReadonlyMap<string, BindingId>;
+	/** The functions that keep one identity for the instance's life (see {@link StablePlan}). */
+	readonly stable: StablePlan;
+	/** What composition adds: slots as render props, models, fallthrough, expose. */
+	readonly composition: CompositionPlan;
+	/**
+	 * The reads of a template ref's value that client code uses whole (stored, passed on, compared,
+	 * returned), by their offset in the source: \`T | null\` there, as the source's type is, where
+	 * Qwik's ref signal holds \`T | undefined\`.
+	 */
+	readonly wholeRefReads: ReadonlySet<number>;
+	/**
+	 * The rules code is printed with; `event` names the event parameter of the function printed,
+	 * whose members other than `currentTarget` stay as written.
+	 */
+	rules(event?: string): RewriteRules;
+	/**
+	 * The code a setup function is declared with: its own (`undefined`), the rest of a named
+	 * handler's, or `null` for a named handler with nothing left.
+	 */
+	functionCode(id: BindingId): FunctionCode | null | undefined;
 }
 
 /**
@@ -241,91 +241,91 @@ export interface SetupPlan {
  * functions it returns are QRLs its caller's client code calls, as a component's exposed ones are.
  */
 export function planSetup(
-  component: UfComponent,
-  module: UfModule,
-  names: OutputNames,
-  composable?: UfComposable,
+	component: UfComponent,
+	module: UfModule,
+	names: OutputNames,
+	composable?: UfComposable,
 ): SetupPlan {
-  const args = new Map(composable?.parameters.map((parameter) => [parameter.binding, parameter]));
-  const returned = new Set(composable?.returns.map((member) => member.binding));
-  const hoisted = hoistable(component, returned, !importsModuleValues(module, component.name));
-  const functions = planFunctions(component, hoisted, names, returned);
-  const consts = planConsts(component, hoisted, args);
-  const qrls = new Set<string>();
-  for (const plan of functions.values()) {
-    if (plan.form === "qrl" || plan.form === "both") qrls.add(plan.qrl);
-  }
-  // A callback argument is the caller's QRL (./composable.ts): a statement call of one that
-  // returns nothing or a promise floats, as an emit does, and any other call is awaited.
-  const promiseQrls = new Set<string>();
-  for (const parameter of args.values()) {
-    if (parameter.kind !== "callback") continue;
-    qrls.add(parameter.name);
-    if (callbackFloats(parameter)) promiseQrls.add(parameter.name);
-  }
-  // A function a composable's call destructures is the hook's QRL (ADR-0069): a call of an async
-  // one is its promise, awaited only where the source awaits it.
-  for (const item of component.setup) {
-    if (item.kind !== "Use") continue;
-    const api = composableApi(module, item.composable);
-    for (const used of item.members) {
-      const { name, kind } = bindingOf(component, used.binding);
-      if (kind !== "usedFn") continue;
-      qrls.add(name);
-      if (api.members.find((member) => member.name === used.member)?.async) promiseQrls.add(name);
-    }
-  }
-  const emitted = emittedEvents(component);
-  const eventLocals = new Map<string, string>();
-  const objectForm = component.propsParameter?.form === "object";
-  if (!objectForm) {
-    for (const event of component.emits?.events ?? []) {
-      if (emitted.has(event.name))
-        eventLocals.set(event.name, names.fresh(qwikEventProp(event.name)));
-    }
-  }
-  const eventProp = (event: string): string =>
-    objectForm
-      ? `${component.propsParameter!.name}.${qwikEventProp(event)}`
-      : (eventLocals.get(event) ?? qwikEventProp(event));
-  const conditionalRefs = refsInConditionals(component);
-  const { planned: eventFunctions, empty: emptyFunctions } = planEventFunctions(component, names);
-  const listeners = planListeners(component, module);
-  const qrlFunctions = new Map<string, BindingId>();
-  for (const [id, fnPlan] of functions) {
-    if (fnPlan.form !== "qrl" && fnPlan.form !== "both") continue;
-    qrlFunctions.set(fnPlan.qrl, id);
-    if (returnsPromise(fnPlan.item.function)) promiseQrls.add(fnPlan.qrl);
-  }
-  const stable = planStable(component, functions, names);
-  const wholeRefReads = refReadsUsedWhole(component);
-  const composition = planComposition(component, module, names);
-  for (const model of composition.models.values()) if (model.written) qrls.add(model.setter);
-  const plan: SetupPlan = {
-    component,
-    module,
-    names,
-    arguments: args,
-    functions,
-    consts,
-    qrls,
-    conditionalRefs,
-    emitted,
-    eventProp,
-    eventLocals,
-    eventFunctions,
-    emptyFunctions,
-    listeners,
-    declared: declaredQrls(component, functions, listeners, returned),
-    promiseQrls,
-    qrlFunctions,
-    stable,
-    wholeRefReads,
-    composition,
-    rules: (event) => rewriteRules(plan, event),
-    functionCode: (id) => eventFunctions.get(id)?.code,
-  };
-  return plan;
+	const args = new Map(composable?.parameters.map((parameter) => [parameter.binding, parameter]));
+	const returned = new Set(composable?.returns.map((member) => member.binding));
+	const hoisted = hoistable(component, returned, !importsModuleValues(module, component.name));
+	const functions = planFunctions(component, hoisted, names, returned);
+	const consts = planConsts(component, hoisted, args);
+	const qrls = new Set<string>();
+	for (const plan of functions.values()) {
+		if (plan.form === "qrl" || plan.form === "both") qrls.add(plan.qrl);
+	}
+	// A callback argument is the caller's QRL (./composable.ts): a statement call of one that
+	// returns nothing or a promise floats, as an emit does, and any other call is awaited.
+	const promiseQrls = new Set<string>();
+	for (const parameter of args.values()) {
+		if (parameter.kind !== "callback") continue;
+		qrls.add(parameter.name);
+		if (callbackFloats(parameter)) promiseQrls.add(parameter.name);
+	}
+	// A function a composable's call destructures is the hook's QRL (ADR-0069): a call of an async
+	// one is its promise, awaited only where the source awaits it.
+	for (const item of component.setup) {
+		if (item.kind !== "Use") continue;
+		const api = composableApi(module, item.composable);
+		for (const used of item.members) {
+			const { name, kind } = bindingOf(component, used.binding);
+			if (kind !== "usedFn") continue;
+			qrls.add(name);
+			if (api.members.find((member) => member.name === used.member)?.async) promiseQrls.add(name);
+		}
+	}
+	const emitted = emittedEvents(component);
+	const eventLocals = new Map<string, string>();
+	const objectForm = component.propsParameter?.form === "object";
+	if (!objectForm) {
+		for (const event of component.emits?.events ?? []) {
+			if (emitted.has(event.name))
+				eventLocals.set(event.name, names.fresh(qwikEventProp(event.name)));
+		}
+	}
+	const eventProp = (event: string): string =>
+		objectForm
+			? `${component.propsParameter!.name}.${qwikEventProp(event)}`
+			: (eventLocals.get(event) ?? qwikEventProp(event));
+	const conditionalRefs = refsInConditionals(component);
+	const { planned: eventFunctions, empty: emptyFunctions } = planEventFunctions(component, names);
+	const listeners = planListeners(component, module);
+	const qrlFunctions = new Map<string, BindingId>();
+	for (const [id, fnPlan] of functions) {
+		if (fnPlan.form !== "qrl" && fnPlan.form !== "both") continue;
+		qrlFunctions.set(fnPlan.qrl, id);
+		if (returnsPromise(fnPlan.item.function)) promiseQrls.add(fnPlan.qrl);
+	}
+	const stable = planStable(component, functions, names);
+	const wholeRefReads = refReadsUsedWhole(component);
+	const composition = planComposition(component, module, names);
+	for (const model of composition.models.values()) if (model.written) qrls.add(model.setter);
+	const plan: SetupPlan = {
+		component,
+		module,
+		names,
+		arguments: args,
+		functions,
+		consts,
+		qrls,
+		conditionalRefs,
+		emitted,
+		eventProp,
+		eventLocals,
+		eventFunctions,
+		emptyFunctions,
+		listeners,
+		declared: declaredQrls(component, functions, listeners, returned),
+		promiseQrls,
+		qrlFunctions,
+		stable,
+		wholeRefReads,
+		composition,
+		rules: (event) => rewriteRules(plan, event),
+		functionCode: (id) => eventFunctions.get(id)?.code,
+	};
+	return plan;
 }
 
 /**
@@ -333,89 +333,89 @@ export function planSetup(
  * functions nothing is left of: their controls, and their calls of such functions, moved out.
  */
 function planEventFunctions(
-  component: UfComponent,
-  names: OutputNames,
+	component: UfComponent,
+	names: OutputNames,
 ): { planned: Map<BindingId, EventFunction>; empty: Set<BindingId> } {
-  const functions = new Map<BindingId, FunctionCode>();
-  for (const item of component.setup) {
-    if (item.kind !== "Function") continue;
-    if (item.function.parameters.some((parameter) => parameter.event !== undefined)) {
-      functions.set(item.binding, item.function);
-    }
-  }
-  const empty = new Set<BindingId>();
-  for (let changed = true; changed;) {
-    changed = false;
-    for (const [id, fn] of functions) {
-      if (!empty.has(id) && splitHandler(fn, component, empty).empty) {
-        empty.add(id);
-        changed = true;
-      }
-    }
-  }
-  const splits = new Map(
-    [...functions].map(([id, fn]) => [id, splitHandler(fn, component, empty)]),
-  );
-  // The calls taken out of their statements, which leave a function nothing else may name.
-  const removed = new Set([...splits.values()].flatMap((split) => split.removedCalls));
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
-        const split = splitHandler(attribute.handler.function, component, empty);
-        for (const offset of split.removedCalls) removed.add(offset);
-      }
-    },
-  });
-  const used = usedFunctions(component, removed);
-  const passes = new Map(
-    [...functions].map(([id]) => [id, eventCallees(splits.get(id)!.body.refs, functions)]),
-  );
-  // Through the functions it passes its event to.
-  const element = new Set([...splits].flatMap(([id, split]) => (split.currentTarget ? [id] : [])));
-  for (let changed = true; changed;) {
-    changed = false;
-    for (const [id, callees] of passes) {
-      if (!element.has(id) && callees.some((callee) => element.has(callee))) {
-        element.add(id);
-        changed = true;
-      }
-    }
-  }
-  const handlerOnly = handlerOnlyFunctions(component);
-  const planned = new Map<BindingId, EventFunction>();
-  for (const [id, fn] of functions) {
-    const split = splits.get(id)!;
-    const takesElement = element.has(id);
-    const base = { split, element: takesElement, passes: passes.get(id)! };
-    if (!split.controls.length && !split.removedCalls.length && !takesElement) continue;
-    if (split.empty && !used.has(id)) {
-      planned.set(id, { ...base, code: null });
-      continue;
-    }
-    const index = fn.parameters.findIndex((parameter) => parameter.event !== undefined);
-    const event = fn.parameters[index]!;
-    const parameters = [...fn.parameters];
-    if (takesElement) {
-      parameters.splice(index + 1, 0, elementParameter(names.once("element"), "Element"));
-    } else if (!split.usesEvent && index === parameters.length - 1) {
-      // An event nothing reads any more: a function only listeners name drops it; one a handler
-      // calls keeps its place, unused.
-      if (handlerOnly.has(id)) parameters.splice(index, 1);
-      else parameters[index] = { ...event, name: `_${event.name!}` };
-    }
-    const code: FunctionCode = { ...fn, parameters, body: split.body };
-    delete code.eventControls;
-    if (fn.expression && split.empty) {
-      // An arrow whose expression body was its control (`(event: Event) =>
-      // event.preventDefault()`), which code still names: an empty block.
-      delete code.expression;
-      code.body = { ...split.body, code: "{}" };
-    }
-    planned.set(id, { ...base, code });
-  }
-  return { planned, empty };
+	const functions = new Map<BindingId, FunctionCode>();
+	for (const item of component.setup) {
+		if (item.kind !== "Function") continue;
+		if (item.function.parameters.some((parameter) => parameter.event !== undefined)) {
+			functions.set(item.binding, item.function);
+		}
+	}
+	const empty = new Set<BindingId>();
+	for (let changed = true; changed;) {
+		changed = false;
+		for (const [id, fn] of functions) {
+			if (!empty.has(id) && splitHandler(fn, component, empty).empty) {
+				empty.add(id);
+				changed = true;
+			}
+		}
+	}
+	const splits = new Map(
+		[...functions].map(([id, fn]) => [id, splitHandler(fn, component, empty)]),
+	);
+	// The calls taken out of their statements, which leave a function nothing else may name.
+	const removed = new Set([...splits.values()].flatMap((split) => split.removedCalls));
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
+				const split = splitHandler(attribute.handler.function, component, empty);
+				for (const offset of split.removedCalls) removed.add(offset);
+			}
+		},
+	});
+	const used = usedFunctions(component, removed);
+	const passes = new Map(
+		[...functions].map(([id]) => [id, eventCallees(splits.get(id)!.body.refs, functions)]),
+	);
+	// Through the functions it passes its event to.
+	const element = new Set([...splits].flatMap(([id, split]) => (split.currentTarget ? [id] : [])));
+	for (let changed = true; changed;) {
+		changed = false;
+		for (const [id, callees] of passes) {
+			if (!element.has(id) && callees.some((callee) => element.has(callee))) {
+				element.add(id);
+				changed = true;
+			}
+		}
+	}
+	const handlerOnly = handlerOnlyFunctions(component);
+	const planned = new Map<BindingId, EventFunction>();
+	for (const [id, fn] of functions) {
+		const split = splits.get(id)!;
+		const takesElement = element.has(id);
+		const base = { split, element: takesElement, passes: passes.get(id)! };
+		if (!split.controls.length && !split.removedCalls.length && !takesElement) continue;
+		if (split.empty && !used.has(id)) {
+			planned.set(id, { ...base, code: null });
+			continue;
+		}
+		const index = fn.parameters.findIndex((parameter) => parameter.event !== undefined);
+		const event = fn.parameters[index]!;
+		const parameters = [...fn.parameters];
+		if (takesElement) {
+			parameters.splice(index + 1, 0, elementParameter(names.once("element"), "Element"));
+		} else if (!split.usesEvent && index === parameters.length - 1) {
+			// An event nothing reads any more: a function only listeners name drops it; one a handler
+			// calls keeps its place, unused.
+			if (handlerOnly.has(id)) parameters.splice(index, 1);
+			else parameters[index] = { ...event, name: `_${event.name!}` };
+		}
+		const code: FunctionCode = { ...fn, parameters, body: split.body };
+		delete code.eventControls;
+		if (fn.expression && split.empty) {
+			// An arrow whose expression body was its control (`(event: Event) =>
+			// event.preventDefault()`), which code still names: an empty block.
+			delete code.expression;
+			code.body = { ...split.body, code: "{}" };
+		}
+		planned.set(id, { ...base, code });
+	}
+	return { planned, empty };
 }
 
 /**
@@ -430,97 +430,97 @@ function planEventFunctions(
  * fills as it creates it. A cycle has a reference by value (the analyser rejects recursion).
  */
 export interface StablePlan {
-  /** The functions declared with \`useConstant\`. */
-  readonly functions: ReadonlySet<BindingId>;
-  /** The references, by their offset in the source, that read a function through the holder. */
-  readonly lazy: ReadonlySet<number>;
-  /** The holder, where some reference reads through it: its name and the functions it holds. */
-  readonly holder?: { name: string; members: readonly BindingId[] };
+	/** The functions declared with \`useConstant\`. */
+	readonly functions: ReadonlySet<BindingId>;
+	/** The references, by their offset in the source, that read a function through the holder. */
+	readonly lazy: ReadonlySet<number>;
+	/** The holder, where some reference reads through it: its name and the functions it holds. */
+	readonly holder?: { name: string; members: readonly BindingId[] };
 }
 
 /** Plans which functions keep their identity, and the holder (see {@link StablePlan}). */
 function planStable(
-  component: UfComponent,
-  functions: ReadonlyMap<BindingId, FunctionPlan>,
-  names: OutputNames,
+	component: UfComponent,
+	functions: ReadonlyMap<BindingId, FunctionPlan>,
+	names: OutputNames,
 ): StablePlan {
-  const qrl = (id: BindingId) => {
-    const form = functions.get(id)?.form;
-    return form === "qrl" || form === "both";
-  };
-  const stable = new Set<BindingId>();
-  // The functions handed to `addEventListener`/`removeEventListener`, anywhere in client code.
-  for (const { function: fn, context } of functionsOf(component)) {
-    if (context !== "client") continue;
-    const base = fn.body.span.start;
-    const values = new Map<number, BindingId>();
-    for (const reference of fn.body.refs) {
-      if (reference.kind === "Binding" && reference.call !== true && qrl(reference.binding)) {
-        values.set(reference.span.start - base, reference.binding);
-      }
-    }
-    if (!values.size) continue;
-    walkNodes(
-      parseCodeSource(fn.body.code, fn.expression ? "expression" : "statements").root,
-      (node) => {
-        const callee = node.callee as SyntaxNode | undefined;
-        const property = callee?.property as SyntaxNode | undefined;
-        if (
-          node.type !== "CallExpression" ||
-          callee?.type !== "MemberExpression" ||
-          callee.computed === true ||
-          (property?.name !== "addEventListener" && property?.name !== "removeEventListener")
-        ) {
-          return;
-        }
-        const listener = (node.arguments as SyntaxNode[])[1];
-        const id = listener ? values.get(unwrappedNode(listener).start) : undefined;
-        if (id !== undefined) stable.add(id);
-      },
-    );
-  }
-  // The references between client functions, and which function reaches which.
-  const edges = new Map<BindingId, { to: BindingId; at: number; call: boolean }[]>();
-  for (const [id, fnPlan] of functions) {
-    if (!qrl(id)) continue;
-    edges.set(
-      id,
-      fnPlan.item.function.body.refs.flatMap((reference) =>
-        reference.kind === "Binding" && qrl(reference.binding)
-          ? [{ to: reference.binding, at: reference.span.start, call: reference.call === true }]
-          : [],
-      ),
-    );
-  }
-  const reach = (from: BindingId): Set<BindingId> => {
-    const seen = new Set<BindingId>();
-    const queue = [from];
-    for (let id = queue.pop(); id !== undefined; id = queue.pop()) {
-      for (const edge of edges.get(id) ?? []) {
-        if (!seen.has(edge.to)) {
-          seen.add(edge.to);
-          queue.push(edge.to);
-        }
-      }
-    }
-    return seen;
-  };
-  const lazy = new Set<number>();
-  const members: BindingId[] = [];
-  for (const [from, list] of edges) {
-    for (const edge of list) {
-      // A reference by value that closes a cycle: the function it reads reaches back to this one.
-      if (edge.call || !reach(edge.to).has(from)) continue;
-      lazy.add(edge.at);
-      stable.add(edge.to);
-      if (!members.includes(edge.to)) members.push(edge.to);
-    }
-  }
-  return {
-    functions: stable,
-    lazy,
-    ...(members.length ? { holder: { name: names.fresh("functions"), members } } : {}),
-  };
+	const qrl = (id: BindingId) => {
+		const form = functions.get(id)?.form;
+		return form === "qrl" || form === "both";
+	};
+	const stable = new Set<BindingId>();
+	// The functions handed to `addEventListener`/`removeEventListener`, anywhere in client code.
+	for (const { function: fn, context } of functionsOf(component)) {
+		if (context !== "client") continue;
+		const base = fn.body.span.start;
+		const values = new Map<number, BindingId>();
+		for (const reference of fn.body.refs) {
+			if (reference.kind === "Binding" && reference.call !== true && qrl(reference.binding)) {
+				values.set(reference.span.start - base, reference.binding);
+			}
+		}
+		if (!values.size) continue;
+		walkNodes(
+			parseCodeSource(fn.body.code, fn.expression ? "expression" : "statements").root,
+			(node) => {
+				const callee = node.callee as SyntaxNode | undefined;
+				const property = callee?.property as SyntaxNode | undefined;
+				if (
+					node.type !== "CallExpression" ||
+					callee?.type !== "MemberExpression" ||
+					callee.computed === true ||
+					(property?.name !== "addEventListener" && property?.name !== "removeEventListener")
+				) {
+					return;
+				}
+				const listener = (node.arguments as SyntaxNode[])[1];
+				const id = listener ? values.get(unwrappedNode(listener).start) : undefined;
+				if (id !== undefined) stable.add(id);
+			},
+		);
+	}
+	// The references between client functions, and which function reaches which.
+	const edges = new Map<BindingId, { to: BindingId; at: number; call: boolean }[]>();
+	for (const [id, fnPlan] of functions) {
+		if (!qrl(id)) continue;
+		edges.set(
+			id,
+			fnPlan.item.function.body.refs.flatMap((reference) =>
+				reference.kind === "Binding" && qrl(reference.binding)
+					? [{ to: reference.binding, at: reference.span.start, call: reference.call === true }]
+					: [],
+			),
+		);
+	}
+	const reach = (from: BindingId): Set<BindingId> => {
+		const seen = new Set<BindingId>();
+		const queue = [from];
+		for (let id = queue.pop(); id !== undefined; id = queue.pop()) {
+			for (const edge of edges.get(id) ?? []) {
+				if (!seen.has(edge.to)) {
+					seen.add(edge.to);
+					queue.push(edge.to);
+				}
+			}
+		}
+		return seen;
+	};
+	const lazy = new Set<number>();
+	const members: BindingId[] = [];
+	for (const [from, list] of edges) {
+		for (const edge of list) {
+			// A reference by value that closes a cycle: the function it reads reaches back to this one.
+			if (edge.call || !reach(edge.to).has(from)) continue;
+			lazy.add(edge.at);
+			stable.add(edge.to);
+			if (!members.includes(edge.to)) members.push(edge.to);
+		}
+	}
+	return {
+		functions: stable,
+		lazy,
+		...(members.length ? { holder: { name: names.fresh("functions"), members } } : {}),
+	};
 }
 
 /**
@@ -530,112 +530,112 @@ function planStable(
  * where \`undefined\` and \`null\` do the same.
  */
 function refReadsUsedWhole(component: UfComponent): Set<number> {
-  const found = new Set<number>();
-  const refs = new Set(
-    component.bindings.flatMap((binding) => (binding.kind === "templateRef" ? [binding.id] : [])),
-  );
-  if (!refs.size) return found;
-  for (const { function: fn, context } of functionsOf(component)) {
-    if (context !== "client") continue;
-    const base = fn.body.span.start;
-    // Each read's span in the body: the node of `field.value` itself, not of what starts with it.
-    const reads = new Map(
-      fn.body.refs.flatMap((reference) =>
-        reference.kind === "Binding" && refs.has(reference.binding)
-          ? [[reference.span.start - base, reference.span.end - base] as const]
-          : [],
-      ),
-    );
-    if (!reads.size) continue;
-    const visit = (node: unknown, parent: SyntaxNode | undefined, key: string): void => {
-      if (Array.isArray(node)) {
-        for (const item of node) visit(item, parent, key);
-        return;
-      }
-      if (!isSyntaxNode(node)) return;
-      if (reads.get(node.start) === node.end && !usedPartly(parent, key)) {
-        found.add(base + node.start);
-      }
-      for (const [childKey, value] of Object.entries(node)) {
-        if (childKey !== "type" && childKey !== "parent" && typeof value === "object") {
-          visit(value, node, childKey);
-        }
-      }
-    };
-    visit(
-      parseCodeSource(fn.body.code, fn.expression ? "expression" : "statements").root,
-      undefined,
-      "",
-    );
-  }
-  return found;
+	const found = new Set<number>();
+	const refs = new Set(
+		component.bindings.flatMap((binding) => (binding.kind === "templateRef" ? [binding.id] : [])),
+	);
+	if (!refs.size) return found;
+	for (const { function: fn, context } of functionsOf(component)) {
+		if (context !== "client") continue;
+		const base = fn.body.span.start;
+		// Each read's span in the body: the node of `field.value` itself, not of what starts with it.
+		const reads = new Map(
+			fn.body.refs.flatMap((reference) =>
+				reference.kind === "Binding" && refs.has(reference.binding)
+					? [[reference.span.start - base, reference.span.end - base] as const]
+					: [],
+			),
+		);
+		if (!reads.size) continue;
+		const visit = (node: unknown, parent: SyntaxNode | undefined, key: string): void => {
+			if (Array.isArray(node)) {
+				for (const item of node) visit(item, parent, key);
+				return;
+			}
+			if (!isSyntaxNode(node)) return;
+			if (reads.get(node.start) === node.end && !usedPartly(parent, key)) {
+				found.add(base + node.start);
+			}
+			for (const [childKey, value] of Object.entries(node)) {
+				if (childKey !== "type" && childKey !== "parent" && typeof value === "object") {
+					visit(value, node, childKey);
+				}
+			}
+		};
+		visit(
+			parseCodeSource(fn.body.code, fn.expression ? "expression" : "statements").root,
+			undefined,
+			"",
+		);
+	}
+	return found;
 }
 
 /** Whether a node at \`key\` of \`parent\` is used for its truth or its members only. */
 function usedPartly(parent: SyntaxNode | undefined, key: string): boolean {
-  if (!parent) return false;
-  switch (parent.type) {
-    case "MemberExpression":
-      return key === "object";
-    case "ChainExpression":
-    case "TSNonNullExpression":
-      return true;
-    case "UnaryExpression":
-      return parent.operator === "!" || parent.operator === "typeof" || parent.operator === "void";
-    case "IfStatement":
-    case "WhileStatement":
-    case "DoWhileStatement":
-    case "ForStatement":
-    case "ConditionalExpression":
-      return key === "test";
-    case "LogicalExpression":
-      return key === "left";
-    default:
-      return false;
-  }
+	if (!parent) return false;
+	switch (parent.type) {
+		case "MemberExpression":
+			return key === "object";
+		case "ChainExpression":
+		case "TSNonNullExpression":
+			return true;
+		case "UnaryExpression":
+			return parent.operator === "!" || parent.operator === "typeof" || parent.operator === "void";
+		case "IfStatement":
+		case "WhileStatement":
+		case "DoWhileStatement":
+		case "ForStatement":
+		case "ConditionalExpression":
+			return key === "test";
+		case "LogicalExpression":
+			return key === "left";
+		default:
+			return false;
+	}
 }
 
 /** A node of oxc's syntax tree, as far as the walks of this file read it. */
 interface SyntaxNode {
-  type: string;
-  start: number;
-  end: number;
-  [key: string]: unknown;
+	type: string;
+	start: number;
+	end: number;
+	[key: string]: unknown;
 }
 
 function isSyntaxNode(value: unknown): value is SyntaxNode {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as SyntaxNode).type === "string" &&
-    typeof (value as SyntaxNode).start === "number"
-  );
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		typeof (value as SyntaxNode).type === "string" &&
+		typeof (value as SyntaxNode).start === "number"
+	);
 }
 
 /** Calls \`visit\` on every node of a tree, parents first. */
 function walkNodes(root: unknown, visit: (node: SyntaxNode) => void): void {
-  if (Array.isArray(root)) {
-    for (const item of root) walkNodes(item, visit);
-    return;
-  }
-  if (!isSyntaxNode(root)) return;
-  visit(root);
-  for (const [key, value] of Object.entries(root)) {
-    if (key !== "type" && key !== "parent" && typeof value === "object") walkNodes(value, visit);
-  }
+	if (Array.isArray(root)) {
+		for (const item of root) walkNodes(item, visit);
+		return;
+	}
+	if (!isSyntaxNode(root)) return;
+	visit(root);
+	for (const [key, value] of Object.entries(root)) {
+		if (key !== "type" && key !== "parent" && typeof value === "object") walkNodes(value, visit);
+	}
 }
 
 /** An expression without its type assertions (\`onKey as EventListener\`). */
 function unwrappedNode(node: SyntaxNode): SyntaxNode {
-  let current = node;
-  while (TYPED.has(current.type)) current = current.expression as SyntaxNode;
-  return current;
+	let current = node;
+	while (TYPED.has(current.type)) current = current.expression as SyntaxNode;
+	return current;
 }
 
 /** Whether a function's return type is a type predicate or an assertion (`x is T`, `asserts x`). */
 export function isPredicate(fn: FunctionCode): boolean {
-  const type = fn.returnType?.code.trim() ?? "";
-  return /^asserts\s/.test(type) || /^[A-Za-z_$][\w$]*\s+is\s/.test(type);
+	const type = fn.returnType?.code.trim() ?? "";
+	return /^asserts\s/.test(type) || /^[A-Za-z_$][\w$]*\s+is\s/.test(type);
 }
 
 /**
@@ -645,62 +645,62 @@ export function isPredicate(fn: FunctionCode): boolean {
  * awaits it only where the source does (./calls.ts).
  */
 export function returnsPromise(fn: FunctionCode): boolean {
-  if (fn.async === true) return true;
-  if (/^(?:Promise|PromiseLike)\s*</.test(fn.returnType?.code.trim() ?? "")) return true;
-  const returned: unknown[] = [];
-  if (fn.expression) {
-    returned.push(parseCodeSource(fn.body.code, "expression").root);
-  } else {
-    const visit = (node: unknown): void => {
-      if (!node || typeof node !== "object") return;
-      if (Array.isArray(node)) {
-        for (const item of node) visit(item);
-        return;
-      }
-      const typed = node as { type?: unknown; argument?: unknown };
-      if (typeof typed.type !== "string" || /Function/.test(typed.type)) return;
-      if (typed.type === "ReturnStatement") returned.push(typed.argument);
-      for (const [key, value] of Object.entries(typed)) {
-        if (key !== "type" && typeof value === "object") visit(value);
-      }
-    };
-    visit(parseCodeSource(fn.body.code, "statements").root);
-  }
-  return returned.length > 0 && returned.every(isPromiseExpression);
+	if (fn.async === true) return true;
+	if (/^(?:Promise|PromiseLike)\s*</.test(fn.returnType?.code.trim() ?? "")) return true;
+	const returned: unknown[] = [];
+	if (fn.expression) {
+		returned.push(parseCodeSource(fn.body.code, "expression").root);
+	} else {
+		const visit = (node: unknown): void => {
+			if (!node || typeof node !== "object") return;
+			if (Array.isArray(node)) {
+				for (const item of node) visit(item);
+				return;
+			}
+			const typed = node as { type?: unknown; argument?: unknown };
+			if (typeof typed.type !== "string" || /Function/.test(typed.type)) return;
+			if (typed.type === "ReturnStatement") returned.push(typed.argument);
+			for (const [key, value] of Object.entries(typed)) {
+				if (key !== "type" && typeof value === "object") visit(value);
+			}
+		};
+		visit(parseCodeSource(fn.body.code, "statements").root);
+	}
+	return returned.length > 0 && returned.every(isPromiseExpression);
 }
 
 /** Whether an expression's value is a promise, by its syntax (see {@link returnsPromise}). */
 function isPromiseExpression(node: unknown): boolean {
-  const typed = node as {
-    type?: string;
-    callee?: {
-      type?: string;
-      name?: string;
-      object?: { name?: string };
-      property?: { name?: string };
-    };
-    expression?: unknown;
-  } | null;
-  if (!typed) return false;
-  if (TYPED.has(typed.type ?? "")) return isPromiseExpression(typed.expression);
-  const callee = typed.callee;
-  if (typed.type === "NewExpression")
-    return callee?.type === "Identifier" && callee.name === "Promise";
-  if (typed.type !== "CallExpression" || !callee) return false;
-  if (callee.type === "Identifier") return callee.name === "fetch";
-  return (
-    callee.type === "MemberExpression" &&
-    (callee.object?.name === "Promise" ||
-      ["then", "catch", "finally"].includes(callee.property?.name ?? ""))
-  );
+	const typed = node as {
+		type?: string;
+		callee?: {
+			type?: string;
+			name?: string;
+			object?: { name?: string };
+			property?: { name?: string };
+		};
+		expression?: unknown;
+	} | null;
+	if (!typed) return false;
+	if (TYPED.has(typed.type ?? "")) return isPromiseExpression(typed.expression);
+	const callee = typed.callee;
+	if (typed.type === "NewExpression")
+		return callee?.type === "Identifier" && callee.name === "Promise";
+	if (typed.type !== "CallExpression" || !callee) return false;
+	if (callee.type === "Identifier") return callee.name === "fetch";
+	return (
+		callee.type === "MemberExpression" &&
+		(callee.object?.name === "Promise" ||
+			["then", "catch", "finally"].includes(callee.property?.name ?? ""))
+	);
 }
 
 /** The node types that wrap an expression with a type (`x as T`, `x!`). */
 const TYPED: ReadonlySet<string> = new Set([
-  "TSAsExpression",
-  "TSSatisfiesExpression",
-  "TSNonNullExpression",
-  "TSTypeAssertion",
+	"TSAsExpression",
+	"TSSatisfiesExpression",
+	"TSNonNullExpression",
+	"TSTypeAssertion",
 ]);
 
 /**
@@ -713,165 +713,165 @@ const TYPED: ReadonlySet<string> = new Set([
  * loaded (the semantics page declares a listener's first run).
  */
 export function inlinedAt(fn: FunctionCode, site: CallSite, synchronous: boolean): boolean {
-  return isPredicate(fn) || (synchronous && !site.nested && !returnsPromise(fn));
+	return isPredicate(fn) || (synchronous && !site.nested && !returnsPromise(fn));
 }
 
 /** Groups the listeners and decides how each group runs (see {@link ListenerPlan}). */
 function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
-  const windowEvents = new Set<string>();
-  const passive = new Map<string, Set<boolean>>();
-  // A consumer's listener of an event the element that spreads the props' rest listens to runs
-  // in that element's prop (./fallthrough.ts), as a plain one: it must not join a capture or a
-  // passive group of the element's own, so the element listens in both phases, and both
-  // passively and not (ADR-0118).
-  const target = fallthroughTarget(component, module);
-  const declared = target?.kind === "Element" ? declaredProps(component) : undefined;
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
-      const phases = new Map<string, Set<boolean>>();
-      const add = (event: string, capture: boolean, passively: boolean) => {
-        const seen = phases.get(event) ?? new Set<boolean>();
-        seen.add(capture);
-        phases.set(event, seen);
-        const kinds = passive.get(event) ?? new Set<boolean>();
-        kinds.add(passively);
-        passive.set(event, kinds);
-      };
-      for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event") continue;
-        add(attribute.event, attribute.capture === true, attribute.passive === true);
-      }
-      if (declared && node === target) {
-        for (const event of phases.keys()) {
-          if (!declared.has(qwikListenerProp(event))) add(event, false, false);
-        }
-      }
-      for (const [event, seen] of phases) if (seen.size === 2) windowEvents.add(event);
-    },
-  });
-  interface Entry {
-    group: Omit<ListenerGroup, "synchronous">;
-    phase: "capture" | "bubble" | "window";
-    path: readonly ElementNode[];
-  }
-  const entries: Entry[] = [];
-  const components = new Map<string, ElementNode>();
-  const visit = (node: RenderNode, path: readonly ElementNode[]): void => {
-    switch (node.kind) {
-      case "Element": {
-        const events = new Map<string, EventAttribute[]>();
-        for (const attribute of node.attributes) {
-          if (attribute.kind !== "Event") continue;
-          events.set(attribute.event, [...(events.get(attribute.event) ?? []), attribute]);
-        }
-        for (const [event, listeners] of events) {
-          const capture = listeners.filter((listener) => listener.capture);
-          const window = capture.length > 0 && windowEvents.has(event);
-          const onElement = window ? listeners.filter((listener) => !listener.capture) : listeners;
-          if (onElement.length) {
-            entries.push({
-              group: { element: node, event, scope: "element", listeners: onElement },
-              phase: !window && capture.length ? "capture" : "bubble",
-              path,
-            });
-          }
-          if (window) {
-            entries.push({
-              group: { element: node, event, scope: "window", listeners: capture },
-              phase: "window",
-              path,
-            });
-          }
-        }
-        for (const child of node.children) visit(child, [...path, node]);
-        return;
-      }
-      case "If":
-        for (const branch of node.branches) for (const child of branch.children) visit(child, path);
-        return;
-      case "For":
-        visit(node.body, path);
-        return;
-      case "Text":
-      case "Interpolation":
-        return;
-      // What a component's fills render sits in the child's elements, which the component cannot
-      // see: its listeners are ordered as the component's own around it. Its native listeners
-      // fall through to its fallthrough element (ADR-0118), which holds what the fills render.
-      case "Component": {
-        const passed = node.attributes.filter(
-          (attribute): attribute is EventAttribute => attribute.kind === "Event",
-        );
-        if (!passed.length) {
-          for (const fill of node.fills) for (const child of fill.children) visit(child, path);
-          return;
-        }
-        const element: ElementNode = {
-          kind: "Element",
-          tag: node.component,
-          attributes: passed,
-          children: node.fills.flatMap((fill) => fill.children),
-          span: node.span,
-        };
-        components.set(`${node.span.start}:${node.span.end}`, element);
-        visit(element, path);
-        return;
-      }
-      case "SlotOutlet":
-        for (const child of node.fallback) visit(child, path);
-        return;
-      case "Dynamic":
-        // Its tag takes its listeners and children, as an element (codegen's `jsxDynamic`).
-        visit(
-          {
-            kind: "Element",
-            tag: "component",
-            attributes: node.attributes.filter((attribute) => attribute.kind === "Event"),
-            children: node.children,
-            span: node.span,
-          },
-          path,
-        );
-        for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
-        return;
-      case "Teleport":
-      // A transition's child renders in its place (ADR-0100).
-      case "Transition":
-        for (const child of node.children) visit(child, path);
-        return;
-      default:
-        unreachable(node);
-    }
-  };
-  const root = component.render;
-  if (root.kind === "Fragment") for (const child of root.children) visit(child, []);
-  else visit(root, []);
-  const groups = new Map<EventAttribute, ListenerGroup>();
-  for (const entry of entries) {
-    const { element, event, listeners } = entry.group;
-    const others = entries.filter((other) => other !== entry && other.group.event === event);
-    const after = others.some((other) => {
-      const ancestor = entry.path.includes(other.group.element);
-      const descendant = other.path.includes(element);
-      switch (entry.phase) {
-        case "window":
-          return true;
-        case "capture":
-          return (descendant && other.phase !== "window") || (ancestor && other.phase === "bubble");
-        case "bubble":
-          return ancestor && other.phase === "bubble";
-        default:
-          return unreachable(entry.phase);
-      }
-    });
-    const group: ListenerGroup = { ...entry.group, synchronous: listeners.length > 1 || after };
-    for (const listener of listeners) groups.set(listener, group);
-  }
-  const mixedPassive = new Set(
-    [...passive].flatMap(([event, kinds]) => (kinds.size === 2 ? [event] : [])),
-  );
-  return { windowEvents, mixedPassive, groups, components };
+	const windowEvents = new Set<string>();
+	const passive = new Map<string, Set<boolean>>();
+	// A consumer's listener of an event the element that spreads the props' rest listens to runs
+	// in that element's prop (./fallthrough.ts), as a plain one: it must not join a capture or a
+	// passive group of the element's own, so the element listens in both phases, and both
+	// passively and not (ADR-0118).
+	const target = fallthroughTarget(component, module);
+	const declared = target?.kind === "Element" ? declaredProps(component) : undefined;
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+			const phases = new Map<string, Set<boolean>>();
+			const add = (event: string, capture: boolean, passively: boolean) => {
+				const seen = phases.get(event) ?? new Set<boolean>();
+				seen.add(capture);
+				phases.set(event, seen);
+				const kinds = passive.get(event) ?? new Set<boolean>();
+				kinds.add(passively);
+				passive.set(event, kinds);
+			};
+			for (const attribute of node.attributes) {
+				if (attribute.kind !== "Event") continue;
+				add(attribute.event, attribute.capture === true, attribute.passive === true);
+			}
+			if (declared && node === target) {
+				for (const event of phases.keys()) {
+					if (!declared.has(qwikListenerProp(event))) add(event, false, false);
+				}
+			}
+			for (const [event, seen] of phases) if (seen.size === 2) windowEvents.add(event);
+		},
+	});
+	interface Entry {
+		group: Omit<ListenerGroup, "synchronous">;
+		phase: "capture" | "bubble" | "window";
+		path: readonly ElementNode[];
+	}
+	const entries: Entry[] = [];
+	const components = new Map<string, ElementNode>();
+	const visit = (node: RenderNode, path: readonly ElementNode[]): void => {
+		switch (node.kind) {
+			case "Element": {
+				const events = new Map<string, EventAttribute[]>();
+				for (const attribute of node.attributes) {
+					if (attribute.kind !== "Event") continue;
+					events.set(attribute.event, [...(events.get(attribute.event) ?? []), attribute]);
+				}
+				for (const [event, listeners] of events) {
+					const capture = listeners.filter((listener) => listener.capture);
+					const window = capture.length > 0 && windowEvents.has(event);
+					const onElement = window ? listeners.filter((listener) => !listener.capture) : listeners;
+					if (onElement.length) {
+						entries.push({
+							group: { element: node, event, scope: "element", listeners: onElement },
+							phase: !window && capture.length ? "capture" : "bubble",
+							path,
+						});
+					}
+					if (window) {
+						entries.push({
+							group: { element: node, event, scope: "window", listeners: capture },
+							phase: "window",
+							path,
+						});
+					}
+				}
+				for (const child of node.children) visit(child, [...path, node]);
+				return;
+			}
+			case "If":
+				for (const branch of node.branches) for (const child of branch.children) visit(child, path);
+				return;
+			case "For":
+				visit(node.body, path);
+				return;
+			case "Text":
+			case "Interpolation":
+				return;
+			// What a component's fills render sits in the child's elements, which the component cannot
+			// see: its listeners are ordered as the component's own around it. Its native listeners
+			// fall through to its fallthrough element (ADR-0118), which holds what the fills render.
+			case "Component": {
+				const passed = node.attributes.filter(
+					(attribute): attribute is EventAttribute => attribute.kind === "Event",
+				);
+				if (!passed.length) {
+					for (const fill of node.fills) for (const child of fill.children) visit(child, path);
+					return;
+				}
+				const element: ElementNode = {
+					kind: "Element",
+					tag: node.component,
+					attributes: passed,
+					children: node.fills.flatMap((fill) => fill.children),
+					span: node.span,
+				};
+				components.set(`${node.span.start}:${node.span.end}`, element);
+				visit(element, path);
+				return;
+			}
+			case "SlotOutlet":
+				for (const child of node.fallback) visit(child, path);
+				return;
+			case "Dynamic":
+				// Its tag takes its listeners and children, as an element (codegen's `jsxDynamic`).
+				visit(
+					{
+						kind: "Element",
+						tag: "component",
+						attributes: node.attributes.filter((attribute) => attribute.kind === "Event"),
+						children: node.children,
+						span: node.span,
+					},
+					path,
+				);
+				for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
+				return;
+			case "Teleport":
+			// A transition's child renders in its place (ADR-0100).
+			case "Transition":
+				for (const child of node.children) visit(child, path);
+				return;
+			default:
+				unreachable(node);
+		}
+	};
+	const root = component.render;
+	if (root.kind === "Fragment") for (const child of root.children) visit(child, []);
+	else visit(root, []);
+	const groups = new Map<EventAttribute, ListenerGroup>();
+	for (const entry of entries) {
+		const { element, event, listeners } = entry.group;
+		const others = entries.filter((other) => other !== entry && other.group.event === event);
+		const after = others.some((other) => {
+			const ancestor = entry.path.includes(other.group.element);
+			const descendant = other.path.includes(element);
+			switch (entry.phase) {
+				case "window":
+					return true;
+				case "capture":
+					return (descendant && other.phase !== "window") || (ancestor && other.phase === "bubble");
+				case "bubble":
+					return ancestor && other.phase === "bubble";
+				default:
+					return unreachable(entry.phase);
+			}
+		});
+		const group: ListenerGroup = { ...entry.group, synchronous: listeners.length > 1 || after };
+		for (const listener of listeners) groups.set(listener, group);
+	}
+	const mixedPassive = new Set(
+		[...passive].flatMap(([event, kinds]) => (kinds.size === 2 ? [event] : [])),
+	);
+	return { windowEvents, mixedPassive, groups, components };
 }
 
 /**
@@ -882,162 +882,162 @@ function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
  * reference of that code reaches it.
  */
 function declaredQrls(
-  component: UfComponent,
-  functions: ReadonlyMap<BindingId, FunctionPlan>,
-  listeners: ListenerPlan,
-  returned: ReadonlySet<BindingId>,
+	component: UfComponent,
+	functions: ReadonlyMap<BindingId, FunctionPlan>,
+	listeners: ListenerPlan,
+	returned: ReadonlySet<BindingId>,
 ): Set<BindingId> {
-  const declared = new Set<BindingId>();
-  const inlined = new Set<BindingId>();
-  const client = (id: BindingId) => {
-    const form = functions.get(id)?.form;
-    return form === "qrl" || form === "both";
-  };
-  const visit = (code: Code, kind: CodeKind, synchronous: boolean, discarded: boolean): void => {
-    const sites = callSites(code.code, kind, discarded);
-    const reached = new Map<BindingId, { inPlace: boolean; local: boolean; other: boolean }>();
-    for (const reference of code.refs) {
-      if (reference.kind !== "Binding" || !client(reference.binding)) continue;
-      const fn = functions.get(reference.binding)!.item.function;
-      const site = reference.call ? sites.get(reference.span.start - code.span.start) : undefined;
-      const entry = reached.get(reference.binding) ?? {
-        inPlace: false,
-        local: false,
-        other: false,
-      };
-      if (site && inlinedAt(fn, site, synchronous)) {
-        entry.inPlace = true;
-        entry.local ||= !(site.statement && spliceable(fn));
-      } else {
-        entry.other = true;
-      }
-      reached.set(reference.binding, entry);
-    }
-    for (const [id, { inPlace, local, other }] of reached) {
-      if (inPlace) inline(id);
-      if (other && !local) need(id);
-    }
-  };
-  const body = (id: BindingId) => functions.get(id)!.item.function;
-  const need = (id: BindingId) => {
-    if (declared.has(id)) return;
-    declared.add(id);
-    visit(body(id).body, kindOf(body(id)), false, false);
-  };
-  const inline = (id: BindingId) => {
-    if (inlined.has(id)) return;
-    inlined.add(id);
-    visit(body(id).body, kindOf(body(id)), true, false);
-  };
-  for (const [listener, group] of listeners.groups) {
-    if (listener.handler.kind === "Inline") {
-      const fn = listener.handler.function;
-      visit(fn.body, kindOf(fn), group.synchronous, true);
-    } else if (client(listener.handler.binding)) {
-      // The handler's call of the function it names (./listeners.ts), a statement.
-      const site = { nested: false, awaited: false, returned: false, statement: true };
-      if (inlinedAt(body(listener.handler.binding), site, group.synchronous)) {
-        inline(listener.handler.binding);
-      } else {
-        need(listener.handler.binding);
-      }
-    }
-  }
-  // A listener of a child's event is a QRL prop the child calls: its calls are awaited, and a
-  // function it names passes on as a QRL.
-  for (const listener of componentListeners(component)) {
-    if (listener.handler.kind === "Inline") {
-      const fn = listener.handler.function;
-      visit(fn.body, kindOf(fn), false, true);
-    } else if (client(listener.handler.binding)) {
-      need(listener.handler.binding);
-    }
-  }
-  // A fill declares a copy of each setup function it calls (./composition.ts `fillExpressions`).
-  for (const expression of fillExpressions(component)) {
-    for (const reference of expression.refs) {
-      if (reference.kind !== "Binding" || !client(reference.binding)) continue;
-      // Every call, a callback's included, runs the fill's own copy; a function passed on is a
-      // QRL.
-      if (reference.call) inline(reference.binding);
-      else need(reference.binding);
-    }
-  }
-  // What a component exposes, its consumer calls as QRLs (./composition.ts), and so does a
-  // composable's caller what it returns.
-  for (const id of [...(component.exposes?.functions ?? []), ...returned]) {
-    if (client(id)) need(id);
-  }
-  // A directive's value is read in its visible task (./directive.ts), and a function it names is
-  // a QRL its hooks call (ADR-0099).
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind !== "Directive") continue;
-        for (const reference of attribute.value.refs) {
-          if (reference.kind === "Binding" && client(reference.binding)) need(reference.binding);
-        }
-      }
-    },
-  });
-  for (const item of component.setup) {
-    switch (item.kind) {
-      // A task's calls run in place (./setup.ts `bodyStatements`).
-      case "Watch":
-        visit(item.callback.body, kindOf(item.callback), true, true);
-        break;
-      case "WatchEffect":
-        visit(item.effect.body, kindOf(item.effect), true, true);
-        break;
-      case "Lifecycle":
-        visit(item.callback.body, kindOf(item.callback), true, item.hook === "mounted");
-        break;
-      // An awaited value reads no setup function (ADR-0101).
-      case "Await":
-      case "State":
-      case "Variable":
-      case "Const":
-      case "Derived":
-      case "Function":
-      case "TemplateRef":
-      case "Id":
-      case "Model":
-      case "Provide":
-      case "Inject":
-      // A development-only block calls no setup function (UF2014, ADR-0117).
-      case "DevCheck":
-        break;
-      // A composable's callback argument is a QRL its hook calls, as a child calls a listener:
-      // its calls are awaited (ADR-0069).
-      case "Use":
-        for (const argument of item.arguments) {
-          if (argument.kind === "Callback") {
-            visit(argument.callback.body, kindOf(argument.callback), false, true);
-          }
-        }
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  return declared;
+	const declared = new Set<BindingId>();
+	const inlined = new Set<BindingId>();
+	const client = (id: BindingId) => {
+		const form = functions.get(id)?.form;
+		return form === "qrl" || form === "both";
+	};
+	const visit = (code: Code, kind: CodeKind, synchronous: boolean, discarded: boolean): void => {
+		const sites = callSites(code.code, kind, discarded);
+		const reached = new Map<BindingId, { inPlace: boolean; local: boolean; other: boolean }>();
+		for (const reference of code.refs) {
+			if (reference.kind !== "Binding" || !client(reference.binding)) continue;
+			const fn = functions.get(reference.binding)!.item.function;
+			const site = reference.call ? sites.get(reference.span.start - code.span.start) : undefined;
+			const entry = reached.get(reference.binding) ?? {
+				inPlace: false,
+				local: false,
+				other: false,
+			};
+			if (site && inlinedAt(fn, site, synchronous)) {
+				entry.inPlace = true;
+				entry.local ||= !(site.statement && spliceable(fn));
+			} else {
+				entry.other = true;
+			}
+			reached.set(reference.binding, entry);
+		}
+		for (const [id, { inPlace, local, other }] of reached) {
+			if (inPlace) inline(id);
+			if (other && !local) need(id);
+		}
+	};
+	const body = (id: BindingId) => functions.get(id)!.item.function;
+	const need = (id: BindingId) => {
+		if (declared.has(id)) return;
+		declared.add(id);
+		visit(body(id).body, kindOf(body(id)), false, false);
+	};
+	const inline = (id: BindingId) => {
+		if (inlined.has(id)) return;
+		inlined.add(id);
+		visit(body(id).body, kindOf(body(id)), true, false);
+	};
+	for (const [listener, group] of listeners.groups) {
+		if (listener.handler.kind === "Inline") {
+			const fn = listener.handler.function;
+			visit(fn.body, kindOf(fn), group.synchronous, true);
+		} else if (client(listener.handler.binding)) {
+			// The handler's call of the function it names (./listeners.ts), a statement.
+			const site = { nested: false, awaited: false, returned: false, statement: true };
+			if (inlinedAt(body(listener.handler.binding), site, group.synchronous)) {
+				inline(listener.handler.binding);
+			} else {
+				need(listener.handler.binding);
+			}
+		}
+	}
+	// A listener of a child's event is a QRL prop the child calls: its calls are awaited, and a
+	// function it names passes on as a QRL.
+	for (const listener of componentListeners(component)) {
+		if (listener.handler.kind === "Inline") {
+			const fn = listener.handler.function;
+			visit(fn.body, kindOf(fn), false, true);
+		} else if (client(listener.handler.binding)) {
+			need(listener.handler.binding);
+		}
+	}
+	// A fill declares a copy of each setup function it calls (./composition.ts `fillExpressions`).
+	for (const expression of fillExpressions(component)) {
+		for (const reference of expression.refs) {
+			if (reference.kind !== "Binding" || !client(reference.binding)) continue;
+			// Every call, a callback's included, runs the fill's own copy; a function passed on is a
+			// QRL.
+			if (reference.call) inline(reference.binding);
+			else need(reference.binding);
+		}
+	}
+	// What a component exposes, its consumer calls as QRLs (./composition.ts), and so does a
+	// composable's caller what it returns.
+	for (const id of [...(component.exposes?.functions ?? []), ...returned]) {
+		if (client(id)) need(id);
+	}
+	// A directive's value is read in its visible task (./directive.ts), and a function it names is
+	// a QRL its hooks call (ADR-0099).
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element") return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind !== "Directive") continue;
+				for (const reference of attribute.value.refs) {
+					if (reference.kind === "Binding" && client(reference.binding)) need(reference.binding);
+				}
+			}
+		},
+	});
+	for (const item of component.setup) {
+		switch (item.kind) {
+			// A task's calls run in place (./setup.ts `bodyStatements`).
+			case "Watch":
+				visit(item.callback.body, kindOf(item.callback), true, true);
+				break;
+			case "WatchEffect":
+				visit(item.effect.body, kindOf(item.effect), true, true);
+				break;
+			case "Lifecycle":
+				visit(item.callback.body, kindOf(item.callback), true, item.hook === "mounted");
+				break;
+			// An awaited value reads no setup function (ADR-0101).
+			case "Await":
+			case "State":
+			case "Variable":
+			case "Const":
+			case "Derived":
+			case "Function":
+			case "TemplateRef":
+			case "Id":
+			case "Model":
+			case "Provide":
+			case "Inject":
+			// A development-only block calls no setup function (UF2014, ADR-0117).
+			case "DevCheck":
+				break;
+			// A composable's callback argument is a QRL its hook calls, as a child calls a listener:
+			// its calls are awaited (ADR-0069).
+			case "Use":
+				for (const argument of item.arguments) {
+					if (argument.kind === "Callback") {
+						visit(argument.callback.body, kindOf(argument.callback), false, true);
+					}
+				}
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	return declared;
 }
 
 const kindOf = (fn: FunctionCode): CodeKind => (fn.expression ? "expression" : "statements");
 
 /** The functions taking an event that code calls, in order, each once. */
 export function eventCallees(
-  refs: readonly CodeReference[],
-  functions: ReadonlyMap<BindingId, unknown>,
+	refs: readonly CodeReference[],
+	functions: ReadonlyMap<BindingId, unknown>,
 ): BindingId[] {
-  const found: BindingId[] = [];
-  for (const reference of refs) {
-    if (reference.kind === "Binding" && reference.call && functions.has(reference.binding)) {
-      if (!found.includes(reference.binding)) found.push(reference.binding);
-    }
-  }
-  return found;
+	const found: BindingId[] = [];
+	for (const reference of refs) {
+		if (reference.kind === "Binding" && reference.call && functions.has(reference.binding)) {
+			if (!found.includes(reference.binding)) found.push(reference.binding);
+		}
+	}
+	return found;
 }
 
 /**
@@ -1050,120 +1050,120 @@ export function eventCallees(
  * as a handler's second argument (its listeners run from one document listener, ADR-0047).
  */
 function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules {
-  const { names } = plan;
-  return {
-    binding(reference, binding, written, site) {
-      switch (binding.kind) {
-        case "prop":
-        case "loopVar":
-        case "state":
-        case "derived":
-        case "localConst":
-        // A plain value the body reads from its computed (./setup.ts, ADR-0101).
-        case "awaited":
-        case "emit":
-        case "model":
-        case "slots":
-        case "slotScope":
-        case "context":
-        case "component":
-          return written;
-        case "templateRef":
-          if (site !== "client") return written;
-          // \`rendered()\` gives \`T | null\`; a read used whole converts Qwik's \`undefined\`.
-          if (plan.conditionalRefs.has(binding.id)) return `${names.once("rendered")}(${written})`;
-          return plan.wholeRefReads.has(reference.span.start) ? `(${written} ?? null)` : written;
-        case "localVar":
-          return `${written}.value`;
-        case "localFn": {
-          const fn = plan.functions.get(binding.id);
-          const name = isClient(site) && fn?.form === "both" ? fn.qrl : written;
-          // A read inside the cycle it closes, through the holder (see {@link StablePlan}).
-          return plan.stable.lazy.has(reference.span.start)
-            ? `${plan.stable.holder!.name}.${name}`
-            : name;
-        }
-        // A composable's parameter, as written: a getter's call reads its signal
-        // (./composable.ts `readGetters`), and a callback's is a QRL call.
-        case "argument":
-          return written;
-        // A module's value, imported or declared at module scope as the source has it, which a
-        // `$` scope reads as a module-level import (ADR-0070); what a composable's call
-        // destructures, as written: a signal read through `.value`, a QRL client code calls,
-        // a constant (ADR-0069).
-        case "moduleConst":
-        case "import":
-        case "usedState":
-        case "usedDerived":
-        case "usedFn":
-        case "usedConst":
-          return written;
-        default:
-          return unreachable(binding.kind);
-      }
-    },
-    emit(emit, _binding, parts) {
-      return `${plan.eventProp(emit.event)}?.(${parts.arguments.join(", ")})`;
-    },
-    // A model's write asks its setter, which a call awaits (./composition.ts).
-    write(write, binding, parts) {
-      const model = plan.composition.models.get(binding.id);
-      return model && `${model.setter}(${writtenValue(write, parts)})`;
-    },
-    // A named slot's presence is its render prop's (`named-slot`). The default slot's is
-    // `default-slot-presence`, an error on Qwik: the output reads as if it were never filled.
-    slot(reference) {
-      return plan.composition.slots.get(reference.slot) ?? "false";
-    },
-    api() {
-      return names.once("nextTick");
-    },
-    // Qwik's own flag: its `./build` export resolves to `true` in development and `false` in
-    // production, by export condition (ADR-0117).
-    dev() {
-      return names.imports.add("@qwik.dev/core/build", "isDev");
-    },
-    event(reference) {
-      if (reference.member === "currentTarget") return names.once("element");
-      if (event === undefined) {
-        throw new Error(
-          `\`${reference.member}\` of an event read where no event parameter is known.`,
-        );
-      }
-      return `${event}.${reference.member}`;
-    },
-  };
+	const { names } = plan;
+	return {
+		binding(reference, binding, written, site) {
+			switch (binding.kind) {
+				case "prop":
+				case "loopVar":
+				case "state":
+				case "derived":
+				case "localConst":
+				// A plain value the body reads from its computed (./setup.ts, ADR-0101).
+				case "awaited":
+				case "emit":
+				case "model":
+				case "slots":
+				case "slotScope":
+				case "context":
+				case "component":
+					return written;
+				case "templateRef":
+					if (site !== "client") return written;
+					// \`rendered()\` gives \`T | null\`; a read used whole converts Qwik's \`undefined\`.
+					if (plan.conditionalRefs.has(binding.id)) return `${names.once("rendered")}(${written})`;
+					return plan.wholeRefReads.has(reference.span.start) ? `(${written} ?? null)` : written;
+				case "localVar":
+					return `${written}.value`;
+				case "localFn": {
+					const fn = plan.functions.get(binding.id);
+					const name = isClient(site) && fn?.form === "both" ? fn.qrl : written;
+					// A read inside the cycle it closes, through the holder (see {@link StablePlan}).
+					return plan.stable.lazy.has(reference.span.start)
+						? `${plan.stable.holder!.name}.${name}`
+						: name;
+				}
+				// A composable's parameter, as written: a getter's call reads its signal
+				// (./composable.ts `readGetters`), and a callback's is a QRL call.
+				case "argument":
+					return written;
+				// A module's value, imported or declared at module scope as the source has it, which a
+				// `$` scope reads as a module-level import (ADR-0070); what a composable's call
+				// destructures, as written: a signal read through `.value`, a QRL client code calls,
+				// a constant (ADR-0069).
+				case "moduleConst":
+				case "import":
+				case "usedState":
+				case "usedDerived":
+				case "usedFn":
+				case "usedConst":
+					return written;
+				default:
+					return unreachable(binding.kind);
+			}
+		},
+		emit(emit, _binding, parts) {
+			return `${plan.eventProp(emit.event)}?.(${parts.arguments.join(", ")})`;
+		},
+		// A model's write asks its setter, which a call awaits (./composition.ts).
+		write(write, binding, parts) {
+			const model = plan.composition.models.get(binding.id);
+			return model && `${model.setter}(${writtenValue(write, parts)})`;
+		},
+		// A named slot's presence is its render prop's (`named-slot`). The default slot's is
+		// `default-slot-presence`, an error on Qwik: the output reads as if it were never filled.
+		slot(reference) {
+			return plan.composition.slots.get(reference.slot) ?? "false";
+		},
+		api() {
+			return names.once("nextTick");
+		},
+		// Qwik's own flag: its `./build` export resolves to `true` in development and `false` in
+		// production, by export condition (ADR-0117).
+		dev() {
+			return names.imports.add("@qwik.dev/core/build", "isDev");
+		},
+		event(reference) {
+			if (reference.member === "currentTarget") return names.once("element");
+			if (event === undefined) {
+				throw new Error(
+					`\`${reference.member}\` of an event read where no event parameter is known.`,
+				);
+			}
+			return `${event}.${reference.member}`;
+		},
+	};
 }
 
 const isClient = (site: RewriteSite) => site === "client";
 
 /** The bindings a piece of code references, writes included. */
 export function referencedIds(refs: readonly CodeReference[]): Set<BindingId> {
-  const found = new Set<BindingId>();
-  for (const reference of refs) {
-    switch (reference.kind) {
-      case "Binding":
-      case "Write":
-        found.add(reference.binding);
-        break;
-      case "Global":
-      case "Import":
-      case "Emit":
-      case "Api":
-      case "Event":
-      case "Slot":
-      case "Dev":
-        break;
-      default:
-        unreachable(reference);
-    }
-  }
-  return found;
+	const found = new Set<BindingId>();
+	for (const reference of refs) {
+		switch (reference.kind) {
+			case "Binding":
+			case "Write":
+				found.add(reference.binding);
+				break;
+			case "Global":
+			case "Import":
+			case "Emit":
+			case "Api":
+			case "Event":
+			case "Slot":
+			case "Dev":
+				break;
+			default:
+				unreachable(reference);
+		}
+	}
+	return found;
 }
 
 /** The code of a setup function: its body and its parameters' defaults (static). */
 function functionRefs(fn: FunctionCode): CodeReference[] {
-  return fn.body.refs;
+	return fn.body.refs;
 }
 
 /**
@@ -1173,78 +1173,78 @@ function functionRefs(fn: FunctionCode): CodeReference[] {
  * (P2).
  */
 export function usedFunctionRenderCalls(component: UfComponent): BindingReference[] {
-  const used = new Set(
-    component.bindings.filter(({ kind }) => kind === "usedFn").map(({ id }) => id),
-  );
-  if (!used.size) return [];
-  // A named or scoped slot's fill is a render prop the child calls as it renders: render code too.
-  const codes: Code[] = expressionsOf(component).map(({ expression }) => expression);
-  for (const item of component.setup) {
-    switch (item.kind) {
-      case "State":
-      case "Variable":
-        if (item.initial) codes.push(item.initial);
-        break;
-      case "Const":
-      case "Await":
-        codes.push(item.value);
-        break;
-      case "Derived":
-        codes.push(item.getter.body);
-        break;
-      case "Watch":
-        for (const source of item.sources) {
-          if (source.kind === "Getter") codes.push(source.getter.body);
-        }
-        break;
-      case "Provide":
-        codes.push(item.value);
-        break;
-      case "Inject":
-        if (item.fallback) codes.push(item.fallback);
-        break;
-      case "DevCheck":
-        codes.push(item.code);
-        break;
-      case "Use":
-        for (const argument of item.arguments) {
-          if (argument.kind === "Value") codes.push(argument.value);
-          else if (argument.kind === "Getter") codes.push(argument.getter.body);
-        }
-        break;
-      case "Function":
-      case "WatchEffect":
-      case "Lifecycle":
-      case "TemplateRef":
-      case "Id":
-      case "Model":
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  // A setup function such code calls runs there too.
-  const functions = new Map(
-    component.setup.flatMap((item) => (item.kind === "Function" ? [[item.binding, item]] : [])),
-  );
-  const reached = new Set<BindingId>();
-  for (let index = 0; index < codes.length; index++) {
-    for (const reference of codes[index]!.refs) {
-      if (reference.kind !== "Binding" || !reference.call || reached.has(reference.binding)) {
-        continue;
-      }
-      const fn = functions.get(reference.binding);
-      if (!fn) continue;
-      reached.add(reference.binding);
-      codes.push(fn.function.body);
-    }
-  }
-  return codes.flatMap(({ refs }) =>
-    refs.filter(
-      (reference): reference is BindingReference =>
-        reference.kind === "Binding" && reference.call === true && used.has(reference.binding),
-    ),
-  );
+	const used = new Set(
+		component.bindings.filter(({ kind }) => kind === "usedFn").map(({ id }) => id),
+	);
+	if (!used.size) return [];
+	// A named or scoped slot's fill is a render prop the child calls as it renders: render code too.
+	const codes: Code[] = expressionsOf(component).map(({ expression }) => expression);
+	for (const item of component.setup) {
+		switch (item.kind) {
+			case "State":
+			case "Variable":
+				if (item.initial) codes.push(item.initial);
+				break;
+			case "Const":
+			case "Await":
+				codes.push(item.value);
+				break;
+			case "Derived":
+				codes.push(item.getter.body);
+				break;
+			case "Watch":
+				for (const source of item.sources) {
+					if (source.kind === "Getter") codes.push(source.getter.body);
+				}
+				break;
+			case "Provide":
+				codes.push(item.value);
+				break;
+			case "Inject":
+				if (item.fallback) codes.push(item.fallback);
+				break;
+			case "DevCheck":
+				codes.push(item.code);
+				break;
+			case "Use":
+				for (const argument of item.arguments) {
+					if (argument.kind === "Value") codes.push(argument.value);
+					else if (argument.kind === "Getter") codes.push(argument.getter.body);
+				}
+				break;
+			case "Function":
+			case "WatchEffect":
+			case "Lifecycle":
+			case "TemplateRef":
+			case "Id":
+			case "Model":
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	// A setup function such code calls runs there too.
+	const functions = new Map(
+		component.setup.flatMap((item) => (item.kind === "Function" ? [[item.binding, item]] : [])),
+	);
+	const reached = new Set<BindingId>();
+	for (let index = 0; index < codes.length; index++) {
+		for (const reference of codes[index]!.refs) {
+			if (reference.kind !== "Binding" || !reference.call || reached.has(reference.binding)) {
+				continue;
+			}
+			const fn = functions.get(reference.binding);
+			if (!fn) continue;
+			reached.add(reference.binding);
+			codes.push(fn.function.body);
+		}
+	}
+	return codes.flatMap(({ refs }) =>
+		refs.filter(
+			(reference): reference is BindingReference =>
+				reference.kind === "Binding" && reference.call === true && used.has(reference.binding),
+		),
+	);
 }
 
 /**
@@ -1255,22 +1255,22 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
  * `undefined`, or a name declared after it. These are reported (P2).
  */
 export function selfReadingArguments(
-  component: UfComponent,
+	component: UfComponent,
 ): { reference: BindingReference; member: BindingId }[] {
-  const declared = declarationReads(component);
-  const found: { reference: BindingReference; member: BindingId }[] = [];
-  for (const item of component.setup) {
-    if (item.kind !== "Use") continue;
-    const members = new Set(item.members.map(({ binding }) => binding));
-    for (const argument of item.arguments) {
-      for (const reference of argumentCode(argument).refs) {
-        if (reference.kind !== "Binding") continue;
-        const member = reachedMember(reference.binding, members, declared);
-        if (member !== undefined) found.push({ reference, member });
-      }
-    }
-  }
-  return found;
+	const declared = declarationReads(component);
+	const found: { reference: BindingReference; member: BindingId }[] = [];
+	for (const item of component.setup) {
+		if (item.kind !== "Use") continue;
+		const members = new Set(item.members.map(({ binding }) => binding));
+		for (const argument of item.arguments) {
+			for (const reference of argumentCode(argument).refs) {
+				if (reference.kind !== "Binding") continue;
+				const member = reachedMember(reference.binding, members, declared);
+				if (member !== undefined) found.push({ reference, member });
+			}
+		}
+	}
+	return found;
 }
 
 /**
@@ -1279,98 +1279,98 @@ export function selfReadingArguments(
  * Qwik's optimizer can name two calls of such a hook alike (./setup.ts `useStatement`).
  */
 export function hooksReadByOtherCalls(component: UfComponent): Set<string> {
-  const declared = declarationReads(component);
-  const calls = component.setup.filter((item): item is UseItem => item.kind === "Use");
-  const found = new Set<string>();
-  for (const item of calls) {
-    const members = new Set(item.members.map(({ binding }) => binding));
-    const read = calls.some(
-      (other) =>
-        other !== item &&
-        other.arguments.some((argument) =>
-          argumentCode(argument).refs.some(
-            (reference) =>
-              reference.kind === "Binding" &&
-              reachedMember(reference.binding, members, declared) !== undefined,
-          ),
-        ),
-    );
-    if (read) found.add(item.composable);
-  }
-  return found;
+	const declared = declarationReads(component);
+	const calls = component.setup.filter((item): item is UseItem => item.kind === "Use");
+	const found = new Set<string>();
+	for (const item of calls) {
+		const members = new Set(item.members.map(({ binding }) => binding));
+		const read = calls.some(
+			(other) =>
+				other !== item &&
+				other.arguments.some((argument) =>
+					argumentCode(argument).refs.some(
+						(reference) =>
+							reference.kind === "Binding" &&
+							reachedMember(reference.binding, members, declared) !== undefined,
+					),
+				),
+		);
+		if (read) found.add(item.composable);
+	}
+	return found;
 }
 
 /** What each setup declaration's code reads, by the binding it declares. */
 function declarationReads(component: UfComponent): Map<BindingId, Code[]> {
-  const declared = new Map<BindingId, Code[]>();
-  for (const item of component.setup) {
-    switch (item.kind) {
-      case "Function":
-        declared.set(item.binding, [item.function.body]);
-        break;
-      case "Const":
-        declared.set(item.binding, [item.value]);
-        break;
-      case "Derived":
-        declared.set(item.binding, [item.getter.body]);
-        break;
-      case "State":
-      case "Variable":
-        if (item.initial) declared.set(item.binding, [item.initial]);
-        break;
-      // Another call's member exists once that call returns, after its own arguments are made:
-      // a cycle through it is a cycle too.
-      case "Use":
-        for (const { binding } of item.members)
-          declared.set(binding, item.arguments.map(argumentCode));
-        break;
-      default:
-        break;
-    }
-  }
-  return declared;
+	const declared = new Map<BindingId, Code[]>();
+	for (const item of component.setup) {
+		switch (item.kind) {
+			case "Function":
+				declared.set(item.binding, [item.function.body]);
+				break;
+			case "Const":
+				declared.set(item.binding, [item.value]);
+				break;
+			case "Derived":
+				declared.set(item.binding, [item.getter.body]);
+				break;
+			case "State":
+			case "Variable":
+				if (item.initial) declared.set(item.binding, [item.initial]);
+				break;
+			// Another call's member exists once that call returns, after its own arguments are made:
+			// a cycle through it is a cycle too.
+			case "Use":
+				for (const { binding } of item.members)
+					declared.set(binding, item.arguments.map(argumentCode));
+				break;
+			default:
+				break;
+		}
+	}
+	return declared;
 }
 
 /** A composable's argument's code: a value's, or a getter's or a callback's body. */
 export function argumentCode(argument: UseArgument): Code {
-  switch (argument.kind) {
-    case "Value":
-      return argument.value;
-    case "Getter":
-      return argument.getter.body;
-    case "Callback":
-      return argument.callback.body;
-    default:
-      return unreachable(argument);
-  }
+	switch (argument.kind) {
+		case "Value":
+			return argument.value;
+		case "Getter":
+			return argument.getter.body;
+		case "Callback":
+			return argument.callback.body;
+		default:
+			return unreachable(argument);
+	}
 }
 
 /** The first of `members` a binding is, or reaches through the declarations' code it reads. */
 function reachedMember(
-  start: BindingId,
-  members: ReadonlySet<BindingId>,
-  declared: ReadonlyMap<BindingId, Code[]>,
+	start: BindingId,
+	members: ReadonlySet<BindingId>,
+	declared: ReadonlyMap<BindingId, Code[]>,
 ): BindingId | undefined {
-  const seen = new Set<BindingId>();
-  const queue = [start];
-  for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
-    if (members.has(id)) return id;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    for (const code of declared.get(id) ?? []) {
-      for (const next of referencedIds(code.refs)) queue.push(next);
-    }
-  }
-  return undefined;
+	const seen = new Set<BindingId>();
+	const queue = [start];
+	for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
+		if (members.has(id)) return id;
+		if (seen.has(id)) continue;
+		seen.add(id);
+		for (const code of declared.get(id) ?? []) {
+			for (const next of referencedIds(code.refs)) queue.push(next);
+		}
+	}
+	return undefined;
 }
 
 /** The API of the composable a module imports under `local` (ADR-0069). */
 function composableApi(module: UfModule, local: string): ComposableApi {
-  for (const entry of module.imports ?? []) {
-    const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
-    if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;
-  }
-  throw new Error(`No composable is imported as ${local}.`);
+	for (const entry of module.imports ?? []) {
+		const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
+		if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;
+	}
+	throw new Error(`No composable is imported as ${local}.`);
 }
 
 /**
@@ -1380,58 +1380,58 @@ function composableApi(module: UfModule, local: string): ComposableApi {
  * analyser rejects recursion, so this is the set a reader would hoist.
  */
 function hoistable(
-  component: UfComponent,
-  returned: ReadonlySet<BindingId>,
-  declaresModule: boolean,
+	component: UfComponent,
+	returned: ReadonlySet<BindingId>,
+	declaresModule: boolean,
 ): Set<BindingId> {
-  const candidates = new Map<BindingId, readonly CodeReference[]>();
-  // Code typed by a type parameter stays in the generic arrow, where `T` is (ADR-0068).
-  const typed = typedByParameters(component);
-  for (const item of component.setup) {
-    if ((item.kind === "Const" || item.kind === "Function") && typed.has(item.binding)) continue;
-    // A function a composable returns is a QRL its caller's client code calls.
-    if (item.kind === "Function" && returned.has(item.binding)) continue;
-    if (item.kind === "Const") candidates.set(item.binding, item.value.refs);
-    else if (item.kind === "Function") candidates.set(item.binding, functionRefs(item.function));
-  }
-  const hoisted = new Set(candidates.keys());
-  // A module's values are at module scope already (ADR-0070), but where the output imports them
-  // from a sibling's (./modules.ts), which may not have run when its own module scope does.
-  const moduleValues = new Set(
-    component.bindings
-      .filter(({ kind }) => declaresModule && (kind === "moduleConst" || kind === "import"))
-      .map(({ id }) => id),
-  );
-  for (let changed = true; changed;) {
-    changed = false;
-    for (const [id, refs] of candidates) {
-      if (!hoisted.has(id)) continue;
-      const captures = refs.some((reference) => {
-        switch (reference.kind) {
-          case "Binding":
-            return !hoisted.has(reference.binding) && !moduleValues.has(reference.binding);
-          case "Write":
-          case "Emit":
-          case "Slot":
-            return true;
-          case "Global":
-          case "Import":
-          case "Api":
-          case "Event":
-          // An import, which a QRL reads at module scope (ADR-0117).
-          case "Dev":
-            return false;
-          default:
-            return unreachable(reference);
-        }
-      });
-      if (captures) {
-        hoisted.delete(id);
-        changed = true;
-      }
-    }
-  }
-  return hoisted;
+	const candidates = new Map<BindingId, readonly CodeReference[]>();
+	// Code typed by a type parameter stays in the generic arrow, where `T` is (ADR-0068).
+	const typed = typedByParameters(component);
+	for (const item of component.setup) {
+		if ((item.kind === "Const" || item.kind === "Function") && typed.has(item.binding)) continue;
+		// A function a composable returns is a QRL its caller's client code calls.
+		if (item.kind === "Function" && returned.has(item.binding)) continue;
+		if (item.kind === "Const") candidates.set(item.binding, item.value.refs);
+		else if (item.kind === "Function") candidates.set(item.binding, functionRefs(item.function));
+	}
+	const hoisted = new Set(candidates.keys());
+	// A module's values are at module scope already (ADR-0070), but where the output imports them
+	// from a sibling's (./modules.ts), which may not have run when its own module scope does.
+	const moduleValues = new Set(
+		component.bindings
+			.filter(({ kind }) => declaresModule && (kind === "moduleConst" || kind === "import"))
+			.map(({ id }) => id),
+	);
+	for (let changed = true; changed;) {
+		changed = false;
+		for (const [id, refs] of candidates) {
+			if (!hoisted.has(id)) continue;
+			const captures = refs.some((reference) => {
+				switch (reference.kind) {
+					case "Binding":
+						return !hoisted.has(reference.binding) && !moduleValues.has(reference.binding);
+					case "Write":
+					case "Emit":
+					case "Slot":
+						return true;
+					case "Global":
+					case "Import":
+					case "Api":
+					case "Event":
+					// An import, which a QRL reads at module scope (ADR-0117).
+					case "Dev":
+						return false;
+					default:
+						return unreachable(reference);
+				}
+			});
+			if (captures) {
+				hoisted.delete(id);
+				changed = true;
+			}
+		}
+	}
+	return hoisted;
 }
 
 /**
@@ -1442,149 +1442,149 @@ function hoistable(
  * (ADR-0045), and those are at module scope.
  */
 function planFunctions(
-  component: UfComponent,
-  hoisted: ReadonlySet<BindingId>,
-  names: OutputNames,
-  returned: ReadonlySet<BindingId>,
+	component: UfComponent,
+	hoisted: ReadonlySet<BindingId>,
+	names: OutputNames,
+	returned: ReadonlySet<BindingId>,
 ): Map<BindingId, FunctionPlan> {
-  const items = new Map<BindingId, FunctionItem>();
-  for (const item of component.setup) if (item.kind === "Function") items.set(item.binding, item);
-  const render = new Set<BindingId>();
-  const client = new Set<BindingId>();
-  // Getters call plain functions as render code does, but declare a kept one themselves.
-  const getters = new Set<BindingId>();
-  const mark = (target: Set<BindingId>, refs: readonly CodeReference[]) => {
-    for (const reference of refs) {
-      if (reference.kind === "Binding" && items.has(reference.binding))
-        target.add(reference.binding);
-    }
-  };
-  // A fill's code runs as a `$` scope (./composition.ts `fillExpressions`): client code.
-  const fills = fillExpressions(component);
-  // A directive's value is read in its visible task (./directive.ts): client code.
-  const directed = new Set<Expression>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Directive") directed.add(attribute.value);
-      }
-    },
-  });
-  for (const { expression } of expressionsOf(component)) {
-    mark(fills.has(expression) || directed.has(expression) ? client : render, expression.refs);
-  }
-  for (const item of component.setup) {
-    switch (item.kind) {
-      case "State":
-      case "Variable":
-        if (item.initial) mark(render, item.initial.refs);
-        break;
-      case "Const":
-      case "Await":
-        mark(render, item.value.refs);
-        break;
-      case "Derived":
-        mark(getters, item.getter.body.refs);
-        break;
-      case "Watch":
-        for (const source of item.sources) {
-          if (source.kind === "Getter") mark(getters, source.getter.body.refs);
-        }
-        mark(client, item.callback.body.refs);
-        break;
-      case "WatchEffect":
-        mark(client, item.effect.body.refs);
-        break;
-      case "Lifecycle":
-        mark(client, item.callback.body.refs);
-        break;
-      case "Provide":
-        mark(render, item.value.refs);
-        break;
-      case "Inject":
-        if (item.fallback) mark(render, item.fallback.refs);
-        break;
-      // Runs where the body does, as render code reads (ADR-0117).
-      case "DevCheck":
-        mark(render, item.code.refs);
-        break;
-      case "Function":
-      case "TemplateRef":
-      case "Id":
-      case "Model":
-        break;
-      // A composable's arguments (ADR-0069): a value is render code, a getter is a
-      // `useComputed$`'s, and a callback is the QRL client code calls.
-      case "Use":
-        for (const argument of item.arguments) {
-          if (argument.kind === "Value") mark(render, argument.value.refs);
-          else if (argument.kind === "Getter") mark(getters, argument.getter.body.refs);
-          else mark(client, argument.callback.body.refs);
-        }
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event") continue;
-        if (attribute.handler.kind === "Function") client.add(attribute.handler.binding);
-        else mark(client, attribute.handler.function.body.refs);
-      }
-    },
-  });
-  for (const listener of componentListeners(component)) {
-    if (listener.handler.kind === "Function") client.add(listener.handler.binding);
-    else mark(client, listener.handler.function.body.refs);
-  }
-  // A function a component exposes, or a composable returns, is one its consumer calls: a QRL.
-  for (const id of component.exposes?.functions ?? []) client.add(id);
-  for (const id of returned) if (items.has(id)) client.add(id);
-  // A function's calls take the forms of its callers.
-  for (let changed = true; changed;) {
-    changed = false;
-    for (const [id, item] of items) {
-      for (const set of [render, client, getters]) {
-        if (!set.has(id)) continue;
-        for (const reference of functionRefs(item.function)) {
-          if (
-            reference.kind === "Binding" &&
-            items.has(reference.binding) &&
-            !set.has(reference.binding)
-          ) {
-            set.add(reference.binding);
-            changed = true;
-          }
-        }
-      }
-    }
-  }
-  const plans = new Map<BindingId, FunctionPlan>();
-  for (const [id, item] of items) {
-    const binding = bindingOf(component, id);
-    const plain = render.has(id) || getters.has(id);
-    const form: FunctionForm = hoisted.has(id)
-      ? "module"
-      : plain && client.has(id)
-        ? "both"
-        : client.has(id)
-          ? "qrl"
-          : "render";
-    const qrl = form === "both" ? names.fresh(`${binding.name}Qrl`) : binding.name;
-    const gettersOnly = getters.has(id) && !render.has(id);
-    plans.set(id, {
-      item,
-      binding,
-      form,
-      qrl,
-      ...(gettersOnly ? { gettersOnly: true as const } : {}),
-    });
-  }
-  return plans;
+	const items = new Map<BindingId, FunctionItem>();
+	for (const item of component.setup) if (item.kind === "Function") items.set(item.binding, item);
+	const render = new Set<BindingId>();
+	const client = new Set<BindingId>();
+	// Getters call plain functions as render code does, but declare a kept one themselves.
+	const getters = new Set<BindingId>();
+	const mark = (target: Set<BindingId>, refs: readonly CodeReference[]) => {
+		for (const reference of refs) {
+			if (reference.kind === "Binding" && items.has(reference.binding))
+				target.add(reference.binding);
+		}
+	};
+	// A fill's code runs as a `$` scope (./composition.ts `fillExpressions`): client code.
+	const fills = fillExpressions(component);
+	// A directive's value is read in its visible task (./directive.ts): client code.
+	const directed = new Set<Expression>();
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element") return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Directive") directed.add(attribute.value);
+			}
+		},
+	});
+	for (const { expression } of expressionsOf(component)) {
+		mark(fills.has(expression) || directed.has(expression) ? client : render, expression.refs);
+	}
+	for (const item of component.setup) {
+		switch (item.kind) {
+			case "State":
+			case "Variable":
+				if (item.initial) mark(render, item.initial.refs);
+				break;
+			case "Const":
+			case "Await":
+				mark(render, item.value.refs);
+				break;
+			case "Derived":
+				mark(getters, item.getter.body.refs);
+				break;
+			case "Watch":
+				for (const source of item.sources) {
+					if (source.kind === "Getter") mark(getters, source.getter.body.refs);
+				}
+				mark(client, item.callback.body.refs);
+				break;
+			case "WatchEffect":
+				mark(client, item.effect.body.refs);
+				break;
+			case "Lifecycle":
+				mark(client, item.callback.body.refs);
+				break;
+			case "Provide":
+				mark(render, item.value.refs);
+				break;
+			case "Inject":
+				if (item.fallback) mark(render, item.fallback.refs);
+				break;
+			// Runs where the body does, as render code reads (ADR-0117).
+			case "DevCheck":
+				mark(render, item.code.refs);
+				break;
+			case "Function":
+			case "TemplateRef":
+			case "Id":
+			case "Model":
+				break;
+			// A composable's arguments (ADR-0069): a value is render code, a getter is a
+			// `useComputed$`'s, and a callback is the QRL client code calls.
+			case "Use":
+				for (const argument of item.arguments) {
+					if (argument.kind === "Value") mark(render, argument.value.refs);
+					else if (argument.kind === "Getter") mark(getters, argument.getter.body.refs);
+					else mark(client, argument.callback.body.refs);
+				}
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind !== "Event") continue;
+				if (attribute.handler.kind === "Function") client.add(attribute.handler.binding);
+				else mark(client, attribute.handler.function.body.refs);
+			}
+		},
+	});
+	for (const listener of componentListeners(component)) {
+		if (listener.handler.kind === "Function") client.add(listener.handler.binding);
+		else mark(client, listener.handler.function.body.refs);
+	}
+	// A function a component exposes, or a composable returns, is one its consumer calls: a QRL.
+	for (const id of component.exposes?.functions ?? []) client.add(id);
+	for (const id of returned) if (items.has(id)) client.add(id);
+	// A function's calls take the forms of its callers.
+	for (let changed = true; changed;) {
+		changed = false;
+		for (const [id, item] of items) {
+			for (const set of [render, client, getters]) {
+				if (!set.has(id)) continue;
+				for (const reference of functionRefs(item.function)) {
+					if (
+						reference.kind === "Binding" &&
+						items.has(reference.binding) &&
+						!set.has(reference.binding)
+					) {
+						set.add(reference.binding);
+						changed = true;
+					}
+				}
+			}
+		}
+	}
+	const plans = new Map<BindingId, FunctionPlan>();
+	for (const [id, item] of items) {
+		const binding = bindingOf(component, id);
+		const plain = render.has(id) || getters.has(id);
+		const form: FunctionForm = hoisted.has(id)
+			? "module"
+			: plain && client.has(id)
+				? "both"
+				: client.has(id)
+					? "qrl"
+					: "render";
+		const qrl = form === "both" ? names.fresh(`${binding.name}Qrl`) : binding.name;
+		const gettersOnly = getters.has(id) && !render.has(id);
+		plans.set(id, {
+			item,
+			binding,
+			form,
+			qrl,
+			...(gettersOnly ? { gettersOnly: true as const } : {}),
+		});
+	}
+	return plans;
 }
 
 /**
@@ -1594,26 +1594,26 @@ function planFunctions(
  * `const` otherwise (it reads only values that never change: ids, other constants).
  */
 function planConsts(
-  component: UfComponent,
-  hoisted: ReadonlySet<BindingId>,
-  args: ReadonlyMap<BindingId, ComposableParameter>,
+	component: UfComponent,
+	hoisted: ReadonlySet<BindingId>,
+	args: ReadonlyMap<BindingId, ComposableParameter>,
 ): Map<BindingId, ConstForm> {
-  const forms = new Map<BindingId, ConstForm>();
-  for (const item of component.setup) {
-    if (item.kind !== "Const") continue;
-    forms.set(item.binding, constForm(item, component, hoisted, args));
-  }
-  return forms;
+	const forms = new Map<BindingId, ConstForm>();
+	for (const item of component.setup) {
+		if (item.kind !== "Const") continue;
+		forms.set(item.binding, constForm(item, component, hoisted, args));
+	}
+	return forms;
 }
 
 function constForm(
-  item: ConstItem,
-  component: UfComponent,
-  hoisted: ReadonlySet<BindingId>,
-  args: ReadonlyMap<BindingId, ComposableParameter>,
+	item: ConstItem,
+	component: UfComponent,
+	hoisted: ReadonlySet<BindingId>,
+	args: ReadonlyMap<BindingId, ComposableParameter>,
 ): ConstForm {
-  if (hoisted.has(item.binding)) return "module";
-  return readsReactive(item.value, component, args) ? "constant" : "plain";
+	if (hoisted.has(item.binding)) return "module";
+	return readsReactive(item.value, component, args) ? "constant" : "plain";
 }
 
 /**
@@ -1621,13 +1621,13 @@ function constForm(
  * or through what it calls.
  */
 export function readsReactive(
-  code: Code,
-  component: UfComponent,
-  args: ReadonlyMap<BindingId, ComposableParameter> = new Map(),
+	code: Code,
+	component: UfComponent,
+	args: ReadonlyMap<BindingId, ComposableParameter> = new Map(),
 ): boolean {
-  return [...summarizeCode(code, component).reads].some((id) =>
-    isReactiveBinding(bindingOf(component, id), args),
-  );
+	return [...summarizeCode(code, component).reads].some((id) =>
+		isReactiveBinding(bindingOf(component, id), args),
+	);
 }
 
 /**
@@ -1636,11 +1636,11 @@ export function readsReactive(
  * is read once and a callback is called.
  */
 export function isReactiveBinding(
-  binding: Binding,
-  args: ReadonlyMap<BindingId, ComposableParameter>,
+	binding: Binding,
+	args: ReadonlyMap<BindingId, ComposableParameter>,
 ): boolean {
-  if (binding.kind === "argument") return args.get(binding.id)?.kind === "getter";
-  return isReactive(binding.kind);
+	if (binding.kind === "argument") return args.get(binding.id)?.kind === "getter";
+	return isReactive(binding.kind);
 }
 
 /**
@@ -1650,35 +1650,35 @@ export function isReactiveBinding(
  * call of any other callback is a value, which the QRL's call awaits.
  */
 export function callbackFloats(parameter: ComposableParameter): boolean {
-  const { root } = parseCodeSource(`let callback: ${parameter.type.code};`, "statements");
-  let returned: SyntaxNode | undefined;
-  walkNodes(root, (node) => {
-    if (returned === undefined && node.type === "TSFunctionType") {
-      returned = (node.returnType as SyntaxNode | undefined)?.typeAnnotation as
-        | SyntaxNode
-        | undefined;
-    }
-  });
-  return returned !== undefined && nothingToWait(returned);
+	const { root } = parseCodeSource(`let callback: ${parameter.type.code};`, "statements");
+	let returned: SyntaxNode | undefined;
+	walkNodes(root, (node) => {
+		if (returned === undefined && node.type === "TSFunctionType") {
+			returned = (node.returnType as SyntaxNode | undefined)?.typeAnnotation as
+				| SyntaxNode
+				| undefined;
+		}
+	});
+	return returned !== undefined && nothingToWait(returned);
 }
 
 /** `void`, `undefined`, a `Promise<…>` or `PromiseLike<…>`, or a union of them. */
 function nothingToWait(type: SyntaxNode): boolean {
-  switch (type.type) {
-    case "TSVoidKeyword":
-    case "TSUndefinedKeyword":
-      return true;
-    case "TSUnionType":
-      return (type.types as SyntaxNode[]).every(nothingToWait);
-    case "TSParenthesizedType":
-      return nothingToWait(type.typeAnnotation as SyntaxNode);
-    case "TSTypeReference": {
-      const name = type.typeName as SyntaxNode;
-      return name.type === "Identifier" && ["Promise", "PromiseLike"].includes(name.name as string);
-    }
-    default:
-      return false;
-  }
+	switch (type.type) {
+		case "TSVoidKeyword":
+		case "TSUndefinedKeyword":
+			return true;
+		case "TSUnionType":
+			return (type.types as SyntaxNode[]).every(nothingToWait);
+		case "TSParenthesizedType":
+			return nothingToWait(type.typeAnnotation as SyntaxNode);
+		case "TSTypeReference": {
+			const name = type.typeName as SyntaxNode;
+			return name.type === "Identifier" && ["Promise", "PromiseLike"].includes(name.name as string);
+		}
+		default:
+			return false;
+	}
 }
 
 /**
@@ -1687,167 +1687,167 @@ function nothingToWait(type: SyntaxNode): boolean {
  * nothing tracks them (UF2010).
  */
 export function isReactive(kind: BindingKind): boolean {
-  switch (kind) {
-    case "prop":
-    case "state":
-    case "derived":
-    case "model":
-    // A composable's state or derived value is its hook's signal (ADR-0069).
-    case "usedState":
-    case "usedDerived":
-      return true;
-    case "loopVar":
-    case "templateRef":
-    case "localConst":
-    // An awaited value is evaluated once each time the setup runs (ADR-0101).
-    case "awaited":
-    case "localFn":
-    case "localVar":
-    case "emit":
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    // A composable's argument changes by its parameter's kind: see `isReactiveBinding`.
-    case "argument":
-    case "moduleConst":
-    case "import":
-    case "usedFn":
-    case "usedConst":
-      return false;
-    default:
-      return unreachable(kind);
-  }
+	switch (kind) {
+		case "prop":
+		case "state":
+		case "derived":
+		case "model":
+		// A composable's state or derived value is its hook's signal (ADR-0069).
+		case "usedState":
+		case "usedDerived":
+			return true;
+		case "loopVar":
+		case "templateRef":
+		case "localConst":
+		// An awaited value is evaluated once each time the setup runs (ADR-0101).
+		case "awaited":
+		case "localFn":
+		case "localVar":
+		case "emit":
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		// A composable's argument changes by its parameter's kind: see `isReactiveBinding`.
+		case "argument":
+		case "moduleConst":
+		case "import":
+		case "usedFn":
+		case "usedConst":
+			return false;
+		default:
+			return unreachable(kind);
+	}
 }
 
 /** The events some code of the component emits. */
 function emittedEvents(component: UfComponent): Set<string> {
-  const found = new Set<string>();
-  const visit = (refs: readonly CodeReference[]) => {
-    for (const reference of refs) if (reference.kind === "Emit") found.add(reference.event);
-  };
-  for (const item of component.setup) {
-    switch (item.kind) {
-      case "Function":
-        visit(item.function.body.refs);
-        break;
-      case "Watch":
-        visit(item.callback.body.refs);
-        break;
-      case "WatchEffect":
-        visit(item.effect.body.refs);
-        break;
-      case "Lifecycle":
-        visit(item.callback.body.refs);
-        break;
-      // An awaited value cannot emit (UF2039).
-      case "Await":
-      case "State":
-      case "Derived":
-      case "TemplateRef":
-      case "Id":
-      case "Const":
-      case "Variable":
-      case "Model":
-      case "Provide":
-      case "Inject":
-      // A development-only block emits nothing (UF2017, ADR-0117).
-      case "DevCheck":
-        break;
-      // A composable's callback argument may emit (ADR-0069).
-      case "Use":
-        for (const argument of item.arguments) {
-          if (argument.kind === "Callback") visit(argument.callback.body.refs);
-        }
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
-          visit(attribute.handler.function.body.refs);
-        }
-      }
-    },
-  });
-  for (const listener of componentListeners(component)) {
-    if (listener.handler.kind === "Inline") visit(listener.handler.function.body.refs);
-  }
-  return found;
+	const found = new Set<string>();
+	const visit = (refs: readonly CodeReference[]) => {
+		for (const reference of refs) if (reference.kind === "Emit") found.add(reference.event);
+	};
+	for (const item of component.setup) {
+		switch (item.kind) {
+			case "Function":
+				visit(item.function.body.refs);
+				break;
+			case "Watch":
+				visit(item.callback.body.refs);
+				break;
+			case "WatchEffect":
+				visit(item.effect.body.refs);
+				break;
+			case "Lifecycle":
+				visit(item.callback.body.refs);
+				break;
+			// An awaited value cannot emit (UF2039).
+			case "Await":
+			case "State":
+			case "Derived":
+			case "TemplateRef":
+			case "Id":
+			case "Const":
+			case "Variable":
+			case "Model":
+			case "Provide":
+			case "Inject":
+			// A development-only block emits nothing (UF2017, ADR-0117).
+			case "DevCheck":
+				break;
+			// A composable's callback argument may emit (ADR-0069).
+			case "Use":
+				for (const argument of item.arguments) {
+					if (argument.kind === "Callback") visit(argument.callback.body.refs);
+				}
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
+					visit(attribute.handler.function.body.refs);
+				}
+			}
+		},
+	});
+	for (const listener of componentListeners(component)) {
+		if (listener.handler.kind === "Inline") visit(listener.handler.function.body.refs);
+	}
+	return found;
 }
 
 /** The listeners of child components' events, on components and on `<component is>`. */
 export function componentListeners(component: UfComponent): ListenerAttribute[] {
-  const found: ListenerAttribute[] = [];
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Component" && node.kind !== "Dynamic") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Listener") found.push(attribute);
-      }
-    },
-  });
-  return found;
+	const found: ListenerAttribute[] = [];
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Listener") found.push(attribute);
+			}
+		},
+	});
+	return found;
 }
 
 /** The template refs attached to an element inside a conditional's branch. */
 function refsInConditionals(component: UfComponent): Set<BindingId> {
-  const found = new Set<BindingId>();
-  const visit = (node: RenderNode, conditional: boolean): void => {
-    switch (node.kind) {
-      case "Element":
-        if (conditional) {
-          for (const attribute of node.attributes) {
-            if (attribute.kind === "Ref") found.add(attribute.binding);
-          }
-        }
-        for (const child of node.children) visit(child, conditional);
-        return;
-      case "If":
-        for (const branch of node.branches) {
-          for (const child of branch.children) visit(child, true);
-        }
-        return;
-      case "For":
-        visit(node.body, conditional);
-        return;
-      case "Text":
-      case "Interpolation":
-        return;
-      // A fill renders where its child puts it, which may be under a condition.
-      case "Component":
-        for (const fill of node.fills) for (const child of fill.children) visit(child, true);
-        return;
-      case "SlotOutlet":
-        for (const child of node.fallback) visit(child, true);
-        return;
-      case "Dynamic":
-        for (const child of node.children) visit(child, conditional);
-        for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, true);
-        return;
-      // A teleport renders once the component has mounted (ADR-0098).
-      case "Teleport":
-        for (const child of node.children) visit(child, true);
-        return;
-      // A transition's element comes and goes as its branch does (ADR-0100).
-      case "Transition":
-        for (const child of node.children) visit(child, conditional);
-        return;
-      default:
-        unreachable(node);
-    }
-  };
-  const root = component.render;
-  if (root.kind === "Fragment") for (const child of root.children) visit(child, false);
-  else visit(root, false);
-  return found;
+	const found = new Set<BindingId>();
+	const visit = (node: RenderNode, conditional: boolean): void => {
+		switch (node.kind) {
+			case "Element":
+				if (conditional) {
+					for (const attribute of node.attributes) {
+						if (attribute.kind === "Ref") found.add(attribute.binding);
+					}
+				}
+				for (const child of node.children) visit(child, conditional);
+				return;
+			case "If":
+				for (const branch of node.branches) {
+					for (const child of branch.children) visit(child, true);
+				}
+				return;
+			case "For":
+				visit(node.body, conditional);
+				return;
+			case "Text":
+			case "Interpolation":
+				return;
+			// A fill renders where its child puts it, which may be under a condition.
+			case "Component":
+				for (const fill of node.fills) for (const child of fill.children) visit(child, true);
+				return;
+			case "SlotOutlet":
+				for (const child of node.fallback) visit(child, true);
+				return;
+			case "Dynamic":
+				for (const child of node.children) visit(child, conditional);
+				for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, true);
+				return;
+			// A teleport renders once the component has mounted (ADR-0098).
+			case "Teleport":
+				for (const child of node.children) visit(child, true);
+				return;
+			// A transition's element comes and goes as its branch does (ADR-0100).
+			case "Transition":
+				for (const child of node.children) visit(child, conditional);
+				return;
+			default:
+				unreachable(node);
+		}
+	};
+	const root = component.render;
+	if (root.kind === "Fragment") for (const child of root.children) visit(child, false);
+	else visit(root, false);
+	return found;
 }
 
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 export function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

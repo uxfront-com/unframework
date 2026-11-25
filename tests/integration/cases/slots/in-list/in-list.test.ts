@@ -6,10 +6,10 @@ import { expect } from "vitest";
 import Recipe from "./Recipe.uf.tsx";
 
 describeTargets("slots/in-list", () => {
-  it("renders the fill before each step", async () => {
-    const view = await mountScenario(Recipe, "tea");
-    await view.expectParity("tea");
-    await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("> Steep");
-    await expect.element(view.getByRole("listitem").nth(2)).toHaveTextContent("> Pour");
-  });
+	it("renders the fill before each step", async () => {
+		const view = await mountScenario(Recipe, "tea");
+		await view.expectParity("tea");
+		await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("> Steep");
+		await expect.element(view.getByRole("listitem").nth(2)).toHaveTextContent("> Pour");
+	});
 });
