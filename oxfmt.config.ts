@@ -30,5 +30,16 @@ export default defineConfig({
 		"tests/integration/styleframe.d.ts",
 		// Written by `pnpm test:budgets:update`, never by hand.
 		"tests/integration/budgets.json",
+		// Emitter output that tests compare byte for byte. The compiler formats its own output
+		// with two spaces (packages/codegen/src/format.ts), so these keep two spaces too.
+		"packages/target-solid/test/fixtures/{Address,AsyncRuns,Coalesced,ForwardedSlot,KeyedRows,Lifecycle,ListedSelect,Listeners,NarrowedState,Narrowing,NumberText,OptionText,RowSlots,Runs,SelectRow,Swatch,UnmatchedSelect,Watchers}.tsx",
+		"packages/target-solid2/test/fixtures/{Address,AsyncRuns,Coalesced,ForwardedSlot,KeyedRows,Lifecycle,ListedSelect,Listeners,NarrowedState,Narrowing,NumberText,OptionText,RowSlots,Runs,SelectRow,Swatch,TickChild,UnmatchedSelect,Watchers}.tsx",
+		"packages/target-qwik/test/fixtures/Attributes.tsx",
+		// Sources whose two-space text the tests search for, or which reaches an output that
+		// a test compares with two-space text.
+		"packages/type-oracle/test/fixtures/local/Card.uf.tsx",
+		"packages/unframework/probes/allowed/intrinsics.uf.tsx",
+		"tests/e2e/design-system/unframework.config.ts",
+		"tests/e2e/design-system/examples/Buttons.example.uf.tsx",
 	],
 });

@@ -2,53 +2,53 @@ import type { ComponentProps, JSX } from "@solidjs/web";
 import { createEffect, createSignal, getObserver, omit, onCleanup } from "solid-js";
 
 export default function OptionText(
-	props: { unit: string } & Omit<
-		ComponentProps<"select">,
-		"unit" | "class" | "style" | "onChange"
-	> & {
-			class?: string;
-			style?: JSX.CSSProperties;
-			onChange?: Extract<ComponentProps<"select">["onChange"], (event: never) => void>;
-		},
+  props: { unit: string } & Omit<
+    ComponentProps<"select">,
+    "unit" | "class" | "style" | "onChange"
+  > & {
+      class?: string;
+      style?: JSX.CSSProperties;
+      onChange?: Extract<ComponentProps<"select">["onChange"], (event: never) => void>;
+    },
 ) {
-	const others = omit(props, "unit", "onChange");
+  const others = omit(props, "unit", "onChange");
 
-	const [amount, setAmount] = createState("2 kg");
+  const [amount, setAmount] = createState("2 kg");
 
-	return (
-		<select
-			aria-label="Amount"
-			onChange={(event) => {
-				setAmount(event.currentTarget.value);
-				props.onChange?.(event);
-			}}
-			ref={selectOptions(amount)}
-			{...others}
-		>
-			<option
-				selected={
-					amount() ===
-					String("  1 " + props.unit)
-						.replace(/[\t\n\f\r ]+/g, " ")
-						.replace(/^ | $/g, "")
-				}
-			>
-				{"  1 "}
-				{props.unit}
-			</option>
-			<option
-				selected={
-					amount() ===
-					String("  2 " + props.unit + " ")
-						.replace(/[\t\n\f\r ]+/g, " ")
-						.replace(/^ | $/g, "")
-				}
-			>
-				{"  2 "}
-				{props.unit}{" "}
-			</option>
-		</select>
-	);
+  return (
+    <select
+      aria-label="Amount"
+      onChange={(event) => {
+        setAmount(event.currentTarget.value);
+        props.onChange?.(event);
+      }}
+      ref={selectOptions(amount)}
+      {...others}
+    >
+      <option
+        selected={
+          amount() ===
+          String("  1 " + props.unit)
+            .replace(/[\t\n\f\r ]+/g, " ")
+            .replace(/^ | $/g, "")
+        }
+      >
+        {"  1 "}
+        {props.unit}
+      </option>
+      <option
+        selected={
+          amount() ===
+          String("  2 " + props.unit + " ")
+            .replace(/[\t\n\f\r ]+/g, " ")
+            .replace(/^ | $/g, "")
+        }
+      >
+        {"  2 "}
+        {props.unit}{" "}
+      </option>
+    </select>
+  );
 }
 
 /**
@@ -56,28 +56,28 @@ export default function OptionText(
  * selects, and none where none holds it: as the value changes, and as options come and go.
  */
 function selectOptions(value: () => unknown): (select: HTMLSelectElement) => void {
-	let bound: HTMLSelectElement | undefined;
-	let observer: MutationObserver | undefined;
-	const choose = (current: unknown) => {
-		const select = bound;
-		if (!select) return;
-		if (!Array.isArray(current)) {
-			// `selectedIndex` -1 where no option holds it: unselecting each one selects the first.
-			select.selectedIndex = [...select.options].findIndex(
-				(option) => option.value === String(current),
-			);
-			return;
-		}
-		for (const option of select.options) option.selected = current.includes(option.value);
-	};
-	// Created here, as the `ref` is evaluated: Solid 2 creates no computation in a `ref` callback.
-	createEffect(value, choose);
-	onCleanup(() => observer?.disconnect());
-	return (select) => {
-		bound = select;
-		observer = new MutationObserver(() => choose(value()));
-		observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
-	};
+  let bound: HTMLSelectElement | undefined;
+  let observer: MutationObserver | undefined;
+  const choose = (current: unknown) => {
+    const select = bound;
+    if (!select) return;
+    if (!Array.isArray(current)) {
+      // `selectedIndex` -1 where no option holds it: unselecting each one selects the first.
+      select.selectedIndex = [...select.options].findIndex(
+        (option) => option.value === String(current),
+      );
+      return;
+    }
+    for (const option of select.options) option.selected = current.includes(option.value);
+  };
+  // Created here, as the `ref` is evaluated: Solid 2 creates no computation in a `ref` callback.
+  createEffect(value, choose);
+  onCleanup(() => observer?.disconnect());
+  return (select) => {
+    bound = select;
+    observer = new MutationObserver(() => choose(value()));
+    observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
+  };
 }
 
 /**
@@ -87,17 +87,17 @@ function selectOptions(value: () => unknown): (select: HTMLSelectElement) => voi
 function createState<T>(): [() => T | undefined, (value: T | undefined) => void];
 function createState<T>(initial: T): [() => T, (value: T) => void];
 function createState<T>(initial?: T): [() => T | undefined, (value: T | undefined) => void] {
-	let current = initial;
-	// A version, never the value: `createSignal` would take a function for a computation.
-	const [tracked, notify] = createSignal(0, { ownedWrite: true });
-	function read(): T | undefined {
-		if (getObserver()) tracked();
-		return current;
-	}
-	function write(value: T | undefined): void {
-		if (Object.is(value, current)) return;
-		current = value;
-		notify((version) => version + 1);
-	}
-	return [read, write];
+  let current = initial;
+  // A version, never the value: `createSignal` would take a function for a computation.
+  const [tracked, notify] = createSignal(0, { ownedWrite: true });
+  function read(): T | undefined {
+    if (getObserver()) tracked();
+    return current;
+  }
+  function write(value: T | undefined): void {
+    if (Object.is(value, current)) return;
+    current = value;
+    notify((version) => version + 1);
+  }
+  return [read, write];
 }

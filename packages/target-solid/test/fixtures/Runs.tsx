@@ -1,174 +1,174 @@
 import {
-	type ComponentProps,
-	For,
-	type JSX,
-	createMemo,
-	createReaction,
-	createSignal,
-	onCleanup,
-	onMount,
-	splitProps,
-	untrack,
+  type ComponentProps,
+  For,
+  type JSX,
+  createMemo,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  splitProps,
+  untrack,
 } from "solid-js";
 
 export interface RunsProps {
-	label: string;
+  label: string;
 }
 
 export interface RunsEvents {
-	onMoved?: (low: number, high: number) => void;
-	onRendered?: (count: number) => void;
-	onSaved?: (text: string) => void;
+  onMoved?: (low: number, high: number) => void;
+  onRendered?: (count: number) => void;
+  onSaved?: (text: string) => void;
 }
 
 export default function Runs(
-	props: RunsProps &
-		RunsEvents &
-		Omit<ComponentProps<"section">, "label" | "style"> & { style?: JSX.CSSProperties },
+  props: RunsProps &
+    RunsEvents &
+    Omit<ComponentProps<"section">, "label" | "style"> & { style?: JSX.CSSProperties },
 ) {
-	const [, others] = splitProps(props, ["label", "onMoved", "onRendered", "onSaved"]);
+  const [, others] = splitProps(props, ["label", "onMoved", "onRendered", "onSaved"]);
 
-	const [low, setLow] = createSignal(0);
-	const [high, setHigh] = createSignal(10);
-	const [query, setQuery] = createSignal("");
-	const [results, setResults] = createSignal<string[]>([]);
-	const [notes, setNotes] = createSignal<string[]>([]);
-	let list: HTMLUListElement | null = null;
+  const [low, setLow] = createSignal(0);
+  const [high, setHigh] = createSignal(10);
+  const [query, setQuery] = createSignal("");
+  const [results, setResults] = createSignal<string[]>([]);
+  const [notes, setNotes] = createSignal<string[]>([]);
+  let list: HTMLUListElement | null = null;
 
-	createWatcher([low, high], ([a, b]) => {
-		props.onMoved?.(a, b);
-	});
+  createWatcher([low, high], ([a, b]) => {
+    props.onMoved?.(a, b);
+  });
 
-	createWatcher(query, (value) => {
-		setResults(value === "" ? [] : [value, `${value}!`]);
-	});
+  createWatcher(query, (value) => {
+    setResults(value === "" ? [] : [value, `${value}!`]);
+  });
 
-	createWatcher(
-		query,
-		() => {
-			props.onRendered?.(list?.childElementCount ?? -1);
-		},
-		{ flush: "post" },
-	);
+  createWatcher(
+    query,
+    () => {
+      props.onRendered?.(list?.childElementCount ?? -1);
+    },
+    { flush: "post" },
+  );
 
-	createWatchEffect([() => props.label, query], async () => {
-		const text = `${props.label} ${query()}`;
-		await Promise.resolve();
-		props.onSaved?.(text);
-	});
+  createWatchEffect([() => props.label, query], async () => {
+    const text = `${props.label} ${query()}`;
+    await Promise.resolve();
+    props.onSaved?.(text);
+  });
 
-	onMount(() => {
-		void start();
-	});
+  onMount(() => {
+    void start();
+  });
 
-	async function start() {
-		await Promise.resolve();
-		setLow(1);
-		setHigh(11);
-	}
+  async function start() {
+    await Promise.resolve();
+    setLow(1);
+    setHigh(11);
+  }
 
-	function later() {
-		setTimeout(() => {
-			setLow(low() + 1);
-			setHigh(high() + 1);
-		}, 0);
-	}
+  function later() {
+    setTimeout(() => {
+      setLow(low() + 1);
+      setHigh(high() + 1);
+    }, 0);
+  }
 
-	function chained() {
-		void Promise.resolve(5).then((step) =>
-			untrack(() => {
-				setLow(low() + step);
-				setHigh(high() + step);
-				props.onSaved?.(`${props.label} ${low()}`);
-			}),
-		);
-	}
+  function chained() {
+    void Promise.resolve(5).then((step) =>
+      untrack(() => {
+        setLow(low() + step);
+        setHigh(high() + step);
+        props.onSaved?.(`${props.label} ${low()}`);
+      }),
+    );
+  }
 
-	function update(change: (entries: string[]) => string[]) {
-		setNotes(change(notes()));
-	}
+  function update(change: (entries: string[]) => string[]) {
+    setNotes(change(notes()));
+  }
 
-	function note() {
-		update((entries) => untrack(() => [...entries, `${props.label} ${query()}`]));
-	}
+  function note() {
+    update((entries) => untrack(() => [...entries, `${props.label} ${query()}`]));
+  }
 
-	async function save() {
-		const before = low();
-		setLow(before + 1);
-		const next = high() + 1;
-		setHigh(next);
-		await Promise.resolve();
-		setLow(next);
-		setHigh(next + before);
-	}
+  async function save() {
+    const before = low();
+    setLow(before + 1);
+    const next = high() + 1;
+    setHigh(next);
+    await Promise.resolve();
+    setLow(next);
+    setHigh(next + before);
+  }
 
-	return (
-		<section aria-label="Runs" {...others}>
-			<p role="status">
-				{low()}-{high()}
-			</p>
-			<ul
-				ref={(element) => {
-					list = element;
-					onCleanup(() => {
-						list = null;
-					});
-				}}
-			>
-				<KeyedFor each={results()} by={(item) => item}>
-					{(item) => <li>{item.value}</li>}
-				</KeyedFor>
-			</ul>
-			<button type="button" onClick={() => setQuery("a")}>
-				Search
-			</button>
-			<button type="button" onClick={later}>
-				Later
-			</button>
-			<button type="button" onClick={chained}>
-				Chained
-			</button>
-			<button type="button" onClick={save}>
-				Save
-			</button>
-			<button type="button" onClick={note}>
-				Note {notes().length}
-			</button>
-		</section>
-	);
+  return (
+    <section aria-label="Runs" {...others}>
+      <p role="status">
+        {low()}-{high()}
+      </p>
+      <ul
+        ref={(element) => {
+          list = element;
+          onCleanup(() => {
+            list = null;
+          });
+        }}
+      >
+        <KeyedFor each={results()} by={(item) => item}>
+          {(item) => <li>{item.value}</li>}
+        </KeyedFor>
+      </ul>
+      <button type="button" onClick={() => setQuery("a")}>
+        Search
+      </button>
+      <button type="button" onClick={later}>
+        Later
+      </button>
+      <button type="button" onClick={chained}>
+        Chained
+      </button>
+      <button type="button" onClick={save}>
+        Save
+      </button>
+      <button type="button" onClick={note}>
+        Note {notes().length}
+      </button>
+    </section>
+  );
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function KeyedFor<T>(props: {
-	each: readonly T[];
-	by: (item: T, index: number) => unknown;
-	children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
-	const items = createMemo(() => {
-		const rows = new Map<unknown, T>();
-		props.each.forEach((item, index) => {
-			const key = props.by(item, index);
-			rows.set(rows.has(key) ? {} : key, item);
-		});
-		return rows;
-	});
-	return (
-		<For each={[...items().keys()]}>
-			{(key, index) => {
-				const item = createMemo(() => items().get(key) as T);
-				return untrack(() =>
-					props.children({
-						get value() {
-							return item();
-						},
-						get index() {
-							return index();
-						},
-					}),
-				);
-			}}
-		</For>
-	);
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
+      }}
+    </For>
+  );
 }
 
 /**
@@ -185,26 +185,26 @@ let flushQueued = false;
  * after the DOM updates sees what the others wrote.
  */
 function queueWatcher(queue: Set<() => void>, run: () => void): void {
-	queue.add(run);
-	if (flushQueued) return;
-	flushQueued = true;
-	queueMicrotask(() => {
-		try {
-			do {
-				for (const watcher of queuedWatchers.pre) {
-					queuedWatchers.pre.delete(watcher);
-					watcher();
-				}
-				for (const watcher of queuedWatchers.post) {
-					queuedWatchers.post.delete(watcher);
-					watcher();
-					if (queuedWatchers.pre.size) break;
-				}
-			} while (queuedWatchers.pre.size || queuedWatchers.post.size);
-		} finally {
-			flushQueued = false;
-		}
-	});
+  queue.add(run);
+  if (flushQueued) return;
+  flushQueued = true;
+  queueMicrotask(() => {
+    try {
+      do {
+        for (const watcher of queuedWatchers.pre) {
+          queuedWatchers.pre.delete(watcher);
+          watcher();
+        }
+        for (const watcher of queuedWatchers.post) {
+          queuedWatchers.post.delete(watcher);
+          watcher();
+          if (queuedWatchers.pre.size) break;
+        }
+      } while (queuedWatchers.pre.size || queuedWatchers.post.size);
+    } finally {
+      flushQueued = false;
+    }
+  });
 }
 
 /**
@@ -214,62 +214,62 @@ function queueWatcher(queue: Set<() => void>, run: () => void): void {
  * the next callback and when the component is removed.
  */
 function createWatcher<T>(
-	source: () => T,
-	callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
-	options?: { flush: "post" },
+  source: () => T,
+  callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
+  options?: { flush: "post" },
 ): void;
 function createWatcher<const S extends readonly (() => unknown)[]>(
-	sources: S,
-	callback: (
-		values: WatchedValues<S>,
-		previous: WatchedValues<S>,
-		onCleanup: (cleanup: () => void) => void,
-	) => unknown,
-	options?: { flush: "post" },
+  sources: S,
+  callback: (
+    values: WatchedValues<S>,
+    previous: WatchedValues<S>,
+    onCleanup: (cleanup: () => void) => void,
+  ) => unknown,
+  options?: { flush: "post" },
 ): void;
 function createWatcher(
-	source: (() => unknown) | readonly (() => unknown)[],
-	callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
-	options?: { flush: "post" },
+  source: (() => unknown) | readonly (() => unknown)[],
+  callback: (value: never, previous: never, onCleanup: (cleanup: () => void) => void) => unknown,
+  options?: { flush: "post" },
 ): void {
-	// An array of sources changes when one of its values does: one source is an array of one.
-	const sources = typeof source === "function" ? [source] : source;
-	const cleanups: (() => void)[] = [];
-	const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;
-	const track = createReaction(() => queueWatcher(queue, run));
-	let last = read();
-	onMount(() =>
-		onCleanup(() => {
-			queue.delete(run);
-			for (const cleanup of cleanups.splice(0)) cleanup();
-		}),
-	);
+  // An array of sources changes when one of its values does: one source is an array of one.
+  const sources = typeof source === "function" ? [source] : source;
+  const cleanups: (() => void)[] = [];
+  const queue = options?.flush === "post" ? queuedWatchers.post : queuedWatchers.pre;
+  const track = createReaction(() => queueWatcher(queue, run));
+  let last = read();
+  onMount(() =>
+    onCleanup(() => {
+      queue.delete(run);
+      for (const cleanup of cleanups.splice(0)) cleanup();
+    }),
+  );
 
-	function read(): unknown[] {
-		let values: unknown[] = [];
-		track(() => {
-			values = sources.map((each) => each());
-		});
-		return values;
-	}
+  function read(): unknown[] {
+    let values: unknown[] = [];
+    track(() => {
+      values = sources.map((each) => each());
+    });
+    return values;
+  }
 
-	function run(): void {
-		const values = read();
-		if (values.every((value, index) => Object.is(value, last[index]))) return;
-		const previous = last;
-		last = values;
-		call(values, previous);
-	}
+  function run(): void {
+    const values = read();
+    if (values.every((value, index) => Object.is(value, last[index]))) return;
+    const previous = last;
+    last = values;
+    call(values, previous);
+  }
 
-	function call(values: unknown[], previous: unknown[] | undefined): void {
-		for (const cleanup of cleanups.splice(0)) cleanup();
-		const register = (cleanup: () => void) => cleanups.push(cleanup);
-		if (typeof source === "function") {
-			callback(values[0] as never, previous?.[0] as never, register);
-		} else {
-			callback(values as never, (previous ?? []) as never, register);
-		}
-	}
+  function call(values: unknown[], previous: unknown[] | undefined): void {
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    const register = (cleanup: () => void) => cleanups.push(cleanup);
+    if (typeof source === "function") {
+      callback(values[0] as never, previous?.[0] as never, register);
+    } else {
+      callback(values as never, (previous ?? []) as never, register);
+    }
+  }
 }
 
 /**
@@ -278,26 +278,26 @@ function createWatcher(
  * registrar, whose cleanups run before its next run and when the component is removed.
  */
 function createWatchEffect(
-	sources: readonly (() => unknown)[],
-	effect: (onCleanup: (cleanup: () => void) => void) => unknown,
+  sources: readonly (() => unknown)[],
+  effect: (onCleanup: (cleanup: () => void) => void) => unknown,
 ): void {
-	onMount(() => {
-		const cleanups: (() => void)[] = [];
-		const track = createReaction(() => queueWatcher(queuedWatchers.post, run));
-		run();
-		onCleanup(() => {
-			queuedWatchers.post.delete(run);
-			for (const cleanup of cleanups.splice(0)) cleanup();
-		});
+  onMount(() => {
+    const cleanups: (() => void)[] = [];
+    const track = createReaction(() => queueWatcher(queuedWatchers.post, run));
+    run();
+    onCleanup(() => {
+      queuedWatchers.post.delete(run);
+      for (const cleanup of cleanups.splice(0)) cleanup();
+    });
 
-		function run(): void {
-			track(() => {
-				for (const source of sources) source();
-			});
-			for (const cleanup of cleanups.splice(0)) cleanup();
-			effect((cleanup) => cleanups.push(cleanup));
-		}
-	});
+    function run(): void {
+      track(() => {
+        for (const source of sources) source();
+      });
+      for (const cleanup of cleanups.splice(0)) cleanup();
+      effect((cleanup) => cleanups.push(cleanup));
+    }
+  });
 }
 
 /** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
